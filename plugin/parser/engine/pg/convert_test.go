@@ -441,6 +441,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 											Name: "people",
 										},
 										ColumnList: []string{"id"},
+										MatchType:  ast.ForeignMatchTypeSimple,
+										OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+										OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
 									},
 								},
 							},
@@ -457,6 +460,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 									Name: "people",
 								},
 								ColumnList: []string{"b"},
+								MatchType:  ast.ForeignMatchTypeSimple,
+								OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+								OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
 							},
 						},
 					},
@@ -808,6 +814,8 @@ func TestPGDropIndexStmt(t *testing.T) {
 			stmt: "DROP INDEX xschema.idx_id, idx_x",
 			want: []ast.Node{
 				&ast.DropIndexStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
 					IndexList: []*ast.IndexDef{
 						{
 							Table: &ast.TableDef{Schema: "xschema"},
@@ -820,6 +828,50 @@ func TestPGDropIndexStmt(t *testing.T) {
 			statementList: []parser.SingleSQL{
 				{
 					Text:     "DROP INDEX xschema.idx_id, idx_x",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP INDEX xschema.idx_id, idx_x restrict",
+			want: []ast.Node{
+				&ast.DropIndexStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
+					IndexList: []*ast.IndexDef{
+						{
+							Table: &ast.TableDef{Schema: "xschema"},
+							Name:  "idx_id",
+						},
+						{Name: "idx_x"},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP INDEX xschema.idx_id, idx_x restrict",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP INDEX IF EXISTS xschema.idx_id, idx_x cascade",
+			want: []ast.Node{
+				&ast.DropIndexStmt{
+					IfExists: true,
+					Behavior: ast.DropBehaviorCascade,
+					IndexList: []*ast.IndexDef{
+						{
+							Table: &ast.TableDef{Schema: "xschema"},
+							Name:  "idx_id",
+						},
+						{Name: "idx_x"},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP INDEX IF EXISTS xschema.idx_id, idx_x cascade",
 					LastLine: 1,
 				},
 			},
@@ -936,6 +988,126 @@ func expressionWithText(expression ast.ExpressionNode, text string) ast.Expressi
 
 func TestPGAddConstraintStmt(t *testing.T) {
 	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypeForeign,
+								Name:    "fk_tech_book_id",
+								KeyList: []string{"id"},
+								Foreign: &ast.ForeignDef{
+									Table: &ast.TableDef{
+										Type: ast.TableTypeBaseTable,
+										Name: "people",
+									},
+									ColumnList: []string{"id"},
+									MatchType:  ast.ForeignMatchTypeSimple,
+									OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+									OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+								},
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH FULL ON UPDATE CASCADE ON DELETE SET DEFAULT",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypeForeign,
+								Name:    "fk_tech_book_id",
+								KeyList: []string{"id"},
+								Foreign: &ast.ForeignDef{
+									Table: &ast.TableDef{
+										Type: ast.TableTypeBaseTable,
+										Name: "people",
+									},
+									ColumnList: []string{"id"},
+									MatchType:  ast.ForeignMatchTypeFull,
+									OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeCascade},
+									OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetDefault},
+								},
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH FULL ON UPDATE CASCADE ON DELETE SET DEFAULT",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH SIMPLE ON UPDATE RESTRICT ON DELETE SET NULL",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypeForeign,
+								Name:    "fk_tech_book_id",
+								KeyList: []string{"id"},
+								Foreign: &ast.ForeignDef{
+									Table: &ast.TableDef{
+										Type: ast.TableTypeBaseTable,
+										Name: "people",
+									},
+									ColumnList: []string{"id"},
+									MatchType:  ast.ForeignMatchTypeSimple,
+									OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeRestrict},
+									OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetNull},
+								},
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH SIMPLE ON UPDATE RESTRICT ON DELETE SET NULL",
+					LastLine: 1,
+				},
+			},
+		},
 		{
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
 			want: []ast.Node{
@@ -1085,6 +1257,9 @@ func TestPGAddConstraintStmt(t *testing.T) {
 										Name: "people",
 									},
 									ColumnList: []string{"id"},
+									MatchType:  ast.ForeignMatchTypeSimple,
+									OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+									OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
 								},
 							},
 						},
@@ -1154,6 +1329,38 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			statementList: []parser.SingleSQL{
 				{
 					Text:     "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE ONLY circles ADD CONSTRAINT circles_c_excl EXCLUDE USING gist (c WITH &&, d WITH &&) WHERE (a > 0);",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "circles",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "circles",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:         ast.ConstraintTypeExclusion,
+								Name:         "circles_c_excl",
+								Exclusions:   "c WITH &&, d WITH &&",
+								AccessMethod: ast.IndexMethodTypeGiST,
+								WhereClause:  "a > 0",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE ONLY circles ADD CONSTRAINT circles_c_excl EXCLUDE USING gist (c WITH &&, d WITH &&) WHERE (a > 0);",
 					LastLine: 1,
 				},
 			},

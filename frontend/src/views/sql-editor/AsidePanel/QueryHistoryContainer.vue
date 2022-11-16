@@ -139,12 +139,14 @@ const handleCopy = (history: QueryHistory) => {
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  // It's awkward that we stored instanceName and databaseName rather than IDs
-  // in the history activity entity.
-  // We may try our best to find the correct database and instance by searching
-  // their names.
-  const { instanceName, databaseName, statement } = queryHistory;
-  const connection = searchConnectionByName(instanceName, databaseName);
+  const { instanceId, databaseId, instanceName, databaseName, statement } =
+    queryHistory;
+  const connection = searchConnectionByName(
+    instanceId,
+    databaseId,
+    instanceName,
+    databaseName
+  );
 
   // Open a new tab with the connection and statement.
   tabStore.selectOrAddTempTab();

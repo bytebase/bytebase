@@ -48,6 +48,8 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 	// Register mysql transform driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
+	// Register mysql edit driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/edit/mysql"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------.

@@ -100,10 +100,22 @@ const prepareSheet = async () => {
   if (Number.isNaN(sheetId)) {
     return false;
   }
+  const openingSheetTab = tabStore.tabList.find(
+    (tab) => tab.sheetId === sheetId
+  );
+
   sqlEditorStore.isFetchingSheet = true;
   const sheet = await sheetStore.getOrFetchSheetById(sheetId);
   sqlEditorStore.isFetchingSheet = false;
+
   if (sheet.id === UNKNOWN_ID) {
+    if (openingSheetTab) {
+      // If a sheet is open in a tab but it returns 404 NOT_FOUND
+      // that means the sheet has been deleted somewhere else.
+      // We need to turn the sheet to an unsaved tab.
+      openingSheetTab.sheetId = undefined;
+      openingSheetTab.isSaved = false;
+    }
     return false;
   }
   if (!isSheetReadable(sheet, currentUser.value)) {
@@ -114,10 +126,6 @@ const prepareSheet = async () => {
     });
     return false;
   }
-
-  const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheetId === sheet.id
-  );
   if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
     tabStore.setCurrentTabId(openingSheetTab.id);
@@ -134,7 +142,6 @@ const prepareSheet = async () => {
         instanceId: sheet.database?.instanceId || UNKNOWN_ID,
         databaseId: sheet.databaseId || UNKNOWN_ID,
       },
-      mode: sheet.payload.tabMode,
     });
   }
 
@@ -232,12 +239,28 @@ const syncURLWithConnection = () => {
               sheetSlug: makeSheetSlug(sheet),
             },
           });
-          return;
+        } else {
+          // A sheet is not found, fallback to an unsaved tab.
+          tabStore.updateCurrentTab({
+            sheetId: undefined,
+            isSaved: false,
+          });
         }
+        return;
       }
       if (instanceId !== UNKNOWN_ID) {
         const instance = instanceStore.getInstanceById(instanceId);
         const database = databaseStore.getDatabaseById(databaseId); // might be <<Unknown database>> here
+        // Sometimes the instance and/or the database might be <<Unknown>> since
+        // they might be deleted somewhere else during the life of the page.
+        // So we need to sync the connection values for cleaning up to prevent
+        // exceptions.
+        tabStore.updateCurrentTab({
+          connection: {
+            instanceId: instance.id,
+            databaseId: database.id,
+          },
+        });
         router.replace({
           name: "sql-editor.detail",
           params: {

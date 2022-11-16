@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/edit"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -790,6 +793,44 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
+
+	g.POST("/database/:databaseID/edit", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		databaseID, err := strconv.Atoi(c.Param("databaseID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{
+			ID: &databaseID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find database").SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+		}
+		databaseEdit := &api.DatabaseEdit{}
+		if err := json.Unmarshal(body, databaseEdit); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed post database edit request").SetInternal(err)
+		}
+
+		engineType := parser.EngineType(database.Instance.Engine)
+		statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
+		}
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+		if _, err := c.Response().Write([]byte(statement)); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write DDL statement response for database %v", databaseID)).SetInternal(err)
+		}
+		return nil
+	})
 }
 
 func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
@@ -842,7 +883,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir, dataDir string) (db.Driver, error) {
 	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
@@ -852,9 +893,9 @@ func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Insta
 		ctx,
 		instance.Engine,
 		db.DriverConfig{
-			PgInstanceDir: s.pgInstance.BaseDir,
-			ResourceDir:   common.GetResourceDir(s.profile.DataDir),
-			BinlogDir:     getBinlogAbsDir(s.profile.DataDir, instance.ID),
+			PgInstanceDir: pgInstanceDir,
+			ResourceDir:   common.GetResourceDir(dataDir),
+			BinlogDir:     getBinlogAbsDir(dataDir, instance.ID),
 		},
 		connCfg,
 		db.ConnectionContext{

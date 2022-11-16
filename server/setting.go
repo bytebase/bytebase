@@ -72,6 +72,8 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureIMApproval.AccessErrorMessage())
 			}
 			p := s.ApplicationRunner.p
+			// clear token cache so that we won't use the previous token.
+			p.ClearTokenCache()
 			approvalCode, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
 				AppID:     value.AppID,
 				AppSecret: value.AppSecret,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
@@ -83,13 +82,13 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 
 						issue, err := r.store.GetIssueByID(ctx, externalApproval.IssueID)
-						stage := getActiveStage(issue.Pipeline.StageList)
-						if stage == nil {
-							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
-						}
 						if err != nil {
 							log.Error("failed to get issue by issue id", zap.Int("issueID", externalApproval.IssueID), zap.Error(err))
 							continue
+						}
+						stage := getActiveStage(issue.Pipeline.StageList)
+						if stage == nil {
+							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
 						if issue.Status != api.IssueOpen {
 							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
@@ -125,8 +124,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 										UpdaterID: externalApproval.ApproverID,
 										Status:    api.TaskPending,
 									}
-									_, err := r.store.PatchTaskStatus(ctx, taskStatusPatch)
-									if err != nil {
+									if _, err := r.store.PatchTaskStatus(ctx, taskStatusPatch); err != nil {
 										return errors.Wrapf(err, "failed to update task status, task id list: %+v", taskIDList)
 									}
 									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, taskStatusPatch, issue, stage, tasks); err != nil {
@@ -223,25 +221,30 @@ func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *
 		if task.Status == api.TaskPendingApproval {
 			pendingApprovalCount++
 		}
-		if len(task.TaskCheckRunList) == 0 {
-			return false, nil
+
+		// get the most recent task check run result for each type of task check
+		taskCheckRun := make(map[api.TaskCheckType]*api.TaskCheckRun)
+		for _, run := range task.TaskCheckRunList {
+			v, ok := taskCheckRun[run.Type]
+			if !ok {
+				taskCheckRun[run.Type] = run
+			} else if run.ID > v.ID {
+				taskCheckRun[run.Type] = run
+			}
 		}
-		// sort to get the most recent task check run result
-		sort.Slice(task.TaskCheckRunList, func(i, j int) bool {
-			return task.TaskCheckRunList[i].UpdatedTs > task.TaskCheckRunList[j].UpdatedTs ||
-				(task.TaskCheckRunList[i].UpdatedTs == task.TaskCheckRunList[j].UpdatedTs && task.TaskCheckRunList[i].ID > task.TaskCheckRunList[j].ID)
-		})
-		taskCheck := task.TaskCheckRunList[0]
-		if taskCheck.Status != api.TaskCheckRunDone {
-			return false, nil
-		}
-		var payload api.TaskCheckRunResultPayload
-		if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
-			return false, err
-		}
-		for _, result := range payload.ResultList {
-			if result.Status == api.TaskCheckStatusError {
+
+		for _, taskCheck := range taskCheckRun {
+			if taskCheck.Status != api.TaskCheckRunDone {
 				return false, nil
+			}
+			var payload api.TaskCheckRunResultPayload
+			if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
+				return false, err
+			}
+			for _, result := range payload.ResultList {
+				if result.Status == api.TaskCheckStatusError {
+					return false, nil
+				}
 			}
 		}
 	}
@@ -261,14 +264,25 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 	if err != nil {
 		return err
 	}
+
+	var taskList []feishu.Task
+	for _, task := range stage.TaskList {
+		taskList = append(taskList, feishu.Task{
+			Name:   task.Name,
+			Status: string(task.Status),
+		})
+	}
+
 	instanceCode, err := r.p.CreateExternalApproval(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
 			AppSecret: settingValue.AppSecret,
 		},
 		feishu.Content{
-			Issue: issue.Name,
-			Stage: stage.Name,
+			Issue:    issue.Name,
+			Stage:    stage.Name,
+			Link:     fmt.Sprintf("%s/issue/%s", r.activityManager.s.profile.ExternalURL, api.IssueSlug(issue)),
+			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalCode,
 		users[issue.Creator.Email],
@@ -276,7 +290,6 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 	if err != nil {
 		return err
 	}
-
 	payload := api.ExternalApprovalPayloadFeishu{
 		StageID:      stage.ID,
 		AssigneeID:   issue.AssigneeID,

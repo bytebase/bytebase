@@ -894,7 +894,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 	var payloadString string
 	switch d.MigrationType {
 	case db.Baseline:
-		taskName = fmt.Sprintf("Establish %q baseline", database.Name)
+		taskName = fmt.Sprintf("Establish baseline for database %q", database.Name)
 		taskType = api.TaskDatabaseSchemaBaseline
 		payload := api.TaskDatabaseSchemaBaselinePayload{
 			Statement:     d.Statement,
@@ -907,7 +907,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.Migrate:
-		taskName = fmt.Sprintf("DDL(schema) for %q", database.Name)
+		taskName = fmt.Sprintf("DDL(schema) for database %q", database.Name)
 		taskType = api.TaskDatabaseSchemaUpdate
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			Statement:     d.Statement,
@@ -920,7 +920,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.MigrateSDL:
-		taskName = fmt.Sprintf("SDL for %q", database.Name)
+		taskName = fmt.Sprintf("SDL for database %q", database.Name)
 		taskType = api.TaskDatabaseSchemaUpdateSDL
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			Statement:     d.Statement,
@@ -933,7 +933,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.Data:
-		taskName = fmt.Sprintf("DML(data) for %q", database.Name)
+		taskName = fmt.Sprintf("DML(data) for database %q", database.Name)
 		taskType = api.TaskDatabaseDataUpdate
 		payload := api.TaskDatabaseDataUpdatePayload{
 			Statement:     d.Statement,
@@ -1129,7 +1129,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update gh-ost sync payload, error: %v", err))
 	}
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:              fmt.Sprintf("Update %q schema gh-ost sync", database.Name),
+		Name:              fmt.Sprintf("Update schema gh-ost sync for database %q", database.Name),
 		InstanceID:        database.InstanceID,
 		DatabaseID:        &database.ID,
 		Status:            api.TaskPendingApproval,
@@ -1146,7 +1146,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
 	}
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:              fmt.Sprintf("Update %q schema gh-ost cutover", database.Name),
+		Name:              fmt.Sprintf("Update schema gh-ost cutover for database %q", database.Name),
 		InstanceID:        database.InstanceID,
 		DatabaseID:        &database.ID,
 		Status:            api.TaskPendingApproval,
@@ -1460,7 +1460,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", nil
 	}
 
-	driver, err := s.getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name)
+	driver, err := getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.pgInstance.BaseDir, s.profile.DataDir)
 	if err != nil {
 		return "", "", err
 	}
