@@ -59,7 +59,7 @@ func (*TaskCheckPITRMySQLExecutor) Run(ctx context.Context, server *Server, task
 		return nil, errors.Wrapf(err, "failed to get instance by ID %d", instanceID)
 	}
 
-	driver, err := server.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, server.pgInstance.BaseDir, server.profile.DataDir)
 	if err != nil {
 		return nil, err
 	}
