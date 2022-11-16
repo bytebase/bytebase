@@ -883,7 +883,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir, dataDir string) (db.Driver, error) {
 	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
@@ -893,9 +893,9 @@ func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Insta
 		ctx,
 		instance.Engine,
 		db.DriverConfig{
-			PgInstanceDir: s.pgInstance.BaseDir,
-			ResourceDir:   common.GetResourceDir(s.profile.DataDir),
-			BinlogDir:     getBinlogAbsDir(s.profile.DataDir, instance.ID),
+			PgInstanceDir: pgInstanceDir,
+			ResourceDir:   common.GetResourceDir(dataDir),
+			BinlogDir:     getBinlogAbsDir(dataDir, instance.ID),
 		},
 		connCfg,
 		db.ConnectionContext{
