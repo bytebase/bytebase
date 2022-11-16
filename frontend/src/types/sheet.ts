@@ -7,7 +7,6 @@ import {
   ProjectId,
   RowStatus,
   PrincipalId,
-  TabMode,
 } from ".";
 
 export type SheetVisibility = "PRIVATE" | "PROJECT" | "PUBLIC";
@@ -16,9 +15,19 @@ export type SheetSource = "BYTEBASE" | "GITLAB_SELF_HOST" | "GITHUB_COM";
 
 export type SheetType = "SQL";
 
-export type SheetPayload = {
-  tabMode: TabMode;
-};
+interface SheetVCSPayload {
+  fileName: string;
+  filePath: string;
+  size: number;
+  author: string;
+  lastCommitId: string;
+  lastSyncTs: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+type SheetEmptyPayload = {};
+
+export type SheetPayload = SheetVCSPayload | SheetEmptyPayload;
 
 export interface Sheet {
   id: SheetId;
@@ -74,15 +83,6 @@ export interface SheetPatch {
   visibility?: SheetVisibility;
   rowStatus?: RowStatus;
   payload?: SheetPayload;
-}
-
-export interface SheetFind {
-  creatorId?: PrincipalId;
-  rowStatus?: RowStatus;
-  projectId?: ProjectId;
-  databaseId?: DatabaseId;
-  visibility?: SheetVisibility;
-  organizerId?: PrincipalId;
 }
 
 export type AccessOption = {

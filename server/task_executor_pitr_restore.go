@@ -173,7 +173,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 }
 
 func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	sourceDriver, err := server.getAdminDatabaseDriver(ctx, task.Instance, "")
+	sourceDriver, err := getAdminDatabaseDriver(ctx, task.Instance, "", server.pgInstance.BaseDir, server.profile.DataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 		if err != nil {
 			return nil, err
 		}
-		if targetDriver, err = server.getAdminDatabaseDriver(ctx, targetInstance, ""); err != nil {
+		if targetDriver, err = getAdminDatabaseDriver(ctx, targetInstance, "", server.pgInstance.BaseDir, server.profile.DataDir); err != nil {
 			return nil, err
 		}
 	}
@@ -344,7 +344,7 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 	}
 	defer backupFile.Close()
 
-	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, server.pgInstance.BaseDir, server.profile.DataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -445,7 +445,7 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*ap
 
 // restoreDatabase will restore the database to the instance from the backup.
 func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) error {
-	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, server.pgInstance.BaseDir, server.profile.DataDir)
 	if err != nil {
 		return err
 	}
@@ -492,7 +492,7 @@ func downloadBackupFileFromCloud(ctx context.Context, server *Server, backupPath
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
 func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
-	targetDriver, err := server.getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name)
+	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, server.pgInstance.BaseDir, server.profile.DataDir)
 	if err != nil {
 		return -1, "", err
 	}

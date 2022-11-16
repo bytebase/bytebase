@@ -25,14 +25,16 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, PropType, reactive, watch } from "vue";
+
 import {
   buildQueryListByIssueFind,
   useIsLoggedIn,
   useIssueStore,
+  useRefreshIssueList,
 } from "@/store";
 import { Issue, IssueFind } from "@/types";
 import { useSessionStorage } from "@vueuse/core";
-import { computed, PropType, reactive, watch } from "vue";
 
 type LocalState = {
   loading: boolean;
@@ -175,5 +177,9 @@ watch(isLoggedIn, () => {
   if (!isLoggedIn.value) {
     resetSession();
   }
+});
+
+useRefreshIssueList(() => {
+  refresh();
 });
 </script>

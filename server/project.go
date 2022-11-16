@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -89,14 +90,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			projectFind.PrincipalID = &userID
 		}
 
-		// Only Owner and DBA can fetch all projects from all users.
-		if projectFind.PrincipalID == nil {
-			role := c.Get(getRoleContextKey()).(api.Role)
-			if role != api.Owner && role != api.DBA {
-				return echo.NewHTTPError(http.StatusForbidden, "Not allowed to fetch all project list")
-			}
-		}
-
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
 			projectFind.RowStatus = &rowStatus
@@ -107,17 +100,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		var activeProjectList []*api.Project
-		// if principalID is passed, we will enable the filter logic
+		// If principalID is passed, We will filter those projects with the current principal having the role provider
+		// different from the project's current role provider.
 		if projectFind.PrincipalID != nil {
 			principalID := *projectFind.PrincipalID
 			for _, project := range projectList {
-				// We will filter those project with the current principal as an inactive member (the role provider differs from that of the project)
-				roleProvider := project.RoleProvider
-				for _, projectMember := range project.ProjectMemberList {
-					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
-						activeProjectList = append(activeProjectList, project)
-						break
-					}
+				if api.HasActiveProjectMembership(principalID, project) {
+					activeProjectList = append(activeProjectList, project)
 				}
 			}
 		} else {
@@ -243,6 +232,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create linked repository request").SetInternal(err)
 		}
+		if repositoryCreate.BranchFilter == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Branch must be specified.")
+		}
+		if strings.Contains(repositoryCreate.BranchFilter, "*") && repositoryCreate.SchemaPathTemplate != "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
+		}
 
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
@@ -321,7 +316,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.POST("/project/:projectID/repository/:repositoryID/sql-review-ci", func(c echo.Context) error {
-		if !s.flight(api.FeatureVCSSQLReviewWorkflow) {
+		if !api.FeatureEnabled(api.FeatureVCSSQLReviewWorkflow, s.profile.Mode) {
 			return echo.NewHTTPError(http.StatusBadRequest, "SQL review CI feature is not enabled")
 		}
 
@@ -471,6 +466,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repo := repoList[0]
 		repoPatch.ID = &repo.ID
+		newSchemaPathTemplate, newBranchFilter := repo.SchemaPathTemplate, repo.BranchFilter
+		if repoPatch.SchemaPathTemplate != nil {
+			newSchemaPathTemplate = *repoPatch.SchemaPathTemplate
+		}
+		if repoPatch.BranchFilter != nil {
+			newBranchFilter = *repoPatch.BranchFilter
+		}
+		if newBranchFilter == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Branch must be specified.")
+		}
+		if strings.Contains(newBranchFilter, "*") && newSchemaPathTemplate != "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
+		}
 
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
@@ -628,20 +636,224 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
 		}
 
+		// DeploymentConfig is never nil.
 		deploymentConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", id)).SetInternal(err)
-		}
-
-		// We should return empty deployment config when it doesn't exist.
-		if deploymentConfig == nil {
-			deploymentConfig = &api.DeploymentConfig{}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, deploymentConfig); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get deployment configuration response: %v", id)).SetInternal(err)
 		}
+		return nil
+	})
+
+	g.POST("/project/:projectID/sync-sheet", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		projectID, err := strconv.Atoi(c.Param("projectID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
+		}
+
+		project, err := s.store.GetProjectByID(ctx, projectID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Project not found: %d", projectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found by ID: %d", projectID))
+		}
+		if project.WorkflowType != api.VCSWorkflow {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
+		}
+
+		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{ProjectID: &projectID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find relevant VCS repo, Project ID: %d", projectID)).SetInternal(err)
+		}
+		if repo == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found by project ID: %d", projectID))
+		}
+
+		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync sheet: %d", repo.VCSID)).SetInternal(err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found by ID: %d", repo.VCSID))
+		}
+
+		basePath := filepath.Dir(repo.SheetPathTemplate)
+		// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
+		fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
+			common.OauthContext{
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
+				AccessToken:  repo.AccessToken,
+				RefreshToken: repo.RefreshToken,
+				Refresher:    s.refreshToken(ctx, repo.WebURL),
+			},
+			vcs.InstanceURL,
+			repo.ExternalID,
+			repo.BranchFilter,
+			basePath,
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository file list from VCS, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
+		}
+
+		for _, file := range fileList {
+			sheetInfo, err := parseSheetInfo(file.Path, repo.SheetPathTemplate)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse sheet info from template").SetInternal(err)
+			}
+			if sheetInfo.SheetName == "" {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("sheet name cannot be empty from sheet path %s with template %s", file.Path, repo.SheetPathTemplate)).SetInternal(err)
+			}
+
+			fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.WebURL),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				file.Path,
+				repo.BranchFilter,
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file content from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
+			}
+
+			fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.WebURL),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				file.Path,
+				repo.BranchFilter,
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
+			}
+
+			lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchCommitByID(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.WebURL),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				fileMeta.LastCommitID,
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch commit data from VCS, instance URL: %s, repo ID: %s, commit ID: %s", vcs.InstanceURL, repo.ExternalID, fileMeta.LastCommitID)).SetInternal(err)
+			}
+
+			sheetVCSPayload := &api.SheetVCSPayload{
+				FileName:     fileMeta.Name,
+				FilePath:     fileMeta.Path,
+				Size:         fileMeta.Size,
+				Author:       lastCommit.AuthorName,
+				LastCommitID: lastCommit.ID,
+				LastSyncTs:   time.Now().Unix(),
+			}
+			payload, err := json.Marshal(sheetVCSPayload)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sheetVCSPayload").SetInternal(err)
+			}
+
+			var databaseID *int
+			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME,
+			// and ENV_NAME and DB_NAME is either both present or neither present.
+			if project.TenantMode != api.TenantModeDisabled {
+				if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
+					databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+						Name:      &sheetInfo.DatabaseName,
+						ProjectID: &projectID,
+					})
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
+					}
+
+					for _, database := range databaseList {
+						database := database // create a new var "database".
+						if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
+							databaseID = &database.ID
+							break
+						}
+					}
+				}
+			}
+
+			var sheetSource api.SheetSource
+			switch vcs.Type {
+			case vcsPlugin.GitLabSelfHost:
+				sheetSource = api.SheetFromGitLabSelfHost
+			case vcsPlugin.GitHubCom:
+				sheetSource = api.SheetFromGitHubCom
+			}
+			vscSheetType := api.SheetForSQL
+			sheetFind := &api.SheetFind{
+				Name:      &sheetInfo.SheetName,
+				ProjectID: &project.ID,
+				Source:    &sheetSource,
+				Type:      &vscSheetType,
+			}
+			sheet, err := s.store.GetSheet(ctx, sheetFind, currentPrincipalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheet with name: %s, project ID: %d", sheetInfo.SheetName, projectID)).SetInternal(err)
+			}
+
+			if sheet == nil {
+				sheetCreate := api.SheetCreate{
+					ProjectID:  projectID,
+					CreatorID:  currentPrincipalID,
+					Name:       sheetInfo.SheetName,
+					Statement:  fileContent,
+					Visibility: api.ProjectSheet,
+					Source:     sheetSource,
+					Type:       api.SheetForSQL,
+					Payload:    string(payload),
+				}
+				if databaseID != nil {
+					sheetCreate.DatabaseID = databaseID
+				}
+
+				if _, err := s.store.CreateSheet(ctx, &sheetCreate); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet from VCS").SetInternal(err)
+				}
+			} else {
+				payloadString := string(payload)
+				sheetPatch := api.SheetPatch{
+					ID:        sheet.ID,
+					UpdaterID: currentPrincipalID,
+					Statement: &fileContent,
+					Payload:   &payloadString,
+				}
+				if databaseID != nil {
+					sheetPatch.DatabaseID = databaseID
+				}
+
+				if _, err := s.store.PatchSheet(ctx, &sheetPatch); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch sheet from VCS").SetInternal(err)
+				}
+			}
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		return nil
 	})
 }

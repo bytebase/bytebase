@@ -38,6 +38,7 @@ import {
   InstanceId,
   EnvironmentId,
   EngineType,
+  DatabaseSyncStatus,
 } from "../types";
 
 interface LocalState {
@@ -68,8 +69,16 @@ export default defineComponent({
       type: Number as PropType<ProjectId>,
       default: UNKNOWN_ID,
     },
+    engineTypeList: {
+      type: Array as PropType<EngineType[]>,
+      default: undefined,
+    },
     engineType: {
       type: String as PropType<EngineType>,
+      default: undefined,
+    },
+    syncStatus: {
+      type: String as PropType<DatabaseSyncStatus>,
       default: undefined,
     },
     disabled: {
@@ -129,9 +138,15 @@ export default defineComponent({
         }
       }
 
-      if (!isNullOrUndefined(props.engineType)) {
+      if (!isNullOrUndefined(props.engineTypeList)) {
         list = list.filter((database: Database) => {
-          return database.instance.engine === props.engineType;
+          return props.engineTypeList?.includes(database.instance.engine);
+        });
+      }
+
+      if (!isNullOrUndefined(props.syncStatus)) {
+        list = list.filter((database: Database) => {
+          return database.syncStatus === props.syncStatus;
         });
       }
 

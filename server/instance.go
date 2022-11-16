@@ -55,7 +55,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		// Try creating the "bytebase" db in the added instance if needed.
 		// Since we allow user to add new instance upfront even providing the incorrect username/password,
 		// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		db, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
 		if err == nil {
 			defer db.Close(ctx)
 			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
@@ -193,7 +193,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
 		if instancePatch.Host != nil || instancePatch.Port != nil {
-			db, err := s.getAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */)
+			db, err := getAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
 			if err == nil {
 				defer db.Close(ctx)
 				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
@@ -284,7 +284,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{}
-		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		db, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -317,7 +317,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instanceMigration := &api.InstanceMigration{}
-		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		db, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
 		if err != nil {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
@@ -362,7 +362,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		find := &db.MigrationHistoryFind{ID: &historyID}
-		driver, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		driver, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Name)).SetInternal(err)
 		}
@@ -437,7 +437,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		driver, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Name)).SetInternal(err)
 		}
@@ -516,7 +516,7 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 	}
-	subscription := s.loadSubscription()
+	subscription := s.loadSubscription(ctx)
 	if count >= subscription.InstanceCount {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}

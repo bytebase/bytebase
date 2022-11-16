@@ -88,11 +88,11 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/member/:id", func(c echo.Context) error {
+	g.PATCH("/member/:memberID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("memberID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberID"))).SetInternal(err)
 		}
 
 		member, err := s.store.GetMemberByID(ctx, id)

@@ -137,6 +137,21 @@ type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+
+	// MySQL rollback SQL related.
+
+	// ThreadID is the ID of the connection executing the migration.
+	// We use it to filter the binlog events of the migration transaction.
+	ThreadID string `json:"threadID,omitempty"`
+	// MigrationID is the ID of the migration history record.
+	// We use it to get the schema when the transaction ran.
+	MigrationID int `json:"migrationID,omitempty"`
+	// BinlogXxx are obtained before and after executing the migration.
+	// We use them to locate the range of binlog for the migration transaction.
+	BinlogFileStart string `json:"binlogFileStart,omitempty"`
+	BinlogFileEnd   string `json:"binlogFileEnd,omitempty"`
+	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
+	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.

@@ -12,17 +12,51 @@
           id="modal-headline"
           class="flex self-center text-lg leading-6 font-medium text-gray-900"
         >
-          {{ featureTitle }}
+          {{ $t(`subscription.features.${featureKey}.title`) }}
         </h3>
       </div>
       <div class="mt-5">
         <p class="whitespace-pre-wrap">
-          {{ featureDesc }}
+          {{ $t(`subscription.features.${featureKey}.desc`) }}
         </p>
       </div>
       <div class="mt-3">
         <p class="whitespace-pre-wrap">
-          {{ $t("subscription.trial-with-plan", { plan: requiredPlan }) }}*
+          <i18n-t
+            v-if="subscriptionStore.canTrial"
+            keypath="subscription.required-plan-with-trial"
+          >
+            <template #requiredPlan>
+              <span class="font-bold text-accent">
+                {{
+                  $t(
+                    `subscription.plan.${planTypeToString(requiredPlan)}.title`
+                  )
+                }}
+              </span>
+            </template>
+            <template v-if="subscriptionStore.canUpgradeTrial" #startTrial>
+              {{ $t("subscription.upgrade-trial").toLowerCase() }}
+            </template>
+            <template v-else #startTrial>
+              {{
+                $t("subscription.trial-for-days", {
+                  days: subscriptionStore.trialingDays,
+                }).toLowerCase()
+              }}
+            </template>
+          </i18n-t>
+          <i18n-t v-else keypath="subscription.require-subscription">
+            <template #requiredPlan>
+              <span class="font-bold text-accent">
+                {{
+                  $t(
+                    `subscription.plan.${planTypeToString(requiredPlan)}.title`
+                  )
+                }}
+              </span>
+            </template>
+          </i18n-t>
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
@@ -33,7 +67,30 @@
         >
           {{ $t("common.dismiss") }}
         </button>
-        <button type="button" class="btn-primary" @click.prevent="ok">
+
+        <template v-if="subscriptionStore.canTrial">
+          <button
+            v-if="subscriptionStore.canUpgradeTrial"
+            type="button"
+            class="btn-primary"
+            @click.prevent="trialSubscription"
+          >
+            {{ $t("subscription.upgrade-trial-button") }}
+          </button>
+          <button
+            v-else
+            type="button"
+            class="btn-primary"
+            @click.prevent="trialSubscription"
+          >
+            {{
+              $t("subscription.start-n-days-trial", {
+                days: subscriptionStore.trialingDays,
+              })
+            }}
+          </button>
+        </template>
+        <button v-else type="button" class="btn-primary" @click.prevent="ok">
           {{ $t("common.learn-more") }}
         </button>
       </div>
@@ -41,45 +98,54 @@
   </BBModal>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType } from "vue";
-import { useI18n } from "vue-i18n";
+<script lang="ts" setup>
+import { PropType } from "vue";
 import { useRouter } from "vue-router";
-import { useSubscriptionStore } from "@/store";
+import { useI18n } from "vue-i18n";
+import { useSubscriptionStore, pushNotification } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 
-export default defineComponent({
-  props: {
-    feature: {
-      required: true,
-      type: String as PropType<FeatureType>,
-    },
-  },
-  emits: ["cancel"],
-  setup(props) {
-    const { t } = useI18n();
-    const router = useRouter();
-
-    const ok = () => {
-      router.push({ name: "setting.workspace.subscription" });
-    };
-
-    const requiredPlan = useSubscriptionStore().getMinimumRequiredPlan(
-      props.feature
-    );
-
-    const featureKey = props.feature.split(".").join("-");
-
-    return {
-      ok,
-      requiredPlan: t(
-        `subscription.plan.${planTypeToString(requiredPlan)}.title`
-      ),
-      featureDesc: t(`subscription.features.${featureKey}.desc`),
-      featureTitle: t(`subscription.features.${featureKey}.title`),
-    };
+const props = defineProps({
+  feature: {
+    required: true,
+    type: String as PropType<FeatureType>,
   },
 });
+
+const emit = defineEmits(["cancel"]);
+const { t } = useI18n();
+const router = useRouter();
+
+const ok = () => {
+  router.push({ name: "setting.workspace.subscription" });
+};
+
+const subscriptionStore = useSubscriptionStore();
+
+const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
+
+const featureKey = props.feature.split(".").join("-");
+
+const trialSubscription = () => {
+  const isUpgrade = subscriptionStore.canUpgradeTrial;
+  subscriptionStore.trialSubscription(requiredPlan).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.success"),
+      description: isUpgrade
+        ? t("subscription.successfully-upgrade-trial", {
+            plan: t(
+              `subscription.plan.${planTypeToString(requiredPlan)}.title`
+            ),
+          })
+        : t("subscription.successfully-start-trial", {
+            days: subscriptionStore.trialingDays,
+          }),
+    });
+    emit("cancel");
+  });
+};
 </script>
 
 <style scoped>

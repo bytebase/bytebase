@@ -208,7 +208,8 @@
     "no": "否",
     "yes": "是",
     "advanced": "高级",
-    "restart": "重启"
+    "restart": "重启",
+    "want-help": "加入用户群"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -321,6 +322,7 @@
       "workspace": "工作空间",
       "general": "通用",
       "members": "成员",
+      "im-integration": "IM 集成管理",
       "version-control": "版本控制",
       "subscription": "订阅",
       "labels": "标签",
@@ -378,6 +380,9 @@
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
       },
       "system-bot": "机器人助手"
+    },
+    "im-integration": {
+      "feishu-updated-tip": "飞书配置更新成功"
     },
     "general": {
       "workspace": {
@@ -517,14 +522,32 @@
     "upload-sql": "上传 SQL",
     "override-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
-    "waiting-earliest-allowed-time": "将于 {time} 之后执行"
+    "waiting-earliest-allowed-time": "将于 {time} 之后执行",
+    "batch-transition": {
+      "not-allowed-tips": "部分选中的工单无法被{operation}",
+      "resolve": "解决",
+      "resolved": "解决",
+      "cancel": "取消",
+      "cancelled": "取消",
+      "reopen": "重开",
+      "reopened": "重开",
+      "action-n-issues": "{action} {n} 个工单",
+      "successfully-action-n-issues": "成功更新 {n} 个工单"
+    },
+    "sql-hint": {
+      "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
+      "dont-apply-to-database-in-baseline-migration": "对于建立基线的迁移，Bytebase 不会应用到数据库，只会记录一个基线历史",
+      "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
     "vcs-info": "已开启 VCS 版本管理。选择该数据库会跳转到对应的 Git 仓库以发起变更流程。",
     "alter-single-db": "变更单个数据库",
-    "alter-multiple-db": "变更多个数据库",
-    "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。"
+    "alter-multiple-db": "手动选择数据库",
+    "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。",
+    "alter-db-group": "按部署的配置",
+    "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
   },
   "quick-action": {
     "create-db": "创建数据库",
@@ -612,7 +635,7 @@
     "show-how-to-create": "如何创建",
     "below-is-an-example-to-create-user-bytebase-with-password": "创建用户 'bytebase{'@'}%' 及其密码的例子如下",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn": "该实例没有配置只读用户，请考虑配置。",
+    "no-read-only-data-source-warn": "该实例没有配置只读连接，请考虑配置。",
     "sentence": {
       "host": {
         "snowflake": "例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
@@ -900,19 +923,22 @@
     "selected-n-databases": "已选择 {n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
-      "description": "将源数据库选定的 Schema 版本同步到目标数据库。",
-      "select-schema-version": "从源数据库选择 Schema 版本",
-      "target-database": "目标数据库",
-      "schema-diff": "Schema 对比差异",
-      "synchronize-statements": "基于对比生成的 Schema DDL 语句",
+      "select-project": "步骤 1. 选择项目",
+      "select-schema": "步骤 2. 选择 Schema",
+      "select-database": "步骤 3. 选择待同步的数据库",
+      "schema-diff": "Schema 对比结果",
+      "synchronize-statements": "DDL 语句",
       "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句。",
-      "select-schema-and-target-database-tip": "请先选择 Schema 和目标数据库",
-      "no-difference-tip": "源数据库 Schema 与目标数据库 Schema 之间没有差异。",
-      "more-version": "更多..."
+      "select-schema-and-target-database-tip": "请先选择 Schema 和数据库。",
+      "no-difference-tip": "没有发现差异。",
+      "more-version": "更多...",
+      "character-sets-diff-found": "Schema 之间的字符集不同",
+      "preview-issue": "预览工单"
     }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
+    "branch-specify-tip": "诀窍: 可以使用空字符串跟踪所有分支的变更.",
     "base-directory": "根目录",
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
     "file-path-template": "文件路径模版",
@@ -1290,7 +1316,10 @@
     "search-sheets": "搜索工作表",
     "hint-tips": {
       "confirm-to-delete-this-history": "确定删除这条记录？",
-      "confirm-to-close-unsaved-tab": "确定关闭未保存的标签页？"
+      "confirm-to-close-unsaved-sheet": {
+        "title": "确定关闭未保存的工作表？",
+        "content": "关闭当前工作表会丢失所有未保存的数据？"
+      }
     },
     "please-input-the-tab-label": "请输入标签页名称!",
     "copy-code": "复制代码",
@@ -1324,7 +1353,8 @@
     "tab-mode": {
       "readonly": "只读",
       "admin": "管理员"
-    }
+    },
+    "close-sheet": "关闭工作表"
   },
   "label": {
     "empty-label-value": "<空值>",
@@ -1357,6 +1387,15 @@
   "subscription": {
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
+    "upgrade-trial-button": "升级试用",
+    "start-n-days-trial": "开启 {days} 天试用",
+    "successfully-start-trial": "成功开启 {days} 天的免费试用",
+    "successfully-upgrade-trial": "成功升级为{plan}试用",
+    "require-subscription": "这个功能需要{requiredPlan}订阅，请购买的 Bytebase 证书来解锁该功能。",
+    "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，但是{startTrial}。",
+    "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
+    "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
+    "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
     "update": {
       "success": {
         "title": "证书更新成功",
@@ -1399,9 +1438,13 @@
         "title": "LGTM 检查",
         "desc": "检查工单是否有 \"LGTM\" 评论。"
       },
+      "bb-feature-im-approval": {
+        "title": "IM 集成",
+        "desc": "通过集成 IM 来批准工单。"
+      },
       "bb-feature-sql-review": {
         "title": "Schema 审核策略",
-        "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。可以通过@:{'subscription.upgrade'}来完全开启该功能。"
+        "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。"
       },
       "bb-feature-vcs-sql-review": {
         "title": "GitOps 工作流中的 SQL 审核",
@@ -1409,7 +1452,7 @@
       },
       "bb-feature-rbac": {
         "title": "角色管理",
-        "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色，可以通过@:{'subscription.upgrade'}来开启该功能。"
+        "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
       },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
@@ -1417,7 +1460,7 @@
       },
       "bb-feature-3rd-party-auth": {
         "title": "第三方认证 & 授权",
-        "desc": "Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。请通过@:{'subscription.upgrade'}来开启该功能。",
+        "desc": "Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。",
         "login": "请@:{'subscription.upgrade'}来开启该功能"
       },
       "bb-feature-branding": {
@@ -1432,7 +1475,7 @@
         "title": "恢复到指定时间点 (PITR)",
         "desc": "将数据库的状态恢复到一个时间点。"
       },
-      "bb-feature-sync-schema": {
+      "bb-feature-sync-schema-all-versions": {
         "title": "库表同步",
         "desc": "选择某个数据库的任意一个 Schema 版本，并将其同步到目标数据库。"
       },

@@ -47,7 +47,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
-		if err := driver.Execute(ctx, migrationSchema); err != nil {
+		if err := driver.Execute(ctx, migrationSchema, true /* createDatabase */); err != nil {
 			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
@@ -264,7 +264,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	var query = baseQuery +
 		db.FormatParamNameInNumberedPosition(paramNames) +
-		`ORDER BY created_ts DESC`
+		`ORDER BY id DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}

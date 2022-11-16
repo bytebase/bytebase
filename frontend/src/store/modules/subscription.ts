@@ -13,6 +13,8 @@ import {
 export const useSubscriptionStore = defineStore("subscription", {
   state: (): SubscriptionState => ({
     subscription: undefined,
+    trialingDays: 14,
+    trialingInstanceCount: 999,
   }),
   getters: {
     currentPlan(state): PlanType {
@@ -55,11 +57,30 @@ export const useSubscriptionStore = defineStore("subscription", {
       );
       return daysBeforeExpire / total < 0.5;
     },
+    canTrial(state): boolean {
+      if (!state.subscription) {
+        return true;
+      }
+      if (state.subscription.plan === PlanType.FREE) {
+        return true;
+      }
+      return this.canUpgradeTrial;
+    },
+    canUpgradeTrial(state): boolean {
+      if (!state.subscription) {
+        return false;
+      }
+      return (
+        state.subscription.trialing &&
+        state.subscription.plan < PlanType.ENTERPRISE
+      );
+    },
   },
   actions: {
     hasFeature(type: FeatureType) {
-      return FEATURE_MATRIX.get(type)![this.currentPlan];
+      return !this.isExpired && FEATURE_MATRIX.get(type)![this.currentPlan];
     },
+
     getMinimumRequiredPlan(type: FeatureType): PlanType {
       const matrix = FEATURE_MATRIX.get(type);
       if (!Array.isArray(matrix)) {
@@ -93,6 +114,23 @@ export const useSubscriptionStore = defineStore("subscription", {
             type: "SubscriptionPatch",
             attributes: {
               license,
+            },
+          },
+        })
+      ).data.data;
+      const subscription = data.attributes as Subscription;
+      this.setSubscription(subscription);
+      return subscription;
+    },
+    async trialSubscription(planType: PlanType) {
+      const data = (
+        await axios.post(`/api/subscription/trial`, {
+          data: {
+            type: "TrialPlanCreate",
+            attributes: {
+              type: planType,
+              days: this.trialingDays,
+              instanceCount: this.trialingInstanceCount,
             },
           },
         })

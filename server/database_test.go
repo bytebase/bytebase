@@ -71,31 +71,6 @@ func TestValidateDatabaseLabelList(t *testing.T) {
 			wantErr:         true,
 		},
 		{
-			name: "invalid label value",
-			labelList: []*api.DatabaseLabel{
-				{
-					Key:   "bb.location",
-					Value: "earth",
-				},
-				{
-					Key:   api.EnvironmentKeyName,
-					Value: "Dev",
-				},
-			},
-			labelKeyList: []*api.LabelKey{
-				{
-					Key:       "bb.location",
-					ValueList: []string{"moon"},
-				},
-				{
-					Key:       api.EnvironmentKeyName,
-					ValueList: []string{},
-				},
-			},
-			environmentName: "Dev",
-			wantErr:         true,
-		},
-		{
 			name: "environment label not present",
 			labelList: []*api.DatabaseLabel{
 				{

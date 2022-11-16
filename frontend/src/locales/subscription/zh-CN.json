@@ -2,12 +2,11 @@
   "current": "当前版本",
   "instance-count": "实例数",
   "expires-at": "过期时间",
-  "free-trial": "无需信用卡即可免费试用",
-  "description-highlight": "购买证书",
+  "free-trial": "您可以免费试用 14 天 - 无需信用卡或预付费",
+  "purchase-license": "购买证书",
   "sensitive-placeholder": "粘贴您的证书 - 仅写入",
   "plan-compare": "比较不同版本的功能，寻找适合您的方案",
   "disabled-feature": "这是一个订阅版高级功能",
-  "trial": "您可以免费试用 14 天（{plan}）",
   "upgrade": "升级订阅",
   "per-month": "/ 月",
   "price-unit-for-enterprise": "/ 月起",
@@ -27,7 +26,7 @@
   "trialing": "试用期",
   "plan": {
     "title": "版本",
-    "try": "试用团队版",
+    "try": "免费试用",
     "free": {
       "title": "免费版",
       "label": "",
@@ -117,6 +116,8 @@
   "main-features": {
     "community-support": "社区支持",
     "review-workflow": "Schema 和数据改动审核流",
+    "gitops": "VCS 集成 #GitOps",
+    "pitr": "恢复到指定时间点 (PITR)",
     "sql-editor": "SQL 编辑器",
     "database-backup-restore": "数据库备份和恢复",
     "im-integration": "IM 集成 (Slack, Discord 等)",
@@ -124,11 +125,14 @@
     "everything-in-free-plan": "所有免费版的功能",
     "rbac": "RBAC 权限管理",
     "gitlab-login": "通过 GitLab 登录",
+    "online-schema-migration": "在线大表结构变更",
     "sql-check-anomaly-detection": "高阶 SQL 检查和异常检测",
     "review-and-backup-policy": "审核和备份策略",
     "sla": "SLA 支持",
     "everything-in-team-plan": "所有团队版的功能",
     "multi-tenancy": "多地域/多租户部署",
+    "dba-workflow": "DBA 工作流",
+    "environment-tier": "环境分级",
     "more-to-come": "更多功能敬请期待..."
   }
 }

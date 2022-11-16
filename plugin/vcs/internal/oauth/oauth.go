@@ -2,6 +2,7 @@
 package oauth
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,8 +18,20 @@ import (
 type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
 
 func requester(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader) func() (*http.Response, error) {
+	// The body may be read multiple times but io.Reader is meant to be read once,
+	// so we read the body first and build the reader every time.
+	var bodyBytes []byte
+	if body != nil {
+		b, err := io.ReadAll(body)
+		if err != nil {
+			return func() (*http.Response, error) {
+				return nil, errors.Wrap(err, "failed to read from body")
+			}
+		}
+		bodyBytes = b
+	}
 	return func() (*http.Response, error) {
-		req, err := http.NewRequestWithContext(ctx, method, url, body)
+		req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(bodyBytes))
 		if err != nil {
 			return nil, errors.Wrapf(err, "construct %s %s", method, url)
 		}

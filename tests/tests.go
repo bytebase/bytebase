@@ -14,7 +14,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -165,6 +164,8 @@ func getTestPort(testName string) int {
 		"TestTenant",
 		"TestTenantVCS/GitLab",
 		"TestTenantVCS/GitHub",
+		"TestTenantVCS_YAML/GitLab",
+		"TestTenantVCS_YAML/GitHub",
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
 		"TestTenantVCSDatabaseNameTemplate/GitLab",
@@ -184,6 +185,7 @@ func getTestPort(testName string) int {
 		"TestPITRInvalidTimePoint",
 		"TestPITRTwice",
 		"TestPITRToNewDatabaseInAnotherInstance",
+		"TestRollback",
 
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
@@ -1472,16 +1474,9 @@ func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, err
 	return sheet, nil
 }
 
-// listSheets lists sheets for a database.
-func (ctl *controller) listSheets(sheetFind api.SheetFind) ([]*api.Sheet, error) {
+// listMySheets lists caller's sheets.
+func (ctl *controller) listMySheets() ([]*api.Sheet, error) {
 	params := map[string]string{}
-	if sheetFind.ProjectID != nil {
-		params["projectId"] = strconv.Itoa(*sheetFind.ProjectID)
-	}
-	if sheetFind.DatabaseID != nil {
-		params["databaseId"] = strconv.Itoa(*sheetFind.DatabaseID)
-	}
-
 	body, err := ctl.get("/sheet/my", params)
 	if err != nil {
 		return nil, err
@@ -1504,7 +1499,7 @@ func (ctl *controller) listSheets(sheetFind api.SheetFind) ([]*api.Sheet, error)
 
 // syncSheet syncs sheets with project.
 func (ctl *controller) syncSheet(projectID int) error {
-	_, err := ctl.post(fmt.Sprintf("/sheet/project/%d/sync", projectID), nil)
+	_, err := ctl.post(fmt.Sprintf("/project/%d/sync-sheet", projectID), nil)
 	return err
 }
 

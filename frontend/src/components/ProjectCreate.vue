@@ -57,6 +57,10 @@
                 value="TENANT"
               />
               <label class="label">{{ $t("project.mode.tenant") }}</label>
+              <FeatureBadge
+                feature="bb.feature.multi-tenancy"
+                class="text-accent"
+              />
             </div>
           </div>
         </div>
@@ -143,15 +147,13 @@ import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
-import { generateDefaultSchedule, projectSlug, randomString } from "@/utils";
+import { projectSlug, randomString } from "@/utils";
 import { Project, ProjectCreate } from "@/types";
 import {
   hasFeature,
   pushNotification,
   useUIStateStore,
   useProjectStore,
-  useEnvironmentList,
-  useDeploymentStore,
 } from "@/store";
 
 interface LocalState {
@@ -248,19 +250,6 @@ export default defineComponent({
           path: `/project/${projectSlug(createdProject)}`,
           hash: "",
         };
-        if (state.project.tenantMode === "TENANT") {
-          // Generate and save default deployment configuration if it's a tenant mode project
-          const environmentList = useEnvironmentList(["NORMAL"]);
-          const schedule = generateDefaultSchedule(environmentList.value);
-          await useDeploymentStore().patchDeploymentConfigByProjectId({
-            projectId: createdProject.id,
-            deploymentConfigPatch: {
-              payload: JSON.stringify(schedule),
-            },
-          });
-
-          url.hash = "deployment-config";
-        }
         router.push(url);
         emit("dismiss");
       } finally {

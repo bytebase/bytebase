@@ -1,0 +1,8 @@
+- stmt: drop table t
+  want: DROP TABLE "t";
+- stmt: drop table public.t, t1
+  want: DROP TABLE "public"."t", "t1";
+- stmt: drop table if exists public.t cascade;
+  want: DROP TABLE IF EXISTS "public"."t" CASCADE;
+- stmt: drop table public.t restrict
+  want: DROP TABLE "public"."t";

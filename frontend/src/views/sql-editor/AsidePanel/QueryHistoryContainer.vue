@@ -60,7 +60,12 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useClipboard } from "@vueuse/core";
 
-import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import {
+  pushNotification,
+  useTabStore,
+  useSQLEditorStore,
+  searchConnectionByName,
+} from "@/store";
 import { QueryHistory } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 
@@ -134,10 +139,20 @@ const handleCopy = (history: QueryHistory) => {
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  // Changing SQL statement is quite harmless, so we just update the current tab.
+  const { instanceId, databaseId, instanceName, databaseName, statement } =
+    queryHistory;
+  const connection = searchConnectionByName(
+    instanceId,
+    databaseId,
+    instanceName,
+    databaseName
+  );
+
+  // Open a new tab with the connection and statement.
+  tabStore.selectOrAddTempTab();
   tabStore.updateCurrentTab({
-    statement: queryHistory.statement,
-    selectedStatement: "",
+    connection,
+    statement,
   });
 };
 </script>

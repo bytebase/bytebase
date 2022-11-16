@@ -28,7 +28,12 @@
                 v-if="isActiveTask(task)"
                 class="name w-5 h-5"
               />
-              <div class="name">{{ databaseForTask(task).name }}</div>
+              <div class="name">
+                {{ databaseForTask(task).name }}
+                <span v-if="schemaVersionForTask(task)" class="schema-version">
+                  ({{ schemaVersionForTask(task) }})
+                </span>
+              </div>
             </div>
             <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
               <InstanceEngineIcon :instance="databaseForTask(task).instance" />
@@ -138,6 +143,20 @@ const databaseForTask = (task: Task | TaskCreate): Database => {
   return database;
 };
 
+const schemaVersionForTask = (task: Task | TaskCreate): string => {
+  // show the schema version for a task if
+  // the project is standard mode and VCS workflow
+  if (create.value) return "";
+  if (project.value.tenantMode === "TENANT") return "";
+  if (project.value.workflowType === "UI") return "";
+
+  // The schema version is specified in the filename
+  // parsed and stored to the payload.schemaVersion
+  // fallback to empty if we can't read the field.
+  const payload: any = (task as Task).payload || {};
+  return payload.schemaVersion || "";
+};
+
 const taskClass = (task: Task | TaskCreate) => {
   const classes: string[] = [];
   if (isSelectedTask(task)) classes.push("selected");
@@ -178,6 +197,9 @@ watchEffect(() => {
 }
 .task .name {
   @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
+}
+.task .schema-version {
+  @apply ml-1 text-sm;
 }
 .task.active .name {
   @apply font-bold;

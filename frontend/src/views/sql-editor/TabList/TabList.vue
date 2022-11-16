@@ -83,17 +83,18 @@ const handleAddTab = () => {
 const handleRemoveTab = async (tab: TabInfo, index: number) => {
   if (!tab.isSaved) {
     const $dialog = dialog.create({
-      title: t("sql-editor.hint-tips.confirm-to-close-unsaved-tab"),
+      title: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.title"),
+      content: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.content"),
       type: "info",
       onPositiveClick() {
-        $dialog.destroy();
-      },
-      async onNegativeClick() {
         remove(index);
         $dialog.destroy();
       },
-      negativeText: t("common.confirm"),
-      positiveText: t("common.cancel"),
+      onNegativeClick() {
+        $dialog.destroy();
+      },
+      positiveText: t("sql-editor.close-sheet"),
+      negativeText: t("common.cancel"),
       showIcon: false,
     });
   } else {

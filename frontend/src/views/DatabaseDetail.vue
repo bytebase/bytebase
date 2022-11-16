@@ -130,7 +130,7 @@
             {{ $t("common.sync-now") }}
           </button>
           <button
-            v-if="allowChangeProject"
+            v-if="allowTransferProject"
             type="button"
             class="btn-normal"
             @click.prevent="tryTransferProject"
@@ -386,8 +386,8 @@ const database = computed((): Database => {
 // Project can be transferred if meets either of the condition below:
 // - Database is in default project
 // - Workspace role can manage instance
-// - Project role can admin database
-const allowChangeProject = computed(() => {
+// - Project role can transfer database
+const allowTransferProject = computed(() => {
   if (database.value.project.id == DEFAULT_PROJECT_ID) {
     return true;
   }
@@ -404,7 +404,10 @@ const allowChangeProject = computed(() => {
   for (const member of database.value.project.memberList) {
     if (
       member.principal.id == currentUser.value.id &&
-      hasProjectPermission("bb.permission.project.admin-database", member.role)
+      hasProjectPermission(
+        "bb.permission.project.transfer-database",
+        member.role
+      )
     ) {
       return true;
     }
@@ -418,7 +421,7 @@ const allowChangeProject = computed(() => {
 // - Project role can admin database
 //
 // The admin operation includes
-// - Transfer project
+// - Edit database label
 // - Enable/disable backup
 const allowAdmin = computed(() => {
   if (
@@ -580,8 +583,7 @@ const createMigration = async (
           baseDirectoryWebUrl(repository, {
             DB_NAME: database.value.name,
             ENV_NAME: database.value.instance.environment.name,
-            TYPE:
-              type === "bb.issue.database.schema.update" ? "migrate" : "data",
+            TYPE: type === "bb.issue.database.schema.update" ? "ddl" : "dml",
           }),
           "_blank"
         );

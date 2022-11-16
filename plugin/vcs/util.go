@@ -56,6 +56,7 @@ type DistinctFileItem struct {
 	Commit    Commit
 	FileName  string
 	ItemType  FileItemType
+	IsYAML    bool
 }
 
 // GetDistinctFileList gets the distinct files from push event commits.
@@ -74,6 +75,7 @@ func (p PushEvent) GetDistinctFileList() []DistinctFileItem {
 				Commit:    commit,
 				FileName:  fileName,
 				ItemType:  itemType,
+				IsYAML:    strings.HasSuffix(fileName, ".yml"),
 			}
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit

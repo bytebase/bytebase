@@ -15,9 +15,11 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/transform"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/store"
 )
 
 // TaskExecutor is the task executor.
@@ -114,7 +116,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	if mi.Type != db.Baseline && statement == "" {
 		return nil, errors.Errorf("empty statement")
 	}
-	// We will force migration for baseline and migrate type of migrations.
+	// We will force migration for baseline, migrate and data type of migrations.
 	// This usually happens when the previous attempt fails and the client retries the migration.
 	// We also force migration for VCS migrations, which is usually a modified file to correct a former wrong migration commit.
 	if mi.Type == db.Baseline || mi.Type == db.Migrate || mi.Type == db.Data {
@@ -128,7 +130,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
-	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, databaseName)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, server.pgInstance.BaseDir, server.profile.DataDir)
 	if err != nil {
 		return 0, "", err
 	}
@@ -150,11 +152,105 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 		return 0, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
 	}
 
+	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
+		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, server.store)
+		if err != nil {
+			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+		}
+		task = updatedTask
+	}
+
 	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
 	if err != nil {
 		return 0, "", err
 	}
+
+	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
+		_, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, server.store, migrationID)
+		if err != nil {
+			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+		}
+	}
+
 	return migrationID, schema, nil
+}
+
+func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store) (*api.Task, error) {
+	mysqlDriver, ok := driver.(*mysql.Driver)
+	if !ok {
+		return nil, errors.Errorf("failed to cast driver to mysql.Driver")
+	}
+	payload := &api.TaskDatabaseDataUpdatePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrap(err, "invalid database data update payload")
+	}
+	connID, err := mysqlDriver.GetMigrationConnID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	payload.ThreadID = connID
+
+	db, err := driver.GetDBConnection(ctx, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the DB connection")
+	}
+	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
+	}
+	payload.BinlogFileStart = binlogInfo.FileName
+	payload.BinlogPosStart = binlogInfo.Position
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal task payload")
+	}
+	payloadString := string(payloadBytes)
+	patch := &api.TaskPatch{
+		ID:        task.ID,
+		UpdaterID: api.SystemBotID,
+		Payload:   &payloadString,
+	}
+	updatedTask, err := store.PatchTask(ctx, patch)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
+	}
+	return updatedTask, nil
+}
+
+func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store, migrationID int64) (*api.Task, error) {
+	payload := &api.TaskDatabaseDataUpdatePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrap(err, "invalid database data update payload")
+	}
+
+	payload.MigrationID = int(migrationID)
+	db, err := driver.GetDBConnection(ctx, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the DB connection")
+	}
+	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
+	}
+	payload.BinlogFileEnd = binlogInfo.FileName
+	payload.BinlogPosEnd = binlogInfo.Position
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal task payload")
+	}
+	payloadString := string(payloadBytes)
+	patch := &api.TaskPatch{
+		ID:        task.ID,
+		UpdaterID: api.SystemBotID,
+		Payload:   &payloadString,
+	}
+	updatedTask, err := store.PatchTask(ctx, patch)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to patch task %d with the MySQL thread ID", task.ID)
+	}
+	return updatedTask, nil
 }
 
 func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
@@ -175,11 +271,11 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		return true, nil, errors.Errorf("failed to find linked repository for database %q", task.Database.Name)
 	}
 
-	// We write back the latest schema after migration for VCS-based projects when schema path template is specified and
+	// On the presence of schema path template and non-wildcard branch filter, We write back the latest schema after migration for VCS-based projects for
 	// 1) baseline migration for SDL,
 	// 2) all DDL/Ghost migrations.
 	writeBack := false
-	if repo != nil && repo.SchemaPathTemplate != "" {
+	if repo != nil && repo.SchemaPathTemplate != "" && !strings.Contains(repo.BranchFilter, "*") {
 		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 			if task.Type == api.TaskDatabaseSchemaBaseline {
 				writeBack = true
@@ -243,17 +339,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", server.profile.ExternalURL, api.IssueSlug(issue), task.StageID)
 		}
 
-		// TODO(d): we need to figure out the baseline write-back for users using wildcard branch filter.
-		branch := repo.BranchFilter
-		if vcsPushEvent != nil {
-			b, err := parseBranchNameFromRefs(vcsPushEvent.Ref)
-			if err != nil {
-				return true, nil, errors.Errorf("failed to parse branch name: %s", vcsPushEvent.Ref)
-			}
-			branch = b
-		}
-		// Use the branch name from the commit as we will write back to the same branch.
-		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, repo.BranchFilter, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}

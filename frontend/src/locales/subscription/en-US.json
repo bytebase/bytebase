@@ -2,13 +2,11 @@
   "current": "Current plan",
   "instance-count": "Instance count",
   "expires-at": "Expires at",
-  "free-trial": "Your first 14 days are free - no credit card required",
-  "description-highlight": "Purchase a license",
+  "free-trial": "You can start a free trial for 14 days - no credit card required",
+  "purchase-license": "Purchase a license",
   "sensitive-placeholder": "Paste your license here - write only",
   "plan-compare": "Compare features between different plans",
   "disabled-feature": "This is a premium feature in subscription plan",
-  "trial": "You can start a free trial - no credit card required",
-  "trial-with-plan": "You can start a free trial({plan}) - no credit card required",
   "upgrade": "Upgrade subscription",
   "per-month": "/ month",
   "price-unit-for-enterprise": "/ month",
@@ -28,7 +26,7 @@
   "trialing": "trialing",
   "plan": {
     "title": "Plan",
-    "try": "Try Team",
+    "try": "Start free trial",
     "free": {
       "title": "Free Plan",
       "label": "",
@@ -118,6 +116,8 @@
   "main-features": {
     "community-support": "Community support",
     "review-workflow": "Schema and data change review workflow",
+    "gitops": "VCS integration #GitOps",
+    "pitr": "Point-in-Time-Recovery",
     "sql-editor": "SQL Editor",
     "database-backup-restore": "Database backup / restore",
     "im-integration": "IM integration (e.g. Slack, Discord and etc)",
@@ -125,11 +125,14 @@
     "everything-in-free-plan": "Everything in free plan",
     "rbac": "Owner, DBA and Developer roles",
     "gitlab-login": "GitLab login",
+    "online-schema-migration": "Large table online schema migration",
     "sql-check-anomaly-detection": "Advanced SQL check and anomaly detection",
     "review-and-backup-policy": "Review and backup policy",
     "sla": "SLA support",
     "everything-in-team-plan": "Everything in team plan",
     "multi-tenancy": "Multi-Region / Multi-Tenancy deployment",
+    "dba-workflow": "DBA workflow",
+    "environment-tier": "Environment tier",
     "more-to-come": "More to come..."
   }
 }

@@ -180,16 +180,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
-
-		adviceLevel := advisor.Success
-		adviceList := []advisor.Advice{}
-
-		if api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) && exec.DatabaseName != "" {
-			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
-			}
-
+		var database *api.Database
+		if exec.DatabaseName != "" {
 			databaseFind := &api.DatabaseFind{
 				InstanceID: &instance.ID,
 				Name:       &exec.DatabaseName,
@@ -204,9 +196,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if len(dbList) > 1 {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
 			}
-			db := dbList[0]
+			database = dbList[0]
+		}
 
-			catalog, err := s.store.NewCatalog(ctx, db.ID, instance.Engine)
+		adviceLevel := advisor.Success
+		adviceList := []advisor.Advice{}
+
+		if api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) && exec.DatabaseName != "" {
+			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
+			}
+
+			catalog, err := s.store.NewCatalog(ctx, database.ID, instance.Engine)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
@@ -224,8 +226,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			adviceLevel, adviceList, err = s.sqlCheck(
 				ctx,
 				dbType,
-				db.CharacterSet,
-				db.Collation,
+				database.CharacterSet,
+				database.Collation,
 				instance.EnvironmentID,
 				exec.Statement,
 				catalog,
@@ -237,12 +239,14 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 			if adviceLevel == advisor.Error {
 				if err := s.createSQLEditorQueryActivity(ctx, c, api.ActivityError, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
-					Statement:    exec.Statement,
-					DurationNs:   0,
-					InstanceName: instance.Name,
-					DatabaseName: exec.DatabaseName,
-					Error:        "",
-					AdviceList:   adviceList,
+					Statement:              exec.Statement,
+					DurationNs:             0,
+					InstanceID:             instance.ID,
+					DeprecatedInstanceName: instance.Name,
+					DatabaseID:             database.ID,
+					DatabaseName:           exec.DatabaseName,
+					Error:                  "",
+					AdviceList:             adviceList,
 				}); err != nil {
 					return err
 				}
@@ -314,13 +318,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			level = api.ActivityError
 			errMessage = queryErr.Error()
 		}
+		var databaseID int
+		if database != nil {
+			databaseID = database.ID
+		}
 		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
-			Statement:    exec.Statement,
-			DurationNs:   time.Now().UnixNano() - start,
-			InstanceName: instance.Name,
-			DatabaseName: exec.DatabaseName,
-			Error:        errMessage,
-			AdviceList:   adviceList,
+			Statement:              exec.Statement,
+			DurationNs:             time.Now().UnixNano() - start,
+			InstanceID:             instance.ID,
+			DeprecatedInstanceName: instance.Name,
+			DatabaseID:             databaseID,
+			DatabaseName:           exec.DatabaseName,
+			Error:                  errMessage,
+			AdviceList:             adviceList,
 		}); err != nil {
 			return err
 		}
@@ -376,13 +386,31 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
+		var database *api.Database
+		if exec.DatabaseName != "" {
+			databaseFind := &api.DatabaseFind{
+				InstanceID: &instance.ID,
+				Name:       &exec.DatabaseName,
+			}
+			dbList, err := s.store.FindDatabase(ctx, databaseFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
+			}
+			if len(dbList) == 0 {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
+			}
+			if len(dbList) > 1 {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
+			}
+			database = dbList[0]
+		}
 
 		// Admin API always executes with read-only off.
 		exec.Readonly = true
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.getAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := getAdminDatabaseDriver(ctx, instance, exec.DatabaseName, s.pgInstance.BaseDir, s.profile.DataDir)
 			if err != nil {
 				return nil, err
 			}
@@ -402,12 +430,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			level = api.ActivityError
 			errMessage = queryErr.Error()
 		}
+		var databaseID int
+		if database != nil {
+			databaseID = database.ID
+		}
 		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
-			Statement:    exec.Statement,
-			DurationNs:   time.Now().UnixNano() - start,
-			InstanceName: instance.Name,
-			DatabaseName: exec.DatabaseName,
-			Error:        errMessage,
+			Statement:              exec.Statement,
+			DurationNs:             time.Now().UnixNano() - start,
+			InstanceID:             instance.ID,
+			DeprecatedInstanceName: instance.Name,
+			DatabaseID:             databaseID,
+			DatabaseName:           exec.DatabaseName,
+			Error:                  errMessage,
 		}); err != nil {
 			return err
 		}
@@ -737,7 +771,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 	if err != nil {
 		log.Warn("Failed to marshal activity after executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
-			zap.String("instance_name", payload.InstanceName),
+			zap.Int("instance_id", payload.InstanceID),
 			zap.String("statement", payload.Statement),
 			zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
@@ -748,15 +782,15 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 		Type:        api.ActivitySQLEditorQuery,
 		ContainerID: containerID,
 		Level:       level,
-		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
-			payload.Statement, payload.DatabaseName, payload.InstanceName),
+		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %d.",
+			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),
 	}
 
 	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
 		log.Warn("Failed to create activity after executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
-			zap.String("instance_name", payload.InstanceName),
+			zap.Int("instance_id", payload.InstanceID),
 			zap.String("statement", payload.Statement),
 			zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)

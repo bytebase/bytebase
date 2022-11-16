@@ -458,3 +458,164 @@ DELIMITER ;
 		})
 	}
 }
+
+func TestFilterBinlogTransactionsByThreadID(t *testing.T) {
+	tests := []struct {
+		name     string
+		txnList  []BinlogTransaction
+		threadID string
+		want     []BinlogTransaction
+		err      bool
+	}{
+		{
+			name: "empty",
+			err:  false,
+		},
+		{
+			name: "invalid transaction",
+			txnList: []BinlogTransaction{
+				{
+					{
+						Type:   UpdateRowsEventType,
+						Header: "#221017 14:25:53 server id 1  end_log_pos 1249 CRC32 0x3d8fa43e 	Update_rows: table id 259 flags: STMT_END_F\n",
+						Body: `### UPDATE ` + "`binlog_test`.`user`" + `
+	### WHERE
+	###   @1=1
+	###   @2='alice'
+	###   @3=100
+	### SET
+	###   @1=1
+	###   @2='alice'
+	###   @3=90`,
+					},
+				},
+			},
+			err: true,
+		},
+		{
+			name: "real world",
+			txnList: []BinlogTransaction{
+				{
+					{
+						Type:   QueryEventType,
+						Header: "#221017 14:25:24 server id 1  end_log_pos 772 CRC32 0x37cb53f6 	Query	thread_id=53771	exec_time=0	error_code=0\n",
+						Body: `SET TIMESTAMP=1665987924/*!*/;
+	BEGIN
+	/*!*/;
+	`,
+					},
+					{
+						Type:   WriteRowsEventType,
+						Header: "#221017 14:25:24 server id 1  end_log_pos 916 CRC32 0x896854fc 	Write_rows: table id 259 flags: STMT_END_F\n",
+						Body: `### INSERT INTO ` + "`binlog_test`.`user`" + `
+	### SET
+	###   @1=1
+	###   @2='alice'
+	###   @3=100
+	### INSERT INTO ` + "`binlog_test`.`user`" + `
+	### SET
+	###   @1=2
+	###   @2='bob'
+	###   @3=100
+	### INSERT INTO ` + "`binlog_test`.`user`" + `
+	### SET
+	###   @1=3
+	###   @2='cindy'
+	###   @3=100`,
+					},
+					{
+						Type:   XidEventType,
+						Header: "#221017 14:25:24 server id 1  end_log_pos 947 CRC32 0xaf8e8303 	Xid = 327602\n",
+						Body: `COMMIT/*!*/;
+	`,
+					},
+				},
+				{
+					{
+						Type:   QueryEventType,
+						Header: "#221018 16:21:45 server id 1  end_log_pos 2236 CRC32 0x965db1d1 	Query	thread_id=58599	exec_time=0	error_code=0\n",
+						Body: `SET TIMESTAMP=1666081305/*!*/;
+	BEGIN
+	/*!*/;
+	`,
+					},
+					{
+						Type:   DeleteRowsEventType,
+						Header: "#221018 16:21:45 server id 1  end_log_pos 2365 CRC32 0xf759c90c 	Delete_rows: table id 259 flags: STMT_END_F\n",
+						Body: `### DELETE FROM ` + "`binlog_test`.`user`" + `
+	### WHERE
+	###   @1=1
+	###   @2='alice'
+	###   @3=0
+	### DELETE FROM ` + "`binlog_test`.`user`" + `
+	### WHERE
+	###   @1=2
+	###   @2='bob'
+	###   @3=0`,
+					},
+					{
+						Type:   XidEventType,
+						Header: "#221018 16:21:45 server id 1  end_log_pos 2396 CRC32 0x816695ae 	Xid = 349604\n",
+						Body: `COMMIT/*!*/;
+	SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
+	DELIMITER ;
+	# End of log file
+	/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+	/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
+					},
+				},
+			},
+			threadID: "53771",
+			want: []BinlogTransaction{
+				{
+					{
+						Type:   QueryEventType,
+						Header: "#221017 14:25:24 server id 1  end_log_pos 772 CRC32 0x37cb53f6 	Query	thread_id=53771	exec_time=0	error_code=0\n",
+						Body: `SET TIMESTAMP=1665987924/*!*/;
+	BEGIN
+	/*!*/;
+	`,
+					},
+					{
+						Type:   WriteRowsEventType,
+						Header: "#221017 14:25:24 server id 1  end_log_pos 916 CRC32 0x896854fc 	Write_rows: table id 259 flags: STMT_END_F\n",
+						Body: `### INSERT INTO ` + "`binlog_test`.`user`" + `
+	### SET
+	###   @1=1
+	###   @2='alice'
+	###   @3=100
+	### INSERT INTO ` + "`binlog_test`.`user`" + `
+	### SET
+	###   @1=2
+	###   @2='bob'
+	###   @3=100
+	### INSERT INTO ` + "`binlog_test`.`user`" + `
+	### SET
+	###   @1=3
+	###   @2='cindy'
+	###   @3=100`,
+					},
+					{
+						Type:   XidEventType,
+						Header: "#221017 14:25:24 server id 1  end_log_pos 947 CRC32 0xaf8e8303 	Xid = 327602\n",
+						Body: `COMMIT/*!*/;
+	`,
+					},
+				},
+			},
+			err: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			a := require.New(t)
+			_, err := FilterBinlogTransactionsByThreadID(test.txnList, test.threadID)
+			if test.err {
+				a.Error(err)
+			} else {
+				a.NoError(err)
+			}
+		})
+	}
+}

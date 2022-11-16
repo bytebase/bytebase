@@ -12,6 +12,7 @@ export type FeatureType =
   | "bb.feature.data-source"
   | "bb.feature.dba-workflow"
   | "bb.feature.lgtm"
+  | "bb.feature.im.approval"
   | "bb.feature.multi-tenancy"
   | "bb.feature.online-migration"
   | "bb.feature.schema-drift"
@@ -21,7 +22,7 @@ export type FeatureType =
   // Database management
   | "bb.feature.pitr"
   | "bb.feature.read-replica-connection"
-  | "bb.feature.sync-schema"
+  | "bb.feature.sync-schema-all-versions"
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
@@ -83,6 +84,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.data-source", [false, false, false]],
   ["bb.feature.dba-workflow", [false, false, true]],
   ["bb.feature.lgtm", [false, false, true]],
+  ["bb.feature.im.approval", [false, false, true]],
   ["bb.feature.multi-tenancy", [false, false, true]],
   ["bb.feature.online-migration", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
@@ -92,7 +94,10 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Database management
   ["bb.feature.pitr", [false, true, true]],
   ["bb.feature.read-replica-connection", [false, false, true]],
-  ["bb.feature.sync-schema", [true, true, true]],
+  // This feature type is specifically means that all schema versions can be selected.
+  // Sync schema is free to all plans. But in non-enterprise plan, we only show the
+  // latest schema version and it's not selectable.
+  ["bb.feature.sync-schema-all-versions", [false, false, true]],
   // Policy Control
   ["bb.feature.approval-policy", [false, true, true]],
   ["bb.feature.backup-policy", [false, true, true]],

@@ -62,11 +62,11 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/environment/:id", func(c echo.Context) error {
+	g.PATCH("/environment/:environmentID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("environmentID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Environment ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Environment ID is not a number: %s", c.Param("environmentID"))).SetInternal(err)
 		}
 
 		envPatch := &api.EnvironmentPatch{
@@ -146,11 +146,11 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/environment/:id/backup-setting", func(c echo.Context) error {
+	g.PATCH("/environment/:environmentID/backup-setting", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		envID, err := strconv.Atoi(c.Param("id"))
+		envID, err := strconv.Atoi(c.Param("environmentID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("environmentID"))).SetInternal(err)
 		}
 
 		backupSettingUpsert := &api.BackupSettingUpsert{

@@ -1,10 +1,10 @@
-import { Principal, Sheet, SheetPayload, TabMode } from "@/types";
-import { hasProjectPermission } from "../utils";
+import { Principal, Sheet, SheetPayload, SheetSource } from "@/types";
+import { hasProjectPermission, hasWorkspacePermission } from "../utils";
 
 export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
   // readable to
   // PRIVATE: the creator only
-  // PROJECT: the creator and members in the project
+  // PROJECT: the creator and members in the project, workspace Owner and DBA
   // PUBLIC: everyone
 
   if (sheet.creator.id === currentUser.id) {
@@ -16,6 +16,15 @@ export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
     return false;
   }
   if (visibility === "PROJECT") {
+    if (
+      hasWorkspacePermission(
+        "bb.permission.workspace.manage-project",
+        currentUser.role
+      )
+    ) {
+      return true;
+    }
+
     const projectMemberList = sheet.project.memberList;
     return (
       projectMemberList.findIndex(
@@ -30,7 +39,7 @@ export const isSheetReadable = (sheet: Sheet, currentUser: Principal) => {
 export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
   // writable to
   // PRIVATE: the creator only
-  // PROJECT: the creator or project role can manage sheet
+  // PROJECT: the creator or project role can manage sheet, workspace Owner and DBA
   // PUBLIC: the creator only
 
   if (sheet.creator.id === currentUser.id) {
@@ -42,6 +51,15 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
     return false;
   }
   if (visibility === "PROJECT") {
+    if (
+      hasWorkspacePermission(
+        "bb.permission.workspace.manage-project",
+        currentUser.role
+      )
+    ) {
+      return true;
+    }
+
     const isCurrentUserProjectOwner = () => {
       const projectMemberList = sheet.project.memberList || [];
       const memberInProject = projectMemberList.find((member) => {
@@ -62,8 +80,16 @@ export const isSheetWritable = (sheet: Sheet, currentUser: Principal) => {
   return false;
 };
 
-export const getDefaultSheetPayload = (): SheetPayload => {
-  return {
-    tabMode: TabMode.ReadOnly,
-  };
+// getDefaultSheetPayloadWithSource gets the default payload with sheet source.
+export const getDefaultSheetPayloadWithSource = (
+  sheetSource: SheetSource
+): SheetPayload => {
+  if (sheetSource === "BYTEBASE") {
+    // As we don't save any data for sheet from UI, return an empty payload.
+    return {};
+  }
+
+  // Shouldn't reach this line.
+  // For those sheet from VCS, we create and patch them in backend.
+  return {};
 };

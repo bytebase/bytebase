@@ -12,7 +12,6 @@ import {
   Project,
   unknown,
   UNKNOWN_ID,
-  SheetFind,
   SheetCreate,
   SheetOrganizerUpsert,
   ProjectId,
@@ -24,13 +23,13 @@ import { useAuthStore } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
-import { getDefaultSheetPayload, isSheetWritable } from "@/utils";
+import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
 
 function convertSheetPayload(
   resourceObj: ResourceObject,
   includedList: ResourceObject[]
-): SheetPayload {
-  const payload = getDefaultSheetPayload();
+) {
+  const payload = {};
   try {
     const payloadJSON = resourceObj.attributes.payload;
     if (typeof payloadJSON === "string") {
@@ -79,7 +78,7 @@ function convertSheet(
     ) as Principal,
     project,
     database,
-    payload,
+    payload: payload as SheetPayload,
   };
 }
 
@@ -161,7 +160,7 @@ export const useSheetStore = defineStore("sheet", {
       }
 
       return this.createSheet({
-        payload: getDefaultSheetPayload(),
+        payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
         ...sheetUpsert,
         visibility: "PRIVATE",
       });
@@ -196,16 +195,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheet;
     },
-    async fetchMySheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (await axios.get(`/api/sheet/my?${queryList.join("&")}`))
-        .data;
+    async fetchMySheetList() {
+      const resData = (await axios.get(`/api/sheet/my`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
@@ -220,17 +211,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheetList;
     },
-    async fetchSharedSheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (
-        await axios.get(`/api/sheet/shared?${queryList.join("&")}`)
-      ).data;
+    async fetchSharedSheetList() {
+      const resData = (await axios.get(`/api/sheet/shared`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
@@ -245,17 +227,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheetList;
     },
-    async fetchStarredSheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (
-        await axios.get(`/api/sheet/starred?${queryList.join("&")}`)
-      ).data;
+    async fetchStarredSheetList() {
+      const resData = (await axios.get(`/api/sheet/starred`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
@@ -271,14 +244,18 @@ export const useSheetStore = defineStore("sheet", {
       return sheetList;
     },
     async fetchSheetById(sheetId: SheetId) {
-      const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
-      const sheet = convertSheet(data.data, data.included);
-      this.setSheetById({
-        sheetId: sheet.id,
-        sheet: sheet,
-      });
+      try {
+        const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
+        const sheet = convertSheet(data.data, data.included);
+        this.setSheetById({
+          sheetId: sheet.id,
+          sheet: sheet,
+        });
 
-      return sheet;
+        return sheet;
+      } catch {
+        return unknown("SHEET");
+      }
     },
     async getOrFetchSheetById(sheetId: SheetId) {
       const storedSheet = this.sheetById.get(sheetId);
@@ -332,7 +309,7 @@ export const useSheetStore = defineStore("sheet", {
       }
     },
     async syncSheetFromVCS(projectId: ProjectId) {
-      await axios.post(`/api/sheet/project/${projectId}/sync`);
+      await axios.post(`/api/project/${projectId}/sync-sheet`);
     },
   },
 });

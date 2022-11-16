@@ -54,9 +54,12 @@
         name="branch"
         type="text"
         class="textfield mt-2 w-full"
-        placeholder="e.g. master"
+        placeholder="e.g. main"
         :disabled="!allowEdit"
       />
+      <div class="mt-2 textinfolabel">
+        {{ $t("repository.branch-specify-tip") }}
+      </div>
     </div>
     <div>
       <div class="textlabel">{{ $t("repository.base-directory") }}</div>

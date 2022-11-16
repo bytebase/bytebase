@@ -39,8 +39,10 @@ export interface QueryHistory {
   durationNs: number;
   instanceName: string;
   databaseName: string;
+  instanceId: InstanceId;
+  databaseId: DatabaseId;
   error: string;
 
-  // Customerize fields
+  // Customized fields
   createdAt: string;
 }

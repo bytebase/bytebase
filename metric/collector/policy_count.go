@@ -79,7 +79,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 		res = append(res, &metric.Metric{
 			Name:  metricAPI.PolicyCountMetricName,
 			Value: policyCountMetric.Count,
-			Labels: map[string]string{
+			Labels: map[string]interface{}{
 				"type":        string(policyCountMetric.Type),
 				"environment": policyCountMetric.EnvironmentName,
 				"value":       policyCountMetric.Value,

@@ -67,8 +67,9 @@
 import { computed } from "vue";
 import { stringify } from "qs";
 
-import { UNKNOWN_ID } from "@/types";
-import { useSQLEditorStore } from "@/store";
+import type { Repository } from "@/types";
+import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
+import { useRepositoryStore, useSQLEditorStore } from "@/store";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;
@@ -83,6 +84,23 @@ const gotoAlterSchema = () => {
   }
 
   const { database } = table.value;
+  const { project } = database;
+  if (project.workflowType === "VCS") {
+    useRepositoryStore()
+      .fetchRepositoryByProjectId(database.project.id)
+      .then((repository: Repository) => {
+        window.open(
+          baseDirectoryWebUrl(repository, {
+            DB_NAME: database.name,
+            ENV_NAME: database.instance.environment.name,
+            TYPE: "ddl",
+          }),
+          "_blank"
+        );
+      });
+    return;
+  }
+
   const query = {
     template: "bb.issue.database.schema.update",
     name: `[${database.name}] Alter schema`,

@@ -50,6 +50,7 @@ type Server struct {
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
+	ApplicationRunner  *ApplicationRunner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *ActivityManager
@@ -188,12 +189,19 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	storeInstance := store.New(storeDB, cacheService)
 	s.store = storeInstance
 
+	// Backfill activity.
+	if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
+		return nil, errors.Wrap(err, "cannot backfill SQL editor activities")
+	}
+
 	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
+
+	s.ActivityManager = NewActivityManager(s, storeInstance)
 
 	e := echo.New()
 	e.Debug = prof.Debug
@@ -283,6 +291,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
+
+		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
@@ -375,21 +385,20 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}
 
-	s.initSubscription()
+	s.initSubscription(ctx)
 
 	serverStarted = true
 	return s, nil
 }
 
 // initSubscription will initial the subscription cache in memory.
-func (s *Server) initSubscription() {
-	s.subscription = s.loadSubscription()
+func (s *Server) initSubscription(ctx context.Context) {
+	s.subscription = s.loadSubscription(ctx)
 }
 
 // initMetricReporter will initial the metric scheduler.
@@ -411,13 +420,12 @@ func (s *Server) initMetricReporter(workspaceID string) {
 
 func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	// initial branding
-	_, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding logo image in base64 string format.",
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -428,7 +436,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate random JWT secret")
 	}
-	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	authSetting, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingAuthSecret,
 		Value:       value,
@@ -440,7 +448,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	conf.secret = authSetting.Value
 
 	// initial workspace
-	workspaceSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	workspaceSetting, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingWorkspaceID,
 		Value:       uuid.New().String(),
@@ -452,11 +460,21 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	conf.workspaceID = workspaceSetting.Value
 
 	// initial license
-	if _, err = store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	if _, _, err = store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingEnterpriseLicense,
 		Value:       "",
 		Description: "Enterprise license",
+	}); err != nil {
+		return nil, err
+	}
+
+	// initial feishu app
+	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingAppIM,
+		Value:       "",
+		Description: "",
 	}); err != nil {
 		return nil, err
 	}
@@ -483,6 +501,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.BackupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)

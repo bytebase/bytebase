@@ -5,7 +5,7 @@
     </p>
     <div class="space-y-4">
       <div class="flex items-center space-x-1">
-        <label class="textlabel">
+        <label class="textlabel !font-bold">
           {{ $t("project.lgtm-check.self") }}
         </label>
         <FeatureBadge feature="bb.feature.lgtm" class="text-accent" />

@@ -87,7 +87,7 @@ const handleSaveSheet = async (sheetName?: string) => {
   }
   isShowSaveSheetModal.value = false;
 
-  const { name, statement, sheetId, mode } = tabStore.currentTab;
+  const { name, statement, sheetId } = tabStore.currentTab;
   sheetName = sheetName ? sheetName : name;
 
   const conn = tabStore.currentTab.connection;
@@ -98,9 +98,6 @@ const handleSaveSheet = async (sheetName?: string) => {
     databaseId: conn.databaseId,
     name: sheetName,
     statement: statement,
-    payload: {
-      tabMode: mode,
-    },
   };
   const sheet = await sheetStore.upsertSheet(sheetUpsert);
 

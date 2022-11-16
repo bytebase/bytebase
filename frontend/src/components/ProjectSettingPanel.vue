@@ -86,7 +86,7 @@ export default defineComponent({
         if (member.principal.id == currentUser.value.id) {
           if (
             hasProjectPermission(
-              "bb.permission.project.archive-restore",
+              "bb.permission.project.manage-general",
               member.role
             )
           ) {

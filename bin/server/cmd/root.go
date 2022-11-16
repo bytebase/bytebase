@@ -48,6 +48,8 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 	// Register mysql transform driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
+	// Register mysql edit driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/edit/mysql"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------.
@@ -196,6 +198,9 @@ func normalizeExternalURL(url string) (string, error) {
 }
 
 func checkDataDir() error {
+	// Clean data directory path.
+	flags.dataDir = filepath.Clean(flags.dataDir)
+
 	// Convert to absolute path if relative path is supplied.
 	if !filepath.IsAbs(flags.dataDir) {
 		absDir, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/" + flags.dataDir)
@@ -204,9 +209,6 @@ func checkDataDir() error {
 		}
 		flags.dataDir = absDir
 	}
-
-	// Trim trailing / in case user supplies
-	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
 		return errors.Wrapf(err, "unable to access --data directory %s", flags.dataDir)

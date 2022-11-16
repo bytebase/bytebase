@@ -60,7 +60,6 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 						Table:      alterTable.Table,
 						ColumnName: alterCmd.Name,
 					}
-
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropColumn)
 				case pgquery.AlterTableType_AT_AddConstraint:
 					def, ok := alterCmd.Def.Node.(*pgquery.Node_Constraint)
@@ -82,6 +81,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					dropConstraint := &ast.DropConstraintStmt{
 						Table:          alterTable.Table,
 						ConstraintName: alterCmd.Name,
+						IfExists:       alterCmd.MissingOk,
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropConstraint)
@@ -111,33 +111,37 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
+				case pgquery.AlterTableType_AT_ColumnDefault:
+					if alterCmd.Def == nil {
+						dropDefault := &ast.DropDefaultStmt{
+							Table:      alterTable.Table,
+							ColumnName: alterCmd.Name,
+						}
+
+						alterTable.AlterItemList = append(alterTable.AlterItemList, dropDefault)
+					} else {
+						var err error
+						setDefault := &ast.SetDefaultStmt{
+							Table:      alterTable.Table,
+							ColumnName: alterCmd.Name,
+						}
+						if setDefault.Expression, _, _, err = convertExpressionNode(alterCmd.Def); err != nil {
+							return nil, err
+						}
+						text, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, alterCmd.Def)
+						if err != nil {
+							return nil, err
+						}
+						setDefault.Expression.SetText(text)
+
+						alterTable.AlterItemList = append(alterTable.AlterItemList, setDefault)
+					}
 				}
 			}
 		}
 		return alterTable, nil
 	case *pgquery.Node_CreateStmt:
-		table := &ast.CreateTableStmt{
-			IfNotExists: in.CreateStmt.IfNotExists,
-			Name:        convertRangeVarToTableName(in.CreateStmt.Relation, ast.TableTypeBaseTable),
-		}
-
-		for _, elt := range in.CreateStmt.TableElts {
-			switch item := elt.Node.(type) {
-			case *pgquery.Node_ColumnDef:
-				column, err := convertColumnDef(item)
-				if err != nil {
-					return nil, err
-				}
-				table.ColumnList = append(table.ColumnList, column)
-			case *pgquery.Node_Constraint:
-				cons, err := convertConstraint(item)
-				if err != nil {
-					return nil, err
-				}
-				table.ConstraintList = append(table.ConstraintList, cons)
-			}
-		}
-		return table, nil
+		return convertCreateStmt(in.CreateStmt)
 	case *pgquery.Node_RenameStmt:
 		switch in.RenameStmt.RenameType {
 		case pgquery.ObjectType_OBJECT_COLUMN:
@@ -204,30 +208,53 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			Unique: in.IndexStmt.Unique,
 		}
 
+		method, err := convertMethodType(in.IndexStmt.AccessMethod)
+		if err != nil {
+			return nil, err
+		}
+		indexDef.Method = method
+
 		for _, key := range in.IndexStmt.IndexParams {
 			index, ok := key.Node.(*pgquery.Node_IndexElem)
 			if !ok {
 				return nil, parser.NewConvertErrorf("expected IndexElem but found %t", key.Node)
 			}
-			// We only support index on columns now.
-			// TODO(rebelice): support index on expressions.
+			indexKey := &ast.IndexKeyDef{}
 			if index.IndexElem.Name != "" {
-				indexDef.KeyList = append(indexDef.KeyList, &ast.IndexKeyDef{
-					Type: ast.IndexKeyTypeColumn,
-					Key:  index.IndexElem.Name,
-				})
+				indexKey.Type = ast.IndexKeyTypeColumn
+				indexKey.Key = index.IndexElem.Name
 			} else {
-				indexDef.KeyList = append(indexDef.KeyList, &ast.IndexKeyDef{
-					Type: ast.IndexKeyTypeExpression,
-				})
+				expression, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, index.IndexElem.Expr)
+				if err != nil {
+					return nil, err
+				}
+				indexKey.Type = ast.IndexKeyTypeExpression
+				indexKey.Key = expression
 			}
+
+			order, err := convertSortOrder(index.IndexElem.Ordering)
+			if err != nil {
+				return nil, err
+			}
+			indexKey.SortOrder = order
+
+			nullOrder, err := convertNullOrder(index.IndexElem.NullsOrdering)
+			if err != nil {
+				return nil, err
+			}
+			indexKey.NullOrder = nullOrder
+
+			indexDef.KeyList = append(indexDef.KeyList, indexKey)
 		}
 
-		return &ast.CreateIndexStmt{Index: indexDef}, nil
+		return &ast.CreateIndexStmt{Index: indexDef, IfNotExists: in.IndexStmt.IfNotExists}, nil
 	case *pgquery.Node_DropStmt:
 		switch in.DropStmt.RemoveType {
 		case pgquery.ObjectType_OBJECT_INDEX:
-			dropIndex := &ast.DropIndexStmt{}
+			dropIndex := &ast.DropIndexStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
 			for _, object := range in.DropStmt.Objects {
 				list, ok := object.Node.(*pgquery.Node_List)
 				if !ok {
@@ -241,7 +268,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 			return dropIndex, nil
 		case pgquery.ObjectType_OBJECT_TABLE:
-			dropTable := &ast.DropTableStmt{}
+			dropTable := &ast.DropTableStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
 			for _, object := range in.DropStmt.Objects {
 				list, ok := object.Node.(*pgquery.Node_List)
 				if !ok {
@@ -255,7 +285,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 			return dropTable, nil
 		case pgquery.ObjectType_OBJECT_VIEW:
-			dropView := &ast.DropTableStmt{}
+			dropView := &ast.DropTableStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
 			for _, object := range in.DropStmt.Objects {
 				list, ok := object.Node.(*pgquery.Node_List)
 				if !ok {
@@ -268,6 +301,19 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				dropView.TableList = append(dropView.TableList, viewDef)
 			}
 			return dropView, nil
+		case pgquery.ObjectType_OBJECT_SCHEMA:
+			dropSchema := &ast.DropSchemaStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
+			for _, object := range in.DropStmt.Objects {
+				strNode, ok := object.Node.(*pgquery.Node_String_)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected String but found %t", object.Node)
+				}
+				dropSchema.SchemaList = append(dropSchema.SchemaList, strNode.String_.Str)
+			}
+			return dropSchema, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -411,11 +457,121 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return &createDatabaseStmt, nil
+	case *pgquery.Node_CreateSchemaStmt:
+		createSchemaStmt := ast.CreateSchemaStmt{
+			Name:        in.CreateSchemaStmt.Schemaname,
+			IfNotExists: in.CreateSchemaStmt.IfNotExists,
+		}
+		roleSpec, err := convertRoleSpec(in.CreateSchemaStmt.Authrole)
+		if err != nil {
+			return nil, err
+		}
+		createSchemaStmt.RoleSpec = roleSpec
+		for _, elt := range in.CreateSchemaStmt.SchemaElts {
+			switch stmt := elt.Node.(type) {
+			// Currently, only CREATE TABLE, CREATE VIEW, CREATE INDEX, CREATE SEQUENCE,
+			// CREATE TRIGGER and GRANT are accepted as clauses within CREATE SCHEMA.
+			// TODO(zp): support other statement list above.
+			case *pgquery.Node_CreateStmt:
+				createStmt, err := convertCreateStmt(stmt.CreateStmt)
+				if err != nil {
+					return nil, err
+				}
+				createSchemaStmt.SchemaElementList = append(createSchemaStmt.SchemaElementList, createStmt)
+			default:
+			}
+		}
+		return &createSchemaStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
 
 	return nil, nil
+}
+
+func convertDropBehavior(behavior pgquery.DropBehavior) ast.DropBehavior {
+	switch behavior {
+	case pgquery.DropBehavior_DROP_CASCADE:
+		return ast.DropBehaviorCascade
+	case pgquery.DropBehavior_DROP_RESTRICT:
+		return ast.DropBehaviorRestrict
+	default:
+		return ast.DropBehaviorNone
+	}
+}
+
+func convertRoleSpec(in *pgquery.RoleSpec) (*ast.RoleSpec, error) {
+	if in == nil {
+		return nil, nil
+	}
+	switch in.Roletype {
+	case pgquery.RoleSpecType_ROLE_SPEC_TYPE_UNDEFINED:
+		return &ast.RoleSpec{
+			Type:  ast.RoleSpecTypeNone,
+			Value: "",
+		}, nil
+	case pgquery.RoleSpecType_ROLESPEC_CSTRING:
+		return &ast.RoleSpec{
+			Type:  ast.RoleSpecTypeUser,
+			Value: in.Rolename,
+		}, nil
+	case pgquery.RoleSpecType_ROLESPEC_CURRENT_USER:
+		return &ast.RoleSpec{
+			Type:  ast.RoleSpecTypeCurrentUser,
+			Value: "",
+		}, nil
+	case pgquery.RoleSpecType_ROLESPEC_SESSION_USER:
+		return &ast.RoleSpec{
+			Type:  ast.RoleSpecTypeSessionUser,
+			Value: "",
+		}, nil
+	}
+	return nil, parser.NewConvertErrorf("unexpected role spec type: %q", in.Roletype.String())
+}
+
+func convertNullOrder(order pgquery.SortByNulls) (ast.NullOrderType, error) {
+	switch order {
+	case pgquery.SortByNulls_SORTBY_NULLS_DEFAULT:
+		return ast.NullOrderTypeDefault, nil
+	case pgquery.SortByNulls_SORTBY_NULLS_FIRST:
+		return ast.NullOrderTypeFirst, nil
+	case pgquery.SortByNulls_SORTBY_NULLS_LAST:
+		return ast.NullOrderTypeLast, nil
+	default:
+		return ast.NullOrderTypeDefault, parser.NewConvertErrorf("unsupported null sort order: %d", order)
+	}
+}
+
+func convertSortOrder(order pgquery.SortByDir) (ast.SortOrderType, error) {
+	switch order {
+	case pgquery.SortByDir_SORTBY_DEFAULT:
+		return ast.SortOrderTypeDefault, nil
+	case pgquery.SortByDir_SORTBY_ASC:
+		return ast.SortOrderTypeAscending, nil
+	case pgquery.SortByDir_SORTBY_DESC:
+		return ast.SortOrderTypeDescending, nil
+	default:
+		return ast.NullOrderTypeDefault, parser.NewConvertErrorf("unsupported sort order: %d", order)
+	}
+}
+
+func convertMethodType(method string) (ast.IndexMethodType, error) {
+	switch method {
+	case "btree":
+		return ast.IndexMethodTypeBTree, nil
+	case "hash":
+		return ast.IndexMethodTypeHash, nil
+	case "gist":
+		return ast.IndexMethodTypeGiST, nil
+	case "spgist":
+		return ast.IndexMethodTypeSpGiST, nil
+	case "gin":
+		return ast.IndexMethodTypeGin, nil
+	case "brin":
+		return ast.IndexMethodTypeBrin, nil
+	default:
+		return ast.IndexMethodTypeBTree, parser.NewConvertErrorf("unsupported index method type: %s", method)
+	}
 }
 
 func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.PatternLikeDef, []*ast.SubqueryDef, error) {
@@ -553,6 +709,32 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 		}
 	}
 	return &ast.UnconvertedExpressionDef{}, nil, nil, nil
+}
+
+// convertCreateStmt convert pgquery create stmt to Bytebase create table stmt node.
+func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
+	table := &ast.CreateTableStmt{
+		IfNotExists: in.IfNotExists,
+		Name:        convertRangeVarToTableName(in.Relation, ast.TableTypeBaseTable),
+	}
+
+	for _, elt := range in.TableElts {
+		switch item := elt.Node.(type) {
+		case *pgquery.Node_ColumnDef:
+			column, err := convertColumnDef(item)
+			if err != nil {
+				return nil, err
+			}
+			table.ColumnList = append(table.ColumnList, column)
+		case *pgquery.Node_Constraint:
+			cons, err := convertConstraint(item)
+			if err != nil {
+				return nil, err
+			}
+			table.ConstraintList = append(table.ConstraintList, cons)
+		}
+	}
+	return table, nil
 }
 
 func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
@@ -713,6 +895,8 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		Name:           in.Constraint.Conname,
 		Type:           convertConstraintType(in.Constraint.Contype, in.Constraint.Indexname != ""),
 		SkipValidation: in.Constraint.SkipValidation,
+		Deferrable:     in.Constraint.Deferrable,
+		Initdeferred:   in.Constraint.Initdeferred,
 	}
 
 	switch cons.Type {
@@ -724,9 +908,28 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 			}
 			cons.KeyList = append(cons.KeyList, name.String_.Str)
 		}
+		for _, col := range in.Constraint.Including {
+			name, ok := col.Node.(*pgquery.Node_String_)
+			if !ok {
+				return nil, parser.NewConvertErrorf("expected String but found %t", col.Node)
+			}
+			cons.Including = append(cons.Including, name.String_.Str)
+		}
+		cons.IndexTableSpace = in.Constraint.Indexspace
 	case ast.ConstraintTypeForeign:
 		cons.Foreign = &ast.ForeignDef{
 			Table: convertRangeVarToTableName(in.Constraint.Pktable, ast.TableTypeBaseTable),
+		}
+
+		var err error
+		if cons.Foreign.MatchType, err = convertForeignMatchType(in.Constraint.FkMatchtype); err != nil {
+			return nil, err
+		}
+		if cons.Foreign.OnUpdate, err = convertReferentialAction(in.Constraint.FkUpdAction); err != nil {
+			return nil, err
+		}
+		if cons.Foreign.OnDelete, err = convertReferentialAction(in.Constraint.FkDelAction); err != nil {
+			return nil, err
 		}
 
 		for _, item := range in.Constraint.PkAttrs {
@@ -746,15 +949,69 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 	case ast.ConstraintTypePrimaryUsingIndex, ast.ConstraintTypeUniqueUsingIndex:
 		cons.IndexName = in.Constraint.Indexname
-	case ast.ConstraintTypeCheck:
+	case ast.ConstraintTypeCheck, ast.ConstraintTypeDefault:
 		expression, _, _, err := convertExpressionNode(in.Constraint.RawExpr)
 		if err != nil {
 			return nil, err
 		}
-		cons.CheckExpression = expression
+		text, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, in.Constraint.RawExpr)
+		if err != nil {
+			return nil, err
+		}
+		expression.SetText(text)
+		cons.Expression = expression
+	case ast.ConstraintTypeExclusion:
+		if len(in.Constraint.Exclusions) >= 1 {
+			exclusion, err := pgquery.DeparseNodes(pgquery.DeparseTypeExclusion, in.Constraint.Exclusions)
+			if err != nil {
+				return nil, err
+			}
+			cons.Exclusions = exclusion
+		}
+		var err error
+		if cons.AccessMethod, err = convertMethodType(in.Constraint.AccessMethod); err != nil {
+			return nil, err
+		}
+		if in.Constraint.WhereClause != nil {
+			whereClause, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, in.Constraint.WhereClause)
+			if err != nil {
+				return nil, err
+			}
+			cons.WhereClause = whereClause
+		}
 	}
 
 	return cons, nil
+}
+
+func convertForeignMatchType(tp string) (ast.ForeignMatchType, error) {
+	switch tp {
+	case "s":
+		return ast.ForeignMatchTypeSimple, nil
+	case "f":
+		return ast.ForeignMatchTypeFull, nil
+	case "p":
+		return ast.ForeignMatchTypePartial, nil
+	default:
+		return ast.ForeignMatchTypeSimple, parser.NewConvertErrorf("unsupported foreign match type: %s", tp)
+	}
+}
+
+func convertReferentialAction(action string) (*ast.ReferentialActionDef, error) {
+	switch action {
+	case "a":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction}, nil
+	case "r":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeRestrict}, nil
+	case "c":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeCascade}, nil
+	case "n":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetNull}, nil
+	case "d":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetDefault}, nil
+	default:
+		return nil, parser.NewConvertErrorf("unsupported referential action: %s", action)
+	}
 }
 
 func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.ConstraintType {
@@ -778,6 +1035,10 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeNotNull
 	case pgquery.ConstrType_CONSTR_CHECK:
 		return ast.ConstraintTypeCheck
+	case pgquery.ConstrType_CONSTR_DEFAULT:
+		return ast.ConstraintTypeDefault
+	case pgquery.ConstrType_CONSTR_EXCLUSION:
+		return ast.ConstraintTypeExclusion
 	}
 	return ast.ConstraintTypeUndefined
 }
@@ -861,6 +1122,12 @@ func convertDataType(tp *pgquery.TypeName) ast.DataType {
 			return &ast.Serial{Size: size}
 		case s == "numeric":
 			return convertToDecimal(tp.Typmods)
+		case s == "bpchar":
+			return convertToCharacter(tp.Typmods)
+		case s == "varchar":
+			return convertToVarchar(tp.Typmods)
+		case s == "text":
+			return &ast.Text{}
 		}
 	}
 	return convertToUnconvertedDataType(tp)
@@ -900,6 +1167,28 @@ func convertToDecimal(typmods []*pgquery.Node) ast.DataType {
 	default:
 		return &ast.UnconvertedDataType{}
 	}
+}
+
+func convertToVarchar(typmods []*pgquery.Node) ast.DataType {
+	if len(typmods) != 1 {
+		return &ast.UnconvertedDataType{}
+	}
+	size, ok := convertToInteger(typmods[0])
+	if !ok {
+		return &ast.UnconvertedDataType{}
+	}
+	return &ast.CharacterVarying{Size: size}
+}
+
+func convertToCharacter(typmods []*pgquery.Node) ast.DataType {
+	if len(typmods) != 1 {
+		return &ast.UnconvertedDataType{}
+	}
+	size, ok := convertToInteger(typmods[0])
+	if !ok {
+		return &ast.UnconvertedDataType{}
+	}
+	return &ast.Character{Size: size}
 }
 
 func convertToInteger(in *pgquery.Node) (int, bool) {
