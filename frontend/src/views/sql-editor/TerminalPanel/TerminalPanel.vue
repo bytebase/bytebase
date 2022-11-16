@@ -52,7 +52,7 @@ import CompactSQLEditor from "./CompactSQLEditor.vue";
 import EditorAction from "../EditorPanel/EditorAction.vue";
 import ConnectionPathBar from "../EditorCommon/ConnectionPathBar.vue";
 import ConnectionHolder from "../EditorPanel/ConnectionHolder.vue";
-import TableView from "./TableView.vue";
+import TableView from "../EditorCommon/TableView.vue";
 import { useElementSize } from "@vueuse/core";
 
 type QueryItem = {
@@ -78,7 +78,13 @@ const createEmptyQueryItem = (): QueryItem => ({
 const tabStore = useTabStore();
 
 const state = reactive<LocalState>({
-  queryList: [createEmptyQueryItem()],
+  queryList: [
+    {
+      // The first query is created from the sheet's SQL statement.
+      sql: tabStore.currentTab.statement,
+      isExecutingSQL: false,
+    },
+  ],
 });
 
 const queryListContainerRef = ref<HTMLDivElement>();
