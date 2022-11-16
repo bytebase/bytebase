@@ -1,12 +1,13 @@
+import { computed, nextTick } from "vue";
 import { cloneDeep, isEqual } from "lodash-es";
-import { InputField, OutputField } from "@/plugins";
+
 import {
   useCurrentUser,
   useIssueStore,
   useIssueSubscriberStore,
   useTaskStore,
 } from "@/store";
-import {
+import type {
   Issue,
   IssueCreate,
   IssueStatus,
@@ -21,7 +22,8 @@ import {
   TaskStatusPatch,
 } from "@/types";
 import { useIssueLogic } from "./index";
-import { computed, nextTick } from "vue";
+import { InputField, OutputField } from "@/plugins";
+import { hasWorkspacePermission } from "@/utils";
 
 export const useExtraIssueLogic = () => {
   const {
@@ -59,11 +61,28 @@ export const useExtraIssueLogic = () => {
     }
 
     const issueEntity = issue.value as Issue;
-    return (
-      issueEntity.status == "OPEN" &&
-      (issueEntity.assignee.id == currentUser.value.id ||
-        issueEntity.creator.id == currentUser.value.id)
-    );
+    if (issueEntity.status === "OPEN") {
+      if (
+        issueEntity.assignee.id === currentUser.value.id ||
+        issueEntity.creator.id === currentUser.value.id
+      ) {
+        // Allowed if current user is the assignee or creator.
+        return true;
+      }
+
+      //
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-issue",
+          currentUser.value.role
+        )
+      ) {
+        // Allowed if RBAC is enabled and current is DBA or workspace owner.
+        return true;
+      }
+    }
+
+    return false;
   });
 
   const updateName = (
