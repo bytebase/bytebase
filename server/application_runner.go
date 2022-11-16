@@ -106,7 +106,8 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 
-						if status == feishu.ApprovalStatusApproved {
+						switch status {
+						case feishu.ApprovalStatusApproved:
 							// double check
 							if stage.ID == payload.StageID && payload.AssigneeID == issue.AssigneeID {
 								// approve stage
@@ -143,8 +144,46 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									log.Error("failed to archive external apporval", zap.Error(err))
 								}
 							}
+						case feishu.ApprovalStatusRejected:
+							if payload.Status == feishu.ApprovalStatusPending {
+								if _, err := r.activityManager.CreateActivity(ctx, &api.ActivityCreate{
+									CreatorID:   api.SystemBotID,
+									ContainerID: issue.ID,
+									Type:        api.ActivityIssueCommentCreate,
+									Level:       api.ActivityInfo,
+									Comment:     fmt.Sprintf("Rejected by assignee %q from Feishu", issue.Assignee.Name),
+								},
+									&ActivityMeta{
+										issue: issue,
+									},
+								); err != nil {
+									log.Error("failed to comment issue on approval rejected", zap.Error(err))
+								}
+							}
+							// Do nothing for others
+						default:
 						}
-						// Do nothing for ApprovalStatusRejected
+
+						if payload.Status != status {
+							// update payload
+							payload.Status = status
+							b, err := json.Marshal(payload)
+							if err != nil {
+								log.Error("failed to marshal payload", zap.Any("payload", payload), zap.Error(err))
+								continue
+							}
+							newPayload := string(b)
+							patch := api.ExternalApprovalPatch{
+								ID:        externalApproval.ID,
+								RowStatus: api.Normal,
+								Payload:   &newPayload,
+							}
+							if _, err := r.store.PatchExternalApproval(ctx, &patch); err != nil {
+								log.Error("failed to patch external approval", zap.Any("patch", patch), zap.Error(err))
+								continue
+							}
+						}
+
 					default:
 						log.Error("Unknown ExternalApproval.Type", zap.Any("ExternalApproval", externalApproval))
 					}
@@ -186,8 +225,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 	}()
 
 	if cancelOld {
-		_, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived})
-		if err != nil {
+		if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
 			return nil, err
 		}
 		if err := r.p.CancelExternalApproval(ctx,
@@ -295,6 +333,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 		AssigneeID:   issue.AssigneeID,
 		InstanceCode: instanceCode,
 		RequesterID:  users[issue.Creator.Email],
+		Status:       feishu.ApprovalStatusPending,
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {

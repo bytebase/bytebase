@@ -1,5 +1,7 @@
 package api
 
+import "github.com/bytebase/bytebase/plugin/app/feishu"
+
 // ExternalApprovalType is the type of the ExternalApproval.
 type ExternalApprovalType string
 
@@ -36,6 +38,7 @@ type ExternalApprovalPayloadFeishu struct {
 	// feishu
 	InstanceCode string
 	RequesterID  string
+	Status       feishu.ApprovalStatus
 }
 
 // ExternalApprovalCreate is the API message for creating an ExternalApproval.
@@ -57,6 +60,11 @@ type ExternalApprovalFind struct {
 
 // ExternalApprovalPatch is the API message for patching an ExternalApproval.
 type ExternalApprovalPatch struct {
-	ID        int
+	ID int
+
+	// Standard fields
 	RowStatus RowStatus
+
+	// Domain specific fields
+	Payload *string
 }
