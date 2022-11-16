@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -20,6 +21,8 @@ const (
 	emptyTokenRespCode   = 99991661
 	invalidTokenRespCode = 99991663
 )
+
+const timeout = 30 * time.Second
 
 // Provider is the provider for IM Feishu.
 type Provider struct {
@@ -35,7 +38,9 @@ type tokenRefresher func(ctx context.Context, client *http.Client, oldToken *str
 // NewProvider returns a Provider.
 func NewProvider() *Provider {
 	p := Provider{
-		client: &http.Client{},
+		client: &http.Client{
+			Timeout: timeout,
+		},
 	}
 	// initialize token
 	p.Token.Store("")
