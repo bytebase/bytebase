@@ -42,7 +42,7 @@ func NewProvider() *Provider {
 	return &p
 }
 
-// Clear token cache removes cached token.
+// ClearTokenCache clears cached token.
 func (p *Provider) ClearTokenCache() {
 	p.Token.Store("")
 }
