@@ -112,7 +112,7 @@ export const useUIEditorStore = defineStore("UIEditor", {
       }
       return tableList;
     },
-    // findTable try to find the table from table list including existed tables and created tables.
+    // findTable tries to find the table from the table list including existing tables and created tables.
     findTable(tableId: TableId, tableName: string, databaseId: DatabaseId) {
       return this.tableList.find(
         (table) =>
