@@ -1307,6 +1307,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			setting, err := s.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 			if err != nil {
 				log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+				return
 			}
 			if setting == nil {
 				log.Error("cannot find IM setting")
@@ -1329,6 +1330,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			}
 			if _, err := s.ApplicationRunner.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
 				log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
+				return
 			}
 		}()
 	}
