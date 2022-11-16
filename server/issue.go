@@ -544,7 +544,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
-					Name:          "Restore backup",
+					Name:          instance.Environment.Name,
 					EnvironmentID: instance.EnvironmentID,
 					TaskList:      taskCreateList,
 					// TODO(zp): Find a common way to merge taskCreateList and TaskIndexDAGList.
@@ -563,7 +563,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		Name: fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
 		StageList: []api.StageCreate{
 			{
-				Name:          "Create database",
+				Name:          instance.Environment.Name,
 				EnvironmentID: instance.EnvironmentID,
 				TaskList:      taskCreateList,
 			},
@@ -600,7 +600,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		Name: "Database Point-in-time Recovery pipeline",
 		StageList: []api.StageCreate{
 			{
-				Name:             "PITR",
+				Name:             database.Instance.Environment.Name,
 				EnvironmentID:    database.Instance.Environment.ID,
 				TaskList:         taskCreateList,
 				TaskIndexDAGList: taskIndexDAGList,
