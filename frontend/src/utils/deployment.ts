@@ -1,35 +1,6 @@
-import {
-  DeploymentConfig,
-  DeploymentSchedule,
-  DeploymentSpec,
-  Environment,
-  Label,
-} from "../types";
+import { DeploymentConfig, DeploymentSpec, Label } from "../types";
 import escapeStringRegexp from "escape-string-regexp";
 import { hidePrefix } from "./label";
-
-export const generateDefaultSchedule = (environmentList: Environment[]) => {
-  const schedule: DeploymentSchedule = {
-    deployments: [],
-  };
-  environmentList.forEach((env) => {
-    schedule.deployments.push({
-      name: `${env.name} Stage`,
-      spec: {
-        selector: {
-          matchExpressions: [
-            {
-              key: "bb.environment",
-              operator: "In",
-              values: [env.name],
-            },
-          ],
-        },
-      },
-    });
-  });
-  return schedule;
-};
 
 export const validateDeploymentConfig = (
   config: DeploymentConfig

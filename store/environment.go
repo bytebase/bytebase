@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -65,6 +66,9 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find Environment list with EnvironmentFind[%+v]", find)
 	}
+	sort.Slice(environmentRawList, func(i, j int) bool {
+		return environmentRawList[i].Order < environmentRawList[j].Order
+	})
 	var environmentList []*api.Environment
 	for _, raw := range environmentRawList {
 		environment, err := s.composeEnvironment(ctx, raw)
