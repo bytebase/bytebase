@@ -552,9 +552,13 @@ func formatForm(content Content) (string, error) {
 	})
 
 	var taskListValue strings.Builder
-	_, _ = taskListValue.WriteString(fmt.Sprintf("Stage %q has %d task(s).\n", content.Stage, len(content.TaskList)))
+	if _, err := taskListValue.WriteString(fmt.Sprintf("Stage %q has %d task(s).\n", content.Stage, len(content.TaskList))); err != nil {
+		return "", err
+	}
 	for i, task := range content.TaskList {
-		_, _ = taskListValue.WriteString(fmt.Sprintf("%d. [%s] %s.\n", i+1, task.Status, task.Name))
+		if _, err := taskListValue.WriteString(fmt.Sprintf("%d. [%s] %s.\n", i+1, task.Status, task.Name)); err != nil {
+			return "", err
+		}
 	}
 
 	forms = append(forms, form{
