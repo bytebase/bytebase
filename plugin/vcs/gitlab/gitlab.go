@@ -89,6 +89,8 @@ type WebhookCommit struct {
 type WebhookPushEvent struct {
 	ObjectKind WebhookType     `json:"object_kind"`
 	Ref        string          `json:"ref"`
+	Before     string          `json:"before"`
+	After      string          `json:"after"`
 	AuthorName string          `json:"user_name"`
 	Project    WebhookProject  `json:"project"`
 	CommitList []WebhookCommit `json:"commits"`
@@ -122,6 +124,11 @@ type RepositoryTreeNode struct {
 type File struct {
 	Content      string
 	LastCommitID string
+}
+
+// CommitsDiff represents a GitLab API response for comparing two commits.
+type CommitsDiff struct {
+	FileDiffList []MergeRequestFile `json:"diffs"`
 }
 
 // ProjectRole is the role of the project member.
@@ -414,6 +421,61 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		AuthorName: commit.AuthorName,
 		CreatedTs:  commit.CreatedAt.Unix(),
 	}, nil
+}
+
+// GetDiffFileList gets the diff files list between two commits.
+func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
+	url := fmt.Sprintf("%s/projects/%s/repository/compare?from=%s&to=%s", p.APIURL(instanceURL), repositoryID, beforeCommit, afterCommit)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get diff file list from URL %s", url)
+	} else if code >= 300 {
+		return nil,
+			errors.Errorf("failed to get diff file list from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	diffs := &CommitsDiff{}
+	if err := json.Unmarshal([]byte(body), diffs); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal file diff data from GitLab instance %s", instanceURL)
+	}
+
+	var ret []vcs.FileDiff
+	for _, diff := range diffs.FileDiffList {
+		item := vcs.FileDiff{
+			Path: diff.NewPath,
+		}
+		if diff.NewFile {
+			item.Type = vcs.FileDiffTypeAdded
+		} else if diff.DeletedFile {
+			item.Type = vcs.FileDiffTypeRemoved
+		} else {
+			item.Type = vcs.FileDiffTypeModified
+		}
+		ret = append(ret, item)
+	}
+	return ret, nil
 }
 
 // FetchUserInfo fetches user info of given user ID.
@@ -1406,7 +1468,10 @@ func (p WebhookPushEvent) ToVCS() (vcs.PushEvent, error) {
 		})
 	}
 	return vcs.PushEvent{
+		VCSType:            vcs.GitLabSelfHost,
 		Ref:                p.Ref,
+		Before:             p.Before,
+		After:              p.After,
 		RepositoryID:       fmt.Sprintf("%v", p.Project.ID),
 		RepositoryURL:      p.Project.WebURL,
 		RepositoryFullPath: p.Project.FullPath,
