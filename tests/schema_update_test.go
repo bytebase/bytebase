@@ -287,7 +287,7 @@ func TestVCS(t *testing.T) {
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added [][]string, modified [][]string) interface{} {
 				var commitList []gitlab.WebhookCommit
-				for i := range commitList {
+				for i := range added {
 					commitList = append(commitList, gitlab.WebhookCommit{
 						Timestamp:    time.Now().Format(time.RFC3339),
 						AddedList:    added[i],
