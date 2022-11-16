@@ -238,7 +238,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 	if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
 		return err
 	}
-	if err := r.p.CancelExternalApproval(ctx,
+	return r.p.CancelExternalApproval(ctx,
 		feishu.TokenCtx{
 			AppID:     value.AppID,
 			AppSecret: value.AppSecret,
@@ -246,10 +246,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 		value.ExternalApproval.ApprovalCode,
 		payload.InstanceCode,
 		payload.RequesterID,
-	); err != nil {
-		return err
-	}
-	return nil
+	)
 }
 
 func (r *ApplicationRunner) shouldCreateExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
