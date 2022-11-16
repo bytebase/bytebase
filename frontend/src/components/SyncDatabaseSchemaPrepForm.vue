@@ -69,9 +69,11 @@
             @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
           >
             <template #menuItem="{ item: migrationHistory }">
-              <div class="truncate">
+              <!-- To enable the ellipsis function only when 
+                overflow happens, we have to set a fixed width. -->
+              <NEllipsis style="max-width: 160px">
                 {{ migrationHistory.version }}
-              </div>
+              </NEllipsis>
             </template>
             <template v-if="!hasSyncSchemaFeature" #suffixItem>
               <div
@@ -235,6 +237,7 @@
 import axios from "axios";
 import dayjs from "dayjs";
 import { head, isUndefined } from "lodash-es";
+import { NEllipsis } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { useRouter } from "vue-router";
