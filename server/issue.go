@@ -1301,8 +1301,8 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		}
 		pipelineStatus = api.PipelineCanceled
 
-		// Try to cancel external approval, it's ok if we failed.
-		if err := s.ApplicationRunner.CancelExternalApprovalIfNeeded(ctx, issue); err != nil {
+		// Cancel external approval, it's ok if we failed.
+		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue); err != nil {
 			log.Error("failed to cancel external appoval if needed on issue cancellation", zap.Error(err))
 		}
 	}
