@@ -186,8 +186,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 	}()
 
 	if cancelOld {
-		_, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived})
-		if err != nil {
+		if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
 			return nil, err
 		}
 		if err := r.p.CancelExternalApproval(ctx,
@@ -205,8 +204,8 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 	return approval, nil
 }
 
-// CancelExternalApprovalIfNeeded trys to cancel the active external approval of an issue.
-func (r *ApplicationRunner) CancelExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue) error {
+// CancelExternalApproval cancels the active external approval of an issue.
+func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *api.Issue) error {
 	settingName := api.SettingAppIM
 	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
@@ -225,12 +224,30 @@ func (r *ApplicationRunner) CancelExternalApprovalIfNeeded(ctx context.Context, 
 	if !value.ExternalApproval.Enabled {
 		return nil
 	}
-	stage := getActiveStage(issue.Pipeline.StageList)
-	if stage == nil {
-		stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
+	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
+	if err != nil {
+		return err
 	}
-	if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
-		return errors.Wrap(err, "failed to cancelOldExternalApprovalIfNeeded")
+	if approval == nil {
+		return nil
+	}
+	var payload api.ExternalApprovalPayloadFeishu
+	if err := json.Unmarshal([]byte(approval.Payload), &payload); err != nil {
+		return err
+	}
+	if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
+		return err
+	}
+	if err := r.p.CancelExternalApproval(ctx,
+		feishu.TokenCtx{
+			AppID:     value.AppID,
+			AppSecret: value.AppSecret,
+		},
+		value.ExternalApproval.ApprovalCode,
+		payload.InstanceCode,
+		payload.RequesterID,
+	); err != nil {
+		return err
 	}
 	return nil
 }
