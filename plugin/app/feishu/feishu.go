@@ -134,7 +134,13 @@ type Content struct {
 	Issue       string
 	Stage       string
 	Link        string
+	TaskList    []Task
 	Description string
+}
+
+type Task struct {
+	Name   string
+	Status string
 }
 
 const (
@@ -146,7 +152,7 @@ const (
   "approval_code": "%s",
 	"approval_name": "@i18n@approval_name",
 	"form": {
-		"form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"input\", \"name\":\"@i18n@widget3\"},{\"id\":\"4\", \"type\": \"textarea\", \"name\":\"@i18n@widget4\"}]"
+		"form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"input\", \"name\":\"@i18n@widget3\"},{\"id\":\"4\", \"type\": \"textarea\", \"name\":\"@i18n@widget4\"},{\"id\":\"5\", \"type\": \"textarea\", \"name\":\"@i18n@widget5\"}]"
 	},
 	"i18n_resources": [
 		{
@@ -167,14 +173,18 @@ const (
 				},
 				{
 					"key": "@i18n@widget2",
-					"value": "阶段"
-				},
-				{
-					"key": "@i18n@widget3",
 					"value": "链接"
 				},
 				{
+					"key": "@i18n@widget3",
+					"value": "阶段"
+				},
+				{
 					"key": "@i18n@widget4",
+					"value": "任务列表"
+				},
+				{
+					"key": "@i18n@widget5",
 					"value": "描述"
 				}
 			]
@@ -197,14 +207,18 @@ const (
 				},
 				{
 					"key": "@i18n@widget2",
-					"value": "Stage"
-				},
-				{
-					"key": "@i18n@widget3",
 					"value": "Link"
 				},
 				{
+					"key": "@i18n@widget3",
+					"value": "Stage"
+				},
+				{
 					"key": "@i18n@widget4",
+					"value": "Task List"
+				},
+				{
+					"key": "@i18n@widget5",
 					"value": "Description"
 				}
 			]
@@ -511,33 +525,50 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 }
 
 func formatForm(content Content) (string, error) {
-	type form []struct {
+	type form struct {
 		ID    string `json:"id"`
 		Type  string `json:"type"`
 		Value string `json:"value"`
 	}
-	forms := form{
-		{
-			ID:    "1",
-			Type:  "input",
-			Value: content.Issue,
-		},
-		{
-			ID:    "2",
-			Type:  "input",
-			Value: content.Stage,
-		},
-		{
-			ID:    "3",
-			Type:  "input",
-			Value: content.Link,
-		},
-		{
-			ID:    "4",
-			Type:  "textarea",
-			Value: content.Description,
-		},
+	var forms []form
+
+	forms = append(forms, form{
+		ID:    "1",
+		Type:  "input",
+		Value: content.Issue,
+	})
+
+	forms = append(forms, form{
+		ID:    "2",
+		Type:  "input",
+		Value: content.Link,
+	})
+
+	forms = append(forms, form{
+		ID:    "3",
+		Type:  "input",
+		Value: content.Stage,
+	})
+
+	var taskListValue strings.Builder
+
+	_, _ = taskListValue.WriteString(fmt.Sprintf("Stage %q has %d task(s).\n", content.Stage, len(content.TaskList)))
+	for i, task := range content.TaskList {
+		_, _ = taskListValue.WriteString(fmt.Sprintf("%d. [%s] %s.\n", i+1, task.Status, task.Name))
 	}
+
+	forms = append(forms, form{
+		ID:    "4",
+		Type:  "textarea",
+		Value: taskListValue.String(),
+	})
+
+	forms = append(forms, form{
+		ID:    "5",
+		Type:  "textarea",
+		Value: content.Description,
+	})
+
 	b, err := json.Marshal(forms)
 	if err != nil {
 		return "", err
