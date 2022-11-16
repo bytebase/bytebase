@@ -50,6 +50,7 @@ p, DBA, /database/{databaseID}/table/{tableName}, GET
 p, DBA, /database/{databaseID}/view, GET
 p, DBA, /database/{databaseID}/extension, GET
 p, DBA, /database/{databaseID}/schema, GET
+p, DBA, /database/{databaseID}/edit, POST
 p, DBA, /database/{databaseID}/backup, GET
 p, DBA, /database/{databaseID}/backup, POST
 p, DBA, /database/{databaseID}/backup-setting, GET
