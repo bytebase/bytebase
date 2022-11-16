@@ -24,9 +24,6 @@ jobs:
       - name: Run pnpm lint
         run: pnpm lint
         working-directory: frontend
-      - name: Run pnpm test
-        run: pnpm test
-        working-directory: frontend
 
   frontend-tests:
     runs-on: ubuntu-latest
