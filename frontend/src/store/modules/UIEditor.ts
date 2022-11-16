@@ -44,7 +44,7 @@ export const useUIEditorStore = defineStore("UIEditor", {
     getTabById(tabId: string) {
       return this.tabState.tabMap.get(tabId);
     },
-    // getTabByDatabaseIdAndTableName gets tab by dartabase id and table name.
+    // getTabByDatabaseIdAndTableName gets tab by database id and table name.
     // * tableName is using to position those new tables with UNKNOWN_ID.
     getTabByDatabaseIdAndTableName(databaseId: DatabaseId, tableName?: string) {
       const wantedTabType = isUndefined(tableName)
