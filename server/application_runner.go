@@ -207,6 +207,36 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 	return approval, nil
 }
 
+// CancelExternalApprovalIfNeeded trys to cancel the active external approval of an issue.
+func (r *ApplicationRunner) CancelExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue) error {
+	settingName := api.SettingAppIM
+	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get IM setting by settingName %s", string(settingName))
+	}
+	if setting == nil {
+		return errors.New("cannot find IM setting")
+	}
+	if setting.Value == "" {
+		return nil
+	}
+	var value api.SettingAppIMValue
+	if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal IM setting, settingName %s", string(settingName))
+	}
+	if !value.ExternalApproval.Enabled {
+		return nil
+	}
+	stage := getActiveStage(issue.Pipeline.StageList)
+	if stage == nil {
+		stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
+	}
+	if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
+		return errors.Wrap(err, "failed to cancelOldExternalApprovalIfNeeded")
+	}
+	return nil
+}
+
 func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
 	if oldApproval != nil {
 		var oldPayload api.ExternalApprovalPayloadFeishu

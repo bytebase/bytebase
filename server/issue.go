@@ -1302,37 +1302,9 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		pipelineStatus = api.PipelineCanceled
 
 		// Try to cancel external approval, it's ok if we failed.
-		func() {
-			settingName := api.SettingAppIM
-			setting, err := s.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
-			if err != nil {
-				log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
-				return
-			}
-			if setting == nil {
-				log.Error("cannot find IM setting")
-				return
-			}
-			if setting.Value == "" {
-				return
-			}
-			var value api.SettingAppIMValue
-			if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
-				log.Error("failed to unmarshal IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
-				return
-			}
-			if !value.ExternalApproval.Enabled {
-				return
-			}
-			stage := getActiveStage(issue.Pipeline.StageList)
-			if stage == nil {
-				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
-			}
-			if _, err := s.ApplicationRunner.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
-				log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
-				return
-			}
-		}()
+		if err := s.ApplicationRunner.CancelExternalApprovalIfNeeded(ctx, issue); err != nil {
+			log.Error("failed to cancel external appoval if needed on issue cancellation", zap.Error(err))
+		}
 	}
 
 	pipelinePatch := &api.PipelinePatch{
