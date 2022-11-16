@@ -7,7 +7,6 @@
     :repository-config="config.repositoryConfig"
     :schema-change-type="config.schemaChangeType"
     :project="project"
-    :form-error="formError"
     @change-schema-change-type="
       (type) => $emit('change-schema-change-type', type)
     "
@@ -30,10 +29,6 @@ export default defineComponent({
     project: {
       required: true,
       type: Object as PropType<Project>,
-    },
-    formError: {
-      required: true,
-      type: Object as PropType<Record<string, boolean>>,
     },
   },
   emits: ["change-schema-change-type"],
