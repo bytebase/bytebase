@@ -546,7 +546,6 @@ func formatForm(content Content) (string, error) {
 			Type:  "input",
 			Value: content.Issue,
 		},
-
 		{
 			ID:    "2",
 			Type:  "input",
