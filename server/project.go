@@ -279,7 +279,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				Refresher:    nil,
 			},
 			vcs.InstanceURL, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); common.ErrorCode(err) == common.NotFound {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %s not found in repository %d.", repositoryCreate.BranchFilter, repositoryCreate.VCSID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
 		}
 
 		// For a particular VCS repo, all Bytebase projects share the same webhook.
@@ -511,7 +511,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				Refresher:    nil,
 			},
 			vcs.InstanceURL, repo.ExternalID, newBranchFilter); common.ErrorCode(err) == common.NotFound {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %s not found in repository %d.", newBranchFilter, repo.VCSID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
 		}
 
 		// We need to check the FilePathTemplate in create repository request.
