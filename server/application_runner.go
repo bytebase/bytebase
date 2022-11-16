@@ -222,9 +222,6 @@ func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *
 		if task.Status == api.TaskPendingApproval {
 			pendingApprovalCount++
 		}
-		if len(task.TaskCheckRunList) == 0 {
-			return false, nil
-		}
 
 		// get the most recent task check run result for each type of task check
 		taskCheckRun := make(map[api.TaskCheckType]*api.TaskCheckRun)
