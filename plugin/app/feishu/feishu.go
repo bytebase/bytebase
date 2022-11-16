@@ -558,7 +558,6 @@ func formatForm(content Content) (string, error) {
 			Type:  "input",
 			Value: content.Stage,
 		},
-
 		{
 			ID:    "4",
 			Type:  "textarea",
