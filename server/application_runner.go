@@ -292,7 +292,16 @@ func (r *ApplicationRunner) shouldCreateExternalApproval(ctx context.Context, is
 	return true, nil
 }
 
+// issue should have pipeline composed.
 func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
+	var stageIndex int
+	for i, s := range issue.Pipeline.StageList {
+		if s.ID == stage.ID {
+			stageIndex = i + 1
+			break
+		}
+	}
+
 	users, err := r.p.GetIDByEmail(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
@@ -319,7 +328,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 		feishu.Content{
 			Issue:    issue.Name,
 			Stage:    stage.Name,
-			Link:     fmt.Sprintf("%s/issue/%s", r.activityManager.s.profile.ExternalURL, api.IssueSlug(issue)),
+			Link:     fmt.Sprintf("%s/issue/%d?stage=%d", r.activityManager.s.profile.ExternalURL, issue.ID, stageIndex),
 			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalCode,
@@ -398,6 +407,7 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 		return
 	}
 	issue := issues[0]
+	issue.Pipeline = pipeline
 	stage := getActiveStage(pipeline.StageList)
 	if stage == nil {
 		stage = pipeline.StageList[len(pipeline.StageList)-1]
