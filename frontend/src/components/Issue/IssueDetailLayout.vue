@@ -317,7 +317,7 @@ watch(
 
 // When activeTask is changed, we automatically select it.
 // This enables users to know the pipeline status has changed and we may move forward.
-const autoSelectWhenStatusChanged = () => {
+const autoSelectWhenStatusChanged = (immediate: boolean) => {
   const activeTask = computed((): Task | undefined => {
     if (create.value) return undefined;
     const { pipeline } = issue.value as Issue;
@@ -336,13 +336,19 @@ const autoSelectWhenStatusChanged = () => {
       selectTask(task);
     },
     // Also triggered when the first time the page is loaded.
-    { immediate: true }
+    { immediate }
   );
 };
 
 const onStatusChanged = (eager: boolean) => emit("status-changed", eager);
 
-autoSelectWhenStatusChanged();
+if (route.query.stage || route.query.task) {
+  // If we have selected stage/task in URL, don't switch to activeTask immediately.
+  autoSelectWhenStatusChanged(false);
+} else {
+  // Otherwise, automatically switch to the active task immediately.
+  autoSelectWhenStatusChanged(true);
+}
 
 provideIssueLogic(
   {
