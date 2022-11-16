@@ -110,7 +110,7 @@
             >
               <template #label="{ label }">
                 <span class="textlabel capitalize">
-                  {{ hidePrefix(label.key) }}&nbsp;-&nbsp;
+                  {{ hidePrefix(label) }}&nbsp;-&nbsp;
                 </span>
               </template>
             </DatabaseLabelProps>

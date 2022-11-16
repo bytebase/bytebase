@@ -13,6 +13,19 @@ import {
 
 export const RESERVED_LABEL_KEYS = ["bb.environment"];
 
+export const PRESET_LABEL_KEYS = ["bb.location", "bb.tenant"];
+
+export const PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS = [
+  "DB_NAME",
+  "LOCATION",
+  "TENANT",
+];
+
+export const PRESET_LABEL_KEY_PLACEHOLDERS = [
+  ["LOCATION", "bb.location"],
+  ["TENANT", "bb.tenant"],
+];
+
 export const LABEL_VALUE_EMPTY = "";
 
 export const isReservedLabel = (label: Label): boolean => {
@@ -167,16 +180,13 @@ const checkLabelExists = (
   return db.labels.some((label) => label.key === rule.key);
 };
 
-export const parseLabelListInTemplate = (
-  template: string,
-  availableLabelList: Label[]
-): Label[] => {
-  const labelList: Label[] = [];
+export const parseLabelListInTemplate = (template: string): string[] => {
+  const labelList: string[] = [];
 
-  availableLabelList.forEach((label) => {
-    const placeholder = `{{${hidePrefix(label.key).toUpperCase()}}}`;
-    if (template.includes(placeholder)) {
-      labelList.push(label);
+  PRESET_LABEL_KEY_PLACEHOLDERS.forEach(([placeholder, labelKey]) => {
+    const pattern = `{{${placeholder}}}`;
+    if (template.includes(pattern)) {
+      labelList.push(labelKey);
     }
   });
 

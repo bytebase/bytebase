@@ -4,6 +4,7 @@ import type {
   DeploymentSpec,
   Environment,
 } from "@/types";
+import { PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS } from "./label";
 
 export const generateDefaultSchedule = (environmentList: Environment[]) => {
   const schedule: DeploymentSchedule = {
@@ -84,7 +85,6 @@ export const parseDatabaseNameByTemplate = (name: string, template: string) => {
 };
 
 export const buildDatabaseNameRegExpByTemplate = (template: string): RegExp => {
-  const AVAILABLE_PLACEHOLDERS = ["DB_NAME", "LOCATION", "TENANT"];
   let regexpString = template;
 
   /*
@@ -92,7 +92,7 @@ export const buildDatabaseNameRegExpByTemplate = (template: string): RegExp => {
     e.g. template = "{{DB_NAME}}_{{TENANT}}"
     here regex will be /^(?<DB_NAME>.+?)_(?<TENANT>.+?)$/
   */
-  AVAILABLE_PLACEHOLDERS.forEach((placeholder) => {
+  PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS.forEach((placeholder) => {
     const pattern = `{{${placeholder}}}`;
     const groupRegExp = `(?<${placeholder}>.+?)`;
     regexpString = regexpString.replace(pattern, groupRegExp);

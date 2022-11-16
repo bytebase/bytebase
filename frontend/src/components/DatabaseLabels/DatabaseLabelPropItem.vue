@@ -12,13 +12,13 @@
         <option :value="''" :selected="!!state.value">
           {{ $t("label.empty-label-value") }}
         </option>
-        <option
+        <!-- <option
           v-for="(labelValue, i) in label.valueList"
           :key="i"
           :value="labelValue"
         >
           {{ labelValue }}
-        </option>
+        </option> -->
       </select>
       {{ state.value || $t("label.empty-label-value") }}
       <heroicons-outline:chevron-down class="w-4 h-4 ml-0.5" />
@@ -31,13 +31,12 @@ import { capitalize } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Database, Label, LabelValueType } from "../../types";
+import { Database, LabelKeyType, LabelValueType } from "../../types";
 import { hidePrefix } from "../../utils";
 
 const props = defineProps<{
-  label: Label;
-  labelList: Label[];
-  requiredLabelList: Label[];
+  labelKey: LabelKeyType;
+  required: boolean;
   value: LabelValueType | undefined;
   database: Database;
   allowEdit: boolean;
@@ -63,12 +62,7 @@ watch(
 const editable = computed((): boolean => {
   if (!props.allowEdit) return false;
 
-  // Not editable if this is a required label in `dbNameTemplate`
-  // e.g. tenant in "{{DB_NAME}}_{{TENANT}}"
-  const isRequired = !!props.requiredLabelList.find(
-    (label) => label.key === props.label.key
-  );
-  return !isRequired;
+  return !props.required;
 });
 
 const onChange = (e: Event) => {
@@ -77,7 +71,7 @@ const onChange = (e: Event) => {
     positiveText: t("common.confirm"),
     negativeText: t("common.cancel"),
     title: t("label.confirm-change", {
-      label: capitalize(hidePrefix(props.label.key)),
+      label: capitalize(hidePrefix(props.labelKey)),
     }),
     closable: false,
     maskClosable: false,

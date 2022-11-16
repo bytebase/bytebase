@@ -21,7 +21,11 @@
 import { computed, withDefaults } from "vue";
 import { capitalize } from "lodash-es";
 import { LabelKeyType } from "../../types";
-import { hidePrefix } from "../../utils";
+import {
+  hidePrefix,
+  PRESET_LABEL_KEYS,
+  RESERVED_LABEL_KEYS,
+} from "../../utils";
 
 const props = withDefaults(
   defineProps<{
@@ -33,7 +37,7 @@ const props = withDefaults(
   }
 );
 
-const LABEL_KEY_LIST = ["bb.environment", "bb.location", "bb.tenant"];
+const LABEL_KEY_LIST = [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
 
 const emit = defineEmits<{
   (event: "update:label", label: LabelKeyType): void;
