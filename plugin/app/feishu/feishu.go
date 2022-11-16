@@ -133,6 +133,7 @@ type createApprovalInstanceReq struct {
 type Content struct {
 	Issue       string
 	Stage       string
+	Link        string
 	Description string
 }
 
@@ -145,7 +146,7 @@ const (
   "approval_code": "%s",
 	"approval_name": "@i18n@approval_name",
 	"form": {
-		"form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"textarea\", \"name\":\"@i18n@widget3\"}]"
+		"form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"input\", \"name\":\"@i18n@widget3\"},{\"id\":\"4\", \"type\": \"textarea\", \"name\":\"@i18n@widget4\"}]"
 	},
 	"i18n_resources": [
 		{
@@ -170,6 +171,10 @@ const (
 				},
 				{
 					"key": "@i18n@widget3",
+					"value": "链接"
+				},
+				{
+					"key": "@i18n@widget4",
 					"value": "描述"
 				}
 			]
@@ -196,6 +201,10 @@ const (
 				},
 				{
 					"key": "@i18n@widget3",
+					"value": "Link"
+				},
+				{
+					"key": "@i18n@widget4",
 					"value": "Description"
 				}
 			]
@@ -520,6 +529,11 @@ func formatForm(content Content) (string, error) {
 		},
 		{
 			ID:    "3",
+			Type:  "input",
+			Value: content.Link,
+		},
+		{
+			ID:    "4",
 			Type:  "textarea",
 			Value: content.Description,
 		},

@@ -269,6 +269,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 		feishu.Content{
 			Issue: issue.Name,
 			Stage: stage.Name,
+			Link:  fmt.Sprintf("%s/issue/%s", r.activityManager.s.profile.ExternalURL, api.IssueSlug(issue)),
 		},
 		settingValue.ExternalApproval.ApprovalCode,
 		users[issue.Creator.Email],
@@ -276,7 +277,6 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 	if err != nil {
 		return err
 	}
-
 	payload := api.ExternalApprovalPayloadFeishu{
 		StageID:      stage.ID,
 		AssigneeID:   issue.AssigneeID,
