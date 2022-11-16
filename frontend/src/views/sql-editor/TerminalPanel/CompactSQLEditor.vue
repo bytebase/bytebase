@@ -19,7 +19,6 @@
         lineNumbers: getLineNumber,
         lineNumbersMinChars: 5,
         glyphMargin: false,
-        theme: 'bb-dark',
       }"
       @change="handleChange"
       @change-selection="handleChangeSelection"
@@ -163,16 +162,6 @@ const handleEditorReady = async () => {
       );
     },
   });
-
-  if (editor) {
-    const messageContribution = editor.getContribution(
-      "editor.contrib.messageController"
-    );
-    editor.onDidAttemptReadOnlyEdit(() => {
-      console.log("should dispose ");
-      messageContribution?.dispose();
-    });
-  }
 
   watchEffect(() => {
     if (selectedInstance.value) {
