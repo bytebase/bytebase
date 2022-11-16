@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
@@ -83,13 +82,13 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 
 						issue, err := r.store.GetIssueByID(ctx, externalApproval.IssueID)
-						stage := getActiveStage(issue.Pipeline.StageList)
-						if stage == nil {
-							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
-						}
 						if err != nil {
 							log.Error("failed to get issue by issue id", zap.Int("issueID", externalApproval.IssueID), zap.Error(err))
 							continue
+						}
+						stage := getActiveStage(issue.Pipeline.StageList)
+						if stage == nil {
+							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
 						if issue.Status != api.IssueOpen {
 							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
@@ -125,8 +124,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 										UpdaterID: externalApproval.ApproverID,
 										Status:    api.TaskPending,
 									}
-									_, err := r.store.PatchTaskStatus(ctx, taskStatusPatch)
-									if err != nil {
+									if _, err := r.store.PatchTaskStatus(ctx, taskStatusPatch); err != nil {
 										return errors.Wrapf(err, "failed to update task status, task id list: %+v", taskIDList)
 									}
 									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, taskStatusPatch, issue, stage, tasks); err != nil {
@@ -207,7 +205,45 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 	return approval, nil
 }
 
-func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+// CancelExternalApprovalIfNeeded trys to cancel the active external approval of an issue.
+func (r *ApplicationRunner) CancelExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue) error {
+	settingName := api.SettingAppIM
+	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get IM setting by settingName %s", string(settingName))
+	}
+	if setting == nil {
+		return errors.New("cannot find IM setting")
+	}
+	if setting.Value == "" {
+		return nil
+	}
+	var value api.SettingAppIMValue
+	if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal IM setting, settingName %s", string(settingName))
+	}
+	if !value.ExternalApproval.Enabled {
+		return nil
+	}
+	stage := getActiveStage(issue.Pipeline.StageList)
+	if stage == nil {
+		stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
+	}
+	if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
+		return errors.Wrap(err, "failed to cancelOldExternalApprovalIfNeeded")
+	}
+	return nil
+}
+
+func (r *ApplicationRunner) shouldCreateExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+	policy, err := r.store.GetPipelineApprovalPolicy(ctx, stage.EnvironmentID)
+	if err != nil {
+		return false, err
+	}
+	// don't send approvals for auto-approval stages.
+	if policy.Value == api.PipelineApprovalValueManualNever {
+		return false, nil
+	}
 	if oldApproval != nil {
 		var oldPayload api.ExternalApprovalPayloadFeishu
 		if err := json.Unmarshal([]byte(oldApproval.Payload), &oldPayload); err != nil {
@@ -223,25 +259,30 @@ func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *
 		if task.Status == api.TaskPendingApproval {
 			pendingApprovalCount++
 		}
-		if len(task.TaskCheckRunList) == 0 {
-			return false, nil
+
+		// get the most recent task check run result for each type of task check
+		taskCheckRun := make(map[api.TaskCheckType]*api.TaskCheckRun)
+		for _, run := range task.TaskCheckRunList {
+			v, ok := taskCheckRun[run.Type]
+			if !ok {
+				taskCheckRun[run.Type] = run
+			} else if run.ID > v.ID {
+				taskCheckRun[run.Type] = run
+			}
 		}
-		// sort to get the most recent task check run result
-		sort.Slice(task.TaskCheckRunList, func(i, j int) bool {
-			return task.TaskCheckRunList[i].UpdatedTs > task.TaskCheckRunList[j].UpdatedTs ||
-				(task.TaskCheckRunList[i].UpdatedTs == task.TaskCheckRunList[j].UpdatedTs && task.TaskCheckRunList[i].ID > task.TaskCheckRunList[j].ID)
-		})
-		taskCheck := task.TaskCheckRunList[0]
-		if taskCheck.Status != api.TaskCheckRunDone {
-			return false, nil
-		}
-		var payload api.TaskCheckRunResultPayload
-		if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
-			return false, err
-		}
-		for _, result := range payload.ResultList {
-			if result.Status == api.TaskCheckStatusError {
+
+		for _, taskCheck := range taskCheckRun {
+			if taskCheck.Status != api.TaskCheckRunDone {
 				return false, nil
+			}
+			var payload api.TaskCheckRunResultPayload
+			if err := json.Unmarshal([]byte(taskCheck.Result), &payload); err != nil {
+				return false, err
+			}
+			for _, result := range payload.ResultList {
+				if result.Status == api.TaskCheckStatusError {
+					return false, nil
+				}
 			}
 		}
 	}
@@ -261,14 +302,25 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 	if err != nil {
 		return err
 	}
+
+	var taskList []feishu.Task
+	for _, task := range stage.TaskList {
+		taskList = append(taskList, feishu.Task{
+			Name:   task.Name,
+			Status: string(task.Status),
+		})
+	}
+
 	instanceCode, err := r.p.CreateExternalApproval(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
 			AppSecret: settingValue.AppSecret,
 		},
 		feishu.Content{
-			Issue: issue.Name,
-			Stage: stage.Name,
+			Issue:    issue.Name,
+			Stage:    stage.Name,
+			Link:     fmt.Sprintf("%s/issue/%s", r.activityManager.s.profile.ExternalURL, api.IssueSlug(issue)),
+			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalCode,
 		users[issue.Creator.Email],
@@ -276,7 +328,6 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 	if err != nil {
 		return err
 	}
-
 	payload := api.ExternalApprovalPayloadFeishu{
 		StageID:      stage.ID,
 		AssigneeID:   issue.AssigneeID,
@@ -362,7 +413,7 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 	// check if we need to create a new external approval
 	// 1. has one or more PENDING_APPROVAL tasks.
 	// 2. all task checks are done and the results have no errors.
-	ok, err := r.shouldCreateExternalApproval(issue, stage, oldApproval)
+	ok, err := r.shouldCreateExternalApproval(ctx, issue, stage, oldApproval)
 	if err != nil {
 		log.Error("failed to check shouldCreateExternalApproval", zap.Error(err))
 		return
