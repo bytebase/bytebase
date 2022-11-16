@@ -194,7 +194,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 				AppID:     settingValue.AppID,
 				AppSecret: settingValue.AppSecret,
 			},
-			settingValue.ExternalApproval.ApprovalCode,
+			settingValue.ExternalApproval.ApprovalDefinitionID,
 			payload.InstanceCode,
 			payload.RequesterID,
 		); err != nil {
@@ -243,7 +243,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 			AppID:     value.AppID,
 			AppSecret: value.AppSecret,
 		},
-		value.ExternalApproval.ApprovalCode,
+		value.ExternalApproval.ApprovalDefinitionID,
 		payload.InstanceCode,
 		payload.RequesterID,
 	)
@@ -336,7 +336,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 			Link:     fmt.Sprintf("%s/issue/%s", r.activityManager.s.profile.ExternalURL, api.IssueSlug(issue)),
 			TaskList: taskList,
 		},
-		settingValue.ExternalApproval.ApprovalCode,
+		settingValue.ExternalApproval.ApprovalDefinitionID,
 		users[issue.Creator.Email],
 		users[issue.Assignee.Email])
 	if err != nil {
@@ -389,7 +389,7 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 		return
 	}
 
-	if settingValue.ExternalApproval.ApprovalCode == "" {
+	if settingValue.ExternalApproval.ApprovalDefinitionID == "" {
 		log.Error("no approval code", zap.Any("settingValue", settingValue))
 		return
 	}

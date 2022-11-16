@@ -83,7 +83,7 @@ type SettingAppIMValue struct {
 	AppID            string `json:"appId"`
 	AppSecret        string `json:"appSecret"`
 	ExternalApproval struct {
-		Enabled      bool `json:"enabled"`
-		ApprovalCode string
+		Enabled              bool   `json:"enabled"`
+		ApprovalDefinitionID string `json:"approvalDefinitionID"`
 	} `json:"externalApproval"`
 }
