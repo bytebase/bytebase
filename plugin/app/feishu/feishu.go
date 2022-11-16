@@ -42,6 +42,11 @@ func NewProvider() *Provider {
 	return &p
 }
 
+// ClearTokenCache clears cached token.
+func (p *Provider) ClearTokenCache() {
+	p.Token.Store("")
+}
+
 // TokenCtx is the token context to access feishu APIs.
 type TokenCtx struct {
 	AppID     string
