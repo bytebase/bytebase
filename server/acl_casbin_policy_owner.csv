@@ -54,6 +54,7 @@ p, OWNER, /database/{databaseID}/table/{tableName}, GET
 p, OWNER, /database/{databaseID}/view, GET
 p, OWNER, /database/{databaseID}/extension, GET
 p, OWNER, /database/{databaseID}/schema, GET
+p, OWNER, /database/{databaseID}/edit, POST
 p, OWNER, /database/{databaseID}/backup, GET
 p, OWNER, /database/{databaseID}/backup, POST
 p, OWNER, /database/{databaseID}/backup-setting, GET
