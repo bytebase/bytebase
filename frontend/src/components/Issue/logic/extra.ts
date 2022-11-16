@@ -70,7 +70,6 @@ export const useExtraIssueLogic = () => {
         return true;
       }
 
-      //
       if (
         hasWorkspacePermission(
           "bb.permission.workspace.manage-issue",
