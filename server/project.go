@@ -235,7 +235,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if repositoryCreate.BranchFilter == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Branch must be specified.")
 		}
-		if strings.Contains(repositoryCreate.BranchFilter, "*") && repositoryCreate.SchemaPathTemplate != "" {
+
+		hasWildcard := strings.Contains(repositoryCreate.BranchFilter, "*")
+		if hasWildcard && repositoryCreate.SchemaPathTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
 		}
 
@@ -269,17 +271,19 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
-		// Make sure the branch exists in the repo.
-		if _, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repositoryCreate.AccessToken,
-				RefreshToken: repositoryCreate.RefreshToken,
-				Refresher:    nil,
-			},
-			vcs.InstanceURL, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); common.ErrorCode(err) == common.NotFound {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
+		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
+		if !hasWildcard {
+			if _, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repositoryCreate.AccessToken,
+					RefreshToken: repositoryCreate.RefreshToken,
+					Refresher:    nil,
+				},
+				vcs.InstanceURL, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); common.ErrorCode(err) == common.NotFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
+			}
 		}
 
 		// For a particular VCS repo, all Bytebase projects share the same webhook.
