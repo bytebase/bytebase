@@ -383,7 +383,7 @@
     },
     "im-integration": {
       "enable": "Enable",
-      "description": "Users can receive and update issues through the IM integration.",
+      "description": "Allow users to approve issues from IM directly.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "general": {
