@@ -21,8 +21,8 @@ import type {
   TaskStatus,
   TaskStatusPatch,
 } from "@/types";
+import type { InputField, OutputField } from "@/plugins";
 import { useIssueLogic } from "./index";
-import { InputField, OutputField } from "@/plugins";
 import { hasWorkspacePermission } from "@/utils";
 
 export const useExtraIssueLogic = () => {
