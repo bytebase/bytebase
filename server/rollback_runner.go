@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -16,7 +17,8 @@ import (
 )
 
 var (
-	generateRollbackSQLChan = make(chan *api.Task, 100)
+	generateRollbackSQLSignal = make(chan struct{}, 1)
+	generateRollbackSQLPool   sync.Pool
 )
 
 // NewRollbackRunner creates a new rollback runner.
@@ -41,8 +43,18 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	r.retryGenerateRollbackSQL(ctx)
 	for {
 		select {
-		case task := <-generateRollbackSQLChan:
-			r.generateRollbackSQL(ctx, task)
+		case <-generateRollbackSQLSignal:
+			log.Debug("Received signal for generating rollback SQL.")
+			for {
+				item := generateRollbackSQLPool.Get()
+				log.Debug("Got item from pool", zap.Any("item", item))
+				if item == nil {
+					break
+				}
+				task := item.(*api.Task)
+				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
+				r.generateRollbackSQL(ctx, task)
+			}
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
@@ -62,11 +74,11 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 		log.Error("Failed to get running DML tasks", zap.Error(err))
 		return
 	}
-	go func() {
-		for _, task := range taskList {
-			generateRollbackSQLChan <- task
-		}
-	}()
+	for _, task := range taskList {
+		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
+		generateRollbackSQLPool.Put(task)
+	}
+	generateRollbackSQLSignal <- struct{}{}
 }
 
 func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task) {
@@ -108,7 +120,7 @@ func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
 		return
 	}
-	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
+	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID), zap.String("rollbackSQL", rollbackSQL))
 }
 
 func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {

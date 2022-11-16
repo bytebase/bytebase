@@ -170,9 +170,13 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
-		go func() {
-			generateRollbackSQLChan <- updatedTask
-		}()
+		task = updatedTask
+		generateRollbackSQLPool.Put(task)
+		select {
+		case generateRollbackSQLSignal <- struct{}{}:
+			log.Debug("Send signal for generating rollback SQL.")
+		default:
+		}
 	}
 
 	return migrationID, schema, nil
