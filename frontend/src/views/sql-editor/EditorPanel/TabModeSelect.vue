@@ -48,11 +48,12 @@ const tabModeOptions = computed((): SelectOption[] => {
 
 const renderLabel = (option: SelectOption) => {
   const icon = option.value === TabMode.Admin ? WrenchIcon : LockIcon;
-  const color = option.value === TabMode.Admin ? "text-error" : "text-main";
+  const color =
+    option.value === TabMode.Admin ? "admin text-error" : "read-only text-main";
   return h(
     "span",
     {
-      class: ["flex items-center gap-x-1", color],
+      class: ["tab-mode-select-label flex items-center gap-x-1", color],
     },
     [h(icon, { class: "h-4 w-4" }), h("span", {}, String(option.label))]
   );
@@ -62,3 +63,9 @@ const onUpdate = () => {
   tabStore.currentTab.isSaved = false;
 };
 </script>
+
+<style>
+.tab-mode-select-label.admin + .n-base-select-option__check {
+  @apply text-error;
+}
+</style>
