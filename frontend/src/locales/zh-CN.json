@@ -382,6 +382,8 @@
       "system-bot": "机器人助手"
     },
     "im-integration": {
+      "enable": "启用",
+      "description": "用户可以通过集成 IM 应用来接受以及更新工单。",
       "feishu-updated-tip": "飞书配置更新成功"
     },
     "general": {

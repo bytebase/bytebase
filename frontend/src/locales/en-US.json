@@ -382,6 +382,8 @@
       "system-bot": "System Bot"
     },
     "im-integration": {
+      "enable": "Enable",
+      "description": "Users can receive and update issues through the IM integration.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "general": {

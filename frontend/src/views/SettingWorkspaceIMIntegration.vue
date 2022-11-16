@@ -1,5 +1,16 @@
 <template>
   <div class="w-full mt-4 space-y-4">
+    <div class="textinfolabel">
+      {{ $t("settings.im-integration.description") }}
+      <a
+        class="normal-link inline-flex items-center"
+        href="https://www.bytebase.com/docs/administration/webhook-integration/external-approval?source=console"
+        target="__BLANK"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+      </a>
+    </div>
     <div class="w-full flex flex-col justify-start items-start space-y-2">
       <div class="w-full flex flex-row justify-start items-center">
         <div class="flex flex-row justify-start items-center">
@@ -8,6 +19,7 @@
             $t("common.feishu")
           }}</span>
           <heroicons-solid:sparkles class="ml-2 w-5 h-auto text-accent" />
+          <BBBetaBadge class="ml-2" />
         </div>
         <button
           v-if="!state.feishuSetting"
@@ -39,20 +51,25 @@
         <div
           class="!mt-4 !mb-2 w-128 max-w-full flex flex-row justify-start items-center"
         >
-          <span class="textlabel mr-4">Enable</span>
+          <span class="textlabel mr-4">{{
+            $t("settings.im-integration.enable")
+          }}</span>
           <BBSwitch
             :value="state.feishuSetting.externalApproval.enabled"
             @toggle="onFeishuIntegrationEnableToggle"
           />
         </div>
-        <button
-          type="button"
-          class="btn-primary inline-flex justify-center py-2 px-4 mt-4"
-          :disabled="!allowFeishuActionButton"
-          @click.prevent="updateFeishuIntegration"
-        >
-          {{ feishuActionButtonText }}
-        </button>
+        <div class="flex flex-row justify-center">
+          <button
+            type="button"
+            class="btn-primary inline-flex justify-center py-2 px-4"
+            :disabled="!allowFeishuActionButton || state.isLoading"
+            @click.prevent="updateFeishuIntegration"
+          >
+            {{ feishuActionButtonText }}
+          </button>
+          <BBSpin v-if="state.isLoading" class="ml-1" />
+        </div>
       </div>
     </div>
   </div>
@@ -67,20 +84,22 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingStore } from "@/store";
 import { SettingAppIMValue } from "@/types/setting";
-import { useI18n } from "vue-i18n";
-import { BBSwitch } from "@/bbkit";
+import { BBBetaBadge, BBSwitch } from "@/bbkit";
 
 interface LocalState {
   originFeishuSetting?: SettingAppIMValue;
   feishuSetting?: SettingAppIMValue;
   showFeatureModal: boolean;
+  isLoading: boolean;
 }
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
   showFeatureModal: false,
+  isLoading: false,
 });
 const settingStore = useSettingStore();
 const hasIMApprovalFeature = featureToRef("bb.feature.im.approval");
@@ -125,7 +144,7 @@ const createFeishuIntegration = () => {
     appId: "",
     appSecret: "",
     externalApproval: {
-      enabled: false,
+      enabled: true,
     },
   };
 };
@@ -136,11 +155,13 @@ const updateFeishuIntegration = async () => {
     return;
   }
 
+  state.isLoading = true;
   await settingStore.updateSettingByName({
     name: "bb.app.im",
     value: JSON.stringify(state.feishuSetting),
   });
   state.originFeishuSetting = cloneDeep(state.feishuSetting);
+  state.isLoading = false;
 
   pushNotification({
     module: "bytebase",
