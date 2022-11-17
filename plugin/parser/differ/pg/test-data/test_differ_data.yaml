@@ -10,12 +10,12 @@
         id serial PRIMARY KEY
     );
   diff: |
-    CREATE TABLE public.users (
-        id serial PRIMARY KEY,
-        username TEXT NOT NULL
+    CREATE TABLE "public"."users" (
+        "id" serial PRIMARY KEY,
+        "username" text NOT NULL
     );
-    CREATE TABLE public.repositories (
-        id serial PRIMARY KEY
+    CREATE TABLE "public"."repositories" (
+        "id" serial PRIMARY KEY
     );
 - oldSchema: CREATE TABLE public.t1(a int, b char(20), c int);
   newSchema: CREATE TABLE public.t1(a int);
@@ -33,22 +33,28 @@
   newSchema: create table public.t1(a varchar(20), b serial, c bigint, d char(30))
   diff: |
     ALTER TABLE "public"."t1"
-        ALTER COLUMN "a" SET DATA TYPE character varying(20),
-        ALTER COLUMN "b" SET DATA TYPE serial,
-        ALTER COLUMN "c" SET DATA TYPE bigint,
         ADD COLUMN "d" character(30);
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "a" SET DATA TYPE character varying(20);
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "b" SET DATA TYPE serial;
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "c" SET DATA TYPE bigint;
 - oldSchema: create table public.t1(a int, b int NOT NULL)
   newSchema: create table public.t1(a int NOT NULL, b int)
   diff: |
     ALTER TABLE "public"."t1"
-        ALTER COLUMN "a" SET NOT NULL,
+        ALTER COLUMN "a" SET NOT NULL;
+    ALTER TABLE "public"."t1"
         ALTER COLUMN "b" DROP NOT NULL;
 - oldSchema: create table public.t1(a int, b int DEFAULT 1+2, c int DEFAULT 1)
   newSchema: create table public.t1(a int DEFAULT 1, b int, c int DEFAULT 1+2+3+4)
   diff: |
     ALTER TABLE "public"."t1"
-        ALTER COLUMN "a" SET DEFAULT 1,
-        ALTER COLUMN "b" DROP DEFAULT,
+        ALTER COLUMN "a" SET DEFAULT 1;
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "b" DROP DEFAULT;
+    ALTER TABLE "public"."t1"
         ALTER COLUMN "c" SET DEFAULT ((1 + 2) + 3) + 4;
 - oldSchema: |
     create schema s1;
@@ -65,11 +71,16 @@
     create table s2.t2(a int);
     create table s2.t3(a int);
   diff: |
-    create table s1.t3(a int, b int);
-    create table s2.t2(a int);
     ALTER TABLE "s1"."t2"
         DROP COLUMN "b";
     DROP TABLE IF EXISTS "s1"."t1", "s2"."t4" CASCADE;
+    CREATE TABLE "s1"."t3" (
+        "a" integer,
+        "b" integer
+    );
+    CREATE TABLE "s2"."t2" (
+        "a" integer
+    );
 - oldSchema: |
     create table public.t1(
       a int,
@@ -87,9 +98,10 @@
   diff: |
     ALTER TABLE "public"."t1"
         DROP CONSTRAINT "check_b",
-        ADD CONSTRAINT "check_b" CHECK (b > a),
-        ADD CONSTRAINT "check_c" CHECK (a > 1),
         DROP CONSTRAINT "check_a";
+    ALTER TABLE "public"."t1"
+        ADD CONSTRAINT "check_b" CHECK (b > a),
+        ADD CONSTRAINT "check_c" CHECK (a > 1);
 - oldSchema: |
     create table public.t1(
       a int,
@@ -112,7 +124,7 @@
     CREATE INDEX idx2 ON public.t1 USING btree (a);
     CREATE INDEX idx3 ON public.t1 USING btree (a, b);
   diff: |
-    CREATE INDEX "idx3" ON "public"."t1" USING btree (a, b);
-    DROP INDEX IF EXISTS "public"."idx2" CASCADE;
-    CREATE INDEX "idx2" ON "public"."t1" USING btree (a);
+    DROP INDEX "public"."idx2";
     DROP INDEX IF EXISTS "public"."idx1" CASCADE;
+    CREATE INDEX "idx2" ON "public"."t1" USING btree (a);
+    CREATE INDEX "idx3" ON "public"."t1" USING btree (a, b);

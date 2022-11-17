@@ -25,13 +25,25 @@ func init() {
 type SchemaDiffer struct {
 }
 
+// diffNode defines different modification types as the safe change order.
+// The safe change order means we can change them with no dependency conflicts as this order.
 type diffNode struct {
-	newSchemaList   []*ast.CreateSchemaStmt
-	newTableList    []*ast.CreateTableStmt
-	modifyTableList []ast.Node
-	newIndexList    []*ast.CreateIndexStmt
-	modifyIndexList []ast.Node
-	dropNodeList    []ast.Node
+	// Drop nodes
+	dropForeignKeyList         []ast.Node
+	dropConstraintExceptFkList []ast.Node
+	dropIndexList              []ast.Node
+	dropColumnList             []ast.Node
+	dropTableList              []ast.Node
+	dropSchemaList             []ast.Node
+
+	// Create nodes
+	createSchemaList             []ast.Node
+	createTableList              []ast.Node
+	createColumnList             []ast.Node
+	alterColumnList              []ast.Node
+	createIndexList              []ast.Node
+	createConstraintExceptFkList []ast.Node
+	createForeignKeyList         []ast.Node
 }
 
 type schemaMap map[string]*schemaInfo
@@ -216,7 +228,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			oldTable := oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
 			// Add the new table.
 			if oldTable == nil {
-				diff.newTableList = append(diff.newTableList, stmt)
+				diff.createTableList = append(diff.createTableList, stmt)
 				continue
 			}
 			oldTable.existsInNew = true
@@ -227,14 +239,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		case *ast.CreateSchemaStmt:
 			schema, hasSchema := oldSchemaMap[stmt.Name]
 			if !hasSchema {
-				diff.newSchemaList = append(diff.newSchemaList, stmt)
+				diff.createSchemaList = append(diff.createSchemaList, stmt)
 				continue
 			}
 			schema.existsInNew = true
 		case *ast.AlterTableStmt:
-			alterTableStmt := &ast.AlterTableStmt{
-				Table: stmt.Table,
-			}
 			for _, alterItem := range stmt.AlterItemList {
 				switch item := alterItem.(type) {
 				case *ast.AddConstraintStmt:
@@ -242,24 +251,20 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion:
 						oldConstraint := oldSchemaMap.getConstraint(item.Table.Schema, item.Table.Name, item.Constraint.Name)
 						if oldConstraint == nil {
-							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, item)
+							diff.appendAddConstraint(stmt.Table, []*ast.ConstraintDef{item.Constraint})
 							continue
 						}
 
 						oldConstraint.existsInNew = true
-						if oldConstraint.addConstraint.Table.Name != item.Table.Name {
-							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
-								Table:    alterTableStmt.Table,
-								IfExists: true,
-							})
-							alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
-								Table:      alterTableStmt.Table,
-								Constraint: item.Constraint,
-							})
-							continue
-						}
-						if err := diff.modifyConstraint(alterTableStmt, oldConstraint.addConstraint.Constraint, item.Constraint); err != nil {
+						nameEqual := oldConstraint.addConstraint.Table.Name == item.Table.Name
+						equal, err := isEqualConstraint(oldConstraint.addConstraint.Constraint, item.Constraint)
+						if err != nil {
 							return "", err
+						}
+						if !nameEqual || !equal {
+							diff.appendDropConstraint(stmt.Table, []*ast.ConstraintDef{oldConstraint.addConstraint.Constraint})
+							diff.appendAddConstraint(stmt.Table, []*ast.ConstraintDef{item.Constraint})
+							continue
 						}
 					default:
 						return "", errors.Errorf("unsupported constraint type %d", item.Constraint.Type)
@@ -268,14 +273,11 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 					return "", errors.Errorf("unsupported alter table item type %T", item)
 				}
 			}
-			if len(alterTableStmt.AlterItemList) > 0 {
-				diff.modifyTableList = append(diff.modifyTableList, alterTableStmt)
-			}
 		case *ast.CreateIndexStmt:
 			oldIndex := oldSchemaMap.getIndex(stmt.Index.Table.Schema, stmt.Index.Name)
 			// Add the new index.
 			if oldIndex == nil {
-				diff.newIndexList = append(diff.newIndexList, stmt)
+				diff.createIndexList = append(diff.createIndexList, stmt)
 				continue
 			}
 			oldIndex.existsInNew = true
@@ -296,38 +298,95 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	return diff.deparse()
 }
 
+func (diff *diffNode) appendDropConstraint(table *ast.TableDef, constraintList []*ast.ConstraintDef) {
+	dropConstraintExceptFkStmt := &ast.AlterTableStmt{Table: table}
+	dropForeignStmt := &ast.AlterTableStmt{Table: table}
+
+	for _, constraint := range constraintList {
+		if constraint == nil {
+			continue
+		}
+
+		dropStmt := &ast.DropConstraintStmt{
+			Table:          table,
+			ConstraintName: constraint.Name,
+		}
+
+		if constraint.Type == ast.ConstraintTypeForeign {
+			dropForeignStmt.AlterItemList = append(dropForeignStmt.AlterItemList, dropStmt)
+		} else {
+			dropConstraintExceptFkStmt.AlterItemList = append(dropConstraintExceptFkStmt.AlterItemList, dropStmt)
+		}
+	}
+
+	if len(dropConstraintExceptFkStmt.AlterItemList) > 0 {
+		diff.dropForeignKeyList = append(diff.dropForeignKeyList, dropConstraintExceptFkStmt)
+	}
+	if len(dropForeignStmt.AlterItemList) > 0 {
+		diff.dropConstraintExceptFkList = append(diff.dropConstraintExceptFkList, dropForeignStmt)
+	}
+}
+
+func (diff *diffNode) appendAddConstraint(table *ast.TableDef, constraintList []*ast.ConstraintDef) {
+	addConstraintExceptFkStmt := &ast.AlterTableStmt{Table: table}
+	addForeignStmt := &ast.AlterTableStmt{Table: table}
+
+	for _, constraint := range constraintList {
+		if constraint == nil {
+			continue
+		}
+
+		addStmt := &ast.AddConstraintStmt{
+			Table:      table,
+			Constraint: constraint,
+		}
+
+		if constraint.Type == ast.ConstraintTypeForeign {
+			addForeignStmt.AlterItemList = append(addForeignStmt.AlterItemList, addStmt)
+		} else {
+			addConstraintExceptFkStmt.AlterItemList = append(addConstraintExceptFkStmt.AlterItemList, addStmt)
+		}
+	}
+
+	if len(addConstraintExceptFkStmt.AlterItemList) > 0 {
+		diff.createConstraintExceptFkList = append(diff.createConstraintExceptFkList, addConstraintExceptFkStmt)
+	}
+	if len(addForeignStmt.AlterItemList) > 0 {
+		diff.createForeignKeyList = append(diff.createForeignKeyList, addForeignStmt)
+	}
+}
+
 func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 	// Drop the remaining old schema.
 	if dropSchemaStmt := dropSchema(oldSchemaMap); dropSchemaStmt != nil {
-		diff.dropNodeList = append(diff.dropNodeList, dropSchemaStmt)
+		diff.dropSchemaList = append(diff.dropSchemaList, dropSchemaStmt)
 	}
 
 	// Drop the remaining old table.
 	if dropTableStmt := dropTable(oldSchemaMap); dropTableStmt != nil {
-		diff.dropNodeList = append(diff.dropNodeList, dropTableStmt)
+		diff.dropTableList = append(diff.dropTableList, dropTableStmt)
 	}
 
 	// Drop the remaining old constraints.
-	dropConstraintStmtList := dropConstraint(oldSchemaMap)
-	for _, dropConstraintStmt := range dropConstraintStmtList {
-		diff.dropNodeList = append(diff.dropNodeList, dropConstraintStmt)
-	}
+	diff.dropConstraint(oldSchemaMap)
 
 	// Drop the remaining old index.
 	if dropIndexStmt := dropIndex(oldSchemaMap); dropIndexStmt != nil {
-		diff.dropNodeList = append(diff.dropNodeList, dropIndexStmt)
+		diff.dropIndexList = append(diff.dropIndexList, dropIndexStmt)
 	}
 
 	return nil
 }
 
-func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
+func (diff *diffNode) modifyTableByColumn(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
 	tableName := oldTable.Name
-	alterTableStmt := &ast.AlterTableStmt{
+	addColumn := &ast.AlterTableStmt{
+		Table: tableName,
+	}
+	dropColumn := &ast.AlterTableStmt{
 		Table: tableName,
 	}
 
-	// Modify table for columns.
 	oldColumnMap := make(map[string]*ast.ColumnDef)
 	for _, column := range oldTable.ColumnList {
 		oldColumnMap[column.ColumnName] = column
@@ -337,14 +396,14 @@ func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.C
 		oldColumn, exists := oldColumnMap[newColumn.ColumnName]
 		// Add the new column.
 		if !exists {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddColumnListStmt{
+			addColumn.AlterItemList = append(addColumn.AlterItemList, &ast.AddColumnListStmt{
 				Table:      tableName,
 				ColumnList: []*ast.ColumnDef{newColumn},
 			})
 			continue
 		}
 		// Modify the column.
-		if err := diff.modifyColumn(alterTableStmt, oldColumn, newColumn); err != nil {
+		if err := diff.modifyColumn(tableName, oldColumn, newColumn); err != nil {
 			return err
 		}
 		delete(oldColumnMap, oldColumn.ColumnName)
@@ -352,12 +411,26 @@ func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.C
 
 	for _, oldColumn := range oldTable.ColumnList {
 		if _, exists := oldColumnMap[oldColumn.ColumnName]; exists {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropColumnStmt{
-				Table:      alterTableStmt.Table,
+			dropColumn.AlterItemList = append(dropColumn.AlterItemList, &ast.DropColumnStmt{
+				Table:      tableName,
 				ColumnName: oldColumn.ColumnName,
 			})
 		}
 	}
+
+	if len(addColumn.AlterItemList) > 0 {
+		diff.createColumnList = append(diff.createColumnList, addColumn)
+	}
+	if len(dropColumn.AlterItemList) > 0 {
+		diff.dropColumnList = append(diff.dropColumnList, dropColumn)
+	}
+	return nil
+}
+
+func (diff *diffNode) modifyTableByConstraint(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
+	tableName := oldTable.Name
+	var addConstraintList []*ast.ConstraintDef
+	var dropConstraintList []*ast.ConstraintDef
 
 	// Modify table for constraints.
 	oldConstraintMap := make(map[string]*ast.ConstraintDef)
@@ -368,91 +441,74 @@ func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.C
 		oldConstraint, exists := oldConstraintMap[newConstraint.Name]
 		// Add the new constraint.
 		if !exists {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
-				Table:      tableName,
-				Constraint: newConstraint,
-			})
+			addConstraintList = append(addConstraintList, newConstraint)
 			continue
 		}
-		if err := diff.modifyConstraint(alterTableStmt, oldConstraint, newConstraint); err != nil {
+
+		isEqual, err := isEqualConstraint(oldConstraint, newConstraint)
+		if err != nil {
 			return err
+		}
+		if !isEqual {
+			dropConstraintList = append(dropConstraintList, oldConstraint)
+			addConstraintList = append(addConstraintList, newConstraint)
 		}
 		delete(oldConstraintMap, oldConstraint.Name)
 	}
 
 	for _, oldConstraint := range oldTable.ConstraintList {
 		if _, exists := oldConstraintMap[oldConstraint.Name]; exists {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
-				Table:          alterTableStmt.Table,
-				ConstraintName: oldConstraint.Name,
-			})
+			dropConstraintList = append(dropConstraintList, oldConstraint)
 		}
 	}
 
-	if len(alterTableStmt.AlterItemList) > 0 {
-		diff.modifyTableList = append(diff.modifyTableList, alterTableStmt)
-	}
-
+	diff.appendAddConstraint(tableName, addConstraintList)
+	diff.appendDropConstraint(tableName, dropConstraintList)
 	return nil
 }
 
-func (*diffNode) modifyConstraint(alterTableStmt *ast.AlterTableStmt, oldConstraint *ast.ConstraintDef, newConstraint *ast.ConstraintDef) error {
-	constraintName := oldConstraint.Name
+func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
+	if err := diff.modifyTableByColumn(oldTable, newTable); err != nil {
+		return err
+	}
 
+	return diff.modifyTableByConstraint(oldTable, newTable)
+}
+
+func isEqualConstraint(oldConstraint *ast.ConstraintDef, newConstraint *ast.ConstraintDef) (bool, error) {
 	if oldConstraint.Type != newConstraint.Type {
-		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
-			Table:          alterTableStmt.Table,
-			ConstraintName: constraintName,
-		})
-		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
-			Table:      alterTableStmt.Table,
-			Constraint: newConstraint,
-		})
-		return nil
+		return false, nil
 	}
 
 	switch newConstraint.Type {
 	case ast.ConstraintTypeCheck:
 		if newConstraint.Expression.Text() != oldConstraint.Expression.Text() {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
-				Table:          alterTableStmt.Table,
-				ConstraintName: constraintName,
-			})
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
-				Table:      alterTableStmt.Table,
-				Constraint: newConstraint,
-			})
-			return nil
+			return false, nil
 		}
 	case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion:
 		// TODO(zp): To make the logic simple now, we just restore the statement, and drop and create the new one if
 		// there is any difference.
 		oldAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, oldConstraint)
 		if err != nil {
-			return errors.Wrapf(err, "failed to deparse old alter table constraintDef: %v", oldConstraint)
+			return false, errors.Wrapf(err, "failed to deparse old alter table constraintDef: %v", oldConstraint)
 		}
 		newAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, newConstraint)
 		if err != nil {
-			return errors.Wrapf(err, "failed to deparse new alter table constraintDef: %v", newConstraint)
+			return false, errors.Wrapf(err, "failed to deparse new alter table constraintDef: %v", newConstraint)
 		}
 		if oldAlterTableAddConstraint != newAlterTableAddConstraint {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropConstraintStmt{
-				Table:          alterTableStmt.Table,
-				ConstraintName: constraintName,
-				IfExists:       true,
-			})
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AddConstraintStmt{
-				Table:      alterTableStmt.Table,
-				Constraint: newConstraint,
-			})
+			return false, nil
 		}
 	default:
-		return errors.Errorf("Unsupported table constraint type: %d for modifyConstraint", newConstraint.Type)
+		return false, errors.Errorf("Unsupported table constraint type: %d for modifyConstraint", newConstraint.Type)
 	}
-	return nil
+	return true, nil
 }
 
-func (*diffNode) modifyColumn(alterTableStmt *ast.AlterTableStmt, oldColumn *ast.ColumnDef, newColumn *ast.ColumnDef) error {
+func (diff *diffNode) modifyColumn(tableName *ast.TableDef, oldColumn *ast.ColumnDef, newColumn *ast.ColumnDef) error {
+	alterTableStmt := &ast.AlterTableStmt{
+		Table: tableName,
+	}
 	columnName := oldColumn.ColumnName
 	// compare the data type
 	equivalent, err := equivalentType(oldColumn.Type, newColumn.Type)
@@ -461,7 +517,7 @@ func (*diffNode) modifyColumn(alterTableStmt *ast.AlterTableStmt, oldColumn *ast
 	}
 	if !equivalent {
 		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AlterColumnTypeStmt{
-			Table:      alterTableStmt.Table,
+			Table:      tableName,
 			ColumnName: columnName,
 			Type:       newColumn.Type,
 		})
@@ -503,15 +559,16 @@ func (*diffNode) modifyColumn(alterTableStmt *ast.AlterTableStmt, oldColumn *ast
 	}
 
 	// TODO(rebelice): compare other column properties
+	if len(alterTableStmt.AlterItemList) > 0 {
+		diff.alterColumnList = append(diff.alterColumnList, alterTableStmt)
+	}
 	return nil
 }
 
 func (diff *diffNode) modifyIndex(oldIndex *ast.CreateIndexStmt, newIndex *ast.CreateIndexStmt) error {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldIndex.Text() != newIndex.Text() {
-		diff.modifyIndexList = append(diff.modifyIndexList, &ast.DropIndexStmt{
-			IfExists: true,
-			Behavior: ast.DropBehaviorCascade,
+		diff.dropIndexList = append(diff.dropIndexList, &ast.DropIndexStmt{
 			IndexList: []*ast.IndexDef{
 				{
 					Table: &ast.TableDef{Schema: oldIndex.Index.Table.Schema},
@@ -519,7 +576,7 @@ func (diff *diffNode) modifyIndex(oldIndex *ast.CreateIndexStmt, newIndex *ast.C
 				},
 			},
 		})
-		diff.modifyIndexList = append(diff.modifyIndexList, newIndex)
+		diff.createIndexList = append(diff.createIndexList, newIndex)
 	}
 	return nil
 }
@@ -554,72 +611,72 @@ func equivalentType(typeA ast.DataType, typeB ast.DataType) (bool, error) {
 	return typeStringA == typeStringB, nil
 }
 
+func printStmtSlice(buf io.Writer, nodeList []ast.Node) error {
+	for _, node := range nodeList {
+		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, node)
+		if err != nil {
+			return err
+		}
+		if err := writeStringWithNewLine(buf, sql); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// deparse statements as the safe change order.
 func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
-	for _, newSchema := range diff.newSchemaList {
-		newSchema.IfNotExists = true
-		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, newSchema)
-		if err != nil {
-			return "", err
-		}
-		if err := writeStringWithNewLine(&buf, sql); err != nil {
-			return "", err
-		}
+
+	// drop
+	if err := printStmtSlice(&buf, diff.dropForeignKeyList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.dropConstraintExceptFkList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.dropIndexList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.dropColumnList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.dropTableList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.dropSchemaList); err != nil {
+		return "", err
 	}
 
-	for _, newTable := range diff.newTableList {
-		if err := writeStringWithNewLine(&buf, newTable.Text()); err != nil {
-			return "", err
-		}
+	// create
+	if err := printStmtSlice(&buf, diff.createSchemaList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.createTableList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.createColumnList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.alterColumnList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.createIndexList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.createConstraintExceptFkList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.createForeignKeyList); err != nil {
+		return "", err
 	}
 
-	for _, modifyTable := range diff.modifyTableList {
-		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, modifyTable)
-		if err != nil {
-			return "", err
-		}
-		if err := writeStringWithNewLine(&buf, sql); err != nil {
-			return "", err
-		}
-	}
-
-	for _, newIndex := range diff.newIndexList {
-		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, newIndex)
-		if err != nil {
-			return "", err
-		}
-		if err := writeStringWithNewLine(&buf, sql); err != nil {
-			return "", err
-		}
-	}
-
-	for _, modifyIndex := range diff.modifyIndexList {
-		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, modifyIndex)
-		if err != nil {
-			return "", err
-		}
-		if err := writeStringWithNewLine(&buf, sql); err != nil {
-			return "", err
-		}
-	}
-
-	// Deparse the drop node in reverse order.
-	for i := len(diff.dropNodeList) - 1; i >= 0; i-- {
-		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, diff.dropNodeList[i])
-		if err != nil {
-			return "", err
-		}
-		if err := writeStringWithNewLine(&buf, sql); err != nil {
-			return "", err
-		}
-	}
 	return buf.String(), nil
 }
 
-func dropConstraint(m schemaMap) []*ast.AlterTableStmt {
-	var dropConstraintList []*ast.AlterTableStmt
-	for schemaName, schemaInfo := range m {
-		for tableName, tableInfo := range schemaInfo.tableMap {
+func (diff *diffNode) dropConstraint(m schemaMap) {
+	for _, schemaInfo := range m {
+		for _, tableInfo := range schemaInfo.tableMap {
 			var constraintInfoList []*constraintInfo
 			for _, constraintInfo := range tableInfo.constraintMap {
 				if !constraintInfo.existsInNew {
@@ -629,23 +686,14 @@ func dropConstraint(m schemaMap) []*ast.AlterTableStmt {
 			sort.Slice(constraintInfoList, func(i, j int) bool {
 				return constraintInfoList[i].id < constraintInfoList[j].id
 			})
-			var alterItemList []ast.Node
+			var dropConstraintList []*ast.ConstraintDef
 			for _, constraintInfo := range constraintInfoList {
-				alterItemList = append(alterItemList, &ast.DropConstraintStmt{
-					Table:          &ast.TableDef{Schema: schemaName, Name: tableName},
-					ConstraintName: constraintInfo.addConstraint.Constraint.Name,
-					IfExists:       true,
-				})
+				dropConstraintList = append(dropConstraintList, constraintInfo.addConstraint.Constraint)
 			}
-			if len(alterItemList) > 0 {
-				dropConstraintList = append(dropConstraintList, &ast.AlterTableStmt{
-					Table:         &ast.TableDef{Schema: schemaName, Name: tableName},
-					AlterItemList: alterItemList,
-				})
-			}
+
+			diff.appendDropConstraint(tableInfo.createTable.Name, dropConstraintList)
 		}
 	}
-	return dropConstraintList
 }
 
 func dropTable(m schemaMap) *ast.DropTableStmt {
