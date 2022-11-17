@@ -273,15 +273,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !hasWildcard {
-			if _, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
-				common.OauthContext{
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repositoryCreate.AccessToken,
-					RefreshToken: repositoryCreate.RefreshToken,
-					Refresher:    nil,
-				},
-				vcs.InstanceURL, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); common.ErrorCode(err) == common.NotFound {
+			if isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
 			}
 		}
@@ -509,15 +501,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !hasWildcard {
-			if _, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
-				common.OauthContext{
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    nil,
-				},
-				vcs.InstanceURL, repo.ExternalID, newBranchFilter); common.ErrorCode(err) == common.NotFound {
+			if isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
 			}
 		}
@@ -1248,4 +1232,17 @@ func refreshTokenNoop() common.TokenRefresher {
 	return func(newToken, newRefreshToken string, expiresTs int64) error {
 		return nil
 	}
+}
+
+func isBranchNotFound(ctx context.Context, vcs *api.VCS, accessToken, refreshToken, externalID, branch string) bool {
+	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
+		common.OauthContext{
+			ClientID:     vcs.ApplicationID,
+			ClientSecret: vcs.Secret,
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+			Refresher:    nil,
+		},
+		vcs.InstanceURL, externalID, branch)
+	return common.ErrorCode(err) == common.NotFound
 }
