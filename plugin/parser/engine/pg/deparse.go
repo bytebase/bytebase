@@ -456,6 +456,132 @@ func deparseConstraintDef(_ parser.DeparseContext, in *ast.ConstraintDef, buf *s
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
+	case ast.ConstraintTypeExclusion:
+		if _, err := buf.WriteString("EXCLUDE USING "); err != nil {
+			return err
+		}
+		if err := deparseIndexMethod(in.AccessMethod, buf); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(" ("); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(in.Exclusions); err != nil {
+			return err
+		}
+		if err := buf.WriteByte(')'); err != nil {
+			return err
+		}
+		if in.WhereClause != "" {
+			if _, err := buf.WriteString(" WHERE ("); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString(in.WhereClause); err != nil {
+				return err
+			}
+			if err := buf.WriteByte(')'); err != nil {
+				return err
+			}
+		}
+	case ast.ConstraintTypeForeign:
+		if _, err := buf.WriteString("FOREIGN KEY ("); err != nil {
+			return err
+		}
+		for i, column := range in.KeyList {
+			if i != 0 {
+				if _, err := buf.WriteString(", "); err != nil {
+					return err
+				}
+			}
+			if err := writeSurrounding(buf, column, `"`); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(") REFERENCES "); err != nil {
+			return err
+		}
+		if err := deparseTableDef(parser.DeparseContext{}, in.Foreign.Table, buf); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(" ("); err != nil {
+			return err
+		}
+		for i, column := range in.Foreign.ColumnList {
+			if i != 0 {
+				if _, err := buf.WriteString(", "); err != nil {
+					return err
+				}
+			}
+			if err := writeSurrounding(buf, column, `"`); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+
+		if err := deparseForeignMatchType(parser.DeparseContext{}, in.Foreign.MatchType, buf); err != nil {
+			return err
+		}
+
+		if err := deparseReferentialAction(parser.DeparseContext{}, "ON DELETE", in.Foreign.OnDelete, buf); err != nil {
+			return err
+		}
+
+		if err := deparseReferentialAction(parser.DeparseContext{}, "ON UPDATE", in.Foreign.OnUpdate, buf); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deparseReferentialAction(_ parser.DeparseContext, prefix string, in *ast.ReferentialActionDef, buf *strings.Builder) error {
+	if in.Type == ast.ReferentialActionTypeNoAction {
+		// It's default value, no need to print.
+		return nil
+	}
+	if err := buf.WriteByte(' '); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(prefix); err != nil {
+		return err
+	}
+	if err := buf.WriteByte(' '); err != nil {
+		return err
+	}
+	switch in.Type {
+	case ast.ReferentialActionTypeRestrict:
+		if _, err := buf.WriteString("RESTRICT"); err != nil {
+			return err
+		}
+	case ast.ReferentialActionTypeCascade:
+		if _, err := buf.WriteString("CASCADE"); err != nil {
+			return err
+		}
+	case ast.ReferentialActionTypeSetNull:
+		if _, err := buf.WriteString("SET NULL"); err != nil {
+			return err
+		}
+	case ast.ReferentialActionTypeSetDefault:
+		if _, err := buf.WriteString("SET DEFAULT"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deparseForeignMatchType(_ parser.DeparseContext, in ast.ForeignMatchType, buf *strings.Builder) error {
+	switch in {
+	case ast.ForeignMatchTypeSimple:
+		// It's default value, no need to print.
+	case ast.ForeignMatchTypeFull:
+		if _, err := buf.WriteString(" MATCH FULL"); err != nil {
+			return err
+		}
+	case ast.ForeignMatchTypePartial:
+		if _, err := buf.WriteString(" MATCH PARTIAL"); err != nil {
+			return err
+		}
 	}
 	return nil
 }

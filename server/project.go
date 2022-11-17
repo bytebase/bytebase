@@ -107,7 +107,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			for _, project := range projectList {
 				if api.HasActiveProjectMembership(principalID, project) {
 					activeProjectList = append(activeProjectList, project)
-					break
 				}
 			}
 		} else {
@@ -637,14 +636,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
 		}
 
+		// DeploymentConfig is never nil.
 		deploymentConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", id)).SetInternal(err)
-		}
-
-		// We should return empty deployment config when it doesn't exist.
-		if deploymentConfig == nil {
-			deploymentConfig = &api.DeploymentConfig{}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

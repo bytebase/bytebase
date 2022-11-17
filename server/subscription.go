@@ -16,6 +16,8 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	metricAPI "github.com/bytebase/bytebase/metric"
+	"github.com/bytebase/bytebase/plugin/metric"
 )
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
@@ -125,7 +127,21 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			}
 		}
 
+		basePlan := s.subscription.Plan
 		s.subscription = s.loadSubscription(ctx)
+		currentPlan := s.subscription.Plan
+
+		if s.MetricReporter != nil {
+			s.MetricReporter.report(&metric.Metric{
+				Name:  metricAPI.SubscriptionTrialMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"trial_plan":    currentPlan.String(),
+					"from_plan":     basePlan.String(),
+					"lark_notified": false,
+				},
+			})
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &s.subscription); err != nil {

@@ -8,7 +8,7 @@
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
-    "test": "vitest",
+    "test": "vitest run",
     "coverage": "vitest --coverage",
     "copy-sql-review-file": "sh ./scripts/copy_sql_review_files.sh"
   },
@@ -25,6 +25,7 @@
     "bootstrap": "5.2.2",
     "canvas-confetti": "1.6.0",
     "dayjs": "1.11.6",
+    "deep-object-diff": "^1.1.9",
     "dompurify": "2.4.0",
     "downloadjs": "1.4.7",
     "escape-string-regexp": "5.0.0",

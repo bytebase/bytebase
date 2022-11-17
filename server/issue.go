@@ -15,9 +15,11 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -542,7 +544,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
-					Name:          "Restore backup",
+					Name:          instance.Environment.Name,
 					EnvironmentID: instance.EnvironmentID,
 					TaskList:      taskCreateList,
 					// TODO(zp): Find a common way to merge taskCreateList and TaskIndexDAGList.
@@ -561,7 +563,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		Name: fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
 		StageList: []api.StageCreate{
 			{
-				Name:          "Create database",
+				Name:          instance.Environment.Name,
 				EnvironmentID: instance.EnvironmentID,
 				TaskList:      taskCreateList,
 			},
@@ -598,7 +600,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		Name: "Database Point-in-time Recovery pipeline",
 		StageList: []api.StageCreate{
 			{
-				Name:             "PITR",
+				Name:             database.Instance.Environment.Name,
 				EnvironmentID:    database.Instance.Environment.ID,
 				TaskList:         taskCreateList,
 				TaskIndexDAGList: taskIndexDAGList,
@@ -894,7 +896,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 	var payloadString string
 	switch d.MigrationType {
 	case db.Baseline:
-		taskName = fmt.Sprintf("Establish %q baseline", database.Name)
+		taskName = fmt.Sprintf("Establish baseline for database %q", database.Name)
 		taskType = api.TaskDatabaseSchemaBaseline
 		payload := api.TaskDatabaseSchemaBaselinePayload{
 			Statement:     d.Statement,
@@ -907,7 +909,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.Migrate:
-		taskName = fmt.Sprintf("DDL(schema) for %q", database.Name)
+		taskName = fmt.Sprintf("DDL(schema) for database %q", database.Name)
 		taskType = api.TaskDatabaseSchemaUpdate
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			Statement:     d.Statement,
@@ -920,7 +922,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.MigrateSDL:
-		taskName = fmt.Sprintf("SDL for %q", database.Name)
+		taskName = fmt.Sprintf("SDL for database %q", database.Name)
 		taskType = api.TaskDatabaseSchemaUpdateSDL
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			Statement:     d.Statement,
@@ -933,7 +935,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.Data:
-		taskName = fmt.Sprintf("DML(data) for %q", database.Name)
+		taskName = fmt.Sprintf("DML(data) for database %q", database.Name)
 		taskType = api.TaskDatabaseDataUpdate
 		payload := api.TaskDatabaseDataUpdatePayload{
 			Statement:     d.Statement,
@@ -1129,7 +1131,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update gh-ost sync payload, error: %v", err))
 	}
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:              fmt.Sprintf("Update %q schema gh-ost sync", database.Name),
+		Name:              fmt.Sprintf("Update schema gh-ost sync for database %q", database.Name),
 		InstanceID:        database.InstanceID,
 		DatabaseID:        &database.ID,
 		Status:            api.TaskPendingApproval,
@@ -1146,7 +1148,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
 	}
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:              fmt.Sprintf("Update %q schema gh-ost cutover", database.Name),
+		Name:              fmt.Sprintf("Update schema gh-ost cutover for database %q", database.Name),
 		InstanceID:        database.InstanceID,
 		DatabaseID:        &database.ID,
 		Status:            api.TaskPendingApproval,
@@ -1298,6 +1300,11 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			}
 		}
 		pipelineStatus = api.PipelineCanceled
+
+		// Cancel external approval, it's ok if we failed.
+		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue); err != nil {
+			log.Error("failed to cancel external appoval if needed on issue cancellation", zap.Error(err))
+		}
 	}
 
 	pipelinePatch := &api.PipelinePatch{
@@ -1460,7 +1467,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 		return "", "", nil
 	}
 
-	driver, err := s.getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name)
+	driver, err := getAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name, s.pgInstance.BaseDir, s.profile.DataDir)
 	if err != nil {
 		return "", "", err
 	}
