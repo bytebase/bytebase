@@ -478,12 +478,7 @@ func TestVCS(t *testing.T) {
 			// TODO(p0ny): expose task DAG list and check the dependency.
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
-			if test.name == "GitLab" {
-				a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
-			} else {
-				// TODO(dragonly): remove this when GetDiffFileList is also implemented for GitHub.
-				a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver0##migrate##merge_from_other_branch.sql, Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
-			}
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -627,59 +622,6 @@ func TestVCS(t *testing.T) {
 					Schema:     "",
 					SchemaPrev: "",
 				},
-			}
-			// TODO(dragonly): remove this when GetDiffFileList is also implemented for GitHub.
-			if test.name == "GitHub" {
-				wantHistories = []api.MigrationHistory{
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Data,
-						Status:     db.Done,
-						Schema:     dumpedSchema3,
-						SchemaPrev: dumpedSchema3,
-					},
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     dumpedSchema3,
-						SchemaPrev: dumpedSchema2,
-					},
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     dumpedSchema2,
-						SchemaPrev: dumpedSchema,
-					},
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     dumpedSchema,
-						SchemaPrev: "",
-					},
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     "",
-						SchemaPrev: "",
-					},
-					{
-						Database:   databaseName,
-						Source:     db.UI,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     "",
-						SchemaPrev: "",
-					},
-				}
 			}
 			a.Equal(len(wantHistories), len(histories))
 

@@ -317,9 +317,65 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	}, nil
 }
 
+// CommitsDiff represents a GitHub API response for comparing two commits.
+type CommitsDiff struct {
+	Files []PullRequestFile `json:"files"`
+}
+
 // GetDiffFileList gets the diff files list between two commits.
-func (*Provider) GetDiffFileList(_ context.Context, _ common.OauthContext, _, _, _, _ string) ([]vcs.FileDiff, error) {
-	return nil, nil
+func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
+	url := fmt.Sprintf("%s/repos/%s/compare/%s...%s", p.APIURL(instanceURL), repositoryID, beforeCommit, afterCommit)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	diffs := &CommitsDiff{}
+	if err := json.Unmarshal([]byte(body), diffs); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal file diff data from GitHub instance %s", instanceURL)
+	}
+
+	var ret []vcs.FileDiff
+	for _, file := range diffs.Files {
+		item := vcs.FileDiff{
+			Path: file.FileName,
+		}
+		switch file.Status {
+		case "added":
+			item.Type = vcs.FileDiffTypeAdded
+		case "modified":
+			item.Type = vcs.FileDiffTypeModified
+		case "removed":
+			item.Type = vcs.FileDiffTypeRemoved
+		}
+		ret = append(ret, item)
+	}
+
+	return ret, nil
 }
 
 // FetchUserInfo fetches user info of given user ID.

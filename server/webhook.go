@@ -573,11 +573,6 @@ func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Reposit
 			}
 		}
 	}
-	// Skip filtering for GitHub.
-	// TODO(dragonly): remove this when GetDiffFileList is also implemented for GitHub.
-	if fileDiffList == nil {
-		filteredDistinctFileList = distinctFileList
-	}
 	return filteredDistinctFileList, nil
 }
 
