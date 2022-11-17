@@ -70,9 +70,11 @@
           <router-link
             v-if="showIMIntegrationItem"
             to="/setting/im-integration"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.im-integration") }}</router-link
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
           >
+            {{ $t("settings.sidebar.im-integration") }}
+            <BBBetaBadge class="ml-1" />
+          </router-link>
           <router-link
             v-if="showVCSItem"
             to="/setting/version-control"

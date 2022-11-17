@@ -1,5 +1,16 @@
 <template>
   <div class="w-full mt-4 space-y-4">
+    <div class="textinfolabel">
+      {{ $t("settings.im-integration.description") }}
+      <a
+        class="normal-link inline-flex items-center"
+        href="https://www.bytebase.com/docs/administration/webhook-integration/external-approval?source=console"
+        target="__BLANK"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+      </a>
+    </div>
     <div class="w-full flex flex-col justify-start items-start space-y-2">
       <div class="w-full flex flex-row justify-start items-center">
         <div class="flex flex-row justify-start items-center">
@@ -39,19 +50,25 @@
         <div
           class="!mt-4 !mb-2 w-128 max-w-full flex flex-row justify-start items-center"
         >
-          <span class="textlabel mr-4">Enable</span>
+          <span class="textlabel mr-4">{{
+            $t("settings.im-integration.enable")
+          }}</span>
           <BBSwitch
             :value="state.feishuSetting.externalApproval.enabled"
             @toggle="onFeishuIntegrationEnableToggle"
           />
         </div>
-        <button
-          type="button"
-          class="btn-primary inline-flex justify-center py-2 px-4 mt-4"
-          @click.prevent="updateFeishuIntegration"
-        >
-          {{ $t("common.update") }}
-        </button>
+        <div class="flex flex-row justify-center">
+          <button
+            type="button"
+            class="btn-primary inline-flex justify-center py-2 px-4"
+            :disabled="!allowFeishuActionButton || state.isLoading"
+            @click.prevent="updateFeishuIntegration"
+          >
+            {{ feishuActionButtonText }}
+          </button>
+          <BBSpin v-if="state.isLoading" class="ml-1" />
+        </div>
       </div>
     </div>
   </div>
@@ -64,30 +81,47 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive } from "vue";
+import { cloneDeep, isEqual } from "lodash-es";
+import { computed, onMounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingStore } from "@/store";
 import { SettingAppIMValue } from "@/types/setting";
-import { useI18n } from "vue-i18n";
 import { BBSwitch } from "@/bbkit";
 
 interface LocalState {
+  originFeishuSetting?: SettingAppIMValue;
   feishuSetting?: SettingAppIMValue;
   showFeatureModal: boolean;
+  isLoading: boolean;
 }
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
   showFeatureModal: false,
+  isLoading: false,
 });
 const settingStore = useSettingStore();
 const hasIMApprovalFeature = featureToRef("bb.feature.im.approval");
 
+const feishuActionButtonText = computed(() => {
+  return state.originFeishuSetting === undefined
+    ? t("common.create")
+    : t("common.update");
+});
+
+const allowFeishuActionButton = computed(() => {
+  return !isEqual(state.originFeishuSetting, state.feishuSetting);
+});
+
 onMounted(() => {
   const setting = settingStore.getSettingByName("bb.app.im");
   if (setting) {
-    const appIMValue = JSON.parse(setting.value || "{}") as SettingAppIMValue;
-    if (appIMValue.imType === "im.feishu") {
-      state.feishuSetting = appIMValue;
+    const appFeishuValue = JSON.parse(
+      setting.value || "{}"
+    ) as SettingAppIMValue;
+    if (appFeishuValue.imType === "im.feishu") {
+      state.originFeishuSetting = cloneDeep(appFeishuValue);
+      state.feishuSetting = appFeishuValue;
     }
   }
 });
@@ -98,7 +132,7 @@ const onFeishuIntegrationEnableToggle = (status: boolean) => {
   }
 };
 
-const createFeishuIntegration = async () => {
+const createFeishuIntegration = () => {
   if (!hasIMApprovalFeature.value) {
     state.showFeatureModal = true;
     return;
@@ -112,10 +146,6 @@ const createFeishuIntegration = async () => {
       enabled: true,
     },
   };
-  await settingStore.updateSettingByName({
-    name: "bb.app.im",
-    value: JSON.stringify(state.feishuSetting),
-  });
 };
 
 const updateFeishuIntegration = async () => {
@@ -124,10 +154,18 @@ const updateFeishuIntegration = async () => {
     return;
   }
 
-  await settingStore.updateSettingByName({
-    name: "bb.app.im",
-    value: JSON.stringify(state.feishuSetting),
-  });
+  state.isLoading = true;
+  try {
+    await settingStore.updateSettingByName({
+      name: "bb.app.im",
+      value: JSON.stringify(state.feishuSetting),
+    });
+  } catch (error) {
+    state.isLoading = false;
+    return;
+  }
+  state.originFeishuSetting = cloneDeep(state.feishuSetting);
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

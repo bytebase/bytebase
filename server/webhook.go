@@ -492,8 +492,14 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 		return nil, nil
 	}
 
+	repo := repositoryList[0]
+	filteredDistinctFileList, err := s.filterFilesByCommitsDiff(ctx, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
+	if err != nil {
+		return nil, err
+	}
+
 	var createdMessageList []string
-	repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repositoryList)
+	repoID2FileItemList := groupFileInfoByRepo(filteredDistinctFileList, repositoryList)
 	for _, fileInfoListInRepo := range repoID2FileItemList {
 		// There are possibly multiple files in the push event.
 		// Each file corresponds to a (database name, schema version) pair.
@@ -535,6 +541,44 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 	}
 
 	return createdMessageList, nil
+}
+
+// Users may merge commits from other branches, and some of the commits merged in may already be merged into the main branch.
+// In that case, the commits in the push event contains files which are not added in this PR/MR.
+// We use the compare API to get the file diffs and filter files by the diffs.
+func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Repository, distinctFileList []vcs.DistinctFileItem, beforeCommit, afterCommit string) ([]vcs.DistinctFileItem, error) {
+	fileDiffList, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).GetDiffFileList(
+		ctx,
+		common.OauthContext{
+			ClientID:     repo.VCS.ApplicationID,
+			ClientSecret: repo.VCS.Secret,
+			AccessToken:  repo.AccessToken,
+			RefreshToken: repo.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repo.WebURL),
+		},
+		repo.VCS.InstanceURL,
+		repo.ExternalID,
+		beforeCommit,
+		afterCommit,
+	)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to get file diff list for repository %s", repo.ExternalID)
+	}
+	var filteredDistinctFileList []vcs.DistinctFileItem
+	for _, file := range distinctFileList {
+		for _, diff := range fileDiffList {
+			if file.FileName == diff.Path {
+				filteredDistinctFileList = append(filteredDistinctFileList, file)
+				break
+			}
+		}
+	}
+	// Skip filtering for GitHub.
+	// TODO(dragonly): remove this when GetDiffFileList is also implemented for GitHub.
+	if fileDiffList == nil {
+		filteredDistinctFileList = distinctFileList
+	}
+	return filteredDistinctFileList, nil
 }
 
 type fileInfo struct {

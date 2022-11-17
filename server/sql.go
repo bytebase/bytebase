@@ -410,7 +410,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.getAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := getAdminDatabaseDriver(ctx, instance, exec.DatabaseName, s.pgInstance.BaseDir, s.profile.DataDir)
 			if err != nil {
 				return nil, err
 			}

@@ -35,7 +35,7 @@ func (c *issueCountCollector) Collect(ctx context.Context) ([]*metric.Metric, er
 		res = append(res, &metric.Metric{
 			Name:  metricAPI.IssueCountMetricName,
 			Value: issueCountMetric.Count,
-			Labels: map[string]string{
+			Labels: map[string]interface{}{
 				"type":   string(issueCountMetric.Type),
 				"status": string(issueCountMetric.Status),
 			},

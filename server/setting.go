@@ -71,20 +71,24 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if value.ExternalApproval.Enabled && !s.feature(api.FeatureIMApproval) {
 				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureIMApproval.AccessErrorMessage())
 			}
-			p := s.ApplicationRunner.p
-			approvalCode, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
-				AppID:     value.AppID,
-				AppSecret: value.AppSecret,
-			}, "")
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create approval definition").SetInternal(err)
+			if value.ExternalApproval.Enabled {
+				p := s.ApplicationRunner.p
+				// clear token cache so that we won't use the previous token.
+				p.ClearTokenCache()
+				approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
+					AppID:     value.AppID,
+					AppSecret: value.AppSecret,
+				}, "")
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create approval definition").SetInternal(err)
+				}
+				value.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
+				b, err := json.Marshal(value)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal updated setting value").SetInternal(err)
+				}
+				settingPatch.Value = string(b)
 			}
-			value.ExternalApproval.ApprovalCode = approvalCode
-			b, err := json.Marshal(value)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal updated setting value").SetInternal(err)
-			}
-			settingPatch.Value = string(b)
 		}
 
 		setting, err := s.store.PatchSetting(ctx, settingPatch)

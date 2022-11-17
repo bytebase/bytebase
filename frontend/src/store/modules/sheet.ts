@@ -244,14 +244,18 @@ export const useSheetStore = defineStore("sheet", {
       return sheetList;
     },
     async fetchSheetById(sheetId: SheetId) {
-      const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
-      const sheet = convertSheet(data.data, data.included);
-      this.setSheetById({
-        sheetId: sheet.id,
-        sheet: sheet,
-      });
+      try {
+        const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
+        const sheet = convertSheet(data.data, data.included);
+        this.setSheetById({
+          sheetId: sheet.id,
+          sheet: sheet,
+        });
 
-      return sheet;
+        return sheet;
+      } catch {
+        return unknown("SHEET");
+      }
     },
     async getOrFetchSheetById(sheetId: SheetId) {
       const storedSheet = this.sheetById.get(sheetId);

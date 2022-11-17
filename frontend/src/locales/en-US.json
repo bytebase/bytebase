@@ -382,6 +382,8 @@
       "system-bot": "System Bot"
     },
     "im-integration": {
+      "enable": "Enable",
+      "description": "Allow users to approve issues from IM directly.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "general": {
@@ -1316,7 +1318,10 @@
     "search-sheets": "Search Sheets",
     "hint-tips": {
       "confirm-to-delete-this-history": "Confirm to delete this history?",
-      "confirm-to-close-unsaved-tab": "Confirm to close unsaved tab?"
+      "confirm-to-close-unsaved-sheet": {
+        "title": "Close the unsaved sheet?",
+        "content": "Close the sheet and lose any unsaved data?"
+      }
     },
     "please-input-the-tab-label": "Please input the tab label!",
     "copy-code": "Copy code",
@@ -1350,7 +1355,8 @@
     "tab-mode": {
       "readonly": "Read-only",
       "admin": "Admin"
-    }
+    },
+    "close-sheet": "Close sheet"
   },
   "label": {
     "empty-label-value": "<Empty Value>",
@@ -1471,8 +1477,8 @@
         "title": "Point-in-Time-Recovery (PITR)",
         "desc": "Restore the database state to a point in time."
       },
-      "bb-feature-sync-schema": {
-        "title": "Synchronize Schema",
+      "bb-feature-sync-schema-all-versions": {
+        "title": "Synchronize schema all versions",
         "desc": "Select any arbitrary migration version from the base database and synchronize it to the target database."
       },
       "bb-feature-read-replica-connection": {

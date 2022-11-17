@@ -40,7 +40,7 @@ func (c *catalogService) GetFinder() *catalog.Finder {
 	return c.finder
 }
 
-func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
+func (s *Server) registerOpenAPIRoutesForSQL(g *echo.Group) {
 	g.POST("/sql/advise", s.sqlCheckController)
 	g.POST("/sql/schema/diff", schemaDiff)
 }
@@ -157,7 +157,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		s.MetricReporter.report(&metric.Metric{
 			Name:  metricAPI.SQLAdviseAPIMetricName,
 			Value: 1,
-			Labels: map[string]string{
+			Labels: map[string]interface{}{
 				"database_type": databaseType,
 				"environment":   request.EnvironmentName,
 			},

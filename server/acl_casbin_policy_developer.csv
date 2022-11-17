@@ -43,6 +43,7 @@ p, DEVELOPER, /database/{databaseID}/table/{tableName}, GET
 p, DEVELOPER, /database/{databaseID}/view, GET
 p, DEVELOPER, /database/{databaseID}/extension, GET
 p, DEVELOPER, /database/{databaseID}/schema, GET
+p, DEVELOPER, /database/{databaseID}/edit, POST
 p, DEVELOPER, /database/{databaseID}/backup, GET
 p, DEVELOPER, /database/{databaseID}/backup, POST
 p, DEVELOPER, /database/{databaseID}/backup-setting, GET

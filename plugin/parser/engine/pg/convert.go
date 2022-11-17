@@ -60,7 +60,6 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 						Table:      alterTable.Table,
 						ColumnName: alterCmd.Name,
 					}
-
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropColumn)
 				case pgquery.AlterTableType_AT_AddConstraint:
 					def, ok := alterCmd.Def.Node.(*pgquery.Node_Constraint)
@@ -252,7 +251,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 	case *pgquery.Node_DropStmt:
 		switch in.DropStmt.RemoveType {
 		case pgquery.ObjectType_OBJECT_INDEX:
-			dropIndex := &ast.DropIndexStmt{}
+			dropIndex := &ast.DropIndexStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
 			for _, object := range in.DropStmt.Objects {
 				list, ok := object.Node.(*pgquery.Node_List)
 				if !ok {
@@ -919,6 +921,17 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 			Table: convertRangeVarToTableName(in.Constraint.Pktable, ast.TableTypeBaseTable),
 		}
 
+		var err error
+		if cons.Foreign.MatchType, err = convertForeignMatchType(in.Constraint.FkMatchtype); err != nil {
+			return nil, err
+		}
+		if cons.Foreign.OnUpdate, err = convertReferentialAction(in.Constraint.FkUpdAction); err != nil {
+			return nil, err
+		}
+		if cons.Foreign.OnDelete, err = convertReferentialAction(in.Constraint.FkDelAction); err != nil {
+			return nil, err
+		}
+
 		for _, item := range in.Constraint.PkAttrs {
 			name, ok := item.Node.(*pgquery.Node_String_)
 			if !ok {
@@ -947,9 +960,58 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 		expression.SetText(text)
 		cons.Expression = expression
+	case ast.ConstraintTypeExclusion:
+		if len(in.Constraint.Exclusions) >= 1 {
+			exclusion, err := pgquery.DeparseNodes(pgquery.DeparseTypeExclusion, in.Constraint.Exclusions)
+			if err != nil {
+				return nil, err
+			}
+			cons.Exclusions = exclusion
+		}
+		var err error
+		if cons.AccessMethod, err = convertMethodType(in.Constraint.AccessMethod); err != nil {
+			return nil, err
+		}
+		if in.Constraint.WhereClause != nil {
+			whereClause, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, in.Constraint.WhereClause)
+			if err != nil {
+				return nil, err
+			}
+			cons.WhereClause = whereClause
+		}
 	}
 
 	return cons, nil
+}
+
+func convertForeignMatchType(tp string) (ast.ForeignMatchType, error) {
+	switch tp {
+	case "s":
+		return ast.ForeignMatchTypeSimple, nil
+	case "f":
+		return ast.ForeignMatchTypeFull, nil
+	case "p":
+		return ast.ForeignMatchTypePartial, nil
+	default:
+		return ast.ForeignMatchTypeSimple, parser.NewConvertErrorf("unsupported foreign match type: %s", tp)
+	}
+}
+
+func convertReferentialAction(action string) (*ast.ReferentialActionDef, error) {
+	switch action {
+	case "a":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction}, nil
+	case "r":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeRestrict}, nil
+	case "c":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeCascade}, nil
+	case "n":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetNull}, nil
+	case "d":
+		return &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetDefault}, nil
+	default:
+		return nil, parser.NewConvertErrorf("unsupported referential action: %s", action)
+	}
 }
 
 func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.ConstraintType {
@@ -975,6 +1037,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeCheck
 	case pgquery.ConstrType_CONSTR_DEFAULT:
 		return ast.ConstraintTypeDefault
+	case pgquery.ConstrType_CONSTR_EXCLUSION:
+		return ast.ConstraintTypeExclusion
 	}
 	return ast.ConstraintTypeUndefined
 }

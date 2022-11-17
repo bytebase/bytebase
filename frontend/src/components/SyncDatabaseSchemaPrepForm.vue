@@ -2,13 +2,13 @@
   <div class="space-y-4 overflow-x-hidden w-208 max-w-full transition-all">
     <!-- Project and base, target database selectors -->
     <div class="w-full flex flex-col justify-start items-start">
-      <div class="w-160">
+      <div class="w-176">
         <div class="w-full mb-2">
           <span>{{ $t("database.sync-schema.select-project") }}</span>
         </div>
         <div class="w-full flex flex-row justify-start items-center px-px">
           <ProjectSelect
-            class="!w-48 mr-2 shrink-0"
+            class="!w-52 mr-2 shrink-0"
             :disabled="!allowSelectProject"
             :selected-id="state.projectId"
             @select-project-id="(projectId: ProjectId)=>{
@@ -17,7 +17,7 @@
           />
         </div>
       </div>
-      <div class="w-160">
+      <div class="w-176">
         <div class="w-full mt-4 mb-2 flex flex-row justify-start items-center">
           <span>{{ $t("database.sync-schema.select-schema") }}</span>
         </div>
@@ -30,7 +30,7 @@
             :class="isValidId(state.projectId) ? 'hidden' : ''"
           ></div>
           <EnvironmentSelect
-            class="!w-48 mr-2 shrink-0"
+            class="!w-52 mr-2 shrink-0"
             name="environment"
             :selected-id="state.baseSchemaInfo.environmentId"
             :select-default="false"
@@ -42,7 +42,7 @@
             :mode="'USER'"
             :environment-id="state.baseSchemaInfo.environmentId"
             :project-id="state.projectId"
-            :engine-type="state.engineType"
+            :engine-type-list="allowedEngineTypeList"
             :sync-status="'OK'"
             :customize-item="true"
             @select-database-id="handleBaseDatabaseSelect"
@@ -59,7 +59,7 @@
             </template>
           </DatabaseSelect>
           <BBSelect
-            class=""
+            class="!grow"
             :selected-item="state.baseSchemaInfo.migrationHistory"
             :item-list="
                 databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
@@ -69,9 +69,11 @@
             @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
           >
             <template #menuItem="{ item: migrationHistory }">
-              <div class="flex items-center">
+              <!-- To enable the ellipsis function only when 
+                overflow happens, we have to set a fixed width. -->
+              <NEllipsis style="max-width: 160px">
                 {{ migrationHistory.version }}
-              </div>
+              </NEllipsis>
             </template>
             <template v-if="!hasSyncSchemaFeature" #suffixItem>
               <div
@@ -85,7 +87,7 @@
         </div>
       </div>
       <hr class="mt-4 w-full" />
-      <div class="w-160">
+      <div class="w-176">
         <div
           class="w-full mt-4 mb-2 leading-6 flex flex-row justify-start items-center"
         >
@@ -100,19 +102,19 @@
             :class="isValidId(state.projectId) ? 'hidden' : ''"
           ></div>
           <EnvironmentSelect
-            class="!w-48 mr-2 shrink-0"
+            class="!w-52 mr-2 shrink-0"
             name="environment"
             :selected-id="state.targetDatabaseInfo.environmentId"
             :select-default="false"
             @select-environment-id="handleTargetEnvironmentSelect"
           />
           <DatabaseSelect
-            class="!grow !w-full"
+            class="!grow"
             :selected-id="(state.targetDatabaseInfo.databaseId as DatabaseId)"
             :mode="'USER'"
             :environment-id="state.targetDatabaseInfo.environmentId"
             :project-id="state.projectId"
-            :engine-type="state.engineType"
+            :engine-type-list="engineTypeList"
             :sync-status="'OK'"
             :customize-item="true"
             @select-database-id="handleTargetDatabaseSelect"
@@ -226,7 +228,7 @@
 
   <FeatureModal
     v-if="state.showFeatureModal"
-    feature="bb.feature.sync-schema"
+    feature="bb.feature.sync-schema-all-versions"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -234,7 +236,8 @@
 <script lang="ts" setup>
 import axios from "axios";
 import dayjs from "dayjs";
-import { head } from "lodash-es";
+import { head, isUndefined } from "lodash-es";
+import { NEllipsis } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { useRouter } from "vue-router";
@@ -260,6 +263,7 @@ import EnvironmentSelect from "./EnvironmentSelect.vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import MonacoEditor from "./MonacoEditor/MonacoEditor.vue";
 import ProjectSelect from "./ProjectSelect.vue";
+import { isDev } from "@/utils";
 
 type LocalState = {
   projectId?: ProjectId;
@@ -271,7 +275,6 @@ type LocalState = {
   targetDatabaseInfo: {
     environmentId?: EnvironmentId;
     databaseId?: DatabaseId;
-    hasDrift?: boolean;
     currentSchema?: string;
   };
   engineType?: EngineType;
@@ -304,20 +307,11 @@ useEventListener(window, "keydown", (e) => {
 
 const state = reactive<LocalState>({
   projectId: props.projectId,
-  engineType: "MYSQL",
   baseSchemaInfo: {},
   targetDatabaseInfo: {},
   recommandStatement: "",
   editStatement: "",
   showFeatureModal: false,
-});
-
-const hasSyncSchemaFeature = computed(() => {
-  return hasFeature("bb.feature.sync-schema");
-});
-
-const allowSelectProject = computed(() => {
-  return props.projectId === undefined;
 });
 
 const isValidId = (id: any) => {
@@ -327,9 +321,30 @@ const isValidId = (id: any) => {
   return true;
 };
 
+const allowedEngineTypeList: EngineType[] = isDev()
+  ? ["MYSQL", "POSTGRES"]
+  : ["MYSQL"];
+
+const hasSyncSchemaFeature = computed(() => {
+  return hasFeature("bb.feature.sync-schema-all-versions");
+});
+
+const allowSelectProject = computed(() => {
+  return props.projectId === undefined;
+});
+
+const engineTypeList = computed((): EngineType[] => {
+  if (isUndefined(state.engineType)) {
+    return allowedEngineTypeList;
+  } else {
+    return [state.engineType];
+  }
+});
+
 const shouldShowDiff = computed(() => {
   return (
     isValidId(state.projectId) &&
+    !isUndefined(state.engineType) &&
     isValidId(state.baseSchemaInfo.environmentId) &&
     isValidId(state.baseSchemaInfo.databaseId) &&
     !isNullOrUndefined(state.baseSchemaInfo.migrationHistory) &&
@@ -536,18 +551,32 @@ watch(
     const databaseId = state.baseSchemaInfo.databaseId;
     if (!isValidId(databaseId)) {
       state.baseSchemaInfo.migrationHistory = undefined;
+      state.engineType = undefined;
       return;
     }
 
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     state.baseSchemaInfo.migrationHistory = undefined;
     if (database) {
+      state.engineType = database.instance.engine;
       const migrationHistoryList = await instanceStore.fetchMigrationHistory({
         instanceId: database.instance.id,
         databaseName: database.name,
       });
       // Default select the first migration history.
       state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
+
+      if (isValidId(state.targetDatabaseInfo.databaseId)) {
+        const targetDatabase = databaseStore.getDatabaseById(
+          state.targetDatabaseInfo.databaseId as DatabaseId
+        );
+        if (
+          targetDatabase &&
+          targetDatabase.instance.engine !== state.engineType
+        ) {
+          state.targetDatabaseInfo.databaseId = undefined;
+        }
+      }
     }
   }
 );

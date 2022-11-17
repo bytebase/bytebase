@@ -13,12 +13,26 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
+	bbparser "github.com/bytebase/bytebase/plugin/parser"
 
+	"github.com/bytebase/bytebase/plugin/parser/edit"
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
-func deparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error) {
+var (
+	_ edit.SchemaEditor = (*SchemaEditor)(nil)
+)
+
+func init() {
+	edit.Register(bbparser.MySQL, &SchemaEditor{})
+}
+
+// SchemaEditor it the editor for MySQL dialect.
+type SchemaEditor struct{}
+
+// DeparseDatabaseEdit deparses DatabaseEdit to DDL statement.
+func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error) {
 	var stmtList []string
 	for _, createTableContext := range databaseEdit.CreateTableList {
 		createTableStmt := transformCreateTableContext(createTableContext)

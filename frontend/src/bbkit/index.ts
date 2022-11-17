@@ -28,6 +28,7 @@ import {
 } from "./BBTable";
 import BBTabPanel from "./BBTabPanel.vue";
 import BBTextField from "./BBTextField.vue";
+import BBBetaBadge from "./BBBetaBadge.vue";
 
 export {
   BBAlert,
@@ -58,4 +59,5 @@ export {
   BBTableHeaderCell,
   BBTableSearch,
   BBTextField,
+  BBBetaBadge,
 };

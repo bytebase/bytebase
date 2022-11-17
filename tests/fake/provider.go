@@ -28,6 +28,8 @@ type VCSProvider interface {
 	GetFiles(repositoryID string, filePaths ...string) (map[string]string, error)
 	// AddPullRequest creates a new pull request and add changed files to it.
 	AddPullRequest(repositoryID string, prID int, files []*vcs.PullRequestFile) error
+	// AddCommitsDiff adds a commits diff.
+	AddCommitsDiff(repositoryID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error
 }
 
 // VCSProviderCreator a function to create a new VCSProvider.
