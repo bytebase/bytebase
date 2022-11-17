@@ -1300,7 +1300,6 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			}
 		}
 		pipelineStatus = api.PipelineCanceled
-
 	}
 
 	pipelinePatch := &api.PipelinePatch{
