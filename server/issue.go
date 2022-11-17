@@ -1300,11 +1300,6 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 			}
 		}
 		pipelineStatus = api.PipelineCanceled
-
-		// Cancel external approval, it's ok if we failed.
-		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue); err != nil {
-			log.Error("failed to cancel external appoval if needed on issue cancellation", zap.Error(err))
-		}
 	}
 
 	pipelinePatch := &api.PipelinePatch{
@@ -1324,6 +1319,13 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Name, issuePatch)
+	}
+
+	// Cancel external approval, it's ok if we failed.
+	if newStatus != api.IssueOpen {
+		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue); err != nil {
+			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
+		}
 	}
 
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
