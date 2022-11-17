@@ -128,6 +128,8 @@ EXECUTE FUNCTION trigger_update_updated_ts();
 -- Policy
 -- policy stores the policies for each environment.
 -- Policies are associated with environments. Since we may have policies not associated with environment later, we name the table policy.
+CREATE TYPE resource_type AS ENUM ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTANCE', 'DATABASE');
+
 CREATE TABLE policy (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
@@ -135,14 +137,15 @@ CREATE TABLE policy (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    environment_id INTEGER NOT NULL REFERENCES environment (id),
     type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
-    payload JSONB NOT NULL DEFAULT '{}'
+    payload JSONB NOT NULL DEFAULT '{}',
+    resource_type resource_type NOT NULL,
+    resource_id INTEGER NOT NULL
 );
 
-CREATE INDEX idx_policy_environment_id ON policy(environment_id);
+CREATE INDEX idx_policy_resource_type_resource_id ON policy(resource_type, resource_id);
 
-CREATE UNIQUE INDEX idx_policy_unique_environment_id_type ON policy(environment_id, type);
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON policy(resource_type, resource_id, type);
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 101;
 

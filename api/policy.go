@@ -23,6 +23,9 @@ type BackupPlanPolicySchedule string
 // EnvironmentTierValue is the value for environment tier policy.
 type EnvironmentTierValue string
 
+// PolicyResourceType is the resource type for a policy.
+type PolicyResourceType string
+
 const (
 	// DefaultPolicyID is the ID of the default policy.
 	DefaultPolicyID int = 0
@@ -57,6 +60,9 @@ const (
 	EnvironmentTierValueProtected EnvironmentTierValue = "PROTECTED"
 	// EnvironmentTierValueUnprotected is UNPROTECTED environment tier value.
 	EnvironmentTierValueUnprotected EnvironmentTierValue = "UNPROTECTED"
+
+	// PolicyResourceTypeEnvironment is the resource type for environment.
+	PolicyResourceTypeEnvironment PolicyResourceType = "ENVIRONMENT"
 )
 
 var (
