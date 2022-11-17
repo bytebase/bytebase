@@ -559,6 +559,9 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		if principal == nil {
 			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
 		}
+		if !s.feature(api.FeatureRBAC) {
+			principal.Role = api.Owner
+		}
 		if principal.Role == api.Owner || principal.Role == api.DBA {
 			return true, nil
 		}
@@ -573,6 +576,9 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		}
 		if member == nil {
 			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
+		}
+		if !s.feature(api.FeatureRBAC) {
+			member.Role = string(api.Owner)
 		}
 		if member.Role == string(api.Owner) {
 			return true, nil
