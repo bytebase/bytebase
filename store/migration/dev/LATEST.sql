@@ -660,6 +660,7 @@ CREATE TABLE task (
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     earliest_allowed_ts BIGINT NOT NULL DEFAULT 0,
+    -- rollback_from is the original task from which this is generated as a rollback task.
     rollback_from INTEGER NULL REFERENCES task(id)
 );
 
