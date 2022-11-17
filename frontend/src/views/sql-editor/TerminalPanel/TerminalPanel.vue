@@ -2,7 +2,7 @@
   <div
     class="flex h-full w-full flex-col justify-start items-start overflow-hidden"
   >
-    <EditorAction />
+    <EditorAction @save-sheet="trySaveSheet" />
 
     <ConnectionPathBar />
 
@@ -18,11 +18,12 @@
               v-model:sql="query.sql"
               class="border-b"
               :readonly="query !== currentQuery"
+              @save-sheet="trySaveSheet"
               @execute="handleExecute"
             />
             <div
               v-if="query.queryResult"
-              class="max-h-[20rem] overflow-y-auto border-b"
+              class="max-h-[21rem] overflow-y-auto border-b"
             >
               <TableView :query-result="query.queryResult.data" />
             </div>
@@ -40,20 +41,23 @@
     <template v-else>
       <ConnectionHolder />
     </template>
+
+    <SaveSheetModal ref="saveSheetModal" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from "vue";
+import { useElementSize } from "@vueuse/core";
 
 import { ExecuteConfig, ExecuteOption, SQLResultSet } from "@/types";
 import { useSQLEditorStore, useTabStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
-import EditorAction from "../EditorPanel/EditorAction.vue";
+import EditorAction from "../EditorCommon/EditorAction.vue";
 import ConnectionPathBar from "../EditorCommon/ConnectionPathBar.vue";
-import ConnectionHolder from "../EditorPanel/ConnectionHolder.vue";
+import ConnectionHolder from "../EditorCommon/ConnectionHolder.vue";
 import TableView from "../EditorCommon/TableView.vue";
-import { useElementSize } from "@vueuse/core";
+import SaveSheetModal from "../EditorCommon/SaveSheetModal.vue";
 
 type QueryItem = {
   sql: string;
@@ -115,6 +119,12 @@ const handleExecute = async (
   } finally {
     queryItem.isExecutingSQL = false;
   }
+};
+
+const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
+
+const trySaveSheet = (sheetName?: string) => {
+  saveSheetModal.value?.trySaveSheet(sheetName);
 };
 
 const queryListSize = useElementSize(queryListRef);
