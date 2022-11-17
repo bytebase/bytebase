@@ -382,6 +382,8 @@
       "system-bot": "System Bot"
     },
     "im-integration": {
+      "enable": "Enable",
+      "description": "Allow users to approve issues from IM directly.",
       "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "general": {

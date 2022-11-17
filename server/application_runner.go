@@ -186,8 +186,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 	}()
 
 	if cancelOld {
-		_, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived})
-		if err != nil {
+		if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
 			return nil, err
 		}
 		if err := r.p.CancelExternalApproval(ctx,
@@ -195,7 +194,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 				AppID:     settingValue.AppID,
 				AppSecret: settingValue.AppSecret,
 			},
-			settingValue.ExternalApproval.ApprovalCode,
+			settingValue.ExternalApproval.ApprovalDefinitionID,
 			payload.InstanceCode,
 			payload.RequesterID,
 		); err != nil {
@@ -205,7 +204,60 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 	return approval, nil
 }
 
-func (*ApplicationRunner) shouldCreateExternalApproval(issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+// CancelExternalApproval cancels the active external approval of an issue.
+func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *api.Issue) error {
+	settingName := api.SettingAppIM
+	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get IM setting by settingName %s", string(settingName))
+	}
+	if setting == nil {
+		return errors.New("cannot find IM setting")
+	}
+	if setting.Value == "" {
+		return nil
+	}
+	var value api.SettingAppIMValue
+	if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal IM setting, settingName %s", string(settingName))
+	}
+	if !value.ExternalApproval.Enabled {
+		return nil
+	}
+	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
+	if err != nil {
+		return err
+	}
+	if approval == nil {
+		return nil
+	}
+	var payload api.ExternalApprovalPayloadFeishu
+	if err := json.Unmarshal([]byte(approval.Payload), &payload); err != nil {
+		return err
+	}
+	if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
+		return err
+	}
+	return r.p.CancelExternalApproval(ctx,
+		feishu.TokenCtx{
+			AppID:     value.AppID,
+			AppSecret: value.AppSecret,
+		},
+		value.ExternalApproval.ApprovalDefinitionID,
+		payload.InstanceCode,
+		payload.RequesterID,
+	)
+}
+
+func (r *ApplicationRunner) shouldCreateExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+	policy, err := r.store.GetPipelineApprovalPolicy(ctx, stage.EnvironmentID)
+	if err != nil {
+		return false, err
+	}
+	// don't send approvals for auto-approval stages.
+	if policy.Value == api.PipelineApprovalValueManualNever {
+		return false, nil
+	}
 	if oldApproval != nil {
 		var oldPayload api.ExternalApprovalPayloadFeishu
 		if err := json.Unmarshal([]byte(oldApproval.Payload), &oldPayload); err != nil {
@@ -284,7 +336,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 			Link:     fmt.Sprintf("%s/issue/%s", r.activityManager.s.profile.ExternalURL, api.IssueSlug(issue)),
 			TaskList: taskList,
 		},
-		settingValue.ExternalApproval.ApprovalCode,
+		settingValue.ExternalApproval.ApprovalDefinitionID,
 		users[issue.Creator.Email],
 		users[issue.Assignee.Email])
 	if err != nil {
@@ -337,7 +389,7 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 		return
 	}
 
-	if settingValue.ExternalApproval.ApprovalCode == "" {
+	if settingValue.ExternalApproval.ApprovalDefinitionID == "" {
 		log.Error("no approval code", zap.Any("settingValue", settingValue))
 		return
 	}
@@ -375,7 +427,7 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 	// check if we need to create a new external approval
 	// 1. has one or more PENDING_APPROVAL tasks.
 	// 2. all task checks are done and the results have no errors.
-	ok, err := r.shouldCreateExternalApproval(issue, stage, oldApproval)
+	ok, err := r.shouldCreateExternalApproval(ctx, issue, stage, oldApproval)
 	if err != nil {
 		log.Error("failed to check shouldCreateExternalApproval", zap.Error(err))
 		return
