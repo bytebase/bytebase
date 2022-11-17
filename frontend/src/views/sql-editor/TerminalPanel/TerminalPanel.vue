@@ -23,7 +23,7 @@
             />
             <div
               v-if="query.queryResult"
-              class="max-h-[21rem] overflow-y-auto border-b"
+              class="max-h-[20rem] overflow-y-auto border-b"
             >
               <TableView :query-result="query.queryResult.data" />
             </div>
