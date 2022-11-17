@@ -16,25 +16,23 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-var (
-	generateRollbackSQLSignal = make(chan struct{}, 1)
-	generateRollbackSQLMap    sync.Map
-)
-
 // NewRollbackRunner creates a new rollback runner.
 func NewRollbackRunner(store *store.Store, pgInstanceDir, dataDir string) *RollbackRunner {
 	return &RollbackRunner{
-		store:         store,
-		pgInstanceDir: pgInstanceDir,
-		dataDir:       dataDir,
+		store:          store,
+		pgInstanceDir:  pgInstanceDir,
+		dataDir:        dataDir,
+		generateSignal: make(chan struct{}, 1),
 	}
 }
 
 // RollbackRunner is the rollback runner generating rollback SQL statements.
 type RollbackRunner struct {
-	store         *store.Store
-	pgInstanceDir string
-	dataDir       string
+	store          *store.Store
+	pgInstanceDir  string
+	dataDir        string
+	generateSignal chan struct{}
+	generateMap    sync.Map
 }
 
 // Run starts the rollback runner.
@@ -43,9 +41,9 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	r.retryGenerateRollbackSQL(ctx)
 	for {
 		select {
-		case <-generateRollbackSQLSignal:
+		case <-r.generateSignal:
 			log.Debug("Received signal for generating rollback SQL.")
-			generateRollbackSQLMap.Range(func(key, value any) bool {
+			r.generateMap.Range(func(key, value any) bool {
 				task := value.(*api.Task)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				r.generateRollbackSQL(ctx, task)
@@ -72,9 +70,9 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 	}
 	for _, task := range taskList {
 		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
-		generateRollbackSQLMap.Store(task.ID, task)
+		r.generateMap.Store(task.ID, task)
 	}
-	generateRollbackSQLSignal <- struct{}{}
+	r.generateSignal <- struct{}{}
 }
 
 func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task) {
@@ -116,7 +114,7 @@ func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
 		return
 	}
-	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID), zap.String("rollbackSQL", rollbackSQL))
+	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
 }
 
 func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
