@@ -27,23 +27,22 @@ func (s *Server) listInstance(c echo.Context) error {
 
 	var response []*openAPIV1.Instance
 	for _, instance := range instanceList {
-		response = append(response, &openAPIV1.Instance{
-			ID:              instance.ID,
-			RowStatus:       instance.RowStatus,
-			CreatorID:       instance.CreatorID,
-			UpdaterID:       instance.UpdaterID,
-			CreatedTs:       instance.CreatedTs,
-			UpdatedTs:       instance.UpdatedTs,
-			EnvironmentName: instance.Environment.Name,
-			Name:            instance.Name,
-			Engine:          instance.Engine,
-			EngineVersion:   instance.EngineVersion,
-			ExternalLink:    instance.ExternalLink,
-			Host:            instance.Host,
-			Port:            instance.Port,
-			Username:        instance.Username,
-		})
+		response = append(response, convertToOpenAPIInstance(instance))
 	}
 
 	return c.JSON(http.StatusOK, response)
+}
+
+func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
+	return &openAPIV1.Instance{
+		ID:            instance.ID,
+		Environment:   instance.Environment.Name,
+		Name:          instance.Name,
+		Engine:        instance.Engine,
+		EngineVersion: instance.EngineVersion,
+		ExternalLink:  instance.ExternalLink,
+		Host:          instance.Host,
+		Port:          instance.Port,
+		Username:      instance.Username,
+	}
 }

@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -9,15 +8,8 @@ import (
 type Instance struct {
 	ID int `jsonapi:"primary,instance" json:"id"`
 
-	// Standard fields
-	RowStatus api.RowStatus `json:"rowStatus"`
-	CreatorID int           `json:"creatorId"`
-	UpdaterID int           `json:"updaterId"`
-	CreatedTs int64         `json:"createdTs"`
-	UpdatedTs int64         `json:"updatedTs"`
-
 	// Related fields
-	EnvironmentName string `json:"environmentName"`
+	Environment string `json:"environment"`
 
 	// Domain specific fields
 	Name          string  `json:"name"`
