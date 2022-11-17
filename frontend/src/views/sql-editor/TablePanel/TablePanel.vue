@@ -1,14 +1,9 @@
 <template>
-  <Splitpanes class="default-theme">
-    <Pane size="100">
-      <TableView :query-result="queryResult" />
-    </Pane>
-  </Splitpanes>
+  <TableView class="w-full h-full" :query-result="queryResult" />
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Splitpanes, Pane } from "splitpanes";
 
 import TableView from "../EditorCommon/TableView.vue";
 import { useTabStore } from "@/store";
