@@ -18,7 +18,7 @@ import (
 
 var (
 	generateRollbackSQLSignal = make(chan struct{}, 1)
-	generateRollbackSQLPool   sync.Pool
+	generateRollbackSQLMap    sync.Map
 )
 
 // NewRollbackRunner creates a new rollback runner.
@@ -45,16 +45,12 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-generateRollbackSQLSignal:
 			log.Debug("Received signal for generating rollback SQL.")
-			for {
-				item := generateRollbackSQLPool.Get()
-				log.Debug("Got item from pool", zap.Any("item", item))
-				if item == nil {
-					break
-				}
-				task := item.(*api.Task)
+			generateRollbackSQLMap.Range(func(key, value any) bool {
+				task := value.(*api.Task)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				r.generateRollbackSQL(ctx, task)
-			}
+				return true
+			})
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
@@ -76,7 +72,7 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 	}
 	for _, task := range taskList {
 		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
-		generateRollbackSQLPool.Put(task)
+		generateRollbackSQLMap.Store(task.ID, task)
 	}
 	generateRollbackSQLSignal <- struct{}{}
 }
