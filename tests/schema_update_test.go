@@ -1639,6 +1639,183 @@ func TestVCS_SQL_Review(t *testing.T) {
 	}
 }
 
+func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
+	externalID := "octocat/Hello-World"
+	repoFullPath := "octocat/Hello-World"
+
+	tests := []struct {
+		name               string
+		vcsProviderCreator fake.VCSProviderCreator
+		vcsType            vcs.Type
+		existedBranchList  []string
+		branchFilter       string
+		shouldFail         bool
+	}{
+		{
+			name:               "mainBranchWithGitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			existedBranchList: []string{
+				"main",
+				"test/branch",
+			},
+			branchFilter: "main",
+			shouldFail:   false,
+		},
+		{
+			name:               "mainBranchWithGitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			existedBranchList: []string{
+				"main",
+				"test/branch",
+			},
+			branchFilter: "main",
+			shouldFail:   false,
+		},
+		{
+			name:               "customBranchWithGitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			existedBranchList: []string{
+				"main",
+				"test/branch",
+			},
+			branchFilter: "test/branch",
+			shouldFail:   false,
+		},
+		{
+			name:               "customBranchWithGitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			existedBranchList: []string{
+				"main",
+				"test/branch",
+			},
+			branchFilter: "test/branch",
+			shouldFail:   false,
+		},
+		{
+			name:               "nonExistedBranchWithGitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			existedBranchList: []string{
+				"main",
+				"test/branch",
+			},
+			branchFilter: "non_existed_branch",
+			shouldFail:   true,
+		},
+		{
+			name:               "nonExistedBranchWithGitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			existedBranchList: []string{
+				"main",
+				"test/branch",
+			},
+			branchFilter: "non_existed_branch",
+			shouldFail:   true,
+		},
+		{
+			name:               "wildcardBranchWithGitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            vcs.GitLabSelfHost,
+			existedBranchList: []string{
+				"main",
+			},
+			branchFilter: "main*",
+			shouldFail:   false,
+		},
+		{
+			name:               "wildcardBranchWithGitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            vcs.GitHubCom,
+			existedBranchList: []string{
+				"main",
+			},
+			branchFilter: "main*",
+			shouldFail:   false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			port := getTestPort(t.Name())
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, port)
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
+
+			// Create a VCS.
+			apiVCS, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          t.Name(),
+					Type:          test.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: "Test VCS Project",
+					Key:  "TVP",
+				},
+			)
+			a.NoError(err)
+
+			// Create a repository in the fake vsc provider.
+			ctl.vcsProvider.CreateRepository(externalID)
+
+			// Create existed branches.
+			for _, existedBranch := range test.existedBranchList {
+				err := ctl.vcsProvider.CreateBranch(externalID, existedBranch)
+				a.NoError(err)
+			}
+
+			// Create a repository.
+			_, err = ctl.createRepository(
+				api.RepositoryCreate{
+					VCSID:              apiVCS.ID,
+					ProjectID:          project.ID,
+					Name:               "Test Repository",
+					FullPath:           repoFullPath,
+					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repoFullPath),
+					BranchFilter:       test.branchFilter,
+					BaseDirectory:      "",
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "",
+					ExternalID:         externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+			)
+
+			if test.shouldFail {
+				a.Error(err)
+			} else {
+				a.NoError(err)
+			}
+		})
+	}
+}
+
 // postVCSSQLReview will create the VCS SQL review and get the response.
 func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
 	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, repo.WebhookEndpointID)
