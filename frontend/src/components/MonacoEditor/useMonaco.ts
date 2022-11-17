@@ -2,6 +2,8 @@ import type { editor as Editor } from "monaco-editor";
 import { SQLDialect } from "@/types";
 import sqlFormatter from "./sqlFormatter";
 import { ExtractPromiseType } from "@/utils";
+import { bbTheme } from "./themes/bb";
+import { bbDarkTheme } from "./themes/bb-dark";
 
 export const useMonaco = async () => {
   const [monaco, { default: EditorWorker }] = await Promise.all([
@@ -9,22 +11,8 @@ export const useMonaco = async () => {
     import("monaco-editor/esm/vs/editor/editor.worker?worker"),
   ]);
 
-  monaco.editor.defineTheme("bb", {
-    base: "vs",
-    inherit: true,
-    rules: [],
-    colors: {
-      "editorCursor.foreground": "#504de2",
-      "editorLineNumber.foreground": "#aaaaaa",
-      "editorLineNumber.activeForeground": "#111111",
-    },
-  });
-  monaco.editor.defineTheme("bb-dark", {
-    base: "vs-dark",
-    inherit: true,
-    rules: [],
-    colors: {},
-  });
+  monaco.editor.defineTheme("bb", bbTheme);
+  monaco.editor.defineTheme("bb-dark", bbDarkTheme);
   monaco.editor.setTheme("bb");
 
   self.MonacoEnvironment = {

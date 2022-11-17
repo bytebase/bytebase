@@ -7,6 +7,7 @@
       :dialect="selectedDialect"
       :readonly="readonly"
       :options="{
+        theme: 'bb-dark',
         minimap: {
           enabled: false,
         },
@@ -108,6 +109,12 @@ watch(
 );
 
 const getLineNumber = (lineNumber: number) => {
+  /*
+    Show a SQL CLI like command prompt.
+    SQL> first_line
+      -> second_line
+      -> more_lines
+  */
   if (lineNumber === 1) return "SQL>";
   return "->";
 };
