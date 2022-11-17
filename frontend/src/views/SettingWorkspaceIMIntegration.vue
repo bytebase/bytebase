@@ -164,6 +164,8 @@ const updateFeishuIntegration = async () => {
     state.isLoading = false;
     return;
   }
+
+  state.isLoading = false;
   state.originFeishuSetting = cloneDeep(state.feishuSetting);
 
   pushNotification({
