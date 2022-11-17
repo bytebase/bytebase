@@ -203,6 +203,8 @@ type WebhookCommit struct {
 // WebhookPushEvent is the API message for webhook push event.
 type WebhookPushEvent struct {
 	Ref        string            `json:"ref"`
+	Before     string            `json:"before"`
+	After      string            `json:"after"`
 	Repository WebhookRepository `json:"repository"`
 	Sender     WebhookSender     `json:"sender"`
 	Commits    []WebhookCommit   `json:"commits"`
@@ -313,6 +315,11 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		AuthorName: commit.Author.Name,
 		CreatedTs:  commit.Author.Date.Unix(),
 	}, nil
+}
+
+// GetDiffFileList gets the diff files list between two commits.
+func (*Provider) GetDiffFileList(_ context.Context, _ common.OauthContext, _, _, _, _ string) ([]vcs.FileDiff, error) {
+	return nil, nil
 }
 
 // FetchUserInfo fetches user info of given user ID.
@@ -1429,7 +1436,10 @@ func (p WebhookPushEvent) ToVCS() vcs.PushEvent {
 		})
 	}
 	return vcs.PushEvent{
+		VCSType:            vcs.GitHubCom,
 		Ref:                p.Ref,
+		Before:             p.Before,
+		After:              p.After,
 		RepositoryID:       p.Repository.FullName,
 		RepositoryURL:      p.Repository.HTMLURL,
 		RepositoryFullPath: p.Repository.FullName,
