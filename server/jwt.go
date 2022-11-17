@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -162,33 +163,59 @@ func removeUserCookie(c echo.Context) {
 	c.SetCookie(cookie)
 }
 
+func findAccessToken(c echo.Context) (string, error) {
+	if common.HasPrefixes(c.Path(), openAPIPrefix) {
+		authHeader := c.Request().Header.Get("Authorization")
+		if authHeader == "" {
+			return "", nil
+		}
+
+		authHeaderParts := strings.Fields(authHeader)
+		if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
+			return "", common.Errorf(common.Invalid, "Authorization header format must be Bearer {token}")
+		}
+
+		return authHeaderParts[1], nil
+	}
+
+	cookie, err := c.Cookie(accessTokenCookieName)
+	if err != nil {
+		return "", err
+	}
+
+	return cookie.Value, nil
+}
+
 // JWTMiddleware validates the access token.
 // If the access token is about to expire or has expired and the request has a valid refresh token, it
 // will try to generate new access token and refresh token.
-func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string) echo.HandlerFunc {
+func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
+
 		// Skips auth, actuator, plan
-		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
+		if common.HasPrefixes(path, "/auth", "/actuator", "/plan") {
 			return next(c)
 		}
 
 		method := c.Request().Method
 		// Skip GET /subscription request
-		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
-			return next(c)
-		}
-		// Skip OpenAPI request
-		if common.HasPrefixes(c.Path(), openAPIPrefix) {
+		if common.HasPrefixes(c.Path(), "/subscription") && method == "GET" {
 			return next(c)
 		}
 
-		cookie, err := c.Cookie(accessTokenCookieName)
+		// Skips OpenAPI SQL endpoint
+		if common.HasPrefixes(c.Path(), fmt.Sprintf("%s/sql", openAPIPrefix)) {
+			return next(c)
+		}
+
+		token, err := findAccessToken(c)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Missing access token")
 		}
 
 		claims := &Claims{}
-		accessToken, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
+		accessToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
 			if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 				return nil, pkgerrors.Errorf("unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
 			}
