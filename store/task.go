@@ -277,6 +277,9 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 	if err != nil {
 		return nil, err
 	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found with ID %v", task.InstanceID)
+	}
 	task.Instance = instance
 
 	if task.DatabaseID != nil {
