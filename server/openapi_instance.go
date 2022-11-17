@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/api"
+	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 )
 
 func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
@@ -24,5 +25,25 @@ func (s *Server) listInstance(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, instanceList)
+	var response []*openAPIV1.Instance
+	for _, instance := range instanceList {
+		response = append(response, &openAPIV1.Instance{
+			ID:              instance.ID,
+			RowStatus:       instance.RowStatus,
+			CreatorID:       instance.CreatorID,
+			UpdaterID:       instance.UpdaterID,
+			CreatedTs:       instance.CreatedTs,
+			UpdatedTs:       instance.UpdatedTs,
+			EnvironmentName: instance.Environment.Name,
+			Name:            instance.Name,
+			Engine:          instance.Engine,
+			EngineVersion:   instance.EngineVersion,
+			ExternalLink:    instance.ExternalLink,
+			Host:            instance.Host,
+			Port:            instance.Port,
+			Username:        instance.Username,
+		})
+	}
+
+	return c.JSON(http.StatusOK, response)
 }

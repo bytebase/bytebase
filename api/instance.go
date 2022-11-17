@@ -8,32 +8,32 @@ import (
 
 // Instance is the API message for an instance.
 type Instance struct {
-	ID int `jsonapi:"primary,instance" json:"id"`
+	ID int `jsonapi:"primary,instance"`
 
 	// Standard fields
-	RowStatus RowStatus  `jsonapi:"attr,rowStatus" json:"rowStatus"`
-	CreatorID int        `json:"-"`
-	Creator   *Principal `jsonapi:"relation,creator" json:"creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs" json:"createdTs"`
-	UpdaterID int        `json:"-"`
-	Updater   *Principal `jsonapi:"relation,updater" json:"updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs" json:"updatedTs"`
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
+	CreatorID int
+	Creator   *Principal `jsonapi:"relation,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterID int
+	Updater   *Principal `jsonapi:"relation,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	EnvironmentID  int           `json:"-"`
-	Environment    *Environment  `jsonapi:"relation,environment" json:"environment"`
-	DataSourceList []*DataSource `jsonapi:"relation,dataSourceList" json:"dataSourceList"`
+	EnvironmentID  int
+	Environment    *Environment  `jsonapi:"relation,environment"`
+	DataSourceList []*DataSource `jsonapi:"relation,dataSourceList"`
 
 	// Domain specific fields
-	Name          string  `jsonapi:"attr,name" json:"name"`
-	Engine        db.Type `jsonapi:"attr,engine" json:"engine"`
-	EngineVersion string  `jsonapi:"attr,engineVersion" json:"engineVersion"`
-	ExternalLink  string  `jsonapi:"attr,externalLink" json:"externalLink"`
-	Host          string  `jsonapi:"attr,host" json:"host"`
-	Port          string  `jsonapi:"attr,port" json:"port"`
-	Username      string  `jsonapi:"attr,username" json:"username"`
+	Name          string  `jsonapi:"attr,name"`
+	Engine        db.Type `jsonapi:"attr,engine"`
+	EngineVersion string  `jsonapi:"attr,engineVersion"`
+	ExternalLink  string  `jsonapi:"attr,externalLink"`
+	Host          string  `jsonapi:"attr,host"`
+	Port          string  `jsonapi:"attr,port"`
+	Username      string  `jsonapi:"attr,username"`
 	// Password is not returned to the client
-	Password string `json:"-"`
+	Password string
 }
 
 // InstanceCreate is the API message for creating an instance.

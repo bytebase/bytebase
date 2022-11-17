@@ -27,8 +27,8 @@ type VCSLogin struct {
 // Login is the API message for logins.
 type Login struct {
 	// Domain specific fields
-	Email    string `jsonapi:"attr,email" json:"email"`
-	Password string `jsonapi:"attr,password" json:"password"`
+	Email    string `jsonapi:"attr,email"`
+	Password string `jsonapi:"attr,password"`
 }
 
 // SignUp is the API message for sign-ups.

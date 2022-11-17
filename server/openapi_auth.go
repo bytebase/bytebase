@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/api"
+	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 )
 
 func (s *Server) registerOpenAPIRoutesForAuth(g *echo.Group) {
@@ -18,7 +19,7 @@ func (s *Server) registerOpenAPIRoutesForAuth(g *echo.Group) {
 
 func (s *Server) openAPIUserLogin(c echo.Context) error {
 	ctx := c.Request().Context()
-	login := &api.Login{}
+	login := &openAPIV1.Login{}
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
@@ -58,7 +59,7 @@ func (s *Server) openAPIUserLogin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
 	}
 
-	response := &api.OpenAPIUserLogin{
+	response := &openAPIV1.LoginResponse{
 		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
