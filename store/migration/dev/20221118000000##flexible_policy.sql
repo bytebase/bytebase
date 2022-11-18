@@ -13,5 +13,4 @@ ALTER TABLE policy ALTER COLUMN resource_type SET NOT NULL;
 ALTER TABLE policy ALTER COLUMN resource_id SET NOT NULL;
 ALTER TABLE policy DROP COLUMN environment_id;
 
-CREATE INDEX idx_policy_resource_type_resource_id ON policy(resource_type, resource_id);
 CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON policy(resource_type, resource_id, type);

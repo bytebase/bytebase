@@ -143,8 +143,6 @@ CREATE TABLE policy (
     resource_id INTEGER NOT NULL
 );
 
-CREATE INDEX idx_policy_resource_type_resource_id ON policy(resource_type, resource_id);
-
 CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON policy(resource_type, resource_id, type);
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 101;
