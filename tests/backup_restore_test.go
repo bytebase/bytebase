@@ -430,9 +430,9 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller, port i
 	a.NoError(err)
 	str := string(buf)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
-		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeBackupPlan,
-		Payload:       &str,
+		ResourceID: prodEnvironment.ID,
+		Type:       api.PolicyTypeBackupPlan,
+		Payload:    &str,
 	})
 	a.NoError(err)
 

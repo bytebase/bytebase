@@ -65,7 +65,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
 		}
 
-		policyUpsert.EnvironmentID = environmentID
+		policyUpsert.ResourceID = environmentID
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
@@ -95,9 +95,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		}
 
 		policyDelete := &api.PolicyDelete{
-			EnvironmentID: environmentID,
-			DeleterID:     c.Get(getPrincipalIDContextKey()).(int),
-			Type:          api.PolicyType(c.QueryParam("type")),
+			ResourceID: environmentID,
+			DeleterID:  c.Get(getPrincipalIDContextKey()).(int),
+			Type:       api.PolicyType(c.QueryParam("type")),
 		}
 
 		ctx := c.Request().Context()
@@ -125,7 +125,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
 		}
 		policyFind.Type = &pType
-		policyFind.EnvironmentID = &environmentID
+		policyFind.ResourceID = &environmentID
 
 		policy, err := s.store.GetPolicy(ctx, policyFind)
 		if err != nil {

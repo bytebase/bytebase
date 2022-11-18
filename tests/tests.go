@@ -1554,7 +1554,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 		return errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.EnvironmentID, policyUpsert.Type), buf)
+	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
 		return err
 	}
@@ -1568,7 +1568,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 
 // deletePolicy deletes the archived policy.
 func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
-	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
+	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.ResourceID, policyDelete.Type), new(bytes.Buffer))
 	if err != nil {
 		return err
 	}
