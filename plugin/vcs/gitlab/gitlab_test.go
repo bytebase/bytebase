@@ -1031,6 +1031,62 @@ func TestProvider_ListPullRequestFile(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_GetDiffFileList(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/compare", r.URL.Path)
+		assert.Equal(t, "from=before_sha&to=after_sha", r.URL.RawQuery)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repositories.html#compare-branches-tags-or-commits
+			Body: io.NopCloser(strings.NewReader(`
+{
+	"commit": {
+		"id": "12d65c8dd2b2676fa3ac47d955accc085a37a9c1",
+		"short_id": "12d65c8dd2b",
+		"title": "JS fix",
+		"author_name": "Example User",
+		"author_email": "user@example.com",
+		"created_at": "2014-02-27T10:27:00+02:00"
+	},
+	"commits": [{
+		"id": "12d65c8dd2b2676fa3ac47d955accc085a37a9c1",
+		"short_id": "12d65c8dd2b",
+		"title": "JS fix",
+		"author_name": "Example User",
+		"author_email": "user@example.com",
+		"created_at": "2014-02-27T10:27:00+02:00"
+	}],
+	"diffs": [{
+		"old_path": "files/js/application.js",
+		"new_path": "files/js/application.js",
+		"a_mode": null,
+		"b_mode": "100644",
+		"diff": "--- a/files/js/application.js\n+++ b/files/js/application.js\n@@ -24,8 +24,10 @@\n //= require g.raphael-min\n //= require g.bar-min\n //= require branch-graph\n-//= require highlightjs.min\n-//= require ace/ace\n //= require_tree .\n //= require d3\n //= require underscore\n+\n+function fix() { \n+  alert(\"Fixed\")\n+}",
+		"new_file": false,
+		"renamed_file": false,
+		"deleted_file": false
+	}],
+	"compare_timeout": false,
+	"compare_same_ref": false,
+	"web_url": "https://gitlab.example.com/janedoe/gitlab-foss/-/compare/ae73cb07c9eeaf35924a10f713b364d32b2dd34f...0b4bc9a49b562e85de7cc9e834518ea6828729b9"
+}
+`)),
+		}, nil
+	},
+	)
+	ctx := context.Background()
+	got, err := p.GetDiffFileList(ctx, common.OauthContext{}, "", "1", "before_sha", "after_sha")
+	require.NoError(t, err)
+
+	want := []vcs.FileDiff{
+		{
+			Path: "files/js/application.js",
+			Type: vcs.FileDiffTypeModified,
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
 func newMockProvider(mockRoundTrip func(r *http.Request) (*http.Response, error)) vcs.Provider {
 	return newProvider(
 		vcs.ProviderConfig{
