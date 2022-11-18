@@ -56,6 +56,7 @@ func (s *Server) createEnvironmentByOpenAPI(c echo.Context) error {
 	env, err := s.createEnvironment(ctx, &api.EnvironmentCreate{
 		CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		Name:      envCreate.Name,
+		Order:     envCreate.Order,
 	})
 	if err != nil {
 		return err

@@ -19,5 +19,6 @@ type EnvironmentPatch struct {
 // EnvironmentCreate is the API message for creating an environment.
 type EnvironmentCreate struct {
 	// Domain specific fields
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Order *int   `json:"order"`
 }

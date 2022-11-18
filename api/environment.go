@@ -33,7 +33,8 @@ type EnvironmentCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Name string `jsonapi:"attr,name"`
+	Name  string `jsonapi:"attr,name"`
+	Order *int   `jsonapi:"attr,order"`
 }
 
 // EnvironmentFind is the API message for finding environments.
