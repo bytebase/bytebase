@@ -338,7 +338,7 @@ func (s *Server) sqlAdviceForFile(
 	// There may exist many databases that match the file name.
 	// We just need to use the first one, which has the SQL review policy and can let us take the check.
 	for _, database := range databases {
-		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &database.Instance.EnvironmentID})
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceID: &database.Instance.EnvironmentID})
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 				log.Debug("Cannot found SQL review policy in environment", zap.Int("Environment", database.Instance.EnvironmentID), zap.Error(err))
