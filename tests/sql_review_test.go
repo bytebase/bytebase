@@ -25,17 +25,15 @@ import (
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
-var (
-	noSQLReviewPolicy = []api.TaskCheckResult{
-		{
-			Status:    api.TaskCheckStatusSuccess,
-			Namespace: api.AdvisorNamespace,
-			Code:      common.Ok.Int(),
-			Title:     "Empty SQL review policy or disabled",
-			Content:   "",
-		},
-	}
-)
+var noSQLReviewPolicy = []api.TaskCheckResult{
+	{
+		Status:    api.TaskCheckStatusSuccess,
+		Namespace: api.AdvisorNamespace,
+		Code:      common.Ok.Int(),
+		Title:     "Empty SQL review policy or disabled",
+		Content:   "",
+	},
+}
 
 type test struct {
 	statement string
@@ -257,7 +255,11 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	port := getTestPort(t.Name()) + 3
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		port:               getTestPort(t.Name()),
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -984,7 +986,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	port := getTestPort(t.Name()) + 3
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		port:               getTestPort(t.Name()),
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()

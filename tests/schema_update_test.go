@@ -34,7 +34,11 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		port:               getTestPort(t.Name()),
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -355,7 +359,11 @@ func TestVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				port:               getTestPort(t.Name()),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -728,7 +736,11 @@ func TestVCS_SDL(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				port:               getTestPort(t.Name()),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1224,7 +1236,11 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, port)
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				port:               port,
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1444,7 +1460,11 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				port:               getTestPort(t.Name()),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
