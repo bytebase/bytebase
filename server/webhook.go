@@ -479,6 +479,10 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 }
 
 func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
+	if len(repositoryList) == 0 {
+		return nil, errors.Errorf("empty repository list")
+	}
+
 	distinctFileList := baseVCSPushEvent.GetDistinctFileList()
 	if len(distinctFileList) == 0 {
 		var commitIDs []string
