@@ -40,7 +40,8 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        environment_id,
+        resource_type,
+        resource_id,
         type,
         payload
     )
@@ -49,6 +50,7 @@ VALUES
         101,
         1,
         1,
+        'ENVIRONMENT',
         101,
         'bb.policy.pipeline-approval',
         '{"value":"MANUAL_APPROVAL_NEVER"}'
@@ -59,7 +61,8 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        environment_id,
+        resource_type,
+        resource_id,
         type,
         payload
     )
@@ -68,6 +71,7 @@ VALUES
         102,
         1,
         1,
+        'ENVIRONMENT',
         102,
         'bb.policy.pipeline-approval',
         '{"value":"MANUAL_APPROVAL_ALWAYS"}'
@@ -78,7 +82,8 @@ INSERT INTO
         id,
         creator_id,
         updater_id,
-        environment_id,
+        resource_type,
+        resource_id,
         type,
         payload
     )
@@ -87,6 +92,7 @@ VALUES
         103,
         1,
         1,
+        'ENVIRONMENT',
         102,
         'bb.policy.backup-plan',
         '{"schedule":"WEEKLY"}'

@@ -35,6 +35,7 @@ VALUES
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 103;
 
+-- TODO(d): update policy data.
 INSERT INTO
     policy (
         id,
