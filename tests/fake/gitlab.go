@@ -473,7 +473,7 @@ func (gl *GitLab) compareCommits(c echo.Context) error {
 func (gl *GitLab) AddCommitsDiff(projectID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error {
 	pd, ok := gl.projects[projectID]
 	if !ok {
-		return errors.Errorf("gitlab project %q doesn't exist", projectID)
+		return errors.Errorf("GitLab project %s doesn't exist", projectID)
 	}
 	key := fmt.Sprintf("%s...%s", fromCommit, toCommit)
 	commitsDiff := &gitlab.CommitsDiff{

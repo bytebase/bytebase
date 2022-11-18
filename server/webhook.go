@@ -546,6 +546,7 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 // Users may merge commits from other branches, and some of the commits merged in may already be merged into the main branch.
 // In that case, the commits in the push event contains files which are not added in this PR/MR.
 // We use the compare API to get the file diffs and filter files by the diffs.
+// TODO(dragonly): generate distinct file change list from the commits diff instead of filter.
 func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Repository, distinctFileList []vcs.DistinctFileItem, beforeCommit, afterCommit string) ([]vcs.DistinctFileItem, error) {
 	fileDiffList, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).GetDiffFileList(
 		ctx,
@@ -572,11 +573,6 @@ func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Reposit
 				break
 			}
 		}
-	}
-	// Skip filtering for GitHub.
-	// TODO(dragonly): remove this when GetDiffFileList is also implemented for GitHub.
-	if fileDiffList == nil {
-		filteredDistinctFileList = distinctFileList
 	}
 	return filteredDistinctFileList, nil
 }
