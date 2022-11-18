@@ -57,6 +57,7 @@ type Server struct {
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
 	ApplicationRunner  *ApplicationRunner
+	RollbackRunner     *RollbackRunner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *ActivityManager
@@ -303,6 +304,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
 
+		// Rollback SQL generator
+		s.RollbackRunner = NewRollbackRunner(s.store, s.profile.DataDir)
+
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
 	}
@@ -531,6 +535,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)

@@ -56,7 +56,9 @@ func TestRollback(t *testing.T) {
 	tableCatalog := map[string][]string{
 		"user": {"id", "name", "balance"},
 	}
-	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileList, 0, math.MaxInt64, tableCatalog)
+	threadID, err := mysqlDriver.GetMigrationConnID(ctx)
+	a.NoError(err)
+	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileList, 0, math.MaxInt64, threadID, tableCatalog)
 	a.NoError(err)
 	_, err = db.ExecContext(ctx, rollbackSQL)
 	a.NoError(err)
