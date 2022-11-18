@@ -36,6 +36,7 @@ p, DBA, /instance, POST
 p, DBA, /instance, GET
 p, DBA, /instance/{instanceID}, GET
 p, DBA, /instance/{instanceID}, PATCH
+p, DBA, /instance/{instanceID}, DELETE
 p, DBA, /instance/{instanceID}/user, GET
 p, DBA, /instance/{instanceID}/user/{userID}, GET
 p, DBA, /instance/{instanceID}/migration, POST
