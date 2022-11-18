@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -19,27 +20,27 @@ import (
 // NewRollbackRunner creates a new rollback runner.
 func NewRollbackRunner(store *store.Store, dataDir string) *RollbackRunner {
 	return &RollbackRunner{
-		store:          store,
-		dataDir:        dataDir,
-		generateSignal: make(chan struct{}, 1),
+		store:   store,
+		dataDir: dataDir,
 	}
 }
 
 // RollbackRunner is the rollback runner generating rollback SQL statements.
 type RollbackRunner struct {
-	store          *store.Store
-	dataDir        string
-	generateSignal chan struct{}
-	generateMap    sync.Map
+	store       *store.Store
+	dataDir     string
+	generateMap sync.Map
 }
 
 // Run starts the rollback runner.
 func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
 	defer wg.Done()
 	r.retryGenerateRollbackSQL(ctx)
 	for {
 		select {
-		case <-r.generateSignal:
+		case <-ticker.C:
 			log.Debug("Received signal for generating rollback SQL.")
 			r.generateMap.Range(func(key, value any) bool {
 				task := value.(*api.Task)
@@ -71,7 +72,6 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
 		r.generateMap.Store(task.ID, task)
 	}
-	r.generateSignal <- struct{}{}
 }
 
 func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task) {

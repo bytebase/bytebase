@@ -170,14 +170,8 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
+		// The runner will periodically scan the map to generate rollback SQL asynchronously.
 		server.RollbackRunner.generateMap.Store(updatedTask.ID, updatedTask)
-		// Do not block on sending the signal if the channel is full.
-		// In that case, the runner is slower and will be signaled anyway.
-		select {
-		case server.RollbackRunner.generateSignal <- struct{}{}:
-			log.Debug("Send signal for generating rollback SQL.")
-		default:
-		}
 	}
 
 	return migrationID, schema, nil
