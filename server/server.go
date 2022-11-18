@@ -420,6 +420,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof P
 	s.registerOpenAPIRoutesForSQL(openAPIGroup)
 	s.registerOpenAPIRoutesForAuth(openAPIGroup)
 	s.registerOpenAPIRoutesForInstance(openAPIGroup)
+	s.registerOpenAPIRoutesForEnvironment(openAPIGroup)
 
 	openAPIGroup.GET("/healthz", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
