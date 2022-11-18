@@ -309,6 +309,8 @@ func TestParseSchemaFileInfo(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			got, err := ParseSchemaFileInfo(test.baseDirectory, test.schemaPathTemplate, test.file)
 			require.NoError(t, err)
