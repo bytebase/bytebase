@@ -13,7 +13,7 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
   diff: |
     ALTER TABLE "public"."order_details"
-        DROP CONSTRAINT IF EXISTS "order_details_un_order_id";
+        DROP CONSTRAINT "order_details_un_order_id";
 - oldSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id);
@@ -22,7 +22,8 @@
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (order_id);
   diff: |
     ALTER TABLE "public"."order_details"
-        DROP CONSTRAINT IF EXISTS "order_details_un_order_id",
+        DROP CONSTRAINT "order_details_un_order_id";
+    ALTER TABLE "public"."order_details"
         ADD CONSTRAINT "order_details_un_order_id" UNIQUE ("order_id");
 - oldSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT);
@@ -32,7 +33,8 @@
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id);
   diff: |
     ALTER TABLE "public"."order_details"
-        DROP CONSTRAINT IF EXISTS "order_details_un_order_id",
+        DROP CONSTRAINT "order_details_un_order_id";
+    ALTER TABLE "public"."order_details"
         ADD CONSTRAINT "order_details_un_order_id" UNIQUE ("id", "order_id");
 - oldSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT, email_id INT);
@@ -42,9 +44,10 @@
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id);
   diff: |
     ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_un_order_id";
+    ALTER TABLE "public"."order_details"
         DROP COLUMN "email_id";
     ALTER TABLE "public"."order_details"
-        DROP CONSTRAINT IF EXISTS "order_details_un_order_id",
         ADD CONSTRAINT "order_details_un_order_id" UNIQUE ("id", "order_id");
 - oldSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT);
@@ -61,7 +64,7 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
   diff: |
     ALTER TABLE "public"."order_details"
-        DROP CONSTRAINT IF EXISTS "order_details_pk";
+        DROP CONSTRAINT "order_details_pk";
 - oldSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id);
@@ -70,7 +73,8 @@
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (order_id);
   diff: |
     ALTER TABLE "public"."order_details"
-        DROP CONSTRAINT IF EXISTS "order_details_pk",
+        DROP CONSTRAINT "order_details_pk";
+    ALTER TABLE "public"."order_details"
         ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("order_id");
 - oldSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT);
@@ -80,7 +84,8 @@
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id);
   diff: |
     ALTER TABLE "public"."order_details"
-        DROP CONSTRAINT IF EXISTS "order_details_pk",
+        DROP CONSTRAINT "order_details_pk";
+    ALTER TABLE "public"."order_details"
         ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("id", "order_id");
 - oldSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT, email_id INT);
@@ -90,9 +95,10 @@
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id);
   diff: |
     ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_pk";
+    ALTER TABLE "public"."order_details"
         DROP COLUMN "email_id";
     ALTER TABLE "public"."order_details"
-        DROP CONSTRAINT IF EXISTS "order_details_pk",
         ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("id", "order_id");
 - oldSchema: |
     CREATE TABLE public.circles(a circle, b circle, c integer);
@@ -101,7 +107,7 @@
     CREATE TABLE public.circles(a circle, b circle, c integer);
   diff: |
     ALTER TABLE "public"."circles"
-        DROP CONSTRAINT IF EXISTS "circles_a_b_excl";
+        DROP CONSTRAINT "circles_a_b_excl";
 - oldSchema: |
     CREATE TABLE public.circles(a circle, b circle, c integer);
   newSchema: |
@@ -118,5 +124,6 @@
     ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
   diff: |
     ALTER TABLE "public"."circles"
-        DROP CONSTRAINT IF EXISTS "circles_a_b_excl",
+        DROP CONSTRAINT "circles_a_b_excl";
+    ALTER TABLE "public"."circles"
         ADD CONSTRAINT "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
