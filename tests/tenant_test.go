@@ -32,7 +32,11 @@ func TestTenant(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		port:               getTestPort(t.Name()),
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -285,7 +289,11 @@ func TestTenantVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				port:               getTestPort(t.Name()),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -517,7 +525,12 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		port:               getTestPort(t.Name()),
+		vcsProviderCreator: fake.NewGitLab,
+	})
+
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -743,7 +756,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				port:               getTestPort(t.Name()),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1079,7 +1096,11 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				port:               getTestPort(t.Name()),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1357,7 +1378,11 @@ func TestTenantVCS_YAML(t *testing.T) {
 
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				port:               getTestPort(t.Name()),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			require.NoError(t, err)
 			defer func() {
 				_ = ctl.Close(ctx)
