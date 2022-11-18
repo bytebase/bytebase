@@ -159,21 +159,20 @@ func enforceWorkspaceDeveloperSheetRouteACL(plan api.PlanType, path string, meth
 	return nil
 }
 
-func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
+func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
+
+		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
+
 		// Skips auth, actuator, plan
-		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan", "/api/oauth") {
+		if common.HasPrefixes(path, "/auth", "/actuator", "/plan", "/oauth") {
 			return next(c)
 		}
 
 		method := c.Request().Method
 		// Skip GET /subscription request
-		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
-			return next(c)
-		}
-		// Skip OpenAPI request
-		if common.HasPrefixes(c.Path(), openAPIPrefix) {
+		if common.HasPrefixes(path, "/subscription") && method == "GET" {
 			return next(c)
 		}
 
@@ -195,8 +194,6 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
 		}
 
-		path := strings.TrimPrefix(c.Request().URL.Path, "/api")
-
 		role := member.Role
 		// If admin feature is not enabled, then we treat all user as OWNER.
 		if !s.feature(api.FeatureRBAC) {
@@ -214,7 +211,7 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 			// XXX_SELF and try again. Because XXX is a superset of XXX_SELF, thus we only try XXX_SELF after
 			// XXX fails.
 			if method == "GET" || method == "PATCH" || method == "DELETE" {
-				if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method); err != nil {
+				if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method, path); err != nil {
 					return err
 				} else if isSelf {
 					method += "_SELF"
@@ -273,26 +270,26 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 	}
 }
 
-func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, method string) (bool, error) {
+func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, method string, path string) (bool, error) {
 	switch method {
 	case http.MethodGet:
-		return isGettingSelf(ctx, c, s, curPrincipalID)
+		return isGettingSelf(ctx, c, s, curPrincipalID, path)
 	case http.MethodPatch, http.MethodDelete:
-		return isUpdatingSelf(ctx, c, s, curPrincipalID)
+		return isUpdatingSelf(ctx, c, s, curPrincipalID, path)
 	default:
 		return false, nil
 	}
 }
 
-func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID int) (bool, error) {
-	if strings.HasPrefix(c.Path(), "/api/inbox/user") {
+func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID int, path string) (bool, error) {
+	if strings.HasPrefix(path, "/inbox/user") {
 		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
 		}
 
 		return userID == curPrincipalID, nil
-	} else if strings.HasPrefix(c.Path(), "/api/bookmark/user") {
+	} else if strings.HasPrefix(path, "/bookmark/user") {
 		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
@@ -304,14 +301,14 @@ func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID 
 	return false, nil
 }
 
-func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int) (bool, error) {
+func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, path string) (bool, error) {
 	const defaultErrMsg = "Failed to process authorize request."
-	if strings.HasPrefix(c.Path(), "/api/principal") {
+	if strings.HasPrefix(path, "/principal") {
 		pathPrincipalID := c.Param("principalID")
 		if pathPrincipalID != "" {
 			return pathPrincipalID == strconv.Itoa(curPrincipalID), nil
 		}
-	} else if strings.HasPrefix(c.Path(), "/api/activity") {
+	} else if strings.HasPrefix(path, "/activity") {
 		if activityIDStr := c.Param("activityID"); activityIDStr != "" {
 			activityID, err := strconv.Atoi(activityIDStr)
 			if err != nil {
@@ -328,7 +325,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 
 			return activity.CreatorID == curPrincipalID, nil
 		}
-	} else if strings.HasPrefix(c.Path(), "/api/bookmark") {
+	} else if strings.HasPrefix(path, "/bookmark") {
 		if bookmarkIDStr := c.Param("bookmarkID"); bookmarkIDStr != "" {
 			bookmarkID, err := strconv.Atoi(bookmarkIDStr)
 			if err != nil {
@@ -345,7 +342,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 
 			return bookmark.CreatorID == curPrincipalID, nil
 		}
-	} else if strings.HasPrefix(c.Path(), "/api/inbox") {
+	} else if strings.HasPrefix(path, "/inbox") {
 		if inboxIDStr := c.Param("inboxID"); inboxIDStr != "" {
 			inboxID, err := strconv.Atoi(inboxIDStr)
 			if err != nil {
@@ -362,7 +359,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 
 			return inbox.ReceiverID == curPrincipalID, nil
 		}
-	} else if strings.HasPrefix(c.Path(), "/api/sheet") {
+	} else if strings.HasPrefix(path, "/sheet") {
 		if idStr := c.Param("id"); idStr != "" {
 			id, err := strconv.Atoi(idStr)
 			if err != nil {

@@ -47,7 +47,7 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
-		EnvironmentID: raw.EnvironmentID,
+		ResourceID: raw.EnvironmentID,
 
 		// Domain specific fields
 		Type:    raw.Type,
@@ -63,7 +63,7 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 	}
 	// Cache environment tier policy as it is used widely.
 	if upsert.Type == api.PolicyTypeEnvironmentTier {
-		if err := s.cache.UpsertCache(api.TierPolicyCache, upsert.EnvironmentID, policyRaw); err != nil {
+		if err := s.cache.UpsertCache(api.TierPolicyCache, upsert.ResourceID, policyRaw); err != nil {
 			return nil, err
 		}
 	}
@@ -102,10 +102,10 @@ func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete
 	defer tx.Rollback()
 
 	find := &api.PolicyFind{
-		EnvironmentID: &policyDelete.EnvironmentID,
-		Type:          &policyDelete.Type,
+		ResourceID: &policyDelete.ResourceID,
+		Type:       &policyDelete.Type,
 	}
-	policyRawList, err := findPolicyImpl(ctx, tx, find)
+	policyRawList, err := findPolicyImpl(ctx, tx, find, s.db.mode)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list policy with PolicyFind[%+v]", find)
 	}
@@ -126,7 +126,7 @@ func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete
 	}
 
 	if policyDelete.Type == api.PolicyTypeEnvironmentTier {
-		s.cache.DeleteCache(api.TierPolicyCache, policyDelete.EnvironmentID)
+		s.cache.DeleteCache(api.TierPolicyCache, policyDelete.ResourceID)
 	}
 	return nil
 }
@@ -145,7 +145,7 @@ func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Po
 	}
 	defer tx.Rollback()
 
-	policyRawList, err := findPolicyImpl(ctx, tx, find)
+	policyRawList, err := findPolicyImpl(ctx, tx, find, s.db.mode)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list policy with PolicyFind[%+v]", find)
 	}
@@ -166,8 +166,8 @@ func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Po
 func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
 	pType := api.PolicyTypeBackupPlan
 	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		EnvironmentID: &environmentID,
-		Type:          &pType,
+		ResourceID: &environmentID,
+		Type:       &pType,
 	})
 	if err != nil {
 		return nil, err
@@ -179,8 +179,8 @@ func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID in
 func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*api.PipelineApprovalPolicy, error) {
 	pType := api.PolicyTypePipelineApproval
 	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		EnvironmentID: &environmentID,
-		Type:          &pType,
+		ResourceID: &environmentID,
+		Type:       &pType,
 	})
 	if err != nil {
 		return nil, err
@@ -213,8 +213,8 @@ func (s *Store) GetNormalSQLReviewPolicy(ctx context.Context, find *api.PolicyFi
 func (s *Store) GetSQLReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
 	pType := api.PolicyTypeSQLReview
 	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		EnvironmentID: &environmentID,
-		Type:          &pType,
+		ResourceID: &environmentID,
+		Type:       &pType,
 	})
 	if err != nil {
 		return 0, err
@@ -232,8 +232,8 @@ func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environment
 	if !ok {
 		pType := api.PolicyTypeEnvironmentTier
 		p, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-			EnvironmentID: &environmentID,
-			Type:          &pType,
+			ResourceID: &environmentID,
+			Type:       &pType,
 		})
 		if err != nil {
 			return nil, err
@@ -266,7 +266,7 @@ func (s *Store) composePolicy(ctx context.Context, raw *policyRaw) (*api.Policy,
 	}
 	policy.Updater = updater
 
-	env, err := s.GetEnvironmentByID(ctx, policy.EnvironmentID)
+	env, err := s.GetEnvironmentByID(ctx, policy.ResourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 	}
 	defer tx.Rollback()
 
-	policyRawList, err := findPolicyImpl(ctx, tx, find)
+	policyRawList, err := findPolicyImpl(ctx, tx, find, s.db.mode)
 	var ret *policyRaw
 	if err != nil {
 		return nil, err
@@ -302,8 +302,8 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 			UpdaterID: api.SystemBotID,
 			Type:      *find.Type,
 		}
-		if find.EnvironmentID != nil {
-			ret.EnvironmentID = *find.EnvironmentID
+		if find.ResourceID != nil {
+			ret.EnvironmentID = *find.ResourceID
 		}
 	} else if len(policyRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}
@@ -323,13 +323,77 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 	return ret, nil
 }
 
-func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind) ([]*policyRaw, error) {
+func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind, mode common.ReleaseMode) ([]*policyRaw, error) {
+	if mode == common.ReleaseModeDev {
+		// TODO(d): handle resource type.
+		// Build WHERE clause.
+		where, args := []string{"1 = 1"}, []interface{}{}
+		if v := find.ID; v != nil {
+			where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+		}
+
+		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, api.PolicyResourceTypeEnvironment)
+
+		if v := find.ResourceID; v != nil {
+			where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+		}
+		if v := find.Type; v != nil {
+			where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+		}
+
+		rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			row_status,
+			resource_id,
+			type,
+			payload
+		FROM policy
+		WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into policyRawList.
+		var policyRawList []*policyRaw
+		for rows.Next() {
+			var policyRaw policyRaw
+			if err := rows.Scan(
+				&policyRaw.ID,
+				&policyRaw.CreatorID,
+				&policyRaw.CreatedTs,
+				&policyRaw.UpdaterID,
+				&policyRaw.UpdatedTs,
+				&policyRaw.RowStatus,
+				&policyRaw.EnvironmentID,
+				&policyRaw.Type,
+				&policyRaw.Payload,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+
+			policyRawList = append(policyRawList, &policyRaw)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return policyRawList, nil
+	}
+
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.EnvironmentID; v != nil {
+	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
@@ -397,7 +461,7 @@ func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (
 	}
 	defer tx.Rollback()
 
-	policy, err := upsertPolicyImpl(ctx, tx, upsert)
+	policy, err := upsertPolicyImpl(ctx, tx, upsert, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -410,8 +474,73 @@ func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (
 }
 
 // upsertPolicyImpl updates an existing policy by environment id and type.
-func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*policyRaw, error) {
-	// Upsert row into policy.
+func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert, mode common.ReleaseMode) (*policyRaw, error) {
+	if mode == common.ReleaseModeDev {
+		var set []string
+		if v := upsert.Payload; v != nil {
+			set = append(set, "payload = EXCLUDED.payload")
+		}
+		if v := upsert.RowStatus; v != nil {
+			set = append(set, "row_status = EXCLUDED.row_status")
+		}
+
+		if len(set) == 0 {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("invalid policy upsert %+v", upsert)}
+		}
+
+		if upsert.Payload == nil || *upsert.Payload == "" {
+			emptyPayload := "{}"
+			upsert.Payload = &emptyPayload
+		}
+		if upsert.RowStatus == nil {
+			rowStatus := string(api.Normal)
+			upsert.RowStatus = &rowStatus
+		}
+
+		// TODO(d): handle resource type.
+		query := fmt.Sprintf(`
+		INSERT INTO policy (
+			creator_id,
+			updater_id,
+			resource_type,
+			resource_id,
+			type,
+			payload,
+			row_status
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
+			%s
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, resource_id, type, payload
+	`, strings.Join(set, ","))
+		var policyRaw policyRaw
+		if err := tx.QueryRowContext(ctx, query,
+			upsert.UpdaterID,
+			upsert.UpdaterID,
+			api.PolicyResourceTypeEnvironment,
+			upsert.ResourceID,
+			upsert.Type,
+			upsert.Payload,
+			upsert.RowStatus,
+		).Scan(
+			&policyRaw.ID,
+			&policyRaw.CreatorID,
+			&policyRaw.CreatedTs,
+			&policyRaw.UpdaterID,
+			&policyRaw.UpdatedTs,
+			&policyRaw.RowStatus,
+			&policyRaw.EnvironmentID,
+			&policyRaw.Type,
+			&policyRaw.Payload,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return nil, FormatError(err)
+		}
+		return &policyRaw, nil
+	}
+
 	var set []string
 	if v := upsert.Payload; v != nil {
 		set = append(set, "payload = EXCLUDED.payload")
@@ -451,7 +580,7 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*p
 	if err := tx.QueryRowContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
-		upsert.EnvironmentID,
+		upsert.ResourceID,
 		upsert.Type,
 		upsert.Payload,
 		upsert.RowStatus,
@@ -476,12 +605,12 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*p
 
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.
 func (*Store) deletePolicyImpl(ctx context.Context, tx *Tx, delete *api.PolicyDelete) error {
-	// Remove row from policy.
+	// TODO(d): handle resource type.
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM policy
-			WHERE environment_id = $1 AND type = $2 AND row_status = $3
+			WHERE resource_id = $1 AND type = $2 AND row_status = $3
 		`,
-		delete.EnvironmentID,
+		delete.ResourceID,
 		delete.Type,
 		api.Archived,
 	); err != nil {

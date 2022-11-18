@@ -347,6 +347,8 @@ func TestVCS(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -718,6 +720,8 @@ func TestVCS_SDL(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -763,7 +767,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS
-			vcs, err := ctl.createVCS(
+			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
 					Name:          t.Name(),
 					Type:          test.vcsType,
@@ -789,7 +793,7 @@ func TestVCS_SDL(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
+					VCSID:              apiVCS.ID,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -835,7 +839,10 @@ func TestVCS_SDL(t *testing.T) {
 				schemaFile: schemaFileContent,
 			})
 			a.NoError(err)
-
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: schemaFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
 			payload, err := json.Marshal(test.newWebhookPushEvent(nil /* added */, []string{schemaFile}, "1", "2"))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
@@ -873,7 +880,10 @@ func TestVCS_SDL(t *testing.T) {
 				dataFile: `INSERT INTO users (id) VALUES (1);`,
 			})
 			a.NoError(err)
-
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
+				{Path: dataFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
 			payload, err = json.Marshal(test.newWebhookPushEvent([]string{dataFile}, nil /* modified */, "2", "3"))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
@@ -1205,6 +1215,8 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -1255,7 +1267,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					FullPath:           repoFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repoFullPath),
 					BranchFilter:       branchFilter,
-					BaseDirectory:      baseDirectory,
+					BaseDirectory:      test.baseDirectory,
 					FilePathTemplate:   test.filePathTemplate,
 					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
 					ExternalID:         externalID,
@@ -1424,7 +1436,11 @@ func TestVCS_SQL_Review(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
@@ -1573,9 +1589,9 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			err = ctl.upsertPolicy(api.PolicyUpsert{
-				EnvironmentID: prodEnvironment.ID,
-				Type:          api.PolicyTypeSQLReview,
-				Payload:       &policyPayload,
+				ResourceID: prodEnvironment.ID,
+				Type:       api.PolicyTypeSQLReview,
+				Payload:    &policyPayload,
 			})
 			a.NoError(err)
 

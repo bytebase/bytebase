@@ -69,6 +69,10 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	}
 	args = append(args, "--inserts")
 	args = append(args, "--use-set-session-authorization")
+	// Avoid pg_dump v15 generate "ALTER SCHEMA public OWNER TO" statement.
+	args = append(args, "--no-owner")
+	// Avoid pg_dump v15 generate REVOKE/GRANT statement.
+	args = append(args, "--no-privileges")
 	args = append(args, database)
 	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
