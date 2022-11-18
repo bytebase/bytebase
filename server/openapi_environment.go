@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 
@@ -19,6 +20,7 @@ func (s *Server) registerOpenAPIRoutesForEnvironment(g *echo.Group) {
 	g.POST("/environment", s.createEnvironmentByOpenAPI)
 	g.GET("/environment/:environmentID", s.getEnvironmentByID)
 	g.PATCH("/environment/:environmentID", s.updateEnvironmentByOpenAPI)
+	g.DELETE("/environment/:environmentID", s.archiveEnvironmentByOpenAPI)
 }
 
 func (s *Server) listEnvironment(c echo.Context) error {
@@ -110,6 +112,35 @@ func (s *Server) updateEnvironmentByOpenAPI(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, convertToOpenAPIEnvironment(env))
+}
+
+func (s *Server) archiveEnvironmentByOpenAPI(c echo.Context) error {
+	ctx := c.Request().Context()
+	id, err := strconv.Atoi(c.Param("environmentID"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Environment ID is not a number: %s", c.Param("environmentID"))).SetInternal(err)
+	}
+
+	env, err := s.store.GetEnvironmentByID(ctx, id)
+	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "Cannot found environment").SetInternal(err)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment").SetInternal(err)
+	}
+
+	rowStatus := string(api.Archived)
+	name := fmt.Sprintf("archived_%s_%d", env.Name, time.Now().Unix())
+	if _, err := s.updateEnvironment(ctx, &api.EnvironmentPatch{
+		ID:        id,
+		UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+		RowStatus: &rowStatus,
+		Name:      &name,
+	}); err != nil {
+		return err
+	}
+
+	return c.String(http.StatusOK, "ok")
 }
 
 func convertToOpenAPIEnvironment(env *api.Environment) *openAPIV1.Environment {
