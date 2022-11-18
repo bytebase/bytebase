@@ -554,6 +554,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 	}
 
 	if s.db.mode == common.ReleaseModeDev {
+		var rollbackFrom sql.NullInt64
 		rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -599,9 +600,12 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 				&taskRaw.Type,
 				&taskRaw.Payload,
 				&taskRaw.EarliestAllowedTs,
-				&taskRaw.RollbackFrom,
+				&rollbackFrom,
 			); err != nil {
 				return nil, FormatError(err)
+			}
+			if rollbackFrom.Valid {
+				taskRaw.RollbackFrom = int(rollbackFrom.Int64)
 			}
 			taskRawList = append(taskRawList, &taskRaw)
 		}
@@ -728,6 +732,7 @@ func (s *Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch)
 	var taskRaw taskRaw
 	// Execute update query with RETURNING.
 	if s.db.mode == common.ReleaseModeDev {
+		var rollbackFrom sql.NullInt64
 		if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
@@ -750,12 +755,15 @@ func (s *Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch)
 			&taskRaw.Type,
 			&taskRaw.Payload,
 			&taskRaw.EarliestAllowedTs,
-			&taskRaw.RollbackFrom,
+			&rollbackFrom,
 		); err != nil {
 			if err == sql.ErrNoRows {
 				return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task not found with ID %d", patch.ID)}
 			}
 			return nil, FormatError(err)
+		}
+		if rollbackFrom.Valid {
+			taskRaw.RollbackFrom = int(rollbackFrom.Int64)
 		}
 		return &taskRaw, nil
 	}
@@ -870,6 +878,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 
 	// Execute update query with RETURNING.
 	if s.db.mode == common.ReleaseModeDev {
+		var rollbackFrom sql.NullInt64
 		rows, err := tx.QueryContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
@@ -901,11 +910,13 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 				&taskRaw.Type,
 				&taskRaw.Payload,
 				&taskRaw.EarliestAllowedTs,
-				&taskRaw.RollbackFrom,
+				&rollbackFrom,
 			); err != nil {
 				return nil, FormatError(err)
 			}
-
+			if rollbackFrom.Valid {
+				taskRaw.RollbackFrom = int(rollbackFrom.Int64)
+			}
 			taskRawList = append(taskRawList, &taskRaw)
 		}
 
