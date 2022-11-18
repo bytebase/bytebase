@@ -148,7 +148,7 @@ type config struct {
 	dataDir string
 	port    int
 
-	vcsProviderCreator    fake.VCSProviderCreator
+	vcsProviderCreator fake.VCSProviderCreator
 
 	pgUser string
 	pgURL  string
