@@ -345,9 +345,9 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+		return nil, common.Errorf(common.NotFound, "failed to get file diff list from URL %s", url)
 	} else if code >= 300 {
-		return nil, errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+		return nil, errors.Errorf("failed to get file diff list from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
@@ -995,9 +995,9 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+		return nil, common.Errorf(common.NotFound, "failed to get branch from URL %s", url)
 	} else if code >= 300 {
-		return nil, errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+		return nil, errors.Errorf("failed to get branch from URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
