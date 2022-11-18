@@ -144,6 +144,16 @@ type controller struct {
 	vcsURL  string
 }
 
+type config struct {
+	dataDir string
+	port    int
+
+	vcsProviderCreator fake.VCSProviderCreator
+
+	pgUser string
+	pgURL  string
+}
+
 func getTestPort(testName string) int {
 	// We allocate 4 ports for each of the integration test, who probably would start
 	// the Bytebase server, Postgres, MySQL and code host (GitLab or GitHub).
@@ -208,23 +218,23 @@ func getTestPort(testName string) int {
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
-	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
+	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, config.port, config.pgUser, config.pgURL)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, vcsProviderCreator, port)
+	return ctl.start(ctx, config.vcsProviderCreator, config.port)
 }
 
 // StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int) error {
+func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	// start main server.
 	log.SetLevel(zap.DebugLevel)
-	profile := cmd.GetTestProfile(dataDir, port)
+	profile := cmd.GetTestProfile(config.dataDir, config.port)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -232,7 +242,7 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProvi
 	ctl.server = server
 	ctl.profile = profile
 
-	return ctl.start(ctx, vcsProviderCreator, port)
+	return ctl.start(ctx, config.vcsProviderCreator, config.port)
 }
 
 // start only called by StartServer() and StartServerWithExternalPg().
@@ -1554,7 +1564,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 		return errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.EnvironmentID, policyUpsert.Type), buf)
+	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
 		return err
 	}
@@ -1568,7 +1578,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 
 // deletePolicy deletes the archived policy.
 func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
-	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
+	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.ResourceID, policyDelete.Type), new(bytes.Buffer))
 	if err != nil {
 		return err
 	}

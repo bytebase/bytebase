@@ -22,7 +22,11 @@ func TestArchiveProject(t *testing.T) {
 	serverPort := getTestPort(t.Name())
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, serverPort)
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		port:               serverPort,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()

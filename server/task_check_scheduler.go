@@ -406,16 +406,27 @@ func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Tas
 	if !s.server.feature(api.FeatureLGTM) {
 		return nil, nil
 	}
-	issue, err := s.server.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issues, err := s.server.store.FindIssueStripped(ctx, &api.IssueFind{PipelineID: &task.PipelineID})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
-	if issue == nil {
+	if len(issues) > 1 {
+		return nil, errors.Errorf("expect to find 0 or 1 issue, get %d", len(issues))
+	}
+	if len(issues) == 0 {
 		// skip if no containing issue.
 		return nil, nil
 	}
-	if issue.Project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
+	if issues[0].Project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
 		// don't schedule LGTM check if it's disabled.
+		return nil, nil
+	}
+	approvalPolicy, err := s.server.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if approvalPolicy.Value == api.PipelineApprovalValueManualNever {
+		// don't schedule LGTM check if the approval policy is auto-approval.
 		return nil, nil
 	}
 	return []*api.TaskCheckRunCreate{

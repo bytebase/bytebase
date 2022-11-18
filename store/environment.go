@@ -250,17 +250,22 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *api.EnvironmentP
 // createEnvironmentImpl creates a new environment.
 func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *api.EnvironmentCreate) (*environmentRaw, error) {
 	var order int
-	// The order is the MAX(order) + 1
-	if err := tx.QueryRowContext(ctx, `
+
+	if create.Order != nil {
+		order = *create.Order
+	} else {
+		// The order is the MAX(order) + 1
+		if err := tx.QueryRowContext(ctx, `
 		SELECT "order"
 		FROM environment
 		ORDER BY "order" DESC
 		LIMIT 1
 	`).Scan(&order); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("no environment record found")}
+			if err == sql.ErrNoRows {
+				return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("no environment record found")}
+			}
+			return nil, FormatError(err)
 		}
-		return nil, FormatError(err)
 	}
 
 	// Insert row into database.

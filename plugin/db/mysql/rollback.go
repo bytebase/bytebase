@@ -52,9 +52,11 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 // binlogFileNameList is a list of binlog file names, such as ["binlog.000001", "binlog.000002"].
 // binlogPosStart is the start position in the first binlog file.
 // binlogPosEnd is the end position in the last binlog file.
+// threadID is used to filter the binlog events of the target transaction. It is recorded after executing the transaction using the same connection.
 // The binlog file names and positions are used to specify the binlog events range for rollback SQL generation.
 // tableCatalog is a map from table names to column names. It is used to map positional placeholders in the binlog events to the actual columns to generate valid SQL statements.
-func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, tableCatalog map[string][]string) (string, error) {
+// TODO(dragonly): parse/filter/generate rollback SQL in stream. Limit the generated SQL size to 8MB for now.
+func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, threadID string, tableCatalog map[string][]string) (string, error) {
 	args := binlogFileNameList
 	args = append(args,
 		"--read-from-remote-server",
@@ -100,10 +102,6 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 		return "", errors.WithMessage(err, "failed to parse binlog stream")
 	}
 
-	threadID, err := driver.GetMigrationConnID(ctx)
-	if err != nil {
-		return "", err
-	}
 	txnList, err = FilterBinlogTransactionsByThreadID(txnList, threadID)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to filter binlog transactions by thread ID")

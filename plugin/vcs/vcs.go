@@ -87,8 +87,10 @@ type FileMeta struct {
 type FileDiffType int
 
 const (
+	// FileDiffTypeUnknown means the file is an unknown diff type.
+	FileDiffTypeUnknown FileDiffType = iota
 	// FileDiffTypeAdded means the file is newly added.
-	FileDiffTypeAdded FileDiffType = iota
+	FileDiffTypeAdded
 	// FileDiffTypeModified means the file is modified.
 	FileDiffTypeModified
 	// FileDiffTypeRemoved means the file is removed.

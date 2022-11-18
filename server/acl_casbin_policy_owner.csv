@@ -29,7 +29,9 @@ p, OWNER, /project/{projectID}/webhook/{webhookID}, DELETE
 p, OWNER, /project/{projectID}/webhook/{webhookID}/test, GET
 p, OWNER, /environment, POST
 p, OWNER, /environment, GET
+p, OWNER, /environment/{environmentID}, GET
 p, OWNER, /environment/{environmentID}, PATCH
+p, OWNER, /environment/{environmentID}, DELETE
 p, OWNER, /environment/{environmentID}/backup-setting, PATCH
 p, OWNER, /policy, GET
 p, OWNER, /policy/environment/{environmentID}, GET
@@ -39,6 +41,7 @@ p, OWNER, /instance, POST
 p, OWNER, /instance, GET
 p, OWNER, /instance/{instanceID}, GET
 p, OWNER, /instance/{instanceID}, PATCH
+p, OWNER, /instance/{instanceID}, DELETE
 p, OWNER, /instance/{instanceID}/user, GET
 p, OWNER, /instance/{instanceID}/user/{userID}, GET
 p, OWNER, /instance/{instanceID}/migration, POST

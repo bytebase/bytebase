@@ -31,7 +31,7 @@
       target="_blank"
       class="outline-item group flex items-center px-2 py-2"
     >
-      <heroicons-outline:terminal class="w-5 h-5 mr-2" />
+      <heroicons-solid:terminal class="w-5 h-5 mr-2" />
       {{ $t("sql-editor.self") }}
     </a>
     <router-link

@@ -152,6 +152,9 @@ type TaskDatabaseDataUpdatePayload struct {
 	BinlogFileEnd   string `json:"binlogFileEnd,omitempty"`
 	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
 	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
+	RollbackError   string `json:"rollbackError,omitempty"`
+	// RollbackStatement is the generated rollback SQL statement for the DML task.
+	RollbackStatement string `json:"rollbackStatement,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
@@ -192,6 +195,8 @@ type Task struct {
 	// BlockedBy is an array of Task ID.
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
+	// RollbackFrom is the task ID from which the rollback SQL statement is generated for this task.
+	RollbackFrom int `jsonapi:"attr,rollbackFrom"`
 	// Progress is loaded from the task scheduler in memory, NOT from the database
 	Progress Progress `jsonapi:"attr,progress"`
 }
