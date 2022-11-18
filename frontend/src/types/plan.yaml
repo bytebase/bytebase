@@ -64,6 +64,8 @@ planList:
         content: vsc-workflow-basic
       - type: shareable-query-link
       - type: im-integration
+        content: im-integration-basic
+        tooltip: im-integration-basic-tooltip
       - type: inbox-notification
       - type: activity-log
     mainFeatureList:
@@ -106,6 +108,8 @@ planList:
         content: vsc-workflow-basic
       - type: shareable-query-link
       - type: im-integration
+        content: im-integration-basic
+        tooltip: im-integration-basic-tooltip
       - type: inbox-notification
       - type: activity-log
       - type: rbac
@@ -156,6 +160,8 @@ planList:
         tooltip: vsc-workflow-advanced-tooltip
       - type: shareable-query-link
       - type: im-integration
+        content: im-integration-advanced
+        tooltip: im-integration-advanced-tooltip
       - type: inbox-notification
       - type: activity-log
       - type: rbac
