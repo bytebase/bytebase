@@ -15,7 +15,11 @@ func TestServiceRestart(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		port:               getTestPort(t.Name()),
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 
 	err = ctl.Login()
@@ -31,7 +35,11 @@ func TestServiceRestart(t *testing.T) {
 	err = ctl.Close(ctx)
 	a.NoError(err)
 
-	err = ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err = ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		port:               getTestPort(t.Name()),
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
