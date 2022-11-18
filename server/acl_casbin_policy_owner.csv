@@ -41,6 +41,7 @@ p, OWNER, /instance, POST
 p, OWNER, /instance, GET
 p, OWNER, /instance/{instanceID}, GET
 p, OWNER, /instance/{instanceID}, PATCH
+p, OWNER, /instance/{instanceID}, DELETE
 p, OWNER, /instance/{instanceID}/user, GET
 p, OWNER, /instance/{instanceID}/user/{userID}, GET
 p, OWNER, /instance/{instanceID}/migration, POST

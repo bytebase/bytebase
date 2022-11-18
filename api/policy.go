@@ -23,6 +23,9 @@ type BackupPlanPolicySchedule string
 // EnvironmentTierValue is the value for environment tier policy.
 type EnvironmentTierValue string
 
+// PolicyResourceType is the resource type for a policy.
+type PolicyResourceType string
+
 const (
 	// DefaultPolicyID is the ID of the default policy.
 	DefaultPolicyID int = 0
@@ -57,6 +60,17 @@ const (
 	EnvironmentTierValueProtected EnvironmentTierValue = "PROTECTED"
 	// EnvironmentTierValueUnprotected is UNPROTECTED environment tier value.
 	EnvironmentTierValueUnprotected EnvironmentTierValue = "UNPROTECTED"
+
+	// PolicyResourceTypeWorkspace is the resource type for workspaces.
+	PolicyResourceTypeWorkspace PolicyResourceType = "WORKSPACE"
+	// PolicyResourceTypeEnvironment is the resource type for environments.
+	PolicyResourceTypeEnvironment PolicyResourceType = "ENVIRONMENT"
+	// PolicyResourceTypeProject is the resource type for projects.
+	PolicyResourceTypeProject PolicyResourceType = "PROJECT"
+	// PolicyResourceTypeInstance is the resource type for instances.
+	PolicyResourceTypeInstance PolicyResourceType = "INSTANCE"
+	// PolicyResourceTypeDatabase is the resource type for databases.
+	PolicyResourceTypeDatabase PolicyResourceType = "DATABASE"
 )
 
 var (
@@ -83,8 +97,9 @@ type Policy struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	EnvironmentID int
-	Environment   *Environment `jsonapi:"relation,environment"`
+	ResourceType PolicyResourceType
+	ResourceID   int
+	Environment  *Environment `jsonapi:"relation,environment"`
 
 	// Domain specific fields
 	Type    PolicyType `jsonapi:"attr,type"`
@@ -96,7 +111,8 @@ type PolicyFind struct {
 	ID *int
 
 	// Related fields
-	EnvironmentID *int
+	ResourceType *PolicyResourceType
+	ResourceID   *int
 
 	// Domain specific fields
 	Type *PolicyType `jsonapi:"attr,type"`
@@ -112,7 +128,8 @@ type PolicyUpsert struct {
 	RowStatus *string `jsonapi:"attr,rowStatus"`
 
 	// Related fields
-	EnvironmentID int
+	ResourceType PolicyResourceType
+	ResourceID   int
 
 	// Domain specific fields
 	Type    PolicyType
@@ -126,7 +143,8 @@ type PolicyDelete struct {
 	DeleterID int
 
 	// Related fields
-	EnvironmentID int
+	ResourceType PolicyResourceType
+	ResourceID   int
 
 	// Domain specific fields
 	// Type is the policy type.

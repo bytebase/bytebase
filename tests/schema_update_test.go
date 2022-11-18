@@ -347,6 +347,8 @@ func TestVCS(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -478,12 +480,7 @@ func TestVCS(t *testing.T) {
 			// TODO(p0ny): expose task DAG list and check the dependency.
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
-			if test.name == "GitLab" {
-				a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
-			} else {
-				// TODO(dragonly): remove this when GetDiffFileList is also implemented for GitHub.
-				a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver0##migrate##merge_from_other_branch.sql, Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
-			}
+			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -628,59 +625,6 @@ func TestVCS(t *testing.T) {
 					SchemaPrev: "",
 				},
 			}
-			// TODO(dragonly): remove this when GetDiffFileList is also implemented for GitHub.
-			if test.name == "GitHub" {
-				wantHistories = []api.MigrationHistory{
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Data,
-						Status:     db.Done,
-						Schema:     dumpedSchema3,
-						SchemaPrev: dumpedSchema3,
-					},
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     dumpedSchema3,
-						SchemaPrev: dumpedSchema2,
-					},
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     dumpedSchema2,
-						SchemaPrev: dumpedSchema,
-					},
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     dumpedSchema,
-						SchemaPrev: "",
-					},
-					{
-						Database:   databaseName,
-						Source:     db.VCS,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     "",
-						SchemaPrev: "",
-					},
-					{
-						Database:   databaseName,
-						Source:     db.UI,
-						Type:       db.Migrate,
-						Status:     db.Done,
-						Schema:     "",
-						SchemaPrev: "",
-					},
-				}
-			}
 			a.Equal(len(wantHistories), len(histories))
 
 			for i, history := range histories {
@@ -776,6 +720,8 @@ func TestVCS_SDL(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -821,7 +767,7 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS
-			vcs, err := ctl.createVCS(
+			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
 					Name:          t.Name(),
 					Type:          test.vcsType,
@@ -847,7 +793,7 @@ func TestVCS_SDL(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
+					VCSID:              apiVCS.ID,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -893,7 +839,10 @@ func TestVCS_SDL(t *testing.T) {
 				schemaFile: schemaFileContent,
 			})
 			a.NoError(err)
-
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: schemaFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
 			payload, err := json.Marshal(test.newWebhookPushEvent(nil /* added */, []string{schemaFile}, "1", "2"))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
@@ -931,7 +880,10 @@ func TestVCS_SDL(t *testing.T) {
 				dataFile: `INSERT INTO users (id) VALUES (1);`,
 			})
 			a.NoError(err)
-
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
+				{Path: dataFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
 			payload, err = json.Marshal(test.newWebhookPushEvent([]string{dataFile}, nil /* modified */, "2", "3"))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
@@ -1263,6 +1215,8 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -1313,7 +1267,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					FullPath:           repoFullPath,
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repoFullPath),
 					BranchFilter:       branchFilter,
-					BaseDirectory:      baseDirectory,
+					BaseDirectory:      test.baseDirectory,
 					FilePathTemplate:   test.filePathTemplate,
 					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
 					ExternalID:         externalID,
@@ -1482,7 +1436,11 @@ func TestVCS_SQL_Review(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
@@ -1631,9 +1589,9 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			err = ctl.upsertPolicy(api.PolicyUpsert{
-				EnvironmentID: prodEnvironment.ID,
-				Type:          api.PolicyTypeSQLReview,
-				Payload:       &policyPayload,
+				ResourceID: prodEnvironment.ID,
+				Type:       api.PolicyTypeSQLReview,
+				Payload:    &policyPayload,
 			})
 			a.NoError(err)
 
