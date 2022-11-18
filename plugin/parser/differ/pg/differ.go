@@ -203,7 +203,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				switch item := alterItem.(type) {
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
-					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion:
+					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion, ast.ConstraintTypeForeign:
 						if err := oldSchemaMap.addConstraint(i, item); err != nil {
 							return "", err
 						}
@@ -248,7 +248,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 				switch item := alterItem.(type) {
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
-					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion:
+					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion, ast.ConstraintTypeForeign:
 						oldConstraint := oldSchemaMap.getConstraint(item.Table.Schema, item.Table.Name, item.Constraint.Name)
 						if oldConstraint == nil {
 							diff.appendAddConstraint(stmt.Table, []*ast.ConstraintDef{item.Constraint})
@@ -485,7 +485,7 @@ func isEqualConstraint(oldConstraint *ast.ConstraintDef, newConstraint *ast.Cons
 		if newConstraint.Expression.Text() != oldConstraint.Expression.Text() {
 			return false, nil
 		}
-	case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion:
+	case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion, ast.ConstraintTypeForeign:
 		// TODO(zp): To make the logic simple now, we just restore the statement, and drop and create the new one if
 		// there is any difference.
 		oldAlterTableAddConstraint, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, oldConstraint)
