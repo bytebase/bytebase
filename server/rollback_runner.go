@@ -41,7 +41,6 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			log.Debug("Received signal for generating rollback SQL.")
 			r.generateMap.Range(func(key, value any) bool {
 				task := value.(*api.Task)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
@@ -136,10 +135,10 @@ func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.
 		return "", errors.WithMessagef(err, "failed to find migration history with ID %d", payload.MigrationID)
 	}
 	if len(list) == 0 {
-		return "", errors.WithMessagef(err, "migration history with ID %d not found", payload.MigrationID)
+		return "", errors.Errorf("migration history with ID %d not found", payload.MigrationID)
 	}
 	if len(list) > 1 {
-		return "", errors.WithMessagef(err, "found %d migration history record, expecting one", len(list))
+		return "", errors.Errorf("found %d migration history record, expecting one", len(list))
 	}
 	history := list[0]
 	tableMap, err := mysql.GetTableColumns(history.Schema)
