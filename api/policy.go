@@ -111,7 +111,7 @@ type PolicyFind struct {
 	ID *int
 
 	// Related fields
-	ResourceType PolicyResourceType
+	ResourceType *PolicyResourceType
 	ResourceID   *int
 
 	// Domain specific fields
