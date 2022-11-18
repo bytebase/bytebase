@@ -6,7 +6,7 @@ import (
 
 // Instance is the API message for an instance.
 type Instance struct {
-	ID int `jsonapi:"primary,instance" json:"id"`
+	ID int `json:"id"`
 
 	// Related fields
 	Environment string `json:"environment"`

@@ -18,6 +18,7 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance", s.listInstance)
 	g.GET("/instance/:instanceID", s.getInstanceByID)
 	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
+	g.DELETE("/instance/:instanceID", s.archiveInstanceByOpenAPI)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
@@ -115,6 +116,25 @@ func (s *Server) updateInstanceByOpenAPI(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, convertToOpenAPIInstance(instance))
+}
+
+func (s *Server) archiveInstanceByOpenAPI(c echo.Context) error {
+	ctx := c.Request().Context()
+	id, err := strconv.Atoi(c.Param("instanceID"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
+	}
+
+	rowStatus := string(api.Archived)
+	if _, err := s.updateInstance(ctx, &api.InstancePatch{
+		ID:        id,
+		UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+		RowStatus: &rowStatus,
+	}); err != nil {
+		return err
+	}
+
+	return c.String(http.StatusOK, "ok")
 }
 
 func (s *Server) getInstanceByID(c echo.Context) error {
