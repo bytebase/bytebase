@@ -20,17 +20,15 @@ func (s *Server) registerOpenAPIRoutesForEnvironment(g *echo.Group) {
 	g.POST("/environment", s.createEnvironmentByOpenAPI)
 	g.GET("/environment/:environmentID", s.getEnvironmentByID)
 	g.PATCH("/environment/:environmentID", s.updateEnvironmentByOpenAPI)
-	g.DELETE("/environment/:environmentID", s.archiveEnvironmentByOpenAPI)
+	g.DELETE("/environment/:environmentID", s.deleteEnvironmentByOpenAPI)
 }
 
 func (s *Server) listEnvironment(c echo.Context) error {
 	ctx := c.Request().Context()
-	envFind := &api.EnvironmentFind{}
-	if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
-		rowStatus := api.RowStatus(rowStatusStr)
-		envFind.RowStatus = &rowStatus
-	}
-	envList, err := s.store.FindEnvironment(ctx, envFind)
+	rowStatus := api.Normal
+	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
+		RowStatus: &rowStatus,
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list").SetInternal(err)
 	}
@@ -114,7 +112,7 @@ func (s *Server) updateEnvironmentByOpenAPI(c echo.Context) error {
 	return c.JSON(http.StatusOK, convertToOpenAPIEnvironment(env))
 }
 
-func (s *Server) archiveEnvironmentByOpenAPI(c echo.Context) error {
+func (s *Server) deleteEnvironmentByOpenAPI(c echo.Context) error {
 	ctx := c.Request().Context()
 	id, err := strconv.Atoi(c.Param("environmentID"))
 	if err != nil {
@@ -148,6 +146,5 @@ func convertToOpenAPIEnvironment(env *api.Environment) *openAPIV1.Environment {
 		ID:    env.ID,
 		Name:  env.Name,
 		Order: env.Order,
-		Tier:  env.Tier,
 	}
 }

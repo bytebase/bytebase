@@ -1,15 +1,12 @@
 package v1
 
-import "github.com/bytebase/bytebase/api"
-
 // Environment is the API message for an environment.
 type Environment struct {
 	ID int `json:"id"`
 
 	// Domain specific fields
-	Name  string                   `json:"name"`
-	Order int                      `json:"order"`
-	Tier  api.EnvironmentTierValue `json:"tier"`
+	Name  string `json:"name"`
+	Order int    `json:"order"`
 }
 
 // EnvironmentPatch is the API message for patching an environment.
