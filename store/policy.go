@@ -331,9 +331,9 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind, mode comm
 		if v := find.ID; v != nil {
 			where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 		}
-		if v := find.ResourceType; v != nil {
-			where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, *v)
-		}
+
+		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, api.PolicyResourceTypeEnvironment)
+
 		if v := find.ResourceID; v != nil {
 			where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 		}
