@@ -50,6 +50,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 func (f *fakeExternalPg) Destroy() error {
 	return postgres.Stop(f.pgIns.BaseDir, f.pgIns.DataDir, os.Stderr, os.Stderr)
 }
+
 func TestBootWithExternalPg(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -71,7 +72,13 @@ func TestBootWithExternalPg(t *testing.T) {
 
 	ctl := &controller{}
 	dataTmpDir := t.TempDir()
-	err = ctl.StartServerWithExternalPg(ctx, dataTmpDir, fake.NewGitLab, serverPort, externalPg.pgUser, externalPg.pgURL)
+	err = ctl.StartServerWithExternalPg(ctx, &config{
+		dataDir:            dataTmpDir,
+		port:               serverPort,
+		vcsProviderCreator: fake.NewGitLab,
+		pgUser:             externalPg.pgUser,
+		pgURL:              externalPg.pgURL,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 }
