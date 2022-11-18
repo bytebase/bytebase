@@ -446,6 +446,8 @@ DELIMITER ;
 	}
 
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
 			txns, err := ParseBinlogStream(strings.NewReader(test.stream))
@@ -608,6 +610,8 @@ func TestFilterBinlogTransactionsByThreadID(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
 			_, err := FilterBinlogTransactionsByThreadID(test.txnList, test.threadID)
