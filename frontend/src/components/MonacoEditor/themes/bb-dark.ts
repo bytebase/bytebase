@@ -1,18 +1,19 @@
 import type { editor as Editor } from "monaco-editor";
+import { callVar } from "./utils";
 
 export const bbDarkTheme: Editor.IStandaloneThemeData = {
   base: "vs-dark",
   inherit: true,
   rules: [
     {
-      foreground: "88ff88",
+      foreground: callVar("--color-dark-green-hover"),
       token: "keyword",
     },
   ],
   colors: {
-    "editor.foreground": "#00cc00",
-    "editorCursor.foreground": "#88ff88",
-    "editorLineNumber.foreground": "#00cc00",
-    "editorLineNumber.activeForeground": "#88ff88",
+    "editor.foreground": callVar("--color-dark-green"),
+    "editorCursor.foreground": callVar("--color-dark-green-hover"),
+    "editorLineNumber.foreground": callVar("--color-dark-green"),
+    "editorLineNumber.activeForeground": callVar("--color-dark-green-hover"),
   },
 };

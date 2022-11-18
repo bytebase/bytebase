@@ -52,17 +52,17 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
 export const darkThemeOverrides = computed((): GlobalThemeOverrides => {
   return {
     common: {
-      primaryColor: callVar("--color-dark-green"),
-      primaryColorHover: callVar("--color-dark-green-hover"),
-      primaryColorPressed: callVar("--color-dark-green"),
+      primaryColor: callVar("--color-matrix-green"),
+      primaryColorHover: callVar("--color-matrix-green-hover"),
+      primaryColorPressed: callVar("--color-matrix-green"),
     },
     Button: {
-      colorInfo: callVar("--color-dark-green"),
-      colorHoverInfo: callVar("--color-dark-green-hover"),
-      colorFocusInfo: callVar("--color-dark-green"),
-      borderInfo: callVar("--color-dark-green"),
-      borderHoverInfo: callVar("--color-dark-green-hover"),
-      borderFocusInfo: callVar("--color-dark-green"),
+      colorInfo: callVar("--color-matrix-green"),
+      colorHoverInfo: callVar("--color-matrix-green-hover"),
+      colorFocusInfo: callVar("--color-matrix-green"),
+      borderInfo: callVar("--color-matrix-green"),
+      borderHoverInfo: callVar("--color-matrix-green-hover"),
+      borderFocusInfo: callVar("--color-matrix-green"),
     },
   };
 });

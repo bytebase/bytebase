@@ -68,9 +68,9 @@
   --color-dark-bg: #1e1e1e;
 
   /* The Matrix green */
-  --color-dark-green: #00cc00;
+  --color-matrix-green: #00cc00;
   /* The matrix green lighter */
-  --color-dark-green-hover: #88ff88;
+  --color-matrix-green-hover: #88ff88;
 }
 
 @tailwind base;
