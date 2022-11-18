@@ -30,13 +30,13 @@ func TestGhostParser(t *testing.T) {
 	ADD
 		COLUMN ghost_play_2 int;
 	`
-	t.Run("fail to parse", func(st *testing.T) {
-		st.Parallel()
+	t.Run("fail to parse", func(t *testing.T) {
+		t.Parallel()
 		parser := ghostsql.NewParserFromAlterStatement(statement)
 		a.Equal(false, parser.HasExplicitTable())
 	})
-	t.Run("succeed to parse", func(st *testing.T) {
-		st.Parallel()
+	t.Run("succeed to parse", func(t *testing.T) {
+		t.Parallel()
 		s := strings.Join(strings.Fields(statement), " ")
 		parser := ghostsql.NewParserFromAlterStatement(s)
 		a.Equal(true, parser.HasExplicitTable())
