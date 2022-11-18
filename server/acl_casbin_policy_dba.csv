@@ -81,6 +81,7 @@ p, DBA, /bookmark/user/{userID}, GET_SELF
 p, DBA, /bookmark/{bookmarkID}, DELETE_SELF
 p, DBA, /pipeline/{pipelineID}/stage/{stageID}/status, PATCH
 p, DBA, /pipeline/{pipelineID}/task/all, PATCH
+p, DBA, /pipeline/{pipelineID}/task/rollback, POST
 p, DBA, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}/check, POST
