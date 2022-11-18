@@ -269,16 +269,11 @@ func (gl *GitLab) getProjectBranch(c echo.Context) error {
 	}
 
 	branchName := c.Param("branchName")
-	pd.branches[branchName] = &gitlab.Branch{
-		Name: branchName,
-		Commit: gitlab.Commit{
-			ID:         "fake_gitlab_commit_id",
-			AuthorName: "fake_gitlab_bot",
-			CreatedAt:  time.Now(),
-		},
+	if _, ok := pd.branches[fmt.Sprintf("refs/heads/%s", branchName)]; !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("branch not found: %v", branchName))
 	}
 
-	buf, err := json.Marshal(pd.branches[branchName])
+	buf, err := json.Marshal(pd.branches[fmt.Sprintf("refs/heads/%s", branchName)])
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting project branch: %v", err))
 	}

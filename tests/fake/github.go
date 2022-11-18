@@ -233,14 +233,11 @@ func (gh *GitHub) getRepositoryBranch(c echo.Context) error {
 	}
 
 	branchName := c.Param("branchName")
-	r.refs[branchName] = &github.Branch{
-		Ref: fmt.Sprintf("refs/heads/%s", branchName),
-		Object: github.ReferenceObject{
-			SHA: "fake_github_commit_sha",
-		},
+	if _, ok := r.refs[fmt.Sprintf("refs/heads/%s", branchName)]; !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("branch not found: %v", branchName))
 	}
 
-	buf, err := json.Marshal(r.refs[branchName])
+	buf, err := json.Marshal(r.refs[fmt.Sprintf("refs/heads/%s", branchName)])
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository branch: %v", err))
 	}
