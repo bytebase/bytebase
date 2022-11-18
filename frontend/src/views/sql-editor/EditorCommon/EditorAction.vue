@@ -55,19 +55,25 @@
 
 <script lang="ts" setup>
 import { computed, defineEmits } from "vue";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import {
   useInstanceStore,
   useTabStore,
   useSQLEditorStore,
   useInstanceById,
 } from "@/store";
+import type { ExecuteConfig, ExecuteOption } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import SharePopover from "./SharePopover.vue";
 import TabModeSelect from "./TabModeSelect.vue";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
+  (
+    e: "execute",
+    sql: string,
+    config: ExecuteConfig,
+    option?: ExecuteOption
+  ): void;
 }>();
 
 const instanceStore = useInstanceStore();
@@ -102,14 +108,12 @@ const allowSave = computed(() => {
   return true;
 });
 
-const { execute } = useExecuteSQL();
-
 const handleRunQuery = async () => {
   const currentTab = tabStore.currentTab;
   const statement = currentTab.statement;
   const selectedStatement = currentTab.selectedStatement;
   const query = selectedStatement || statement;
-  await execute(query, { databaseType: selectedInstanceEngine.value });
+  await emit("execute", query, { databaseType: selectedInstanceEngine.value });
 };
 
 const handleExplainQuery = () => {
@@ -117,7 +121,8 @@ const handleExplainQuery = () => {
   const statement = currentTab.statement;
   const selectedStatement = currentTab.selectedStatement;
   const query = selectedStatement || statement;
-  execute(
+  emit(
+    "execute",
     query,
     { databaseType: selectedInstanceEngine.value },
     { explain: true }

@@ -49,6 +49,24 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
   };
 });
 
+export const darkThemeOverrides = computed((): GlobalThemeOverrides => {
+  return {
+    common: {
+      primaryColor: callVar("--color-dark-green"),
+      primaryColorHover: callVar("--color-dark-green-hover"),
+      primaryColorPressed: callVar("--color-dark-green"),
+    },
+    Button: {
+      colorInfo: callVar("--color-dark-green"),
+      colorHoverInfo: callVar("--color-dark-green-hover"),
+      colorFocusInfo: callVar("--color-dark-green"),
+      borderInfo: callVar("--color-dark-green"),
+      borderHoverInfo: callVar("--color-dark-green-hover"),
+      borderFocusInfo: callVar("--color-dark-green"),
+    },
+  };
+});
+
 const isZhCn = (): boolean => {
   return curLocale.value === "zh-CN";
 };

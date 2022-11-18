@@ -2,45 +2,49 @@
   <div
     class="flex h-full w-full flex-col justify-start items-start overflow-hidden"
   >
-    <EditorAction @save-sheet="trySaveSheet" />
+    <EditorAction @execute="handleExecute" @save-sheet="trySaveSheet" />
 
     <ConnectionPathBar />
 
-    <template v-if="!tabStore.isDisconnected">
-      <div ref="queryListContainerRef" class="w-full flex-1 overflow-y-auto">
-        <div
-          ref="queryListRef"
-          class="w-full flex flex-col"
-          :data-height="queryListSize.height"
-        >
-          <div v-for="(query, i) in state.queryList" :key="i" class="relative">
-            <CompactSQLEditor
-              v-model:sql="query.sql"
-              class="border-b"
-              :readonly="query !== currentQuery"
-              @save-sheet="trySaveSheet"
-              @execute="handleExecute"
+    <div
+      v-if="!tabStore.isDisconnected"
+      ref="queryListContainerRef"
+      class="w-full flex-1 overflow-y-auto bg-dark-bg"
+    >
+      <div
+        ref="queryListRef"
+        class="w-full flex flex-col"
+        :data-height="queryListHeight"
+      >
+        <div v-for="(query, i) in state.queryList" :key="i" class="relative">
+          <CompactSQLEditor
+            v-model:sql="query.sql"
+            class="border-b min-h-[2rem]"
+            :readonly="query !== currentQuery"
+            @save-sheet="trySaveSheet"
+            @execute="handleExecute"
+          />
+          <div
+            v-if="query.queryResult"
+            class="max-h-[20rem] overflow-y-auto border-b"
+          >
+            <TableView
+              :query-result="query.queryResult.data"
+              :loading="query.isExecutingSQL"
+              :dark="true"
             />
-            <div
-              v-if="query.queryResult"
-              class="max-h-[20rem] overflow-y-auto border-b"
-            >
-              <TableView :query-result="query.queryResult.data" />
-            </div>
+          </div>
 
-            <div
-              v-if="query.isExecutingSQL"
-              class="absolute inset-0 bg-white/50 flex justify-center items-center"
-            >
-              <BBSpin />
-            </div>
+          <div
+            v-if="query.isExecutingSQL"
+            class="absolute inset-0 bg-black/50 flex justify-center items-center"
+          >
+            <BBSpin />
           </div>
         </div>
       </div>
-    </template>
-    <template v-else>
-      <ConnectionHolder />
-    </template>
+    </div>
+    <ConnectionHolder v-else />
 
     <SaveSheetModal ref="saveSheetModal" />
   </div>
@@ -51,13 +55,14 @@ import { computed, reactive, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
 import { ExecuteConfig, ExecuteOption, SQLResultSet } from "@/types";
-import { useSQLEditorStore, useTabStore } from "@/store";
+import { useTabStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import EditorAction from "../EditorCommon/EditorAction.vue";
 import ConnectionPathBar from "../EditorCommon/ConnectionPathBar.vue";
 import ConnectionHolder from "../EditorCommon/ConnectionHolder.vue";
 import TableView from "../EditorCommon/TableView.vue";
 import SaveSheetModal from "../EditorCommon/SaveSheetModal.vue";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 
 type QueryItem = {
   sql: string;
@@ -98,6 +103,8 @@ const currentQuery = computed(
   () => state.queryList[state.queryList.length - 1]
 );
 
+const { execute } = useExecuteSQL();
+
 const handleExecute = async (
   query: string,
   config: ExecuteConfig,
@@ -108,17 +115,26 @@ const handleExecute = async (
     return;
   }
 
-  queryItem.executeParams = { query, config, option };
-  queryItem.isExecutingSQL = true;
   try {
-    const result = await useSQLEditorStore().executeAdminQuery({
-      statement: query,
-    });
-    queryItem.queryResult = result;
+    queryItem.executeParams = { query, config, option };
+    queryItem.isExecutingSQL = true;
+    const sqlResultSet = await execute(query, config, option);
+
+    queryItem.queryResult = sqlResultSet;
     state.queryList.push(createEmptyQueryItem());
   } finally {
     queryItem.isExecutingSQL = false;
   }
+
+  // try {
+  //   const result = await useSQLEditorStore().executeAdminQuery({
+  //     statement: query,
+  //   });
+  //   queryItem.queryResult = result;
+  //   state.queryList.push(createEmptyQueryItem());
+  // } finally {
+  //   queryItem.isExecutingSQL = false;
+  // }
 };
 
 const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
@@ -127,9 +143,9 @@ const trySaveSheet = (sheetName?: string) => {
   saveSheetModal.value?.trySaveSheet(sheetName);
 };
 
-const queryListSize = useElementSize(queryListRef);
+const { height: queryListHeight } = useElementSize(queryListRef);
 
-watch(queryListSize.height, () => {
+watch(queryListHeight, () => {
   // Always scroll to the bottom as if we are in a real terminal.
   requestAnimationFrame(() => {
     const container = queryListContainerRef.value;

@@ -19,7 +19,10 @@
           </Pane>
         </Splitpanes>
 
-        <TerminalPanel v-if="tabStore.currentTab.mode === TabMode.Admin" />
+        <TerminalPanel
+          v-if="tabStore.currentTab.mode === TabMode.Admin"
+          :key="tabStore.currentTab.id"
+        />
 
         <div
           v-if="isFetchingSheet"

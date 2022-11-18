@@ -1,5 +1,9 @@
 <template>
-  <div class="relative flex flex-col justify-start items-start h-full p-2">
+  <NConfigProvider
+    v-bind="naiveUIConfig"
+    class="relative flex flex-col justify-start items-start h-full p-2"
+    :class="dark && 'dark bg-dark-bg'"
+  >
     <div
       v-show="queryResult !== null"
       class="w-full flex flex-row justify-between items-center mb-2"
@@ -55,9 +59,9 @@
     <div
       v-if="showPlaceholder"
       class="absolute inset-0 flex flex-col justify-center items-center z-10"
-      :class="tabStore.currentTab.isExecutingSQL && 'bg-white/80'"
+      :class="loading && 'bg-white/80 dark:bg-black/80'"
     >
-      <template v-if="tabStore.currentTab.isExecutingSQL">
+      <template v-if="loading">
         <BBSpin />
         {{ $t("sql-editor.loading-data") }}
       </template>
@@ -65,7 +69,7 @@
         {{ $t("sql-editor.table-empty-placeholder") }}
       </template>
     </div>
-  </div>
+  </NConfigProvider>
 </template>
 
 <script lang="ts" setup>
@@ -75,7 +79,9 @@ import { debouncedRef } from "@vueuse/core";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
+import { darkTheme, NConfigProvider } from "naive-ui";
 
+import { darkThemeOverrides } from "@/../naive-ui.config";
 import { useTabStore, useInstanceStore } from "@/store";
 import { createExplainToken } from "@/utils";
 import DataTable from "./DataTable.vue";
@@ -92,6 +98,14 @@ const props = defineProps({
     type: Object as PropType<QueryResult>,
     default: undefined,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  dark: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const { t } = useI18n();
@@ -100,6 +114,13 @@ const instanceStore = useInstanceStore();
 
 const state = reactive<State>({
   search: "",
+});
+
+const naiveUIConfig = computed(() => {
+  if (props.dark) {
+    return { theme: darkTheme, themeOverrides: darkThemeOverrides.value };
+  }
+  return {};
 });
 
 // use a debounced value to improve performance when typing rapidly
@@ -140,7 +161,7 @@ const data = computed(() => {
 
 const showPlaceholder = computed(() => {
   if (!props.queryResult) return true;
-  if (tabStore.currentTab.isExecutingSQL) return true;
+  if (props.loading) return true;
   return false;
 });
 
