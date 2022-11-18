@@ -16,7 +16,7 @@
         class="w-full flex flex-col"
         :data-height="queryListHeight"
       >
-        <div v-for="(query, i) in state.queryList" :key="i" class="relative">
+        <div v-for="(query, i) in queryList" :key="i" class="relative">
           <CompactSQLEditor
             v-model:sql="query.sql"
             class="border-b min-h-[2rem]"
@@ -51,11 +51,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
-import { ExecuteConfig, ExecuteOption, SQLResultSet } from "@/types";
-import { useTabStore } from "@/store";
+import { ExecuteConfig, ExecuteOption } from "@/types";
+import { useTabStore, useWebTerminalStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import EditorAction from "../EditorCommon/EditorAction.vue";
 import ConnectionPathBar from "../EditorCommon/ConnectionPathBar.vue";
@@ -64,43 +64,18 @@ import TableView from "../EditorCommon/TableView.vue";
 import SaveSheetModal from "../EditorCommon/SaveSheetModal.vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 
-type QueryItem = {
-  sql: string;
-  executeParams?: {
-    query: string;
-    config: ExecuteConfig;
-    option?: Partial<ExecuteOption>;
-  };
-  isExecutingSQL: boolean;
-  queryResult?: SQLResultSet;
-};
-
-type LocalState = {
-  queryList: QueryItem[];
-};
-
-const createEmptyQueryItem = (): QueryItem => ({
-  sql: "",
-  isExecutingSQL: false,
-});
-
 const tabStore = useTabStore();
+const webTerminalStore = useWebTerminalStore();
 
-const state = reactive<LocalState>({
-  queryList: [
-    {
-      // The first query is created from the sheet's SQL statement.
-      sql: tabStore.currentTab.statement,
-      isExecutingSQL: false,
-    },
-  ],
+const queryList = computed(() => {
+  return webTerminalStore.getQueryListByTab(tabStore.currentTab);
 });
 
 const queryListContainerRef = ref<HTMLDivElement>();
 const queryListRef = ref<HTMLDivElement>();
 
 const currentQuery = computed(
-  () => state.queryList[state.queryList.length - 1]
+  () => queryList.value[queryList.value.length - 1]
 );
 
 const { execute } = useExecuteSQL();
@@ -121,20 +96,13 @@ const handleExecute = async (
     const sqlResultSet = await execute(query, config, option);
 
     queryItem.queryResult = sqlResultSet;
-    state.queryList.push(createEmptyQueryItem());
+    queryList.value.push({
+      sql: "",
+      isExecutingSQL: false,
+    });
   } finally {
     queryItem.isExecutingSQL = false;
   }
-
-  // try {
-  //   const result = await useSQLEditorStore().executeAdminQuery({
-  //     statement: query,
-  //   });
-  //   queryItem.queryResult = result;
-  //   state.queryList.push(createEmptyQueryItem());
-  // } finally {
-  //   queryItem.isExecutingSQL = false;
-  // }
 };
 
 const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
