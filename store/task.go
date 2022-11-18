@@ -44,6 +44,7 @@ type taskRaw struct {
 	Payload           string
 	EarliestAllowedTs int64
 	BlockedBy         []string
+	RollbackFrom      int
 }
 
 // toTask creates an instance of Task based on the taskRaw.
@@ -72,6 +73,7 @@ func (raw *taskRaw) toTask() *api.Task {
 		Payload:           raw.Payload,
 		EarliestAllowedTs: raw.EarliestAllowedTs,
 		BlockedBy:         raw.BlockedBy,
+		RollbackFrom:      raw.RollbackFrom,
 	}
 	for _, taskRunRaw := range raw.TaskRunRawList {
 		task.TaskRunList = append(task.TaskRunList, taskRunRaw.toTaskRun())
@@ -551,6 +553,84 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 		where = append(where, v)
 	}
 
+	if s.db.mode == common.ReleaseModeDev {
+		rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			pipeline_id,
+			stage_id,
+			instance_id,
+			database_id,
+			name,
+			status,
+			type,
+			payload,
+			earliest_allowed_ts,
+			rollback_from
+		FROM task
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into taskRawList.
+		var taskRawList []*taskRaw
+		for rows.Next() {
+			var taskRaw taskRaw
+			if err := rows.Scan(
+				&taskRaw.ID,
+				&taskRaw.CreatorID,
+				&taskRaw.CreatedTs,
+				&taskRaw.UpdaterID,
+				&taskRaw.UpdatedTs,
+				&taskRaw.PipelineID,
+				&taskRaw.StageID,
+				&taskRaw.InstanceID,
+				&taskRaw.DatabaseID,
+				&taskRaw.Name,
+				&taskRaw.Status,
+				&taskRaw.Type,
+				&taskRaw.Payload,
+				&taskRaw.EarliestAllowedTs,
+				&taskRaw.RollbackFrom,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+			taskRawList = append(taskRawList, &taskRaw)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		for _, taskRaw := range taskRawList {
+			taskRunFind := &api.TaskRunFind{
+				TaskID: &taskRaw.ID,
+			}
+			taskRunRawList, err := s.findTaskRunImpl(ctx, tx, taskRunFind)
+			if err != nil {
+				return nil, err
+			}
+			taskRaw.TaskRunRawList = taskRunRawList
+
+			taskCheckRunFind := &api.TaskCheckRunFind{
+				TaskID: &taskRaw.ID,
+			}
+			taskCheckRunRawList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
+			if err != nil {
+				return nil, err
+			}
+			taskRaw.TaskCheckRunRawList = taskCheckRunRawList
+		}
+		return taskRawList, nil
+	}
+
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -627,7 +707,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 }
 
 // patchTaskImpl updates a task by ID. Returns the new state of the task after update.
-func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (*taskRaw, error) {
+func (s *Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (*taskRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.DatabaseID; v != nil {
@@ -647,6 +727,39 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (
 
 	var taskRaw taskRaw
 	// Execute update query with RETURNING.
+	if s.db.mode == common.ReleaseModeDev {
+		if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+		UPDATE task
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts, rollback_from
+	`, len(args)),
+			args...,
+		).Scan(
+			&taskRaw.ID,
+			&taskRaw.CreatorID,
+			&taskRaw.CreatedTs,
+			&taskRaw.UpdaterID,
+			&taskRaw.UpdatedTs,
+			&taskRaw.PipelineID,
+			&taskRaw.StageID,
+			&taskRaw.InstanceID,
+			&taskRaw.DatabaseID,
+			&taskRaw.Name,
+			&taskRaw.Status,
+			&taskRaw.Type,
+			&taskRaw.Payload,
+			&taskRaw.EarliestAllowedTs,
+			&taskRaw.RollbackFrom,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task not found with ID %d", patch.ID)}
+			}
+			return nil, FormatError(err)
+		}
+		return &taskRaw, nil
+	}
+
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
@@ -756,6 +869,72 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 	}
 
 	// Execute update query with RETURNING.
+	if s.db.mode == common.ReleaseModeDev {
+		rows, err := tx.QueryContext(ctx, `
+		UPDATE task
+		SET `+strings.Join(set, ", ")+`
+		WHERE id in (`+strings.Join(ids, ",")+`)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts, rollback_from
+	`,
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		var taskRawList []*taskRaw
+		for rows.Next() {
+			var taskRaw taskRaw
+			if err := rows.Scan(
+				&taskRaw.ID,
+				&taskRaw.CreatorID,
+				&taskRaw.CreatedTs,
+				&taskRaw.UpdaterID,
+				&taskRaw.UpdatedTs,
+				&taskRaw.PipelineID,
+				&taskRaw.StageID,
+				&taskRaw.InstanceID,
+				&taskRaw.DatabaseID,
+				&taskRaw.Name,
+				&taskRaw.Status,
+				&taskRaw.Type,
+				&taskRaw.Payload,
+				&taskRaw.EarliestAllowedTs,
+				&taskRaw.RollbackFrom,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+
+			taskRawList = append(taskRawList, &taskRaw)
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		for _, taskRaw := range taskRawList {
+			taskRunRawList, err := s.findTaskRunImpl(ctx, tx, &api.TaskRunFind{
+				TaskID: &taskRaw.ID,
+			})
+			if err != nil {
+				return nil, err
+			}
+			taskRaw.TaskRunRawList = taskRunRawList
+
+			taskCheckRunFind := &api.TaskCheckRunFind{
+				TaskID: &taskRaw.ID,
+			}
+			taskCheckRunRawList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
+			if err != nil {
+				return nil, err
+			}
+			taskRaw.TaskCheckRunRawList = taskCheckRunRawList
+		}
+
+		return taskRawList, nil
+	}
+
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
