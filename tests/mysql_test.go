@@ -24,16 +24,14 @@ func TestCheckEngineInnoDB(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 
-	port := getTestPort(t.Name())
-
 	t.Run("success", func(t *testing.T) {
-		port := port
 		t.Parallel()
-		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		mysqlPort := getTestPort()
+		_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 		defer stopFn()
 		t.Log("create test database")
 		database := "test_success"
-		db, err := connectTestMySQL(port, "")
+		db, err := connectTestMySQL(mysqlPort, "")
 		a.NoError(err)
 		defer db.Close()
 		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`;", database, database))
@@ -44,7 +42,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("check InnoDB engine")
-		driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), database, "")
+		driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, "")
 		a.NoError(err)
 		defer driver.Close(ctx)
 
@@ -55,13 +53,13 @@ func TestCheckEngineInnoDB(t *testing.T) {
 	})
 
 	t.Run("fail", func(t *testing.T) {
-		port := port + 1
 		t.Parallel()
-		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		mysqlPort := getTestPort()
+		_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 		defer stopFn()
 		t.Log("create test database")
 		database := "test_fail"
-		db, err := connectTestMySQL(port, "")
+		db, err := connectTestMySQL(mysqlPort, "")
 		a.NoError(err)
 		defer db.Close()
 		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`;", database, database))
@@ -75,7 +73,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("check InnoDB engine")
-		driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), database, "")
+		driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, "")
 		a.NoError(err)
 		defer driver.Close(ctx)
 
@@ -92,15 +90,15 @@ func TestCheckServerVersionAndBinlogForPITR(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 
-	port := getTestPort(t.Name())
-	_, stopFn := resourcemysql.SetupTestInstance(t, port)
+	mysqlPort := getTestPort()
+	_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 	defer stopFn()
 
-	db, err := connectTestMySQL(port, "")
+	db, err := connectTestMySQL(mysqlPort, "")
 	a.NoError(err)
 	defer db.Close()
 
-	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), "", "")
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), "", "")
 	a.NoError(err)
 	defer driver.Close(ctx)
 
@@ -126,11 +124,11 @@ func TestFetchBinlogFiles(t *testing.T) {
 	ctx := context.Background()
 	log.SetLevel(zapcore.DebugLevel)
 
-	port := getTestPort(t.Name())
-	_, stopFn := resourcemysql.SetupTestInstance(t, port)
+	mysqlPort := getTestPort()
+	_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 	defer stopFn()
 
-	db, err := connectTestMySQL(port, "")
+	db, err := connectTestMySQL(mysqlPort, "")
 	a.NoError(err)
 	defer db.Close()
 
@@ -138,7 +136,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	err = mysqlutil.Install(resourceDir)
 	a.NoError(err)
 
-	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), "", resourceDir)
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), "", resourceDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 
