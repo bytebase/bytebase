@@ -554,8 +554,3 @@ type SensitiveColumnList []string
 
 // SensitiveSchema is the set of the sensitive columns group by table names.
 type SensitiveSchema map[string]SensitiveColumnList
-
-// SensitivePolicy is the struct for sensitive policy.
-type SensitivePolicy struct {
-	Schema SensitiveSchema
-}
