@@ -18,17 +18,15 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance", s.listInstance)
 	g.GET("/instance/:instanceID", s.getInstanceByID)
 	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
-	g.DELETE("/instance/:instanceID", s.archiveInstanceByOpenAPI)
+	g.DELETE("/instance/:instanceID", s.deleteInstanceByOpenAPI)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
 	ctx := c.Request().Context()
-	instanceFind := &api.InstanceFind{}
-	if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
-		rowStatus := api.RowStatus(rowStatusStr)
-		instanceFind.RowStatus = &rowStatus
-	}
-	instanceList, err := s.store.FindInstance(ctx, instanceFind)
+	rowStatus := api.Normal
+	instanceList, err := s.store.FindInstance(ctx, &api.InstanceFind{
+		RowStatus: &rowStatus,
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
 	}
@@ -118,7 +116,7 @@ func (s *Server) updateInstanceByOpenAPI(c echo.Context) error {
 	return c.JSON(http.StatusOK, convertToOpenAPIInstance(instance))
 }
 
-func (s *Server) archiveInstanceByOpenAPI(c echo.Context) error {
+func (s *Server) deleteInstanceByOpenAPI(c echo.Context) error {
 	ctx := c.Request().Context()
 	id, err := strconv.Atoi(c.Param("instanceID"))
 	if err != nil {
