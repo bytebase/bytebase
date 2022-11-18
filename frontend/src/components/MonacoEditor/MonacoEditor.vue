@@ -71,6 +71,7 @@ const initEditorInstance = () => {
   const model = monaco.editor.createModel(sqlCode.value, "sql");
   const editorInstance = monaco.editor.create(editorContainerRef.value!, {
     model,
+    theme: "bb",
     tabSize: 2,
     insertSpaces: true,
     autoClosingQuotes: "always",

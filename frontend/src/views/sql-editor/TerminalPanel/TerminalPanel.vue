@@ -37,7 +37,7 @@
 
           <div
             v-if="query.isExecutingSQL"
-            class="absolute inset-0 bg-black/50 flex justify-center items-center"
+            class="absolute inset-0 bg-black/20 flex justify-center items-center"
           >
             <BBSpin />
           </div>

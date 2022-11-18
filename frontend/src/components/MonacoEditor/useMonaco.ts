@@ -13,7 +13,6 @@ export const useMonaco = async () => {
 
   monaco.editor.defineTheme("bb", bbTheme);
   monaco.editor.defineTheme("bb-dark", bbDarkTheme);
-  monaco.editor.setTheme("bb");
 
   self.MonacoEnvironment = {
     getWorker: (workerId, label) => {
