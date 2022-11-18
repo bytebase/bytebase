@@ -22,12 +22,14 @@ import { ref } from "vue";
 
 import type { ExecuteConfig, ExecuteOption } from "@/types";
 import { useTabStore } from "@/store";
-import EditorAction from "../EditorCommon/EditorAction.vue";
 import SQLEditor from "./SQLEditor.vue";
-import ConnectionPathBar from "../EditorCommon/ConnectionPathBar.vue";
-import ConnectionHolder from "../EditorCommon/ConnectionHolder.vue";
-import ExecutingHintModal from "../EditorCommon/ExecutingHintModal.vue";
-import SaveSheetModal from "../EditorCommon/SaveSheetModal.vue";
+import {
+  EditorAction,
+  ConnectionPathBar,
+  ConnectionHolder,
+  ExecutingHintModal,
+  SaveSheetModal,
+} from "../EditorCommon";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 
 const tabStore = useTabStore();

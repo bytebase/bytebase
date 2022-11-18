@@ -9,7 +9,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import TableView from "../EditorCommon/TableView.vue";
+import { TableView } from "../EditorCommon/";
 import { useTabStore } from "@/store";
 
 const tabStore = useTabStore();

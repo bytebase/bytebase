@@ -57,11 +57,13 @@ import { useElementSize } from "@vueuse/core";
 import { ExecuteConfig, ExecuteOption } from "@/types";
 import { useTabStore, useWebTerminalStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
-import EditorAction from "../EditorCommon/EditorAction.vue";
-import ConnectionPathBar from "../EditorCommon/ConnectionPathBar.vue";
-import ConnectionHolder from "../EditorCommon/ConnectionHolder.vue";
-import TableView from "../EditorCommon/TableView.vue";
-import SaveSheetModal from "../EditorCommon/SaveSheetModal.vue";
+import {
+  EditorAction,
+  ConnectionPathBar,
+  ConnectionHolder,
+  TableView,
+  SaveSheetModal,
+} from "../EditorCommon";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 
 const tabStore = useTabStore();
