@@ -299,7 +299,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		s.AnomalyScanner = NewAnomalyScanner(s)
 
 		// Rollback SQL generator
-		s.RollbackRunner = NewRollbackRunner(s.store, s.pgInstance.BaseDir, s.profile.DataDir)
+		s.RollbackRunner = NewRollbackRunner(s.store, s.profile.DataDir)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)

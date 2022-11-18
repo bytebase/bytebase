@@ -17,10 +17,9 @@ import (
 )
 
 // NewRollbackRunner creates a new rollback runner.
-func NewRollbackRunner(store *store.Store, pgInstanceDir, dataDir string) *RollbackRunner {
+func NewRollbackRunner(store *store.Store, dataDir string) *RollbackRunner {
 	return &RollbackRunner{
 		store:          store,
-		pgInstanceDir:  pgInstanceDir,
 		dataDir:        dataDir,
 		generateSignal: make(chan struct{}, 1),
 	}
@@ -29,7 +28,6 @@ func NewRollbackRunner(store *store.Store, pgInstanceDir, dataDir string) *Rollb
 // RollbackRunner is the rollback runner generating rollback SQL statements.
 type RollbackRunner struct {
 	store          *store.Store
-	pgInstanceDir  string
 	dataDir        string
 	generateSignal chan struct{}
 	generateMap    sync.Map
@@ -47,6 +45,7 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				task := value.(*api.Task)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				r.generateRollbackSQL(ctx, task)
+				r.generateMap.Delete(key)
 				return true
 			})
 		case <-ctx.Done(): // if cancel() execute
@@ -128,7 +127,7 @@ func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.
 	}
 	binlogFileNameList := mysql.GenBinlogFileNames(basename, seqStart, seqEnd)
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", r.pgInstanceDir, r.dataDir)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "", r.dataDir)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}
