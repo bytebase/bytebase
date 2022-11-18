@@ -152,6 +152,9 @@ type TaskDatabaseDataUpdatePayload struct {
 	BinlogFileEnd   string `json:"binlogFileEnd,omitempty"`
 	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
 	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
+	RollbackError   string `json:"rollbackError,omitempty"`
+	// RollbackStatement is the generated rollback SQL statement for the DML task.
+	RollbackStatement string `json:"rollbackStatement,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
