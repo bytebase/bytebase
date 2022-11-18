@@ -83,7 +83,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 					AppSecret: value.AppSecret,
 				}, "")
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create approval definition").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Failed to create approval definition").SetInternal(err)
 				}
 				value.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 				b, err := json.Marshal(value)
