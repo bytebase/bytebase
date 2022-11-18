@@ -26,7 +26,9 @@ p, DBA, /project/{projectID}/webhook/{webhookID}, DELETE
 p, DBA, /project/{projectID}/webhook/{webhookID}/test, GET
 p, DBA, /environment, POST
 p, DBA, /environment, GET
+p, DBA, /environment/{environmentID}, GET
 p, DBA, /environment/{environmentID}, PATCH
+p, DBA, /environment/{environmentID}, DELETE
 p, DBA, /environment/{environmentID}/backup-setting, PATCH
 p, DBA, /policy, GET
 p, DBA, /policy/environment/{environmentID}, GET
