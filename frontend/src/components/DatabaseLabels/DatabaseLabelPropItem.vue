@@ -154,7 +154,7 @@ watch([() => state.editing, () => state.value], ([editing, value]) => {
   @apply cursor-not-allowed bg-control-bg;
 }
 .textfield {
-  @apply rounded px-2 py-0 text-sm w-32 h-[20px];
+  @apply rounded px-0.5 py-0 text-sm w-32 h-[20px];
 }
 .textfield.error {
   @apply border-error focus:ring-error focus:border-error;
