@@ -20,6 +20,7 @@
         lineNumbers: getLineNumber,
         lineNumbersMinChars: 5,
         glyphMargin: false,
+        cursorStyle: 'block',
       }"
       @change="handleChange"
       @change-selection="handleChangeSelection"
