@@ -11,6 +11,8 @@ import {
   LabelValueType,
 } from "../types";
 
+export const MAX_LABEL_VALUE_LENGTH = 63;
+
 export const RESERVED_LABEL_KEYS = ["bb.environment"];
 
 export const PRESET_LABEL_KEYS = ["bb.location", "bb.tenant"];
