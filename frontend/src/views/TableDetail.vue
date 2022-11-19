@@ -79,7 +79,7 @@
                 {{ $t("sql-editor.self") }}
               </span>
               <button class="ml-1 btn-icon" @click.prevent="gotoSQLEditor">
-                <heroicons-outline:terminal class="w-4 h-4" />
+                <heroicons-solid:terminal class="w-5 h-5" />
               </button>
             </dd>
           </dl>

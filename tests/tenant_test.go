@@ -32,7 +32,10 @@ func TestTenant(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -207,6 +210,7 @@ func TestTenant(t *testing.T) {
 }
 
 func TestTenantVCS(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -285,7 +289,10 @@ func TestTenantVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -517,7 +524,11 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
+
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -743,7 +754,10 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1079,7 +1093,10 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1351,13 +1368,16 @@ func TestTenantVCS_YAML(t *testing.T) {
 	}
 	for _, test := range tests {
 		// Fix the problem that closure in a for loop will always use the last element.
-		// test := test
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			require.NoError(t, err)
 			defer func() {
 				_ = ctl.Close(ctx)

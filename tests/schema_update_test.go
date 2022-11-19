@@ -34,7 +34,10 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -355,7 +358,10 @@ func TestVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -728,7 +734,10 @@ func TestVCS_SDL(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -740,11 +749,11 @@ func TestVCS_SDL(t *testing.T) {
 			a.NoError(err)
 
 			// Create a PostgreSQL instance.
-			port := getTestPort(t.Name()) + 3
-			_, stopInstance := postgres.SetupTestInstance(t, port)
+			pgPort := getTestPort()
+			_, stopInstance := postgres.SetupTestInstance(t, pgPort)
 			defer stopInstance()
 
-			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", port))
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
 			a.NoError(err)
 			defer func() {
 				_ = pgDB.Close()
@@ -821,7 +830,7 @@ func TestVCS_SDL(t *testing.T) {
 					Name:          "pgInstance",
 					Engine:        db.Postgres,
 					Host:          "/tmp",
-					Port:          strconv.Itoa(port),
+					Port:          strconv.Itoa(pgPort),
 					Username:      "bytebase",
 					Password:      "bytebase",
 				},
@@ -1220,11 +1229,13 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			port := getTestPort(t.Name())
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, port)
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1444,7 +1455,10 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1456,11 +1470,11 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			// Create a PostgreSQL instance.
-			port := getTestPort(t.Name()) + 3
-			_, stopInstance := postgres.SetupTestInstance(t, port)
+			pgPort := getTestPort()
+			_, stopInstance := postgres.SetupTestInstance(t, pgPort)
 			defer stopInstance()
 
-			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", port))
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
 			a.NoError(err)
 			defer func() {
 				_ = pgDB.Close()
@@ -1510,7 +1524,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 				Name:          "pgInstance",
 				Engine:        db.Postgres,
 				Host:          "/tmp",
-				Port:          strconv.Itoa(port),
+				Port:          strconv.Itoa(pgPort),
 				Username:      "bytebase",
 				Password:      "bytebase",
 			})

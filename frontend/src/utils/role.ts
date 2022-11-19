@@ -33,7 +33,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-member", [false, false, true]],
   ["bb.permission.workspace.manage-vcs-provider", [false, false, true]],
   ["bb.permission.workspace.manage-general", [false, false, true]],
-  ["bb.permission.workspace.manage-im-integration", [false, true, true]],
+  ["bb.permission.workspace.manage-im-integration", [false, false, true]],
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
 ]);
 

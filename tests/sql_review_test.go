@@ -25,17 +25,15 @@ import (
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
-var (
-	noSQLReviewPolicy = []api.TaskCheckResult{
-		{
-			Status:    api.TaskCheckStatusSuccess,
-			Namespace: api.AdvisorNamespace,
-			Code:      common.Ok.Int(),
-			Title:     "Empty SQL review policy or disabled",
-			Content:   "",
-		},
-	}
-)
+var noSQLReviewPolicy = []api.TaskCheckResult{
+	{
+		Status:    api.TaskCheckStatusSuccess,
+		Namespace: api.AdvisorNamespace,
+		Code:      common.Ok.Int(),
+		Title:     "Empty SQL review policy or disabled",
+		Content:   "",
+	},
+}
 
 type test struct {
 	statement string
@@ -256,18 +254,21 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	port := getTestPort(t.Name()) + 3
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
 	a.NoError(err)
 
 	// Create a PostgreSQL instance.
-	_, stopInstance := postgres.SetupTestInstance(t, port)
+	pgPort := getTestPort()
+	_, stopInstance := postgres.SetupTestInstance(t, pgPort)
 	defer stopInstance()
 
-	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", port))
+	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
 	a.NoError(err)
 	defer pgDB.Close()
 
@@ -320,7 +321,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 		Name:          "pgInstance",
 		Engine:        db.Postgres,
 		Host:          "/tmp",
-		Port:          strconv.Itoa(port),
+		Port:          strconv.Itoa(pgPort),
 		Username:      "bytebase",
 		Password:      "bytebase",
 	})
@@ -983,18 +984,21 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	port := getTestPort(t.Name()) + 3
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
 	a.NoError(err)
 
 	// Create a MySQL instance.
-	_, stopInstance := mysql.SetupTestInstance(t, port)
+	mysqlPort := getTestPort()
+	_, stopInstance := mysql.SetupTestInstance(t, mysqlPort)
 	defer stopInstance()
 
-	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", port))
+	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", mysqlPort))
 	a.NoError(err)
 	defer mysqlDB.Close()
 
@@ -1046,7 +1050,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,
 		Host:          "127.0.0.1",
-		Port:          strconv.Itoa(port),
+		Port:          strconv.Itoa(mysqlPort),
 		Username:      "bytebase",
 		Password:      "bytebase",
 	})
