@@ -224,6 +224,13 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
+	// Re-query the issue to get the updated task, which has the RollbackFrom field.
+	rollbackIssue, err = ctl.getIssue(rollbackIssue.ID)
+	a.NoError(err)
+	a.Len(rollbackIssue.Pipeline.StageList, 1)
+	a.Len(rollbackIssue.Pipeline.StageList[0].TaskList, 1)
+	rollbackTask := rollbackIssue.Pipeline.StageList[0].TaskList[0]
+	a.Equal(task.ID, rollbackTask.RollbackFrom)
 
 	// Check that the data is restored.
 	rows2, err := dbMySQL.QueryContext(ctx, "SELECT * FROM t;")
