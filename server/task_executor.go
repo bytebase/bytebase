@@ -130,7 +130,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
-	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, databaseName)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, server.pgInstance.BaseDir, server.profile.DataDir)
 	if err != nil {
 		return 0, "", err
 	}
@@ -166,10 +166,12 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		_, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, server.store, migrationID)
+		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, server.store, migrationID)
 		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
+		// The runner will periodically scan the map to generate rollback SQL asynchronously.
+		server.RollbackRunner.generateMap.Store(updatedTask.ID, updatedTask)
 	}
 
 	return migrationID, schema, nil

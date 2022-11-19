@@ -382,6 +382,8 @@
       "system-bot": "机器人助手"
     },
     "im-integration": {
+      "enable": "启用",
+      "description": "可以让用户在 IM 里直接审批工单。",
       "feishu-updated-tip": "飞书配置更新成功"
     },
     "general": {
@@ -1316,7 +1318,10 @@
     "search-sheets": "搜索工作表",
     "hint-tips": {
       "confirm-to-delete-this-history": "确定删除这条记录？",
-      "confirm-to-close-unsaved-tab": "确定关闭未保存的标签页？"
+      "confirm-to-close-unsaved-sheet": {
+        "title": "确定关闭未保存的工作表？",
+        "content": "关闭当前工作表会丢失所有未保存的数据？"
+      }
     },
     "please-input-the-tab-label": "请输入标签页名称!",
     "copy-code": "复制代码",
@@ -1350,7 +1355,8 @@
     "tab-mode": {
       "readonly": "只读",
       "admin": "管理员"
-    }
+    },
+    "close-sheet": "关闭工作表"
   },
   "label": {
     "empty-label-value": "<空值>",

@@ -17,16 +17,12 @@ import (
 )
 
 func TestProvider_FetchUserInfo(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/users/1", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/users/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
+			Body: io.NopCloser(strings.NewReader(`
 {
   "id": 1,
   "username": "john_smith",
@@ -49,11 +45,8 @@ func TestProvider_FetchUserInfo(t *testing.T) {
   "following": 1
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -148,17 +141,13 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 		assert.EqualError(t, got, want)
 	})
 
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						switch r.URL.Path {
-						case "/api/v4/projects/1/members/all":
-							return &http.Response{
-								StatusCode: http.StatusOK,
-								// Example response derived from https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project-including-inherited-and-invited-members
-								Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/members/all":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response derived from https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project-including-inherited-and-invited-members
+				Body: io.NopCloser(strings.NewReader(`
 [
   {
     "id": 1,
@@ -209,12 +198,12 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
   }
 ]
 `)),
-							}, nil
-						case "/api/v4/users/1":
-							return &http.Response{
-								StatusCode: http.StatusOK,
-								// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
-								Body: io.NopCloser(strings.NewReader(`
+			}, nil
+		case "/api/v4/users/1":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
+				Body: io.NopCloser(strings.NewReader(`
 {
   "id": 1,
   "username": "john_smith",
@@ -237,13 +226,10 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
   "following": 1
 }
 `)),
-							}, nil
-						}
-						return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
-					},
-				},
-			},
-		},
+			}, nil
+		}
+		return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
+	},
 	)
 
 	ctx := context.Background()
@@ -265,16 +251,12 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 }
 
 func TestProvider_FetchCommitByID(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/5/repository/commits/6104942438c14ec7bd21c6cd5bd995272b3faff6", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/commits.html#get-a-single-commit
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/5/repository/commits/6104942438c14ec7bd21c6cd5bd995272b3faff6", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/commits.html#get-a-single-commit
+			Body: io.NopCloser(strings.NewReader(`
 {
   "id": "6104942438c14ec7bd21c6cd5bd995272b3faff6",
   "short_id": "6104942438c",
@@ -305,11 +287,8 @@ func TestProvider_FetchCommitByID(t *testing.T) {
   "web_url": "https://gitlab.example.com/thedude/gitlab-foss/-/commit/6104942438c14ec7bd21c6cd5bd995272b3faff6"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -325,17 +304,13 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 }
 
 func TestProvider_ExchangeOAuthToken(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/oauth/token", r.URL.Path)
-						assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-flow
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/oauth/token", r.URL.Path)
+		assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-flow
+			Body: io.NopCloser(strings.NewReader(`
 {
  "access_token": "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
  "token_type": "bearer",
@@ -344,11 +319,8 @@ func TestProvider_ExchangeOAuthToken(t *testing.T) {
  "created_at": 1607635748
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -373,16 +345,12 @@ func TestProvider_ExchangeOAuthToken(t *testing.T) {
 }
 
 func TestProvider_FetchAllRepositoryList(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/projects.html#list-all-projects
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/projects.html#list-all-projects
+			Body: io.NopCloser(strings.NewReader(`
 [
   {
     "id": 4,
@@ -412,11 +380,8 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
   }
 ]
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -435,16 +400,12 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 }
 
 func TestProvider_FetchRepositoryFileList(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/tree", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/tree", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
+			Body: io.NopCloser(strings.NewReader(`
 [
   {
     "id": "a1e8f8d745cc87e3a9248358d9352bb7f9a0aeba",
@@ -462,11 +423,8 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
   }
 ]
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -484,31 +442,24 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 }
 
 func TestProvider_CreateFile(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
 
-						body, err := io.ReadAll(r.Body)
-						require.NoError(t, err)
-						wantBody := `{"branch":"master","content":"some content","commit_message":"create a new file"}`
-						assert.Equal(t, wantBody, string(body))
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#create-new-file-in-repository
-							Body: io.NopCloser(strings.NewReader(`
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		wantBody := `{"branch":"master","content":"some content","commit_message":"create a new file"}`
+		assert.Equal(t, wantBody, string(body))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#create-new-file-in-repository
+			Body: io.NopCloser(strings.NewReader(`
 {
   "file_path": "app/project.rb",
   "branch": "master"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -528,31 +479,24 @@ func TestProvider_CreateFile(t *testing.T) {
 }
 
 func TestProvider_OverwriteFile(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
 
-						body, err := io.ReadAll(r.Body)
-						require.NoError(t, err)
-						wantBody := `{"branch":"master","content":"some content","commit_message":"update file","last_commit_id":"7638417db6d59f3c431d3e1f261cc637155684cd"}`
-						assert.Equal(t, wantBody, string(body))
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#update-existing-file-in-repository
-							Body: io.NopCloser(strings.NewReader(`
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		wantBody := `{"branch":"master","content":"some content","commit_message":"update file","last_commit_id":"7638417db6d59f3c431d3e1f261cc637155684cd"}`
+		assert.Equal(t, wantBody, string(body))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#update-existing-file-in-repository
+			Body: io.NopCloser(strings.NewReader(`
 {
   "file_path": "app/project.rb",
   "branch": "master"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -573,27 +517,20 @@ func TestProvider_OverwriteFile(t *testing.T) {
 }
 
 func TestProvider_ReadFileMeta(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/app%2Fmodels%2Fkey.rb/raw", r.URL.RawPath)
-						header := http.Header{}
-						header.Set("x-gitlab-file-name", "key.rb")
-						header.Set("x-gitlab-file-path", "app/models/key.rb")
-						header.Set("x-gitlab-size", "3")
-						header.Set("x-gitlab-last-commit-id", "27329d3afac51fbf2762428e12f2635d1137c549")
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-							Body:   io.NopCloser(strings.NewReader(`key`)),
-							Header: header,
-						}, nil
-					},
-				},
-			},
-		},
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/files/app%2Fmodels%2Fkey.rb/raw", r.URL.RawPath)
+		header := http.Header{}
+		header.Set("x-gitlab-file-name", "key.rb")
+		header.Set("x-gitlab-file-path", "app/models/key.rb")
+		header.Set("x-gitlab-size", "3")
+		header.Set("x-gitlab-last-commit-id", "27329d3afac51fbf2762428e12f2635d1137c549")
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
+			Body:   io.NopCloser(strings.NewReader(`key`)),
+			Header: header,
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -607,21 +544,17 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 }
 
 func TestProvider_ReadFileContent(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/app%2Fmodels%2Fkey.rb/raw", r.URL.RawPath)
-						header := http.Header{}
-						header.Set("x-gitlab-file-name", "key.rb")
-						header.Set("x-gitlab-file-path", "app/models/key.rb")
-						header.Set("x-gitlab-size", "3")
-						header.Set("x-gitlab-last-commit-id", "27329d3afac51fbf2762428e12f2635d1137c549")
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-							Body: io.NopCloser(strings.NewReader(`# Sample GitLab Project
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/files/app%2Fmodels%2Fkey.rb/raw", r.URL.RawPath)
+		header := http.Header{}
+		header.Set("x-gitlab-file-name", "key.rb")
+		header.Set("x-gitlab-file-path", "app/models/key.rb")
+		header.Set("x-gitlab-size", "3")
+		header.Set("x-gitlab-last-commit-id", "27329d3afac51fbf2762428e12f2635d1137c549")
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
+			Body: io.NopCloser(strings.NewReader(`# Sample GitLab Project
 
 This sample project shows how a project in GitLab looks for demonstration purposes. It contains issues, merge requests and Markdown files in many branches,
 named and filled with lorem ipsum.
@@ -630,12 +563,9 @@ You can look around to get an idea how to structure your project and, when done,
 
 [Learn more about creating GitLab projects.](https://docs.gitlab.com/ee/gitlab-basics/create-project.html)
 `)),
-							Header: header,
-						}, nil
-					},
-				},
-			},
-		},
+			Header: header,
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -655,16 +585,12 @@ You can look around to get an idea how to structure your project and, when done,
 }
 
 func TestProvider_CreateWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/hooks", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusCreated,
-							// Example response taken from https://docs.gitlab.com/ee/api/projects.html#get-project-hook
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/hooks", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusCreated,
+			// Example response taken from https://docs.gitlab.com/ee/api/projects.html#get-project-hook
+			Body: io.NopCloser(strings.NewReader(`
 {
   "id": 1,
   "url": "http://example.com/hook",
@@ -686,11 +612,8 @@ func TestProvider_CreateWebhook(t *testing.T) {
   "created_at": "2012-10-12T17:04:47Z"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -700,20 +623,13 @@ func TestProvider_CreateWebhook(t *testing.T) {
 }
 
 func TestProvider_PatchWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							Body:       io.NopCloser(strings.NewReader("")),
-						}, nil
-					},
-				},
-			},
-		},
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -722,20 +638,13 @@ func TestProvider_PatchWebhook(t *testing.T) {
 }
 
 func TestProvider_DeleteWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							Body:       io.NopCloser(strings.NewReader("")),
-						}, nil
-					},
-				},
-			},
-		},
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -799,17 +708,13 @@ func TestOAuth_RefreshToken(t *testing.T) {
 }
 
 func TestProvider_GetBranch(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "GET", r.Method)
-						assert.Equal(t, "/api/v4/projects/1/repository/branches/main", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "GET", r.Method)
+		assert.Equal(t, "/api/v4/projects/1/repository/branches/main", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
+			Body: io.NopCloser(strings.NewReader(`
 {
   "name": "main",
   "merged": false,
@@ -836,11 +741,8 @@ func TestProvider_GetBranch(t *testing.T) {
   }
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -855,17 +757,13 @@ func TestProvider_GetBranch(t *testing.T) {
 }
 
 func TestProvider_CreateBranch(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "POST", r.Method)
-						assert.Equal(t, "/api/v4/projects/1/repository/branches", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/api/v4/projects/1/repository/branches", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
+			Body: io.NopCloser(strings.NewReader(`
 {
   "commit": {
     "author_email": "john@example.com",
@@ -892,11 +790,8 @@ func TestProvider_CreateBranch(t *testing.T) {
   "web_url": "https://gitlab.example.com/my-group/my-project/-/tree/newbranch"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -908,16 +803,12 @@ func TestProvider_CreateBranch(t *testing.T) {
 }
 
 func TestProvider_CreatePullRequest(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/merge_requests", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/merge_requests", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
+			Body: io.NopCloser(strings.NewReader(`
 {
   "id": 1,
   "iid": 1,
@@ -1002,11 +893,8 @@ func TestProvider_CreatePullRequest(t *testing.T) {
   "diverged_commits_count": 2
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -1022,18 +910,14 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 }
 
 func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						switch r.URL.Path {
-						case "/api/v4/projects/1/variables/1":
-							if r.Method == "GET" {
-								return &http.Response{
-									StatusCode: http.StatusOK,
-									// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
-									Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/variables/1":
+			if r.Method == "GET" {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
+					Body: io.NopCloser(strings.NewReader(`
 {
     "variable_type": "env_var",
     "key": "1",
@@ -1043,12 +927,12 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
     "environment_scope": "*"
 }
 `)),
-								}, nil
-							} else if r.Method == "PUT" {
-								return &http.Response{
-									StatusCode: http.StatusOK,
-									// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#update-a-variable
-									Body: io.NopCloser(strings.NewReader(`
+				}, nil
+			} else if r.Method == "PUT" {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#update-a-variable
+					Body: io.NopCloser(strings.NewReader(`
 {
     "variable_type": "env_var",
     "key": "1",
@@ -1058,14 +942,14 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
     "environment_scope": "*"
 }
 `)),
-								}, nil
-							}
-						case "/api/v4/projects/1/variables":
-							assert.Equal(t, "POST", r.Method)
-							return &http.Response{
-								StatusCode: http.StatusOK,
-								// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#create-a-variable
-								Body: io.NopCloser(strings.NewReader(`
+				}, nil
+			}
+		case "/api/v4/projects/1/variables":
+			assert.Equal(t, "POST", r.Method)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#create-a-variable
+				Body: io.NopCloser(strings.NewReader(`
 {
     "variable_type": "env_var",
     "key": "1",
@@ -1075,14 +959,11 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
     "environment_scope": "*"
 }
 `)),
-							}, nil
-						}
+			}, nil
+		}
 
-						return nil, errors.Errorf("Invalid request. %s: %s", r.Method, r.URL.Path)
-					},
-				},
-			},
-		},
+		return nil, errors.Errorf("Invalid request. %s: %s", r.Method, r.URL.Path)
+	},
 	)
 
 	ctx := context.Background()
@@ -1091,16 +972,12 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
 }
 
 func TestProvider_ListPullRequestFile(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/merge_requests/1/changes", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/merge_requests/1/changes", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
+			Body: io.NopCloser(strings.NewReader(`
 {
   "id": 21,
   "iid": 1,
@@ -1137,11 +1014,8 @@ func TestProvider_ListPullRequestFile(t *testing.T) {
   "overflow": false
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 	ctx := context.Background()
 	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, "", "1", "1")
@@ -1155,4 +1029,72 @@ func TestProvider_ListPullRequestFile(t *testing.T) {
 		},
 	}
 	assert.Equal(t, want, got)
+}
+
+func TestProvider_GetDiffFileList(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/compare", r.URL.Path)
+		assert.Equal(t, "from=before_sha&to=after_sha", r.URL.RawQuery)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repositories.html#compare-branches-tags-or-commits
+			Body: io.NopCloser(strings.NewReader(`
+{
+	"commit": {
+		"id": "12d65c8dd2b2676fa3ac47d955accc085a37a9c1",
+		"short_id": "12d65c8dd2b",
+		"title": "JS fix",
+		"author_name": "Example User",
+		"author_email": "user@example.com",
+		"created_at": "2014-02-27T10:27:00+02:00"
+	},
+	"commits": [{
+		"id": "12d65c8dd2b2676fa3ac47d955accc085a37a9c1",
+		"short_id": "12d65c8dd2b",
+		"title": "JS fix",
+		"author_name": "Example User",
+		"author_email": "user@example.com",
+		"created_at": "2014-02-27T10:27:00+02:00"
+	}],
+	"diffs": [{
+		"old_path": "files/js/application.js",
+		"new_path": "files/js/application.js",
+		"a_mode": null,
+		"b_mode": "100644",
+		"diff": "--- a/files/js/application.js\n+++ b/files/js/application.js\n@@ -24,8 +24,10 @@\n //= require g.raphael-min\n //= require g.bar-min\n //= require branch-graph\n-//= require highlightjs.min\n-//= require ace/ace\n //= require_tree .\n //= require d3\n //= require underscore\n+\n+function fix() { \n+  alert(\"Fixed\")\n+}",
+		"new_file": false,
+		"renamed_file": false,
+		"deleted_file": false
+	}],
+	"compare_timeout": false,
+	"compare_same_ref": false,
+	"web_url": "https://gitlab.example.com/janedoe/gitlab-foss/-/compare/ae73cb07c9eeaf35924a10f713b364d32b2dd34f...0b4bc9a49b562e85de7cc9e834518ea6828729b9"
+}
+`)),
+		}, nil
+	},
+	)
+	ctx := context.Background()
+	got, err := p.GetDiffFileList(ctx, common.OauthContext{}, "", "1", "before_sha", "after_sha")
+	require.NoError(t, err)
+
+	want := []vcs.FileDiff{
+		{
+			Path: "files/js/application.js",
+			Type: vcs.FileDiffTypeModified,
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func newMockProvider(mockRoundTrip func(r *http.Request) (*http.Response, error)) vcs.Provider {
+	return newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: mockRoundTrip,
+				},
+			},
+		},
+	)
 }

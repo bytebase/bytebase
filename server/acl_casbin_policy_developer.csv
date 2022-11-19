@@ -25,6 +25,7 @@ p, DEVELOPER, /project/{projectID}/webhook/{webhookID}, PATCH
 p, DEVELOPER, /project/{projectID}/webhook/{webhookID}, DELETE
 p, DEVELOPER, /project/{projectID}/webhook/{webhookID}/test, GET
 p, DEVELOPER, /environment, GET
+p, DEVELOPER, /environment/{environmentID}, GET
 p, DEVELOPER, /policy, GET
 p, DEVELOPER, /policy/environment/{environmentID}, GET
 p, DEVELOPER, /instance, GET
@@ -43,6 +44,7 @@ p, DEVELOPER, /database/{databaseID}/table/{tableName}, GET
 p, DEVELOPER, /database/{databaseID}/view, GET
 p, DEVELOPER, /database/{databaseID}/extension, GET
 p, DEVELOPER, /database/{databaseID}/schema, GET
+p, DEVELOPER, /database/{databaseID}/edit, POST
 p, DEVELOPER, /database/{databaseID}/backup, GET
 p, DEVELOPER, /database/{databaseID}/backup, POST
 p, DEVELOPER, /database/{databaseID}/backup-setting, GET

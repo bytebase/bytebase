@@ -15,6 +15,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/jsonapi"
@@ -144,87 +145,56 @@ type controller struct {
 	vcsURL  string
 }
 
-func getTestPort(testName string) int {
-	// We allocate 4 ports for each of the integration test, who probably would start
-	// the Bytebase server, Postgres, MySQL and code host (GitLab or GitHub).
-	tests := []string{
-		"TestServiceRestart",
-		"TestSchemaAndDataUpdate",
-		"TestVCS/GitLab",
-		"TestVCS/GitHub",
-		"TestVCS_SQL_Review/GitLab",
-		"TestVCS_SQL_Review/GitHub",
-		"TestVCS_SDL/GitLab",
-		"TestVCS_SDL/GitHub",
-		"TestWildcardInVCSFilePathTemplate/emptyBaseAndMixAsterisks",
-		"TestWildcardInVCSFilePathTemplate/singleAsterisk",
-		"TestWildcardInVCSFilePathTemplate/doubleAsterisks",
-		"TestWildcardInVCSFilePathTemplate/mixAsterisks",
-		"TestWildcardInVCSFilePathTemplate/placeholderAsFolder",
-		"TestTenant",
-		"TestTenantVCS/GitLab",
-		"TestTenantVCS/GitHub",
-		"TestTenantVCS_YAML/GitLab",
-		"TestTenantVCS_YAML/GitHub",
-		"TestTenantDatabaseNameTemplate",
-		"TestGhostSchemaUpdate",
-		"TestTenantVCSDatabaseNameTemplate/GitLab",
-		"TestTenantVCSDatabaseNameTemplate/GitHub",
-		"TestTenantVCSDatabaseNameTemplate_Empty/GitLab",
-		"TestTenantVCSDatabaseNameTemplate_Empty/GitHub",
-		"TestBootWithExternalPg",
-		"TestSheetVCS/GitLab",
-		"TestSheetVCS/GitHub",
-		"TestPrepare",
+type config struct {
+	dataDir            string
+	vcsProviderCreator fake.VCSProviderCreator
 
-		// PITR related cases
-		"TestRestoreToNewDatabase",
-		"TestRetentionPolicy",
-		"TestPITRGeneral",
-		"TestPITRDropDatabase",
-		"TestPITRInvalidTimePoint",
-		"TestPITRTwice",
-		"TestPITRToNewDatabaseInAnotherInstance",
-		"TestRollback",
+	pgUser string
+	pgURL  string
+}
 
-		"TestCheckEngineInnoDB",
-		"TestCheckServerVersionAndBinlogForPITR",
-		"TestFetchBinlogFiles",
+var (
+	mu       sync.Mutex
+	nextPort = 1234
+)
 
-		"TestSQLReviewForMySQL",
-		"TestSQLReviewForPostgreSQL",
+// getTestPort reserves and returns a port.
+func getTestPort() int {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextPort
+	nextPort++
+	return p
+}
 
-		"TestArchiveProject",
-		"TestDataSource",
-	}
-	port := 1234
-	for _, name := range tests {
-		if testName == name {
-			return port
-		}
-		port += 4
-	}
-	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
+// getTestPortForEmbeddedPg reserves two ports, one for server and one for postgres server.
+func getTestPortForEmbeddedPg() int {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextPort
+	nextPort += 2
+	return p
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
-	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
+	serverPort := getTestPort()
+	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, config.pgUser, config.pgURL)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, vcsProviderCreator, port)
+	return ctl.start(ctx, config.vcsProviderCreator, serverPort)
 }
 
 // StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int) error {
-	// start main server.
+func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
-	profile := cmd.GetTestProfile(dataDir, port)
+	serverPort := getTestPortForEmbeddedPg()
+	profile := cmd.GetTestProfile(config.dataDir, serverPort)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -232,7 +202,7 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProvi
 	ctl.server = server
 	ctl.profile = profile
 
-	return ctl.start(ctx, vcsProviderCreator, port)
+	return ctl.start(ctx, config.vcsProviderCreator, serverPort)
 }
 
 // start only called by StartServer() and StartServerWithExternalPg().
@@ -241,7 +211,7 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
 	// Set up VCS provider.
-	vcsPort := port + 2
+	vcsPort := getTestPort()
 	ctl.vcsProvider = vcsProviderCreator(vcsPort)
 	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
 
@@ -1554,7 +1524,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 		return errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.EnvironmentID, policyUpsert.Type), buf)
+	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
 		return err
 	}
@@ -1568,7 +1538,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 
 // deletePolicy deletes the archived policy.
 func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
-	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
+	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.ResourceID, policyDelete.Type), new(bytes.Buffer))
 	if err != nil {
 		return err
 	}

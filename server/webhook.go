@@ -338,7 +338,7 @@ func (s *Server) sqlAdviceForFile(
 	// There may exist many databases that match the file name.
 	// We just need to use the first one, which has the SQL review policy and can let us take the check.
 	for _, database := range databases {
-		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &database.Instance.EnvironmentID})
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceID: &database.Instance.EnvironmentID})
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 				log.Debug("Cannot found SQL review policy in environment", zap.Int("Environment", database.Instance.EnvironmentID), zap.Error(err))
@@ -479,6 +479,10 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 }
 
 func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Repository, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
+	if len(repositoryList) == 0 {
+		return nil, errors.Errorf("empty repository list")
+	}
+
 	distinctFileList := baseVCSPushEvent.GetDistinctFileList()
 	if len(distinctFileList) == 0 {
 		var commitIDs []string
@@ -492,8 +496,14 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 		return nil, nil
 	}
 
+	repo := repositoryList[0]
+	filteredDistinctFileList, err := s.filterFilesByCommitsDiff(ctx, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
+	if err != nil {
+		return nil, err
+	}
+
 	var createdMessageList []string
-	repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repositoryList)
+	repoID2FileItemList := groupFileInfoByRepo(filteredDistinctFileList, repositoryList)
 	for _, fileInfoListInRepo := range repoID2FileItemList {
 		// There are possibly multiple files in the push event.
 		// Each file corresponds to a (database name, schema version) pair.
@@ -535,6 +545,40 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 	}
 
 	return createdMessageList, nil
+}
+
+// Users may merge commits from other branches, and some of the commits merged in may already be merged into the main branch.
+// In that case, the commits in the push event contains files which are not added in this PR/MR.
+// We use the compare API to get the file diffs and filter files by the diffs.
+// TODO(dragonly): generate distinct file change list from the commits diff instead of filter.
+func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Repository, distinctFileList []vcs.DistinctFileItem, beforeCommit, afterCommit string) ([]vcs.DistinctFileItem, error) {
+	fileDiffList, err := vcs.Get(repo.VCS.Type, vcs.ProviderConfig{}).GetDiffFileList(
+		ctx,
+		common.OauthContext{
+			ClientID:     repo.VCS.ApplicationID,
+			ClientSecret: repo.VCS.Secret,
+			AccessToken:  repo.AccessToken,
+			RefreshToken: repo.RefreshToken,
+			Refresher:    s.refreshToken(ctx, repo.WebURL),
+		},
+		repo.VCS.InstanceURL,
+		repo.ExternalID,
+		beforeCommit,
+		afterCommit,
+	)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to get file diff list for repository %s", repo.ExternalID)
+	}
+	var filteredDistinctFileList []vcs.DistinctFileItem
+	for _, file := range distinctFileList {
+		for _, diff := range fileDiffList {
+			if file.FileName == diff.Path {
+				filteredDistinctFileList = append(filteredDistinctFileList, file)
+				break
+			}
+		}
+	}
+	return filteredDistinctFileList, nil
 }
 
 type fileInfo struct {

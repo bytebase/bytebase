@@ -83,6 +83,27 @@ type FileMeta struct {
 	LastCommitID string
 }
 
+// FileDiffType is the type of file diff.
+type FileDiffType int
+
+const (
+	// FileDiffTypeUnknown means the file is an unknown diff type.
+	FileDiffTypeUnknown FileDiffType = iota
+	// FileDiffTypeAdded means the file is newly added.
+	FileDiffTypeAdded
+	// FileDiffTypeModified means the file is modified.
+	FileDiffTypeModified
+	// FileDiffTypeRemoved means the file is removed.
+	FileDiffTypeRemoved
+)
+
+// FileDiff contains file diffs between two commits.
+// It's obtained by comparing the base and head commits of a PR/MR so that we know the real changes.
+type FileDiff struct {
+	Path string
+	Type FileDiffType
+}
+
 // RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
 type RepositoryTreeNode struct {
 	Path string
@@ -94,6 +115,8 @@ type PushEvent struct {
 	VCSType            Type     `json:"vcsType"`
 	BaseDirectory      string   `json:"baseDir"`
 	Ref                string   `json:"ref"`
+	Before             string   `json:"before"`
+	After              string   `json:"after"`
 	RepositoryID       string   `json:"repositoryId"`
 	RepositoryURL      string   `json:"repositoryUrl"`
 	RepositoryFullPath string   `json:"repositoryFullPath"`
@@ -191,6 +214,14 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// commitID: the commit ID
 	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*Commit, error)
+	// Get the diff files list between two commits
+	//
+	// oauthCtx: OAuth context to fetch commit
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// beforeCommit: the previous commit
+	// afterCommit: the current commit
+	GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]FileDiff, error)
 	// Fetch the user info of the given userID
 	//
 	// oauthCtx: OAuth context to write the file content

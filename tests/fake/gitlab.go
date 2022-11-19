@@ -49,6 +49,9 @@ type projectData struct {
 		*gitlab.MergeRequestChange
 		*gitlab.MergeRequest
 	}
+	// commitsDiff is the map for commits compare.
+	// The map key has the format "from...to" which is SHA or branch name.
+	commitsDiff map[string]*gitlab.CommitsDiff
 }
 
 // NewGitLab creates a new fake implementation of GitLab VCS provider.
@@ -81,6 +84,7 @@ func NewGitLab(port int) VCSProvider {
 	projectGroup.POST("/projects/:id/variables", gl.createProjectEnvironmentVariable)
 	projectGroup.PUT("/projects/:id/variables/:variableKey", gl.updateProjectEnvironmentVariable)
 	projectGroup.GET("/projects/:id/merge_requests/:mrID/changes", gl.getMergeRequestChanges)
+	projectGroup.GET("/projects/:id/repository/compare", gl.compareCommits)
 
 	return gl
 }
@@ -115,6 +119,7 @@ func (gl *GitLab) CreateRepository(id string) {
 			*gitlab.MergeRequestChange
 			*gitlab.MergeRequest
 		}{},
+		commitsDiff: map[string]*gitlab.CommitsDiff{},
 	}
 }
 
@@ -437,7 +442,7 @@ func (gl *GitLab) getMergeRequestChanges(c echo.Context) error {
 
 	mergeRequest, ok := pd.mergeRequests[mrNumber]
 	if !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("Cannot found the merge request: %v", c.Param("mrID")))
+		return c.String(http.StatusNotFound, fmt.Sprintf("Cannot find the merge request: %v", c.Param("mrID")))
 	}
 
 	buf, err := json.Marshal(mergeRequest.MergeRequestChange)
@@ -445,6 +450,49 @@ func (gl *GitLab) getMergeRequestChanges(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
 	}
 	return c.String(http.StatusOK, string(buf))
+}
+
+func (gl *GitLab) compareCommits(c echo.Context) error {
+	pd, err := gl.validProject(c)
+	if err != nil {
+		return err
+	}
+	key := fmt.Sprintf("%s...%s", c.QueryParam("from"), c.QueryParam("to"))
+	diff, ok := pd.commitsDiff[key]
+	if !ok {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find the diff key %s", key))
+	}
+	buf, err := json.Marshal(diff)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response body").SetInternal(err)
+	}
+	return c.String(http.StatusOK, string(buf))
+}
+
+// AddCommitsDiff adds a commits diff.
+func (gl *GitLab) AddCommitsDiff(projectID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error {
+	pd, ok := gl.projects[projectID]
+	if !ok {
+		return errors.Errorf("GitLab project %s doesn't exist", projectID)
+	}
+	key := fmt.Sprintf("%s...%s", fromCommit, toCommit)
+	commitsDiff := &gitlab.CommitsDiff{
+		FileDiffList: []gitlab.MergeRequestFile{},
+	}
+	for _, fileDiff := range fileDiffList {
+		mrFile := gitlab.MergeRequestFile{
+			NewPath: fileDiff.Path,
+		}
+		switch fileDiff.Type {
+		case vcs.FileDiffTypeAdded:
+			mrFile.NewFile = true
+		case vcs.FileDiffTypeRemoved:
+			mrFile.DeletedFile = true
+		}
+		commitsDiff.FileDiffList = append(commitsDiff.FileDiffList, mrFile)
+	}
+	pd.commitsDiff[key] = commitsDiff
+	return nil
 }
 
 // SendWebhookPush sends out a webhook for a push event for the GitLab project

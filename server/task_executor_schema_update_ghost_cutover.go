@@ -76,7 +76,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		return true, nil, err
 	}
 	migrationID, schema, err := func() (migrationHistoryID int64, updatedSchema string, resErr error) {
-		driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
+		driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, server.pgInstance.BaseDir, server.profile.DataDir)
 		if err != nil {
 			return -1, "", err
 		}

@@ -18,13 +18,13 @@ func TestRollback(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	port := getTestPort(t.Name())
 	database := "funny\ndatabase"
 
-	_, stopFn := resourcemysql.SetupTestInstance(t, port)
+	mysqlPort := getTestPort()
+	_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 	defer stopFn()
 
-	db, err := connectTestMySQL(port, "")
+	db, err := connectTestMySQL(mysqlPort, "")
 	a.NoError(err)
 	defer db.Close()
 	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`; CREATE TABLE user (id INT PRIMARY KEY, name VARCHAR(64), balance INT);", database, database))
@@ -37,7 +37,7 @@ func TestRollback(t *testing.T) {
 	resourceDir := t.TempDir()
 	err = mysqlutil.Install(resourceDir)
 	a.NoError(err)
-	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(port), database, resourceDir)
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, resourceDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 
@@ -56,7 +56,9 @@ func TestRollback(t *testing.T) {
 	tableCatalog := map[string][]string{
 		"user": {"id", "name", "balance"},
 	}
-	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileList, 0, math.MaxInt64, tableCatalog)
+	threadID, err := mysqlDriver.GetMigrationConnID(ctx)
+	a.NoError(err)
+	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileList, 0, math.MaxInt64, threadID, tableCatalog)
 	a.NoError(err)
 	_, err = db.ExecContext(ctx, rollbackSQL)
 	a.NoError(err)

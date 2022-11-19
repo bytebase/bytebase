@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -20,6 +21,8 @@ const (
 	emptyTokenRespCode   = 99991661
 	invalidTokenRespCode = 99991663
 )
+
+const timeout = 30 * time.Second
 
 // Provider is the provider for IM Feishu.
 type Provider struct {
@@ -35,11 +38,18 @@ type tokenRefresher func(ctx context.Context, client *http.Client, oldToken *str
 // NewProvider returns a Provider.
 func NewProvider() *Provider {
 	p := Provider{
-		client: &http.Client{},
+		client: &http.Client{
+			Timeout: timeout,
+		},
 	}
 	// initialize token
 	p.Token.Store("")
 	return &p
+}
+
+// ClearTokenCache clears cached token.
+func (p *Provider) ClearTokenCache() {
+	p.Token.Store("")
 }
 
 // TokenCtx is the token context to access feishu APIs.
@@ -133,7 +143,15 @@ type createApprovalInstanceReq struct {
 type Content struct {
 	Issue       string
 	Stage       string
+	Link        string
+	TaskList    []Task
 	Description string
+}
+
+// Task is the content of a task.
+type Task struct {
+	Name   string
+	Status string
 }
 
 const (
@@ -145,7 +163,7 @@ const (
   "approval_code": "%s",
 	"approval_name": "@i18n@approval_name",
 	"form": {
-		"form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"textarea\", \"name\":\"@i18n@widget3\"}]"
+		"form_content": "[{\"id\":\"1\", \"type\": \"input\", \"name\":\"@i18n@widget1\"},{\"id\":\"2\", \"type\": \"input\", \"name\":\"@i18n@widget2\"},{\"id\":\"3\", \"type\": \"input\", \"name\":\"@i18n@widget3\"},{\"id\":\"4\", \"type\": \"textarea\", \"name\":\"@i18n@widget4\"},{\"id\":\"5\", \"type\": \"textarea\", \"name\":\"@i18n@widget5\"}]"
 	},
 	"i18n_resources": [
 		{
@@ -166,10 +184,18 @@ const (
 				},
 				{
 					"key": "@i18n@widget2",
-					"value": "阶段"
+					"value": "链接"
 				},
 				{
 					"key": "@i18n@widget3",
+					"value": "阶段"
+				},
+				{
+					"key": "@i18n@widget4",
+					"value": "任务列表"
+				},
+				{
+					"key": "@i18n@widget5",
 					"value": "描述"
 				}
 			]
@@ -192,10 +218,18 @@ const (
 				},
 				{
 					"key": "@i18n@widget2",
-					"value": "Stage"
+					"value": "Link"
 				},
 				{
 					"key": "@i18n@widget3",
+					"value": "Stage"
+				},
+				{
+					"key": "@i18n@widget4",
+					"value": "Task List"
+				},
+				{
+					"key": "@i18n@widget5",
 					"value": "Description"
 				}
 			]
@@ -502,12 +536,21 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 }
 
 func formatForm(content Content) (string, error) {
-	type form []struct {
+	type form struct {
 		ID    string `json:"id"`
 		Type  string `json:"type"`
 		Value string `json:"value"`
 	}
-	forms := form{
+	var taskListValue strings.Builder
+	if _, err := taskListValue.WriteString(fmt.Sprintf("Stage %q has %d task(s).\n", content.Stage, len(content.TaskList))); err != nil {
+		return "", err
+	}
+	for i, task := range content.TaskList {
+		if _, err := taskListValue.WriteString(fmt.Sprintf("%d. [%s] %s.\n", i+1, task.Status, task.Name)); err != nil {
+			return "", err
+		}
+	}
+	forms := []form{
 		{
 			ID:    "1",
 			Type:  "input",
@@ -516,10 +559,20 @@ func formatForm(content Content) (string, error) {
 		{
 			ID:    "2",
 			Type:  "input",
-			Value: content.Stage,
+			Value: content.Link,
 		},
 		{
 			ID:    "3",
+			Type:  "input",
+			Value: content.Stage,
+		},
+		{
+			ID:    "4",
+			Type:  "textarea",
+			Value: taskListValue.String(),
+		},
+		{
+			ID:    "5",
 			Type:  "textarea",
 			Value: content.Description,
 		},

@@ -28,6 +28,8 @@ const (
 	OpenAPIMetricName metric.Name = "bb.api.call"
 	// SQLAdviseAPIMetricName is the metric name for SQL check API.
 	SQLAdviseAPIMetricName metric.Name = "bb.api.sql.advise"
+	// SubscriptionTrialMetricName is the metric name for trial.
+	SubscriptionTrialMetricName metric.Name = "bb.subscription.trial"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count.

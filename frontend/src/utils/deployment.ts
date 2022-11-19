@@ -1,33 +1,5 @@
-import type {
-  DeploymentConfig,
-  DeploymentSchedule,
-  DeploymentSpec,
-  Environment,
-} from "@/types";
+import type { DeploymentConfig, DeploymentSpec } from "@/types";
 import { PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS } from "./label";
-
-export const generateDefaultSchedule = (environmentList: Environment[]) => {
-  const schedule: DeploymentSchedule = {
-    deployments: [],
-  };
-  environmentList.forEach((env) => {
-    schedule.deployments.push({
-      name: `${env.name} Stage`,
-      spec: {
-        selector: {
-          matchExpressions: [
-            {
-              key: "bb.environment",
-              operator: "In",
-              values: [env.name],
-            },
-          ],
-        },
-      },
-    });
-  });
-  return schedule;
-};
 
 export const validateDeploymentConfig = (
   config: DeploymentConfig

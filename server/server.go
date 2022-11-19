@@ -38,8 +38,14 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// openAPIPrefix is the API prefix for Bytebase OpenAPI.
-const openAPIPrefix = "/v1"
+const (
+	// internalAPIPrefix is the API prefix for Bytebase internal, used by the UX.
+	internalAPIPrefix = "/api"
+	// webhookAPIPrefix is the API prefix for Bytebase webhook.
+	webhookAPIPrefix = "/hook"
+	// openAPIPrefix is the API prefix for Bytebase OpenAPI.
+	openAPIPrefix = "/v1"
+)
 
 // Server is the Bytebase server.
 type Server struct {
@@ -51,6 +57,7 @@ type Server struct {
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
 	ApplicationRunner  *ApplicationRunner
+	RollbackRunner     *RollbackRunner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *ActivityManager
@@ -297,6 +304,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
 
+		// Rollback SQL generator
+		s.RollbackRunner = NewRollbackRunner(s.store, s.profile.DataDir)
+
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
 	}
@@ -311,7 +321,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 			if s.profile.Mode == common.ReleaseModeProd && !s.profile.Debug {
 				return true
 			}
-			return !common.HasPrefixes(c.Path(), "/api", "/hook")
+			return !common.HasPrefixes(c.Path(), internalAPIPrefix, openAPIPrefix, webhookAPIPrefix)
 		},
 		Format: `{"time":"${time_rfc3339}",` +
 			`"method":"${method}","uri":"${uri}",` +
@@ -320,18 +330,12 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	e.Use(recoverMiddleware)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	webhookGroup := e.Group("/hook")
+	webhookGroup := e.Group(webhookAPIPrefix)
 	s.registerWebhookRoutes(webhookGroup)
 
-	openAPIGroup := e.Group(openAPIPrefix)
-	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return openAPIMetricMiddleware(s, next)
-	})
-	s.registerOpenAPIRoutes(openAPIGroup)
-
-	apiGroup := e.Group("/api")
+	apiGroup := e.Group(internalAPIPrefix)
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
+		return JWTMiddleware(internalAPIPrefix, s.store, next, prof.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -344,7 +348,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, ce, next, prof.Readonly)
+		return aclMiddleware(s, internalAPIPrefix, ce, next, prof.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
@@ -379,6 +383,10 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK!\n")
 	})
+
+	// Register open API routes
+	s.registerOpenAPIRoutes(e, ce, prof)
+
 	// Register pprof endpoints.
 	pprof.Register(e)
 	// Register prometheus metrics endpoint.
@@ -394,6 +402,31 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	serverStarted = true
 	return s, nil
+}
+
+func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof Profile) {
+	openAPIGroup := e.Group(openAPIPrefix)
+
+	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return JWTMiddleware(openAPIPrefix, s.store, next, prof.Mode, s.secret)
+	})
+	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return aclMiddleware(s, openAPIPrefix, ce, next, prof.Readonly)
+	})
+	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return openAPIMetricMiddleware(s, next)
+	})
+
+	s.registerOpenAPIRoutesForSQL(openAPIGroup)
+	s.registerOpenAPIRoutesForAuth(openAPIGroup)
+	s.registerOpenAPIRoutesForInstance(openAPIGroup)
+	s.registerOpenAPIRoutesForEnvironment(openAPIGroup)
+
+	openAPIGroup.GET("/healthz", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"content": "OK",
+		})
+	})
 }
 
 // initSubscription will initial the subscription cache in memory.
@@ -503,6 +536,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.RollbackRunner.Run(ctx, &s.runnerWG)
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
