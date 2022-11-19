@@ -186,6 +186,7 @@ func getTestPort(testName string) int {
 		"TestPITRTwice",
 		"TestPITRToNewDatabaseInAnotherInstance",
 		"TestRollback",
+		"TestCreateRollbackIssueMySQL",
 
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
@@ -856,6 +857,26 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 		return nil, errors.Wrap(err, "fail to unmarshal patchTaskStatus response")
 	}
 	return task, nil
+}
+
+func (ctl *controller) createRollbackIssue(pipelineID int, taskIDList []string) (*api.Issue, error) {
+	payload := api.TaskRollbackRequestPayload{TaskIDList: taskIDList}
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &payload); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal api.TaskRollbackRequestPayload")
+	}
+
+	body, err := ctl.post(fmt.Sprintf("/pipeline/%d/task/rollback", pipelineID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	issue := new(api.Issue)
+	if err := jsonapi.UnmarshalPayload(body, issue); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal create rollback issue response")
+	}
+
+	return issue, nil
 }
 
 // patchStageAllTaskStatus patches the status of all tasks in the pipeline stage.
