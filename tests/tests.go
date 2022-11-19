@@ -15,6 +15,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/jsonapi"
@@ -145,96 +146,55 @@ type controller struct {
 }
 
 type config struct {
-	dataDir string
-	port    int
-
+	dataDir            string
 	vcsProviderCreator fake.VCSProviderCreator
 
 	pgUser string
 	pgURL  string
 }
 
-func getTestPort(testName string) int {
-	// We allocate 4 ports for each of the integration test, who probably would start
-	// the Bytebase server, Postgres, MySQL and code host (GitLab or GitHub).
-	tests := []string{
-		"TestServiceRestart",
-		"TestSchemaAndDataUpdate",
-		"TestVCS/GitLab",
-		"TestVCS/GitHub",
-		"TestVCS_SQL_Review/GitLab",
-		"TestVCS_SQL_Review/GitHub",
-		"TestVCS_SDL/GitLab",
-		"TestVCS_SDL/GitHub",
-		"TestWildcardInVCSFilePathTemplate/emptyBaseAndMixAsterisks",
-		"TestWildcardInVCSFilePathTemplate/singleAsterisk",
-		"TestWildcardInVCSFilePathTemplate/doubleAsterisks",
-		"TestWildcardInVCSFilePathTemplate/mixAsterisks",
-		"TestWildcardInVCSFilePathTemplate/placeholderAsFolder",
-		"TestTenant",
-		"TestTenantVCS/GitLab",
-		"TestTenantVCS/GitHub",
-		"TestTenantVCS_YAML/GitLab",
-		"TestTenantVCS_YAML/GitHub",
-		"TestTenantDatabaseNameTemplate",
-		"TestGhostSchemaUpdate",
-		"TestTenantVCSDatabaseNameTemplate/GitLab",
-		"TestTenantVCSDatabaseNameTemplate/GitHub",
-		"TestTenantVCSDatabaseNameTemplate_Empty/GitLab",
-		"TestTenantVCSDatabaseNameTemplate_Empty/GitHub",
-		"TestBootWithExternalPg",
-		"TestSheetVCS/GitLab",
-		"TestSheetVCS/GitHub",
-		"TestPrepare",
+var (
+	mu       sync.Mutex
+	nextPort = 1234
+)
 
-		// PITR related cases
-		"TestRestoreToNewDatabase",
-		"TestRetentionPolicy",
-		"TestPITRGeneral",
-		"TestPITRDropDatabase",
-		"TestPITRInvalidTimePoint",
-		"TestPITRTwice",
-		"TestPITRToNewDatabaseInAnotherInstance",
-		"TestRollback",
+// getTestPort reserves and returns a port.
+func getTestPort() int {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextPort
+	nextPort++
+	return p
+}
 
-		"TestCheckEngineInnoDB",
-		"TestCheckServerVersionAndBinlogForPITR",
-		"TestFetchBinlogFiles",
-
-		"TestSQLReviewForMySQL",
-		"TestSQLReviewForPostgreSQL",
-
-		"TestArchiveProject",
-		"TestDataSource",
-	}
-	port := 1234
-	for _, name := range tests {
-		if testName == name {
-			return port
-		}
-		port += 4
-	}
-	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
+// getTestPortForEmbeddedPg reserves two ports, one for server and one for postgres server.
+func getTestPortForEmbeddedPg() int {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextPort
+	nextPort += 2
+	return p
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
-	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, config.port, config.pgUser, config.pgURL)
+	serverPort := getTestPort()
+	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, config.pgUser, config.pgURL)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
 	}
 	ctl.server = server
 
-	return ctl.start(ctx, config.vcsProviderCreator, config.port)
+	return ctl.start(ctx, config.vcsProviderCreator, serverPort)
 }
 
 // StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, config *config) error {
-	// start main server.
 	log.SetLevel(zap.DebugLevel)
-	profile := cmd.GetTestProfile(config.dataDir, config.port)
+	serverPort := getTestPortForEmbeddedPg()
+	profile := cmd.GetTestProfile(config.dataDir, serverPort)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -242,7 +202,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	ctl.server = server
 	ctl.profile = profile
 
-	return ctl.start(ctx, config.vcsProviderCreator, config.port)
+	return ctl.start(ctx, config.vcsProviderCreator, serverPort)
 }
 
 // start only called by StartServer() and StartServerWithExternalPg().
@@ -251,7 +211,7 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
 	// Set up VCS provider.
-	vcsPort := port + 2
+	vcsPort := getTestPort()
 	ctl.vcsProvider = vcsProviderCreator(vcsPort)
 	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
 
