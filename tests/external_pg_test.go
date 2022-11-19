@@ -8,14 +8,13 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
-
-	"github.com/stretchr/testify/require"
 )
 
 type fakeExternalPg struct {
@@ -58,10 +57,8 @@ func TestBootWithExternalPg(t *testing.T) {
 
 	pgTmpDir := t.TempDir()
 
-	port := getTestPort(t.Name())
-	serverPort := port + 1
-
-	externalPg, err := newFakeExternalPg(pgTmpDir, port)
+	pgPort := getTestPort()
+	externalPg, err := newFakeExternalPg(pgTmpDir, pgPort)
 	a.NoError(err)
 	defer func() {
 		if err = externalPg.Destroy(); err != nil {
@@ -74,7 +71,6 @@ func TestBootWithExternalPg(t *testing.T) {
 	dataTmpDir := t.TempDir()
 	err = ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataTmpDir,
-		port:               serverPort,
 		vcsProviderCreator: fake.NewGitLab,
 		pgUser:             externalPg.pgUser,
 		pgURL:              externalPg.pgURL,
