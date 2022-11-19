@@ -58,15 +58,6 @@
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.members") }}</router-link
           >
-          <!--
-            Label Management is visible to all
-            but only editable to Owners and DBAs
-          -->
-          <router-link
-            to="/setting/label"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.labels") }}</router-link
-          >
           <router-link
             v-if="showIMIntegrationItem"
             to="/setting/im-integration"
