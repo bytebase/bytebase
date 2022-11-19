@@ -99,7 +99,7 @@
           class="mt-2 w-full placeholder-gray-300"
           :required="true"
           :value="state.project.dbNameTemplate"
-          placeholder="e.g. {{DB_NAME}}_{{TENANT}}"
+          placeholder="e.g. {{DB_NAME}}__{{TENANT}}"
           @input="
             state.project.dbNameTemplate = (
               $event.target as HTMLInputElement
