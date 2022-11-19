@@ -13,6 +13,7 @@ import (
 )
 
 func TestSheetVCS(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name               string
 		vcsProviderCreator fake.VCSProviderCreator
@@ -46,7 +47,6 @@ func TestSheetVCS(t *testing.T) {
 			ctl := &controller{}
 			err := ctl.StartServer(ctx, &config{
 				dataDir:            t.TempDir(),
-				port:               getTestPort(t.Name()),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
