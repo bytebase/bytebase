@@ -123,6 +123,28 @@ func (gl *GitLab) CreateRepository(id string) {
 	}
 }
 
+// CreateBranch creates a new branch with the given name.
+func (gl *GitLab) CreateBranch(id, branchName string) error {
+	pd, ok := gl.projects[id]
+	if !ok {
+		return errors.Errorf("gitlab project %q doesn't exist", id)
+	}
+
+	if _, ok := pd.branches[fmt.Sprintf("refs/heads/%s", branchName)]; ok {
+		return errors.Errorf("branch %q already exists", branchName)
+	}
+
+	pd.branches[fmt.Sprintf("refs/heads/%s", branchName)] = &gitlab.Branch{
+		Name: branchName,
+		Commit: gitlab.Commit{
+			ID:         "fake_gitlab_commit_id",
+			AuthorName: "fake_gitlab_bot",
+			CreatedAt:  time.Now(),
+		},
+	}
+	return nil
+}
+
 // createProjectHook creates a project webhook.
 func (gl *GitLab) createProjectHook(c echo.Context) error {
 	pd, err := gl.validProject(c)

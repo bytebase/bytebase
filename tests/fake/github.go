@@ -462,6 +462,27 @@ func (gh *GitHub) CreateRepository(id string) {
 	}
 }
 
+// CreateBranch creates a new branch with the given name.
+func (gh *GitHub) CreateBranch(id, branchName string) error {
+	pd, ok := gh.repositories[id]
+	if !ok {
+		return errors.Errorf("github project %q doesn't exist", id)
+	}
+
+	if _, ok := pd.refs[fmt.Sprintf("refs/heads/%s", branchName)]; ok {
+		return errors.Errorf("branch %q already exists", branchName)
+	}
+
+	pd.refs[fmt.Sprintf("refs/heads/%s", branchName)] = &github.Branch{
+		Ref: fmt.Sprintf("refs/heads/%s", branchName),
+		Object: github.ReferenceObject{
+			SHA: "fake_github_commit_sha",
+		},
+	}
+
+	return nil
+}
+
 // AddCommitsDiff adds a commits diff.
 func (gh *GitHub) AddCommitsDiff(repositoryID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error {
 	r, ok := gh.repositories[repositoryID]

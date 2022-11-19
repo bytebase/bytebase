@@ -19,6 +19,8 @@ type VCSProvider interface {
 
 	// CreateRepository creates a new repository with given ID.
 	CreateRepository(id string)
+	// CreateBranch creates a new branch in the repository with given ID.
+	CreateBranch(id, branchName string) error
 	// SendWebhookPush sends out a webhook for a push event for the repository using
 	// given payload.
 	SendWebhookPush(repositoryID string, payload []byte) error
