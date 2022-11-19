@@ -96,8 +96,11 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	serverPort := getTestPort(t.Name())
-	err := ctl.StartServer(ctx, t.TempDir(), fake.NewGitLab, serverPort)
+	dataDir := t.TempDir()
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer func() {
 		_ = ctl.Close(ctx)
@@ -109,7 +112,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.NoError(err)
 
 	// Create a MySQL instance.
-	mysqlPort := serverPort + 1
+	mysqlPort := getTestPort()
 	_, stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
 	defer stopInstance()
 
@@ -207,12 +210,16 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	want1 := []record{{2, "unknown\nunknown"}, {3, "unknown\nunknown"}}
 	a.Equal(want1, records1)
 
-	// Wait for the rollback SQL generation.
-	time.Sleep(3 * time.Second)
-
 	// Run a rollback issue.
-	rollbackIssue, err := ctl.createRollbackIssue(issue.Pipeline.ID, []string{fmt.Sprintf("%d", task.ID)})
-	a.NoError(err)
+	var rollbackIssue *api.Issue
+	for i := 0; i < 10; i++ {
+		rollbackIssue, err = ctl.createRollbackIssue(issue.Pipeline.ID, []string{fmt.Sprintf("%d", task.ID)})
+		if err == nil {
+			break
+		}
+		// Wait for the rollback SQL generation and retry.
+		time.Sleep(3 * time.Second)
+	}
 	t.Log("Rollback issue created.")
 	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
 	a.NoError(err)
