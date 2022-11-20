@@ -160,14 +160,14 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		var resourceType *api.PolicyResourceType
 		var resourceID *int
 		if c.QueryParam("resourceType") != "" {
-			rt, err := getPolicyResourceType(c.Param("resourceType"))
+			rt, err := getPolicyResourceType(c.QueryParam("resourceType"))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
 			resourceType = &rt
 		}
 		if c.QueryParam("resourceId") != "" {
-			id, err := getPolicyResourceID(c.Param("resourceID"))
+			id, err := getPolicyResourceID(c.QueryParam("resourceID"))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
