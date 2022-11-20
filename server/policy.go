@@ -51,10 +51,15 @@ func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
 func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	g.PATCH("/policy/:resourceType/:resourceID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		resourceType, resourceID, err := getPolicyResource(c.Param("resourceType"), c.Param("resourceID"))
+		resourceType, err := getPolicyResourceType(c.Param("resourceType"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
+		resourceID, err := getPolicyResourceID(c.Param("resourceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+
 		pType := api.PolicyType(c.QueryParam("type"))
 		if err := api.ValidatePolicy(pType, ""); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
@@ -90,7 +95,11 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 
 	g.DELETE("/policy/:resourceType/:resourceID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		resourceType, resourceID, err := getPolicyResource(c.Param("resourceType"), c.Param("resourceID"))
+		resourceType, err := getPolicyResourceType(c.Param("resourceType"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+		resourceID, err := getPolicyResourceID(c.Param("resourceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
@@ -114,7 +123,11 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 
 	g.GET("/policy/:resourceType/:resourceID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		resourceType, resourceID, err := getPolicyResource(c.Param("resourceType"), c.Param("resourceID"))
+		resourceType, err := getPolicyResourceType(c.Param("resourceType"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+		resourceID, err := getPolicyResourceID(c.Param("resourceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
@@ -144,20 +157,26 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := api.ValidatePolicy(pType, ""); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
 		}
-
-		policyFind := &api.PolicyFind{
-			Type: &pType,
-		}
+		var resourceType *api.PolicyResourceType
+		var resourceID *int
 		if c.QueryParam("resourceType") != "" {
-			resourceType := api.PolicyResourceType(c.QueryParam("resourceType"))
-			policyFind.ResourceType = &resourceType
+			rt, err := getPolicyResourceType(c.Param("resourceType"))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+			}
+			resourceType = &rt
 		}
 		if c.QueryParam("resourceId") != "" {
-			resourceID, err := strconv.Atoi(c.Param("resourceId"))
+			id, err := getPolicyResourceID(c.Param("resourceID"))
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ResourceID is not a number: %s", c.Param("resourceID"))).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
-			policyFind.ResourceID = &resourceID
+			resourceID = &id
+		}
+		policyFind := &api.PolicyFind{
+			ResourceType: resourceType,
+			ResourceID:   resourceID,
+			Type:         &pType,
 		}
 
 		ctx := c.Request().Context()
@@ -174,11 +193,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	})
 }
 
-func getPolicyResource(resourceType, resourceID string) (api.PolicyResourceType, int, error) {
-	id, err := strconv.Atoi(resourceID)
-	if err != nil {
-		return api.PolicyResourceTypeUnknown, 0, errors.Errorf("invalid policy resource ID %q", resourceID)
-	}
+func getPolicyResourceType(resourceType string) (api.PolicyResourceType, error) {
 	var rt api.PolicyResourceType
 	switch resourceType {
 	case "workspace":
@@ -192,7 +207,15 @@ func getPolicyResource(resourceType, resourceID string) (api.PolicyResourceType,
 	case "database":
 		rt = api.PolicyResourceTypeDatabase
 	default:
-		return api.PolicyResourceTypeUnknown, 0, errors.Errorf("invalid policy resource type %q", rt)
+		return api.PolicyResourceTypeUnknown, errors.Errorf("invalid policy resource type %q", rt)
 	}
-	return rt, id, nil
+	return rt, nil
+}
+
+func getPolicyResourceID(resourceID string) (int, error) {
+	id, err := strconv.Atoi(resourceID)
+	if err != nil {
+		return 0, errors.Errorf("invalid policy resource ID %q", resourceID)
+	}
+	return id, nil
 }
