@@ -12,6 +12,8 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	metricAPI "github.com/bytebase/bytebase/metric"
+	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -207,6 +209,17 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 		if err := GenerateTokensAndSetCookies(c, user, s.profile.Mode, s.secret); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
+		}
+
+		if user.ID == principalIDForFirstUser && s.MetricReporter != nil {
+			s.MetricReporter.report(&metric.Metric{
+				Name:  metricAPI.FirstPrincipalMetricName,
+				Value: 1,
+				Labels: map[string]interface{}{
+					"email":         user.Email,
+					"lark_notified": false,
+				},
+			})
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
