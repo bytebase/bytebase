@@ -38,6 +38,8 @@ const (
 	PolicyTypeSQLReview PolicyType = "bb.policy.sql-review"
 	// PolicyTypeEnvironmentTier is the tier of an environment.
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
+	// PolicyTypeSensitiveData is the sensitive data policy type.
+	PolicyTypeSensitiveData PolicyType = "bb.policy.sensitive-data"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -76,12 +78,13 @@ const (
 )
 
 var (
-	// PolicyTypes is a set of all policy types.
-	PolicyTypes = map[PolicyType]bool{
+	// policyTypes is a set of all policy types.
+	policyTypes = map[PolicyType]bool{
 		PolicyTypePipelineApproval: true,
 		PolicyTypeBackupPlan:       true,
 		PolicyTypeSQLReview:        true,
 		PolicyTypeEnvironmentTier:  true,
+		PolicyTypeSensitiveData:    true,
 	}
 )
 
@@ -117,7 +120,7 @@ type PolicyFind struct {
 	ResourceID   *int
 
 	// Domain specific fields
-	Type *PolicyType `jsonapi:"attr,type"`
+	Type PolicyType `jsonapi:"attr,type"`
 }
 
 // PolicyUpsert is the message to upsert a policy.
@@ -240,6 +243,44 @@ func (p *EnvironmentTierPolicy) String() (string, error) {
 	return string(s), nil
 }
 
+// SensitiveDataPolicy is the policy configuration for sensitive data.
+// It is only applicable to database resource type.
+type SensitiveDataPolicy struct {
+	SensitiveDataList []SensitiveData `json:"sensitiveDataList"`
+}
+
+// SensitiveData is the value for sensitive data.
+type SensitiveData struct {
+	Table  string            `json:"table"`
+	Column string            `json:"column"`
+	Type   SensitiveDataType `json:"type"`
+}
+
+// SensitiveDataType is the type for sensitive data.
+type SensitiveDataType string
+
+const (
+	// SensitiveDataTypeWildcard is the sensitive data type for using wildcard to hide data.
+	SensitiveDataTypeWildcard SensitiveDataType = "WILDCARD"
+)
+
+// UnmarshalSensitiveDataPolicy will unmarshal payload to sensitive data policy.
+func UnmarshalSensitiveDataPolicy(payload string) (*SensitiveDataPolicy, error) {
+	var p SensitiveDataPolicy
+	if err := json.Unmarshal([]byte(payload), &p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal sensitive data policy %q", payload)
+	}
+	return &p, nil
+}
+
+func (p *SensitiveDataPolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
 // UnmarshalEnvironmentTierPolicy will unmarshal payload to environment tier policy.
 func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, error) {
 	var p EnvironmentTierPolicy
@@ -249,62 +290,89 @@ func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, err
 	return &p, nil
 }
 
-// ValidatePolicy will validate the policy type and payload values.
-func ValidatePolicy(pType PolicyType, payload string) error {
-	if !PolicyTypes[pType] {
+// ValidatePolicType will validate the policy type.
+func ValidatePolicType(pType PolicyType) error {
+	if !policyTypes[pType] {
 		return errors.Errorf("invalid policy type: %s", pType)
 	}
-	if payload == "" {
-		return nil
-	}
-
-	switch pType {
-	case PolicyTypePipelineApproval:
-		pa, err := UnmarshalPipelineApprovalPolicy(payload)
-		if err != nil {
-			return err
-		}
-		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
-			return errors.Errorf("invalid approval policy value: %q", payload)
-		}
-		issueTypeSeen := make(map[IssueType]bool)
-		for _, group := range pa.AssigneeGroupList {
-			if group.IssueType != IssueDatabaseSchemaUpdate &&
-				group.IssueType != IssueDatabaseSchemaUpdateGhost &&
-				group.IssueType != IssueDatabaseDataUpdate {
-				return errors.Errorf("invalid assignee group issue type %q", group.IssueType)
-			}
-			if issueTypeSeen[group.IssueType] {
-				return errors.Errorf("duplicate assignee group issue type %q", group.IssueType)
-			}
-			issueTypeSeen[group.IssueType] = true
-		}
-	case PolicyTypeBackupPlan:
-		bp, err := UnmarshalBackupPlanPolicy(payload)
-		if err != nil {
-			return err
-		}
-		if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
-			return errors.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
-		}
-	case PolicyTypeSQLReview:
-		sr, err := UnmarshalSQLReviewPolicy(payload)
-		if err != nil {
-			return err
-		}
-		if err := sr.Validate(); err != nil {
-			return errors.Wrap(err, "invalid SQL review policy")
-		}
-	case PolicyTypeEnvironmentTier:
-		p, err := UnmarshalEnvironmentTierPolicy(payload)
-		if err != nil {
-			return err
-		}
-		if p.EnvironmentTier != EnvironmentTierValueProtected && p.EnvironmentTier != EnvironmentTierValueUnprotected {
-			return errors.Errorf("invalid environment tier value %q", p.EnvironmentTier)
-		}
-	}
 	return nil
+}
+
+// ValidatePolicy will validate the policy resource type, type and payload values.
+func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *string) error {
+	if payload == nil {
+		return errors.Errorf("empty payload")
+	}
+	switch resourceType {
+	case PolicyResourceTypeEnvironment:
+		switch pType {
+		case PolicyTypePipelineApproval:
+			pa, err := UnmarshalPipelineApprovalPolicy(*payload)
+			if err != nil {
+				return err
+			}
+			if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
+				return errors.Errorf("invalid approval policy value: %q", *payload)
+			}
+			issueTypeSeen := make(map[IssueType]bool)
+			for _, group := range pa.AssigneeGroupList {
+				if group.IssueType != IssueDatabaseSchemaUpdate &&
+					group.IssueType != IssueDatabaseSchemaUpdateGhost &&
+					group.IssueType != IssueDatabaseDataUpdate {
+					return errors.Errorf("invalid assignee group issue type %q", group.IssueType)
+				}
+				if issueTypeSeen[group.IssueType] {
+					return errors.Errorf("duplicate assignee group issue type %q", group.IssueType)
+				}
+				issueTypeSeen[group.IssueType] = true
+			}
+			return nil
+		case PolicyTypeBackupPlan:
+			bp, err := UnmarshalBackupPlanPolicy(*payload)
+			if err != nil {
+				return err
+			}
+			if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
+				return errors.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
+			}
+			return nil
+		case PolicyTypeSQLReview:
+			sr, err := UnmarshalSQLReviewPolicy(*payload)
+			if err != nil {
+				return err
+			}
+			if err := sr.Validate(); err != nil {
+				return errors.Wrap(err, "invalid SQL review policy")
+			}
+			return nil
+		case PolicyTypeEnvironmentTier:
+			p, err := UnmarshalEnvironmentTierPolicy(*payload)
+			if err != nil {
+				return err
+			}
+			if p.EnvironmentTier != EnvironmentTierValueProtected && p.EnvironmentTier != EnvironmentTierValueUnprotected {
+				return errors.Errorf("invalid environment tier value %q", p.EnvironmentTier)
+			}
+			return nil
+		}
+	case PolicyResourceTypeDatabase:
+		if pType == PolicyTypeSensitiveData {
+			p, err := UnmarshalSensitiveDataPolicy(*payload)
+			if err != nil {
+				return err
+			}
+			for _, v := range p.SensitiveDataList {
+				if v.Table == "" || v.Column == "" {
+					return errors.Errorf("sensitive data policy rule cannot have empty table or column name")
+				}
+				if v.Type != SensitiveDataTypeWildcard {
+					return errors.Errorf("sensitive data policy rule must have type %q", SensitiveDataTypeWildcard)
+				}
+			}
+			return nil
+		}
+	}
+	return errors.Errorf("invalid resource type %s and policy type %s", resourceType, pType)
 }
 
 // GetDefaultPolicy will return the default value for the given policy type.
@@ -328,6 +396,9 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		policy := EnvironmentTierPolicy{
 			EnvironmentTier: EnvironmentTierValueUnprotected,
 		}
+		return policy.String()
+	case PolicyTypeSensitiveData:
+		policy := SensitiveDataPolicy{}
 		return policy.String()
 	}
 	return "", nil
