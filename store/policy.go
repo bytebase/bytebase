@@ -136,12 +136,6 @@ func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete
 
 // ListPolicy gets a list of policy by PolicyFind.
 func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Policy, error) {
-	// Validate policy type existence.
-	if find.Type != nil && *find.Type != "" {
-		if err := api.ValidatePolicy(*find.Type, ""); err != nil {
-			return nil, &common.Error{Code: common.Invalid, Err: err}
-		}
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -291,12 +285,6 @@ func (s *Store) composePolicy(ctx context.Context, raw *policyRaw) (*api.Policy,
 // getPolicyRaw finds the policy for an environment.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policyRaw, error) {
-	// Validate policy type existence.
-	if find.Type != nil && *find.Type != "" {
-		if err := api.ValidatePolicy(*find.Type, ""); err != nil {
-			return nil, &common.Error{Code: common.Invalid, Err: err}
-		}
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -465,12 +453,6 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind, mode comm
 
 // upsertPolicyRaw sets a policy for an environment.
 func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (*policyRaw, error) {
-	// Validate policy.
-	if upsert.Type != "" && upsert.Payload != nil {
-		if err := api.ValidatePolicy(upsert.Type, *upsert.Payload); err != nil {
-			return nil, &common.Error{Code: common.Invalid, Err: err}
-		}
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
