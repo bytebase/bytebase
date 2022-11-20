@@ -217,6 +217,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				Value: 1,
 				Labels: map[string]interface{}{
 					"email":         user.Email,
+					"name":          user.Name,
 					"lark_notified": false,
 				},
 			})
