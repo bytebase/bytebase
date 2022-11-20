@@ -18,14 +18,14 @@
    - **(IMPORTANT)** Think about compatibility and don't break existing users. This usually happens if we change database schemas or APIs.
    - Guard new features behind a release flag, especially for frontend using [`isDev()`](https://github.com/bytebase/bytebase/blob/4fd7ea41a716dbd72c85b0bc02f04fff5e08370f/frontend/src/main.ts#L41). We should release the feature only when it's mature.
    - Testing is the key to product quality. This includes unit tests, [backend integration tests](https://github.com/bytebase/bytebase/tree/main/tests), frontend manual tests. Tests should cover critical user journeys. While writing backend integration tests, you will have an even better idea of how users will use the product from end to end.
-   - Golang code follows [Go Wiki](https://github.com/golang/go/wiki/CodeReviewComments) and [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md).
+   - Golang code follows [Google Go Style](https://google.github.io/styleguide/go/).
    - Collaborate if a feature requires multiple developers to work on.
    - (Optional) After code is submitted, you can wait for a while and use a docker image with tag `bytebase/bytebase:dev-ci` for testing release build. See [Docker Deployment Guide](https://www.bytebase.com/docs/get-started/install/deploy-with-docker).
 1. Success metrics
    - What data do we need to prove the feature or business is successful?
    - Collect and display the metrics in the [metrics dashboard](https://metric.bytebase.com/).
-1. Documentation.
+2. Documentation.
    - We should update [public documentation](https://bytebase.com/docs) for new features.
-1. Testing and feedback.
+3. Testing and feedback.
    - Before a feature is released, get some peers to try out these new features by following public documentation. Receive feedback and iterate.
-1. Release and announcement. Cheers!
+4. Release and announcement. Cheers!

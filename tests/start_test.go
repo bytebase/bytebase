@@ -17,7 +17,6 @@ func TestServiceRestart(t *testing.T) {
 	dataDir := t.TempDir()
 	err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
-		port:               getTestPort(t.Name()),
 		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
@@ -37,7 +36,6 @@ func TestServiceRestart(t *testing.T) {
 
 	err = ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
-		port:               getTestPort(t.Name()),
 		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)

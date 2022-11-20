@@ -34,7 +34,6 @@ func TestTenant(t *testing.T) {
 	dataDir := t.TempDir()
 	err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
-		port:               getTestPort(t.Name()),
 		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
@@ -211,6 +210,7 @@ func TestTenant(t *testing.T) {
 }
 
 func TestTenantVCS(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -291,7 +291,6 @@ func TestTenantVCS(t *testing.T) {
 			ctl := &controller{}
 			err := ctl.StartServer(ctx, &config{
 				dataDir:            t.TempDir(),
-				port:               getTestPort(t.Name()),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
@@ -527,7 +526,6 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	dataDir := t.TempDir()
 	err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
-		port:               getTestPort(t.Name()),
 		vcsProviderCreator: fake.NewGitLab,
 	})
 
@@ -758,7 +756,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			ctl := &controller{}
 			err := ctl.StartServer(ctx, &config{
 				dataDir:            t.TempDir(),
-				port:               getTestPort(t.Name()),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
@@ -1098,7 +1095,6 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			ctl := &controller{}
 			err := ctl.StartServer(ctx, &config{
 				dataDir:            t.TempDir(),
-				port:               getTestPort(t.Name()),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			a.NoError(err)
@@ -1372,7 +1368,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 	}
 	for _, test := range tests {
 		// Fix the problem that closure in a for loop will always use the last element.
-		// test := test
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -1380,7 +1376,6 @@ func TestTenantVCS_YAML(t *testing.T) {
 			ctl := &controller{}
 			err := ctl.StartServer(ctx, &config{
 				dataDir:            t.TempDir(),
-				port:               getTestPort(t.Name()),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
 			require.NoError(t, err)

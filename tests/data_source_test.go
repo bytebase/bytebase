@@ -17,12 +17,10 @@ func TestDataSource(t *testing.T) {
 	a := require.New(t)
 	log.SetLevel(zapcore.DebugLevel)
 	ctx := context.Background()
-	serverPort := getTestPort(t.Name())
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
-		port:               serverPort,
 		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
