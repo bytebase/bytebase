@@ -150,7 +150,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		policyFind := &api.PolicyFind{
 			ResourceType: &resourceType,
 			ResourceID:   &resourceID,
-			Type:         &pType,
+			Type:         pType,
 		}
 		policy, err := s.store.GetPolicy(ctx, policyFind)
 		if err != nil {
@@ -189,7 +189,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		policyFind := &api.PolicyFind{
 			ResourceType: resourceType,
 			ResourceID:   resourceID,
-			Type:         &pType,
+			Type:         pType,
 		}
 
 		ctx := c.Request().Context()

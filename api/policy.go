@@ -120,7 +120,7 @@ type PolicyFind struct {
 	ResourceID   *int
 
 	// Domain specific fields
-	Type *PolicyType `jsonapi:"attr,type"`
+	Type PolicyType `jsonapi:"attr,type"`
 }
 
 // PolicyUpsert is the message to upsert a policy.

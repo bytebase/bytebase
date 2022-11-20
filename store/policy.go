@@ -106,7 +106,7 @@ func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete
 	find := &api.PolicyFind{
 		ResourceType: &policyDelete.ResourceType,
 		ResourceID:   &policyDelete.ResourceID,
-		Type:         &policyDelete.Type,
+		Type:         policyDelete.Type,
 	}
 	policyRawList, err := findPolicyImpl(ctx, tx, find, s.db.mode)
 	if err != nil {
@@ -162,11 +162,10 @@ func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Po
 // GetBackupPlanPolicyByEnvID will get the backup plan policy for an environment.
 func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
 	environmentResourceType := api.PolicyResourceTypeEnvironment
-	pType := api.PolicyTypeBackupPlan
 	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
 		ResourceType: &environmentResourceType,
 		ResourceID:   &environmentID,
-		Type:         &pType,
+		Type:         api.PolicyTypeBackupPlan,
 	})
 	if err != nil {
 		return nil, err
@@ -176,12 +175,11 @@ func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID in
 
 // GetPipelineApprovalPolicy will get the pipeline approval policy for an environment.
 func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*api.PipelineApprovalPolicy, error) {
-	pType := api.PolicyTypePipelineApproval
 	environmentResourceType := api.PolicyResourceTypeEnvironment
 	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
 		ResourceType: &environmentResourceType,
 		ResourceID:   &environmentID,
-		Type:         &pType,
+		Type:         api.PolicyTypePipelineApproval,
 	})
 	if err != nil {
 		return nil, err
@@ -196,9 +194,8 @@ func (s *Store) GetNormalSQLReviewPolicy(ctx context.Context, find *api.PolicyFi
 	}
 
 	environmentResourceType := api.PolicyResourceTypeEnvironment
-	pType := api.PolicyTypeSQLReview
 	find.ResourceType = &environmentResourceType
-	find.Type = &pType
+	find.Type = api.PolicyTypeSQLReview
 	policy, err := s.getPolicyRaw(ctx, find)
 	if err != nil {
 		return nil, err
@@ -215,11 +212,10 @@ func (s *Store) GetNormalSQLReviewPolicy(ctx context.Context, find *api.PolicyFi
 // GetSQLReviewPolicyIDByEnvID will get the SQL review policy ID for an environment.
 func (s *Store) GetSQLReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
 	environmentResourceType := api.PolicyResourceTypeEnvironment
-	pType := api.PolicyTypeSQLReview
 	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
 		ResourceType: &environmentResourceType,
 		ResourceID:   &environmentID,
-		Type:         &pType,
+		Type:         api.PolicyTypeSQLReview,
 	})
 	if err != nil {
 		return 0, err
@@ -236,11 +232,10 @@ func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environment
 	}
 	if !ok {
 		environmentResourceType := api.PolicyResourceTypeEnvironment
-		pType := api.PolicyTypeEnvironmentTier
 		p, err := s.getPolicyRaw(ctx, &api.PolicyFind{
 			ResourceType: &environmentResourceType,
 			ResourceID:   &environmentID,
-			Type:         &pType,
+			Type:         api.PolicyTypeEnvironmentTier,
 		})
 		if err != nil {
 			return nil, err
@@ -301,7 +296,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 		ret = &policyRaw{
 			CreatorID: api.SystemBotID,
 			UpdaterID: api.SystemBotID,
-			Type:      *find.Type,
+			Type:      find.Type,
 		}
 		if find.ResourceType != nil {
 			ret.ResourceType = *find.ResourceType
@@ -317,7 +312,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 
 	if ret.Payload == "" {
 		// Return the default policy when there is no stored policy.
-		payload, err := api.GetDefaultPolicy(*find.Type)
+		payload, err := api.GetDefaultPolicy(find.Type)
 		if err != nil {
 			return nil, &common.Error{Code: common.Internal, Err: err}
 		}
@@ -341,9 +336,7 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind, mode comm
 		if v := find.ResourceID; v != nil {
 			where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 		}
-		if v := find.Type; v != nil {
-			where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
-		}
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, find.Type)
 
 		rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -400,9 +393,7 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind, mode comm
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
-	}
+	where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, find.Type)
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
