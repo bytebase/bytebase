@@ -1618,9 +1618,10 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			err = ctl.upsertPolicy(api.PolicyUpsert{
-				ResourceID: prodEnvironment.ID,
-				Type:       api.PolicyTypeSQLReview,
-				Payload:    &policyPayload,
+				ResourceType: api.PolicyResourceTypeEnvironment,
+				ResourceID:   prodEnvironment.ID,
+				Type:         api.PolicyTypeSQLReview,
+				Payload:      &policyPayload,
 			})
 			a.NoError(err)
 

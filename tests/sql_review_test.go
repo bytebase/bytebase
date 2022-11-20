@@ -300,9 +300,10 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceID: prodEnvironment.ID,
-		Type:       api.PolicyTypeSQLReview,
-		Payload:    &policyPayload,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeSQLReview,
+		Payload:      &policyPayload,
 	})
 	a.NoError(err)
 
@@ -310,9 +311,10 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceID: prodEnvironment.ID,
-		Type:       api.PolicyTypeSQLReview,
-		Payload:    &policyPayload,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeSQLReview,
+		Payload:      &policyPayload,
 	})
 	a.NoError(err)
 
@@ -353,10 +355,11 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	// disable the SQL review policy
 	disable := string(api.Archived)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceID: prodEnvironment.ID,
-		Type:       api.PolicyTypeSQLReview,
-		Payload:    &policyPayload,
-		RowStatus:  &disable,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeSQLReview,
+		Payload:      &policyPayload,
+		RowStatus:    &disable,
 	})
 	a.NoError(err)
 
@@ -365,8 +368,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	// delete the SQL review policy
 	err = ctl.deletePolicy(api.PolicyDelete{
-		ResourceID: prodEnvironment.ID,
-		Type:       api.PolicyTypeSQLReview,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeSQLReview,
 	})
 	a.NoError(err)
 
@@ -1029,9 +1033,10 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceID: prodEnvironment.ID,
-		Type:       api.PolicyTypeSQLReview,
-		Payload:    &policyPayload,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeSQLReview,
+		Payload:      &policyPayload,
 	})
 	a.NoError(err)
 
@@ -1039,9 +1044,10 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceID: prodEnvironment.ID,
-		Type:       api.PolicyTypeSQLReview,
-		Payload:    &policyPayload,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeSQLReview,
+		Payload:      &policyPayload,
 	})
 	a.NoError(err)
 
@@ -1115,10 +1121,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	// disable the SQL review policy
 	disable := string(api.Archived)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceID: prodEnvironment.ID,
-		Type:       api.PolicyTypeSQLReview,
-		Payload:    &policyPayload,
-		RowStatus:  &disable,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeSQLReview,
+		Payload:      &policyPayload,
+		RowStatus:    &disable,
 	})
 	a.NoError(err)
 
@@ -1127,8 +1134,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// delete the SQL review policy
 	err = ctl.deletePolicy(api.PolicyDelete{
-		ResourceID: prodEnvironment.ID,
-		Type:       api.PolicyTypeSQLReview,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeSQLReview,
 	})
 	a.NoError(err)
 
