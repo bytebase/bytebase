@@ -8,7 +8,7 @@
 set -e
 
 cd "$(dirname "$0")/../"
-. ./scripts/init.sh
+. ./scripts/build_init.sh
 
 echo "Start building Bytebase docker image ${VERSION}..."
 

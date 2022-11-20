@@ -1,14 +1,14 @@
 #!/bin/sh
 # ===========================================================================
-# File: build.sh
-# Description: usage: ./build.sh [outdir]
+# File: build_bytebase
+# Description: usage: ./build_bytebase [outdir]
 # ===========================================================================
 
 # exit when any command fails
 set -e
 
 cd "$(dirname "$0")/../"
-. ./scripts/init.sh
+. ./scripts/build_init.sh
 
 OUTPUT_DIR=$(mkdir_output "$1")
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase

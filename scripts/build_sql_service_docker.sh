@@ -1,14 +1,14 @@
 #!/bin/sh
 # ===========================================================================
-# File: build_sql_service.sh
-# Description: usage: ./build_sql_service.sh
+# File: build_sql_service_docker.sh
+# Description: usage: ./build_sql_service_docker.sh
 # ===========================================================================
 
 # exit when any command fails
 set -e
 
 cd "$(dirname "$0")/../"
-. ./scripts/init.sh
+. ./scripts/build_init.sh
 
 echo "Start building SQL Service docker image ${VERSION}..."
 
