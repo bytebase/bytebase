@@ -61,6 +61,8 @@ const (
 	// EnvironmentTierValueUnprotected is UNPROTECTED environment tier value.
 	EnvironmentTierValueUnprotected EnvironmentTierValue = "UNPROTECTED"
 
+	// PolicyResourceTypeUnknown is the unknown resource type.
+	PolicyResourceTypeUnknown PolicyResourceType = ""
 	// PolicyResourceTypeWorkspace is the resource type for workspaces.
 	PolicyResourceTypeWorkspace PolicyResourceType = "WORKSPACE"
 	// PolicyResourceTypeEnvironment is the resource type for environments.

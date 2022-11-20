@@ -809,7 +809,8 @@ func (s *Server) sqlCheck(
 	driver *sql.DB,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
-	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceID: &environmentID})
+	environmentResourceType := api.PolicyResourceTypeEnvironment
+	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			adviceList = []advisor.Advice{
