@@ -8,7 +8,7 @@
 set -e
 
 cd "$(dirname "$0")/../"
-. ./scripts/init.sh
+. ./scripts/build_init.sh
 
 OUTPUT_DIR=$(mkdir_output "$1")
 OUTPUT_BINARY=$OUTPUT_DIR/bb
