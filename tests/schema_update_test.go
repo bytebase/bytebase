@@ -800,6 +800,11 @@ func TestVCS_SDL(t *testing.T) {
 
 			// Create a repository
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -1270,6 +1275,11 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(externalID)
+
+			// Create the branch.
+			err = ctl.vcsProvider.CreateBranch(externalID, branchFilter)
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -1536,6 +1546,11 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch.
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			repository, err := ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              vcsData.ID,
