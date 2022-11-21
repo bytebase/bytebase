@@ -67,7 +67,7 @@ type Profile struct {
 	DisableMetric bool
 }
 
-// UseEmbedDB returns whether to use embedDB
+// UseEmbedDB returns whether to use embedDB.
 func (prof *Profile) UseEmbedDB() bool {
 	return len(prof.PgURL) == 0
 }
