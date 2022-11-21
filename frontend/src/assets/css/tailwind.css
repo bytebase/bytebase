@@ -62,9 +62,12 @@
   --color-control-border: #d1d5db;
 }
 
-/* Colors for dark theme and Web Terminal */
+/*
+  Colors for dark theme
+  Only used by Web Terminal now
+*/
 :root {
-  /* same as vs-dark theme's bg */
+  /* same as vs-dark theme's bg, not pure black. */
   --color-dark-bg: #1e1e1e;
 
   /* The Matrix green */
