@@ -51,9 +51,12 @@
           <div class="flex items-center justify-center">
             <NPopconfirm @positive-click="removeSensitiveColumn(item)">
               <template #trigger>
-                <heroicons-outline:trash
-                  class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed"
-                />
+                <button
+                  :disabled="!allowAdmin"
+                  class="w-5 h-5 p-0.5 bg-white hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                >
+                  <heroicons-outline:trash />
+                </button>
               </template>
 
               <div class="whitespace-nowrap">
@@ -80,12 +83,14 @@ import { NPopconfirm } from "naive-ui";
 
 import {
   featureToRef,
+  useCurrentUser,
   useDatabaseStore,
   usePolicyListByResourceTypeAndPolicyType,
   usePolicyStore,
 } from "@/store";
 import { Database, Policy, SensitiveDataPolicyPayload } from "@/types";
 import { BBTableColumn } from "@/bbkit/types";
+import { hasWorkspacePermission } from "@/utils";
 
 type SensitiveColumn = {
   database: Database;
@@ -107,6 +112,14 @@ const state = reactive<LocalState>({
 });
 const databaseStore = useDatabaseStore();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+
+const currentUser = useCurrentUser();
+const allowAdmin = computed(() => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-database",
+    currentUser.value.role
+  );
+});
 
 const policyList = usePolicyListByResourceTypeAndPolicyType(
   computed(() => ({
