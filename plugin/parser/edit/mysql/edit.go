@@ -126,15 +126,15 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) *ast.A
 		alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 	}
 
-	if len(alterTableContext.AlterColumnList) > 0 {
-		for _, alterColumnContext := range alterTableContext.AlterColumnList {
+	if len(alterTableContext.ModifyColumnList) > 0 {
+		for _, modifyColumnContext := range alterTableContext.ModifyColumnList {
 			alterTableSpec := &ast.AlterTableSpec{
 				Tp: ast.AlterTableModifyColumn,
 				Position: &ast.ColumnPosition{
 					Tp: ast.ColumnPositionNone,
 				},
 			}
-			alterTableSpec.NewColumns = []*ast.ColumnDef{transformAlterColumnContext(alterColumnContext)}
+			alterTableSpec.NewColumns = []*ast.ColumnDef{transformModifyColumnContext(modifyColumnContext)}
 			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 		}
 	}
@@ -203,37 +203,37 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext) *ast.Colu
 	return columnDef
 }
 
-func transformAlterColumnContext(alterColumnContext *api.AlterColumnContext) *ast.ColumnDef {
+func transformModifyColumnContext(modifyColumnContext *api.ModifyColumnContext) *ast.ColumnDef {
 	colName := &ast.ColumnName{
-		Name: model.NewCIStr(alterColumnContext.Name),
+		Name: model.NewCIStr(modifyColumnContext.Name),
 	}
 	columnDef := &ast.ColumnDef{
 		Name: colName,
-		Tp:   transformColumnType(alterColumnContext.Type),
+		Tp:   transformColumnType(modifyColumnContext.Type),
 	}
 
 	var columnOptionList []*ast.ColumnOption
-	if alterColumnContext.Comment != "" {
+	if modifyColumnContext.Comment != "" {
 		columnOptionList = append(columnOptionList, &ast.ColumnOption{
 			Tp:   ast.ColumnOptionComment,
-			Expr: ast.NewValueExpr(interface{}(alterColumnContext.Comment), alterColumnContext.CharacterSet, alterColumnContext.Collation),
+			Expr: ast.NewValueExpr(interface{}(modifyColumnContext.Comment), modifyColumnContext.CharacterSet, modifyColumnContext.Collation),
 		})
 	}
-	if alterColumnContext.Collation != "" {
+	if modifyColumnContext.Collation != "" {
 		columnOptionList = append(columnOptionList, &ast.ColumnOption{
 			Tp:       ast.ColumnOptionCollate,
-			StrValue: alterColumnContext.Collation,
+			StrValue: modifyColumnContext.Collation,
 		})
 	}
-	if !alterColumnContext.Nullable {
+	if !modifyColumnContext.Nullable {
 		columnOptionList = append(columnOptionList, &ast.ColumnOption{
 			Tp: ast.ColumnOptionNotNull,
 		})
 	}
-	if alterColumnContext.Default != nil {
+	if modifyColumnContext.Default != nil {
 		columnOptionList = append(columnOptionList, &ast.ColumnOption{
 			Tp:   ast.ColumnOptionDefaultValue,
-			Expr: ast.NewValueExpr(interface{}(*alterColumnContext.Default), alterColumnContext.CharacterSet, alterColumnContext.Collation),
+			Expr: ast.NewValueExpr(interface{}(*modifyColumnContext.Default), modifyColumnContext.CharacterSet, modifyColumnContext.Collation),
 		})
 	}
 	columnDef.Options = columnOptionList
