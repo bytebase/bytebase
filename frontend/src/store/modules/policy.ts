@@ -12,6 +12,7 @@ import {
 import {
   PipelineApprovalPolicyPayload,
   Policy,
+  PolicyResourceType,
   PolicyType,
   PolicyUpsert,
   SensitiveDataPolicyPayload,
@@ -92,6 +93,7 @@ export const usePolicyStore = defineStore("policy", {
   state: (): PolicyState => ({
     policyMapByEnvironmentId: new Map(),
     policyMapByDatabaseId: new Map(),
+    policyMapByResourceType: new Map(),
   }),
   actions: {
     getPolicyByEnvironmentIdAndType(
@@ -272,6 +274,48 @@ export const usePolicyStore = defineStore("policy", {
         }
       }
     },
+
+    getPolicyListByResourceTypeAndPolicyType(
+      resourceType: PolicyResourceType,
+      policyType: PolicyType
+    ) {
+      const map = this.policyMapByResourceType.get(resourceType);
+      if (!map) return [];
+      return map.get(policyType) ?? [];
+    },
+    setPolicyListByResourceTypeAndPolicyType(
+      resourceType: PolicyResourceType,
+      policyType: PolicyType,
+      policyList: Policy[]
+    ) {
+      const map = this.policyMapByResourceType.get(resourceType);
+      if (map) {
+        map.set(policyType, policyList);
+      } else {
+        this.policyMapByResourceType.set(
+          resourceType,
+          new Map([[policyType, policyList]])
+        );
+      }
+    },
+    async fetchPolicyListByResourceTypeAndPolicyType(
+      resourceType: PolicyResourceType,
+      policyType: PolicyType
+    ) {
+      const url = `/api/policy?resourceType=${resourceType}&type=${policyType}`;
+      const data: { data: ResourceObject[]; included: ResourceObject[] } = (
+        await axios.get(url)
+      ).data;
+
+      const policyList = data.data.map((d) => convert(d, data.included));
+      this.setPolicyListByResourceTypeAndPolicyType(
+        resourceType,
+        policyType,
+        policyList
+      );
+
+      return policyList;
+    },
   },
 });
 
@@ -309,6 +353,28 @@ export const usePolicyByDatabaseAndType = (
     store.getPolicyByDatabaseIdAndType(
       params.value.databaseId,
       params.value.type
+    )
+  );
+};
+
+export const usePolicyListByResourceTypeAndPolicyType = (
+  params: Ref<{ resourceType: PolicyResourceType; policyType: PolicyType }>
+) => {
+  const store = usePolicyStore();
+  const currentUser = useCurrentUser();
+  watchEffect(() => {
+    if (currentUser.value.id === UNKNOWN_ID) return;
+
+    store.fetchPolicyListByResourceTypeAndPolicyType(
+      params.value.resourceType,
+      params.value.policyType
+    );
+  });
+
+  return computed(() =>
+    store.getPolicyListByResourceTypeAndPolicyType(
+      params.value.resourceType,
+      params.value.policyType
     )
   );
 };

@@ -209,7 +209,8 @@
     "yes": "是",
     "advanced": "高级",
     "restart": "重启",
-    "want-help": "加入用户群"
+    "want-help": "加入用户群",
+    "operation": "操作"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -326,7 +327,8 @@
       "version-control": "版本控制",
       "subscription": "订阅",
       "labels": "标签",
-      "debug-log": "Debug 日志"
+      "debug-log": "Debug 日志",
+      "sensitive-data": "敏感数据"
     },
     "profile": {
       "email": "邮箱",
@@ -397,6 +399,10 @@
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
         "logo-upload-succeed": "Logo 更新完成"
       }
+    },
+    "sensitive-data": {
+      "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，你可以将多个列标记为敏感数据。",
+      "remove-sensitive-column-tips": "不再对此列数据脱敏？"
     }
   },
   "activity": {
@@ -880,6 +886,7 @@
     "row-count-estimate": "估计行数",
     "data-size": "数据大小",
     "index-size": "索引大小",
+    "column": "列",
     "columns": "列",
     "indexes": "索引",
     "row-count-est": "估计行数",
