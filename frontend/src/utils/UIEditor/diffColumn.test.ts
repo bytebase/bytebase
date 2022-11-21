@@ -21,6 +21,7 @@ it("diff add column list", () => {
       originColumnList: [],
       targetColumnList: [
         {
+          id: -1,
           name: "id",
           type: "int",
           characterSet: "",

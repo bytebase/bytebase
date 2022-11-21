@@ -28,6 +28,7 @@ it("diff create table list", () => {
           comment: "",
           columnList: [
             {
+              id: -1,
               name: "id",
               type: "int",
               characterSet: "",
@@ -122,6 +123,7 @@ it("diff alter table list", () => {
               default: undefined,
             },
             {
+              id: -1,
               name: "email",
               type: "varchar",
               characterSet: "",

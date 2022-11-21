@@ -18,7 +18,7 @@ export const diffColumnList = (
   );
 
   const addColumnList: AddColumnContext[] = [];
-  const addedColumnList = Object.values(diffResult.added) as Column[];
+  const addedColumnList = targetColumnList.filter((column) => column.id === -1);
   for (const column of addedColumnList) {
     addColumnList.push(transformColumnToAddColumnContext(column));
   }
