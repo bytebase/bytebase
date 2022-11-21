@@ -130,6 +130,7 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) *tidba
 		for _, modifyColumnContext := range alterTableContext.ModifyColumnList {
 			alterTableSpec := &tidbast.AlterTableSpec{
 				Tp: tidbast.AlterTableModifyColumn,
+				// TODO(steven): support modify the column position.
 				Position: &tidbast.ColumnPosition{
 					Tp: tidbast.ColumnPositionNone,
 				},

@@ -111,7 +111,7 @@ func TestDeparseAlterTable(t *testing.T) {
 		want         string
 	}{
 		{
-			name: "alter table t1 and add column id",
+			name: "alter table t1 and add column id, id_card",
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
 				AlterTableList: []*api.AlterTableContext{
@@ -122,11 +122,15 @@ func TestDeparseAlterTable(t *testing.T) {
 								Name: "id",
 								Type: "int",
 							},
+							{
+								Name: "id_card",
+								Type: "int",
+							},
 						},
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL);",
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);",
 		},
 		{
 			name: "alter table t1 and modify column id",
