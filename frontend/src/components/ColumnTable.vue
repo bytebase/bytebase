@@ -5,8 +5,25 @@
     :show-header="true"
     :left-bordered="true"
     :right-bordered="true"
+    v-bind="$attrs"
   >
     <template #body="{ rowData: column }">
+      <BBTableCell :left-padding="4" class="w-[1%] text-center">
+        <!-- width: 1% means as narrow as possible -->
+        <input
+          type="checkbox"
+          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          :disabled="!allowAdmin"
+          :checked="isSensitiveColumn(column)"
+          @input="
+            toggleSensitiveColumn(
+              column,
+              ($event.target as HTMLInputElement).checked,
+              $event
+            )
+          "
+        />
+      </BBTableCell>
       <BBTableCell :left-padding="4" class="w-16">
         {{ column.name }}
       </BBTableCell>
@@ -40,17 +57,44 @@
       </BBTableCell>
     </template>
   </BBTable>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.sensitive-data"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
-import { Column, EngineType } from "../types";
+import { computed, defineComponent, PropType, reactive } from "vue";
+import {
+  Column,
+  Database,
+  EngineType,
+  SensitiveData,
+  SensitiveDataPolicyPayload,
+  Table,
+} from "../types";
 import { useI18n } from "vue-i18n";
+import { cloneDeep } from "lodash-es";
+import { featureToRef, useCurrentUser, usePolicyStore } from "@/store";
+import { hasWorkspacePermission } from "@/utils";
+
+type LocalState = {
+  showFeatureModal: boolean;
+};
 
 export default defineComponent({
   name: "ColumnTable",
-  components: {},
   props: {
+    database: {
+      required: true,
+      type: Object as PropType<Database>,
+    },
+    table: {
+      required: true,
+      type: Object as PropType<Table>,
+    },
     columnList: {
       required: true,
       type: Object as PropType<Column[]>,
@@ -59,11 +103,33 @@ export default defineComponent({
       required: true,
       type: String as PropType<EngineType>,
     },
+    sensitiveDataList: {
+      required: true,
+      type: Array as PropType<SensitiveData[]>,
+    },
   },
   setup(props) {
     const { t } = useI18n();
+    const state = reactive<LocalState>({
+      showFeatureModal: false,
+    });
+
+    const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+
+    const currentUser = useCurrentUser();
+    const allowAdmin = computed(() => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-database",
+        currentUser.value.role
+      );
+    });
 
     const NORMAL_COLUMN_LIST = computed(() => [
+      {
+        title: t("database.sensitive"),
+        center: true,
+        nowrap: true,
+      },
       {
         title: t("common.name"),
       },
@@ -88,6 +154,10 @@ export default defineComponent({
     ]);
     const POSTGRES_COLUMN_LIST = computed(() => [
       {
+        title: t("database.sensitive"),
+        center: true,
+      },
+      {
         title: t("common.name"),
       },
       {
@@ -107,6 +177,10 @@ export default defineComponent({
       },
     ]);
     const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed(() => [
+      {
+        title: t("database.sensitive"),
+        center: true,
+      },
       {
         title: t("common.name"),
       },
@@ -136,8 +210,63 @@ export default defineComponent({
       }
     });
 
+    const isSensitiveColumn = (column: Column) => {
+      return (
+        props.sensitiveDataList.findIndex((sensitiveData) => {
+          return (
+            sensitiveData.table === props.table.name &&
+            sensitiveData.column === column.name
+          );
+        }) >= 0
+      );
+    };
+
+    const toggleSensitiveColumn = (column: Column, on: boolean, e: Event) => {
+      if (!hasSensitiveDataFeature.value) {
+        state.showFeatureModal = true;
+
+        // Revert UI states
+        e.preventDefault();
+        e.stopPropagation();
+        (e.target as HTMLInputElement).checked = !on;
+        return;
+      }
+
+      const index = props.sensitiveDataList.findIndex((sensitiveData) => {
+        return (
+          sensitiveData.table === props.table.name &&
+          sensitiveData.column === column.name
+        );
+      });
+      const sensitiveDataList = cloneDeep(props.sensitiveDataList);
+      if (on && index < 0) {
+        // Turn on sensitive
+        sensitiveDataList.push({
+          table: props.table.name,
+          column: column.name,
+          maskType: "DEFAULT",
+        });
+      } else if (!on && index >= 0) {
+        sensitiveDataList.splice(index, 1);
+      }
+      const payload: SensitiveDataPolicyPayload = {
+        sensitiveDataList,
+      };
+      usePolicyStore().upsertPolicyByDatabaseAndType({
+        databaseId: props.database.id,
+        type: "bb.policy.sensitive-data",
+        policyUpsert: {
+          payload,
+        },
+      });
+    };
+
     return {
+      state,
       columnNameList,
+      allowAdmin,
+      isSensitiveColumn,
+      toggleSensitiveColumn,
     };
   },
 });
