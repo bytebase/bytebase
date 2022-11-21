@@ -39,6 +39,16 @@
       </BBTableCell>
       <BBTableCell :left-padding="showSelectionColumn ? 2 : 4" class="w-[25%]">
         <div class="flex items-center space-x-2">
+          <button
+            v-if="showSQLEditorLink"
+            class="btn-icon tooltip-wrapper"
+            @click.stop="gotoSQLEditor(database)"
+          >
+            <heroicons-solid:terminal class="w-5 h-5" />
+            <div class="tooltip whitespace-nowrap">
+              {{ $t("sql-editor.self") }}
+            </div>
+          </button>
           <span>{{ database.name }}</span>
           <BBBadge
             v-if="isPITRDatabase(database)"
@@ -65,17 +75,6 @@
               }}
             </div>
           </NTooltip>
-
-          <button
-            v-if="showSQLEditorLink"
-            class="btn-icon tooltip-wrapper"
-            @click.stop="gotoSQLEditor(database)"
-          >
-            <heroicons-outline:terminal class="w-4 h-4" />
-            <div class="tooltip whitespace-nowrap">
-              {{ $t("sql-editor.self") }}
-            </div>
-          </button>
         </div>
       </BBTableCell>
       <BBTableCell class="w-[10%]">

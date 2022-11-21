@@ -65,13 +65,15 @@ func TestGhostSchemaUpdate(t *testing.T) {
 		mysqlBookSchema2 = `[["TABLE_CATALOG","TABLE_SCHEMA","TABLE_NAME","COLUMN_NAME","ORDINAL_POSITION","COLUMN_DEFAULT","IS_NULLABLE","DATA_TYPE","CHARACTER_MAXIMUM_LENGTH","CHARACTER_OCTET_LENGTH","NUMERIC_PRECISION","NUMERIC_SCALE","DATETIME_PRECISION","CHARACTER_SET_NAME","COLLATION_NAME","COLUMN_TYPE","COLUMN_KEY","EXTRA","PRIVILEGES","COLUMN_COMMENT","GENERATION_EXPRESSION","SRS_ID"],["VARCHAR","VARCHAR","VARCHAR","VARCHAR","INT","TEXT","VARCHAR","TEXT","BIGINT","BIGINT","BIGINT","BIGINT","INT","VARCHAR","VARCHAR","TEXT","CHAR","VARCHAR","VARCHAR","TEXT","TEXT","INT"],[["def","testGhostSchemaUpdate","book","id",1,null,"NO","int",null,null,"10","0",null,null,null,"int","PRI","auto_increment","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","name",2,null,"YES","text","65535","65535",null,null,null,"utf8mb4","utf8mb4_general_ci","text","","","select,insert,update,references","","",null],["def","testGhostSchemaUpdate","book","author",3,null,"YES","varchar","54","216",null,null,null,"utf8mb4","utf8mb4_general_ci","varchar(54)","","","select,insert,update,references","","",null]]]`
 	)
 
-	port := getTestPort(t.Name()) + 3
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -79,10 +81,11 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	err = ctl.setLicense()
 	a.NoError(err)
 
-	_, stopInstance := mysql.SetupTestInstance(t, port)
+	mysqlPort := getTestPort()
+	_, stopInstance := mysql.SetupTestInstance(t, mysqlPort)
 	defer stopInstance()
 
-	mysqlDB, err := connectTestMySQL(port, "")
+	mysqlDB, err := connectTestMySQL(mysqlPort, "")
 	a.NoError(err)
 	defer mysqlDB.Close()
 
@@ -113,7 +116,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 		Name:          "mysqlInstance",
 		Engine:        db.MySQL,
 		Host:          "127.0.0.1",
-		Port:          strconv.Itoa(port),
+		Port:          strconv.Itoa(mysqlPort),
 		Username:      "bytebase",
 		Password:      "bytebase",
 	})

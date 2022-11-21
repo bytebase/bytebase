@@ -72,6 +72,9 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureIMApproval.AccessErrorMessage())
 			}
 			if value.ExternalApproval.Enabled {
+				if value.AppID == "" || value.AppSecret == "" {
+					return echo.NewHTTPError(http.StatusBadRequest, "Application ID and secret cannot be empty")
+				}
 				p := s.ApplicationRunner.p
 				// clear token cache so that we won't use the previous token.
 				p.ClearTokenCache()
@@ -80,7 +83,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 					AppSecret: value.AppSecret,
 				}, "")
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create approval definition").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Failed to create approval definition").SetInternal(err)
 				}
 				value.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 				b, err := json.Marshal(value)

@@ -19,10 +19,12 @@ func TestArchiveProject(t *testing.T) {
 	a := require.New(t)
 	log.SetLevel(zapcore.DebugLevel)
 	ctx := context.Background()
-	serverPort := getTestPort(t.Name())
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, serverPort)
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()

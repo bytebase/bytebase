@@ -54,6 +54,9 @@ type repositoryData struct {
 		Files []*github.PullRequestFile
 		*github.PullRequest
 	}
+	// commitsDiff is the map for commits compare.
+	// The map key has the format "from...to" which is SHA or branch name.
+	commitsDiff map[string]*github.CommitsDiff
 }
 
 // NewGitHub creates a new fake implementation of GitHub VCS provider.
@@ -85,6 +88,7 @@ func NewGitHub(port int) VCSProvider {
 	)
 	g.PUT("/repos/:owner/:repo/actions/secrets/:keyName", gh.updateRepositoryPublicKey)
 	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
+	g.GET("/repos/:owner/:repo/compare/:baseHead", gh.compareCommits)
 	return gh
 }
 
@@ -229,14 +233,11 @@ func (gh *GitHub) getRepositoryBranch(c echo.Context) error {
 	}
 
 	branchName := c.Param("branchName")
-	r.refs[branchName] = &github.Branch{
-		Ref: fmt.Sprintf("refs/heads/%s", branchName),
-		Object: github.ReferenceObject{
-			SHA: "fake_github_commit_sha",
-		},
+	if _, ok := r.refs[fmt.Sprintf("refs/heads/%s", branchName)]; !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("branch not found: %v", branchName))
 	}
 
-	buf, err := json.Marshal(r.refs[branchName])
+	buf, err := json.Marshal(r.refs[fmt.Sprintf("refs/heads/%s", branchName)])
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository branch: %v", err))
 	}
@@ -391,6 +392,26 @@ func (gh *GitHub) listPullRequestFile(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
+func (gh *GitHub) compareCommits(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	key := c.Param("baseHead")
+	diff, ok := r.commitsDiff[key]
+	if !ok {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find the diff key %s", key))
+	}
+
+	buf, err := json.Marshal(diff)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response body").SetInternal(err)
+	}
+
+	return c.String(http.StatusOK, string(buf))
+}
+
 func (gh *GitHub) validRepository(c echo.Context) (*repositoryData, error) {
 	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
 	r, ok := gh.repositories[repositoryID]
@@ -437,11 +458,56 @@ func (gh *GitHub) CreateRepository(id string) {
 			Files []*github.PullRequestFile
 			*github.PullRequest
 		}{},
+		commitsDiff: map[string]*github.CommitsDiff{},
 	}
 }
 
+// CreateBranch creates a new branch with the given name.
+func (gh *GitHub) CreateBranch(id, branchName string) error {
+	pd, ok := gh.repositories[id]
+	if !ok {
+		return errors.Errorf("github project %q doesn't exist", id)
+	}
+
+	if _, ok := pd.refs[fmt.Sprintf("refs/heads/%s", branchName)]; ok {
+		return errors.Errorf("branch %q already exists", branchName)
+	}
+
+	pd.refs[fmt.Sprintf("refs/heads/%s", branchName)] = &github.Branch{
+		Ref: fmt.Sprintf("refs/heads/%s", branchName),
+		Object: github.ReferenceObject{
+			SHA: "fake_github_commit_sha",
+		},
+	}
+
+	return nil
+}
+
 // AddCommitsDiff adds a commits diff.
-func (*GitHub) AddCommitsDiff(_, _, _ string, _ []vcs.FileDiff) error {
+func (gh *GitHub) AddCommitsDiff(repositoryID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error {
+	r, ok := gh.repositories[repositoryID]
+	if !ok {
+		return errors.Errorf("GitHub repository %s doesn't exist", repositoryID)
+	}
+	key := fmt.Sprintf("%s...%s", fromCommit, toCommit)
+	commitsDiff := &github.CommitsDiff{
+		Files: []github.PullRequestFile{},
+	}
+	for _, fileDiff := range fileDiffList {
+		prFile := github.PullRequestFile{
+			FileName: fileDiff.Path,
+		}
+		switch fileDiff.Type {
+		case vcs.FileDiffTypeAdded:
+			prFile.Status = "added"
+		case vcs.FileDiffTypeModified:
+			prFile.Status = "modified"
+		case vcs.FileDiffTypeRemoved:
+			prFile.Status = "removed"
+		}
+		commitsDiff.Files = append(commitsDiff.Files, prFile)
+	}
+	r.commitsDiff[key] = commitsDiff
 	return nil
 }
 

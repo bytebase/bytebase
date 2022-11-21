@@ -32,7 +32,10 @@ func TestTenant(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -207,13 +210,14 @@ func TestTenant(t *testing.T) {
 }
 
 func TestTenantVCS(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
 	}{
 		{
 			name:               "GitLab",
@@ -221,10 +225,12 @@ func TestTenantVCS(t *testing.T) {
 			vcsType:            vcs.GitLabSelfHost,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
@@ -243,9 +249,11 @@ func TestTenantVCS(t *testing.T) {
 			vcsType:            vcs.GitHubCom,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
 				return github.WebhookPushEvent{
-					Ref: "refs/heads/feature/foo",
+					Ref:    "refs/heads/feature/foo",
+					Before: beforeSHA,
+					After:  afterSHA,
 					Repository: github.WebhookRepository{
 						ID:       211,
 						FullName: "octocat/Hello-World",
@@ -273,13 +281,18 @@ func TestTenantVCS(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -291,7 +304,7 @@ func TestTenantVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			vcs, err := ctl.createVCS(
+			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
 					Name:          t.Name(),
 					Type:          test.vcsType,
@@ -317,7 +330,7 @@ func TestTenantVCS(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
+					VCSID:              apiVCS.ID,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -441,8 +454,11 @@ func TestTenantVCS(t *testing.T) {
 			gitFile := "bbtest/testTenantVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
 			a.NoError(err)
-
-			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: gitFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile, "1", "2"))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -508,7 +524,11 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
+
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -662,7 +682,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
 	}{
 		{
 			name:               "GitLab",
@@ -670,10 +690,12 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			vcsType:            vcs.GitLabSelfHost,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
@@ -692,9 +714,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			vcsType:            vcs.GitHubCom,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
 				return github.WebhookPushEvent{
-					Ref: "refs/heads/feature/foo",
+					Ref:    "refs/heads/feature/foo",
+					Before: beforeSHA,
+					After:  afterSHA,
 					Repository: github.WebhookRepository{
 						ID:       211,
 						FullName: "octocat/Hello-World",
@@ -722,13 +746,18 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), fake.NewGitHub, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -740,7 +769,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			vcs, err := ctl.createVCS(
+			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
 					Name:          t.Name(),
 					Type:          test.vcsType,
@@ -767,7 +796,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
+					VCSID:              apiVCS.ID,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -896,8 +925,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			gitFile := "bbtest/testTenantVCSSchemaUpdate##ver1##migrate##create_a_test_table.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
 			a.NoError(err)
-
-			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: gitFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile, "1", "2"))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -989,7 +1021,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
 	}{
 		{
 			name:               "GitLab",
@@ -997,10 +1029,12 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			vcsType:            vcs.GitLabSelfHost,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
@@ -1019,9 +1053,11 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			vcsType:            vcs.GitHubCom,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
 				return github.WebhookPushEvent{
-					Ref: "refs/heads/feature/foo",
+					Ref:    "refs/heads/feature/foo",
+					Before: beforeSHA,
+					After:  afterSHA,
 					Repository: github.WebhookRepository{
 						ID:       211,
 						FullName: "octocat/Hello-World",
@@ -1049,13 +1085,18 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), fake.NewGitHub, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1067,7 +1108,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			vcs, err := ctl.createVCS(
+			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
 					Name:          t.Name(),
 					Type:          test.vcsType,
@@ -1093,7 +1134,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
+					VCSID:              apiVCS.ID,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -1197,8 +1238,11 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			gitFile := baseDirectory + "/ver1##migrate##create_a_test_table.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
 			a.NoError(err)
-
-			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: gitFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile, "1", "2"))
 			a.NoError(err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			a.NoError(err)
@@ -1259,7 +1303,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 		vcsType             vcs.Type
 		externalID          string
 		repositoryFullPath  string
-		newWebhookPushEvent func(gitFile string) interface{}
+		newWebhookPushEvent func(gitFile, beforeSHA, afterSHA string) interface{}
 	}{
 		{
 			name:               "GitLab",
@@ -1267,10 +1311,12 @@ func TestTenantVCS_YAML(t *testing.T) {
 			vcsType:            vcs.GitLabSelfHost,
 			externalID:         "121",
 			repositoryFullPath: "test/dataUpdate",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
 				return gitlab.WebhookPushEvent{
 					ObjectKind: gitlab.WebhookPush,
 					Ref:        "refs/heads/feature/foo",
+					Before:     beforeSHA,
+					After:      afterSHA,
 					Project: gitlab.WebhookProject{
 						ID: 121,
 					},
@@ -1289,9 +1335,11 @@ func TestTenantVCS_YAML(t *testing.T) {
 			vcsType:            vcs.GitHubCom,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(gitFile string) interface{} {
+			newWebhookPushEvent: func(gitFile, beforeSHA, afterSHA string) interface{} {
 				return github.WebhookPushEvent{
-					Ref: "refs/heads/feature/foo",
+					Ref:    "refs/heads/feature/foo",
+					Before: beforeSHA,
+					After:  afterSHA,
 					Repository: github.WebhookRepository{
 						ID:       211,
 						FullName: "octocat/Hello-World",
@@ -1319,12 +1367,17 @@ func TestTenantVCS_YAML(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), fake.NewGitHub, getTestPort(t.Name()))
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			require.NoError(t, err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -1336,7 +1389,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create a VCS.
-			vcs, err := ctl.createVCS(
+			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
 					Name:          t.Name(),
 					Type:          test.vcsType,
@@ -1362,7 +1415,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			ctl.vcsProvider.CreateRepository(test.externalID)
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
-					VCSID:              vcs.ID,
+					VCSID:              apiVCS.ID,
 					ProjectID:          project.ID,
 					Name:               "Test Repository",
 					FullPath:           test.repositoryFullPath,
@@ -1463,11 +1516,14 @@ func TestTenantVCS_YAML(t *testing.T) {
 			require.Equal(t, stagingTenantNumber, len(stagingDatabases))
 
 			// Simulate Git commits for schema update.
-			gitFile := baseDirectory + "/ver1##migrate##create_a_test_table.sql"
-			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: migrationStatement})
+			gitFile1 := baseDirectory + "/ver1##migrate##create_a_test_table.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile1: migrationStatement})
 			require.NoError(t, err)
-
-			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile))
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: gitFile1, Type: vcs.FileDiffTypeAdded},
+			})
+			require.NoError(t, err)
+			payload, err := json.Marshal(test.newWebhookPushEvent(gitFile1, "1", "2"))
 			require.NoError(t, err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			require.NoError(t, err)
@@ -1487,11 +1543,11 @@ func TestTenantVCS_YAML(t *testing.T) {
 			require.Equal(t, api.TaskDone, status)
 
 			// Simulate Git commits for data update.
-			gitFile = baseDirectory + "/ver2##data##insert_a_new_row.yml"
+			gitFile2 := baseDirectory + "/ver2##data##insert_a_new_row.yml"
 			err = ctl.vcsProvider.AddFiles(
 				test.externalID,
 				map[string]string{
-					gitFile: fmt.Sprintf(`
+					gitFile2: fmt.Sprintf(`
 databases:
   - name: %s
 statement: |
@@ -1502,8 +1558,11 @@ statement: |
 				},
 			)
 			require.NoError(t, err)
-
-			payload, err = json.Marshal(test.newWebhookPushEvent(gitFile))
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
+				{Path: gitFile2, Type: vcs.FileDiffTypeAdded},
+			})
+			require.NoError(t, err)
+			payload, err = json.Marshal(test.newWebhookPushEvent(gitFile2, "2", "3"))
 			require.NoError(t, err)
 			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
 			require.NoError(t, err)
