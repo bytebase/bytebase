@@ -25,6 +25,10 @@ function convertEnvironment(
   policy: ResourceObject,
   includedList: ResourceObject[]
 ) {
+  // The `environment` relationship cannot retire now.
+  // But for database-level policies it will be null.
+  // In order not to break the typings, we will fallback to <<Unknown Environment>>
+  // for database-level policies here.
   let environment = unknown("ENVIRONMENT");
   const data = policy.relationships?.environment?.data as
     | ResourceIdentifier
