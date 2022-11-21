@@ -291,8 +291,8 @@ func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, err
 	return &p, nil
 }
 
-// ValidatePolicType will validate the policy type.
-func ValidatePolicType(pType PolicyType) error {
+// ValidatePolicyType will validate the policy type.
+func ValidatePolicyType(pType PolicyType) error {
 	if !policyTypes[pType] {
 		return errors.Errorf("invalid policy type: %s", pType)
 	}
