@@ -4,6 +4,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -234,6 +235,15 @@ func checkCloudBackupFlags() error {
 	return nil
 }
 
+// Check the port availability by trying to bind and immediately release it.
+func checkPort(port int) error {
+	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
+	if err != nil {
+		return err
+	}
+	return l.Close()
+}
+
 func start() {
 	if flags.debug {
 		log.SetLevel(zap.DebugLevel)
@@ -255,7 +265,28 @@ func start() {
 		log.Error("invalid flags for cloud backup", zap.Error(err))
 		return
 	}
+
 	profile := activeProfile(flags.dataDir)
+
+	// The ideal bootstrap order is:
+	// 1. Connect to the metadb
+	// 2. Start echo server
+	// 3. Start various background runners
+	//
+	// Strangely, when the port is unavailable, echo server would return OK response for /healthz
+	// and then complain unable to bind port. Thus we cannot rely on checking /healthz. As a
+	// workaround, we check whether the port is available here.
+	if err := checkPort(flags.port); err != nil {
+		log.Error(fmt.Sprintf("server port %d is not available", flags.port), zap.Error(err))
+		return
+	}
+
+	if profile.UseEmbedDB() {
+		if err := checkPort(profile.DatastorePort); err != nil {
+			log.Error(fmt.Sprintf("database port %d is not available", profile.DatastorePort), zap.Error(err))
+			return
+		}
+	}
 
 	var s *server.Server
 	// Setup signal handlers.
