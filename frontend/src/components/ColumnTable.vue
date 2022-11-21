@@ -27,9 +27,6 @@
       <BBTableCell :left-padding="4" class="w-16">
         {{ column.name }}
       </BBTableCell>
-      <BBTableCell :left-padding="4" class="w-16">
-        {{ column.name }}
-      </BBTableCell>
       <BBTableCell class="w-8">
         {{ column.type }}
       </BBTableCell>
