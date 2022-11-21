@@ -261,6 +261,7 @@ type SensitiveDataMaskType string
 
 const (
 	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
+	// The default method is subject to change.
 	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
 )
 
