@@ -2,6 +2,7 @@
 package postgres
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -32,6 +33,20 @@ type Instance struct {
 	Port int
 }
 
+// isPgDump15 returns true if the pg_dump binary is version 15.
+func isPgDump15(pgDumpPath string) (bool, error) {
+	var cmd *exec.Cmd
+	var version bytes.Buffer
+	cmd = exec.Command(pgDumpPath, "-V")
+	cmd.Stdout = &version
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return false, err
+	}
+	pgDump15 := "pg_dump (PostgreSQL) 15.1\n"
+	return pgDump15 == version.String(), nil
+}
+
 // Install returns the postgres binary depending on the OS.
 func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	var tarName string
@@ -45,20 +60,33 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	}
 	version := strings.TrimRight(tarName, ".txz")
 	pgBinDir := path.Join(resourceDir, version)
-
-	// TODO(zp): remove this when pg_dump 15 is populated to all users.
-	// Bytebase bump the pg_dump version to 15 to support PostgreSQL 15.
-	// We need to reinstall the PostgreSQL resources if md5sum of pg_dump is different.
-	if err := os.RemoveAll(pgBinDir); err != nil {
-		return nil, errors.Wrapf(err, "failed to remove binary directory path %q", pgBinDir)
-	}
+	pgDumpPath := path.Join(pgBinDir, "bin", "pg_dump")
+	needInstall := false
 
 	if _, err := os.Stat(pgBinDir); err != nil {
-		fmt.Println("Installing.....")
 		if !os.IsNotExist(err) {
 			return nil, errors.Wrapf(err, "failed to check binary directory path %q", pgBinDir)
 		}
 		// Install if not exist yet.
+		needInstall = true
+	} else {
+		// TODO(zp): remove this when pg_dump 15 is populated to all users.
+		// Bytebase bump the pg_dump version to 15 to support PostgreSQL 15.
+		// We need to reinstall the PostgreSQL resources if md5sum of pg_dump is different.
+		// Check if pg_dump is version 15.
+		isPgDump15, err := isPgDump15(pgDumpPath)
+		if err != nil {
+			return nil, err
+		}
+		if !isPgDump15 {
+			needInstall = true
+			// Reinstall if pg_dump is not version 15.
+			if err := os.RemoveAll(pgBinDir); err != nil {
+				return nil, errors.Wrapf(err, "failed to remove postgres binary directory %q", pgBinDir)
+			}
+		}
+	}
+	if needInstall {
 		// The ordering below made Postgres installation atomic.
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := installInDir(tarName, tmpDir); err != nil {
