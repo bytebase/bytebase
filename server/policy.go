@@ -64,7 +64,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		pType := api.PolicyType(c.QueryParam("type"))
-		if err := api.ValidatePolicType(pType); err != nil {
+		if err := api.ValidatePolicyType(pType); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		policyUpsert := &api.PolicyUpsert{
@@ -112,7 +112,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		pType := api.PolicyType(c.QueryParam("type"))
-		if err := api.ValidatePolicType(pType); err != nil {
+		if err := api.ValidatePolicyType(pType); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		policyDelete := &api.PolicyDelete{
@@ -144,7 +144,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		pType := api.PolicyType(c.QueryParam("type"))
-		if err := api.ValidatePolicType(pType); err != nil {
+		if err := api.ValidatePolicyType(pType); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		policyFind := &api.PolicyFind{
@@ -182,7 +182,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			resourceID = &id
 		}
 		pType := api.PolicyType(c.QueryParam("type"))
-		if err := api.ValidatePolicType(pType); err != nil {
+		if err := api.ValidatePolicyType(pType); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 
