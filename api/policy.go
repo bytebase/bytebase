@@ -256,7 +256,7 @@ type SensitiveData struct {
 	Type   SensitiveDataMaskType `json:"type"`
 }
 
-// SensitiveDataMaskType is the type for sensitive data.
+// SensitiveDataMaskType is the mask type for sensitive data.
 type SensitiveDataMaskType string
 
 const (
