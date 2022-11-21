@@ -46,40 +46,23 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	version := strings.TrimRight(tarName, ".txz")
 	pgBinDir := path.Join(resourceDir, version)
 
-	// TODO(d): remove this when pg_dump is populated to all users.
-	_, err := os.Stat(path.Join(pgBinDir, "bin", "pg_dump"))
-	pgDumpNotExist := false
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, errors.Wrapf(err, "failed to check pg_dump %q", pgBinDir)
-		}
-		pgDumpNotExist = true
-	}
-	if pgDumpNotExist {
-		if err := os.RemoveAll(pgBinDir); err != nil {
-			return nil, errors.Wrapf(err, "failed to remove binary directory path %q", pgBinDir)
-		}
+	// TODO(zp): remove this when pg_dump 15 is populated to all users.
+	// Bytebase bump the pg_dump version to 15 to support PostgreSQL 15.
+	// We need to reinstall the PostgreSQL resources if md5sum of pg_dump is different.
+	if err := os.RemoveAll(pgBinDir); err != nil {
+		return nil, errors.Wrapf(err, "failed to remove binary directory path %q", pgBinDir)
 	}
 
 	if _, err := os.Stat(pgBinDir); err != nil {
+		fmt.Println("Installing.....")
 		if !os.IsNotExist(err) {
 			return nil, errors.Wrapf(err, "failed to check binary directory path %q", pgBinDir)
 		}
 		// Install if not exist yet.
 		// The ordering below made Postgres installation atomic.
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
-		if err := os.RemoveAll(tmpDir); err != nil {
-			return nil, errors.Wrapf(err, "failed to remove postgres binary temp directory %q", tmpDir)
-		}
-
-		f, err := resources.Open(tarName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
-		}
-		defer f.Close()
-
-		if err := utils.ExtractTarXz(f, tmpDir); err != nil {
-			return nil, errors.Wrap(err, "failed to extract txz file")
+		if err := installInDir(tarName, tmpDir); err != nil {
+			return nil, err
 		}
 
 		if err := os.Rename(tmpDir, pgBinDir); err != nil {
@@ -282,4 +265,21 @@ func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
 	}
 
 	return i, stopFn
+}
+
+func installInDir(tarName string, dir string) error {
+	if err := os.RemoveAll(dir); err != nil {
+		return errors.Wrapf(err, "failed to remove postgres binary temp directory %q", dir)
+	}
+
+	f, err := resources.Open(tarName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
+	}
+	defer f.Close()
+
+	if err := utils.ExtractTarXz(f, dir); err != nil {
+		return errors.Wrap(err, "failed to extract txz file")
+	}
+	return nil
 }
