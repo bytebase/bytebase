@@ -251,17 +251,18 @@ type SensitiveDataPolicy struct {
 
 // SensitiveData is the value for sensitive data.
 type SensitiveData struct {
-	Table  string            `json:"table"`
-	Column string            `json:"column"`
-	Type   SensitiveDataType `json:"type"`
+	Table  string                `json:"table"`
+	Column string                `json:"column"`
+	Type   SensitiveDataMaskType `json:"maskType"`
 }
 
-// SensitiveDataType is the type for sensitive data.
-type SensitiveDataType string
+// SensitiveDataMaskType is the mask type for sensitive data.
+type SensitiveDataMaskType string
 
 const (
-	// SensitiveDataTypeWildcard is the sensitive data type for using wildcard to hide data.
-	SensitiveDataTypeWildcard SensitiveDataType = "WILDCARD"
+	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
+	// The default method is subject to change.
+	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
 )
 
 // UnmarshalSensitiveDataPolicy will unmarshal payload to sensitive data policy.
@@ -365,14 +366,14 @@ func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *
 				if v.Table == "" || v.Column == "" {
 					return errors.Errorf("sensitive data policy rule cannot have empty table or column name")
 				}
-				if v.Type != SensitiveDataTypeWildcard {
-					return errors.Errorf("sensitive data policy rule must have type %q", SensitiveDataTypeWildcard)
+				if v.Type != SensitiveDataMaskTypeDefault {
+					return errors.Errorf("sensitive data policy rule must have mask type %q", SensitiveDataMaskTypeDefault)
 				}
 			}
 			return nil
 		}
 	}
-	return errors.Errorf("invalid resource type %s and policy type %s", resourceType, pType)
+	return errors.Errorf("invalid resource type %s and policy type %s pair", resourceType, pType)
 }
 
 // GetDefaultPolicy will return the default value for the given policy type.
