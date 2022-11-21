@@ -36,7 +36,7 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 	var stmtList []string
 	for _, createTableContext := range databaseEdit.CreateTableList {
 		createTableStmt := transformCreateTableContext(createTableContext)
-		stmt, err := deparseASTNode(createTableStmt)
+		stmt, err := restoreASTNode(createTableStmt)
 		if err != nil {
 			return "", err
 		}
@@ -44,7 +44,7 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 	}
 	for _, alterTableContext := range databaseEdit.AlterTableList {
 		alterTableStmt := transformAlterTableContext(alterTableContext)
-		stmt, err := deparseASTNode(alterTableStmt)
+		stmt, err := restoreASTNode(alterTableStmt)
 		if err != nil {
 			return "", err
 		}
@@ -52,7 +52,7 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 	}
 	for _, dropTableContext := range databaseEdit.DropTableList {
 		dropTableStmt := transformDropTableContext(dropTableContext)
-		stmt, err := deparseASTNode(dropTableStmt)
+		stmt, err := restoreASTNode(dropTableStmt)
 		if err != nil {
 			return "", err
 		}
@@ -263,7 +263,7 @@ func getColumnType(typeStr string) byte {
 	return mysql.TypeUnspecified
 }
 
-func deparseASTNode(node tidbast.Node) (string, error) {
+func restoreASTNode(node tidbast.Node) (string, error) {
 	var buf bytes.Buffer
 	restoreFlag := format.DefaultRestoreFlags | format.RestorePrettyFormat
 	if err := node.Restore(format.NewRestoreCtx(restoreFlag, &buf)); err != nil {
