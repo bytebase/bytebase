@@ -1743,11 +1743,14 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			port := getTestPort(t.Name())
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, port)
+			dataDir := t.TempDir()
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            dataDir,
+				vcsProviderCreator: fake.NewGitLab,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
