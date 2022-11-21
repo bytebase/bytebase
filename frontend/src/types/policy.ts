@@ -88,6 +88,14 @@ export type PolicyPayload =
   | EnvironmentTierPolicyPayload
   | SensitiveDataPolicyPayload;
 
+export type PolicyResourceType =
+  | ""
+  | "workspace"
+  | "environment"
+  | "project"
+  | "instance"
+  | "database";
+
 export type Policy = {
   id: PolicyId;
 
@@ -99,6 +107,8 @@ export type Policy = {
   rowStatus: RowStatus;
 
   // Related fields
+  resourceType: PolicyResourceType;
+  resourceId: number;
   environment: Environment;
 
   // Domain specific fields
