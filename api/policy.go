@@ -367,7 +367,7 @@ func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *
 					return errors.Errorf("sensitive data policy rule cannot have empty table or column name")
 				}
 				if v.Type != SensitiveDataMaskTypeDefault {
-					return errors.Errorf("sensitive data policy rule must have type %q", SensitiveDataMaskTypeDefault)
+					return errors.Errorf("sensitive data policy rule must have mask type %q", SensitiveDataMaskTypeDefault)
 				}
 			}
 			return nil
