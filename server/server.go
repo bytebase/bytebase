@@ -521,7 +521,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
-			return errors.Wrap(err, "failed to clear existing RUNNING tasks before start the task scheduler")
+			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
 		}
 		// runnerWG waits for all goroutines to complete.
 		s.runnerWG.Add(1)
@@ -550,8 +550,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Trying to stop Bytebase ....")
-	log.Info("Trying to gracefully shutdown server")
+	log.Info("Trying to stop Bytebase...")
+	log.Info("Trying to gracefully shutdown server...")
 
 	// Close the metric reporter
 	if s.MetricReporter != nil {
