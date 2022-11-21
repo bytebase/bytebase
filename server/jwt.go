@@ -205,7 +205,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 		}
 
 		// Skips OpenAPI SQL endpoint
-		if common.HasPrefixes(path, fmt.Sprintf("%s/sql", openAPIPrefix)) {
+		if common.HasPrefixes(c.Path(), fmt.Sprintf("%s/sql", openAPIPrefix)) {
 			return next(c)
 		}
 
