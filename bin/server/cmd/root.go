@@ -266,6 +266,8 @@ func start() {
 		return
 	}
 
+	profile := activeProfile(flags.dataDir)
+
 	// The ideal bootstrap order is:
 	// 1. Connect to the metadb
 	// 2. Start echo server
@@ -275,11 +277,16 @@ func start() {
 	// and then complain unable to bind port. Thus we cannot rely on checking /healthz. As a
 	// workaround, we check whether the port is available here.
 	if err := checkPort(flags.port); err != nil {
-		log.Error(fmt.Sprintf("port %d is not available", flags.port), zap.Error(err))
+		log.Error(fmt.Sprintf("server port %d is not available", flags.port), zap.Error(err))
 		return
 	}
 
-	profile := activeProfile(flags.dataDir)
+	if profile.UseEmbedDB() {
+		if err := checkPort(profile.DatastorePort); err != nil {
+			log.Error(fmt.Sprintf("database port %d is not available", profile.DatastorePort), zap.Error(err))
+			return
+		}
+	}
 
 	var s *server.Server
 	// Setup signal handlers.

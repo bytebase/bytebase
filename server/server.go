@@ -152,7 +152,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// Install Postgres.
 	var pgDataDir string
-	if prof.useEmbedDB() {
+	if prof.UseEmbedDB() {
 		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
 	}
 	log.Info("-----Embedded Postgres Config BEGIN-----")
@@ -171,7 +171,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.pgInstance = pgInstance
 
 	// New MetadataDB instance.
-	if prof.useEmbedDB() {
+	if prof.UseEmbedDB() {
 		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
