@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func TestDeparseDatabaseEdit(t *testing.T) {
+func TestDeparseCreateTable(t *testing.T) {
 	var defaultValue = "0"
 
 	tests := []struct {
@@ -93,6 +93,135 @@ func TestDeparseDatabaseEdit(t *testing.T) {
 				},
 			},
 			want: "CREATE TABLE `t1` (\n  `id` INT COMMENT 'ID' DEFAULT '0',\n  `name` VARCHAR CHARACTER SET UTF8MB4 COLLATE utf8mb4_bin COMMENT 'Name' NOT NULL\n) ENGINE=InnoDB;",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
+func TestDeparseAlterTable(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "alter table t1 and add column id",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t1",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name: "id",
+								Type: "int",
+							},
+						},
+					},
+				},
+			},
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL);",
+		},
+		{
+			name: "alter table t1 and alter column id",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t1",
+						AlterColumnList: []*api.AlterColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Comment:  "Name",
+								Nullable: true,
+							},
+						},
+					},
+				},
+			},
+			want: "ALTER TABLE `t1` MODIFY COLUMN `id` INT COMMENT 'Name';",
+		},
+		{
+			name: "alter table t1 and drop column id",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t1",
+						DropColumnList: []*api.DropColumnContext{
+							{
+								Name: "id",
+							},
+						},
+					},
+				},
+			},
+			want: "ALTER TABLE `t1` DROP COLUMN `id`;",
+		},
+		{
+			name: "alter table t1 and drop column id",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t1",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name: "id",
+								Type: "int",
+							},
+						},
+						AlterColumnList: []*api.AlterColumnContext{
+							{
+								Name:    "id_card",
+								Type:    "int",
+								Comment: "ID Card",
+							},
+						},
+						DropColumnList: []*api.DropColumnContext{
+							{
+								Name: "email",
+							},
+						},
+					},
+				},
+			},
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), MODIFY COLUMN `id_card` INT COMMENT 'ID Card' NOT NULL, DROP COLUMN `email`;",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
+func TestDeparseDropTable(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "drop table t1",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				DropTableList: []*api.DropTableContext{
+					{
+						Name: "t1",
+					},
+				},
+			},
+			want: "DROP TABLE IF EXISTS `t1`;",
 		},
 	}
 
