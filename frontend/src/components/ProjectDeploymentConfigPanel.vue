@@ -21,13 +21,37 @@
         </template>
       </i18n-t>
     </div>
-    <div class="mt-3">
-      <input
-        disabled
-        type="text"
-        class="textfield w-full"
-        :value="project.dbNameTemplate"
-      />
+    <div class="mt-3 space-y-2">
+      <div>
+        <input
+          v-model="state.dbNameTemplate"
+          type="text"
+          class="textfield w-full"
+          :disabled="!state.isEditingDBNameTemplate"
+        />
+      </div>
+      <div class="flex items-center justify-end gap-x-2">
+        <button
+          v-if="!state.isEditingDBNameTemplate"
+          :disabled="!allowEdit"
+          class="btn-normal"
+          @click="beginEditDBNameTemplate"
+        >
+          {{ $t("common.edit") }}
+        </button>
+        <template v-if="state.isEditingDBNameTemplate">
+          <button class="btn-normal" @click="cancelEditDBNameTemplate">
+            {{ $t("common.cancel") }}
+          </button>
+          <button
+            class="btn-primary"
+            :disabled="!allowUpdateDBNameTemplate"
+            @click="confirmEditDBNameTemplate"
+          >
+            {{ $t("common.update") }}
+          </button>
+        </template>
+      </div>
     </div>
 
     <div class="text-lg font-medium leading-7 text-main mt-6 border-t pt-4">
@@ -59,8 +83,8 @@
           <button
             v-if="allowEdit"
             class="btn-normal"
-            :disabled="!dirty"
-            @click="revert"
+            :disabled="!isDeploymentConfigDirty"
+            @click="revertDeploymentConfig"
           >
             {{ $t("common.revert") }}
           </button>
@@ -69,9 +93,11 @@
               <div
                 class="btn-primary"
                 :class="
-                  !allowUpdate ? 'bg-accent opacity-50 cursor-not-allowed' : ''
+                  !allowUpdateDeploymentConfig
+                    ? 'bg-accent opacity-50 cursor-not-allowed'
+                    : ''
                 "
-                @click="update"
+                @click="updateDeploymentConfig"
               >
                 {{ $t("common.update") }}
               </div>
@@ -135,12 +161,15 @@ import {
   useEnvironmentList,
   useEnvironmentStore,
   useLabelList,
+  useProjectStore,
 } from "@/store";
 
 type LocalState = {
   deployment: DeploymentConfig | undefined;
   originalDeployment: DeploymentConfig | undefined;
   error: string | undefined;
+  isEditingDBNameTemplate: boolean;
+  dbNameTemplate: string;
 };
 
 export default defineComponent({
@@ -166,15 +195,17 @@ export default defineComponent({
       deployment: undefined,
       originalDeployment: undefined,
       error: undefined,
+      isEditingDBNameTemplate: false,
+      dbNameTemplate: props.project.dbNameTemplate,
     });
 
-    const dirty = computed((): boolean => {
+    const isDeploymentConfigDirty = computed((): boolean => {
       return !isEqual(state.deployment, state.originalDeployment);
     });
 
-    const allowUpdate = computed((): boolean => {
+    const allowUpdateDeploymentConfig = computed((): boolean => {
       if (state.error) return false;
-      if (!dirty.value) return false;
+      if (!isDeploymentConfigDirty.value) return false;
       return true;
     });
 
@@ -244,7 +275,7 @@ export default defineComponent({
       state.error = validateDeploymentConfig(state.deployment);
     };
 
-    const revert = () => {
+    const revertDeploymentConfig = () => {
       dialog.create({
         positiveText: t("common.confirm"),
         negativeText: t("common.cancel"),
@@ -262,9 +293,9 @@ export default defineComponent({
       });
     };
 
-    const update = async () => {
+    const updateDeploymentConfig = async () => {
       if (!state.deployment) return;
-      if (!allowUpdate.value) return;
+      if (!allowUpdateDeploymentConfig.value) return;
 
       const deploymentConfigPatch: DeploymentConfigPatch = {
         payload: JSON.stringify(state.deployment.schedule),
@@ -299,19 +330,65 @@ export default defineComponent({
       })
     );
 
+    const allowUpdateDBNameTemplate = computed(() => {
+      return state.dbNameTemplate !== props.project.dbNameTemplate;
+    });
+
+    const beginEditDBNameTemplate = () => {
+      state.dbNameTemplate = props.project.dbNameTemplate;
+      state.isEditingDBNameTemplate = true;
+    };
+
+    const cancelEditDBNameTemplate = () => {
+      state.dbNameTemplate = props.project.dbNameTemplate;
+      state.isEditingDBNameTemplate = false;
+    };
+
+    const confirmEditDBNameTemplate = async () => {
+      try {
+        await useProjectStore().patchProject({
+          projectId: props.project.id,
+          projectPatch: {
+            dbNameTemplate: state.dbNameTemplate,
+          },
+        });
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("project.successfully-updated-db-name-template"),
+        });
+      } catch {
+        state.dbNameTemplate = props.project.dbNameTemplate;
+      } finally {
+        state.isEditingDBNameTemplate = false;
+      }
+    };
+
+    watchEffect(() => {
+      console.log(
+        state.dbNameTemplate,
+        props.project.dbNameTemplate,
+        state.dbNameTemplate === props.project.dbNameTemplate
+      );
+    });
+
     return {
       EMPTY_ID,
       state,
-      dirty,
-      allowUpdate,
+      isDeploymentConfigDirty,
+      allowUpdateDeploymentConfig,
       environmentList,
       labelList,
       databaseList,
       availableLabelList,
       addStage,
-      revert,
-      update,
+      revertDeploymentConfig,
+      updateDeploymentConfig,
       dbNameTemplateTips,
+      allowUpdateDBNameTemplate,
+      beginEditDBNameTemplate,
+      cancelEditDBNameTemplate,
+      confirmEditDBNameTemplate,
     };
   },
 });
