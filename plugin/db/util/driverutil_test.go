@@ -8,6 +8,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/plugin/db"
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestToStoredVersion(t *testing.T) {
@@ -231,4 +235,63 @@ func generateOneMBInsert() string {
 		b[i] = letterList[rand.Intn(len(letterList))]
 	}
 	return fmt.Sprintf("INSERT INTO t values('%s')", string(b))
+}
+
+func TestExtractSensitiveField(t *testing.T) {
+	tests := []struct {
+		statement        string
+		fieldName        []string
+		sensitiveDataMap db.SensitiveDataMap
+		fieldMap         sensitiveFiledMap
+	}{
+		{
+			statement: "select * from (select * from t) result LIMIT 100000;",
+			fieldName: []string{"a", "b", "c", "d"},
+			sensitiveDataMap: db.SensitiveDataMap{
+				db.SensitiveData{
+					Database: "",
+					Table:    "t",
+					Column:   "a",
+				}: db.SensitiveDataMaskTypeDefault,
+				db.SensitiveData{
+					Database: "",
+					Table:    "t",
+					Column:   "d",
+				}: db.SensitiveDataMaskTypeDefault,
+			},
+			fieldMap: sensitiveFiledMap{
+				0: true,
+				3: true,
+			},
+		},
+		{
+			statement: "select * from (select *, a, t.*, b from db.t) result LIMIT 100000;",
+			fieldName: []string{"a", "b", "c", "a", "a", "b", "c", "b"},
+			sensitiveDataMap: db.SensitiveDataMap{
+				db.SensitiveData{
+					Database: "db",
+					Table:    "t",
+					Column:   "a",
+				}: db.SensitiveDataMaskTypeDefault,
+				db.SensitiveData{
+					Database: "db",
+					Table:    "t",
+					Column:   "c",
+				}: db.SensitiveDataMaskTypeDefault,
+			},
+			fieldMap: sensitiveFiledMap{
+				0: true,
+				2: true,
+				3: true,
+				4: true,
+				6: true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		res, err := extractSensitiveField(db.MySQL, test.statement, test.fieldName, test.sensitiveDataMap)
+		require.NoError(t, err)
+		require.Equal(t, test.fieldMap, res)
+	}
 }

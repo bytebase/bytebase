@@ -249,6 +249,20 @@ func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environment
 	return api.UnmarshalEnvironmentTierPolicy(policy.Payload)
 }
 
+// GetSensitiveDataPolicy will get the sensitive data policy for database ID.
+func (s *Store) GetSensitiveDataPolicy(ctx context.Context, databaseID int) (*api.SensitiveDataPolicy, error) {
+	databaseResourceType := api.PolicyResourceTypeDatabase
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		ResourceType: &databaseResourceType,
+		ResourceID:   &databaseID,
+		Type:         api.PolicyTypeSensitiveData,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return api.UnmarshalSensitiveDataPolicy(policy.Payload)
+}
+
 //
 // private functions
 //
