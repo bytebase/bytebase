@@ -182,21 +182,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		var database *api.Database
 		if exec.DatabaseName != "" {
-			databaseFind := &api.DatabaseFind{
-				InstanceID: &instance.ID,
-				Name:       &exec.DatabaseName,
-			}
-			dbList, err := s.store.FindDatabase(ctx, databaseFind)
+			database, err = s.getDatabase(ctx, instance.ID, exec.DatabaseName)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
+				return err
 			}
-			if len(dbList) == 0 {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
-			}
-			if len(dbList) > 1 {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
-			}
-			database = dbList[0]
 		}
 
 		adviceLevel := advisor.Success
@@ -263,6 +252,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
+		var sensitiveDataMap db.SensitiveDataMap
+		if instance.Engine == db.MySQL {
+			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
+			}
+
+			sensitiveDataMap, err = s.getSensitiveData(ctx, instance.ID, databaseList, exec.DatabaseName)
+			if err != nil {
+				return err
+			}
+		}
+
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
@@ -272,7 +274,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, true /* readOnly */)
+			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, true /* readOnly */, sensitiveDataMap)
 			if err != nil {
 				return nil, err
 			}
@@ -416,7 +418,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, false /* readOnly */)
+			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, false /* readOnly */, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -882,4 +884,62 @@ func checkPostgreSQLIndexHit(statement string, plan string) []advisor.Advice {
 		}
 	}
 	return nil
+}
+
+func (s *Server) getDatabase(ctx context.Context, instanceID int, databaseName string) (*api.Database, error) {
+	databaseFind := &api.DatabaseFind{
+		InstanceID: &instanceID,
+		Name:       &databaseName,
+	}
+	dbList, err := s.store.FindDatabase(ctx, databaseFind)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", databaseName, instanceID)).SetInternal(err)
+	}
+	if len(dbList) == 0 {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", databaseName, instanceID))
+	}
+	if len(dbList) > 1 {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", databaseName, instanceID))
+	}
+	return dbList[0], nil
+}
+
+func (s *Server) getSensitiveData(ctx context.Context, instanceID int, databaseList []string, currentDatabase string) (db.SensitiveDataMap, error) {
+	res := make(db.SensitiveDataMap)
+	for _, name := range databaseList {
+		databaseName := name
+		if name == "" {
+			if currentDatabase == "" {
+				continue
+			}
+			databaseName = currentDatabase
+		}
+
+		database, err := s.getDatabase(ctx, instanceID, databaseName)
+		if err != nil {
+			return nil, err
+		}
+
+		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.ID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instanceID))
+		}
+		for _, data := range policy.SensitiveDataList {
+			res[db.SensitiveData{
+				Database: databaseName,
+				Table:    data.Table,
+				Column:   data.Column,
+			}] = db.SensitiveDataMaskType(data.Type)
+			// use for current database
+			if name == "" {
+				res[db.SensitiveData{
+					Database: "",
+					Table:    data.Table,
+					Column:   data.Column,
+				}] = db.SensitiveDataMaskType(data.Type)
+			}
+		}
+	}
+
+	return res, nil
 }

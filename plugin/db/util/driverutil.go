@@ -16,6 +16,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	tidbparser "github.com/pingcap/tidb/parser"
+	tidbast "github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -321,7 +324,7 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int, readOnly bool) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int, readOnly bool, sensitiveDataMap db.SensitiveDataMap) ([]interface{}, error) {
 	if !readOnly {
 		return queryAdmin(ctx, sqldb, statement, limit)
 	}
@@ -354,6 +357,11 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, FormatError(err)
+	}
+
+	fieldMap, err := extractSensitiveField(dbType, statement, columnNames, sensitiveDataMap)
+	if err != nil {
+		return nil, err
 	}
 
 	columnTypes, err := rows.ColumnTypes()
@@ -395,6 +403,10 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 
 		rowData := []interface{}{}
 		for i := range columnTypes {
+			if sensitive, ok := fieldMap[i]; ok && sensitive {
+				rowData = append(rowData, "******")
+				continue
+			}
 			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
 				rowData = append(rowData, v.Bool)
 				continue
@@ -671,4 +683,127 @@ func fromStoredVersion(storedVersion string) (bool, string, string, error) {
 		return false, "", "", errors.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
 	}
 	return true, fmt.Sprintf("%d.%d.%d", major, minor, patch), suffix, nil
+}
+
+type sensitiveFiledMap map[int]bool
+
+func extractSensitiveField(dbType db.Type, statement string, fieldName []string, sensitiveDataMap db.SensitiveDataMap) (sensitiveFiledMap, error) {
+	fieldMap := make(sensitiveFiledMap)
+	switch dbType {
+	case db.MySQL, db.TiDB:
+	default:
+		return fieldMap, nil
+	}
+
+	if sensitiveDataMap == nil {
+		return fieldMap, nil
+	}
+	p := tidbparser.New()
+
+	// To support MySQL8 window function syntax.
+	// See https://github.com/bytebase/bytebase/issues/175.
+	p.EnableWindowFunc(true)
+	nodeList, _, err := p.Parse(statement, "", "")
+	if err != nil {
+		return nil, err
+	}
+	if len(nodeList) != 1 {
+		return nil, errors.Errorf("except one statement but found %d", len(nodeList))
+	}
+	node, ok := nodeList[0].(*tidbast.SelectStmt)
+	if !ok {
+		return fieldMap, nil
+	}
+
+	selectStmt, ok := extractMySQLOriginSelect(node)
+	if !ok {
+		return fieldMap, nil
+	}
+
+	databaseName, tableName, ok := extractMySQLSingleTable(selectStmt.From)
+	if !ok {
+		return fieldMap, nil
+	}
+	starLength := extractMySQLStarLength(fieldName, selectStmt)
+	fieldPosition := 0
+	for _, field := range selectStmt.Fields.Fields {
+		if field.WildCard != nil {
+			for i := 0; i < starLength; i++ {
+				position := fieldPosition + i
+				column := db.SensitiveData{
+					Database: databaseName,
+					Table:    tableName,
+					Column:   fieldName[position],
+				}
+				if _, ok := sensitiveDataMap[column]; ok {
+					fieldMap[position] = true
+				}
+			}
+			fieldPosition += starLength
+		} else {
+			if field.Expr != nil {
+				columnName, ok := field.Expr.(*tidbast.ColumnNameExpr)
+				if ok {
+					column := db.SensitiveData{
+						Database: databaseName,
+						Table:    tableName,
+						Column:   columnName.Name.Name.O,
+					}
+					if _, ok := sensitiveDataMap[column]; ok {
+						fieldMap[fieldPosition] = true
+					}
+				}
+			}
+			fieldPosition++
+		}
+	}
+	return fieldMap, nil
+}
+
+func extractMySQLOriginSelect(in *tidbast.SelectStmt) (*tidbast.SelectStmt, bool) {
+	// For read only MySQL query, we will run as SELECT * FROM (sql) result LIMIT,
+	// so we need to extract the origin SELECT statement.
+	// details see getMySQLStatementWithResultLimit()
+	if in == nil || in.From == nil || in.From.TableRefs == nil || in.From.TableRefs.Left == nil || in.From.TableRefs.Right != nil {
+		return nil, false
+	}
+	tableSource, ok := in.From.TableRefs.Left.(*tidbast.TableSource)
+	if !ok {
+		return nil, false
+	}
+	selectStmt, ok := tableSource.Source.(*tidbast.SelectStmt)
+	if !ok {
+		return nil, false
+	}
+	return selectStmt, true
+}
+
+// extractMySQLStarLength works for single table in FROM clause.
+func extractMySQLStarLength(fieldName []string, selectStmt *tidbast.SelectStmt) int {
+	starFieldCount := 0
+	for _, field := range selectStmt.Fields.Fields {
+		if field.WildCard != nil {
+			starFieldCount++
+		}
+	}
+	if starFieldCount == 0 {
+		return 0
+	}
+	nonStarFieldCount := len(selectStmt.Fields.Fields) - starFieldCount
+	return (len(fieldName) - nonStarFieldCount) / starFieldCount
+}
+
+func extractMySQLSingleTable(fromClause *tidbast.TableRefsClause) (string, string, bool) {
+	if fromClause.TableRefs.Right != nil {
+		return "", "", false
+	}
+	tableSource, ok := fromClause.TableRefs.Left.(*tidbast.TableSource)
+	if !ok {
+		return "", "", false
+	}
+	tableName, ok := tableSource.Source.(*tidbast.TableName)
+	if !ok {
+		return "", "", false
+	}
+	return tableName.Schema.O, tableName.Name.O, true
 }
