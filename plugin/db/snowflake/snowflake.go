@@ -256,6 +256,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) err
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, limit int, readOnly bool) ([]interface{}, error) {
-	return util.Query(ctx, db.Snowflake, driver.db, statement, limit, readOnly)
+func (driver *Driver) Query(ctx context.Context, statement string, limit int, readOnly bool, sensitiveDataMap db.SensitiveDataMap) ([]interface{}, error) {
+	return util.Query(ctx, db.Snowflake, driver.db, statement, limit, readOnly, sensitiveDataMap)
 }
