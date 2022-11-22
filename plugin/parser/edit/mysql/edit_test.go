@@ -36,6 +36,25 @@ func TestDeparseCreateTable(t *testing.T) {
 			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n);",
 		},
 		{
+			name: "create table t1 with column name of SQL keyword",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				CreateTableList: []*api.CreateTableContext{
+					{
+						Name: "t1",
+						Type: "BASE TABLE",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name: "type",
+								Type: "int",
+							},
+						},
+					},
+				},
+			},
+			want: "CREATE TABLE `t1` (\n  `type` INT NOT NULL\n);",
+		},
+		{
 			name: "create table t1&t2",
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
