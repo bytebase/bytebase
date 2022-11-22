@@ -1,12 +1,17 @@
 <template>
-  <IssueDetailLayout
-    v-if="issue"
-    :issue="issue"
-    :create="create"
-    @status-changed="onStatusChanged"
-  />
-  <div v-else class="w-full h-full flex justify-center items-center">
-    <NSpin />
+  <div class="w-full h-full relative">
+    <IssueDetailLayout
+      v-if="issue"
+      :issue="issue"
+      :create="create"
+      @status-changed="onStatusChanged"
+    />
+    <div
+      v-if="showLoading"
+      class="w-full h-full absolute inset-0 flex justify-center items-center bg-white/50"
+    >
+      <NSpin />
+    </div>
   </div>
   <FeatureModal
     v-if="state.showFeatureModal"
@@ -28,7 +33,7 @@ import {
   unknown,
   UNKNOWN_ID,
 } from "@/types";
-import { hasFeature, useProjectStore } from "@/store";
+import { hasFeature, useIssueStore, useProjectStore } from "@/store";
 import { useInitializeIssue, usePollIssue } from "@/plugins/issue/logic";
 
 interface LocalState {
@@ -47,10 +52,16 @@ const route = useRoute();
 const state = reactive<LocalState>({
   showFeatureModal: false,
 });
+const issueStore = useIssueStore();
 
 const issueSlug = computed(() => props.issueSlug);
 
 const { create, issue } = useInitializeIssue(issueSlug);
+
+const showLoading = computed(() => {
+  if (!issue.value) return true;
+  return issueStore.isCreatingIssue;
+});
 
 const pollIssue = usePollIssue(issueSlug, issue);
 
