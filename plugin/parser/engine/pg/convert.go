@@ -1259,21 +1259,16 @@ func convertDefElemToSeqType(defElem *pgquery.DefElem) (*ast.Integer, error) {
 	if len(typeNameNode.TypeName.Names) != 2 {
 		return nil, parser.NewConvertErrorf("expected TypeName with 2 names but found %d", len(typeNameNode.TypeName.Names))
 	}
-	// typeNameNode.TypeName.Names[0] should be 'pg_catalog'
-	nodeStr, ok := typeNameNode.TypeName.Names[1].Node.(*pgquery.Node_String_)
+	dataType := convertDataType(typeNameNode.TypeName)
+	// Sequence type should be int2(smallint), int4(integer), or int8(bigint)
+	intType, ok := dataType.(*ast.Integer)
 	if !ok {
-		return nil, parser.NewConvertErrorf("expected String but found %T", typeNameNode.TypeName.Names[1].Node)
+		return nil, parser.NewConvertErrorf("expected Integer but found %T", dataType)
 	}
-	switch nodeStr.String_.Str {
-	case "int2":
-		return &ast.Integer{Size: 2}, nil
-	case "int4":
-		return &ast.Integer{Size: 4}, nil
-	case "int8":
-		return &ast.Integer{Size: 8}, nil
-	default:
-		return nil, parser.NewConvertErrorf("expected int2, int4, or int8 but found %s", nodeStr.String_.Str)
+	if intType.Size != 2 && intType.Size != 4 && intType.Size != 8 {
+		return nil, parser.NewConvertErrorf("expected Integer with size 2, 4, or 8 but found %d", intType.Size)
 	}
+	return intType, nil
 }
 
 func convertNodeListToColumnNameDef(in []*pgquery.Node) (*ast.ColumnNameDef, error) {
