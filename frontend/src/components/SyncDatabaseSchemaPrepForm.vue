@@ -131,7 +131,7 @@
       </div>
     </div>
 
-    <!-- Schema diff statement editor container -->
+    <!-- Schema diff container -->
     <div class="w-full flex flex-col justify-start items-start">
       <div class="w-full flex flex-row justify-start items-center mb-2">
         <span>{{ $t("database.sync-schema.schema-diff") }}</span>
@@ -155,14 +155,18 @@
         </div>
         <code-diff
           v-else
-          class="w-full"
+          class="code-diff-container w-full h-auto max-h-96 overflow-y-auto"
           :old-string="state.targetDatabaseInfo.currentSchema"
           :new-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
           output-format="side-by-side"
           data-label="bb-migration-history-code-diff-block"
         />
       </template>
-      <div class="w-full flex flex-col justify-start mt-4 mb-2 leading-8">
+    </div>
+
+    <!-- DDL statement editor container -->
+    <div class="w-full flex flex-col justify-start items-start">
+      <div class="w-full flex flex-col justify-start mb-2 leading-8">
         <div class="flex flex-row justify-start items-center">
           <span>{{ $t("database.sync-schema.synchronize-statements") }}</span>
           <button
@@ -193,7 +197,7 @@
         ></div>
         <MonacoEditor
           ref="editorRef"
-          class="w-full h-auto max-h-[300px]"
+          class="w-full h-auto max-h-96"
           data-label="bb-issue-sql-editor"
           :value="state.editStatement"
           :auto-focus="false"
@@ -620,3 +624,9 @@ watch(
   }
 );
 </script>
+
+<style>
+.code-diff-container .d2h-file-wrapper {
+  @apply mb-0;
+}
+</style>
