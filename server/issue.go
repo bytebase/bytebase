@@ -33,7 +33,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 		}
 
-		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
+		issueCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		issue, err := s.createIssue(ctx, issueCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
@@ -309,7 +310,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.Issue, error) {
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
 	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
@@ -338,20 +339,19 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
 	}
 
-	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate, creatorID)
+	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate)
 	if err != nil {
 		return nil, err
 	}
 
 	if issueCreate.ValidateOnly {
-		issue, err := s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate, creatorID)
+		issue, err := s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate)
 		if err != nil {
 			return nil, err
 		}
 		return issue, nil
 	}
 
-	issueCreate.CreatorID = creatorID
 	issueCreate.PipelineID = pipeline.ID
 	issue, err := s.store.CreateIssue(ctx, issueCreate)
 	if err != nil {
@@ -386,7 +386,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
 	}
 	activityCreate := &api.ActivityCreate{
-		CreatorID:   creatorID,
+		CreatorID:   issueCreate.CreatorID,
 		ContainerID: issue.ID,
 		Type:        api.ActivityIssueCreate,
 		Level:       api.ActivityInfo,
@@ -401,7 +401,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreate, pipelineCreate *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreate, pipelineCreate *api.PipelineCreate) (*api.Pipeline, error) {
 	// Return an error if the issue has no task to be executed
 	hasTask := false
 	for _, stage := range pipelineCreate.StageList {
@@ -415,12 +415,13 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
+	pipelineCreate.CreatorID = issueCreate.CreatorID
+
 	// Create the pipeline, stages, and tasks.
 	if issueCreate.ValidateOnly {
-		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate, creatorID)
+		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate)
 	}
 
-	pipelineCreate.CreatorID = creatorID
 	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
@@ -428,7 +429,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 
 	// TODO(p0ny): create stages in batch.
 	for _, stageCreate := range pipelineCreate.StageList {
-		stageCreate.CreatorID = creatorID
+		stageCreate.CreatorID = issueCreate.CreatorID
 		stageCreate.PipelineID = pipelineCreated.ID
 		createdStage, err := s.store.CreateStage(ctx, &stageCreate)
 		if err != nil {
@@ -438,7 +439,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		var taskCreateList []*api.TaskCreate
 		for _, taskCreate := range stageCreate.TaskList {
 			c := taskCreate
-			c.CreatorID = creatorID
+			c.CreatorID = issueCreate.CreatorID
 			c.PipelineID = pipelineCreated.ID
 			c.StageID = createdStage.ID
 			taskCreateList = append(taskCreateList, &c)
