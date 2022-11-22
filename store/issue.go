@@ -187,11 +187,11 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 
 // CreateIssueValidateOnly creates an issue for validation purpose
 // Do NOT write to the database.
-func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipeline, create *api.IssueCreate, creatorID int) (*api.Issue, error) {
+func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipeline, create *api.IssueCreate) (*api.Issue, error) {
 	issue := &api.Issue{
-		CreatorID:   creatorID,
+		CreatorID:   create.CreatorID,
 		CreatedTs:   time.Now().Unix(),
-		UpdaterID:   creatorID,
+		UpdaterID:   create.CreatorID,
 		UpdatedTs:   time.Now().Unix(),
 		ProjectID:   create.ProjectID,
 		Name:        create.Name,
@@ -212,7 +212,7 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipel
 
 // CreatePipelineValidateOnly creates a pipeline for validation purpose
 // Do NOT write to the database.
-func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
 	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
 	// jsonapi resource relationships will collide different resources into the same bucket.
 	id := 0
@@ -221,9 +221,9 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 		ID:        id,
 		Name:      create.Name,
 		Status:    api.PipelineOpen,
-		CreatorID: creatorID,
+		CreatorID: create.CreatorID,
 		CreatedTs: ts,
-		UpdaterID: creatorID,
+		UpdaterID: create.CreatorID,
 		UpdatedTs: ts,
 	}
 	for _, sc := range create.StageList {
@@ -231,9 +231,9 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 		stage := &api.Stage{
 			ID:            id,
 			Name:          sc.Name,
-			CreatorID:     creatorID,
+			CreatorID:     create.CreatorID,
 			CreatedTs:     ts,
-			UpdaterID:     creatorID,
+			UpdaterID:     create.CreatorID,
 			UpdatedTs:     ts,
 			PipelineID:    sc.PipelineID,
 			EnvironmentID: sc.EnvironmentID,
@@ -257,9 +257,9 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
-				CreatorID:         creatorID,
+				CreatorID:         create.CreatorID,
 				CreatedTs:         ts,
-				UpdaterID:         creatorID,
+				UpdaterID:         create.CreatorID,
 				UpdatedTs:         ts,
 				Type:              tc.Type,
 				Payload:           tc.Payload,
@@ -654,7 +654,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 		where = append(where, fmt.Sprintf("status IN (%s)", strings.Join(list, ",")))
 	}
 
-	var query = `
+	query := `
 		SELECT
 			id,
 			creator_id,
