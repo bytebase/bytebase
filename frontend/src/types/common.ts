@@ -2,6 +2,7 @@ import { Activity } from "./activity";
 import { Anomaly } from "./anomaly";
 import { BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
+import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
@@ -26,7 +27,6 @@ import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
 import { Table } from "./table";
-import { EMPTY_ID, UNKNOWN_ID } from ".";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;

@@ -22,7 +22,7 @@ it("diff add column list", () => {
       originColumnList: [],
       targetColumnList: [
         {
-          id: -1,
+          id: UNKNOWN_ID,
           name: "id",
           type: "int",
           characterSet: "",
@@ -69,6 +69,7 @@ it("diff modify column list", () => {
     {
       originColumnList: [
         {
+          id: 1,
           name: "id",
           type: "int",
           characterSet: "",
@@ -80,8 +81,9 @@ it("diff modify column list", () => {
       ],
       targetColumnList: [
         {
+          id: 1,
           name: "id",
-          type: "int",
+          type: "varchar",
           characterSet: "",
           collation: "",
           comment: "",
@@ -94,7 +96,7 @@ it("diff modify column list", () => {
         modifyColumnList: [
           {
             name: "id",
-            type: "int",
+            type: "varchar",
             characterSet: "",
             collation: "",
             comment: "",
@@ -126,6 +128,7 @@ it("diff drop column list", () => {
     {
       originColumnList: [
         {
+          id: 1,
           name: "id",
           type: "int",
           characterSet: "",
