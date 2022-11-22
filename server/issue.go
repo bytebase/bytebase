@@ -307,6 +307,116 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.POST("/issue/:issueID/rollback", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		issueID, err := strconv.Atoi(c.Param("issueID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue ID %s is not a number", c.Param("issueID"))).SetInternal(err)
+		}
+		issue, err := s.store.GetIssueByID(ctx, issueID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with ID %d", issueID)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", issueID))
+		}
+
+		rollbackPayload := new(api.TaskRollbackRequestPayload)
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, rollbackPayload); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed task rollback request").SetInternal(err)
+		}
+
+		if len(rollbackPayload.TaskIDList) != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, "The task ID list must have exactly one element")
+		}
+
+		taskID64, err := strconv.ParseInt(rollbackPayload.TaskIDList[0], 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID %s", rollbackPayload.TaskIDList[0])
+		}
+		taskID := int(taskID64)
+		task, err := s.store.GetTaskByID(ctx, taskID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get task with ID %d", taskID)).SetInternal(err)
+		}
+		if task == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
+		}
+		if task.Type != api.TaskDatabaseDataUpdate {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task type must be %s, but got %s", api.TaskDatabaseDataUpdate, task.Type))
+		}
+		if task.PipelineID != issue.PipelineID {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in pipeline %d", taskID, issue.PipelineID))
+		}
+		if task.Status != api.TaskDone && task.Status != api.TaskFailed {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d has status %s, must be %s or %s", taskID, task.Status, api.TaskDone, api.TaskFailed))
+		}
+
+		taskPayload := &api.TaskDatabaseDataUpdatePayload{}
+		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal the task payload with ID %d", taskID)).SetInternal(err)
+		}
+		switch {
+		case taskPayload.RollbackStatement == "" && taskPayload.RollbackError == "":
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d is still in progress", taskID))
+		case taskPayload.RollbackStatement == "" && taskPayload.RollbackError != "":
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed", taskID))
+		case taskPayload.RollbackStatement != "" && taskPayload.RollbackError != "":
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid task payload: RollbackStatement=%q, RollbackError=%q", taskPayload.RollbackStatement, taskPayload.RollbackError))
+		}
+
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
+		createContext, err := json.Marshal(
+			&api.MigrationContext{
+				DetailList: []*api.MigrationDetail{
+					{
+						MigrationType: db.Data,
+						DatabaseID:    *task.DatabaseID,
+						Statement:     taskPayload.RollbackStatement,
+						SchemaVersion: common.DefaultMigrationVersion(),
+					},
+				},
+			},
+		)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue create context").SetInternal(err)
+		}
+		issueCreate := &api.IssueCreate{
+			ProjectID:     task.Database.ProjectID,
+			Name:          fmt.Sprintf("Rollback task %q", task.Name),
+			Type:          api.IssueDatabaseDataUpdate,
+			Description:   fmt.Sprintf("Automatically generated rollback issue for task %q (ID: %d)", task.Name, taskID),
+			AssigneeID:    api.SystemBotID,
+			CreateContext: string(createContext),
+		}
+		rollbackIssue, err := s.createIssue(ctx, issueCreate, principalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create rollback issue for task %d", taskID)).SetInternal(err)
+		}
+
+		if len(rollbackIssue.Pipeline.StageList) != 1 {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid issue, should have 1 stage, but got %d", len(rollbackIssue.Pipeline.StageList)))
+		}
+		if len(rollbackIssue.Pipeline.StageList[0].TaskList) != 1 {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid issue, should have 1 task, but got %d", len(rollbackIssue.Pipeline.StageList[0].TaskList)))
+		}
+		rollbackTask := rollbackIssue.Pipeline.StageList[0].TaskList[0]
+		taskPatch := &api.TaskPatch{
+			ID:           rollbackTask.ID,
+			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
+			RollbackFrom: &taskID,
+		}
+		if _, httpErr := s.patchTask(ctx, task, taskPatch, rollbackIssue); httpErr != nil {
+			return httpErr
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, rollbackIssue); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal generated rollback issue for task %d", taskID)).SetInternal(err)
+		}
+		return nil
+	})
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {

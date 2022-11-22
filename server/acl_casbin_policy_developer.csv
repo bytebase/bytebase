@@ -61,6 +61,7 @@ p, DEVELOPER, /issue/{issueID}/status, PATCH
 p, DEVELOPER, /issue/{issueID}/subscriber, GET
 p, DEVELOPER, /issue/{issueID}/subscriber, POST
 p, DEVELOPER, /issue/{issueID}/subscriber/{subscriberID}, DELETE
+p, DEVELOPER, /issue/{issueID}/rollback, POST
 p, DEVELOPER, /activity, POST
 p, DEVELOPER, /activity, GET
 p, DEVELOPER, /activity/{activityID}, PATCH_SELF
@@ -72,7 +73,6 @@ p, DEVELOPER, /bookmark/user/{userID}, GET_SELF
 p, DEVELOPER, /bookmark/{bookmarkID}, DELETE_SELF
 p, DEVELOPER, /pipeline/{pipelineID}/stage/{stageID}/status, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/all, PATCH
-p, DEVELOPER, /pipeline/{pipelineID}/task/rollback, POST
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}/check, POST
