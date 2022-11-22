@@ -661,9 +661,7 @@ CREATE TABLE task (
     status TEXT NOT NULL CHECK (status IN ('PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
-    earliest_allowed_ts BIGINT NOT NULL DEFAULT 0,
-    -- rollback_from is the original task from which this is generated as a rollback task.
-    rollback_from INTEGER NULL REFERENCES task(id)
+    earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
