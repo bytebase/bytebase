@@ -402,10 +402,21 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid issue, should have 1 task, but got %d", len(rollbackIssue.Pipeline.StageList[0].TaskList)))
 		}
 		rollbackTask := rollbackIssue.Pipeline.StageList[0].TaskList[0]
+		rollbackTaskPayload := &api.TaskDatabaseDataUpdatePayload{}
+		if err := json.Unmarshal([]byte(rollbackTask.Payload), rollbackTaskPayload); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal the rollback task payload with ID %d", rollbackTask.ID)).SetInternal(err)
+		}
+		rollbackTaskPayload.RollbackFromIssueID = issueID
+		buf, err := json.Marshal(rollbackTaskPayload)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal task payload").SetInternal(err)
+		}
+		payloadString := string(buf)
 		taskPatch := &api.TaskPatch{
 			ID:           rollbackTask.ID,
 			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
 			RollbackFrom: &taskID,
+			Payload:      &payloadString,
 		}
 		if _, httpErr := s.patchTask(ctx, task, taskPatch, rollbackIssue); httpErr != nil {
 			return httpErr

@@ -184,7 +184,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	t.Log("Issue created.")
+	t.Logf("Issue %d created.", issue.ID)
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
@@ -220,7 +220,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		// Wait for the rollback SQL generation and retry.
 		time.Sleep(3 * time.Second)
 	}
-	t.Log("Rollback issue created.")
+	t.Logf("Rollback issue %d created.", rollbackIssue.ID)
 	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
@@ -231,6 +231,10 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.Len(rollbackIssue.Pipeline.StageList[0].TaskList, 1)
 	rollbackTask := rollbackIssue.Pipeline.StageList[0].TaskList[0]
 	a.Equal(task.ID, rollbackTask.RollbackFrom)
+	rollbackTaskPayload := &api.TaskDatabaseDataUpdatePayload{}
+	err = json.Unmarshal([]byte(rollbackTask.Payload), rollbackTaskPayload)
+	a.NoError(err)
+	a.Equal(issue.ID, rollbackTaskPayload.RollbackFromIssueID)
 
 	// Check that the data is restored.
 	rows2, err := dbMySQL.QueryContext(ctx, "SELECT * FROM t;")
