@@ -209,7 +209,8 @@
     "yes": "Yes",
     "advanced": "Advanced",
     "restart": "Restart",
-    "want-help": "Want help"
+    "want-help": "Want help",
+    "operation": "Operation"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -326,7 +327,8 @@
       "version-control": "Version Control",
       "subscription": "Subscription",
       "labels": "Labels",
-      "debug-log": "Debug Log"
+      "debug-log": "Debug Log",
+      "sensitive-data": "Sensitive Data"
     },
     "profile": {
       "email": "Email",
@@ -397,6 +399,10 @@
         "logo-upload-tip": "{extension} up to {size} MiB",
         "logo-upload-succeed": "Successfully updated the logo"
       }
+    },
+    "sensitive-data": {
+      "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
+      "remove-sensitive-column-tips": "Expose this column?"
     }
   },
   "activity": {
@@ -880,6 +886,7 @@
     "row-count-estimate": "Row count estimate",
     "data-size": "Data size",
     "index-size": "Index size",
+    "column": "Column",
     "columns": "Columns",
     "indexes": "Indexes",
     "row-count-est": "Row count est.",
@@ -936,7 +943,8 @@
       "more-version": "more...",
       "character-sets-diff-found": "There are differences between character sets.",
       "preview-issue": "Preview issue"
-    }
+    },
+    "sensitive": "Sensitive"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

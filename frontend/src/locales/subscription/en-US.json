@@ -107,7 +107,8 @@
         "sync-members-from-vcs": "Sync project membership from the linked GitLab project",
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
-        "environment-tier": "Environment tier"
+        "environment-tier": "Environment tier",
+        "sensitive-data": "Sensitive data masking"
       }
     },
     "branding": {
