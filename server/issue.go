@@ -322,7 +322,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", issueID))
 		}
 
-		rollbackPayload := new(api.TaskRollbackRequestPayload)
+		rollbackPayload := new(api.IssueRollbackRequestPayload)
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, rollbackPayload); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed task rollback request").SetInternal(err)
 		}
@@ -347,7 +347,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task type must be %s, but got %s", api.TaskDatabaseDataUpdate, task.Type))
 		}
 		if task.PipelineID != issue.PipelineID {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in pipeline %d", taskID, issue.PipelineID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in issue %d", taskID, issue.ID))
 		}
 		if task.Status != api.TaskDone && task.Status != api.TaskFailed {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d has status %s, must be %s or %s", taskID, task.Status, api.TaskDone, api.TaskFailed))
@@ -361,7 +361,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		case taskPayload.RollbackStatement == "" && taskPayload.RollbackError == "":
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d is still in progress", taskID))
 		case taskPayload.RollbackStatement == "" && taskPayload.RollbackError != "":
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed", taskID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed: %s", taskID, taskPayload.RollbackError))
 		case taskPayload.RollbackStatement != "" && taskPayload.RollbackError != "":
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid task payload: RollbackStatement=%q, RollbackError=%q", taskPayload.RollbackStatement, taskPayload.RollbackError))
 		}

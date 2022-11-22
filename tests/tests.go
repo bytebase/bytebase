@@ -829,10 +829,10 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 }
 
 func (ctl *controller) createRollbackIssue(issueID int, taskIDList []string) (*api.Issue, error) {
-	payload := api.TaskRollbackRequestPayload{TaskIDList: taskIDList}
+	payload := api.IssueRollbackRequestPayload{TaskIDList: taskIDList}
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &payload); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal api.TaskRollbackRequestPayload")
+		return nil, errors.Wrap(err, "failed to marshal api.IssueRollbackRequestPayload")
 	}
 
 	body, err := ctl.post(fmt.Sprintf("/issue/%d/rollback", issueID), buf)
