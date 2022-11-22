@@ -253,13 +253,13 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		var sensitiveDataMap db.SensitiveDataMap
-		if instance.Engine == db.MySQL {
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
 			}
 
-			sensitiveDataMap, err = s.getSensitiveData(ctx, instance.ID, databaseList, exec.DatabaseName)
+			sensitiveDataMap, err = s.getSensitiveData(ctx, instance.Engine, instance.ID, databaseList, exec.DatabaseName)
 			if err != nil {
 				return err
 			}
@@ -904,7 +904,7 @@ func (s *Server) getDatabase(ctx context.Context, instanceID int, databaseName s
 	return dbList[0], nil
 }
 
-func (s *Server) getSensitiveData(ctx context.Context, instanceID int, databaseList []string, currentDatabase string) (db.SensitiveDataMap, error) {
+func (s *Server) getSensitiveData(ctx context.Context, engineType db.Type, instanceID int, databaseList []string, currentDatabase string) (db.SensitiveDataMap, error) {
 	res := make(db.SensitiveDataMap)
 	for _, name := range databaseList {
 		databaseName := name
@@ -913,6 +913,10 @@ func (s *Server) getSensitiveData(ctx context.Context, instanceID int, databaseL
 				continue
 			}
 			databaseName = currentDatabase
+		}
+
+		if isExcludeDatabase(engineType, databaseName) {
+			continue
 		}
 
 		database, err := s.getDatabase(ctx, instanceID, databaseName)
@@ -942,4 +946,33 @@ func (s *Server) getSensitiveData(ctx context.Context, instanceID int, databaseL
 	}
 
 	return res, nil
+}
+
+func isExcludeDatabase(dbType db.Type, database string) bool {
+	switch dbType {
+	case db.MySQL:
+		return isMySQLExcludeDatabase(database)
+	case db.TiDB:
+		if isMySQLExcludeDatabase(database) {
+			return true
+		}
+		return database == "metrics_schema"
+	default:
+		return false
+	}
+}
+
+func isMySQLExcludeDatabase(database string) bool {
+	if strings.ToLower(database) == "information_schema" {
+		return true
+	}
+
+	switch database {
+	case "mysql":
+	case "sys":
+	case "performance_schema":
+	default:
+		return false
+	}
+	return true
 }
