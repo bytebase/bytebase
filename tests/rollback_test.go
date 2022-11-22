@@ -213,7 +213,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	// Run a rollback issue.
 	var rollbackIssue *api.Issue
 	for i := 0; i < 10; i++ {
-		rollbackIssue, err = ctl.createRollbackIssue(issue.Pipeline.ID, []string{fmt.Sprintf("%d", task.ID)})
+		rollbackIssue, err = ctl.createRollbackIssue(issue.ID, []string{fmt.Sprintf("%d", task.ID)})
 		if err == nil {
 			break
 		}

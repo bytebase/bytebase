@@ -828,14 +828,14 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 	return task, nil
 }
 
-func (ctl *controller) createRollbackIssue(pipelineID int, taskIDList []string) (*api.Issue, error) {
+func (ctl *controller) createRollbackIssue(issueID int, taskIDList []string) (*api.Issue, error) {
 	payload := api.TaskRollbackRequestPayload{TaskIDList: taskIDList}
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &payload); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal api.TaskRollbackRequestPayload")
 	}
 
-	body, err := ctl.post(fmt.Sprintf("/pipeline/%d/task/rollback", pipelineID), buf)
+	body, err := ctl.post(fmt.Sprintf("/issue/%d/rollback", issueID), buf)
 	if err != nil {
 		return nil, err
 	}
