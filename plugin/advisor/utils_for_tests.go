@@ -192,7 +192,7 @@ func (*MockDriver) Execute(_ context.Context, _ string, _ bool) error {
 }
 
 // Query implements the Driver interface.
-func (*MockDriver) Query(_ context.Context, statement string, _ int, _ bool) ([]interface{}, error) {
+func (*MockDriver) Query(_ context.Context, statement string, _ int, _ bool, _ database.SensitiveDataMap) ([]interface{}, error) {
 	switch statement {
 	// For TestStatementDMLDryRun
 	case "EXPLAIN DELETE FROM tech_book":
