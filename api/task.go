@@ -291,7 +291,6 @@ type TaskPatch struct {
 	Statement         *string `jsonapi:"attr,statement"`
 	Payload           *string
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
-	RollbackFrom      *int
 }
 
 // TaskStatusPatch is the API message for patching a task status.

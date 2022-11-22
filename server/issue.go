@@ -414,10 +414,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		payloadString := string(buf)
 		taskPatch := &api.TaskPatch{
-			ID:           rollbackTask.ID,
-			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
-			RollbackFrom: &taskID,
-			Payload:      &payloadString,
+			ID:        rollbackTask.ID,
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+			Payload:   &payloadString,
 		}
 		if _, httpErr := s.patchTask(ctx, task, taskPatch, rollbackIssue); httpErr != nil {
 			return httpErr

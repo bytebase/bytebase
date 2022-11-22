@@ -643,9 +643,6 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (
 	if v := patch.EarliestAllowedTs; v != nil {
 		set, args = append(set, fmt.Sprintf("earliest_allowed_ts = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.RollbackFrom; v != nil {
-		set, args = append(set, fmt.Sprintf("rollback_from = $%d", len(args)+1)), append(args, *v)
-	}
 	args = append(args, patch.ID)
 
 	var taskRaw taskRaw

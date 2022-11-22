@@ -224,7 +224,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	status, err = ctl.waitIssuePipeline(rollbackIssue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
-	// Re-query the issue to get the updated task, which has the RollbackFrom field.
+	// Re-query the issue to get the updated task, which has the RollbackFromIssueID and RollbackFromTaskID fields.
 	rollbackIssue, err = ctl.getIssue(rollbackIssue.ID)
 	a.NoError(err)
 	a.Len(rollbackIssue.Pipeline.StageList, 1)
