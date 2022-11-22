@@ -18,7 +18,10 @@
           <span class="ml-2 text-lg font-medium">{{
             $t("common.feishu")
           }}</span>
-          <heroicons-solid:sparkles class="ml-2 w-5 h-auto text-accent" />
+          <FeatureBadge
+            :feature="'bb.feature.im.approval'"
+            class="ml-2 text-accent"
+          />
         </div>
         <button
           v-if="!state.feishuSetting"
@@ -87,6 +90,7 @@ import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useSettingStore } from "@/store";
 import { SettingAppIMValue } from "@/types/setting";
 import { BBSwitch } from "@/bbkit";
+import FeatureBadge from "@/components/FeatureBadge.vue";
 
 interface LocalState {
   originFeishuSetting?: SettingAppIMValue;
