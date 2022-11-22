@@ -407,6 +407,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal the rollback task payload with ID %d", rollbackTask.ID)).SetInternal(err)
 		}
 		rollbackTaskPayload.RollbackFromIssueID = issueID
+		rollbackTaskPayload.RollbackFromTaskID = taskID
 		buf, err := json.Marshal(rollbackTaskPayload)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal task payload").SetInternal(err)

@@ -157,6 +157,8 @@ type TaskDatabaseDataUpdatePayload struct {
 	RollbackStatement string `json:"rollbackStatement,omitempty"`
 	// RollbackFromIssueID is the issue ID containing the original task from which the rollback SQL statement is generated for this task.
 	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
+	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
+	RollbackFromTaskID int `json:"rollbackFromTaskId,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.

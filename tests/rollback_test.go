@@ -230,11 +230,11 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 	a.Len(rollbackIssue.Pipeline.StageList, 1)
 	a.Len(rollbackIssue.Pipeline.StageList[0].TaskList, 1)
 	rollbackTask := rollbackIssue.Pipeline.StageList[0].TaskList[0]
-	a.Equal(task.ID, rollbackTask.RollbackFrom)
 	rollbackTaskPayload := &api.TaskDatabaseDataUpdatePayload{}
 	err = json.Unmarshal([]byte(rollbackTask.Payload), rollbackTaskPayload)
 	a.NoError(err)
 	a.Equal(issue.ID, rollbackTaskPayload.RollbackFromIssueID)
+	a.Equal(task.ID, rollbackTaskPayload.RollbackFromTaskID)
 
 	// Check that the data is restored.
 	rows2, err := dbMySQL.QueryContext(ctx, "SELECT * FROM t;")
