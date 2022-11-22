@@ -91,6 +91,7 @@ export interface InboxState {
 
 export interface IssueState {
   issueById: Map<IssueId, Issue>;
+  isCreatingIssue: boolean;
 }
 
 export interface IssueSubscriberState {

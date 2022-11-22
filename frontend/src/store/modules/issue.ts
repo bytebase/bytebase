@@ -115,6 +115,7 @@ function getIssueFromIncludedList(
 export const useIssueStore = defineStore("issue", {
   state: (): IssueState => ({
     issueById: new Map(),
+    isCreatingIssue: false,
   }),
   getters: {
     issueList: (state) => {
@@ -194,27 +195,32 @@ export const useIssueStore = defineStore("issue", {
       return issue;
     },
     async createIssue(newIssue: IssueCreate) {
-      const data = (
-        await axios.post(`/api/issue`, {
-          data: {
-            type: "IssueCreate",
-            attributes: {
-              ...newIssue,
-              // Server expects payload as string, so we stringify first.
-              createContext: JSON.stringify(newIssue.createContext),
-              payload: JSON.stringify(newIssue.payload),
+      try {
+        this.isCreatingIssue = true;
+        const data = (
+          await axios.post(`/api/issue`, {
+            data: {
+              type: "IssueCreate",
+              attributes: {
+                ...newIssue,
+                // Server expects payload as string, so we stringify first.
+                createContext: JSON.stringify(newIssue.createContext),
+                payload: JSON.stringify(newIssue.payload),
+              },
             },
-          },
-        })
-      ).data;
-      const createdIssue = convert(data.data, data.included);
+          })
+        ).data;
+        const createdIssue = convert(data.data, data.included);
 
-      this.setIssueById({
-        issueId: createdIssue.id,
-        issue: createdIssue,
-      });
+        this.setIssueById({
+          issueId: createdIssue.id,
+          issue: createdIssue,
+        });
 
-      return createdIssue;
+        return createdIssue;
+      } finally {
+        this.isCreatingIssue = false;
+      }
     },
     async validateIssue(newIssue: IssueCreate) {
       const data = (
