@@ -1248,28 +1248,28 @@ func convertDefElemNodeIntegerToInt32(defElem *pgquery.DefElem) (*int32, error) 
 	return &val, nil
 }
 
-func convertDefElemToSeqType(defElem *pgquery.DefElem) (ast.SequenceDataType, error) {
+func convertDefElemToSeqType(defElem *pgquery.DefElem) (*ast.Integer, error) {
 	typeNameNode, ok := defElem.Arg.Node.(*pgquery.Node_TypeName)
 	if !ok {
-		return ast.SequenceDataTypeUnknown, parser.NewConvertErrorf("expected TypeName but found %T", defElem.Arg.Node)
+		return nil, parser.NewConvertErrorf("expected TypeName but found %T", defElem.Arg.Node)
 	}
 	if len(typeNameNode.TypeName.Names) != 2 {
-		return ast.SequenceDataTypeUnknown, parser.NewConvertErrorf("expected TypeName with 2 names but found %d", len(typeNameNode.TypeName.Names))
+		return nil, parser.NewConvertErrorf("expected TypeName with 2 names but found %d", len(typeNameNode.TypeName.Names))
 	}
 	// typeNameNode.TypeName.Names[0] should be 'pg_catalog'
 	nodeStr, ok := typeNameNode.TypeName.Names[1].Node.(*pgquery.Node_String_)
 	if !ok {
-		return ast.SequenceDataTypeUnknown, parser.NewConvertErrorf("expected String but found %T", typeNameNode.TypeName.Names[1].Node)
+		return nil, parser.NewConvertErrorf("expected String but found %T", typeNameNode.TypeName.Names[1].Node)
 	}
 	switch nodeStr.String_.Str {
 	case "int2":
-		return ast.SequenceDataTypeSmallInt, nil
+		return &ast.Integer{Size: 2}, nil
 	case "int4":
-		return ast.SequenceDataTypeInteger, nil
+		return &ast.Integer{Size: 4}, nil
 	case "int8":
-		return ast.SequenceDataTypeBigInt, nil
+		return &ast.Integer{Size: 8}, nil
 	default:
-		return ast.SequenceDataTypeUnknown, parser.NewConvertErrorf("expected int2, int4, or int8 but found %s", nodeStr.String_.Str)
+		return nil, parser.NewConvertErrorf("expected int2, int4, or int8 but found %s", nodeStr.String_.Str)
 	}
 }
 

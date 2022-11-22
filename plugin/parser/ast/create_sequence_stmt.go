@@ -1,19 +1,5 @@
 package ast
 
-// SequenceDataType is the type of a sequence data.
-type SequenceDataType int
-
-const (
-	// SequenceDataTypeUnknown is the unknown sequence data type.
-	SequenceDataTypeUnknown SequenceDataType = iota
-	// SequenceDataTypeSmallInt is the smallint sequence data type.
-	SequenceDataTypeSmallInt
-	// SequenceDataTypeInteger is the integer sequence data type.
-	SequenceDataTypeInteger
-	// SequenceDataTypeBigInt is the bigint sequence data type.
-	SequenceDataTypeBigInt
-)
-
 // SequenceNameDef is the name of a sequence.
 type SequenceNameDef struct {
 	Schema string
@@ -27,7 +13,7 @@ type CreateSequenceStmt struct {
 
 	SequenceName     SequenceNameDef
 	IfNotExists      bool
-	SequenceDataType SequenceDataType
+	SequenceDataType *Integer
 	// No cycle is default
 	Cycle       bool
 	StartWith   *int32

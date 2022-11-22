@@ -2376,13 +2376,15 @@ func TestCreateSequence(t *testing.T) {
 						Schema: "public",
 						Name:   "tbl_seq_id_seq",
 					},
-					SequenceDataType: ast.SequenceDataTypeInteger,
-					IncrementBy:      &one,
-					StartWith:        &one,
-					MinValue:         &one,
-					MaxValue:         &one,
-					Cache:            &one,
-					Cycle:            true,
+					SequenceDataType: &ast.Integer{
+						Size: 4,
+					},
+					IncrementBy: &one,
+					StartWith:   &one,
+					MinValue:    &one,
+					MaxValue:    &one,
+					Cache:       &one,
+					Cycle:       true,
 					OwnedBy: &ast.ColumnNameDef{
 						Table: &ast.TableDef{
 							Type:   ast.TableTypeUnknown,
@@ -2410,7 +2412,7 @@ func TestCreateSequence(t *testing.T) {
 		},
 		{
 			stmt: `CREATE SEQUENCE public.tbl_seq_id_seq
-				AS integer
+				AS bigint
 				INCREMENT BY 1
 				START WITH 1
 				NO MINVALUE
@@ -2422,17 +2424,19 @@ func TestCreateSequence(t *testing.T) {
 						Schema: "public",
 						Name:   "tbl_seq_id_seq",
 					},
-					SequenceDataType: ast.SequenceDataTypeInteger,
-					IncrementBy:      &one,
-					StartWith:        &one,
-					Cache:            &one,
-					Cycle:            false,
+					SequenceDataType: &ast.Integer{
+						Size: 8,
+					},
+					IncrementBy: &one,
+					StartWith:   &one,
+					Cache:       &one,
+					Cycle:       false,
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
 					Text: `CREATE SEQUENCE public.tbl_seq_id_seq
-				AS integer
+				AS bigint
 				INCREMENT BY 1
 				START WITH 1
 				NO MINVALUE
@@ -2450,8 +2454,6 @@ func TestCreateSequence(t *testing.T) {
 						Schema: "public",
 						Name:   "tbl_seq_id_seq",
 					},
-					SequenceDataType: ast.SequenceDataTypeUnknown,
-					Cycle:            false,
 				},
 			},
 			statementList: []parser.SingleSQL{
