@@ -29,6 +29,7 @@ categoryList:
       - sync-members-from-vcs
       - dba-workflow
       - environment-tier
+      - sensitive-data
   - type: branding
     featureList:
       - branding-logo
@@ -170,6 +171,7 @@ planList:
       - type: dba-workflow
         tooltip: dba-workflow-tooltip
       - type: environment-tier
+      - type: sensitive-data
       - type: branding-logo
     mainFeatureList:
       - sla

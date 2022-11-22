@@ -18,6 +18,7 @@
             headerClass,
             index == 0 ? 'pl-4' : 'pl-2',
             column.center && 'text-center pr-2',
+            column.nowrap && 'whitespace-nowrap',
           ]"
         >
           {{ column.title }}

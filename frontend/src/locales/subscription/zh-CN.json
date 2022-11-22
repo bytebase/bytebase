@@ -107,7 +107,8 @@
         "sync-members-from-vcs": "从 GitLab 同步成员信息",
         "dba-workflow": "DBA 工作流",
         "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
-        "environment-tier": "环境分级"
+        "environment-tier": "环境分级",
+        "sensitive-data": "数据脱敏"
       }
     },
     "branding": {

@@ -103,7 +103,7 @@ type Policy struct {
 
 	// Related fields
 	ResourceType PolicyResourceType
-	ResourceID   int
+	ResourceID   int          `jsonapi:"attr,resourceId"`
 	Environment  *Environment `jsonapi:"relation,environment"`
 
 	// Domain specific fields

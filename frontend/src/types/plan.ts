@@ -26,7 +26,8 @@ export type FeatureType =
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
-  | "bb.feature.environment-tier-policy";
+  | "bb.feature.environment-tier-policy"
+  | "bb.feature.sensitive-data";
 
 export enum PlanType {
   FREE = 0,
@@ -102,6 +103,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.approval-policy", [false, true, true]],
   ["bb.feature.backup-policy", [false, true, true]],
   ["bb.feature.environment-tier-policy", [false, false, true]],
+  ["bb.feature.sensitive-data", [false, false, true]],
 ]);
 
 export const FEATURE_SECTIONS: { type: string; featureList: string[] }[] =
