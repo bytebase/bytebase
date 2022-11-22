@@ -425,8 +425,9 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 
 	// createExternalApprovalIfNeeded
 	// check if we need to create a new external approval
-	// 1. has one or more PENDING_APPROVAL tasks.
-	// 2. all task checks are done and the results have no errors.
+	// 1. the approval policy is MANUAL_APPROVAL_ALWAYS
+	// 2. has one or more PENDING_APPROVAL tasks.
+	// 3. all task checks are done and the results have no errors.
 	ok, err := r.shouldCreateExternalApproval(ctx, issue, stage, oldApproval)
 	if err != nil {
 		log.Error("failed to check shouldCreateExternalApproval", zap.Error(err))
