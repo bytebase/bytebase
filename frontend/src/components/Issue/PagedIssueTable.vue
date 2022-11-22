@@ -115,15 +115,16 @@ const fetchData = (refresh = false) => {
   state.loading = true;
 
   const isFirstFetch = state.paginationToken === "";
+  const expectedRowCount = isFirstFetch
+    ? // Load one or more page for the first fetch to restore the session
+      limit.value * sessionState.value.page
+    : // Always load one page if NOT the first fetch
+      limit.value;
 
   issueStore
     .fetchPagedIssueList({
       ...props.issueFind,
-      limit: isFirstFetch
-        ? // Load one or more page for the first fetch to restore the session
-          limit.value * sessionState.value.page
-        : // Always load one page if NOT the first fetch
-          limit.value,
+      limit: expectedRowCount,
       token: state.paginationToken,
     })
     .then(({ nextToken, issueList }) => {
@@ -133,7 +134,7 @@ const fetchData = (refresh = false) => {
         state.issueList.push(...issueList);
       }
 
-      if (issueList.length === 0) {
+      if (issueList.length < expectedRowCount) {
         state.hasMore = false;
       } else if (!isFirstFetch) {
         // If we didn't reach the end, memorize we've clicked the "load more" button.
