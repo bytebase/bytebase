@@ -2356,3 +2356,111 @@ func TestAlterColumnDefault(t *testing.T) {
 	}
 	runTests(t, tests)
 }
+
+func TestCreateSequence(t *testing.T) {
+	var one int32 = 1
+	tests := []testData{
+		{
+			stmt: `CREATE SEQUENCE public.tbl_seq_id_seq
+				AS integer
+				INCREMENT BY 1
+				START WITH 1
+				MINVALUE 1
+				MAXVALUE 1
+				CACHE 1
+				CYCLE
+				OWNED BY public.tbl.id;`,
+			want: []ast.Node{
+				&ast.CreateSequenceStmt{
+					SequenceName: ast.SequenceNameDef{
+						Schema: "public",
+						Name:   "tbl_seq_id_seq",
+					},
+					SequenceDataType: ast.SequenceDataTypeInteger,
+					IncrementBy:      &one,
+					StartWith:        &one,
+					MinValue:         &one,
+					MaxValue:         &one,
+					Cache:            &one,
+					Cycle:            true,
+					OwnedBy: &ast.ColumnNameDef{
+						Table: &ast.TableDef{
+							Type:   ast.TableTypeUnknown,
+							Name:   "tbl",
+							Schema: "public",
+						},
+						ColumnName: "id",
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE SEQUENCE public.tbl_seq_id_seq
+				AS integer
+				INCREMENT BY 1
+				START WITH 1
+				MINVALUE 1
+				MAXVALUE 1
+				CACHE 1
+				CYCLE
+				OWNED BY public.tbl.id;`,
+					LastLine: 9,
+				},
+			},
+		},
+		{
+			stmt: `CREATE SEQUENCE public.tbl_seq_id_seq
+				AS integer
+				INCREMENT BY 1
+				START WITH 1
+				NO MINVALUE
+				NO MAXVALUE
+				CACHE 1;`,
+			want: []ast.Node{
+				&ast.CreateSequenceStmt{
+					SequenceName: ast.SequenceNameDef{
+						Schema: "public",
+						Name:   "tbl_seq_id_seq",
+					},
+					SequenceDataType: ast.SequenceDataTypeInteger,
+					IncrementBy:      &one,
+					StartWith:        &one,
+					Cache:            &one,
+					Cycle:            false,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE SEQUENCE public.tbl_seq_id_seq
+				AS integer
+				INCREMENT BY 1
+				START WITH 1
+				NO MINVALUE
+				NO MAXVALUE
+				CACHE 1;`,
+					LastLine: 7,
+				},
+			},
+		},
+		{
+			stmt: `CREATE SEQUENCE public.tbl_seq_id_seq;`,
+			want: []ast.Node{
+				&ast.CreateSequenceStmt{
+					SequenceName: ast.SequenceNameDef{
+						Schema: "public",
+						Name:   "tbl_seq_id_seq",
+					},
+					SequenceDataType: ast.SequenceDataTypeUnknown,
+					Cycle:            false,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `CREATE SEQUENCE public.tbl_seq_id_seq;`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
