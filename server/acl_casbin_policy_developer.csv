@@ -27,7 +27,7 @@ p, DEVELOPER, /project/{projectID}/webhook/{webhookID}/test, GET
 p, DEVELOPER, /environment, GET
 p, DEVELOPER, /environment/{environmentID}, GET
 p, DEVELOPER, /policy, GET
-p, DEVELOPER, /policy/environment/{environmentID}, GET
+p, DEVELOPER, /policy/{resourceType}/{resourceID}, GET
 p, DEVELOPER, /instance, GET
 p, DEVELOPER, /instance/{instanceID}, GET
 p, DEVELOPER, /instance/{instanceID}/user, GET

@@ -531,7 +531,7 @@ func (ctl *controller) patchProject(projectPatch api.ProjectPatch) error {
 	return nil
 }
 
-func (ctl *controller) createEnvrionment(environmentCreate api.EnvironmentCreate) (*api.Environment, error) {
+func (ctl *controller) createEnvironment(environmentCreate api.EnvironmentCreate) (*api.Environment, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &environmentCreate); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal environment create")

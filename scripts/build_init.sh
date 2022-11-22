@@ -1,7 +1,7 @@
 #!/bin/sh
 # ===========================================================================
-# File: init.sh
-# Description: common variables & functions.
+# File: build_init.sh
+# Description: common variables & functions for the build scripts.
 # ===========================================================================
 
 set -e

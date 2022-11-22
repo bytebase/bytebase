@@ -205,8 +205,6 @@ type Task struct {
 	// BlockedBy is an array of Task ID.
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
-	// RollbackFrom is the task ID from which the rollback SQL statement is generated for this task.
-	RollbackFrom int `jsonapi:"attr,rollbackFrom"`
 	// Progress is loaded from the task scheduler in memory, NOT from the database
 	Progress Progress `jsonapi:"attr,progress"`
 }

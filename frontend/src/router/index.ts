@@ -353,6 +353,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "sensitive-data",
+                name: "setting.workspace.sensitive-data",
+                meta: { title: () => t("settings.sidebar.sensitive-data") },
+                component: () =>
+                  import("../views/SettingWorkspaceSensitiveData.vue"),
+                props: true,
+              },
+              {
                 path: "version-control",
                 name: "setting.workspace.version-control",
                 meta: { title: () => t("settings.sidebar.version-control") },

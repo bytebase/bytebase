@@ -30,6 +30,8 @@ const (
 	SQLAdviseAPIMetricName metric.Name = "bb.api.sql.advise"
 	// SubscriptionTrialMetricName is the metric name for trial.
 	SubscriptionTrialMetricName metric.Name = "bb.subscription.trial"
+	// FirstPrincipalMetricName is the metric name for the first principal.
+	FirstPrincipalMetricName metric.Name = "bb.principal.registration"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count.

@@ -466,90 +466,94 @@ func deparse(out io.Writer, newNodeList []ast.Node, newNodeStmt []string, inplac
 	// Deletions for destructive (none in-place) node updates (in reverse order).
 	// Additions for destructive node updates.
 	// Deletions for deleted nodes (in reverse order).
-	restoreCtx := format.NewRestoreCtx(flag, out)
-	for _, node := range newNodeList {
-		if err := node.Restore(restoreCtx); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte(";\n")); err != nil {
-			return err
-		}
+	if err := writeNodeStatementList(out, newNodeList, flag, false /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write new node list" /*reverse*/)
 	}
-	for _, stmt := range newNodeStmt {
-		if _, err := out.Write([]byte(stmt)); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte("\n")); err != nil {
-			return err
-		}
+	if err := writeStringStatementList(out, newNodeStmt, false /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write new node statement list")
 	}
-
-	for _, node := range inplaceUpdate {
-		if err := node.Restore(restoreCtx); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte(";\n")); err != nil {
-			return err
-		}
+	if err := writeNodeStatementList(out, inplaceUpdate, flag, false /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write inplace update node list")
 	}
-
-	for i := len(inplaceDrop) - 1; i >= 0; i-- {
-		if err := inplaceDrop[i].Restore(restoreCtx); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte(";\n")); err != nil {
-			return err
-		}
+	if err := writeNodeStatementList(out, inplaceDrop, flag, true /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write inplace drop node list")
 	}
-	for i := len(inplaceDropStmt) - 1; i >= 0; i-- {
-		if _, err := out.Write([]byte(inplaceDropStmt[i])); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte("\n")); err != nil {
-			return err
-		}
+	if err := writeStringStatementList(out, inplaceDropStmt, true /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write inplace drop statement list")
 	}
-
-	for i := len(inplaceAdd) - 1; i >= 0; i-- {
-		if err := inplaceAdd[i].Restore(restoreCtx); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte(";\n")); err != nil {
-			return err
-		}
+	if err := writeNodeStatementList(out, inplaceAdd, flag, false /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write inplace add node list")
 	}
-	for _, stmt := range inplaceAddStmt {
-		if _, err := out.Write([]byte(stmt)); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte("\n")); err != nil {
-			return err
-		}
+	if err := writeStringStatementList(out, inplaceAddStmt, false /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write inplace add statement list")
 	}
-
-	for i := len(dropNodeList) - 1; i >= 0; i-- {
-		if err := dropNodeList[i].Restore(restoreCtx); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte(";\n")); err != nil {
-			return err
-		}
+	if err := writeNodeStatementList(out, dropNodeList, flag, true /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write drop node list")
 	}
-	for i := len(dropStmt) - 1; i >= 0; i-- {
-		if _, err := out.Write([]byte(dropStmt[i])); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte("\n")); err != nil {
-			return err
-		}
+	if err := writeStringStatementList(out, dropStmt, true /*reverse*/); err != nil {
+		return errors.Wrap(err, "failed to write drop statement list")
 	}
-
 	for _, node := range viewStmts {
-		if err := node.Restore(restoreCtx); err != nil {
+		if err := node.Restore(format.NewRestoreCtx(flag, out)); err != nil {
 			return err
 		}
-		if _, err := out.Write([]byte(";\n")); err != nil {
+		if _, err := out.Write([]byte(";\n\n")); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func writeStringStatement(w io.Writer, s string) error {
+	if _, err := w.Write([]byte(s)); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte("\n\n")); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeStringStatementList(w io.Writer, ss []string, reverse bool) error {
+	if reverse {
+		for i := len(ss) - 1; i >= 0; i-- {
+			if err := writeStringStatement(w, ss[i]); err != nil {
+				return err
+			}
+		}
+	} else {
+		for _, s := range ss {
+			if err := writeStringStatement(w, s); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func writeNodeStatement(w io.Writer, n ast.Node, flags format.RestoreFlags) error {
+	restoreCtx := format.NewRestoreCtx(flags, w)
+	if err := n.Restore(restoreCtx); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte(";\n\n")); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeNodeStatementList(w io.Writer, ns []ast.Node, flags format.RestoreFlags, reverse bool) error {
+	if reverse {
+		for i := len(ns) - 1; i >= 0; i-- {
+			if err := writeNodeStatement(w, ns[i], flags); err != nil {
+				return err
+			}
+		}
+	} else {
+		for _, n := range ns {
+			if err := writeNodeStatement(w, n, flags); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
