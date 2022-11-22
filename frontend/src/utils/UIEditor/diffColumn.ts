@@ -6,6 +6,7 @@ import {
   DropColumnContext,
   ModifyColumnContext,
 } from "@/types";
+import { UNKNOWN_ID } from "@/types/const";
 import { transformColumnToAddColumnContext } from "./transform";
 
 export const diffColumnList = (
@@ -17,8 +18,12 @@ export const diffColumnList = (
     cloneDeep(targetColumnList)
   );
 
+  const
+
   const addColumnList: AddColumnContext[] = [];
-  const addedColumnList = targetColumnList.filter((column) => column.id === -1);
+  const addedColumnList = targetColumnList.filter(
+    (column) => column.id === UNKNOWN_ID
+  );
   for (const column of addedColumnList) {
     addColumnList.push(transformColumnToAddColumnContext(column));
   }

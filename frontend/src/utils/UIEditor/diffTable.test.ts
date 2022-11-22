@@ -5,6 +5,7 @@ import {
   CreateTableContext,
   AlterTableContext,
 } from "@/types";
+import { UNKNOWN_ID } from "@/types/const";
 import { diffTableList } from "./diffTable";
 
 it("diff create table list", () => {
@@ -28,7 +29,7 @@ it("diff create table list", () => {
           comment: "",
           columnList: [
             {
-              id: -1,
+              id: UNKNOWN_ID,
               name: "id",
               type: "int",
               characterSet: "",
@@ -123,7 +124,7 @@ it("diff alter table list", () => {
               default: undefined,
             },
             {
-              id: -1,
+              id: UNKNOWN_ID,
               name: "email",
               type: "varchar",
               characterSet: "",

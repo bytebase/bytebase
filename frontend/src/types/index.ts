@@ -6,6 +6,7 @@ export * from "./backup";
 export * from "./bookmark";
 export * from "./column";
 export * from "./common";
+export * from "./const";
 export * from "./database";
 export * from "./dataSource";
 export * from "./debug";
