@@ -708,7 +708,7 @@ func extractSensitiveField(dbType db.Type, statement string, fieldName []string,
 		return nil, err
 	}
 	if len(nodeList) != 1 {
-		return nil, errors.Errorf("except one statement but found %d", len(nodeList))
+		return nil, errors.Errorf("expect one statement but found %d", len(nodeList))
 	}
 	node, ok := nodeList[0].(*tidbast.SelectStmt)
 	if !ok {
