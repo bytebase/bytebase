@@ -22,6 +22,7 @@ it("diff create table list", () => {
       originTableList: [],
       targetTableList: [
         {
+          id: UNKNOWN_ID,
           name: "user",
           type: "BASE TABLE",
           engine: "InnoDB",
@@ -88,6 +89,8 @@ it("diff alter table list", () => {
     {
       originTableList: [
         {
+          // Temp table id for testing.
+          id: 1,
           name: "user",
           type: "BASE TABLE",
           engine: "InnoDB",
@@ -108,6 +111,7 @@ it("diff alter table list", () => {
       ],
       targetTableList: [
         {
+          id: 1,
           name: "user",
           type: "BASE TABLE",
           engine: "InnoDB",
@@ -180,6 +184,7 @@ it("diff drop table list", () => {
     {
       originTableList: [
         {
+          id: 1,
           name: "user",
           type: "BASE TABLE",
           engine: "InnoDB",

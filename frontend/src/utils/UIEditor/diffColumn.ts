@@ -1,5 +1,4 @@
-import { detailedDiff } from "deep-object-diff";
-import { cloneDeep } from "lodash-es";
+import { isEqual, isUndefined } from "lodash-es";
 import {
   AddColumnContext,
   Column,
@@ -13,51 +12,53 @@ export const diffColumnList = (
   originColumnList: Column[],
   targetColumnList: Column[]
 ) => {
-  const diffResult = detailedDiff(
-    cloneDeep(originColumnList),
-    cloneDeep(targetColumnList)
-  );
+  const targetColumnIdList = targetColumnList.map((column) => column.id);
 
-  const
-
-  const addColumnList: AddColumnContext[] = [];
   const addedColumnList = targetColumnList.filter(
     (column) => column.id === UNKNOWN_ID
   );
+  const modifiedColumnList: Column[] = [];
+  for (const column of targetColumnList) {
+    if (column.id === UNKNOWN_ID) {
+      continue;
+    }
+    const originColumn = originColumnList.find(
+      (originColumn) => originColumn.id === column.id
+    );
+    if (isUndefined(originColumn)) {
+      continue;
+    }
+    if (!isEqual(originColumn, column)) {
+      modifiedColumnList.push(column);
+    }
+  }
+  const dropedColumnList: Column[] = [];
+  for (const column of originColumnList) {
+    if (!targetColumnIdList.includes(column.id)) {
+      dropedColumnList.push(column);
+    }
+  }
+
+  const addColumnContextList: AddColumnContext[] = [];
   for (const column of addedColumnList) {
-    addColumnList.push(transformColumnToAddColumnContext(column));
+    addColumnContextList.push(transformColumnToAddColumnContext(column));
   }
 
-  const updatedColumnIndexList = (
-    Object.keys(diffResult.updated) as string[]
-  ).map((indexStr) => Number(indexStr));
-  const updatedColumnList = updatedColumnIndexList.map((index) => {
-    return {
-      ...originColumnList[index],
-      ...(diffResult.updated as any)[`${index}`],
-    };
-  });
-  const modifyColumnList: ModifyColumnContext[] = [];
-  for (const column of updatedColumnList) {
-    modifyColumnList.push(transformColumnToAddColumnContext(column));
+  const modifyColumnContextList: ModifyColumnContext[] = [];
+  for (const column of modifiedColumnList) {
+    modifyColumnContextList.push(transformColumnToAddColumnContext(column));
   }
 
-  const deletedColumnIndexList = (
-    Object.keys(diffResult.deleted) as string[]
-  ).map((indexStr) => Number(indexStr));
-  const deletedColumnList = deletedColumnIndexList.map((index) => {
-    return originColumnList[index];
-  });
-  const dropColumnList: DropColumnContext[] = [];
-  for (const column of deletedColumnList) {
-    dropColumnList.push({
+  const dropColumnContextList: DropColumnContext[] = [];
+  for (const column of dropedColumnList) {
+    dropColumnContextList.push({
       name: column.name,
     });
   }
 
   return {
-    addColumnList,
-    modifyColumnList,
-    dropColumnList,
+    addColumnList: addColumnContextList,
+    modifyColumnList: modifyColumnContextList,
+    dropColumnList: dropColumnContextList,
   };
 };

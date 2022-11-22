@@ -1,73 +1,82 @@
-import { detailedDiff } from "deep-object-diff";
+import { isEqual, isUndefined } from "lodash-es";
 import {
   AlterTableContext,
   CreateTableContext,
   DropTableContext,
   Table,
 } from "@/types";
+import { UNKNOWN_ID } from "@/types/const";
 import { transformTableToCreateTableContext } from "./transform";
 import { diffColumnList } from "./diffColumn";
-import { cloneDeep } from "lodash-es";
 
 export const diffTableList = (
   originTableList: Table[],
   targetTableList: Table[]
 ) => {
-  const diffResult = detailedDiff(
-    cloneDeep(originTableList).map((table) => stringifyColumnList(table)),
-    cloneDeep(targetTableList).map((table) => stringifyColumnList(table))
-  );
+  const targetTableIdList = targetTableList.map((table) => table.id);
 
-  const addedTableIndexList = (Object.keys(diffResult.added) as string[]).map(
-    (indexStr) => Number(indexStr)
+  const createdTableList = targetTableList.filter(
+    (table) => table.id === UNKNOWN_ID
   );
-  const createTableList: CreateTableContext[] = [];
-  for (const index of addedTableIndexList) {
-    const table = targetTableList[index];
+  const alteredTableList: Table[] = [];
+  for (const table of targetTableList) {
+    if (table.id === UNKNOWN_ID) {
+      continue;
+    }
+    const originTable = originTableList.find(
+      (originTable) => originTable.id === table.id
+    );
+    if (isUndefined(originTable)) {
+      continue;
+    }
+    if (!isEqual(originTable, table)) {
+      alteredTableList.push(table);
+    }
+  }
+  const dropedTableList: Table[] = [];
+  for (const table of originTableList) {
+    if (!targetTableIdList.includes(table.id)) {
+      dropedTableList.push(table);
+    }
+  }
+
+  const createTableContextList: CreateTableContext[] = [];
+  for (const table of createdTableList) {
     const createTableContext = transformTableToCreateTableContext(table);
     const diffColumnListResult = diffColumnList([], table.columnList);
     createTableContext.addColumnList = diffColumnListResult.addColumnList;
-    createTableList.push(createTableContext);
+    createTableContextList.push(createTableContext);
   }
 
-  const updatedTableIndexList = (
-    Object.keys(diffResult.updated) as string[]
-  ).map((indexStr) => Number(indexStr));
-  const alterTableList: AlterTableContext[] = [];
-  for (const index of updatedTableIndexList) {
-    const columnListDiffResult = diffColumnList(
-      originTableList[index].columnList,
-      targetTableList[index].columnList
+  const alterTableContextList: AlterTableContext[] = [];
+  for (const table of alteredTableList) {
+    const originTable = originTableList.find(
+      (originTable) => originTable.id === table.id
     );
-    alterTableList.push({
-      name: targetTableList[index].name,
+    if (isUndefined(originTable)) {
+      continue;
+    }
+
+    const columnListDiffResult = diffColumnList(
+      originTable.columnList,
+      table.columnList
+    );
+    alterTableContextList.push({
+      name: table.name,
       ...columnListDiffResult,
     });
   }
 
-  const deletedTableIndexList = (
-    Object.keys(diffResult.deleted) as string[]
-  ).map((indexStr) => Number(indexStr));
-  const deletedTableList = deletedTableIndexList.map((index) => {
-    return originTableList[index];
-  });
-  const dropTableList: DropTableContext[] = [];
-  for (const table of deletedTableList) {
-    dropTableList.push({
+  const dropTableContextList: DropTableContext[] = [];
+  for (const table of dropedTableList) {
+    dropTableContextList.push({
       name: table.name,
     });
   }
 
   return {
-    createTableList,
-    alterTableList,
-    dropTableList,
-  };
-};
-
-const stringifyColumnList = (table: Table) => {
-  return {
-    ...table,
-    columnList: JSON.stringify(table.columnList),
+    createTableList: createTableContextList,
+    alterTableList: alterTableContextList,
+    dropTableList: dropTableContextList,
   };
 };
