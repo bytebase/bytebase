@@ -360,12 +360,14 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 		return deleteStmt, nil
 	case *pgquery.Node_CreateSeqStmt:
-		createSeqStmt := &ast.CreateSequenceStmt{}
+		createSeqStmt := &ast.CreateSequenceStmt{
+			IfNotExists: in.CreateSeqStmt.IfNotExists,
+		}
 		if in.CreateSeqStmt.Sequence == nil {
 			// Unexpected case.
 			return nil, parser.NewConvertErrorf("CreateSeqStmt.Sequence is nil")
 		}
-		createSeqStmt.SequenceName = convertRangeVarToSeqName(in.CreateSeqStmt.Sequence)
+		createSeqStmt.SequenceDef.SequenceName = convertRangeVarToSeqName(in.CreateSeqStmt.Sequence)
 		for _, option := range in.CreateSeqStmt.Options {
 			defElemNode, ok := option.Node.(*pgquery.Node_DefElem)
 			if !ok {
@@ -373,41 +375,42 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 			switch defElemNode.DefElem.Defname {
 			case "as":
-				if createSeqStmt.SequenceDataType, err = convertDefElemToSeqType(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.SequenceDataType, err = convertDefElemToSeqType(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "increment":
-				if createSeqStmt.IncrementBy, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.IncrementBy, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "start":
-				if createSeqStmt.StartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.StartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "minvalue":
-				if createSeqStmt.MinValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.MinValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "maxvalue":
-				if createSeqStmt.MaxValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.MaxValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "cache":
-				if createSeqStmt.Cache, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.Cache, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "cycle":
-				if createSeqStmt.Cycle, err = convertDefElemNodeIntegerToBool(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.Cycle, err = convertDefElemNodeIntegerToBool(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			case "owned_by":
-				if createSeqStmt.OwnedBy, err = convertDefElemNodeListToColumnNameDef(defElemNode.DefElem); err != nil {
+				if createSeqStmt.SequenceDef.OwnedBy, err = convertDefElemNodeListToColumnNameDef(defElemNode.DefElem); err != nil {
 					return nil, err
 				}
 			default:
 				return nil, parser.NewConvertErrorf("unsupported option %s", defElemNode.DefElem.Defname)
 			}
 		}
+
 		return createSeqStmt, nil
 	case *pgquery.Node_AlterObjectSchemaStmt:
 		switch in.AlterObjectSchemaStmt.ObjectType {

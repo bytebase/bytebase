@@ -2372,26 +2372,29 @@ func TestCreateSequence(t *testing.T) {
 				OWNED BY public.tbl.id;`,
 			want: []ast.Node{
 				&ast.CreateSequenceStmt{
-					SequenceName: ast.SequenceNameDef{
-						Schema: "public",
-						Name:   "tbl_seq_id_seq",
-					},
-					SequenceDataType: &ast.Integer{
-						Size: 4,
-					},
-					IncrementBy: &one,
-					StartWith:   &one,
-					MinValue:    &one,
-					MaxValue:    &one,
-					Cache:       &one,
-					Cycle:       true,
-					OwnedBy: &ast.ColumnNameDef{
-						Table: &ast.TableDef{
-							Type:   ast.TableTypeUnknown,
-							Name:   "tbl",
+					IfNotExists: false,
+					SequenceDef: ast.SequenceDef{
+						SequenceName: ast.SequenceNameDef{
 							Schema: "public",
+							Name:   "tbl_seq_id_seq",
 						},
-						ColumnName: "id",
+						SequenceDataType: &ast.Integer{
+							Size: 4,
+						},
+						IncrementBy: &one,
+						StartWith:   &one,
+						MinValue:    &one,
+						MaxValue:    &one,
+						Cache:       &one,
+						Cycle:       true,
+						OwnedBy: &ast.ColumnNameDef{
+							Table: &ast.TableDef{
+								Type:   ast.TableTypeUnknown,
+								Name:   "tbl",
+								Schema: "public",
+							},
+							ColumnName: "id",
+						},
 					},
 				},
 			},
@@ -2420,17 +2423,20 @@ func TestCreateSequence(t *testing.T) {
 				CACHE 1;`,
 			want: []ast.Node{
 				&ast.CreateSequenceStmt{
-					SequenceName: ast.SequenceNameDef{
-						Schema: "public",
-						Name:   "tbl_seq_id_seq",
+					IfNotExists: false,
+					SequenceDef: ast.SequenceDef{
+						SequenceName: ast.SequenceNameDef{
+							Schema: "public",
+							Name:   "tbl_seq_id_seq",
+						},
+						SequenceDataType: &ast.Integer{
+							Size: 8,
+						},
+						IncrementBy: &one,
+						StartWith:   &one,
+						Cache:       &one,
+						Cycle:       false,
 					},
-					SequenceDataType: &ast.Integer{
-						Size: 8,
-					},
-					IncrementBy: &one,
-					StartWith:   &one,
-					Cache:       &one,
-					Cycle:       false,
 				},
 			},
 			statementList: []parser.SingleSQL{
@@ -2447,18 +2453,21 @@ func TestCreateSequence(t *testing.T) {
 			},
 		},
 		{
-			stmt: `CREATE SEQUENCE public.tbl_seq_id_seq;`,
+			stmt: `CREATE SEQUENCE IF NOT EXISTS public.tbl_seq_id_seq;`,
 			want: []ast.Node{
 				&ast.CreateSequenceStmt{
-					SequenceName: ast.SequenceNameDef{
-						Schema: "public",
-						Name:   "tbl_seq_id_seq",
+					IfNotExists: true,
+					SequenceDef: ast.SequenceDef{
+						SequenceName: ast.SequenceNameDef{
+							Schema: "public",
+							Name:   "tbl_seq_id_seq",
+						},
 					},
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     `CREATE SEQUENCE public.tbl_seq_id_seq;`,
+					Text:     `CREATE SEQUENCE IF NOT EXISTS public.tbl_seq_id_seq;`,
 					LastLine: 1,
 				},
 			},
