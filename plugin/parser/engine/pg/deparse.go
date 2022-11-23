@@ -908,11 +908,7 @@ func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Buil
 			return err
 		}
 	case *ast.UnconvertedDataType:
-		var nameList []string
-		for _, name := range node.Name {
-			nameList = append(nameList, fmt.Sprintf(`"%s"`, name))
-		}
-		if _, err := buf.WriteString(strings.Join(nameList, ".")); err != nil {
+		if _, err := buf.WriteString(node.Text()); err != nil {
 			return err
 		}
 	default:
