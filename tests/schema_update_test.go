@@ -1645,233 +1645,188 @@ func TestVCS_SQL_Review(t *testing.T) {
 }
 
 func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
-	tests := []struct {
+	type testCase struct {
 		name              string
-		vcsType           vcs.Type
 		existedBranchList []string
 		branchFilter      string
 		want              bool
-	}{
+	}
+	type vcsTestCase struct {
+		vcsType            vcs.Type
+		vcsProviderCreator fake.VCSProviderCreator
+		externalID         string
+		repoFullPath       string
+		caseList           []testCase
+	}
+
+	tests := []vcsTestCase{
 		{
-			name:    "mainBranchWithGitLab",
-			vcsType: vcs.GitLabSelfHost,
-			existedBranchList: []string{
-				"main",
-				"test/branch",
+			vcsType:            vcs.GitLabSelfHost,
+			vcsProviderCreator: fake.NewGitLab,
+			externalID:         "1234",
+			repoFullPath:       "1234",
+			caseList: []testCase{
+				{
+					name: "mainBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "main",
+					want:         false,
+				}, {
+					name: "customBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "test/branch",
+					want:         false,
+				}, {
+					name: "nonExistedBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "non_existed_branch",
+					want:         true,
+				}, {
+					name: "wildcardBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+					},
+					branchFilter: "main*",
+					want:         false,
+				},
 			},
-			branchFilter: "main",
-			want:         false,
 		},
 		{
-			name:    "mainBranchWithGitHub",
-			vcsType: vcs.GitHubCom,
-			existedBranchList: []string{
-				"main",
-				"test/branch",
+			vcsType:            vcs.GitHubCom,
+			vcsProviderCreator: fake.NewGitHub,
+			externalID:         "test/branch",
+			repoFullPath:       "test/branch",
+			caseList: []testCase{
+				{
+					name: "mainBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "main",
+					want:         false,
+				}, {
+					name: "customBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "test/branch",
+					want:         false,
+				}, {
+					name: "nonExistedBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "non_existed_branch",
+					want:         true,
+				}, {
+					name: "wildcardBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+					},
+					branchFilter: "main*",
+					want:         false,
+				},
 			},
-			branchFilter: "main",
-			want:         false,
-		},
-		{
-			name:    "customBranchWithGitLab",
-			vcsType: vcs.GitLabSelfHost,
-			existedBranchList: []string{
-				"main",
-				"test/branch",
-			},
-			branchFilter: "test/branch",
-			want:         false,
-		},
-		{
-			name:    "customBranchWithGitHub",
-			vcsType: vcs.GitHubCom,
-			existedBranchList: []string{
-				"main",
-				"test/branch",
-			},
-			branchFilter: "test/branch",
-			want:         false,
-		},
-		{
-			name:    "nonExistedBranchWithGitLab",
-			vcsType: vcs.GitLabSelfHost,
-			existedBranchList: []string{
-				"main",
-				"test/branch",
-			},
-			branchFilter: "non_existed_branch",
-			want:         true,
-		},
-		{
-			name:    "nonExistedBranchWithGitHub",
-			vcsType: vcs.GitHubCom,
-			existedBranchList: []string{
-				"main",
-				"test/branch",
-			},
-			branchFilter: "non_existed_branch",
-			want:         true,
-		},
-		{
-			name:    "wildcardBranchWithGitLab",
-			vcsType: vcs.GitLabSelfHost,
-			existedBranchList: []string{
-				"main",
-			},
-			branchFilter: "main*",
-			want:         false,
-		},
-		{
-			name:    "wildcardBranchWithGitHub",
-			vcsType: vcs.GitHubCom,
-			existedBranchList: []string{
-				"main",
-			},
-			branchFilter: "main*",
-			want:         false,
 		},
 	}
 
-	a := require.New(t)
-	ctx := context.Background()
+	for _, vcsTest := range tests {
+		// Wrap the defer statement in an anonymous func to make it work properly.
+		(func() {
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
 
-	// Setup server for GitLab.
-	ctlGL := &controller{}
-	err := ctlGL.StartServer(ctx, &config{
-		dataDir:            t.TempDir(),
-		vcsProviderCreator: fake.NewGitLab,
-	})
-	a.NoError(err)
-	defer func() {
-		_ = ctlGL.Close(ctx)
-	}()
+			// Create a server.
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: vcsTest.vcsProviderCreator,
+			})
+			a.NoError(err)
 
-	err = ctlGL.Login()
-	a.NoError(err)
-	err = ctlGL.setLicense()
-	a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
 
-	// Setup server for GitHub.
-	ctlGH := &controller{}
-	err = ctlGH.StartServer(ctx, &config{
-		dataDir:            t.TempDir(),
-		vcsProviderCreator: fake.NewGitHub,
-	})
-	a.NoError(err)
-	defer func() {
-		_ = ctlGH.Close(ctx)
-	}()
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
 
-	err = ctlGH.Login()
-	a.NoError(err)
-	err = ctlGH.setLicense()
-	a.NoError(err)
-
-	// Create a VCS for GitLab.
-	apiVCSGL, err := ctlGL.createVCS(
-		api.VCSCreate{
-			Name:          "testGitLabName",
-			Type:          vcs.GitLabSelfHost,
-			InstanceURL:   ctlGL.vcsURL,
-			APIURL:        ctlGL.vcsProvider.APIURL(ctlGL.vcsURL),
-			ApplicationID: "testGitLabID",
-			Secret:        "testGitLabSecret",
-		},
-	)
-	a.NoError(err)
-
-	// Create a VCS for GitHub.
-	apiVCSGH, err := ctlGH.createVCS(
-		api.VCSCreate{
-			Name:          "testGitHubName",
-			Type:          vcs.GitHubCom,
-			InstanceURL:   ctlGH.vcsURL,
-			APIURL:        ctlGH.vcsProvider.APIURL(ctlGH.vcsURL),
-			ApplicationID: "testGitHubID",
-			Secret:        "testGitHubSecret",
-		},
-	)
-	a.NoError(err)
-
-	// Create a project for GitLab.
-	projectGL, err := ctlGL.createProject(
-		api.ProjectCreate{
-			Name: "Test GitLab Project",
-			Key:  "TGL",
-		},
-	)
-	a.NoError(err)
-
-	// Create a project for GitHub.
-	projectGH, err := ctlGH.createProject(
-		api.ProjectCreate{
-			Name: "Test GitHub Project",
-			Key:  "TGH",
-		},
-	)
-	a.NoError(err)
-
-	for i, test := range tests {
-		test := test
-
-		t.Run(test.name, func(t *testing.T) {
-			var (
-				ctl          *controller
-				apiVCS       *api.VCS
-				project      *api.Project
-				externalID   string
-				repoFullPath string
-			)
-
-			if test.vcsType == vcs.GitLabSelfHost {
-				ctl = ctlGL
-				apiVCS = apiVCSGL
-				project = projectGL
-				externalID = fmt.Sprintf("%d", i)
-				repoFullPath = fmt.Sprintf("%d", i)
-			} else if test.vcsType == vcs.GitHubCom {
-				ctl = ctlGH
-				apiVCS = apiVCSGH
-				project = projectGH
-				externalID = t.Name()
-				repoFullPath = t.Name()
-			}
-
-			// Create a repository in the fake vsc provider.
-			ctl.vcsProvider.CreateRepository(externalID)
-
-			// Create existed branches.
-			for _, existedBranch := range test.existedBranchList {
-				err := ctl.vcsProvider.CreateBranch(externalID, existedBranch)
-				a.NoError(err)
-			}
-
-			// Create a repository.
-			_, err = ctl.createRepository(
-				api.RepositoryCreate{
-					VCSID:              apiVCS.ID,
-					ProjectID:          project.ID,
-					Name:               "Test Repository",
-					FullPath:           repoFullPath,
-					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, repoFullPath),
-					BranchFilter:       test.branchFilter,
-					BaseDirectory:      "",
-					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: "",
-					ExternalID:         externalID,
-					AccessToken:        "accessToken1",
-					RefreshToken:       "refreshToken1",
+			// Create a VCS.
+			apiVCS, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          "testName",
+					Type:          vcsTest.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testID",
+					Secret:        "testSecret",
 				},
 			)
+			a.NoError(err)
 
-			if test.want {
-				a.Error(err)
-			} else {
-				a.NoError(err)
-				err = ctl.unlinkRepository(project.ID)
-				a.NoError(err)
+			// Create a project.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: "Test VSC Project",
+					Key:  "TVP",
+				},
+			)
+			a.NoError(err)
+
+			for _, test := range vcsTest.caseList {
+				test := test
+				t.Run(test.name, func(t *testing.T) {
+					// Create a repository in the fake vsc provider.
+					ctl.vcsProvider.CreateRepository(vcsTest.externalID)
+
+					// Create existed branches.
+					for _, existedBranch := range test.existedBranchList {
+						err := ctl.vcsProvider.CreateBranch(vcsTest.externalID, existedBranch)
+						a.NoError(err)
+					}
+
+					// Create a repository.
+					_, err = ctl.createRepository(
+						api.RepositoryCreate{
+							VCSID:              apiVCS.ID,
+							ProjectID:          project.ID,
+							Name:               "Test Repository",
+							FullPath:           vcsTest.repoFullPath,
+							WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, vcsTest.repoFullPath),
+							BranchFilter:       test.branchFilter,
+							BaseDirectory:      "",
+							FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+							SchemaPathTemplate: "",
+							ExternalID:         vcsTest.externalID,
+							AccessToken:        "accessToken1",
+							RefreshToken:       "refreshToken1",
+						},
+					)
+
+					if test.want {
+						a.Error(err)
+					} else {
+						a.NoError(err)
+						err = ctl.unlinkRepository(project.ID)
+						a.NoError(err)
+					}
+				})
 			}
-		})
+		})()
 	}
 }
 
