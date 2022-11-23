@@ -396,6 +396,11 @@ func TestVCS(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -1636,6 +1641,192 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.Equal(expectResult.Status, reviewResult.Status)
 			a.Equal(expectResult.Content, reviewResult.Content)
 		})
+	}
+}
+
+func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
+	type testCase struct {
+		name              string
+		existedBranchList []string
+		branchFilter      string
+		want              bool
+	}
+	type vcsTestCase struct {
+		vcsType            vcs.Type
+		vcsProviderCreator fake.VCSProviderCreator
+		externalID         string
+		repoFullPath       string
+		caseList           []testCase
+	}
+
+	tests := []vcsTestCase{
+		{
+			vcsType:            vcs.GitLabSelfHost,
+			vcsProviderCreator: fake.NewGitLab,
+			externalID:         "1234",
+			repoFullPath:       "1234",
+			caseList: []testCase{
+				{
+					name: "mainBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "main",
+					want:         false,
+				}, {
+					name: "customBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "test/branch",
+					want:         false,
+				}, {
+					name: "nonExistedBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "non_existed_branch",
+					want:         true,
+				}, {
+					name: "wildcardBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+					},
+					branchFilter: "main*",
+					want:         false,
+				},
+			},
+		},
+		{
+			vcsType:            vcs.GitHubCom,
+			vcsProviderCreator: fake.NewGitHub,
+			externalID:         "test/branch",
+			repoFullPath:       "test/branch",
+			caseList: []testCase{
+				{
+					name: "mainBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "main",
+					want:         false,
+				}, {
+					name: "customBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "test/branch",
+					want:         false,
+				}, {
+					name: "nonExistedBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "non_existed_branch",
+					want:         true,
+				}, {
+					name: "wildcardBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+					},
+					branchFilter: "main*",
+					want:         false,
+				},
+			},
+		},
+	}
+
+	for _, vcsTest := range tests {
+		// Wrap the defer statement in an anonymous func to make it work properly.
+		(func() {
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+
+			// Create a server.
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: vcsTest.vcsProviderCreator,
+			})
+			a.NoError(err)
+
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
+
+			// Create a VCS.
+			apiVCS, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          "testName",
+					Type:          vcsTest.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testID",
+					Secret:        "testSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: "Test VSC Project",
+					Key:  "TVP",
+				},
+			)
+			a.NoError(err)
+
+			for _, test := range vcsTest.caseList {
+				test := test
+				t.Run(test.name, func(t *testing.T) {
+					// Create a repository in the fake vsc provider.
+					ctl.vcsProvider.CreateRepository(vcsTest.externalID)
+
+					// Create existed branches.
+					for _, existedBranch := range test.existedBranchList {
+						err := ctl.vcsProvider.CreateBranch(vcsTest.externalID, existedBranch)
+						a.NoError(err)
+					}
+
+					// Create a repository.
+					_, err = ctl.createRepository(
+						api.RepositoryCreate{
+							VCSID:              apiVCS.ID,
+							ProjectID:          project.ID,
+							Name:               "Test Repository",
+							FullPath:           vcsTest.repoFullPath,
+							WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, vcsTest.repoFullPath),
+							BranchFilter:       test.branchFilter,
+							BaseDirectory:      "",
+							FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+							SchemaPathTemplate: "",
+							ExternalID:         vcsTest.externalID,
+							AccessToken:        "accessToken1",
+							RefreshToken:       "refreshToken1",
+						},
+					)
+
+					if test.want {
+						a.Error(err)
+					} else {
+						a.NoError(err)
+						err = ctl.unlinkRepository(project.ID)
+						a.NoError(err)
+					}
+				})
+			}
+		})()
 	}
 }
 
