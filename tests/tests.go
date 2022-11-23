@@ -1018,7 +1018,9 @@ func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatu
 
 // waitIssuePipelineWithNoApproval waits for pipeline to finish and do nothing when approvals are needed.
 func (ctl *controller) waitIssuePipelineWithNoApproval(id int) (api.TaskStatus, error) {
-	noop := func(*api.Issue) error { return nil }
+	noop := func(*api.Issue) error {
+		return nil
+	}
 	return ctl.waitIssuePipelineTaskImpl(id, noop, false)
 }
 
