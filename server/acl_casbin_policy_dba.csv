@@ -70,7 +70,6 @@ p, DBA, /issue/{issueID}/status, PATCH
 p, DBA, /issue/{issueID}/subscriber, GET
 p, DBA, /issue/{issueID}/subscriber, POST
 p, DBA, /issue/{issueID}/subscriber/{subscriberID}, DELETE
-p, DBA, /issue/{issueID}/rollback, POST
 p, DBA, /activity, POST
 p, DBA, /activity, GET
 p, DBA, /activity/{activityID}, PATCH_SELF

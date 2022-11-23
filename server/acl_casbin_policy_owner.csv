@@ -74,7 +74,6 @@ p, OWNER, /issue/{issueID}/status, PATCH
 p, OWNER, /issue/{issueID}/subscriber, GET
 p, OWNER, /issue/{issueID}/subscriber, POST
 p, OWNER, /issue/{issueID}/subscriber/{subscriberID}, DELETE
-p, OWNER, /issue/{issueID}/rollback, POST
 p, OWNER, /activity, POST
 p, OWNER, /activity, GET
 p, OWNER, /activity/{activityID}, PATCH_SELF
