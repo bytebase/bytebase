@@ -445,6 +445,17 @@ type ConnectionContext struct {
 	InstanceName    string
 }
 
+// QueryContext is the context to query.
+type QueryContext struct {
+	// Limit is the maximum row count returned. No limit enforced if limit <= 0
+	Limit            int
+	ReadOnly         bool
+	SensitiveDataMap SensitiveDataMap
+
+	// CurrentDatabase is for MySQL
+	CurrentDatabase string
+}
+
 // Driver is the interface for database driver.
 type Driver interface {
 	// General execution
@@ -459,8 +470,7 @@ type Driver interface {
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 	Execute(ctx context.Context, statement string, createDatabase bool) error
 	// Used for execute readonly SELECT statement
-	// limit is the maximum row count returned. No limit enforced if limit <= 0
-	Query(ctx context.Context, statement string, limit int, readOnly bool, sensitiveDataMap SensitiveDataMap) ([]interface{}, error)
+	Query(ctx context.Context, statement string, queryContext *QueryContext) ([]interface{}, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
