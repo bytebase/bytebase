@@ -26,12 +26,13 @@ type policyRaw struct {
 	UpdatedTs int64
 
 	// Related fields
-	ResourceType  api.PolicyResourceType
-	EnvironmentID int
+	ResourceType api.PolicyResourceType
+	ResourceID   int
 
 	// Domain specific fields
-	Type    api.PolicyType
-	Payload string
+	InheritFromParent bool
+	Type              api.PolicyType
+	Payload           string
 }
 
 // toPolicy creates an instance of Policy based on the PolicyRaw.
@@ -49,11 +50,12 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 
 		// Related fields
 		ResourceType: raw.ResourceType,
-		ResourceID:   raw.EnvironmentID,
+		ResourceID:   raw.ResourceID,
 
 		// Domain specific fields
-		Type:    raw.Type,
-		Payload: raw.Payload,
+		InheritFromParent: raw.InheritFromParent,
+		Type:              raw.Type,
+		Payload:           raw.Payload,
 	}
 }
 
@@ -201,10 +203,10 @@ func (s *Store) GetNormalSQLReviewPolicy(ctx context.Context, find *api.PolicyFi
 		return nil, err
 	}
 	if policy.RowStatus == api.Archived {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy ID: %d for environment %d is archived", policy.ID, policy.EnvironmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy ID: %d for environment %d is archived", policy.ID, policy.ResourceID)}
 	}
 	if policy.ID == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy ID: %d for environment %d not found", policy.ID, policy.ResourceID)}
 	}
 	return api.UnmarshalSQLReviewPolicy(policy.Payload)
 }
@@ -316,7 +318,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 			ret.ResourceType = *find.ResourceType
 		}
 		if find.ResourceID != nil {
-			ret.EnvironmentID = *find.ResourceID
+			ret.ResourceID = *find.ResourceID
 		}
 	} else if len(policyRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}
@@ -361,6 +363,7 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind, mode comm
 			updated_ts,
 			row_status,
 			resource_id,
+			inherit_from_parent,
 			type,
 			payload
 		FROM policy
@@ -383,7 +386,8 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind, mode comm
 				&policyRaw.UpdaterID,
 				&policyRaw.UpdatedTs,
 				&policyRaw.RowStatus,
-				&policyRaw.EnvironmentID,
+				&policyRaw.ResourceID,
+				&policyRaw.InheritFromParent,
 				&policyRaw.Type,
 				&policyRaw.Payload,
 			); err != nil {
@@ -440,7 +444,7 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind, mode comm
 			&policyRaw.UpdaterID,
 			&policyRaw.UpdatedTs,
 			&policyRaw.RowStatus,
-			&policyRaw.EnvironmentID,
+			&policyRaw.ResourceID,
 			&policyRaw.Type,
 			&policyRaw.Payload,
 		); err != nil {
@@ -499,14 +503,18 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert, mod
 			rowStatus := string(api.Normal)
 			upsert.RowStatus = &rowStatus
 		}
+		inheritFromParent := true
+		if upsert.InheritFromParent != nil {
+			inheritFromParent = *upsert.InheritFromParent
+		}
 
-		// TODO(d): handle resource type.
 		query := fmt.Sprintf(`
 		INSERT INTO policy (
 			creator_id,
 			updater_id,
 			resource_type,
 			resource_id,
+			inherit_from_parent,
 			type,
 			payload,
 			row_status
@@ -514,7 +522,7 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert, mod
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
 			%s
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, resource_id, type, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, resource_id, inherit_from_parent, type, payload
 	`, strings.Join(set, ","))
 		var policyRaw policyRaw
 		if err := tx.QueryRowContext(ctx, query,
@@ -522,6 +530,7 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert, mod
 			upsert.UpdaterID,
 			upsert.ResourceType,
 			upsert.ResourceID,
+			inheritFromParent,
 			upsert.Type,
 			upsert.Payload,
 			upsert.RowStatus,
@@ -532,7 +541,8 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert, mod
 			&policyRaw.UpdaterID,
 			&policyRaw.UpdatedTs,
 			&policyRaw.RowStatus,
-			&policyRaw.EnvironmentID,
+			&policyRaw.ResourceID,
+			&policyRaw.InheritFromParent,
 			&policyRaw.Type,
 			&policyRaw.Payload,
 		); err != nil {
@@ -594,7 +604,7 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert, mod
 		&policyRaw.UpdaterID,
 		&policyRaw.UpdatedTs,
 		&policyRaw.RowStatus,
-		&policyRaw.EnvironmentID,
+		&policyRaw.ResourceID,
 		&policyRaw.Type,
 		&policyRaw.Payload,
 	); err != nil {
