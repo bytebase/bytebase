@@ -1,11 +1,13 @@
 import { useDatabaseStore } from "@/store";
 import {
+  Issue,
   Task,
   TaskCreate,
   TaskDatabaseCreatePayload,
   TaskDatabasePITRRestorePayload,
   unknown,
 } from "@/types";
+import { issueSlug, stageSlug, taskSlug } from "./slug";
 
 export const extractDatabaseNameFromTask = (
   task: Task | TaskCreate
@@ -52,4 +54,25 @@ export const extractDatabaseNameFromTask = (
 
   // Fallback to <<Unknown database>>. Won't be happy to see it.
   return unknown("DATABASE").name;
+};
+
+export const buildIssueLinkWithTask = (
+  issue: Issue,
+  task: Task,
+  simple = false
+) => {
+  const stage = task.stage;
+  const stageIndex = issue.pipeline.stageList.findIndex(
+    (s) => s.id === stage.id
+  );
+
+  const issuePart = simple ? String(issue.id) : issueSlug(issue.name, issue.id);
+  const stagePart = simple
+    ? String(stageIndex + 1)
+    : stageSlug(stage.name, stageIndex + 1);
+  const taskPart = simple ? String(task.id) : taskSlug(task.name, task.id);
+
+  const url = `/issue/${issuePart}?stage=${stagePart}&task=${taskPart}`;
+
+  return url;
 };

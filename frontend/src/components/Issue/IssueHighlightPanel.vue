@@ -70,6 +70,7 @@
               }}</template>
             </i18n-t>
           </p>
+          <IssueRollbackFromTips />
         </div>
       </div>
     </div>
@@ -82,6 +83,7 @@
 <script lang="ts" setup>
 import { reactive, watch, computed, Ref } from "vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
+import IssueRollbackFromTips from "./IssueRollbackFromTips.vue";
 import { activeTask } from "@/utils";
 import {
   TaskDatabaseSchemaUpdatePayload,

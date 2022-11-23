@@ -4,6 +4,7 @@ import {
   BackupId,
   DatabaseId,
   InstanceId,
+  IssueId,
   ProjectId,
   TaskId,
   TaskRunId,
@@ -97,6 +98,9 @@ export type TaskDatabasePITRDeletePayload = {
 export type TaskDatabaseDataUpdatePayload = {
   statement: string;
   pushEvent?: VCSPushEvent;
+  rollbackStatement: string;
+  rollbackFromIssueId: IssueId;
+  rollbackFromTaskId: TaskId;
 };
 
 export type TaskDatabaseRestorePayload = {
