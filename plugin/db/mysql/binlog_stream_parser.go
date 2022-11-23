@@ -40,7 +40,7 @@ type BinlogEvent struct {
 type BinlogTransaction []BinlogEvent
 
 // ParseBinlogStream splits the mysqlbinlog output stream to a list of transactions.
-func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
+func ParseBinlogStream(stream io.Reader, threadID string) ([]BinlogTransaction, error) {
 	reader := bufio.NewReader(stream)
 	var event BinlogEvent
 	var txns []BinlogTransaction
@@ -89,7 +89,13 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 			} else if event.Type == XidEventType {
 				// The current transaction ends with an Xid event, which means it's a complete transaction.
 				txn = append(txn, event)
-				txns = append(txns, txn)
+				ok, err := filterBinlogTransactionsByThreadID(txn, threadID)
+				if err != nil {
+					return nil, err
+				}
+				if ok {
+					txns = append(txns, txn)
+				}
 				txn = nil
 			} else {
 				// This is a DML event. Append it to the current transaction.
@@ -99,7 +105,11 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 		event = BinlogEvent{}
 		bodyBuf.Reset()
 		if err == io.EOF {
-			if len(txn) > 0 {
+			ok, err := filterBinlogTransactionsByThreadID(txn, threadID)
+			if err != nil {
+				return nil, err
+			}
+			if ok {
 				txns = append(txns, txn)
 			}
 			break
@@ -109,24 +119,19 @@ func ParseBinlogStream(stream io.Reader) ([]BinlogTransaction, error) {
 	return txns, nil
 }
 
-// FilterBinlogTransactionsByThreadID filters the binlog transaction by thread ID.
-// TODO(dragonly): refactor to streaming process.
-func FilterBinlogTransactionsByThreadID(txnList []BinlogTransaction, threadID string) ([]BinlogTransaction, error) {
-	var ret []BinlogTransaction
-	for _, txn := range txnList {
-		event := txn[0]
-		if event.Type != QueryEventType {
-			return nil, errors.Errorf("invalid binlog transaction, the first event must be an query event, but got %s", event.Type.String())
-		}
-		parsed, err := parseQueryEventThreadID(event.Header)
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to parse thread ID from query event")
-		}
-		if parsed == threadID {
-			ret = append(ret, txn)
-		}
+func filterBinlogTransactionsByThreadID(txn BinlogTransaction, threadID string) (bool, error) {
+	if len(txn) == 0 {
+		return false, nil
 	}
-	return ret, nil
+	event := txn[0]
+	if event.Type != QueryEventType {
+		return false, errors.Errorf("invalid binlog transaction, the first event must be an query event, but got %s", event.Type.String())
+	}
+	eventThreadID, err := parseQueryEventThreadID(event.Header)
+	if err != nil {
+		return false, errors.WithMessage(err, "failed to parse thread ID from query event")
+	}
+	return eventThreadID == threadID, nil
 }
 
 var (
