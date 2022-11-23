@@ -1035,7 +1035,7 @@ func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	return vcs, nil
 }
 
-// createRepository creates a repository.
+// createRepository links the repository with the project.
 func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (*api.Repository, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &repositoryCreate); err != nil {
@@ -1052,6 +1052,15 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 		return nil, errors.Wrap(err, "fail to unmarshal repository response")
 	}
 	return repository, nil
+}
+
+// unlinkRepository unlinks the repository from the project by projectID.
+func (ctl *controller) unlinkRepository(projectID int) error {
+	_, err := ctl.delete(fmt.Sprintf("/project/%d/repository", projectID), nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // listRepository gets the repository list.
