@@ -2,6 +2,7 @@ import { Activity } from "./activity";
 import { Anomaly } from "./anomaly";
 import { BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
+import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
@@ -103,14 +104,6 @@ export type QuickActionType =
   | InstanceQuickActionType
   | UserQuickActionType
   | DatabaseQuickActionType;
-
-// unknown represents an anomaly.
-// Returns as function to avoid caller accidentally mutate it.
-// UNKNOWN_ID means an anomaly, it expects a resource which is missing (e.g. Keyed lookup missing).
-export const UNKNOWN_ID = -1;
-// EMPTY_ID means an expected behavior, it expects no resource (e.g. contains an empty value, using this technic enables
-// us to declare variable as required, which leads to cleaner code)
-export const EMPTY_ID = 0;
 
 export type ResourceType =
   | "PRINCIPAL"
