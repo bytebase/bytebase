@@ -273,8 +273,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !hasWildcard {
-			if isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter) {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
+			if notFound, err := isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); notFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
+			} else if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", repositoryCreate.BranchFilter)).SetInternal(err)
 			}
 		}
 
@@ -501,8 +503,10 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !hasWildcard {
-			if isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter) {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch \"%s\" not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
+			if notFound, err := isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter); notFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
+			} else if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", newBranchFilter)).SetInternal(err)
 			}
 		}
 
@@ -1234,7 +1238,7 @@ func refreshTokenNoop() common.TokenRefresher {
 	}
 }
 
-func isBranchNotFound(ctx context.Context, vcs *api.VCS, accessToken, refreshToken, externalID, branch string) bool {
+func isBranchNotFound(ctx context.Context, vcs *api.VCS, accessToken, refreshToken, externalID, branch string) (bool, error) {
 	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1244,5 +1248,9 @@ func isBranchNotFound(ctx context.Context, vcs *api.VCS, accessToken, refreshTok
 			Refresher:    nil,
 		},
 		vcs.InstanceURL, externalID, branch)
-	return common.ErrorCode(err) == common.NotFound
+
+	if common.ErrorCode(err) == common.NotFound {
+		return true, nil
+	}
+	return false, err
 }
