@@ -170,4 +170,4 @@ replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-2022102803595
 
 replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20221028035959-5d3b71eadf24
 
-replace github.com/pganalyze/pg_query_go/v2 => github.com/bytebase/pg_query_go/v2 v2.0.0-20221115090145-10eaaf3c22b6
+replace github.com/pganalyze/pg_query_go/v2 => github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7

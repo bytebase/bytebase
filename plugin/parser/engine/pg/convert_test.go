@@ -48,6 +48,12 @@ func runTests(t *testing.T, tests []testData) {
 	}
 }
 
+func newUnconvertedDataType(name []string, text string) *ast.UnconvertedDataType {
+	tp := &ast.UnconvertedDataType{Name: name}
+	tp.SetText(text)
+	return tp
+}
+
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
@@ -220,7 +226,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "u",
-							Type:       &ast.UnconvertedDataType{Name: []string{"user defined data type"}},
+							Type:       newUnconvertedDataType([]string{"user defined data type"}, `"user defined data type"`),
 						},
 					},
 				},
