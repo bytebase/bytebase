@@ -78,7 +78,7 @@ import {
 import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 import { featureToRef, useCurrentUser, usePolicyStore } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { hasProjectPermission, hasWorkspacePermission } from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -118,10 +118,34 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
     const allowAdmin = computed(() => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-database",
-        currentUser.value.role
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-sensitive-data",
+          currentUser.value.role
+        )
+      ) {
+        // True if the currentUser has workspace level sensitive data
+        // R+W privileges. AKA workspace owner
+        return true;
+      }
+
+      const memberInProject = props.database.project.memberList.find(
+        (member) => member.principal.id === currentUser.value.id
       );
+      if (
+        memberInProject &&
+        hasProjectPermission(
+          "bb.permission.project.admin-database",
+          memberInProject.role
+        )
+      ) {
+        // True if the current user has project level database R+W privileges.
+        // AKA project owner
+        return true;
+      }
+
+      // False otherwise
+      return false;
     });
 
     const NORMAL_COLUMN_LIST = computed(() => [
