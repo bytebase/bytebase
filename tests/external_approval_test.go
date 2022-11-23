@@ -147,16 +147,21 @@ func TestExternalApprovalFeishu(t *testing.T) {
 	})
 	a.NoError(err)
 
+	// Sleep for 5 seconds, giving time to ApplicationRunner to create external approvals.
 	time.Sleep(5 * time.Second)
 	issue, err = ctl.getIssue(issue.ID)
 	a.NoError(err)
 	taskStatus, err := getNextTaskStatus(issue)
 	a.NoError(err)
+	// The task is still waiting for approval.
 	a.Equal(api.TaskPendingApproval, taskStatus)
 
+	// Should have 1 PENDING approval on the feishu side.
 	a.Equal(1, ctl.feishuProvider.PendingApprovalCount())
+	// Simulate users approving on the feishu side.
 	ctl.feishuProvider.ApprovePendingApprovals()
 
+	// Waiting ApplicationRunner to approves the issue.
 	status, err := ctl.waitIssuePipelineWithNoApproval(issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
