@@ -1,5 +1,5 @@
 import { isEqual, isUndefined } from "lodash-es";
-import {
+import type {
   AlterTableContext,
   CreateTableContext,
   DropTableContext,
