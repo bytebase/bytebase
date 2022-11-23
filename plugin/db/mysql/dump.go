@@ -369,7 +369,7 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 		&unused,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return api.BinlogInfo{}, common.FormatDBErrorEmptyRowWithQuery(query)
+			return api.BinlogInfo{}, nil
 		}
 		return api.BinlogInfo{}, err
 	}
