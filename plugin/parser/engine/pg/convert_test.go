@@ -2481,3 +2481,54 @@ func TestCreateSequence(t *testing.T) {
 	}
 	runTests(t, tests)
 }
+
+func TestDropSequence(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `DROP SEQUENCE public.tbl_seq_id_seq;`,
+			want: []ast.Node{
+				&ast.DropSequenceStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
+					SequenceNameList: []ast.SequenceNameDef{
+						{
+							Schema: "public",
+							Name:   "tbl_seq_id_seq",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `DROP SEQUENCE public.tbl_seq_id_seq;`,
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: `DROP SEQUENCE IF EXISTS tbl_seq1, public.tbl_seq2 CASCADE;`,
+			want: []ast.Node{
+				&ast.DropSequenceStmt{
+					IfExists: true,
+					Behavior: ast.DropBehaviorCascade,
+					SequenceNameList: []ast.SequenceNameDef{
+						{
+							Name: "tbl_seq1",
+						},
+						{
+							Schema: "public",
+							Name:   "tbl_seq2",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `DROP SEQUENCE IF EXISTS tbl_seq1, public.tbl_seq2 CASCADE;`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}

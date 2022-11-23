@@ -318,6 +318,23 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				dropSchema.SchemaList = append(dropSchema.SchemaList, strNode.String_.Str)
 			}
 			return dropSchema, nil
+		case pgquery.ObjectType_OBJECT_SEQUENCE:
+			dropSequence := &ast.DropSequenceStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
+			for _, sequence := range in.DropStmt.Objects {
+				list, ok := sequence.Node.(*pgquery.Node_List)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected List but found %t", sequence.Node)
+				}
+				sequenceDef, err := convertListToSequenceNameDef(list)
+				if err != nil {
+					return nil, err
+				}
+				dropSequence.SequenceNameList = append(dropSequence.SequenceNameList, sequenceDef)
+			}
+			return dropSequence, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -414,7 +431,6 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				return nil, parser.NewConvertErrorf("unsupported option %s", defElemNode.DefElem.Defname)
 			}
 		}
-
 		return createSeqStmt, nil
 	case *pgquery.Node_AlterObjectSchemaStmt:
 		switch in.AlterObjectSchemaStmt.ObjectType {
@@ -830,6 +846,26 @@ func convertSetOperation(t pgquery.SetOperation) (ast.SetOperationType, error) {
 		return ast.SetOperationTypeExcept, nil
 	default:
 		return 0, errors.Errorf("failed to parse set operation: unknown type %s", t)
+	}
+}
+
+func convertListToSequenceNameDef(in *pgquery.Node_List) (ast.SequenceNameDef, error) {
+	stringList, err := convertListToStringList(in)
+	if err != nil {
+		return ast.SequenceNameDef{}, err
+	}
+	switch len(in.List.Items) {
+	case 2:
+		return ast.SequenceNameDef{
+			Schema: stringList[0],
+			Name:   stringList[1],
+		}, nil
+	case 1:
+		return ast.SequenceNameDef{
+			Name: stringList[0],
+		}, nil
+	default:
+		return ast.SequenceNameDef{}, parser.NewConvertErrorf("expected length is 1 or 2, but found %d", len(in.List.Items))
 	}
 }
 
