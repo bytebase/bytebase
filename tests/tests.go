@@ -1090,6 +1090,18 @@ func (ctl *controller) createSQLReviewCI(projectID, repositoryID int) (*api.SQLR
 	return sqlReviewCISetup, nil
 }
 
+func (ctl *controller) getLatestSchemaOfDatabaseID(databaseID int) (string, error) {
+	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), nil)
+	if err != nil {
+		return "", err
+	}
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	return string(bs), nil
+}
+
 func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
 	labels, err := marshalLabels(labelMap, instance.Environment.Name)
 	if err != nil {
