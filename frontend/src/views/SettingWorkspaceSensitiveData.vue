@@ -116,7 +116,7 @@ const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const currentUser = useCurrentUser();
 const allowAdmin = computed(() => {
   return hasWorkspacePermission(
-    "bb.permission.workspace.manage-database",
+    "bb.permission.workspace.manage-sensitive-data",
     currentUser.value.role
   );
 });
