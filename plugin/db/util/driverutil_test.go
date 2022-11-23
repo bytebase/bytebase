@@ -249,12 +249,12 @@ func TestExtractSensitiveField(t *testing.T) {
 			fieldName: []string{"a", "b", "c", "d"},
 			sensitiveDataMap: db.SensitiveDataMap{
 				db.SensitiveData{
-					Database: "",
+					Database: "db",
 					Table:    "t",
 					Column:   "a",
 				}: db.SensitiveDataMaskTypeDefault,
 				db.SensitiveData{
-					Database: "",
+					Database: "db",
 					Table:    "t",
 					Column:   "d",
 				}: db.SensitiveDataMaskTypeDefault,
@@ -290,7 +290,7 @@ func TestExtractSensitiveField(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := extractSensitiveField(db.MySQL, test.statement, test.fieldName, test.sensitiveDataMap)
+		res, err := extractSensitiveField(db.MySQL, test.statement, "db", test.fieldName, test.sensitiveDataMap)
 		require.NoError(t, err)
 		require.Equal(t, test.fieldMap, res)
 	}
