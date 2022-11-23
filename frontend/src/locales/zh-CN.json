@@ -1444,6 +1444,10 @@
         "title": "环境级别",
         "desc": "「环境级别」可以将环境标记为受保护的"
       },
+      "bb-feature-sensitive-data": {
+        "title": "敏感数据",
+        "desc": "将数据表的列标记为敏感数据，它们在查询结果中将会被显示成 \"******\"。"
+      },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",
         "desc": "检查工单是否有 \"LGTM\" 评论。"
