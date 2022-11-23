@@ -14,7 +14,7 @@ export default defineComponent({
     },
     tag: {
       type: String,
-      default: "div",
+      default: "pre",
     },
   },
   render() {
@@ -23,7 +23,6 @@ export default defineComponent({
     const result = hljs.highlight(code, {
       language: language,
     });
-    result.language;
 
     return h(tag, {
       class: language,

@@ -79,6 +79,7 @@ module.exports = {
         176: "44rem",
         192: "48rem",
         208: "52rem",
+        320: "80rem",
       },
       animation: {
         "ping-slow": "ping-slow 2500ms cubic-bezier(0.4, 0, 0.6, 1) infinite",
