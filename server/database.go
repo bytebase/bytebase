@@ -402,7 +402,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		driver, err := tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BaseDir, s.profile.DataDir)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
