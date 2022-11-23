@@ -24,7 +24,7 @@
           "
         />
       </BBTableCell>
-      <BBTableCell :left-padding="4" class="w-16">
+      <BBTableCell class="w-16">
         {{ column.name }}
       </BBTableCell>
       <BBTableCell class="w-8">
