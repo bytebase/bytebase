@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, watch, WatchCallback } from "vue";
+import { computed, ref, unref, watch, WatchCallback, watchEffect } from "vue";
 import axios from "axios";
 import {
   empty,
@@ -12,12 +12,14 @@ import {
   IssuePatch,
   IssueState,
   IssueStatusPatch,
+  MaybeRef,
   Pipeline,
   Principal,
   Project,
   ResourceIdentifier,
   ResourceObject,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useActivityStore } from "./activity";
@@ -345,4 +347,24 @@ export const refreshIssueList = () => {
 };
 export const useRefreshIssueList = (callback: WatchCallback) => {
   watch(REFRESH_ISSUE_LIST, callback);
+};
+
+export const useIssueById = (issueId: MaybeRef<IssueId>, lazy = false) => {
+  const store = useIssueStore();
+
+  watchEffect(() => {
+    const id = unref(issueId);
+    if (id !== UNKNOWN_ID) {
+      if (lazy && store.issueById.has(id)) {
+        // Don't fetch again if we have a local copy
+        // when lazy === true
+        return;
+      }
+      store.fetchIssueById(id);
+    }
+  });
+
+  return computed(() => {
+    return store.getIssueById(unref(issueId));
+  });
 };
