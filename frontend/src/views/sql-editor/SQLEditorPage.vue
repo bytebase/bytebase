@@ -35,7 +35,6 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
-import "splitpanes/dist/splitpanes.css";
 
 import { TabMode } from "@/types";
 import { useSQLEditorStore, useTabStore } from "@/store";
@@ -53,6 +52,8 @@ const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
 </script>
 
 <style>
+@import "splitpanes/dist/splitpanes.css";
+
 /* splitpanes pane style */
 .splitpanes.default-theme .splitpanes__pane {
   @apply bg-transparent;
