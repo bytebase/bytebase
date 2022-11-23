@@ -5,6 +5,7 @@ import {
   IssueId,
   PrincipalId,
   ProjectId,
+  TaskId,
 } from "./id";
 import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
@@ -18,6 +19,7 @@ type IssueTypeDatabase =
   | "bb.issue.database.grant"
   | "bb.issue.database.schema.update"
   | "bb.issue.database.data.update"
+  | "bb.issue.database.rollback"
   | "bb.issue.database.schema.update.ghost"
   | "bb.issue.database.restore.pitr";
 
@@ -71,6 +73,13 @@ export type PITRContext = {
   createDatabaseContext?: CreateDatabaseContext;
 };
 
+export type RollbackContext = {
+  // IssueID is the id of the issue to rollback.
+  issueId: IssueId;
+  // TaskIDList is the list of task ids to rollback.
+  taskIdList: TaskId[];
+};
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type EmptyContext = {};
 
@@ -79,6 +88,7 @@ export type IssueCreateContext =
   | MigrationContext
   | UpdateSchemaGhostContext
   | PITRContext
+  | RollbackContext
   | EmptyContext;
 
 export type IssuePayload = { [key: string]: any };

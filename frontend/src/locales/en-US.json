@@ -210,7 +210,8 @@
     "advanced": "Advanced",
     "restart": "Restart",
     "want-help": "Want help",
-    "operation": "Operation"
+    "operation": "Operation",
+    "rollback": "Rollback"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -546,7 +547,9 @@
       "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
       "dont-apply-to-database-in-baseline-migration": "This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
-    }
+    },
+    "rollback-from": "This task rollbacks from {link}.",
+    "issue-link-with-task": "Issue {issue} - task {task}"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
