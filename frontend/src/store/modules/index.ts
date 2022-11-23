@@ -32,6 +32,7 @@ export * from "./sheet";
 export * from "./stage";
 export * from "./sql";
 export * from "./sqlEditor";
+export * from "./webTerminal";
 export * from "./subscription";
 export * from "./tab";
 export * from "./table";

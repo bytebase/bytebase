@@ -97,6 +97,7 @@ module.exports = {
       },
     },
   },
+  darkMode: "class",
   variants: {
     extend: {
       ringWidth: ["focus-visible"],

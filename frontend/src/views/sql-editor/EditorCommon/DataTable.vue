@@ -4,7 +4,7 @@
   >
     <div class="w-full flex-1 overflow-hidden">
       <div
-        class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50"
+        class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50 dark:bg-gray-700"
       />
 
       <div
@@ -22,7 +22,7 @@
               <th
                 v-for="header of table.getFlatHeaders()"
                 :key="header.index"
-                class="relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 text-xs font-medium text-gray-500 tracking-wider border border-t-0 border-block-border border-b-0"
+                class="relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border border-t-0 border-block-border border-b-0"
                 v-bind="tableResize.getColumnProps(header.index)"
               >
                 {{ header.column.columnDef.header }}
@@ -45,7 +45,7 @@
               <td
                 v-for="(cell, cellIndex) of row.getVisibleCells()"
                 :key="cellIndex"
-                class="px-2 py-1 text-sm leading-5 whitespace-pre-wrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50"
+                class="px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-pre-wrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
               >
                 {{ cell.getValue() }}
               </td>
