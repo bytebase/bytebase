@@ -54,10 +54,10 @@
 </template>
 
 <script lang="ts" setup>
-import BookmarkListSidePanel from "../components/BookmarkListSidePanel.vue";
-import ProjectListSidePanel from "../components/ProjectListSidePanel.vue";
-import DatabaseListSidePanel from "../components/DatabaseListSidePanel.vue";
 import { useKBarHandler } from "@bytebase/vue-kbar";
+import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
+import ProjectListSidePanel from "@/components/ProjectListSidePanel.vue";
+import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";
 
 const isMac = navigator.platform.match(/mac/i);
 

@@ -6,7 +6,7 @@ import (
 
 // Column is the API message for a table column.
 type Column struct {
-	ID int `jsonapi:"primary,column"`
+	ID int `jsonapi:"primary,column" json:"id"`
 
 	// Standard fields
 	CreatorID int
@@ -15,8 +15,8 @@ type Column struct {
 	UpdatedTs int64 `json:"updatedTs"`
 
 	// Related fields
-	DatabaseID int
-	TableID    int
+	DatabaseID int `json:"databaseId"`
+	TableID    int `json:"tableId"`
 
 	// Domain specific fields
 	Name         string  `json:"name"`
