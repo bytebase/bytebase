@@ -56,6 +56,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.CreateSequenceStmt:
+		if err := deparseCreateSequence(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -914,6 +919,166 @@ func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Buil
 		return errors.Errorf("failed to deparse data type %T", in)
 	}
 	return nil
+}
+
+func deparseCreateSequence(ctx parser.DeparseContext, in *ast.CreateSequenceStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("CREATE SEQUENCE "); err != nil {
+		return err
+	}
+	if in.IfNotExists {
+		if _, err := buf.WriteString("IF NOT EXISTS "); err != nil {
+			return err
+		}
+	}
+	if err := deparseSequenceName(ctx, &in.SequenceDef.SequenceName, buf); err != nil {
+		return err
+	}
+	return depraseSequenceDef(parser.DeparseContext{IndentLevel: ctx.IndentLevel + 1}, &in.SequenceDef, buf)
+}
+
+func depraseSequenceDef(ctx parser.DeparseContext, in *ast.SequenceDef, buf *strings.Builder) error {
+	if in.SequenceDataType != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("AS "); err != nil {
+			return err
+		}
+		if err := deparseDataType(ctx, in.SequenceDataType, buf); err != nil {
+			return err
+		}
+	}
+	if in.IncrementBy != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("INCREMENT BY %d", *in.IncrementBy)); err != nil {
+			return err
+		}
+	}
+	if in.MinValue != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("MINVALUE %d", *in.MinValue)); err != nil {
+			return err
+		}
+	} else {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("NO MINVALUE"); err != nil {
+			return err
+		}
+	}
+	if in.MaxValue != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("MAXVALUE %d", *in.MaxValue)); err != nil {
+			return err
+		}
+	} else {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("NO MAXVALUE"); err != nil {
+			return err
+		}
+	}
+	if in.StartWith != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("START WITH %d", *in.StartWith)); err != nil {
+			return err
+		}
+	}
+	if in.Cache != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("CACHE %d", *in.Cache)); err != nil {
+			return err
+		}
+	}
+	if in.Cycle {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("CYCLE"); err != nil {
+			return err
+		}
+	}
+	if in.OwnedBy != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := ctx.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("OWNED BY "); err != nil {
+			return err
+		}
+		if err := deparseColumnNameDef(ctx, in.OwnedBy, buf); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deparseColumnNameDef(ctx parser.DeparseContext, in *ast.ColumnNameDef, buf *strings.Builder) error {
+	if err := deparseTableDef(ctx, in.Table, buf); err != nil {
+		return err
+	}
+	if in.ColumnName != "" {
+		if _, err := buf.WriteString("."); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(in.ColumnName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deparseSequenceName(_ parser.DeparseContext, in *ast.SequenceNameDef, buf *strings.Builder) error {
+	if in.Schema != "" {
+		if err := writeSurrounding(buf, in.Schema, `"`); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("."); err != nil {
+			return err
+		}
+	}
+	return writeSurrounding(buf, in.Name, "\"")
 }
 
 func deparseCreateSchema(ctx parser.DeparseContext, in *ast.CreateSchemaStmt, buf *strings.Builder) error {
