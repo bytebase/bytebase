@@ -1444,6 +1444,10 @@
         "title": "Environment tier",
         "desc": "Mark environment as protected."
       },
+      "bb-feature-sensitive-data": {
+        "title": "Sensitive data",
+        "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
+      },
       "bb-feature-lgtm": {
         "title": "LGTM check",
         "desc": "Check if the issue has an \"LGTM\" comment."
