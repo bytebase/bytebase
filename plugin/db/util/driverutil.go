@@ -324,7 +324,9 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int, readOnly bool, sensitiveDataMap db.SensitiveDataMap) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	readOnly := queryContext.ReadOnly
+	limit := queryContext.Limit
 	if !readOnly {
 		return queryAdmin(ctx, sqldb, statement, limit)
 	}
@@ -359,7 +361,7 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		return nil, FormatError(err)
 	}
 
-	fieldMap, err := extractSensitiveField(dbType, statement, columnNames, sensitiveDataMap)
+	fieldMap, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, columnNames, queryContext.SensitiveDataMap)
 	if err != nil {
 		return nil, err
 	}
@@ -687,7 +689,7 @@ func fromStoredVersion(storedVersion string) (bool, string, string, error) {
 
 type sensitiveFiledMap map[int]bool
 
-func extractSensitiveField(dbType db.Type, statement string, fieldName []string, sensitiveDataMap db.SensitiveDataMap) (sensitiveFiledMap, error) {
+func extractSensitiveField(dbType db.Type, statement string, currentDatabase string, fieldName []string, sensitiveDataMap db.SensitiveDataMap) (sensitiveFiledMap, error) {
 	fieldMap := make(sensitiveFiledMap)
 	switch dbType {
 	case db.MySQL, db.TiDB:
@@ -723,6 +725,9 @@ func extractSensitiveField(dbType db.Type, statement string, fieldName []string,
 	databaseName, tableName, ok := extractMySQLSingleTable(selectStmt.From)
 	if !ok {
 		return fieldMap, nil
+	}
+	if databaseName == "" {
+		databaseName = currentDatabase
 	}
 	starLength := extractMySQLStarLength(fieldName, selectStmt)
 	fieldPosition := 0

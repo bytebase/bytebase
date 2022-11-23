@@ -274,7 +274,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, true /* readOnly */, sensitiveDataMap)
+			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+				Limit:            exec.Limit,
+				ReadOnly:         true,
+				CurrentDatabase:  exec.DatabaseName,
+				SensitiveDataMap: sensitiveDataMap,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -418,7 +423,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, false /* readOnly */, nil)
+			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+				Limit:            exec.Limit,
+				ReadOnly:         false,
+				CurrentDatabase:  exec.DatabaseName,
+				SensitiveDataMap: nil,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -934,14 +944,6 @@ func (s *Server) getSensitiveData(ctx context.Context, engineType db.Type, insta
 				Table:    data.Table,
 				Column:   data.Column,
 			}] = db.SensitiveDataMaskType(data.Type)
-			// use for current database
-			if name == "" {
-				res[db.SensitiveData{
-					Database: "",
-					Table:    data.Table,
-					Column:   data.Column,
-				}] = db.SensitiveDataMaskType(data.Type)
-			}
 		}
 	}
 
