@@ -21,3 +21,4 @@ export * from "./sheet";
 export * from "./pev2";
 export * from "./web-storage";
 export * from "./dom";
+export * from "./UIEditor";

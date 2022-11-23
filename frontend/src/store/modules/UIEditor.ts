@@ -28,6 +28,7 @@ const getDefaultUIEditorState = (): UIEditorState => {
     },
     databaseList: [],
     tableList: [],
+    droppedTableList: [],
   };
 };
 
@@ -85,6 +86,26 @@ export const useUIEditorStore = defineStore("UIEditor", {
       }
       this.tabState.currentTabId = tabId;
     },
+    closeTab(tabId: string) {
+      const tabList = Array.from(this.tabState.tabMap.values());
+      const tabIndex = tabList.findIndex((tab) => tab.id === tabId);
+      // Find next tab for showing.
+      if (this.tabState.currentTabId === tabId) {
+        let nextTabIndex = -1;
+        if (tabIndex === 0) {
+          nextTabIndex = 1;
+        } else {
+          nextTabIndex = tabIndex - 1;
+        }
+        const nextTab = tabList[nextTabIndex];
+        if (nextTab) {
+          this.setCurrentTab(nextTab.id);
+        } else {
+          this.setCurrentTab("");
+        }
+      }
+      this.tabState.tabMap.delete(tabId);
+    },
     async fetchDatabaseList(databaseIdList: DatabaseId[]) {
       const databaseList: Database[] = [];
       for (const id of databaseIdList) {
@@ -94,6 +115,7 @@ export const useUIEditorStore = defineStore("UIEditor", {
         databaseList.push(database);
       }
       this.databaseList = databaseList;
+      return databaseList;
     },
     async getOrFetchTableListByDatabaseId(databaseId: DatabaseId) {
       const tableList: Table[] = [];
@@ -125,12 +147,54 @@ export const useUIEditorStore = defineStore("UIEditor", {
     // Its ID is UNKNOWN_ID and name should be an unique temp name.
     createNewTable(databaseId: DatabaseId) {
       const table = unknown("TABLE");
-      const index =
-        this.tableList.filter((table) => table.id === UNKNOWN_ID).length + 1;
-      table.name = `New Table-${index}`;
-      table.database.id = databaseId;
+      const databaseTableList = this.tableList.filter(
+        (table) => table.database.id === databaseId
+      );
+      const databaseTableNameList = databaseTableList.map(
+        (table) => table.name
+      );
+      let tableNameUniqueIndex =
+        databaseTableList.filter((table) => table.id === UNKNOWN_ID).length + 1;
+      let tableName = `untitled_table_${tableNameUniqueIndex}`;
+      while (databaseTableNameList.includes(tableName)) {
+        tableNameUniqueIndex++;
+        tableName = `untitled_table_${tableNameUniqueIndex}`;
+      }
+
+      const database = useDatabaseStore().getDatabaseById(databaseId);
+      table.id = UNKNOWN_ID;
+      table.name = tableName;
+      table.database = database;
       this.tableList.push(table);
       return table;
+    },
+    dropTable(databaseId: DatabaseId, tableId: TableId, tableName: string) {
+      const index = this.tableList.findIndex(
+        (table) =>
+          table.database.id === databaseId &&
+          table.id === tableId &&
+          table.name === tableName
+      );
+      const table = this.tableList[index];
+      if (table.id === UNKNOWN_ID) {
+        this.tableList.splice(index, 1);
+      } else {
+        this.droppedTableList.push(table);
+      }
+
+      const tab = this.getTabByDatabaseIdAndTableName(databaseId, tableName);
+      if (tab) {
+        this.closeTab(tab.id);
+      }
+    },
+    restoreTable(databaseId: DatabaseId, tableId: TableId, tableName: string) {
+      const index = this.droppedTableList.findIndex(
+        (table) =>
+          table.database.id === databaseId &&
+          table.id === tableId &&
+          table.name === tableName
+      );
+      this.droppedTableList.splice(index, 1);
     },
     async postDatabaseEdit(databaseEdit: DatabaseEdit) {
       const stmt = (
