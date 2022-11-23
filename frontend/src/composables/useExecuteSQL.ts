@@ -11,7 +11,7 @@ import {
 } from "../components/MonacoEditor/sqlParser";
 import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
 import { BBNotificationStyle } from "@/bbkit/types";
-import { ExecuteConfig, ExecuteOption, TabMode } from "@/types";
+import { ExecuteConfig, ExecuteOption, SQLResultSet, TabMode } from "@/types";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();
@@ -121,6 +121,8 @@ const useExecuteSQL = () => {
         // (with or without warnings).
         sqlEditorStore.fetchQueryHistoryList();
       }
+
+      return sqlResultSet;
     } catch (error) {
       Object.assign(tab, {
         queryResult: undefined,
@@ -170,6 +172,8 @@ const useExecuteSQL = () => {
         // (with or without warnings).
         sqlEditorStore.fetchQueryHistoryList();
       }
+
+      return sqlResultSet;
     } catch (error) {
       Object.assign(tab, {
         queryResult: undefined,
@@ -209,13 +213,16 @@ const useExecuteSQL = () => {
 
     tab.isExecutingSQL = true;
 
+    let result: SQLResultSet | undefined = undefined;
     if (tab.mode === TabMode.ReadOnly) {
-      await executeReadonly(query, config, option);
+      result = await executeReadonly(query, config, option);
     } else if (tab.mode === TabMode.Admin) {
-      await executeAdmin(query, config, option);
+      result = await executeAdmin(query, config, option);
     }
 
     tab.isExecutingSQL = false;
+
+    return result;
   };
 
   return {

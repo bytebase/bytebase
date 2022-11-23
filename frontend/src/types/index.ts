@@ -39,6 +39,7 @@ export * from "./db_extension";
 export * from "./label";
 export * from "./deployment";
 export * from "./sqlEditor";
+export * from "./webTerminal";
 export * from "./tab";
 export * from "./subscription";
 export * from "./sheet";

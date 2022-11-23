@@ -1,5 +1,9 @@
 <template>
-  <div class="relative flex flex-col justify-start items-start h-full p-2">
+  <NConfigProvider
+    v-bind="naiveUIConfig"
+    class="relative flex flex-col justify-start items-start h-full p-2"
+    :class="dark && 'dark bg-dark-bg'"
+  >
     <div
       v-show="queryResult !== null"
       class="w-full flex flex-row justify-between items-center mb-2"
@@ -55,9 +59,9 @@
     <div
       v-if="showPlaceholder"
       class="absolute inset-0 flex flex-col justify-center items-center z-10"
-      :class="tabStore.currentTab.isExecutingSQL && 'bg-white/80'"
+      :class="loading && 'bg-white/80 dark:bg-black/80'"
     >
-      <template v-if="tabStore.currentTab.isExecutingSQL">
+      <template v-if="loading">
         <BBSpin />
         {{ $t("sql-editor.loading-data") }}
       </template>
@@ -65,16 +69,19 @@
         {{ $t("sql-editor.table-empty-placeholder") }}
       </template>
     </div>
-  </div>
+  </NConfigProvider>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { debouncedRef } from "@vueuse/core";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
+import { darkTheme, NConfigProvider } from "naive-ui";
+
+import { darkThemeOverrides } from "@/../naive-ui.config";
 import { useTabStore, useInstanceStore } from "@/store";
 import { createExplainToken } from "@/utils";
 import DataTable from "./DataTable.vue";
@@ -84,14 +91,36 @@ interface State {
   search: string;
 }
 
+type QueryResult = [string[], string[], any[][]];
+
+const props = defineProps({
+  queryResult: {
+    type: Object as PropType<QueryResult>,
+    default: undefined,
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  dark: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 const { t } = useI18n();
 const tabStore = useTabStore();
 const instanceStore = useInstanceStore();
 
-const queryResult = computed(() => tabStore.currentTab.queryResult || null);
-
 const state = reactive<State>({
   search: "",
+});
+
+const naiveUIConfig = computed(() => {
+  if (props.dark) {
+    return { theme: darkTheme, themeOverrides: darkThemeOverrides.value };
+  }
+  return {};
 });
 
 // use a debounced value to improve performance when typing rapidly
@@ -101,11 +130,11 @@ const keyword = debouncedRef(
 );
 
 const columns = computed(() => {
-  if (!queryResult.value) {
+  if (!props.queryResult) {
     return [];
   }
 
-  const columns = queryResult.value[0];
+  const columns = props.queryResult[0];
   return columns.map((d) => {
     return {
       title: d,
@@ -115,11 +144,11 @@ const columns = computed(() => {
 });
 
 const data = computed(() => {
-  if (!queryResult.value) {
+  if (!props.queryResult) {
     return [];
   }
 
-  const data = queryResult.value[2];
+  const data = props.queryResult[2];
   const search = keyword.value;
   let temp = data;
   if (search) {
@@ -131,8 +160,8 @@ const data = computed(() => {
 });
 
 const showPlaceholder = computed(() => {
-  if (!queryResult.value) return true;
-  if (tabStore.currentTab.isExecutingSQL) return true;
+  if (!props.queryResult) return true;
+  if (props.loading) return true;
   return false;
 });
 
@@ -140,12 +169,12 @@ const exportDropdownOptions = computed(() => [
   {
     label: t("sql-editor.download-as-csv"),
     key: "csv",
-    disabled: queryResult.value === null || isEmpty(queryResult.value),
+    disabled: props.queryResult === null || isEmpty(props.queryResult),
   },
   {
     label: t("sql-editor.download-as-json"),
     key: "json",
-    disabled: queryResult.value === null || isEmpty(queryResult.value),
+    disabled: props.queryResult === null || isEmpty(props.queryResult),
   },
 ]);
 

@@ -40,6 +40,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  options: {
+    type: Object as PropType<Editor.IStandaloneEditorConstructionOptions>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -67,6 +71,7 @@ const initEditorInstance = () => {
   const model = monaco.editor.createModel(sqlCode.value, "sql");
   const editorInstance = monaco.editor.create(editorContainerRef.value!, {
     model,
+    theme: "bb",
     tabSize: 2,
     insertSpaces: true,
     autoClosingQuotes: "always",
@@ -91,6 +96,7 @@ const initEditorInstance = () => {
     scrollbar: {
       alwaysConsumeMouseWheel: false,
     },
+    ...props.options,
   });
 
   // add `Format SQL` action into context menu
@@ -187,6 +193,16 @@ onMounted(async () => {
       // Delay the flush timing to ensure it performs after the language client started.
       flush: "post",
     });
+
+    watch(
+      () => props.options,
+      (opts) => {
+        if (opts) {
+          editorInstance.updateOptions(opts);
+        }
+      },
+      { deep: true }
+    );
   });
 });
 

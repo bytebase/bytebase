@@ -13,7 +13,7 @@ import {
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 
-function convert(resultSet: ResourceObject): SQLResultSet {
+export function convert(resultSet: ResourceObject): SQLResultSet {
   return {
     data: JSON.parse((resultSet.attributes.data as string) || "null"),
     error: resultSet.attributes.error as string,
