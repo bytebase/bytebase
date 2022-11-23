@@ -510,6 +510,9 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	if task.Type != api.TaskDatabaseDataUpdate {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task type must be %s, but got %s", api.TaskDatabaseDataUpdate, task.Type))
 	}
+	if task.Database.Instance.Engine != db.MySQL {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Only support rollback for MySQL now, but got %s", task.Database.Instance.Engine))
+	}
 	if task.PipelineID != issue.PipelineID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in issue %d", taskID, issue.ID))
 	}
