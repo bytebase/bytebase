@@ -212,8 +212,20 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 
 	// Run a rollback issue.
 	var rollbackIssue *api.Issue
+	rollbackCreateContext, err := json.Marshal(&api.RollbackContext{
+		IssueID:    issue.ID,
+		TaskIDList: []int{task.ID},
+	})
+	a.NoError(err)
 	for i := 0; i < 10; i++ {
-		rollbackIssue, err = ctl.createRollbackIssue(issue.ID, []int{task.ID})
+		// rollbackIssue, err = ctl.createRollbackIssue(issue.ID, []int{task.ID})
+		rollbackIssue, err = ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          "rollback",
+			Type:          api.IssueDatabaseRollback,
+			AssigneeID:    project.Creator.ID,
+			CreateContext: string(rollbackCreateContext),
+		})
 		if err == nil {
 			break
 		}

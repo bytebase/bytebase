@@ -166,11 +166,6 @@ type TaskDatabaseBackupPayload struct {
 	BackupID int `json:"backupId,omitempty"`
 }
 
-// IssueRollbackRequestPayload is the payload of the DML task rollback API.
-type IssueRollbackRequestPayload struct {
-	TaskIDList []int `json:"taskIdList,omitempty"`
-}
-
 // Task is the API message for a task.
 type Task struct {
 	ID int `jsonapi:"primary,task"`

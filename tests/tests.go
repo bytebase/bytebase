@@ -828,26 +828,6 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 	return task, nil
 }
 
-func (ctl *controller) createRollbackIssue(issueID int, taskIDList []int) (*api.Issue, error) {
-	payload := api.IssueRollbackRequestPayload{TaskIDList: taskIDList}
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &payload); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal api.IssueRollbackRequestPayload")
-	}
-
-	body, err := ctl.post(fmt.Sprintf("/issue/%d/rollback", issueID), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	issue := new(api.Issue)
-	if err := jsonapi.UnmarshalPayload(body, issue); err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal create rollback issue response")
-	}
-
-	return issue, nil
-}
-
 // patchStageAllTaskStatus patches the status of all tasks in the pipeline stage.
 func (ctl *controller) patchStageAllTaskStatus(stageAllTaskStatusPatch api.StageAllTaskStatusPatch, pipelineID int) ([]*api.Task, error) {
 	buf := new(bytes.Buffer)
