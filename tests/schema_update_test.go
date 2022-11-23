@@ -1647,16 +1647,14 @@ func TestVCS_SQL_Review(t *testing.T) {
 func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 	tests := []struct {
 		name              string
-		vcsProvider       string
 		vcsType           vcs.Type
 		existedBranchList []string
 		branchFilter      string
 		want              bool
 	}{
 		{
-			name:        "mainBranchWithGitLab",
-			vcsProvider: "GitLab",
-			vcsType:     vcs.GitLabSelfHost,
+			name:    "mainBranchWithGitLab",
+			vcsType: vcs.GitLabSelfHost,
 			existedBranchList: []string{
 				"main",
 				"test/branch",
@@ -1665,9 +1663,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			want:         false,
 		},
 		{
-			name:        "mainBranchWithGitHub",
-			vcsProvider: "GitHub",
-			vcsType:     vcs.GitHubCom,
+			name:    "mainBranchWithGitHub",
+			vcsType: vcs.GitHubCom,
 			existedBranchList: []string{
 				"main",
 				"test/branch",
@@ -1676,9 +1673,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			want:         false,
 		},
 		{
-			name:        "customBranchWithGitLab",
-			vcsProvider: "GitLab",
-			vcsType:     vcs.GitLabSelfHost,
+			name:    "customBranchWithGitLab",
+			vcsType: vcs.GitLabSelfHost,
 			existedBranchList: []string{
 				"main",
 				"test/branch",
@@ -1687,9 +1683,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			want:         false,
 		},
 		{
-			name:        "customBranchWithGitHub",
-			vcsProvider: "GitHub",
-			vcsType:     vcs.GitHubCom,
+			name:    "customBranchWithGitHub",
+			vcsType: vcs.GitHubCom,
 			existedBranchList: []string{
 				"main",
 				"test/branch",
@@ -1698,9 +1693,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			want:         false,
 		},
 		{
-			name:        "nonExistedBranchWithGitLab",
-			vcsProvider: "GitLab",
-			vcsType:     vcs.GitLabSelfHost,
+			name:    "nonExistedBranchWithGitLab",
+			vcsType: vcs.GitLabSelfHost,
 			existedBranchList: []string{
 				"main",
 				"test/branch",
@@ -1709,9 +1703,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			want:         true,
 		},
 		{
-			name:        "nonExistedBranchWithGitHub",
-			vcsProvider: "GitHub",
-			vcsType:     vcs.GitHubCom,
+			name:    "nonExistedBranchWithGitHub",
+			vcsType: vcs.GitHubCom,
 			existedBranchList: []string{
 				"main",
 				"test/branch",
@@ -1720,9 +1713,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			want:         true,
 		},
 		{
-			name:        "wildcardBranchWithGitLab",
-			vcsProvider: "GitLab",
-			vcsType:     vcs.GitLabSelfHost,
+			name:    "wildcardBranchWithGitLab",
+			vcsType: vcs.GitLabSelfHost,
 			existedBranchList: []string{
 				"main",
 			},
@@ -1730,9 +1722,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			want:         false,
 		},
 		{
-			name:        "wildcardBranchWithGitHub",
-			vcsProvider: "GitHub",
-			vcsType:     vcs.GitHubCom,
+			name:    "wildcardBranchWithGitHub",
+			vcsType: vcs.GitHubCom,
 			existedBranchList: []string{
 				"main",
 			},
@@ -1832,13 +1823,13 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 				repoFullPath string
 			)
 
-			if test.vcsProvider == "GitLab" {
+			if test.vcsType == vcs.GitLabSelfHost {
 				ctl = ctlGL
 				apiVCS = apiVCSGL
 				project = projectGL
 				externalID = fmt.Sprintf("%d", i)
 				repoFullPath = fmt.Sprintf("%d", i)
-			} else {
+			} else if test.vcsType == vcs.GitHubCom {
 				ctl = ctlGH
 				apiVCS = apiVCSGH
 				project = projectGH
