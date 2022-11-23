@@ -167,9 +167,8 @@ type TaskDatabaseBackupPayload struct {
 }
 
 // IssueRollbackRequestPayload is the payload of the DML task rollback API.
-// We use []string instead of []int because the latter is not supported by the golang jsonapi library.
 type IssueRollbackRequestPayload struct {
-	TaskIDList []string `jsonapi:"attr,taskIdList"`
+	TaskIDList []int `json:"taskIdList,omitempty"`
 }
 
 // Task is the API message for a task.

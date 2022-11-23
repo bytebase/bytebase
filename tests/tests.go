@@ -828,7 +828,7 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 	return task, nil
 }
 
-func (ctl *controller) createRollbackIssue(issueID int, taskIDList []string) (*api.Issue, error) {
+func (ctl *controller) createRollbackIssue(issueID int, taskIDList []int) (*api.Issue, error) {
 	payload := api.IssueRollbackRequestPayload{TaskIDList: taskIDList}
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &payload); err != nil {

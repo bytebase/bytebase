@@ -326,16 +326,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, rollbackPayload); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed task rollback request").SetInternal(err)
 		}
-
 		if len(rollbackPayload.TaskIDList) != 1 {
 			return echo.NewHTTPError(http.StatusBadRequest, "The task ID list must have exactly one element")
 		}
+		taskID := rollbackPayload.TaskIDList[0]
 
-		taskID64, err := strconv.ParseInt(rollbackPayload.TaskIDList[0], 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID %s", rollbackPayload.TaskIDList[0])
-		}
-		taskID := int(taskID64)
 		task, err := s.store.GetTaskByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get task with ID %d", taskID)).SetInternal(err)
