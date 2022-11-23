@@ -1862,3 +1862,132 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 
 	return res, nil
 }
+
+func TestGetLatestSchema(t *testing.T) {
+	tests := []struct {
+		name         string
+		dbType       db.Type
+		databaseName string
+		ddl          string
+		want         string
+	}{
+		{
+			name:         "PostgreSQL",
+			dbType:       db.Postgres,
+			databaseName: "latestSchema",
+			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
+			want: `SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.book (
+    id integer,
+    name text
+);
+
+`,
+		},
+	}
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            t.TempDir(),
+		vcsProviderCreator: fake.NewGitLab,
+	})
+	a.NoError(err)
+	defer func() {
+		_ = ctl.Close(ctx)
+	}()
+	err = ctl.Login()
+	a.NoError(err)
+	err = ctl.setLicense()
+	a.NoError(err)
+	environmentName := t.Name()
+	environment, err := ctl.createEnvironment(api.EnvironmentCreate{
+		Name: environmentName,
+	})
+	a.NoError(err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			dbPort := getTestPort()
+			switch test.dbType {
+			case db.Postgres:
+				_, stopInstance := postgres.SetupTestInstance(t, dbPort)
+				defer stopInstance()
+			default:
+				a.FailNow("unsupported db type")
+			}
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: test.name,
+					Key:  test.name,
+				},
+			)
+			a.NoError(err)
+			// Add an instance.
+			instance, err := ctl.addInstance(api.InstanceCreate{
+				EnvironmentID: environment.ID,
+				Name:          test.name,
+				Engine:        db.Postgres,
+				Host:          "/tmp",
+				Port:          strconv.Itoa(dbPort),
+				Username:      "root",
+			})
+			a.NoError(err)
+			err = ctl.createDatabase(project, instance, test.databaseName, "root", nil /* labelMap */)
+			a.NoError(err)
+			databases, err := ctl.getDatabases(api.DatabaseFind{
+				InstanceID: &instance.ID,
+			})
+			a.NoError(err)
+			// Find databases
+			var database *api.Database
+			for _, db := range databases {
+				if db.Name == test.databaseName {
+					database = db
+					break
+				}
+			}
+			a.NotNil(database)
+			// Create an issue that updates database schema.
+			createContext, err := json.Marshal(&api.MigrationContext{
+				DetailList: []*api.MigrationDetail{
+					{
+						MigrationType: db.Migrate,
+						DatabaseID:    database.ID,
+						Statement:     test.ddl,
+					},
+				},
+			})
+			a.NoError(err)
+			issue, err := ctl.createIssue(api.IssueCreate{
+				ProjectID:   project.ID,
+				Name:        fmt.Sprintf("update schema for database %q", test.databaseName),
+				Type:        api.IssueDatabaseSchemaUpdate,
+				Description: fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
+				// Assign to self.
+				AssigneeID:    project.Creator.ID,
+				CreateContext: string(createContext),
+			})
+			a.NoError(err)
+			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			latestSchema, err := ctl.getLatestSchemaOfDatabaseID(database.ID)
+			a.NoError(err)
+			a.Equal(latestSchema, test.want)
+		})
+	}
+}
