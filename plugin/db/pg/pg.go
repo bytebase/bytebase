@@ -375,8 +375,8 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, limit int, readOnly bool, sensitiveDataMap db.SensitiveDataMap) ([]interface{}, error) {
-	return util.Query(ctx, db.Postgres, driver.db, statement, limit, readOnly, sensitiveDataMap)
+func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	return util.Query(ctx, db.Postgres, driver.db, statement, queryContext)
 }
 
 func (driver *Driver) switchDatabase(dbName string) error {
