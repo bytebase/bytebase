@@ -19,11 +19,11 @@ import (
 const applicationRunnerInterval = time.Duration(60) * time.Second
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *ActivityManager) *ApplicationRunner {
+func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider) *ApplicationRunner {
 	return &ApplicationRunner{
 		store:           store,
 		activityManager: activityManager,
-		p:               feishu.NewProvider(),
+		p:               feishuProvider,
 	}
 }
 
@@ -154,6 +154,11 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		}
 	}
+}
+
+// SetFeishuAPIPath is used in tests.
+func (r *ApplicationRunner) SetFeishuAPIPath(url string) {
+	r.p.APIPath = url
 }
 
 func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
