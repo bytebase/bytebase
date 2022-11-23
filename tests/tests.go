@@ -1016,6 +1016,40 @@ func (ctl *controller) query(instance *api.Instance, databaseName, query string)
 	return sqlResultSet.Data, nil
 }
 
+// adminExecuteSQL executes a SQL query on the database.
+func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &sqlExecute); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal sqlExecute")
+	}
+
+	body, err := ctl.post("/sql/execute/admin", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlResultSet := new(api.SQLResultSet)
+	if err = jsonapi.UnmarshalPayload(body, sqlResultSet); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal sqlResultSet response")
+	}
+	return sqlResultSet, nil
+}
+
+func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) (string, error) {
+	sqlResultSet, err := ctl.adminExecuteSQL(api.SQLExecute{
+		InstanceID:   instance.ID,
+		DatabaseName: databaseName,
+		Statement:    query,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to execute SQL")
+	}
+	if sqlResultSet.Error != "" {
+		return "", errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
+	}
+	return sqlResultSet.Data, nil
+}
+
 // createVCS creates a VCS.
 func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	buf := new(bytes.Buffer)
@@ -1533,7 +1567,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 		return errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.ResourceID, policyUpsert.Type), buf)
+	body, err := ctl.patch(fmt.Sprintf("/policy/%s/%d?type=%s", strings.ToLower(string(policyUpsert.ResourceType)), policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
 		return err
 	}
