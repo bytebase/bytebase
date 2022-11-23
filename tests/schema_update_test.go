@@ -1780,6 +1780,7 @@ CREATE TABLE public.book (
 					},
 				},
 			})
+			a.NoError(err)
 			issue, err := ctl.createIssue(api.IssueCreate{
 				ProjectID:   project.ID,
 				Name:        fmt.Sprintf("update schema for database %q", test.databaseName),
@@ -1789,6 +1790,7 @@ CREATE TABLE public.book (
 				AssigneeID:    project.Creator.ID,
 				CreateContext: string(createContext),
 			})
+			a.NoError(err)
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
