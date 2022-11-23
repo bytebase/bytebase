@@ -1,13 +1,27 @@
 <template>
-  <div
-    class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-scroll"
-  >
+  <div class="whitespace-pre-wrap w-full overflow-hidden">
     <MonacoEditor
       ref="editorRef"
-      v-model:value="sqlCode"
-      class="w-full h-full"
+      class="w-full h-auto max-h-[360px]"
+      :value="sql"
       :dialect="selectedDialect"
       :readonly="readonly"
+      :options="{
+        theme: 'bb-dark',
+        minimap: {
+          enabled: false,
+        },
+        scrollbar: {
+          vertical: 'hidden',
+          horizontal: 'hidden',
+          alwaysConsumeMouseWheel: false,
+        },
+        overviewRulerLanes: 0,
+        lineNumbers: getLineNumber,
+        lineNumbersMinChars: 5,
+        glyphMargin: false,
+        cursorStyle: 'block',
+      }"
       @change="handleChange"
       @change-selection="handleChangeSelection"
       @save="handleSaveSheet"
@@ -17,7 +31,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineEmits, nextTick, ref, watch, watchEffect } from "vue";
+import { computed, nextTick, ref, watch, watchEffect } from "vue";
 
 import {
   useInstanceStore,
@@ -25,14 +39,25 @@ import {
   useSQLEditorStore,
   useDatabaseStore,
   useTableStore,
-  useSheetStore,
   useInstanceById,
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import type { ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
+import { ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
+
+const props = defineProps({
+  sql: {
+    type: String,
+    default: "",
+  },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
+});
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
+  (e: "update:sql", sql: string): void;
   (
     e: "execute",
     sql: string,
@@ -41,16 +66,16 @@ const emit = defineEmits<{
   ): void;
 }>();
 
+const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
+
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
 const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
-const sheetStore = useSheetStore();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
-const sqlCode = computed(() => tabStore.currentTab.statement);
 const selectedInstance = useInstanceById(
   computed(() => tabStore.currentTab.connection.instanceId)
 );
@@ -64,7 +89,6 @@ const selectedDialect = computed((): SQLDialect => {
   }
   return "mysql";
 });
-const readonly = computed(() => sheetStore.isReadOnly);
 const currentTabId = computed(() => tabStore.currentTabId);
 const isSwitchingTab = ref(false);
 
@@ -85,6 +109,17 @@ watch(
   }
 );
 
+const getLineNumber = (lineNumber: number) => {
+  /*
+    Show a SQL CLI like command prompt.
+    SQL> first_line
+      -> second_line
+      -> more_lines
+  */
+  if (lineNumber === 1) return "SQL>";
+  return "->";
+};
+
 const handleChange = (value: string) => {
   // When we are switching between tabs, the MonacoEditor emits a 'change'
   // event, but we shouldn't update the current tab;
@@ -95,6 +130,9 @@ const handleChange = (value: string) => {
     statement: value,
     isSaved: false,
   });
+
+  emit("update:sql", value);
+  updateEditorHeight();
 };
 
 const handleChangeSelection = (value: string) => {
@@ -109,43 +147,30 @@ const handleSaveSheet = () => {
 
 const handleEditorReady = async () => {
   const monaco = await import("monaco-editor");
-  editorRef.value?.editorInstance?.addAction({
+  const editor = editorRef.value?.editorInstance;
+  editor?.addAction({
     id: "RunQuery",
     label: "Run Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
     run: async () => {
-      const typedValue = editorRef.value?.editorInstance?.getValue();
-      const selectedValue = editorRef.value?.editorInstance
-        ?.getModel()
-        ?.getValueInRange(
-          editorRef.value?.editorInstance?.getSelection() as any
-        ) as string;
-      const query = selectedValue || typedValue || "";
-      await emit("execute", query, {
+      emit("execute", props.sql, {
         databaseType: selectedInstanceEngine.value,
       });
     },
   });
 
-  editorRef.value?.editorInstance?.addAction({
+  editor?.addAction({
     id: "ExplainQuery",
     label: "Explain Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
     run: async () => {
-      const typedValue = editorRef.value?.editorInstance?.getValue();
-      const selectedValue = editorRef.value?.editorInstance
-        ?.getModel()
-        ?.getValueInRange(
-          editorRef.value?.editorInstance?.getSelection() as any
-        ) as string;
-      const query = selectedValue || typedValue || "";
-      await emit(
+      emit(
         "execute",
-        query,
+        props.sql,
         { databaseType: selectedInstanceEngine.value },
         { explain: true }
       );
@@ -164,5 +189,17 @@ const handleEditorReady = async () => {
       editorRef.value?.setEditorAutoCompletionContext(databaseList, tableList);
     }
   });
+
+  updateEditorHeight();
+};
+
+const updateEditorHeight = () => {
+  const contentHeight =
+    editorRef.value?.editorInstance?.getContentHeight() as number;
+  let actualHeight = contentHeight;
+  if (actualHeight < MIN_EDITOR_HEIGHT) {
+    actualHeight = MIN_EDITOR_HEIGHT;
+  }
+  editorRef.value?.setEditorContentHeight(actualHeight);
 };
 </script>
