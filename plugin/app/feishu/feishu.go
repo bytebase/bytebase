@@ -127,8 +127,8 @@ type GetExternalApprovalResponse struct {
 	} `json:"data"`
 }
 
-// createExternalApprovalCommentResponse is the response of CreateExternalApprovalComment.
-type createExternalApprovalCommentResponse struct {
+// CreateExternalApprovalCommentResponse is the response of CreateExternalApprovalComment.
+type CreateExternalApprovalCommentResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 }
@@ -148,6 +148,11 @@ type CreateApprovalInstanceRequest struct {
 		Value []string `json:"value"`
 	} `json:"node_approver_open_id_list"`
 	OpenID string `json:"open_id"`
+}
+
+// CreateExternalApprovalCommentRequest is the request of CreateExternalApprovalComment.
+type CreateExternalApprovalCommentRequest struct {
+	Content string `json:"content"`
 }
 
 // CancelExternalApprovalRequest is the request of CancelExternalApproval.
@@ -498,9 +503,7 @@ func (p *Provider) CreateExternalApprovalComment(ctx context.Context, tokenCtx T
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal content")
 	}
-	payload := struct {
-		Content string `json:"content"`
-	}{
+	payload := CreateExternalApprovalCommentRequest{
 		Content: string(content),
 	}
 	body, err := json.Marshal(payload)
@@ -515,7 +518,7 @@ func (p *Provider) CreateExternalApprovalComment(ctx context.Context, tokenCtx T
 		return errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response createExternalApprovalCommentResponse
+	var response CreateExternalApprovalCommentResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return err
 	}
