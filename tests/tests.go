@@ -531,7 +531,7 @@ func (ctl *controller) patchProject(projectPatch api.ProjectPatch) error {
 	return nil
 }
 
-func (ctl *controller) createEnvrionment(environmentCreate api.EnvironmentCreate) (*api.Environment, error) {
+func (ctl *controller) createEnvironment(environmentCreate api.EnvironmentCreate) (*api.Environment, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &environmentCreate); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal environment create")
@@ -1016,6 +1016,40 @@ func (ctl *controller) query(instance *api.Instance, databaseName, query string)
 	return sqlResultSet.Data, nil
 }
 
+// adminExecuteSQL executes a SQL query on the database.
+func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &sqlExecute); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal sqlExecute")
+	}
+
+	body, err := ctl.post("/sql/execute/admin", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlResultSet := new(api.SQLResultSet)
+	if err = jsonapi.UnmarshalPayload(body, sqlResultSet); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal sqlResultSet response")
+	}
+	return sqlResultSet, nil
+}
+
+func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) (string, error) {
+	sqlResultSet, err := ctl.adminExecuteSQL(api.SQLExecute{
+		InstanceID:   instance.ID,
+		DatabaseName: databaseName,
+		Statement:    query,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to execute SQL")
+	}
+	if sqlResultSet.Error != "" {
+		return "", errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
+	}
+	return sqlResultSet.Data, nil
+}
+
 // createVCS creates a VCS.
 func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	buf := new(bytes.Buffer)
@@ -1035,7 +1069,7 @@ func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	return vcs, nil
 }
 
-// createRepository creates a repository.
+// createRepository links the repository with the project.
 func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (*api.Repository, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &repositoryCreate); err != nil {
@@ -1052,6 +1086,15 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 		return nil, errors.Wrap(err, "fail to unmarshal repository response")
 	}
 	return repository, nil
+}
+
+// unlinkRepository unlinks the repository from the project by projectID.
+func (ctl *controller) unlinkRepository(projectID int) error {
+	_, err := ctl.delete(fmt.Sprintf("/project/%d/repository", projectID), nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // listRepository gets the repository list.
@@ -1088,6 +1131,18 @@ func (ctl *controller) createSQLReviewCI(projectID, repositoryID int) (*api.SQLR
 		return nil, errors.Wrap(err, "fail to unmarshal SQL reivew CI response")
 	}
 	return sqlReviewCISetup, nil
+}
+
+func (ctl *controller) getLatestSchemaOfDatabaseID(databaseID int) (string, error) {
+	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), nil)
+	if err != nil {
+		return "", err
+	}
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	return string(bs), nil
 }
 
 func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
@@ -1524,7 +1579,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 		return errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.ResourceID, policyUpsert.Type), buf)
+	body, err := ctl.patch(fmt.Sprintf("/policy/%s/%d?type=%s", strings.ToLower(string(policyUpsert.ResourceType)), policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
 		return err
 	}

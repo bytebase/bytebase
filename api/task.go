@@ -155,6 +155,10 @@ type TaskDatabaseDataUpdatePayload struct {
 	RollbackError   string `json:"rollbackError,omitempty"`
 	// RollbackStatement is the generated rollback SQL statement for the DML task.
 	RollbackStatement string `json:"rollbackStatement,omitempty"`
+	// RollbackFromIssueID is the issue ID containing the original task from which the rollback SQL statement is generated for this task.
+	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
+	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
+	RollbackFromTaskID int `json:"rollbackFromTaskId,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
@@ -195,8 +199,6 @@ type Task struct {
 	// BlockedBy is an array of Task ID.
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
-	// RollbackFrom is the task ID from which the rollback SQL statement is generated for this task.
-	RollbackFrom int `jsonapi:"attr,rollbackFrom"`
 	// Progress is loaded from the task scheduler in memory, NOT from the database
 	Progress Progress `jsonapi:"attr,progress"`
 }

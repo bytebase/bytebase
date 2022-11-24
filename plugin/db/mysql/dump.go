@@ -369,7 +369,8 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 		&unused,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return api.BinlogInfo{}, common.FormatDBErrorEmptyRowWithQuery(query)
+			// SHOW MASTER STATUS returns empty row when binlog is off. We should not fail migration in this case for this expected case.
+			return api.BinlogInfo{}, nil
 		}
 		return api.BinlogInfo{}, err
 	}

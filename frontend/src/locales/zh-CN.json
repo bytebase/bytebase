@@ -209,7 +209,9 @@
     "yes": "是",
     "advanced": "高级",
     "restart": "重启",
-    "want-help": "加入用户群"
+    "want-help": "加入用户群",
+    "operation": "操作",
+    "rollback": "回滚"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -326,7 +328,8 @@
       "version-control": "版本控制",
       "subscription": "订阅",
       "labels": "标签",
-      "debug-log": "Debug 日志"
+      "debug-log": "Debug 日志",
+      "sensitive-data": "敏感数据"
     },
     "profile": {
       "email": "邮箱",
@@ -397,6 +400,10 @@
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
         "logo-upload-succeed": "Logo 更新完成"
       }
+    },
+    "sensitive-data": {
+      "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，你可以将多个列标记为敏感数据。",
+      "remove-sensitive-column-tips": "不再对此列数据脱敏？"
     }
   },
   "activity": {
@@ -540,7 +547,9 @@
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
       "dont-apply-to-database-in-baseline-migration": "对于建立基线的迁移，Bytebase 不会应用到数据库，只会记录一个基线历史",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
-    }
+    },
+    "rollback-from": "当前任务回滚自 {link}。",
+    "issue-link-with-task": "工单 {issue} - 任务 {task}"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -880,6 +889,7 @@
     "row-count-estimate": "估计行数",
     "data-size": "数据大小",
     "index-size": "索引大小",
+    "column": "列",
     "columns": "列",
     "indexes": "索引",
     "row-count-est": "估计行数",
@@ -936,7 +946,8 @@
       "more-version": "更多...",
       "character-sets-diff-found": "Schema 之间的字符集不同",
       "preview-issue": "预览工单"
-    }
+    },
+    "sensitive": "敏感"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1435,6 +1446,10 @@
       "bb-feature-environment-tier-policy": {
         "title": "环境级别",
         "desc": "「环境级别」可以将环境标记为受保护的"
+      },
+      "bb-feature-sensitive-data": {
+        "title": "敏感数据",
+        "desc": "将数据表的列标记为敏感数据，它们在查询结果中将会被显示成 \"******\"。"
       },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",

@@ -209,7 +209,9 @@
     "yes": "Yes",
     "advanced": "Advanced",
     "restart": "Restart",
-    "want-help": "Want help"
+    "want-help": "Want help",
+    "operation": "Operation",
+    "rollback": "Rollback"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -326,7 +328,8 @@
       "version-control": "Version Control",
       "subscription": "Subscription",
       "labels": "Labels",
-      "debug-log": "Debug Log"
+      "debug-log": "Debug Log",
+      "sensitive-data": "Sensitive Data"
     },
     "profile": {
       "email": "Email",
@@ -397,6 +400,10 @@
         "logo-upload-tip": "{extension} up to {size} MiB",
         "logo-upload-succeed": "Successfully updated the logo"
       }
+    },
+    "sensitive-data": {
+      "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
+      "remove-sensitive-column-tips": "Expose this column?"
     }
   },
   "activity": {
@@ -540,7 +547,9 @@
       "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
       "dont-apply-to-database-in-baseline-migration": "This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
-    }
+    },
+    "rollback-from": "This task rollbacks from {link}.",
+    "issue-link-with-task": "Issue {issue} - task {task}"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -880,6 +889,7 @@
     "row-count-estimate": "Row count estimate",
     "data-size": "Data size",
     "index-size": "Index size",
+    "column": "Column",
     "columns": "Columns",
     "indexes": "Indexes",
     "row-count-est": "Row count est.",
@@ -936,7 +946,8 @@
       "more-version": "more...",
       "character-sets-diff-found": "There are differences between character sets.",
       "preview-issue": "Preview issue"
-    }
+    },
+    "sensitive": "Sensitive"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1435,6 +1446,10 @@
       "bb-feature-environment-tier-policy": {
         "title": "Environment tier",
         "desc": "Mark environment as protected."
+      },
+      "bb-feature-sensitive-data": {
+        "title": "Sensitive data",
+        "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
       },
       "bb-feature-lgtm": {
         "title": "LGTM check",

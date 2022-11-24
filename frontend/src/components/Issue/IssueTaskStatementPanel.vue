@@ -119,6 +119,8 @@
           </button>
         </template>
       </template>
+
+      <IssueRollbackButton />
     </div>
   </div>
   <label class="sr-only">{{ $t("common.sql-statement") }}</label>
@@ -177,6 +179,8 @@ import {
   Ref,
 } from "vue";
 import { useDialog } from "naive-ui";
+import { useI18n } from "vue-i18n";
+
 import {
   pushNotification,
   useRepositoryStore,
@@ -187,7 +191,7 @@ import { useIssueLogic } from "./logic";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import type { Issue, Repository, SQLDialect, Task, TaskId } from "@/types";
 import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
-import { useI18n } from "vue-i18n";
+import IssueRollbackButton from "./IssueRollbackButton.vue";
 
 interface LocalState {
   editing: boolean;
@@ -206,6 +210,7 @@ export default defineComponent({
   name: "IssueTaskStatementPanel",
   components: {
     MonacoEditor,
+    IssueRollbackButton,
   },
   props: {
     sqlHint: {

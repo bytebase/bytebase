@@ -33,6 +33,7 @@ export interface UIEditorState {
   };
   databaseList: Database[];
   tableList: Table[];
+  droppedTableList: Table[];
 }
 
 /**
@@ -41,7 +42,9 @@ export interface UIEditorState {
 export interface DatabaseEdit {
   databaseId: DatabaseId;
 
-  CreateTableList: CreateTableContext[];
+  createTableList: CreateTableContext[];
+  alterTableList: AlterTableContext[];
+  dropTableList: DropTableContext[];
 }
 
 export interface CreateTableContext {
@@ -55,6 +58,18 @@ export interface CreateTableContext {
   addColumnList: AddColumnContext[];
 }
 
+export interface AlterTableContext {
+  name: string;
+
+  addColumnList: AddColumnContext[];
+  modifyColumnList: ModifyColumnContext[];
+  dropColumnList: DropColumnContext[];
+}
+
+export interface DropTableContext {
+  name: string;
+}
+
 export interface AddColumnContext {
   name: string;
   type: string;
@@ -63,4 +78,18 @@ export interface AddColumnContext {
   comment: string;
   nullable: boolean;
   default?: string;
+}
+
+export interface ModifyColumnContext {
+  name: string;
+  type: string;
+  characterSet: string;
+  collation: string;
+  comment: string;
+  nullable: boolean;
+  default?: string;
+}
+
+export interface DropColumnContext {
+  name: string;
 }

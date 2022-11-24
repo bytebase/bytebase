@@ -1,4 +1,4 @@
-# DO NOT run docker build against this file directly. Instead using ./build_docker_bb.sh as that
+# DO NOT run docker build against this file directly. Instead using ./build_bb_docker.sh as that
 # one sets the various ARG used in the Dockerfile
 
 # After build

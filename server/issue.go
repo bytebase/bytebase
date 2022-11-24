@@ -33,7 +33,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 		}
 
-		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
+		issueCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		issue, err := s.createIssue(ctx, issueCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
 		}
@@ -309,7 +310,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.Issue, error) {
+func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.Issue, error) {
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
 	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
@@ -338,20 +339,19 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
 	}
 
-	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate, creatorID)
+	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate)
 	if err != nil {
 		return nil, err
 	}
 
 	if issueCreate.ValidateOnly {
-		issue, err := s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate, creatorID)
+		issue, err := s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate)
 		if err != nil {
 			return nil, err
 		}
 		return issue, nil
 	}
 
-	issueCreate.CreatorID = creatorID
 	issueCreate.PipelineID = pipeline.ID
 	issue, err := s.store.CreateIssue(ctx, issueCreate)
 	if err != nil {
@@ -386,7 +386,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
 	}
 	activityCreate := &api.ActivityCreate{
-		CreatorID:   creatorID,
+		CreatorID:   issueCreate.CreatorID,
 		ContainerID: issue.ID,
 		Type:        api.ActivityIssueCreate,
 		Level:       api.ActivityInfo,
@@ -401,7 +401,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreate, pipelineCreate *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreate, pipelineCreate *api.PipelineCreate) (*api.Pipeline, error) {
 	// Return an error if the issue has no task to be executed
 	hasTask := false
 	for _, stage := range pipelineCreate.StageList {
@@ -415,12 +415,13 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
+	pipelineCreate.CreatorID = issueCreate.CreatorID
+
 	// Create the pipeline, stages, and tasks.
 	if issueCreate.ValidateOnly {
-		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate, creatorID)
+		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate)
 	}
 
-	pipelineCreate.CreatorID = creatorID
 	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
@@ -428,7 +429,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 
 	// TODO(p0ny): create stages in batch.
 	for _, stageCreate := range pipelineCreate.StageList {
-		stageCreate.CreatorID = creatorID
+		stageCreate.CreatorID = issueCreate.CreatorID
 		stageCreate.PipelineID = pipelineCreated.ID
 		createdStage, err := s.store.CreateStage(ctx, &stageCreate)
 		if err != nil {
@@ -438,7 +439,7 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		var taskCreateList []*api.TaskCreate
 		for _, taskCreate := range stageCreate.TaskList {
 			c := taskCreate
-			c.CreatorID = creatorID
+			c.CreatorID = issueCreate.CreatorID
 			c.PipelineID = pipelineCreated.ID
 			c.StageID = createdStage.ID
 			taskCreateList = append(taskCreateList, &c)
@@ -474,9 +475,103 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
 	case api.IssueDatabaseSchemaUpdateGhost:
 		return s.getPipelineCreateForDatabaseSchemaUpdateGhost(ctx, issueCreate)
+	case api.IssueDatabaseRollback:
+		return s.getPipelineCreateForDatabaseRollback(ctx, issueCreate)
 	default:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
+}
+
+func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+	c := api.RollbackContext{}
+	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
+		return nil, err
+	}
+
+	issueID := c.IssueID
+	if len(c.TaskIDList) != 1 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "The task ID list must have exactly one element")
+	}
+	taskID := c.TaskIDList[0]
+	issue, err := s.store.GetIssueByID(ctx, issueID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with ID %d", issueID)).SetInternal(err)
+	}
+	if issue == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", issueID))
+	}
+	task, err := s.store.GetTaskByID(ctx, taskID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get task with ID %d", taskID)).SetInternal(err)
+	}
+	if task == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
+	}
+	if task.Type != api.TaskDatabaseDataUpdate {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task type must be %s, but got %s", api.TaskDatabaseDataUpdate, task.Type))
+	}
+	if task.Database.Instance.Engine != db.MySQL {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Only support rollback for MySQL now, but got %s", task.Database.Instance.Engine))
+	}
+	if task.PipelineID != issue.PipelineID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d is not in issue %d", taskID, issue.ID))
+	}
+	if task.Status != api.TaskDone && task.Status != api.TaskFailed {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task %d has status %s, must be %s or %s", taskID, task.Status, api.TaskDone, api.TaskFailed))
+	}
+
+	taskPayload := &api.TaskDatabaseDataUpdatePayload{}
+	if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to unmarshal the task payload with ID %d", taskID)).SetInternal(err)
+	}
+	switch {
+	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError == "":
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d is still in progress", taskID))
+	case taskPayload.RollbackStatement == "" && taskPayload.RollbackError != "":
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Rollback SQL generation for task %d has already failed: %s", taskID, taskPayload.RollbackError))
+	case taskPayload.RollbackStatement != "" && taskPayload.RollbackError != "":
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid task payload: RollbackStatement=%q, RollbackError=%q", taskPayload.RollbackStatement, taskPayload.RollbackError))
+	}
+
+	issueCreateContext := &api.MigrationContext{
+		DetailList: []*api.MigrationDetail{
+			{
+				MigrationType: db.Data,
+				DatabaseID:    *task.DatabaseID,
+				Statement:     taskPayload.RollbackStatement,
+			},
+		},
+	}
+	bytes, err := json.Marshal(issueCreateContext)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue create context for rollback issue")
+	}
+	issueCreate.CreateContext = string(bytes)
+	issueCreate.Type = api.IssueDatabaseDataUpdate
+	pipelineCreate, err := s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pipelineCreate.StageList) != 1 {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Must have one stage for a rollback task")
+	}
+	if len(pipelineCreate.StageList[0].TaskList) != 1 {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Must have one task for a rollback task")
+	}
+	rollbackTaskPayload := &api.TaskDatabaseDataUpdatePayload{}
+	if err := json.Unmarshal([]byte(pipelineCreate.StageList[0].TaskList[0].Payload), rollbackTaskPayload); err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to unmarshal the rollback task create payload").SetInternal(err)
+	}
+	rollbackTaskPayload.RollbackFromIssueID = issueID
+	rollbackTaskPayload.RollbackFromTaskID = taskID
+	buf, err := json.Marshal(rollbackTaskPayload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal rollback task payload").SetInternal(err)
+	}
+	pipelineCreate.StageList[0].TaskList[0].Payload = string(buf)
+
+	return pipelineCreate, nil
 }
 
 func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {

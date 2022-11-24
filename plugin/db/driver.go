@@ -445,6 +445,17 @@ type ConnectionContext struct {
 	InstanceName    string
 }
 
+// QueryContext is the context to query.
+type QueryContext struct {
+	// Limit is the maximum row count returned. No limit enforced if limit <= 0
+	Limit            int
+	ReadOnly         bool
+	SensitiveDataMap SensitiveDataMap
+
+	// CurrentDatabase is for MySQL
+	CurrentDatabase string
+}
+
 // Driver is the interface for database driver.
 type Driver interface {
 	// General execution
@@ -459,8 +470,7 @@ type Driver interface {
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 	Execute(ctx context.Context, statement string, createDatabase bool) error
 	// Used for execute readonly SELECT statement
-	// limit is the maximum row count returned. No limit enforced if limit <= 0
-	Query(ctx context.Context, statement string, limit int, readOnly bool) ([]interface{}, error)
+	Query(ctx context.Context, statement string, queryContext *QueryContext) ([]interface{}, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
@@ -549,8 +559,21 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
-// SensitiveColumnList is the list for sensitive columns.
-type SensitiveColumnList []string
+// SensitiveData is the struct for sensitive column.
+type SensitiveData struct {
+	Database string
+	Table    string
+	Column   string
+}
 
-// SensitiveSchema is the set of the sensitive columns group by table names.
-type SensitiveSchema map[string]SensitiveColumnList
+// SensitiveDataMap is the map for sensitive data.
+type SensitiveDataMap map[SensitiveData]SensitiveDataMaskType
+
+// SensitiveDataMaskType is the mask type for sensitive data.
+type SensitiveDataMaskType string
+
+const (
+	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
+	// The default method is subject to change.
+	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
+)

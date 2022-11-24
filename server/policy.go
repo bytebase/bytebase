@@ -44,6 +44,10 @@ func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
 		if !s.feature(api.FeatureEnvironmentTierPolicy) {
 			return errors.Errorf(api.FeatureEnvironmentTierPolicy.AccessErrorMessage())
 		}
+	case api.PolicyTypeSensitiveData:
+		if !s.feature(api.FeatureSensitiveData) {
+			return errors.Errorf(api.FeatureSensitiveData.AccessErrorMessage())
+		}
 	}
 	return nil
 }
@@ -59,10 +63,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
-
 		pType := api.PolicyType(c.QueryParam("type"))
-		if err := api.ValidatePolicy(pType, ""); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
+		if err := api.ValidatePolicyType(pType); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		policyUpsert := &api.PolicyUpsert{
 			ResourceType: resourceType,
@@ -76,6 +79,11 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 
 		if err := s.hasAccessToUpsertPolicy(policyUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
+		}
+
+		// Validate policy.
+		if err := api.ValidatePolicy(policyUpsert.ResourceType, policyUpsert.Type, policyUpsert.Payload); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy payload %s", err.Error())).SetInternal(err)
 		}
 
 		policy, err := s.store.UpsertPolicy(ctx, policyUpsert)
@@ -103,10 +111,14 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
+		pType := api.PolicyType(c.QueryParam("type"))
+		if err := api.ValidatePolicyType(pType); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
 		policyDelete := &api.PolicyDelete{
 			ResourceType: resourceType,
 			ResourceID:   resourceID,
-			Type:         api.PolicyType(c.QueryParam("type")),
+			Type:         pType,
 			DeleterID:    c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := s.store.DeletePolicy(ctx, policyDelete); err != nil {
@@ -132,13 +144,13 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		pType := api.PolicyType(c.QueryParam("type"))
-		if err := api.ValidatePolicy(pType, ""); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
+		if err := api.ValidatePolicyType(pType); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		policyFind := &api.PolicyFind{
 			ResourceType: &resourceType,
 			ResourceID:   &resourceID,
-			Type:         &pType,
+			Type:         pType,
 		}
 		policy, err := s.store.GetPolicy(ctx, policyFind)
 		if err != nil {
@@ -153,10 +165,6 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	})
 
 	g.GET("/policy", func(c echo.Context) error {
-		pType := api.PolicyType(c.QueryParam("type"))
-		if err := api.ValidatePolicy(pType, ""); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy type: %q", pType)).SetInternal(err)
-		}
 		var resourceType *api.PolicyResourceType
 		var resourceID *int
 		if c.QueryParam("resourceType") != "" {
@@ -173,10 +181,15 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			}
 			resourceID = &id
 		}
+		pType := api.PolicyType(c.QueryParam("type"))
+		if err := api.ValidatePolicyType(pType); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+
 		policyFind := &api.PolicyFind{
 			ResourceType: resourceType,
 			ResourceID:   resourceID,
-			Type:         &pType,
+			Type:         pType,
 		}
 
 		ctx := c.Request().Context()
