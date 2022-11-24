@@ -300,7 +300,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
 
-		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager, feishu.NewProvider(feishu.APIPath))
+		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager, feishu.NewProvider(prof.FeishuAPIURL))
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
