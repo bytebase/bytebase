@@ -196,6 +196,14 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 		if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
 			return nil, err
 		}
+		botID, err := r.p.GetBotID(ctx,
+			feishu.TokenCtx{
+				AppID:     settingValue.AppID,
+				AppSecret: settingValue.AppSecret,
+			})
+		if err != nil {
+			return nil, err
+		}
 		if err := r.p.CancelExternalApproval(ctx,
 			feishu.TokenCtx{
 				AppID:     settingValue.AppID,
@@ -203,7 +211,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 			},
 			settingValue.ExternalApproval.ApprovalDefinitionID,
 			payload.InstanceCode,
-			payload.RequesterID,
+			botID,
 		); err != nil {
 			return nil, err
 		}
@@ -213,7 +221,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 				AppSecret: settingValue.AppSecret,
 			},
 			payload.InstanceCode,
-			payload.RequesterID,
+			botID,
 			reason,
 		); err != nil {
 			return nil, err
@@ -256,6 +264,14 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 	if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
 		return err
 	}
+	botID, err := r.p.GetBotID(ctx,
+		feishu.TokenCtx{
+			AppID:     value.AppID,
+			AppSecret: value.AppSecret,
+		})
+	if err != nil {
+		return err
+	}
 	if err := r.p.CancelExternalApproval(ctx,
 		feishu.TokenCtx{
 			AppID:     value.AppID,
@@ -263,7 +279,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 		},
 		value.ExternalApproval.ApprovalDefinitionID,
 		payload.InstanceCode,
-		payload.RequesterID,
+		botID,
 	); err != nil {
 		return err
 	}
@@ -273,7 +289,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 			AppSecret: value.AppSecret,
 		},
 		payload.InstanceCode,
-		payload.RequesterID,
+		botID,
 		string(reason),
 	)
 }
