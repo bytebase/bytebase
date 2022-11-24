@@ -169,11 +169,14 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 		return nil, err
 	}
 
+	reason := api.ExternalApprovalCancelReasonGeneral
 	cancelOld := func() bool {
 		if payload.StageID != stage.ID {
+			reason = api.ExternalApprovalCancelReasonNoTaskPendingApproval
 			return true
 		}
 		if payload.AssigneeID != issue.AssigneeID {
+			reason = api.ExternalApprovalCancelReasonReassigned
 			return true
 		}
 		pendingApprovalCount := 0
@@ -182,7 +185,11 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 				pendingApprovalCount++
 			}
 		}
-		return pendingApprovalCount == 0
+		if pendingApprovalCount == 0 {
+			reason = api.ExternalApprovalCancelReasonNoTaskPendingApproval
+			return true
+		}
+		return false
 	}()
 
 	if cancelOld {
@@ -207,7 +214,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 			},
 			payload.InstanceCode,
 			payload.RequesterID,
-			"The approval is canceled because the assignee has been changed or all tasks of the stage have been approved.",
+			reason,
 		); err != nil {
 			return nil, err
 		}
@@ -216,7 +223,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 }
 
 // CancelExternalApproval cancels the active external approval of an issue.
-func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *api.Issue) error {
+func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *api.Issue, reason api.ExternalApprovalCancelReason) error {
 	settingName := api.SettingAppIM
 	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
@@ -267,7 +274,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 		},
 		payload.InstanceCode,
 		payload.RequesterID,
-		"The approval is canceled because the assignee has been changed or all tasks of the stage have been approved.",
+		string(reason),
 	)
 }
 

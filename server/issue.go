@@ -1418,7 +1418,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 
 	// Cancel external approval, it's ok if we failed.
 	if newStatus != api.IssueOpen {
-		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue); err != nil {
+		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue, api.ExternalApprovalCancelReason(api.ExternalApprovalCancelReasonIssueCanceled)); err != nil {
 			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
 		}
 	}
