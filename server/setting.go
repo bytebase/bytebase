@@ -78,6 +78,16 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				p := s.ApplicationRunner.p
 				// clear token cache so that we won't use the previous token.
 				p.ClearTokenCache()
+
+				// check bot info
+				if _, err := p.GetBotID(ctx, feishu.TokenCtx{
+					AppID:     value.AppID,
+					AppSecret: value.AppSecret,
+				}); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Failed to get bot id. Hint: check if bot is enabled.").SetInternal(err)
+				}
+
+				// create approval definition
 				approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
 					AppID:     value.AppID,
 					AppSecret: value.AppSecret,
@@ -85,6 +95,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Failed to create approval definition").SetInternal(err)
 				}
+
 				value.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 				b, err := json.Marshal(value)
 				if err != nil {

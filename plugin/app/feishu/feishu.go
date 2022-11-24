@@ -139,6 +139,15 @@ type CancelExternalApprovalResponse struct {
 	Msg  string `json:"msg"`
 }
 
+// GetBotIDResponse is the response of GetBotID.
+type GetBotIDResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Bot  struct {
+		OpenID string `json:"open_id"`
+	} `json:"bot"`
+}
+
 // CreateApprovalInstanceRequest is the request of CreateApprovalInstance.
 type CreateApprovalInstanceRequest struct {
 	ApprovalCode           string `json:"approval_code"`
@@ -599,6 +608,29 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 	}
 
 	return userID, nil
+}
+
+// GetBotID gets the id of the bot.
+// https://open.feishu.cn/document/ukTMukTMukTM/uAjMxEjLwITMx4CMyETM
+func (p *Provider) GetBotID(ctx context.Context, tokenCtx TokenCtx) (string, error) {
+	url := fmt.Sprintf("%s/bot/v3/info", p.APIPath)
+	code, _, b, err := p.do(ctx, p.client, http.MethodGet, url, nil, p.tokenRefresher(tokenCtx))
+	if err != nil {
+		return "", errors.Wrapf(err, "POST %s", url)
+	}
+	if code != http.StatusOK {
+		return "", errors.Errorf("non-200 POST status code %d with body %q", code, b)
+	}
+
+	var response GetBotIDResponse
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
+		return "", err
+	}
+	if response.Code != 0 {
+		return "", errors.Errorf("failed to create external approval, code %d, msg %s", response.Code, response.Msg)
+	}
+
+	return response.Bot.OpenID, nil
 }
 
 func formatForm(content Content) (string, error) {
