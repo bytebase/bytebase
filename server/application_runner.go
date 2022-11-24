@@ -91,7 +91,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
 						if issue.Status != api.IssueOpen {
-							if err := r.CancelExternalApproval(ctx, issue.ID); err != nil {
+							if err := r.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
 							}
 							continue
@@ -222,7 +222,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 			},
 			payload.InstanceCode,
 			botID,
-			reason,
+			string(reason),
 		); err != nil {
 			return nil, err
 		}
@@ -231,7 +231,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 }
 
 // CancelExternalApproval cancels the active external approval of an issue.
-func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *api.Issue, reason api.ExternalApprovalCancelReason) error {
+func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID int, reason api.ExternalApprovalCancelReason) error {
 	settingName := api.SettingAppIM
 	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {

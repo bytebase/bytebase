@@ -9,10 +9,10 @@ const ExternalApprovalTypeFeishu = "bb.plugin.app.feishu"
 type ExternalApprovalCancelReason string
 
 const (
-	ExternalApprovalCancelReasonGeneral               string = "Canceled because the assignee has been changed, or all tasks of the stage have been approved or the issue is no longer open."
-	ExternalApprovalCancelReasonIssueNotOpen          string = "Canceled because the containing issue is no longer open."
-	ExternalApprovalCancelReasonReassigned            string = "Canceled because the assignee has changed."
-	ExternalApprovalCancelReasonNoTaskPendingApproval string = "Canceled because all tasks have benn approved."
+	ExternalApprovalCancelReasonGeneral               ExternalApprovalCancelReason = "Canceled because the assignee has been changed, or all tasks of the stage have been approved or the issue is no longer open."
+	ExternalApprovalCancelReasonIssueNotOpen          ExternalApprovalCancelReason = "Canceled because the containing issue is no longer open."
+	ExternalApprovalCancelReasonReassigned            ExternalApprovalCancelReason = "Canceled because the assignee has changed."
+	ExternalApprovalCancelReasonNoTaskPendingApproval ExternalApprovalCancelReason = "Canceled because all tasks have benn approved."
 )
 
 // ExternalApproval is the API message of ExternalApproval.
