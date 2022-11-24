@@ -18,13 +18,16 @@ import (
 
 // Feishu is a fake feishu API server implementation for testing.
 type Feishu struct {
-	port               int
-	echo               *echo.Echo
+	port  int
+	echo  *echo.Echo
+	botID string
+
+	mutex sync.Mutex
+	// mutex protects everything below.
 	approvalDefinition map[string]bool
 	approvalInstance   map[string]*approval
-	// email to user id mapping
+	// email to user id mapping.
 	users map[string]string
-	mutex sync.Mutex
 }
 
 // FeishuProviderCreator is the function to create a fake feishu provider.
@@ -52,6 +55,7 @@ func NewFeishu(port int) *Feishu {
 		approvalInstance:   map[string]*approval{},
 		users:              map[string]string{},
 		mutex:              sync.Mutex{},
+		botID:              uuid.NewString(),
 	}
 
 	// Routes
@@ -61,6 +65,7 @@ func NewFeishu(port int) *Feishu {
 	g.GET("/approval/v4/instances/:id", f.getApprovalInstanceStatus)
 	g.POST("/approval/v4/instances/cancel", f.cancelApprovalInstance)
 	g.POST("/contact/v3/users/batch_get_id", f.getIDByEmail)
+	g.GET("/bot/v3/info", f.getBotID)
 
 	return f
 }
@@ -255,4 +260,16 @@ func (f *Feishu) getIDByEmail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func (f *Feishu) getBotID(c echo.Context) error {
+	return c.JSON(http.StatusOK, &feishu.GetBotIDResponse{
+		Code: 0,
+		Msg:  "ok",
+		Bot: struct {
+			OpenID string `json:"open_id"`
+		}{
+			OpenID: f.botID,
+		},
+	})
 }
