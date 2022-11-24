@@ -85,7 +85,7 @@ type SettingAppIMValue struct {
 	ExternalApproval struct {
 		Enabled              bool   `json:"enabled"`
 		ApprovalDefinitionID string `json:"approvalDefinitionID"`
-		// FallbackEmail is optional. It's used as a substitution of bytebase bot. If the issue creator is bytebase bot, we use this email to find the user on the IM.
+		// FallbackEmail is optional. It's used as a substitution for bytebase bot. If the issue creator is bytebase bot, we use this email to find the user on the IM.
 		FallbackEmail string `json:"fallbackEmail"`
 	} `json:"externalApproval"`
 }
