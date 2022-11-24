@@ -5,6 +5,6 @@ type DropSequenceStmt struct {
 	ddl
 
 	IfExists         bool
-	SequenceNameList []SequenceNameDef
+	SequenceNameList []*SequenceNameDef
 	Behavior         DropBehavior
 }

@@ -432,6 +432,8 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 		}
 		return createSeqStmt, nil
+	case *pgquery.Node_AlterSeqStmt:
+		return convertAlterSequence(in.AlterSeqStmt)
 	case *pgquery.Node_AlterObjectSchemaStmt:
 		switch in.AlterObjectSchemaStmt.ObjectType {
 		case pgquery.ObjectType_OBJECT_TABLE:
@@ -560,6 +562,85 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 	}
 
 	return nil, nil
+}
+
+func convertAlterSequence(in *pgquery.AlterSeqStmt) (*ast.AlterSequenceStmt, error) {
+	alterSequenceStmt := &ast.AlterSequenceStmt{
+		IfExists: in.MissingOk,
+	}
+
+	if in.Sequence == nil {
+		return nil, parser.NewConvertErrorf("AlterSeqStmt.Sequence is nil")
+	}
+
+	alterSequenceStmt.Name = convertRangeVarToSeqName(in.Sequence)
+
+	for _, option := range in.Options {
+		defElemNode, ok := option.Node.(*pgquery.Node_DefElem)
+		if !ok {
+			return nil, parser.NewConvertErrorf("expected DefElem but found %t", option.Node)
+		}
+		var err error
+		switch defElemNode.DefElem.Defname {
+		case "as":
+			if alterSequenceStmt.Type, err = convertDefElemToSeqType(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+		case "increment":
+			if alterSequenceStmt.IncrementBy, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+		case "start":
+			if alterSequenceStmt.StartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+    case "restart":
+      if alterSequenceStmt.RestartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+        return nil, err
+      }
+		case "minvalue":
+			if alterSequenceStmt.MinValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+			if alterSequenceStmt.MinValue == nil {
+				alterSequenceStmt.NoMinValue = true
+			}
+		case "maxvalue":
+			if alterSequenceStmt.MaxValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+			if alterSequenceStmt.MaxValue == nil {
+				alterSequenceStmt.NoMaxValue = true
+			}
+		case "cache":
+			if alterSequenceStmt.Cache, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+		case "cycle":
+			var cycle bool
+			if cycle, err = convertDefElemNodeIntegerToBool(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+			alterSequenceStmt.Cycle = &cycle
+		case "owned_by":
+			owner, err := convertDefElemNodeListToColumnNameDef(defElemNode.DefElem)
+			if err != nil {
+				return nil, err
+			}
+			if owner.Table.Database == "" &&
+				owner.Table.Schema == "" &&
+				owner.Table.Name == "" &&
+				owner.ColumnName == "none" {
+        alterSequenceStmt.OwnedByNone = true
+			} else {
+        alterSequenceStmt.OwnedBy = owner
+      }
+		default:
+			return nil, parser.NewConvertErrorf("unsupported option %s", defElemNode.DefElem.Defname)
+		}
+	}
+
+	return alterSequenceStmt, nil
 }
 
 func convertDropBehavior(behavior pgquery.DropBehavior) ast.DropBehavior {
@@ -849,23 +930,23 @@ func convertSetOperation(t pgquery.SetOperation) (ast.SetOperationType, error) {
 	}
 }
 
-func convertListToSequenceNameDef(in *pgquery.Node_List) (ast.SequenceNameDef, error) {
+func convertListToSequenceNameDef(in *pgquery.Node_List) (*ast.SequenceNameDef, error) {
 	stringList, err := convertListToStringList(in)
 	if err != nil {
-		return ast.SequenceNameDef{}, err
+		return &ast.SequenceNameDef{}, err
 	}
 	switch len(in.List.Items) {
 	case 2:
-		return ast.SequenceNameDef{
+		return &ast.SequenceNameDef{
 			Schema: stringList[0],
 			Name:   stringList[1],
 		}, nil
 	case 1:
-		return ast.SequenceNameDef{
+		return &ast.SequenceNameDef{
 			Name: stringList[0],
 		}, nil
 	default:
-		return ast.SequenceNameDef{}, parser.NewConvertErrorf("expected length is 1 or 2, but found %d", len(in.List.Items))
+		return &ast.SequenceNameDef{}, parser.NewConvertErrorf("expected length is 1 or 2, but found %d", len(in.List.Items))
 	}
 }
 
@@ -933,8 +1014,8 @@ func convertRangeVarToTableName(in *pgquery.RangeVar, tableType ast.TableType) *
 	}
 }
 
-func convertRangeVarToSeqName(in *pgquery.RangeVar) ast.SequenceNameDef {
-	return ast.SequenceNameDef{
+func convertRangeVarToSeqName(in *pgquery.RangeVar) *ast.SequenceNameDef {
+	return &ast.SequenceNameDef{
 		Schema: in.Schemaname,
 		Name:   in.Relname,
 	}
