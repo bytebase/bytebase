@@ -53,6 +53,7 @@ func NewFeishu(port int) *Feishu {
 		approvalDefinition: map[string]bool{},
 		approvalInstance:   map[string]*approval{},
 		users:              map[string]string{},
+		userIDs:            map[string]bool{},
 		mutex:              sync.Mutex{},
 	}
 
