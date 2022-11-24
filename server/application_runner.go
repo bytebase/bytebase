@@ -91,10 +91,10 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
 						if issue.Status != api.IssueOpen {
-							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
+							if err := r.CancelExternalApproval(ctx, issue.ID); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
-								continue
 							}
+							continue
 						}
 
 						status, err := r.p.GetExternalApprovalStatus(ctx, feishu.TokenCtx{
@@ -250,7 +250,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 	if !value.ExternalApproval.Enabled {
 		return nil
 	}
-	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
+	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issueID)
 	if err != nil {
 		return err
 	}
