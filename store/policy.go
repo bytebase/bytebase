@@ -519,7 +519,7 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert, mod
 			payload,
 			row_status
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
 			%s
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, resource_id, inherit_from_parent, type, payload
