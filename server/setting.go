@@ -78,10 +78,23 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				p := s.ApplicationRunner.p
 				// clear token cache so that we won't use the previous token.
 				p.ClearTokenCache()
-				approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
-					AppID:     value.AppID,
-					AppSecret: value.AppSecret,
-				}, "")
+
+				if value.ExternalApproval.FallbackEmail != "" {
+					if _, err := p.GetIDByEmail(ctx,
+						feishu.TokenCtx{
+							AppID:     value.AppID,
+							AppSecret: value.AppSecret,
+						},
+						[]string{value.ExternalApproval.FallbackEmail}); err != nil {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get user id by email %s", value.ExternalApproval.FallbackEmail)).SetInternal(err)
+					}
+				}
+				approvalDefinitionID, err := p.CreateApprovalDefinition(ctx,
+					feishu.TokenCtx{
+						AppID:     value.AppID,
+						AppSecret: value.AppSecret,
+					},
+					"")
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Failed to create approval definition").SetInternal(err)
 				}
