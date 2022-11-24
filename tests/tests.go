@@ -134,20 +134,23 @@ CREATE TABLE book3 (
 )
 
 type controller struct {
-	server      *server.Server
-	profile     server.Profile
-	client      *http.Client
-	cookie      string
-	vcsProvider fake.VCSProvider
+	server         *server.Server
+	profile        server.Profile
+	client         *http.Client
+	cookie         string
+	vcsProvider    fake.VCSProvider
+	feishuProvider *fake.Feishu
 
-	rootURL string
-	apiURL  string
-	vcsURL  string
+	rootURL   string
+	apiURL    string
+	vcsURL    string
+	feishuURL string
 }
 
 type config struct {
-	dataDir            string
-	vcsProviderCreator fake.VCSProviderCreator
+	dataDir                 string
+	vcsProviderCreator      fake.VCSProviderCreator
+	feishuProverdierCreator fake.FeishuProviderCreator
 
 	pgUser string
 	pgURL  string
@@ -179,22 +182,11 @@ func getTestPortForEmbeddedPg() int {
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
-	serverPort := getTestPort()
-	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, config.pgUser, config.pgURL)
-	server, err := server.NewServer(ctx, profile)
-	if err != nil {
+	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
 		return err
 	}
-	ctl.server = server
-
-	return ctl.start(ctx, config.vcsProviderCreator, serverPort)
-}
-
-// StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, config *config) error {
-	log.SetLevel(zap.DebugLevel)
-	serverPort := getTestPortForEmbeddedPg()
-	profile := cmd.GetTestProfile(config.dataDir, serverPort)
+	serverPort := getTestPort()
+	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, config.pgUser, config.pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -202,18 +194,73 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	ctl.server = server
 	ctl.profile = profile
 
-	return ctl.start(ctx, config.vcsProviderCreator, serverPort)
+	return ctl.start(ctx, serverPort)
 }
 
-// start only called by StartServer() and StartServerWithExternalPg().
-func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSProviderCreator, port int) error {
-	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
-	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
+// StartServer starts the main server with embed Postgres.
+func (ctl *controller) StartServer(ctx context.Context, config *config) error {
+	log.SetLevel(zap.DebugLevel)
+	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
+		return err
+	}
+	serverPort := getTestPortForEmbeddedPg()
+	profile := cmd.GetTestProfile(config.dataDir, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	server, err := server.NewServer(ctx, profile)
+	if err != nil {
+		return err
+	}
+	ctl.server = server
+	ctl.profile = profile
 
+	return ctl.start(ctx, serverPort)
+}
+
+func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreator, feishuProviderCreator fake.FeishuProviderCreator) error {
 	// Set up VCS provider.
 	vcsPort := getTestPort()
 	ctl.vcsProvider = vcsProviderCreator(vcsPort)
 	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
+
+	// Set up fake feishu server.
+	if feishuProviderCreator != nil {
+		feishuPort := getTestPort()
+		ctl.feishuProvider = feishuProviderCreator(feishuPort)
+		ctl.feishuURL = fmt.Sprintf("http://localhost:%d", feishuPort)
+	}
+
+	errChan := make(chan error, 1)
+
+	go func() {
+		if err := ctl.vcsProvider.Run(); err != nil {
+			errChan <- errors.Wrap(err, "failed to run vcsProvider server")
+		}
+	}()
+
+	if feishuProviderCreator != nil {
+		go func() {
+			if err := ctl.feishuProvider.Run(); err != nil {
+				errChan <- errors.Wrap(err, "failed to run feishuProvider server")
+			}
+		}()
+	}
+
+	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
+		return errors.Wrap(err, "failed to wait for vcsProvider to start")
+	}
+
+	if feishuProviderCreator != nil {
+		if err := waitForFeishuStart(ctl.feishuProvider, errChan); err != nil {
+			return errors.Wrap(err, "failed to wait for feishuProvider to start")
+		}
+	}
+
+	return nil
+}
+
+// start only called by StartServer() and StartServerWithExternalPg().
+func (ctl *controller) start(ctx context.Context, port int) error {
+	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
+	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
 	errChan := make(chan error, 1)
 
@@ -223,17 +270,8 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 		}
 	}()
 
-	go func() {
-		if err := ctl.vcsProvider.Run(); err != nil {
-			errChan <- errors.Wrap(err, "failed to run vcsProvider server")
-		}
-	}()
-
 	if err := waitForServerStart(ctl.server, errChan); err != nil {
 		return errors.Wrap(err, "failed to wait for server to start")
-	}
-	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
-		return errors.Wrap(err, "failed to wait for vcsProvider to start")
 	}
 
 	// initialize controller clients.
@@ -281,6 +319,26 @@ func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 		select {
 		case <-ticker.C:
 			addr := p.ListenerAddr()
+			if addr != nil && strings.Contains(addr.String(), ":") {
+				return nil // was started
+			}
+		case err := <-errChan:
+			if err == http.ErrServerClosed {
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+func waitForFeishuStart(f *fake.Feishu, errChan <-chan error) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			addr := f.ListenerAddr()
 			if addr != nil && strings.Contains(addr.String(), ":") {
 				return nil // was started
 			}
@@ -474,6 +532,42 @@ func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, e
 		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 	return resp.Body, nil
+}
+
+func (ctl *controller) createPrincipal(principalCreate api.PrincipalCreate) (*api.Principal, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &principalCreate); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal principal create")
+	}
+
+	body, err := ctl.post("/principal", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	principal := new(api.Principal)
+	if err = jsonapi.UnmarshalPayload(body, principal); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal post principal response")
+	}
+	return principal, nil
+}
+
+func (ctl *controller) createMember(memberCreate api.MemberCreate) (*api.Member, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &memberCreate); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal member create")
+	}
+
+	body, err := ctl.post("/member", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	member := new(api.Member)
+	if err = jsonapi.UnmarshalPayload(body, member); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal post member response")
+	}
+	return member, nil
 }
 
 // getProjects gets the projects.
@@ -937,6 +1031,14 @@ func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatu
 	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueTasksWithStageApproval, false)
 }
 
+// waitIssuePipelineWithNoApproval waits for pipeline to finish and do nothing when approvals are needed.
+func (ctl *controller) waitIssuePipelineWithNoApproval(id int) (api.TaskStatus, error) {
+	noop := func(*api.Issue) error {
+		return nil
+	}
+	return ctl.waitIssuePipelineTaskImpl(id, noop, false)
+}
+
 // waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
 	// Sleep for 1 second between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
@@ -1016,6 +1118,40 @@ func (ctl *controller) query(instance *api.Instance, databaseName, query string)
 	return sqlResultSet.Data, nil
 }
 
+// adminExecuteSQL executes a SQL query on the database.
+func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &sqlExecute); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal sqlExecute")
+	}
+
+	body, err := ctl.post("/sql/execute/admin", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlResultSet := new(api.SQLResultSet)
+	if err = jsonapi.UnmarshalPayload(body, sqlResultSet); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal sqlResultSet response")
+	}
+	return sqlResultSet, nil
+}
+
+func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) (string, error) {
+	sqlResultSet, err := ctl.adminExecuteSQL(api.SQLExecute{
+		InstanceID:   instance.ID,
+		DatabaseName: databaseName,
+		Statement:    query,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to execute SQL")
+	}
+	if sqlResultSet.Error != "" {
+		return "", errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
+	}
+	return sqlResultSet.Data, nil
+}
+
 // createVCS creates a VCS.
 func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	buf := new(bytes.Buffer)
@@ -1035,7 +1171,7 @@ func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	return vcs, nil
 }
 
-// createRepository creates a repository.
+// createRepository links the repository with the project.
 func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (*api.Repository, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &repositoryCreate); err != nil {
@@ -1052,6 +1188,15 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 		return nil, errors.Wrap(err, "fail to unmarshal repository response")
 	}
 	return repository, nil
+}
+
+// unlinkRepository unlinks the repository from the project by projectID.
+func (ctl *controller) unlinkRepository(projectID int) error {
+	_, err := ctl.delete(fmt.Sprintf("/project/%d/repository", projectID), nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // listRepository gets the repository list.
@@ -1088,6 +1233,18 @@ func (ctl *controller) createSQLReviewCI(projectID, repositoryID int) (*api.SQLR
 		return nil, errors.Wrap(err, "fail to unmarshal SQL reivew CI response")
 	}
 	return sqlReviewCISetup, nil
+}
+
+func (ctl *controller) getLatestSchemaOfDatabaseID(databaseID int) (string, error) {
+	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), nil)
+	if err != nil {
+		return "", err
+	}
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	return string(bs), nil
 }
 
 func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
@@ -1517,6 +1674,24 @@ func (ctl *controller) deleteDataSource(databaseID, dataSourceID int) error {
 	return nil
 }
 
+func (ctl *controller) patchSetting(settingPatch api.SettingPatch) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &settingPatch); err != nil {
+		return errors.Wrap(err, "failed to marshal settingPatch")
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/setting/%s", settingPatch.Name), buf)
+	if err != nil {
+		return err
+	}
+
+	setting := new(api.Setting)
+	if err = jsonapi.UnmarshalPayload(body, setting); err != nil {
+		return errors.Wrap(err, "fail to unmarshal setting response")
+	}
+	return nil
+}
+
 // upsertPolicy upserts the policy.
 func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 	buf := new(bytes.Buffer)
@@ -1524,7 +1699,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 		return errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.ResourceID, policyUpsert.Type), buf)
+	body, err := ctl.patch(fmt.Sprintf("/policy/%s/%d?type=%s", strings.ToLower(string(policyUpsert.ResourceType)), policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
 		return err
 	}

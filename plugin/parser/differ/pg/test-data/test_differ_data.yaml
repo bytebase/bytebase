@@ -128,3 +128,25 @@
     DROP INDEX IF EXISTS "public"."idx1" CASCADE;
     CREATE INDEX "idx2" ON "public"."t1" USING btree (a);
     CREATE INDEX "idx3" ON "public"."t1" USING btree (a, b);
+- oldSchema: |
+    CREATE TABLE public.t (a int, b varchar(20), c boolean, d bit(2), e jsonb);
+  newSchema: |
+    CREATE TABLE public.t (a integer, b varchar(20), c boolean, d bit(2), e jsonb);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE public.t (a int8, b varchar(220), c date, d varbit(2), e json, f bit(2));
+  newSchema: |
+    CREATE TABLE public.t (a integer, b varchar(20), c boolean, d bit(2), e jsonb, f bit(4));
+  diff: |
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "a" SET DATA TYPE integer;
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "b" SET DATA TYPE character varying(20);
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "c" SET DATA TYPE boolean;
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "d" SET DATA TYPE pg_catalog.bit(2);
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "e" SET DATA TYPE jsonb;
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "f" SET DATA TYPE pg_catalog.bit(4);

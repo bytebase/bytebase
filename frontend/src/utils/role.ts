@@ -5,7 +5,6 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
   | "bb.permission.workspace.manage-environment"
   | "bb.permission.workspace.manage-instance"
-  | "bb.permission.workspace.manage-database"
   // Change issue assignee, change issue status, view all issues
   | "bb.permission.workspace.manage-issue"
   | "bb.permission.workspace.manage-label"
@@ -15,6 +14,7 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.manage-im-integration"
   | "bb.permission.workspace.manage-vcs-provider"
   | "bb.permission.workspace.manage-general"
+  | "bb.permission.workspace.manage-sensitive-data"
   // Can execute admininstrive queries such as "SHOW PROCESSLIST"
   | "bb.permission.workspace.admin-sql-editor";
 
@@ -27,7 +27,6 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.debug", [false, true, true]],
   ["bb.permission.workspace.manage-environment", [false, true, true]],
   ["bb.permission.workspace.manage-instance", [false, true, true]],
-  ["bb.permission.workspace.manage-database", [false, false, true]],
   ["bb.permission.workspace.manage-issue", [false, true, true]],
   ["bb.permission.workspace.manage-label", [false, true, true]],
   ["bb.permission.workspace.manage-project", [false, true, true]],
@@ -36,6 +35,7 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-vcs-provider", [false, false, true]],
   ["bb.permission.workspace.manage-general", [false, false, true]],
   ["bb.permission.workspace.manage-im-integration", [false, false, true]],
+  ["bb.permission.workspace.manage-sensitive-data", [false, true, true]],
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
 ]);
 

@@ -37,6 +37,8 @@ const (
 	IssueDataSourceRequest IssueType = "bb.issue.data-source.request"
 	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
 	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
+	// IssueDatabaseRollback is the issue type for a generated rollback issue.
+	IssueDatabaseRollback IssueType = "bb.issue.database.rollback"
 )
 
 // IssueFieldID is the field ID for an issue.
@@ -222,6 +224,14 @@ type PITRContext struct {
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
 	PointInTimeTs *int64 `json:"pointInTimeTs"`
+}
+
+// RollbackContext is the issue create context for rollback a issue.
+type RollbackContext struct {
+	// IssueID is the id of the issue to rollback.
+	IssueID int `json:"issueId"`
+	// TaskIDList is the list of task ids to rollback.
+	TaskIDList []int `json:"taskIdList"`
 }
 
 // IssueFind is the API message for finding issues.

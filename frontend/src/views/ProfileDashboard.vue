@@ -112,7 +112,22 @@
             <dt class="text-sm font-medium text-control-light">
               {{ $t("settings.profile.email") }}
             </dt>
-            <dd class="mt-1 text-sm text-main">{{ principal.email }}</dd>
+            <dd class="mt-1 text-sm text-main">
+              <input
+                v-if="state.editing"
+                id="email"
+                required
+                autocomplete="off"
+                name="email"
+                type="text"
+                class="textfield"
+                :value="state.editingPrincipal?.email"
+                @input="(e: any)=>updatePrincipal('email', e.target.value)"
+              />
+              <template v-else>
+                {{ principal.email }}
+              </template>
+            </dd>
           </div>
 
           <template v-if="state.editing">
@@ -271,6 +286,7 @@ export default defineComponent({
       const clone = cloneDeep(principal.value);
       state.editingPrincipal = {
         name: clone.name,
+        email: clone.email,
       };
       state.editing = true;
 

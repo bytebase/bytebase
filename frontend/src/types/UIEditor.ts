@@ -33,6 +33,7 @@ export interface UIEditorState {
   };
   databaseList: Database[];
   tableList: Table[];
+  droppedTableList: Table[];
 }
 
 /**

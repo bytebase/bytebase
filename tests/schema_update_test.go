@@ -396,6 +396,11 @@ func TestVCS(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -1639,6 +1644,192 @@ func TestVCS_SQL_Review(t *testing.T) {
 	}
 }
 
+func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
+	type testCase struct {
+		name              string
+		existedBranchList []string
+		branchFilter      string
+		want              bool
+	}
+	type vcsTestCase struct {
+		vcsType            vcs.Type
+		vcsProviderCreator fake.VCSProviderCreator
+		externalID         string
+		repoFullPath       string
+		caseList           []testCase
+	}
+
+	tests := []vcsTestCase{
+		{
+			vcsType:            vcs.GitLabSelfHost,
+			vcsProviderCreator: fake.NewGitLab,
+			externalID:         "1234",
+			repoFullPath:       "1234",
+			caseList: []testCase{
+				{
+					name: "mainBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "main",
+					want:         false,
+				}, {
+					name: "customBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "test/branch",
+					want:         false,
+				}, {
+					name: "nonExistedBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "non_existed_branch",
+					want:         true,
+				}, {
+					name: "wildcardBranchWithGitLab",
+					existedBranchList: []string{
+						"main",
+					},
+					branchFilter: "main*",
+					want:         false,
+				},
+			},
+		},
+		{
+			vcsType:            vcs.GitHubCom,
+			vcsProviderCreator: fake.NewGitHub,
+			externalID:         "test/branch",
+			repoFullPath:       "test/branch",
+			caseList: []testCase{
+				{
+					name: "mainBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "main",
+					want:         false,
+				}, {
+					name: "customBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "test/branch",
+					want:         false,
+				}, {
+					name: "nonExistedBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+						"test/branch",
+					},
+					branchFilter: "non_existed_branch",
+					want:         true,
+				}, {
+					name: "wildcardBranchWithGitHub",
+					existedBranchList: []string{
+						"main",
+					},
+					branchFilter: "main*",
+					want:         false,
+				},
+			},
+		},
+	}
+
+	for _, vcsTest := range tests {
+		// Wrap the defer statement in an anonymous func to make it work properly.
+		(func() {
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+
+			// Create a server.
+			err := ctl.StartServer(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: vcsTest.vcsProviderCreator,
+			})
+			a.NoError(err)
+
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			err = ctl.Login()
+			a.NoError(err)
+			err = ctl.setLicense()
+			a.NoError(err)
+
+			// Create a VCS.
+			apiVCS, err := ctl.createVCS(
+				api.VCSCreate{
+					Name:          "testName",
+					Type:          vcsTest.vcsType,
+					InstanceURL:   ctl.vcsURL,
+					APIURL:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationID: "testID",
+					Secret:        "testSecret",
+				},
+			)
+			a.NoError(err)
+
+			// Create a project.
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: "Test VSC Project",
+					Key:  "TVP",
+				},
+			)
+			a.NoError(err)
+
+			for _, test := range vcsTest.caseList {
+				test := test
+				t.Run(test.name, func(t *testing.T) {
+					// Create a repository in the fake vsc provider.
+					ctl.vcsProvider.CreateRepository(vcsTest.externalID)
+
+					// Create existed branches.
+					for _, existedBranch := range test.existedBranchList {
+						err := ctl.vcsProvider.CreateBranch(vcsTest.externalID, existedBranch)
+						a.NoError(err)
+					}
+
+					// Create a repository.
+					_, err = ctl.createRepository(
+						api.RepositoryCreate{
+							VCSID:              apiVCS.ID,
+							ProjectID:          project.ID,
+							Name:               "Test Repository",
+							FullPath:           vcsTest.repoFullPath,
+							WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, vcsTest.repoFullPath),
+							BranchFilter:       test.branchFilter,
+							BaseDirectory:      "",
+							FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+							SchemaPathTemplate: "",
+							ExternalID:         vcsTest.externalID,
+							AccessToken:        "accessToken1",
+							RefreshToken:       "refreshToken1",
+						},
+					)
+
+					if test.want {
+						a.Error(err)
+					} else {
+						a.NoError(err)
+						err = ctl.unlinkRepository(project.ID)
+						a.NoError(err)
+					}
+				})
+			}
+		})()
+	}
+}
+
 // postVCSSQLReview will create the VCS SQL review and get the response.
 func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
 	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, repo.WebhookEndpointID)
@@ -1670,4 +1861,133 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 	}
 
 	return res, nil
+}
+
+func TestGetLatestSchema(t *testing.T) {
+	tests := []struct {
+		name         string
+		dbType       db.Type
+		databaseName string
+		ddl          string
+		want         string
+	}{
+		{
+			name:         "PostgreSQL",
+			dbType:       db.Postgres,
+			databaseName: "latestSchema",
+			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
+			want: `SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.book (
+    id integer,
+    name text
+);
+
+`,
+		},
+	}
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            t.TempDir(),
+		vcsProviderCreator: fake.NewGitLab,
+	})
+	a.NoError(err)
+	defer func() {
+		_ = ctl.Close(ctx)
+	}()
+	err = ctl.Login()
+	a.NoError(err)
+	err = ctl.setLicense()
+	a.NoError(err)
+	environmentName := t.Name()
+	environment, err := ctl.createEnvironment(api.EnvironmentCreate{
+		Name: environmentName,
+	})
+	a.NoError(err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			dbPort := getTestPort()
+			switch test.dbType {
+			case db.Postgres:
+				_, stopInstance := postgres.SetupTestInstance(t, dbPort)
+				defer stopInstance()
+			default:
+				a.FailNow("unsupported db type")
+			}
+			project, err := ctl.createProject(
+				api.ProjectCreate{
+					Name: test.name,
+					Key:  test.name,
+				},
+			)
+			a.NoError(err)
+			// Add an instance.
+			instance, err := ctl.addInstance(api.InstanceCreate{
+				EnvironmentID: environment.ID,
+				Name:          test.name,
+				Engine:        db.Postgres,
+				Host:          "/tmp",
+				Port:          strconv.Itoa(dbPort),
+				Username:      "root",
+			})
+			a.NoError(err)
+			err = ctl.createDatabase(project, instance, test.databaseName, "root", nil /* labelMap */)
+			a.NoError(err)
+			databases, err := ctl.getDatabases(api.DatabaseFind{
+				InstanceID: &instance.ID,
+			})
+			a.NoError(err)
+			// Find databases
+			var database *api.Database
+			for _, db := range databases {
+				if db.Name == test.databaseName {
+					database = db
+					break
+				}
+			}
+			a.NotNil(database)
+			// Create an issue that updates database schema.
+			createContext, err := json.Marshal(&api.MigrationContext{
+				DetailList: []*api.MigrationDetail{
+					{
+						MigrationType: db.Migrate,
+						DatabaseID:    database.ID,
+						Statement:     test.ddl,
+					},
+				},
+			})
+			a.NoError(err)
+			issue, err := ctl.createIssue(api.IssueCreate{
+				ProjectID:   project.ID,
+				Name:        fmt.Sprintf("update schema for database %q", test.databaseName),
+				Type:        api.IssueDatabaseSchemaUpdate,
+				Description: fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
+				// Assign to self.
+				AssigneeID:    project.Creator.ID,
+				CreateContext: string(createContext),
+			})
+			a.NoError(err)
+			status, err := ctl.waitIssuePipeline(issue.ID)
+			a.NoError(err)
+			a.Equal(api.TaskDone, status)
+			latestSchema, err := ctl.getLatestSchemaOfDatabaseID(database.ID)
+			a.NoError(err)
+			a.Equal(latestSchema, test.want)
+		})
+	}
 }

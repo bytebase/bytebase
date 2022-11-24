@@ -328,6 +328,11 @@ func TestTenantVCS(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -794,6 +799,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -1132,6 +1142,11 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -1413,6 +1428,11 @@ func TestTenantVCS_YAML(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			require.NoError(t, err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,

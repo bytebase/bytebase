@@ -104,10 +104,14 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					if !ok {
 						return nil, parser.NewConvertErrorf("expected ColumnDef but found %t", alterCmd.Def.Node)
 					}
+					dataType, err := convertDataType(column.ColumnDef.TypeName)
+					if err != nil {
+						return nil, err
+					}
 					alterColumType := &ast.AlterColumnTypeStmt{
 						Table:      alterTable.Table,
 						ColumnName: alterCmd.Name,
-						Type:       convertDataType(column.ColumnDef.TypeName),
+						Type:       dataType,
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
@@ -314,6 +318,23 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				dropSchema.SchemaList = append(dropSchema.SchemaList, strNode.String_.Str)
 			}
 			return dropSchema, nil
+		case pgquery.ObjectType_OBJECT_SEQUENCE:
+			dropSequence := &ast.DropSequenceStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
+			for _, sequence := range in.DropStmt.Objects {
+				list, ok := sequence.Node.(*pgquery.Node_List)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected List but found %t", sequence.Node)
+				}
+				sequenceDef, err := convertListToSequenceNameDef(list)
+				if err != nil {
+					return nil, err
+				}
+				dropSequence.SequenceNameList = append(dropSequence.SequenceNameList, sequenceDef)
+			}
+			return dropSequence, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -410,8 +431,9 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				return nil, parser.NewConvertErrorf("unsupported option %s", defElemNode.DefElem.Defname)
 			}
 		}
-
 		return createSeqStmt, nil
+	case *pgquery.Node_AlterSeqStmt:
+		return convertAlterSequence(in.AlterSeqStmt)
 	case *pgquery.Node_AlterObjectSchemaStmt:
 		switch in.AlterObjectSchemaStmt.ObjectType {
 		case pgquery.ObjectType_OBJECT_TABLE:
@@ -540,6 +562,85 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 	}
 
 	return nil, nil
+}
+
+func convertAlterSequence(in *pgquery.AlterSeqStmt) (*ast.AlterSequenceStmt, error) {
+	alterSequenceStmt := &ast.AlterSequenceStmt{
+		IfExists: in.MissingOk,
+	}
+
+	if in.Sequence == nil {
+		return nil, parser.NewConvertErrorf("AlterSeqStmt.Sequence is nil")
+	}
+
+	alterSequenceStmt.Name = convertRangeVarToSeqName(in.Sequence)
+
+	for _, option := range in.Options {
+		defElemNode, ok := option.Node.(*pgquery.Node_DefElem)
+		if !ok {
+			return nil, parser.NewConvertErrorf("expected DefElem but found %t", option.Node)
+		}
+		var err error
+		switch defElemNode.DefElem.Defname {
+		case "as":
+			if alterSequenceStmt.Type, err = convertDefElemToSeqType(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+		case "increment":
+			if alterSequenceStmt.IncrementBy, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+		case "start":
+			if alterSequenceStmt.StartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+		case "restart":
+			if alterSequenceStmt.RestartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+		case "minvalue":
+			if alterSequenceStmt.MinValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+			if alterSequenceStmt.MinValue == nil {
+				alterSequenceStmt.NoMinValue = true
+			}
+		case "maxvalue":
+			if alterSequenceStmt.MaxValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+			if alterSequenceStmt.MaxValue == nil {
+				alterSequenceStmt.NoMaxValue = true
+			}
+		case "cache":
+			if alterSequenceStmt.Cache, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+		case "cycle":
+			var cycle bool
+			if cycle, err = convertDefElemNodeIntegerToBool(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
+			alterSequenceStmt.Cycle = &cycle
+		case "owned_by":
+			owner, err := convertDefElemNodeListToColumnNameDef(defElemNode.DefElem)
+			if err != nil {
+				return nil, err
+			}
+			if owner.Table.Database == "" &&
+				owner.Table.Schema == "" &&
+				owner.Table.Name == "" &&
+				owner.ColumnName == "none" {
+				alterSequenceStmt.OwnedByNone = true
+			} else {
+				alterSequenceStmt.OwnedBy = owner
+			}
+		default:
+			return nil, parser.NewConvertErrorf("unsupported option %s", defElemNode.DefElem.Defname)
+		}
+	}
+
+	return alterSequenceStmt, nil
 }
 
 func convertDropBehavior(behavior pgquery.DropBehavior) ast.DropBehavior {
@@ -829,6 +930,26 @@ func convertSetOperation(t pgquery.SetOperation) (ast.SetOperationType, error) {
 	}
 }
 
+func convertListToSequenceNameDef(in *pgquery.Node_List) (*ast.SequenceNameDef, error) {
+	stringList, err := convertListToStringList(in)
+	if err != nil {
+		return &ast.SequenceNameDef{}, err
+	}
+	switch len(in.List.Items) {
+	case 2:
+		return &ast.SequenceNameDef{
+			Schema: stringList[0],
+			Name:   stringList[1],
+		}, nil
+	case 1:
+		return &ast.SequenceNameDef{
+			Name: stringList[0],
+		}, nil
+	default:
+		return &ast.SequenceNameDef{}, parser.NewConvertErrorf("expected length is 1 or 2, but found %d", len(in.List.Items))
+	}
+}
+
 func convertListToTableDef(in *pgquery.Node_List, tableType ast.TableType) (*ast.TableDef, error) {
 	stringList, err := convertListToStringList(in)
 	if err != nil {
@@ -893,8 +1014,8 @@ func convertRangeVarToTableName(in *pgquery.RangeVar, tableType ast.TableType) *
 	}
 }
 
-func convertRangeVarToSeqName(in *pgquery.RangeVar) ast.SequenceNameDef {
-	return ast.SequenceNameDef{
+func convertRangeVarToSeqName(in *pgquery.RangeVar) *ast.SequenceNameDef {
+	return &ast.SequenceNameDef{
 		Schema: in.Schemaname,
 		Name:   in.Relname,
 	}
@@ -1064,7 +1185,10 @@ func convertColumnDef(in *pgquery.Node_ColumnDef) (*ast.ColumnDef, error) {
 	column := &ast.ColumnDef{
 		ColumnName: in.ColumnDef.Colname,
 	}
-	columnType := convertDataType(in.ColumnDef.TypeName)
+	columnType, err := convertDataType(in.ColumnDef.TypeName)
+	if err != nil {
+		return nil, err
+	}
 	column.Type = columnType
 
 	for _, cons := range in.ColumnDef.Constraints {
@@ -1104,50 +1228,63 @@ func stripPgCatalogPrefix(tp *pgquery.TypeName) *pgquery.TypeName {
 	return tp
 }
 
-func convertDataType(tp *pgquery.TypeName) ast.DataType {
-	tp = stripPgCatalogPrefix(tp)
-	if len(tp.Names) == 1 {
-		name, ok := tp.Names[0].Node.(*pgquery.Node_String_)
-		if !ok {
-			return &ast.UnconvertedDataType{}
-		}
-		s := name.String_.Str
-		switch {
-		case strings.HasPrefix(s, "int"):
-			size, err := strconv.Atoi(s[3:])
-			if err != nil {
-				return convertToUnconvertedDataType(tp)
-			}
-			return &ast.Integer{Size: size}
-		case strings.HasPrefix(s, "float"):
-			size, err := strconv.Atoi(s[5:])
-			if err != nil {
-				return convertToUnconvertedDataType(tp)
-			}
-			return &ast.Float{Size: size}
-		case s == "serial":
-			return &ast.Serial{Size: 4}
-		case s == "smallserial":
-			return &ast.Serial{Size: 2}
-		case s == "bigserial":
-			return &ast.Serial{Size: 8}
-		case strings.HasPrefix(s, "serial"):
-			size, err := strconv.Atoi(s[6:])
-			if err != nil {
-				return convertToUnconvertedDataType(tp)
-			}
-			return &ast.Serial{Size: size}
-		case s == "numeric":
-			return convertToDecimal(tp.Typmods)
-		case s == "bpchar":
-			return convertToCharacter(tp.Typmods)
-		case s == "varchar":
-			return convertToVarchar(tp.Typmods)
-		case s == "text":
-			return &ast.Text{}
-		}
+func convertDataType(tp *pgquery.TypeName) (ast.DataType, error) {
+	text, err := pgquery.DeparseNode(pgquery.DeparseTypeDataType, &pgquery.Node{Node: &pgquery.Node_TypeName{TypeName: tp}})
+	if err != nil {
+		return nil, err
 	}
-	return convertToUnconvertedDataType(tp)
+
+	dataType := func() ast.DataType {
+		tp = stripPgCatalogPrefix(tp)
+		if len(tp.Names) == 1 {
+			name, ok := tp.Names[0].Node.(*pgquery.Node_String_)
+			if !ok {
+				return &ast.UnconvertedDataType{}
+			}
+			s := name.String_.Str
+			switch {
+			case strings.HasPrefix(s, "int"):
+				size, err := strconv.Atoi(s[3:])
+				if err != nil {
+					return convertToUnconvertedDataType(tp)
+				}
+				return &ast.Integer{Size: size}
+			case strings.HasPrefix(s, "float"):
+				size, err := strconv.Atoi(s[5:])
+				if err != nil {
+					return convertToUnconvertedDataType(tp)
+				}
+				return &ast.Float{Size: size}
+			case s == "serial":
+				return &ast.Serial{Size: 4}
+			case s == "smallserial":
+				return &ast.Serial{Size: 2}
+			case s == "bigserial":
+				return &ast.Serial{Size: 8}
+			case strings.HasPrefix(s, "serial"):
+				size, err := strconv.Atoi(s[6:])
+				if err != nil {
+					return convertToUnconvertedDataType(tp)
+				}
+				return &ast.Serial{Size: size}
+			case s == "numeric":
+				return convertToDecimal(tp.Typmods)
+			case s == "bpchar":
+				return convertToCharacter(tp.Typmods)
+			case s == "varchar":
+				return convertToVarchar(tp.Typmods)
+			case s == "text":
+				return &ast.Text{}
+			}
+		}
+		return convertToUnconvertedDataType(tp)
+	}()
+
+	// For UnconvertedDataType, we use the text deparsed by pg_query_go
+	if _, ok := dataType.(*ast.UnconvertedDataType); ok {
+		dataType.SetText(text)
+	}
+	return dataType, nil
 }
 
 func convertToUnconvertedDataType(tp *pgquery.TypeName) ast.DataType {
@@ -1259,7 +1396,10 @@ func convertDefElemToSeqType(defElem *pgquery.DefElem) (*ast.Integer, error) {
 	if len(typeNameNode.TypeName.Names) != 2 {
 		return nil, parser.NewConvertErrorf("expected TypeName with 2 names but found %d", len(typeNameNode.TypeName.Names))
 	}
-	dataType := convertDataType(typeNameNode.TypeName)
+	dataType, err := convertDataType(typeNameNode.TypeName)
+	if err != nil {
+		return nil, err
+	}
 	// Sequence type should be int2(smallint), int4(integer), or int8(bigint)
 	intType, ok := dataType.(*ast.Integer)
 	if !ok {
