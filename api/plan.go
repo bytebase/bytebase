@@ -333,11 +333,14 @@ type PlanLimit int
 const (
 	// PlanLimitMaximumTask is the key name for maximum number of tasks for a plan.
 	PlanLimitMaximumTask PlanLimit = iota
+	// PlanLimitMaximumEnvironment is the key name for maximum number of environments for a plan.
+	PlanLimitMaximumEnvironment
 )
 
 // PlanLimitValues is the plan limit value mapping.
 var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaximumTask: {4, math.MaxInt64, math.MaxInt64},
+	PlanLimitMaximumTask:        {4, math.MaxInt64, math.MaxInt64},
+	PlanLimitMaximumEnvironment: {2, 3, math.MaxInt64},
 }
 
 // Feature returns whether a particular feature is available in a particular plan.

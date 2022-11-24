@@ -18,6 +18,20 @@ import (
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	g.POST("/environment", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		normalRowStatus := api.Normal
+		envFind := &api.EnvironmentFind{
+			RowStatus: &normalRowStatus,
+		}
+		envList, err := s.store.FindEnvironment(ctx, envFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment list").SetInternal(err)
+		}
+
+		maximumEnvironmentLimit := s.getPlanLimitValue(api.PlanLimitMaximumEnvironment)
+		if int64(len(envList)) >= maximumEnvironmentLimit {
+			return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can create up to %d environments.", s.getEffectivePlan(), maximumEnvironmentLimit))
+		}
+
 		envCreate := &api.EnvironmentCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, envCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create environment request").SetInternal(err)
