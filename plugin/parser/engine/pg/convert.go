@@ -594,10 +594,10 @@ func convertAlterSequence(in *pgquery.AlterSeqStmt) (*ast.AlterSequenceStmt, err
 			if alterSequenceStmt.StartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
 				return nil, err
 			}
-    case "restart":
-      if alterSequenceStmt.RestartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
-        return nil, err
-      }
+		case "restart":
+			if alterSequenceStmt.RestartWith, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
+				return nil, err
+			}
 		case "minvalue":
 			if alterSequenceStmt.MinValue, err = convertDefElemNodeIntegerToInt32(defElemNode.DefElem); err != nil {
 				return nil, err
@@ -631,10 +631,10 @@ func convertAlterSequence(in *pgquery.AlterSeqStmt) (*ast.AlterSequenceStmt, err
 				owner.Table.Schema == "" &&
 				owner.Table.Name == "" &&
 				owner.ColumnName == "none" {
-        alterSequenceStmt.OwnedByNone = true
+				alterSequenceStmt.OwnedByNone = true
 			} else {
-        alterSequenceStmt.OwnedBy = owner
-      }
+				alterSequenceStmt.OwnedBy = owner
+			}
 		default:
 			return nil, parser.NewConvertErrorf("unsupported option %s", defElemNode.DefElem.Defname)
 		}
