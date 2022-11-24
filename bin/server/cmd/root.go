@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
 
+	"github.com/bytebase/bytebase/plugin/app/feishu"
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
 	// Register mysql driver.
@@ -121,6 +122,9 @@ var (
 		backupRegion     string
 		backupBucket     string
 		backupCredential string
+
+		// IM integration related.
+		feishuAPIURL string
 	}
 
 	rootCmd = &cobra.Command{
@@ -168,6 +172,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3://example-bucket. When provided, Bytebase will store data to the S3 bucket.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
+
+	// IM integration related flags.
+	rootCmd.PersistentFlags().StringVar(&flags.feishuAPIURL, "feishu-api-url", feishu.APIPath, "the Feishu API server URL which Bytebase calls.")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------

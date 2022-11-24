@@ -182,22 +182,11 @@ func getTestPortForEmbeddedPg() int {
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
-	serverPort := getTestPort()
-	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, config.pgUser, config.pgURL)
-	server, err := server.NewServer(ctx, profile)
-	if err != nil {
+	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
 		return err
 	}
-	ctl.server = server
-
-	return ctl.start(ctx, config.vcsProviderCreator, config.feishuProverdierCreator, serverPort)
-}
-
-// StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, config *config) error {
-	log.SetLevel(zap.DebugLevel)
-	serverPort := getTestPortForEmbeddedPg()
-	profile := cmd.GetTestProfile(config.dataDir, serverPort)
+	serverPort := getTestPort()
+	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, config.pgUser, config.pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -205,19 +194,34 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	ctl.server = server
 	ctl.profile = profile
 
-	return ctl.start(ctx, config.vcsProviderCreator, config.feishuProverdierCreator, serverPort)
+	return ctl.start(ctx, serverPort)
 }
 
-// start only called by StartServer() and StartServerWithExternalPg().
-func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSProviderCreator, feishuProviderCreator fake.FeishuProviderCreator, port int) error {
-	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
-	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
+// StartServer starts the main server with embed Postgres.
+func (ctl *controller) StartServer(ctx context.Context, config *config) error {
+	log.SetLevel(zap.DebugLevel)
+	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
+		return err
+	}
+	serverPort := getTestPortForEmbeddedPg()
+	profile := cmd.GetTestProfile(config.dataDir, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	server, err := server.NewServer(ctx, profile)
+	if err != nil {
+		return err
+	}
+	ctl.server = server
+	ctl.profile = profile
 
+	return ctl.start(ctx, serverPort)
+}
+
+func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreator, feishuProviderCreator fake.FeishuProviderCreator) error {
 	// Set up VCS provider.
 	vcsPort := getTestPort()
 	ctl.vcsProvider = vcsProviderCreator(vcsPort)
 	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
 
+	// Set up fake feishu server.
 	if feishuProviderCreator != nil {
 		feishuPort := getTestPort()
 		ctl.feishuProvider = feishuProviderCreator(feishuPort)
@@ -225,12 +229,6 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 	}
 
 	errChan := make(chan error, 1)
-
-	go func() {
-		if err := ctl.server.Run(ctx, port); err != nil {
-			errChan <- errors.Wrap(err, "failed to run main server")
-		}
-	}()
 
 	go func() {
 		if err := ctl.vcsProvider.Run(); err != nil {
@@ -246,9 +244,6 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 		}()
 	}
 
-	if err := waitForServerStart(ctl.server, errChan); err != nil {
-		return errors.Wrap(err, "failed to wait for server to start")
-	}
 	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
 		return errors.Wrap(err, "failed to wait for vcsProvider to start")
 	}
@@ -257,6 +252,26 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 		if err := waitForFeishuStart(ctl.feishuProvider, errChan); err != nil {
 			return errors.Wrap(err, "failed to wait for feishuProvider to start")
 		}
+	}
+
+	return nil
+}
+
+// start only called by StartServer() and StartServerWithExternalPg().
+func (ctl *controller) start(ctx context.Context, port int) error {
+	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
+	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
+
+	errChan := make(chan error, 1)
+
+	go func() {
+		if err := ctl.server.Run(ctx, port); err != nil {
+			errChan <- errors.Wrap(err, "failed to run main server")
+		}
+	}()
+
+	if err := waitForServerStart(ctl.server, errChan); err != nil {
+		return errors.Wrap(err, "failed to wait for server to start")
 	}
 
 	// initialize controller clients.

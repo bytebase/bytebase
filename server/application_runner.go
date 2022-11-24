@@ -156,11 +156,6 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// SetFeishuAPIPath is used in tests.
-func (r *ApplicationRunner) SetFeishuAPIPath(url string) {
-	r.p.APIPath = url
-}
-
 func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
 	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
 	if err != nil {

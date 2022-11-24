@@ -45,9 +45,6 @@ func TestExternalApprovalFeishu(t *testing.T) {
 		a.Equal(api.IssueCanceled, patchedIssue.Status)
 	}
 
-	// Set feishu api url.
-	ctl.server.ApplicationRunner.SetFeishuAPIPath(ctl.feishuProvider.APIURL(ctl.feishuURL))
-
 	err = ctl.patchSetting(api.SettingPatch{
 		Name:  api.SettingAppIM,
 		Value: `{"imType":"im.feishu","appId":"123","appSecret":"123","externalApproval":{"enabled":true}}`,
