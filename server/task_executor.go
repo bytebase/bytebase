@@ -200,6 +200,10 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
 	}
+	if (binlogInfo == api.BinlogInfo{}) {
+		log.Warn("binlog is not enabled", zap.Int("task", task.ID))
+		return task, nil
+	}
 	payload.BinlogFileStart = binlogInfo.FileName
 	payload.BinlogPosStart = binlogInfo.Position
 
@@ -234,6 +238,10 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	binlogInfo, err := mysql.GetBinlogInfo(ctx, db)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the binlog info before executing the migration transaction")
+	}
+	if (binlogInfo == api.BinlogInfo{}) {
+		log.Warn("binlog is not enabled", zap.Int("task", task.ID))
+		return task, nil
 	}
 	payload.BinlogFileEnd = binlogInfo.FileName
 	payload.BinlogPosEnd = binlogInfo.Position
