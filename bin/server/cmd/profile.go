@@ -6,6 +6,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/app/feishu"
 	"github.com/bytebase/bytebase/server"
 )
 
@@ -40,7 +41,7 @@ func getBaseProfile() server.Profile {
 		BackupRegion:         flags.backupRegion,
 		BackupBucket:         flags.backupBucket,
 		BackupCredentialFile: flags.backupCredential,
-		FeishuAPIURL:         flags.feishuAPIURL,
+		FeishuAPIURL:         feishu.APIPath,
 	}
 }
 
