@@ -349,7 +349,7 @@ func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *
 		}
 	}
 	if !hasResourceType {
-		errors.Errorf("invalid resource type %s and policy type %s pair", resourceType, pType)
+		return errors.Errorf("invalid resource type %s and policy type %s pair", resourceType, pType)
 	}
 
 	switch pType {
