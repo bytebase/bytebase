@@ -14,7 +14,7 @@ import (
 
 func TestProvider_CreateApprovalDefinition(t *testing.T) {
 	a := require.New(t)
-	p := NewProvider()
+	p := NewProvider(APIPath)
 	p.client = &http.Client{
 		Transport: &common.MockRoundTripper{
 			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -43,7 +43,7 @@ func TestProvider_CreateApprovalDefinition(t *testing.T) {
 
 func TestProvider_CreateExternalApproval(t *testing.T) {
 	a := require.New(t)
-	p := NewProvider()
+	p := NewProvider(APIPath)
 	p.client = &http.Client{
 		Transport: &common.MockRoundTripper{
 			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -71,7 +71,7 @@ func TestProvider_CreateExternalApproval(t *testing.T) {
 
 func TestProvider_GetExternalApprovalStatus(t *testing.T) {
 	a := require.New(t)
-	p := NewProvider()
+	p := NewProvider(APIPath)
 	p.client = &http.Client{
 		Transport: &common.MockRoundTripper{
 			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -134,7 +134,7 @@ func TestProvider_GetExternalApprovalStatus(t *testing.T) {
 
 func TestProvider_CancelExternalApproval(t *testing.T) {
 	a := require.New(t)
-	p := NewProvider()
+	p := NewProvider(APIPath)
 	p.client = &http.Client{
 		Transport: &common.MockRoundTripper{
 			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -160,7 +160,7 @@ func TestProvider_CancelExternalApproval(t *testing.T) {
 func TestProvider_GetIDByEmail(t *testing.T) {
 	t.Run("user id not found", func(t *testing.T) {
 		a := require.New(t)
-		p := NewProvider()
+		p := NewProvider(APIPath)
 		p.client = &http.Client{
 			Transport: &common.MockRoundTripper{
 				MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -193,7 +193,7 @@ func TestProvider_GetIDByEmail(t *testing.T) {
 	})
 	t.Run("success", func(t *testing.T) {
 		a := require.New(t)
-		p := NewProvider()
+		p := NewProvider(APIPath)
 		p.client = &http.Client{
 			Transport: &common.MockRoundTripper{
 				MockRoundTrip: func(r *http.Request) (*http.Response, error) {
