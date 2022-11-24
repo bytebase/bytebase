@@ -34,4 +34,5 @@ export type PrincipalPatch = {
   // Domain specific fields
   name?: string;
   password?: string;
+  email?: string;
 };
