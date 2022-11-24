@@ -2,6 +2,8 @@ package ast
 
 // SequenceNameDef is the name of a sequence.
 type SequenceNameDef struct {
+	node
+
 	Schema string
 	Name   string
 }
@@ -10,7 +12,7 @@ type SequenceNameDef struct {
 type SequenceDef struct {
 	node
 
-	SequenceName     SequenceNameDef
+	SequenceName     *SequenceNameDef
 	SequenceDataType *Integer
 	// No cycle is default
 	Cycle       bool
