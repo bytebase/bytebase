@@ -947,6 +947,9 @@
       "character-sets-diff-found": "Schema 之间的字符集不同",
       "preview-issue": "预览工单"
     },
+    "ui-editor": {
+      "preview-issue": "预览工单"
+    },
     "sensitive": "敏感"
   },
   "repository": {

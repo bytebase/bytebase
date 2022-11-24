@@ -947,6 +947,9 @@
       "character-sets-diff-found": "There are differences between character sets.",
       "preview-issue": "Preview issue"
     },
+    "ui-editor": {
+      "preview-issue": "Preview issue"
+    },
     "sensitive": "Sensitive"
   },
   "repository": {
