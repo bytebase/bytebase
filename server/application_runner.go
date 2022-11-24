@@ -19,11 +19,11 @@ import (
 const applicationRunnerInterval = time.Duration(60) * time.Second
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *ActivityManager) *ApplicationRunner {
+func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider) *ApplicationRunner {
 	return &ApplicationRunner{
 		store:           store,
 		activityManager: activityManager,
-		p:               feishu.NewProvider(),
+		p:               feishuProvider,
 	}
 }
 

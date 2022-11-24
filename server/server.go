@@ -32,6 +32,7 @@ import (
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
+	"github.com/bytebase/bytebase/plugin/app/feishu"
 	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
@@ -299,7 +300,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
 
-		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager)
+		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager, feishu.NewProvider(prof.FeishuAPIURL))
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
