@@ -307,12 +307,17 @@ func (r *ApplicationRunner) shouldCreateExternalApproval(ctx context.Context, is
 }
 
 func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
+	creatorEmail := issue.Creator.Email
+	if issue.CreatorID == api.SystemBotID && settingValue.ExternalApproval.FallbackEmail != "" {
+		creatorEmail = settingValue.ExternalApproval.FallbackEmail
+	}
 	users, err := r.p.GetIDByEmail(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
 			AppSecret: settingValue.AppSecret,
 		},
-		[]string{issue.Creator.Email, issue.Assignee.Email})
+		[]string{creatorEmail, issue.Assignee.Email},
+	)
 	if err != nil {
 		return err
 	}
@@ -337,7 +342,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalDefinitionID,
-		users[issue.Creator.Email],
+		users[creatorEmail],
 		users[issue.Assignee.Email])
 	if err != nil {
 		return err
@@ -346,7 +351,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 		StageID:      stage.ID,
 		AssigneeID:   issue.AssigneeID,
 		InstanceCode: instanceCode,
-		RequesterID:  users[issue.Creator.Email],
+		RequesterID:  users[creatorEmail],
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {
