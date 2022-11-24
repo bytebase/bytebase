@@ -132,6 +132,32 @@ func TestProvider_GetExternalApprovalStatus(t *testing.T) {
 	a.Equal(want, status)
 }
 
+func TestProvider_CreateExternalApprovalComemnt(t *testing.T) {
+	a := require.New(t)
+	p := NewProvider(APIPath)
+	p.client = &http.Client{
+		Transport: &common.MockRoundTripper{
+			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body: io.NopCloser(strings.NewReader(`
+{
+    "code": 0,
+    "data": {
+      "comment_id": "7169475380984840194"
+    },
+    "msg": ""
+}
+`)),
+				}, nil
+			},
+		},
+	}
+	ctx := context.Background()
+	err := p.CreateExternalApprovalComment(ctx, TokenCtx{}, "", "", "test")
+	a.NoError(err)
+}
+
 func TestProvider_CancelExternalApproval(t *testing.T) {
 	a := require.New(t)
 	p := NewProvider(APIPath)

@@ -200,6 +200,17 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 		); err != nil {
 			return nil, err
 		}
+		if err := r.p.CreateExternalApprovalComment(ctx,
+			feishu.TokenCtx{
+				AppID:     settingValue.AppID,
+				AppSecret: settingValue.AppSecret,
+			},
+			payload.InstanceCode,
+			payload.RequesterID,
+			"The approval is canceled because the assignee has been changed or all tasks of the stage have been approved.",
+		); err != nil {
+			return nil, err
+		}
 	}
 	return approval, nil
 }
@@ -238,7 +249,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 	if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{ID: approval.ID, RowStatus: api.Archived}); err != nil {
 		return err
 	}
-	return r.p.CancelExternalApproval(ctx,
+	if err := r.p.CancelExternalApproval(ctx,
 		feishu.TokenCtx{
 			AppID:     value.AppID,
 			AppSecret: value.AppSecret,
@@ -246,6 +257,17 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 		value.ExternalApproval.ApprovalDefinitionID,
 		payload.InstanceCode,
 		payload.RequesterID,
+	); err != nil {
+		return err
+	}
+	return r.p.CreateExternalApprovalComment(ctx,
+		feishu.TokenCtx{
+			AppID:     value.AppID,
+			AppSecret: value.AppSecret,
+		},
+		payload.InstanceCode,
+		payload.RequesterID,
+		"The approval is canceled because the assignee has been changed or all tasks of the stage have been approved.",
 	)
 }
 
