@@ -438,7 +438,8 @@
       "project-member-delete": "删除项目成员",
       "project-member-role-update": "变更项目成员角色",
       "pipeline-task-earliest-allowed-time-update": "更新最早允许执行时间",
-      "database-recovery-pitr-done": "将数据库恢复到指定时间点"
+      "database-recovery-pitr-done": "将数据库恢复到指定时间点",
+      "external-approval-rejected": "拒绝外部审批"
     },
     "sentence": {
       "created-issue": "创建工单",
@@ -465,7 +466,8 @@
       "failed": "失败",
       "task-name": "任务 {name}",
       "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
-      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销"
+      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销",
+      "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批"
     },
     "subject-prefix": {
       "task": "任务"

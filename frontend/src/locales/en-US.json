@@ -438,7 +438,8 @@
       "project-member-delete": "delete project member",
       "project-member-role-update": "change project member role",
       "pipeline-task-earliest-allowed-time-update": "update earliest allowed time",
-      "database-recovery-pitr-done": "restore database to point in time"
+      "database-recovery-pitr-done": "restore database to point in time",
+      "external-approval-rejected": "external approval rejected"
     },
     "sentence": {
       "created-issue": "created issue",
@@ -465,7 +466,8 @@
       "failed": "failed",
       "task-name": " task {name}",
       "committed-to-at": "committed {file} to{branch}{'@'}{repo}",
-      "dismissed-stale-approval": "dismissed stale approvals of {task}"
+      "dismissed-stale-approval": "dismissed stale approvals of {task}",
+      "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\""
     },
     "subject-prefix": {
       "task": "Task"
