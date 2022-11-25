@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/app/feishu"
 	"github.com/bytebase/bytebase/store"
@@ -30,11 +31,12 @@ const (
 )
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider) *ApplicationRunner {
+func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider, releaseMode common.ReleaseMode) *ApplicationRunner {
 	return &ApplicationRunner{
 		store:           store,
 		activityManager: activityManager,
 		p:               feishuProvider,
+		mode:            releaseMode,
 	}
 }
 
@@ -43,6 +45,7 @@ type ApplicationRunner struct {
 	store           *store.Store
 	activityManager *ActivityManager
 	p               *feishu.Provider
+	mode            common.ReleaseMode
 }
 
 // Run runs the ApplicationRunner.
@@ -94,6 +97,10 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 
+						if payload.Rejected {
+							continue
+						}
+
 						issue, err := r.store.GetIssueByID(ctx, externalApproval.IssueID)
 						if err != nil {
 							log.Error("failed to get issue by issue id", zap.Int("issueID", externalApproval.IssueID), zap.Error(err))
@@ -122,7 +129,8 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 
-						if status == feishu.ApprovalStatusApproved {
+						switch status {
+						case feishu.ApprovalStatusApproved:
 							// double check
 							if stage.ID == payload.StageID && payload.AssigneeID == issue.AssigneeID {
 								// approve stage
@@ -161,8 +169,60 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									continue
 								}
 							}
+						case feishu.ApprovalStatusRejected:
+							if err := func() error {
+								// TODO(p0ny): remove release guard.
+								if r.mode == common.ReleaseModeProd {
+									return nil
+								}
+								payload := payload
+								payload.Rejected = true
+								bytes, err := json.Marshal(payload)
+								if err != nil {
+									return errors.Wrapf(err, "failed to marshal payload %+v", payload)
+								}
+								payloadString := string(bytes)
+
+								if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
+									ID:        externalApproval.ID,
+									RowStatus: api.Normal,
+									Payload:   &payloadString,
+								}); err != nil {
+									return errors.Wrap(err, "failed to patch external approval")
+								}
+
+								stageName := "UNKNOWN"
+								for _, stage := range issue.Pipeline.StageList {
+									if stage.ID == payload.StageID {
+										stageName = stage.Name
+										break
+									}
+								}
+								activityPayload, err := json.Marshal(api.ActivityIssueExternalApprovalRejectPayload{
+									StageName: stageName,
+									IMType:    api.IMTypeFeishu,
+								})
+								if err != nil {
+									return errors.Wrap(err, "failed to marshal ActivityIssueExternalApprovalRejectPayload")
+								}
+
+								activityCreate := &api.ActivityCreate{
+									CreatorID:   payload.AssigneeID,
+									ContainerID: issue.ID,
+									Type:        api.ActivityIssueExternalApprovalReject,
+									Level:       api.ActivityInfo,
+									Comment:     "",
+									Payload:     string(activityPayload),
+								}
+
+								if _, err = r.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+									return errors.Wrap(err, "failed to create activity after external approval rejected")
+								}
+								return nil
+							}(); err != nil {
+								log.Error("failed to handle rejected feishu approval", zap.Error(err))
+							}
 						}
-						// Do nothing for ApprovalStatusRejected
 					default:
 						log.Error("Unknown ExternalApproval.Type", zap.Any("ExternalApproval", externalApproval))
 					}
@@ -410,6 +470,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 		AssigneeID:   issue.AssigneeID,
 		InstanceCode: instanceCode,
 		RequesterID:  users[issue.Creator.Email],
+		Rejected:     false,
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {

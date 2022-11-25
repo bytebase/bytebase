@@ -33,9 +33,11 @@ type ExternalApprovalPayloadFeishu struct {
 	StageID    int
 	AssigneeID int
 
-	// feishu
+	// Feishu
 	InstanceCode string
 	RequesterID  string
+	// Rejected tells if the approval has been rejected on Feishu.
+	Rejected bool
 }
 
 // ExternalApprovalCreate is the API message for creating an ExternalApproval.
@@ -59,4 +61,6 @@ type ExternalApprovalFind struct {
 type ExternalApprovalPatch struct {
 	ID        int
 	RowStatus RowStatus
+
+	Payload *string
 }
