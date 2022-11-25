@@ -13,6 +13,7 @@ import { TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 import { Advice } from "./sql";
+import { ExternalApprovalType } from "./externalApproval";
 import { t } from "../plugins/i18n";
 
 export type IssueActivityType =
@@ -20,6 +21,7 @@ export type IssueActivityType =
   | "bb.issue.comment.create"
   | "bb.issue.field.update"
   | "bb.issue.status.update"
+  | "bb.issue.external-approval.reject"
   | "bb.pipeline.task.status.update"
   | "bb.pipeline.task.file.commit"
   | "bb.pipeline.task.statement.update"
@@ -57,6 +59,8 @@ export function activityName(type: ActivityType): string {
       return t("activity.type.comment-create");
     case "bb.issue.field.update":
       return t("activity.type.issue-field-update");
+    case "bb.issue.external-approval.reject":
+      return t("activity.type.external-approval-rejected");
     case "bb.issue.status.update":
       return t("activity.type.issue-status-update");
     case "bb.pipeline.task.status.update":
@@ -113,6 +117,11 @@ export type ActivityIssueStatusUpdatePayload = {
   oldStatus: IssueStatus;
   newStatus: IssueStatus;
   issueName: string;
+};
+
+export type ActivityIssueExternalApprovalRejectPayload = {
+  stageName: string;
+  externalApprovalType: ExternalApprovalType;
 };
 
 export type ActivityTaskStatusUpdatePayload = {
@@ -198,6 +207,7 @@ export type ActionPayloadType =
   | ActivityIssueCommentCreatePayload
   | ActivityIssueFieldUpdatePayload
   | ActivityIssueStatusUpdatePayload
+  | ActivityIssueExternalApprovalRejectPayload
   | ActivityTaskStatusUpdatePayload
   | ActivityTaskFileCommitPayload
   | ActivityTaskStatementUpdatePayload
