@@ -1,0 +1,256 @@
+<template>
+  <BBModal
+    :title="'Alter Schema'"
+    class="ui-editor-modal-container !w-320 !max-w-[calc(100%-80px)]"
+    @close="dismissModal"
+  >
+    <div
+      class="w-full flex flex-row justify-start items-center border-b border-b-gray-300"
+    >
+      <span
+        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
+        :class="
+          state.selectedTab === 'raw-sql' &&
+          'bg-white border-gray-300 text-gray-800'
+        "
+        @click="handleChangeTab('raw-sql')"
+        >Raw SQL</span
+      >
+      <span
+        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
+        :class="
+          state.selectedTab === 'ui-editor' &&
+          'bg-white border-gray-300 text-gray-800'
+        "
+        @click="handleChangeTab('ui-editor')"
+        >UI Editor</span
+      >
+    </div>
+    <div class="w-full h-144 border-b mb-4">
+      <div
+        v-show="state.selectedTab === 'raw-sql'"
+        class="w-full h-full flex flex-row justify-center items-center"
+      >
+        <p>SQL Editor(WIP)</p>
+      </div>
+      <UIEditor
+        v-show="state.selectedTab === 'ui-editor'"
+        :database-id-list="props.databaseIdList"
+      />
+    </div>
+    <div class="flex items-center justify-end">
+      <button type="button" class="btn-normal py-2 px-4" @click="dismissModal">
+        {{ $t("common.cancel") }}
+      </button>
+      <button
+        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        @click="handlePreviewIssue"
+      >
+        {{ $t("database.ui-editor.preview-issue") }}
+      </button>
+    </div>
+  </BBModal>
+
+  <!-- Select DDL mode for MySQL -->
+  <GhostDialog ref="ghostDialog" />
+</template>
+
+<script lang="ts" setup>
+import dayjs from "dayjs";
+import { head } from "lodash-es";
+import { onMounted, PropType, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
+import { Database, DatabaseEdit, DatabaseId, UNKNOWN_ID } from "@/types";
+import { allowGhostMigration } from "@/utils";
+import { useDatabaseStore, useTableStore, useUIEditorStore } from "@/store";
+import { diffTableList } from "@/utils/UIEditor/diffTable";
+import UIEditor from "@/components/UIEditor/UIEditor.vue";
+import GhostDialog from "./GhostDialog.vue";
+
+type TabType = "raw-sql" | "ui-editor";
+
+interface LocalState {
+  selectedTab: TabType;
+}
+
+const props = defineProps({
+  databaseIdList: {
+    type: Array as PropType<DatabaseId[]>,
+    required: true,
+  },
+});
+
+const emit = defineEmits<{
+  (event: "close"): void;
+}>();
+
+const router = useRouter();
+const state = reactive<LocalState>({
+  selectedTab: "ui-editor",
+});
+const databaseStore = useDatabaseStore();
+const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
+
+const databaseList = props.databaseIdList.map((databaseId) => {
+  return databaseStore.getDatabaseById(databaseId);
+});
+const databaseEngineType = databaseList.reduce(
+  (engine: string, database: Database) => {
+    if (engine === "") {
+      engine = database.instance.engine;
+    } else {
+      engine = database.instance.engine === engine ? engine : "unknown";
+    }
+    return engine;
+  },
+  ""
+);
+
+onMounted(() => {
+  if (databaseList.length === 0 || databaseEngineType === "unknown") {
+    emit("close");
+    return;
+  }
+});
+
+const handleChangeTab = (tab: TabType) => {
+  state.selectedTab = tab;
+};
+
+const dismissModal = () => {
+  emit("close");
+};
+
+// 'normal' -> normal migration
+// 'online' -> online migration
+// false -> user clicked cancel button
+const isUsingGhostMigration = async (databaseList: Database[]) => {
+  // Gh-ost is not available for tenant mode yet.
+  if (databaseList.some((db) => db.project.tenantMode === "TENANT")) {
+    return "normal";
+  }
+
+  // check if all selected databases supports gh-ost
+  if (allowGhostMigration(databaseList)) {
+    // open the dialog to ask the user
+    const { result, mode } = await ghostDialog.value!.open();
+    if (!result) {
+      return false; // return false when user clicked the cancel button
+    }
+    return mode;
+  }
+
+  // fallback to normal
+  return "normal";
+};
+
+const handlePreviewIssue = async () => {
+  const projectId = head(databaseList)?.projectId || UNKNOWN_ID;
+  if (projectId === UNKNOWN_ID) {
+    console.error("project unknown");
+    return;
+  }
+
+  const mode = await isUsingGhostMigration(databaseList);
+  if (mode === false) {
+    return;
+  }
+  const isGhostMode = mode === "online";
+  const query: Record<string, any> = {
+    template: "bb.issue.database.schema.update",
+    name: generateIssueName(
+      databaseList.map((db) => db.name),
+      isGhostMode
+    ),
+    project: projectId,
+    databaseList: props.databaseIdList.join(","),
+  };
+  if (isGhostMode) {
+    query.ghost = 1;
+  }
+
+  if (state.selectedTab === "raw-sql") {
+    // todo
+  } else {
+    const editorStore = useUIEditorStore();
+    const tableStore = useTableStore();
+    const databaseEditList: DatabaseEdit[] = [];
+    for (const database of editorStore.databaseList) {
+      const originTableList = await tableStore.getOrFetchTableListByDatabaseId(
+        database.id
+      );
+      const updatedTableList = (
+        await editorStore.getOrFetchTableListByDatabaseId(database.id)
+      ).filter((table) => !editorStore.droppedTableList.includes(table));
+      const diffTableListResult = diffTableList(
+        originTableList,
+        updatedTableList
+      );
+      if (
+        diffTableListResult.createTableList.length > 0 ||
+        diffTableListResult.alterTableList.length > 0 ||
+        diffTableListResult.dropTableList.length > 0
+      ) {
+        databaseEditList.push({
+          databaseId: database.id,
+          ...diffTableListResult,
+        });
+      }
+    }
+
+    if (databaseEditList.length > 0) {
+      const databaseIdList: DatabaseId[] = [];
+      const statmentList = [];
+      for (const databaseEdit of databaseEditList) {
+        databaseIdList.push(databaseEdit.databaseId);
+        const statement = await editorStore.postDatabaseEdit(databaseEdit);
+        statmentList.push(statement);
+      }
+      query.databaseList = databaseIdList.join(",");
+      query.name = generateIssueName(
+        databaseList
+          .filter((database) => databaseIdList.includes(database.id))
+          .map((db) => db.name),
+        isGhostMode
+      );
+      query.sql = statmentList.join("\n");
+    }
+  }
+
+  router.push({
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
+    },
+    query,
+  });
+};
+
+const generateIssueName = (
+  databaseNameList: string[],
+  isOnlineMode: boolean
+) => {
+  const issueNameParts: string[] = [];
+  if (databaseNameList.length === 1) {
+    issueNameParts.push(`[${databaseNameList[0]}]`);
+  } else {
+    issueNameParts.push(`[${databaseNameList.length} databases]`);
+  }
+  if (isOnlineMode) {
+    issueNameParts.push("Online schema change");
+  } else {
+    issueNameParts.push(`Alter schema`);
+  }
+  const datetime = dayjs().format("@MM-DD HH:mm");
+  const tz = "UTC" + dayjs().format("ZZ");
+  issueNameParts.push(`${datetime} ${tz}`);
+
+  return issueNameParts.join(" ");
+};
+</script>
+
+<style>
+.ui-editor-modal-container > .modal-container {
+  @apply w-full h-full overflow-auto;
+}
+</style>

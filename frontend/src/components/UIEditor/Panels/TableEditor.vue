@@ -11,13 +11,7 @@
           <input
             v-model="tableCache.name"
             placeholder=""
-            :disabled="tableCache.id !== UNKNOWN_ID"
             class="w-full leading-6 px-2 py-1 rounded border text-sm"
-            :class="
-              tableCache.id === UNKNOWN_ID
-                ? 'border-gray-200'
-                : 'border-transparent'
-            "
             type="text"
           />
         </div>
@@ -314,6 +308,7 @@ const handlePreviewDDLStatement = async () => {
     databaseId: tableCache.database.id,
     createTableList: [],
     alterTableList: [],
+    renameTableList: [],
     dropTableList: [],
   };
   if (table.id === UNKNOWN_ID) {
