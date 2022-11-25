@@ -156,7 +156,7 @@ type AlterTableContext struct {
 	ColumnNameList []string `json:"columnNameList"`
 
 	AddColumnList    []*AddColumnContext    `json:"addColumnList"`
-	ModifyColumnList []*ModifyColumnContext `json:"modifyColumnList"`
+	ChangeColumnList []*ChangeColumnContext `json:"changeColumnList"`
 	DropColumnList   []*DropColumnContext   `json:"dropColumnList"`
 }
 
@@ -183,9 +183,10 @@ type AddColumnContext struct {
 	Default      *string `json:"default"`
 }
 
-// ModifyColumnContext is the alter table context to modify a column.
-type ModifyColumnContext struct {
-	Name         string  `json:"name"`
+// ChangeColumnContext is the alter table context to change a column.
+type ChangeColumnContext struct {
+	OldName      string  `json:"oldName"`
+	NewName      string  `json:"newName"`
 	Type         string  `json:"type"`
 	CharacterSet string  `json:"characterSet"`
 	Collation    string  `json:"collation"`
