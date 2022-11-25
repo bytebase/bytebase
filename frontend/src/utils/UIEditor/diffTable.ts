@@ -3,6 +3,7 @@ import type {
   AlterTableContext,
   CreateTableContext,
   DropTableContext,
+  RenameTableContext,
   Table,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types/const";
@@ -31,6 +32,7 @@ export const diffTableList = (
   }
 
   const alterTableContextList: AlterTableContext[] = [];
+  const renameTableContextList: RenameTableContext[] = [];
   for (const table of targetTableList) {
     if (table.id === UNKNOWN_ID) {
       continue;
@@ -46,10 +48,23 @@ export const diffTableList = (
         originTable.columnList,
         table.columnList
       );
-      alterTableContextList.push({
-        name: table.name,
-        ...columnListDiffResult,
-      });
+      if (
+        columnListDiffResult.addColumnList.length > 0 ||
+        columnListDiffResult.changeColumnList.length > 0 ||
+        columnListDiffResult.dropColumnList.length > 0
+      ) {
+        alterTableContextList.push({
+          name: table.name,
+          ...columnListDiffResult,
+        });
+      }
+
+      if (originTable.name !== table.name) {
+        renameTableContextList.push({
+          oldName: originTable.name,
+          newName: table.name,
+        });
+      }
     }
   }
 
@@ -65,6 +80,7 @@ export const diffTableList = (
   return {
     createTableList: createTableContextList,
     alterTableList: alterTableContextList,
+    renameTableList: renameTableContextList,
     dropTableList: dropTableContextList,
   };
 };
