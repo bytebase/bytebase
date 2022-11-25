@@ -1441,10 +1441,9 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Payload:     string(payload),
 	}
 
-	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
 		issue: updatedIssue,
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
 	}
 
