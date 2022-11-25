@@ -158,9 +158,10 @@ func TestDeparseAlterTable(t *testing.T) {
 				AlterTableList: []*api.AlterTableContext{
 					{
 						Name: "t1",
-						ModifyColumnList: []*api.ModifyColumnContext{
+						ChangeColumnList: []*api.ChangeColumnContext{
 							{
-								Name:     "id",
+								OldName:  "id",
+								NewName:  "id",
 								Type:     "int",
 								Comment:  "Name",
 								Nullable: true,
@@ -169,7 +170,7 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` MODIFY COLUMN `id` INT COMMENT 'Name';",
+			want: "ALTER TABLE `t1` CHANGE COLUMN `id` `id` INT COMMENT 'Name';",
 		},
 		{
 			name: "alter table t1 and drop column id",
@@ -201,9 +202,10 @@ func TestDeparseAlterTable(t *testing.T) {
 								Type: "int",
 							},
 						},
-						ModifyColumnList: []*api.ModifyColumnContext{
+						ChangeColumnList: []*api.ChangeColumnContext{
 							{
-								Name:    "id_card",
+								OldName: "id_card",
+								NewName: "id_card2",
 								Type:    "int",
 								Comment: "ID Card",
 							},
@@ -216,7 +218,80 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), MODIFY COLUMN `id_card` INT COMMENT 'ID Card' NOT NULL, DROP COLUMN `email`;",
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), CHANGE COLUMN `id_card` `id_card2` INT COMMENT 'ID Card' NOT NULL, DROP COLUMN `email`;",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
+func TestDeparseRenameTable(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "rename table name t1 to t2",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				RenameTableList: []*api.RenameTableContext{
+					{
+						OldName: "t1",
+						NewName: "t2",
+					},
+				},
+			},
+			want: "RENAME TABLE `t1` TO `t2`;",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
+func TestDeparseAlterAndRenameTable(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "alter table t1 and rename to t2",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t1",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name: "id",
+								Type: "int",
+							},
+							{
+								Name: "id_card",
+								Type: "int",
+							},
+						},
+					},
+				},
+				RenameTableList: []*api.RenameTableContext{
+					{
+						OldName: "t1",
+						NewName: "t2",
+					},
+				},
+			},
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);\nRENAME TABLE `t1` TO `t2`;",
 		},
 	}
 

@@ -61,6 +61,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.AlterSequenceStmt:
+		if err := deparseAlterSequence(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -917,6 +922,184 @@ func deparseDataType(_ parser.DeparseContext, in ast.DataType, buf *strings.Buil
 	return nil
 }
 
+func deparseAlterSequence(ctx parser.DeparseContext, in *ast.AlterSequenceStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("ALTER SEQUENCE "); err != nil {
+		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+	if err := deparseSequenceName(ctx, in.Name, buf); err != nil {
+		return err
+	}
+	// Write alter items.
+	itemContext := parser.DeparseContext{IndentLevel: ctx.IndentLevel + 1}
+	if in.Type != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString("AS "); err != nil {
+			return err
+		}
+		if err := deparseDataType(parser.DeparseContext{}, in.Type, buf); err != nil {
+			return err
+		}
+	}
+
+	if in.IncrementBy != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("INCREMENT BY %d", *in.IncrementBy)); err != nil {
+			return err
+		}
+	}
+
+	if in.NoMinValue {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString("NO MINVALUE"); err != nil {
+			return err
+		}
+	} else if in.MinValue != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("MINVALUE %d", *in.MinValue)); err != nil {
+			return err
+		}
+	}
+
+	if in.NoMaxValue {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString("NO MAXVALUE"); err != nil {
+			return err
+		}
+	} else if in.MaxValue != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("MAXVALUE %d", *in.MaxValue)); err != nil {
+			return err
+		}
+	}
+
+	if in.StartWith != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("START WITH %d", *in.StartWith)); err != nil {
+			return err
+		}
+	}
+
+	if in.RestartWith != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("RESTART WITH %d", *in.RestartWith)); err != nil {
+			return err
+		}
+	}
+
+	if in.Cache != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("CACHE %d", *in.Cache)); err != nil {
+			return err
+		}
+	}
+
+	if in.Cycle != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if !*in.Cycle {
+			if _, err := buf.WriteString("NO "); err != nil {
+				return err
+			}
+		}
+
+		if _, err := buf.WriteString("CYCLE"); err != nil {
+			return err
+		}
+	}
+
+	if in.OwnedByNone {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString("OWNED BY NONE"); err != nil {
+			return err
+		}
+	} else if in.OwnedBy != nil {
+		if err := buf.WriteByte('\n'); err != nil {
+			return err
+		}
+		if err := itemContext.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+			return err
+		}
+
+		if _, err := buf.WriteString("OWNED BY "); err != nil {
+			return err
+		}
+		if err := deparseColumnNameDef(parser.DeparseContext{}, in.OwnedBy, buf); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func deparseCreateSequence(ctx parser.DeparseContext, in *ast.CreateSequenceStmt, buf *strings.Builder) error {
 	if _, err := buf.WriteString("CREATE SEQUENCE "); err != nil {
 		return err
@@ -926,7 +1109,7 @@ func deparseCreateSequence(ctx parser.DeparseContext, in *ast.CreateSequenceStmt
 			return err
 		}
 	}
-	if err := deparseSequenceName(ctx, &in.SequenceDef.SequenceName, buf); err != nil {
+	if err := deparseSequenceName(ctx, in.SequenceDef.SequenceName, buf); err != nil {
 		return err
 	}
 	return depraseSequenceDef(parser.DeparseContext{IndentLevel: ctx.IndentLevel + 1}, &in.SequenceDef, buf)
@@ -1058,7 +1241,7 @@ func deparseColumnNameDef(ctx parser.DeparseContext, in *ast.ColumnNameDef, buf 
 		if _, err := buf.WriteString("."); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(in.ColumnName); err != nil {
+		if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
 			return err
 		}
 	}

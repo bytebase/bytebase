@@ -15,11 +15,30 @@ jobs:
       - name: Extract version
         run: |
           echo "RELEASE_VERSION=${GITHUB_REF_NAME#release/}" >> $GITHUB_ENV
-      - name: Update render web service
+      - name: Update staging.bytebase.com using PG 15
         run: |
           RENDER_RESPONSE=$(curl --request PATCH \
                 -w "%{http_code}" \
                 --url https://api.render.com/v1/services/srv-c760lk4objdcv67lc6ug \
+                --header 'Accept: application/json' \
+                --header 'Authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
+                --header 'Content-Type: application/json' \
+                --data '
+                {
+                  "autoDeploy": "yes",
+                  "branch": "release/${{ env.RELEASE_VERSION }}"
+                }
+                '
+              )
+          echo ${RENDER_RESPONSE}
+          if [[ "$(echo ${RENDER_RESPONSE} | tail -c 4)" != "200" ]]; then
+            exit 1
+          fi
+      - name: Update staging14.bytebase.com using PG 14
+        run: |
+          RENDER_RESPONSE=$(curl --request PATCH \
+                -w "%{http_code}" \
+                --url https://api.render.com/v1/services/srv-ce02beha6gdsa605m5eg \
                 --header 'Accept: application/json' \
                 --header 'Authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
                 --header 'Content-Type: application/json' \

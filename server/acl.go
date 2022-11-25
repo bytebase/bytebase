@@ -170,6 +170,11 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 			return next(c)
 		}
 
+		// Skips OpenAPI SQL endpoint
+		if common.HasPrefixes(c.Path(), fmt.Sprintf("%s/sql", openAPIPrefix)) {
+			return next(c)
+		}
+
 		method := c.Request().Method
 		// Skip GET /subscription request
 		if common.HasPrefixes(path, "/subscription") && method == "GET" {

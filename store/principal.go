@@ -374,6 +374,9 @@ func patchPrincipalImpl(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) 
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Email; v != nil {
+		set, args = append(set, fmt.Sprintf("email = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.PasswordHash; v != nil {
 		set, args = append(set, fmt.Sprintf("password_hash = $%d", len(args)+1)), append(args, *v)
 	}

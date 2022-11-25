@@ -117,6 +117,7 @@ type PrincipalPatch struct {
 
 	// Domain specific fields
 	Name         *string `jsonapi:"attr,name"`
+	Email        *string `jsonapi:"attr,email"`
 	Password     *string `jsonapi:"attr,password"`
 	PasswordHash *string
 }

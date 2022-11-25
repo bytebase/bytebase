@@ -146,7 +146,7 @@ const showProjectItem = computed((): boolean => {
 
 const showSensitiveDataItem = computed((): boolean => {
   return hasWorkspacePermission(
-    "bb.permission.workspace.view-sensitive-data",
+    "bb.permission.workspace.manage-sensitive-data",
     currentUser.value.role
   );
 });

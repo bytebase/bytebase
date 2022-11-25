@@ -69,6 +69,7 @@ func TestDeparse(t *testing.T) {
 		"test_drop_index_data.yaml",
 		// Sequence
 		"test_create_sequence_data.yaml",
+		"test_alter_sequence_data.yaml",
 	}
 	for _, test := range testFileList {
 		runDeparseTest(t, test, false /* record */)
