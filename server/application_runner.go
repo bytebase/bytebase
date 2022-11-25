@@ -138,6 +138,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									return nil
 								}(); err != nil {
 									log.Error("failed to approve stage", zap.Error(err))
+									continue
 								}
 
 								if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
@@ -146,6 +147,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									RowStatus: api.Archived,
 								}); err != nil {
 									log.Error("failed to archive external apporval", zap.Error(err))
+									continue
 								}
 							}
 						}
