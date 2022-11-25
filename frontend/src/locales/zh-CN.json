@@ -138,6 +138,7 @@
     "Default": "默认",
     "definition": "定义",
     "empty": "空",
+    "connecting": "连接中...",
     "creating": "创建中...",
     "updating": "更新中...",
     "Address": "地址",

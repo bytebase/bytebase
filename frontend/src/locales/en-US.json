@@ -138,6 +138,7 @@
     "Default": "Default",
     "definition": "Definition",
     "empty": "Empty",
+    "connecting": "Connecting...",
     "creating": "Creating...",
     "updating": "Updating...",
     "Address": "Address",

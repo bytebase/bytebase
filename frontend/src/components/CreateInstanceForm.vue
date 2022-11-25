@@ -184,7 +184,7 @@
           <button
             type="button"
             class="btn-normal whitespace-nowrap items-center"
-            :disabled="!state.instance.host"
+            :disabled="!state.instance.host || state.isPingingInstance"
             @click.prevent="testConnection"
           >
             {{ $t("instance.test-connection") }}
@@ -202,11 +202,15 @@
             v-if="state.isCreatingInstance"
             :title="$t('common.creating')"
           />
+          <BBSpin
+            v-if="state.isPingingInstance"
+            :title="$t('common.connecting')"
+          />
           <div class="ml-2">
             <button
               type="button"
               class="btn-normal py-2 px-4"
-              :disabled="state.isCreatingInstance"
+              :disabled="state.isCreatingInstance || state.isPingingInstance"
               @click.prevent="cancel"
             >
               {{ $t("common.cancel") }}
@@ -214,7 +218,11 @@
             <button
               type="button"
               class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-              :disabled="!allowCreate || state.isCreatingInstance"
+              :disabled="
+                !allowCreate ||
+                state.isCreatingInstance ||
+                state.isPingingInstance
+              "
               @click.prevent="tryCreate"
             >
               {{ $t("common.create") }}
@@ -264,6 +272,7 @@ import {
 
 interface LocalState {
   instance: InstanceCreate;
+  isPingingInstance: boolean;
   isCreatingInstance: boolean;
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
@@ -303,6 +312,7 @@ const state = reactive<LocalState>({
   },
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
+  isPingingInstance: false,
   isCreatingInstance: false,
 });
 
@@ -499,16 +509,23 @@ const tryCreate = () => {
     connectionInfo.sslCert = instance.sslCert ?? "";
   }
 
-  sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
-    if (isEmpty(resultSet.error)) {
-      doCreate();
-    } else {
-      state.createInstanceWarning = t("instance.unable-to-connect", [
-        resultSet.error,
-      ]);
-      state.showCreateInstanceWarningModal = true;
-    }
-  });
+  state.isPingingInstance = true;
+  sqlStore
+    .ping(connectionInfo)
+    .then((resultSet: SQLResultSet) => {
+      state.isPingingInstance = false;
+      if (isEmpty(resultSet.error)) {
+        doCreate();
+      } else {
+        state.createInstanceWarning = t("instance.unable-to-connect", [
+          resultSet.error,
+        ]);
+        state.showCreateInstanceWarningModal = true;
+      }
+    })
+    .catch(() => {
+      state.isPingingInstance = false;
+    });
 };
 
 // We will also create the database * denoting all databases
@@ -556,31 +573,37 @@ const testConnection = () => {
     connectionInfo.sslCert = instance.sslCert ?? "";
   }
 
-  sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
-    if (isEmpty(resultSet.error)) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("instance.successfully-connected-instance"),
-      });
-    } else {
-      let title = t("instance.failed-to-connect-instance");
-      if (
-        connectionInfo.host == "localhost" ||
-        connectionInfo.host == "127.0.0.1"
-      ) {
-        title = t("instance.failed-to-connect-instance-localhost");
+  state.isPingingInstance = true;
+  sqlStore
+    .ping(connectionInfo)
+    .then((resultSet: SQLResultSet) => {
+      if (isEmpty(resultSet.error)) {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("instance.successfully-connected-instance"),
+        });
+      } else {
+        let title = t("instance.failed-to-connect-instance");
+        if (
+          connectionInfo.host == "localhost" ||
+          connectionInfo.host == "127.0.0.1"
+        ) {
+          title = t("instance.failed-to-connect-instance-localhost");
+        }
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: title,
+          description: resultSet.error,
+          // Manual hide, because user may need time to inspect the error
+          manualHide: true,
+        });
       }
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: title,
-        description: resultSet.error,
-        // Manual hide, because user may need time to inspect the error
-        manualHide: true,
-      });
-    }
-  });
+    })
+    .finally(() => {
+      state.isPingingInstance = false;
+    });
 };
 </script>
 
