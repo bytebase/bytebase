@@ -977,6 +977,10 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_FORGOT_MODULE
   ) {
     if (isLoggedIn) {
+      if (typeof to.query.redirect === "string") {
+        location.replace(to.query.redirect);
+        return;
+      }
       next({ name: HOME_MODULE, replace: true });
     } else {
       if (to.name === ACTIVATE_MODULE) {
