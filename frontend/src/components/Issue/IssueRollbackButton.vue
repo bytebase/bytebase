@@ -19,6 +19,7 @@ import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 
 import type {
+  ActivityCreate,
   Issue,
   IssueCreate,
   RollbackContext,
@@ -26,7 +27,7 @@ import type {
   TaskDatabaseDataUpdatePayload,
 } from "@/types";
 import { useIssueLogic } from "./logic";
-import { useCurrentUser, useIssueStore } from "@/store";
+import { useActivityStore, useCurrentUser, useIssueStore } from "@/store";
 import {
   absolutifyLink,
   buildIssueLinkWithTask,
@@ -171,13 +172,37 @@ const tryRollbackTask = async () => {
     const createdIssue = await issueStore.createIssue(issueCreate);
     state.rollbackIssue = createdIssue;
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     state.buttonState = ButtonState.GENERATED;
+
+    await createRollbackCommentActivity(task, issueEntity, createdIssue);
 
     navigateToRollbackIssue();
   } catch {
     state.buttonState = ButtonState.DEFAULT;
+  }
+};
+
+const createRollbackCommentActivity = async (
+  task: Task,
+  issue: Issue,
+  newIssue: Issue
+) => {
+  const comment = [
+    "Rollback task",
+    `[${task.name}]`,
+    `in issue #${newIssue.id}`,
+  ].join(" ");
+
+  const createActivity: ActivityCreate = {
+    type: "bb.issue.comment.create",
+    containerId: issue.id,
+    comment,
+  };
+  try {
+    await useActivityStore().createActivity(createActivity);
+  } catch {
+    // do nothing
+    // failing to comment to won't be too bad
   }
 };
 </script>
