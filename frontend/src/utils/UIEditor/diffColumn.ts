@@ -3,10 +3,13 @@ import type {
   AddColumnContext,
   Column,
   DropColumnContext,
-  ModifyColumnContext,
+  ChangeColumnContext,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types/const";
-import { transformColumnToAddColumnContext } from "./transform";
+import {
+  transformColumnToAddColumnContext,
+  transformColumnToChangeColumnContext,
+} from "./transform";
 
 // diffColumnList gets the differences between column object list.
 // Including addColumnList, modifyColumnList and dropColumnList.
@@ -23,7 +26,7 @@ export const diffColumnList = (
     }
   }
 
-  const modifyColumnContextList: ModifyColumnContext[] = [];
+  const changeColumnContextList: ChangeColumnContext[] = [];
   for (const column of targetColumnList) {
     if (column.id === UNKNOWN_ID) {
       continue;
@@ -35,7 +38,9 @@ export const diffColumnList = (
       continue;
     }
     if (!isEqual(originColumn, column)) {
-      modifyColumnContextList.push(transformColumnToAddColumnContext(column));
+      changeColumnContextList.push(
+        transformColumnToChangeColumnContext(originColumn, column)
+      );
     }
   }
 
@@ -50,7 +55,7 @@ export const diffColumnList = (
 
   return {
     addColumnList: addColumnContextList,
-    modifyColumnList: modifyColumnContextList,
+    changeColumnList: changeColumnContextList,
     dropColumnList: dropColumnContextList,
   };
 };
