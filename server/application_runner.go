@@ -231,7 +231,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 }
 
 // CancelExternalApproval cancels the active external approval of an issue.
-func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID int, reason api.ExternalApprovalCancelReason) error {
+func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID int, reason string) error {
 	settingName := api.SettingAppIM
 	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
