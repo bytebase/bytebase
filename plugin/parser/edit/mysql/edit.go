@@ -50,6 +50,14 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 		}
 		stmtList = append(stmtList, stmt)
 	}
+	for _, renameTableContext := range databaseEdit.RenameTableList {
+		renameTableStmt := transformRenameTableContext(renameTableContext)
+		stmt, err := restoreASTNode(renameTableStmt)
+		if err != nil {
+			return "", err
+		}
+		stmtList = append(stmtList, stmt)
+	}
 	for _, dropTableContext := range databaseEdit.DropTableList {
 		dropTableStmt := transformDropTableContext(dropTableContext)
 		stmt, err := restoreASTNode(dropTableStmt)
@@ -153,6 +161,24 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) *tidba
 	}
 
 	return alterTableStmt
+}
+
+func transformRenameTableContext(renameTableContext *api.RenameTableContext) *tidbast.RenameTableStmt {
+	oldTableName := &tidbast.TableName{
+		Name: model.NewCIStr(renameTableContext.OldName),
+	}
+	newTableName := &tidbast.TableName{
+		Name: model.NewCIStr(renameTableContext.NewName),
+	}
+	renameTableStmt := &tidbast.RenameTableStmt{
+		TableToTables: []*tidbast.TableToTable{
+			{
+				OldTable: oldTableName,
+				NewTable: newTableName,
+			},
+		},
+	}
+	return renameTableStmt
 }
 
 func transformDropTableContext(dropTableContext *api.DropTableContext) *tidbast.DropTableStmt {
