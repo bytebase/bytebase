@@ -51,9 +51,9 @@
   newSchema: create table public.t1(a int DEFAULT 1, b int, c int DEFAULT 1+2+3+4)
   diff: |
     ALTER TABLE "public"."t1"
-        ALTER COLUMN "a" SET DEFAULT 1;
-    ALTER TABLE "public"."t1"
         ALTER COLUMN "b" DROP DEFAULT;
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "a" SET DEFAULT 1;
     ALTER TABLE "public"."t1"
         ALTER COLUMN "c" SET DEFAULT ((1 + 2) + 3) + 4;
 - oldSchema: |
