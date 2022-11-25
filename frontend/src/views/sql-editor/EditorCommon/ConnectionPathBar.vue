@@ -4,13 +4,7 @@
     class="w-full py-1 px-4 flex justify-between items-center border-b"
     :class="[isProtectedEnvironment && 'bg-yellow-50']"
   >
-    <div :class="[isProtectedEnvironment ? 'text-yellow-700' : 'text-main']">
-      <template v-if="isProtectedEnvironment">
-        {{ $t("sql-editor.sql-execute-in-protected-environment") }}
-      </template>
-    </div>
-
-    <div class="action-right flex justify-end items-center">
+    <div class="flex justify-start items-center">
       <NPopover
         v-if="selectedInstance.id !== UNKNOWN_ID && !hasReadonlyDataSource"
         trigger="hover"
@@ -52,7 +46,11 @@
               v-if="selectedInstance.id !== UNKNOWN_ID"
               class="flex items-center"
             >
-              <span class="mx-2">/</span>
+              <span class="mx-2">
+                <heroicons-solid:chevron-right
+                  class="flex-shrink-0 h-4 w-4 text-control-light"
+                />
+              </span>
               <InstanceEngineIcon :instance="selectedInstance" show-status />
               <span class="ml-2">{{ selectedInstance.name }}</span>
             </div>
@@ -60,7 +58,11 @@
               v-if="selectedDatabase.id !== UNKNOWN_ID"
               class="flex items-center"
             >
-              <span class="mx-2">/</span>
+              <span class="mx-2">
+                <heroicons-solid:chevron-right
+                  class="flex-shrink-0 h-4 w-4 text-control-light"
+                />
+              </span>
               <heroicons-outline:database />
               <span class="ml-2">{{ selectedDatabase.name }}</span>
             </div>
@@ -98,6 +100,12 @@
           </div>
         </section>
       </NPopover>
+    </div>
+
+    <div :class="[isProtectedEnvironment ? 'text-yellow-700' : 'text-main']">
+      <template v-if="isProtectedEnvironment">
+        {{ $t("sql-editor.sql-execute-in-protected-environment") }}
+      </template>
     </div>
   </div>
 </template>
