@@ -47,7 +47,9 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				settingName := api.SettingAppIM
 				setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 				if err != nil {
-					log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+					if !errors.Is(err, context.Canceled) {
+						log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+					}
 					return
 				}
 				if setting == nil {
@@ -102,6 +104,9 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							AppSecret: value.AppSecret,
 						}, payload.InstanceCode)
 						if err != nil {
+							if errors.Is(err, context.Canceled) {
+								break
+							}
 							log.Error("failed to get external approval", zap.String("instanceCode", payload.InstanceCode), zap.Error(err))
 							continue
 						}
