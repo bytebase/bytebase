@@ -114,9 +114,8 @@ type ActivityIssueStatusUpdatePayload struct {
 
 // ActivityIssueExternalApprovalRejectPayload is the API message payloads for rejected external approvals.
 type ActivityIssueExternalApprovalRejectPayload struct {
-	AssigneeID int    `json:"assigneeId"`
-	StageName  string `json:"stageName"`
-	IMType     IMType `json:"imType"`
+	StageName            string               `json:"stageName"`
+	ExternalApprovalType ExternalApprovalType `json:"externalApprovalType"`
 }
 
 // ActivityPipelineTaskStatusUpdatePayload is the API message payloads for updating pipeline task status.

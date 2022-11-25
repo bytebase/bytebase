@@ -199,8 +199,8 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									}
 								}
 								activityPayload, err := json.Marshal(api.ActivityIssueExternalApprovalRejectPayload{
-									StageName: stageName,
-									IMType:    api.IMTypeFeishu,
+									StageName:            stageName,
+									ExternalApprovalType: api.ExternalApprovalTypeFeishu,
 								})
 								if err != nil {
 									return errors.Wrap(err, "failed to marshal ActivityIssueExternalApprovalRejectPayload")
