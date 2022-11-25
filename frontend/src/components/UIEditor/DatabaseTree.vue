@@ -90,6 +90,7 @@ interface TreeNodeForTable extends BaseTreeNode {
   instanceId: InstanceId;
   databaseId: DatabaseId;
   tableId: TableId;
+  table: Table;
 }
 
 type TreeNode = TreeNodeForInstance | TreeNodeForDatabase | TreeNodeForTable;
@@ -139,12 +140,7 @@ const contextMenuOptions = computed(() => {
     });
     return options;
   } else if (treeNode?.type === "table") {
-    const table = editorStore.findTable(
-      treeNode.tableId,
-      treeNode.label,
-      treeNode.databaseId
-    );
-    const isDropped = editorStore.droppedTableList.includes(table as Table);
+    const isDropped = editorStore.droppedTableList.includes(treeNode.table);
     const options = [];
     if (isDropped) {
       options.push({
@@ -236,6 +232,7 @@ watch(tableList.value, () => {
           instanceId: database.instance.id,
           databaseId: database.id,
           tableId: table.id,
+          table: table,
         };
       });
     }
@@ -314,16 +311,11 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
         treeNode.databaseId,
         treeNode.tableId
       );
-      const table = editorStore.findTable(
-        treeNode.tableId,
-        treeNode.label,
-        treeNode.databaseId
-      );
 
-      const isDropped = editorStore.droppedTableList.includes(table as Table);
+      const isDropped = editorStore.droppedTableList.includes(treeNode.table);
       if (isDropped) {
         additionalClassList.push("text-red-700 line-through");
-      } else if (!isEqual(originTable, table)) {
+      } else if (!isEqual(originTable, treeNode.table)) {
         additionalClassList.push("text-yellow-700");
       }
     }
@@ -399,6 +391,7 @@ const loadSubTree = async (treeNode: TreeNode) => {
           instanceId: instanceId,
           databaseId: databaseId,
           tableId: table.id,
+          table: table,
         };
       });
     }
@@ -433,18 +426,14 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
         } else if (treeNode.type === "table") {
           const databaseId = treeNode.databaseId as any;
           const tableId = treeNode.tableId as any;
-          const table = editorStore.findTable(
-            tableId,
-            treeNode.label || "",
-            databaseId
-          ) as Table;
 
           editorStore.addTab({
             id: generateUniqueTabId(),
             type: UIEditorTabType.TabForTable,
             databaseId: databaseId,
             tableId: tableId,
-            tableCache: cloneDeep(table),
+            table: treeNode.table,
+            tableCache: cloneDeep(treeNode.table),
           });
         }
 
@@ -479,16 +468,13 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         type: UIEditorTabType.TabForTable,
         databaseId: treeNode.databaseId,
         tableId: table.id,
+        table: table,
         tableCache: cloneDeep(table),
       });
     }
   } else if (treeNode?.type === "table") {
     if (key === "drop") {
-      editorStore.dropTable(
-        treeNode.databaseId,
-        treeNode.tableId,
-        treeNode.label
-      );
+      editorStore.dropTable(treeNode.table);
     } else if (key === "restore") {
       editorStore.restoreTable(
         treeNode.databaseId,

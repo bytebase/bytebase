@@ -7,31 +7,54 @@
     <div
       class="w-full flex flex-row justify-start items-center border-b border-b-gray-300"
     >
-      <span
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
-        :class="
-          state.selectedTab === 'raw-sql' &&
-          'bg-white border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('raw-sql')"
-        >Raw SQL</span
-      >
-      <span
+      <button
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
           state.selectedTab === 'ui-editor' &&
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('ui-editor')"
-        >UI Editor</span
       >
+        UI Editor
+      </button>
+      <button
+        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
+        :class="
+          state.selectedTab === 'raw-sql' &&
+          'bg-white border-gray-300 text-gray-800'
+        "
+        @click="handleChangeTab('raw-sql')"
+      >
+        Raw SQL
+      </button>
     </div>
     <div class="w-full h-144 border-b mb-4">
       <div
         v-show="state.selectedTab === 'raw-sql'"
-        class="w-full h-full flex flex-row justify-center items-center"
+        class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto"
       >
-        <p>SQL Editor(WIP)</p>
+        <div
+          class="w-full h-full pl-3 shrink-0 flex flex-row justify-between items-center"
+        >
+          <div>SQL Editor</div>
+          <div>
+            <button
+              class="text-sm border px-3 leading-8 rounded cursor-pointer hover:bg-gray-100"
+              @click="handleSyncSQLFromUIEditor"
+            >
+              Sync SQL from UI Editor
+            </button>
+          </div>
+        </div>
+        <MonacoEditor
+          ref="editorRef"
+          class="w-full h-full border border-b-0"
+          data-label="bb-issue-sql-editor"
+          :value="state.editStatement"
+          :auto-focus="false"
+          :dialect="(databaseEngineType as SQLDialect)"
+          @change="onStatementChange"
+        />
       </div>
       <UIEditor
         v-show="state.selectedTab === 'ui-editor'"
@@ -60,7 +83,13 @@ import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { onMounted, PropType, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { Database, DatabaseEdit, DatabaseId, UNKNOWN_ID } from "@/types";
+import {
+  Database,
+  DatabaseEdit,
+  DatabaseId,
+  SQLDialect,
+  UNKNOWN_ID,
+} from "@/types";
 import { allowGhostMigration } from "@/utils";
 import { useDatabaseStore, useTableStore, useUIEditorStore } from "@/store";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
@@ -71,6 +100,7 @@ type TabType = "raw-sql" | "ui-editor";
 
 interface LocalState {
   selectedTab: TabType;
+  editStatement: string;
 }
 
 const props = defineProps({
@@ -87,7 +117,10 @@ const emit = defineEmits<{
 const router = useRouter();
 const state = reactive<LocalState>({
   selectedTab: "ui-editor",
+  editStatement: "",
 });
+const editorStore = useUIEditorStore();
+const tableStore = useTableStore();
 const databaseStore = useDatabaseStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
@@ -117,6 +150,10 @@ const handleChangeTab = (tab: TabType) => {
   state.selectedTab = tab;
 };
 
+const onStatementChange = (value: string) => {
+  state.editStatement = value;
+};
+
 const dismissModal = () => {
   emit("close");
 };
@@ -142,6 +179,49 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 
   // fallback to normal
   return "normal";
+};
+
+const handleSyncSQLFromUIEditor = async () => {
+  const statement = await fetchDDLStatementWithUIEditor();
+  state.editStatement = statement;
+};
+
+const fetchDDLStatementWithUIEditor = async () => {
+  const databaseEditList: DatabaseEdit[] = [];
+  for (const database of editorStore.databaseList) {
+    const originTableList = await tableStore.getOrFetchTableListByDatabaseId(
+      database.id
+    );
+    const updatedTableList = (
+      await editorStore.getOrFetchTableListByDatabaseId(database.id)
+    ).filter((table) => !editorStore.droppedTableList.includes(table));
+    const diffTableListResult = diffTableList(
+      originTableList,
+      updatedTableList
+    );
+    if (
+      diffTableListResult.createTableList.length > 0 ||
+      diffTableListResult.alterTableList.length > 0 ||
+      diffTableListResult.renameTableList.length > 0 ||
+      diffTableListResult.dropTableList.length > 0
+    ) {
+      databaseEditList.push({
+        databaseId: database.id,
+        ...diffTableListResult,
+      });
+    }
+  }
+
+  const statmentList = [];
+  if (databaseEditList.length > 0) {
+    const databaseIdList: DatabaseId[] = [];
+    for (const databaseEdit of databaseEditList) {
+      databaseIdList.push(databaseEdit.databaseId);
+      const statement = await editorStore.postDatabaseEdit(databaseEdit);
+      statmentList.push(statement);
+    }
+  }
+  return statmentList.join("\n");
 };
 
 const handlePreviewIssue = async () => {
@@ -170,10 +250,8 @@ const handlePreviewIssue = async () => {
   }
 
   if (state.selectedTab === "raw-sql") {
-    // todo
+    query.sql = state.editStatement;
   } else {
-    const editorStore = useUIEditorStore();
-    const tableStore = useTableStore();
     const databaseEditList: DatabaseEdit[] = [];
     for (const database of editorStore.databaseList) {
       const originTableList = await tableStore.getOrFetchTableListByDatabaseId(
@@ -189,6 +267,7 @@ const handlePreviewIssue = async () => {
       if (
         diffTableListResult.createTableList.length > 0 ||
         diffTableListResult.alterTableList.length > 0 ||
+        diffTableListResult.renameTableList.length > 0 ||
         diffTableListResult.dropTableList.length > 0
       ) {
         databaseEditList.push({
