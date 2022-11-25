@@ -19,12 +19,12 @@ import (
 
 var (
 	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
-		api.TaskPendingApproval: {api.TaskPending},
-		api.TaskPending:         {api.TaskCanceled, api.TaskRunning, api.TaskPendingApproval},
+		api.TaskPendingApproval: {api.TaskPending, api.TaskDone},
+		api.TaskPending:         {api.TaskCanceled, api.TaskRunning, api.TaskPendingApproval, api.TaskDone},
 		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
 		api.TaskDone:            {},
-		api.TaskFailed:          {api.TaskPendingApproval},
-		api.TaskCanceled:        {api.TaskPendingApproval},
+		api.TaskFailed:          {api.TaskPendingApproval, api.TaskDone},
+		api.TaskCanceled:        {api.TaskPendingApproval, api.TaskDone},
 	}
 	taskCancellationImplemented = map[api.TaskType]bool{
 		api.TaskDatabaseSchemaUpdateGhostSync: true,
