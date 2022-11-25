@@ -32,6 +32,7 @@ type diffNode struct {
 	dropForeignKeyList         []ast.Node
 	dropConstraintExceptFkList []ast.Node
 	dropIndexList              []ast.Node
+	dropDefaultList            []ast.Node
 	dropColumnList             []ast.Node
 	dropTableList              []ast.Node
 	dropSchemaList             []ast.Node
@@ -41,6 +42,7 @@ type diffNode struct {
 	createTableList              []ast.Node
 	createColumnList             []ast.Node
 	alterColumnList              []ast.Node
+	setDefaultList               []ast.Node
 	createIndexList              []ast.Node
 	createConstraintExceptFkList []ast.Node
 	createForeignKeyList         []ast.Node
@@ -176,17 +178,72 @@ func (m schemaMap) getIndex(schemaName string, indexName string) *indexInfo {
 	return schema.indexMap[indexName]
 }
 
+func parseAndPreprocessStatment(statement string) ([]ast.Node, error) {
+	nodeList, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse statement %q", statement)
+	}
+	return mergeDefaultIntoColumn(nodeList)
+}
+
+// mergeDefaultIntoColumn merges some statements into one statement, for example, merge
+// `CREATE TABLE tbl(id INT DEFAULT '3');`,
+// `ALTER TABLE ONLY tbl ALTER COLUMN id nextval('tbl_id_seq'::regclass);`
+// to `CREATE TABLE tbl(id INT DEFAULT nextval('tbl_id_seq'::regclass));`.
+func mergeDefaultIntoColumn(nodeList []ast.Node) ([]ast.Node, error) {
+	var retNodes []ast.Node
+
+	schemaTableNameToRetNodesIdx := make(map[string]int)
+	for _, node := range nodeList {
+		switch node := node.(type) {
+		case *ast.CreateTableStmt:
+			schemaTableName := node.Name.Schema + "." + node.Name.Name
+			retNodes = append(retNodes, node)
+			schemaTableNameToRetNodesIdx[schemaTableName] = len(retNodes) - 1
+		case *ast.AlterTableStmt:
+			schemaTableName := node.Table.Schema + "." + node.Table.Name
+			retNodesIdx, ok := schemaTableNameToRetNodesIdx[schemaTableName]
+			if !ok {
+				// For pg_dump, this will never happen.
+				return nil, errors.Errorf("cannot find table %s", schemaTableName)
+			}
+			for _, alterItem := range node.AlterItemList {
+				switch item := alterItem.(type) {
+				case *ast.SetDefaultStmt:
+					for _, columnDef := range retNodes[retNodesIdx].(*ast.CreateTableStmt).ColumnList {
+						if columnDef.ColumnName == item.ColumnName {
+							constraintDef := &ast.ConstraintDef{
+								Type:       ast.ConstraintTypeDefault,
+								Expression: item.Expression,
+							}
+							// pg_dump will ensure that there is only one default constraint, in ColumnDef or AlterTableStmt.
+							columnDef.ConstraintList = append(columnDef.ConstraintList, constraintDef)
+							break
+						}
+					}
+				default:
+					retNodes = append(retNodes, node)
+				}
+				// For pg_dump, Set Default statements will be alone in one alter tabel statement.
+				// So here sikp append is safe.
+			}
+		default:
+			retNodes = append(retNodes, node)
+		}
+	}
+	return retNodes, nil
+}
+
 // SchemaDiff computes the schema differences between old and new schema.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
-	oldNodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, oldStmt)
+	oldNodes, err := parseAndPreprocessStatment(oldStmt)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse old statement %q", oldStmt)
+		return "", errors.Wrapf(err, "failed to parse and preprocess old statements %q", oldStmt)
 	}
-	newNodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, newStmt)
+	newNodes, err := parseAndPreprocessStatment(newStmt)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
+		return "", errors.Wrapf(err, "failed to and preprocess new statements %q", newStmt)
 	}
-
 	oldSchemaMap := make(schemaMap)
 	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
 	oldSchemaMap["public"].existsInNew = true
@@ -545,15 +602,25 @@ func (diff *diffNode) modifyColumn(tableName *ast.TableDef, oldColumn *ast.Colum
 	if needSetDefault {
 		expression := &ast.UnconvertedExpressionDef{}
 		expression.SetText(newDefault)
-		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetDefaultStmt{
-			Table:      alterTableStmt.Table,
-			ColumnName: columnName,
-			Expression: expression,
+		diff.setDefaultList = append(diff.setDefaultList, &ast.AlterTableStmt{
+			Table: tableName,
+			AlterItemList: []ast.Node{
+				&ast.SetDefaultStmt{
+					Table:      alterTableStmt.Table,
+					ColumnName: columnName,
+					Expression: expression,
+				},
+			},
 		})
 	} else if needDropDefault {
-		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropDefaultStmt{
-			Table:      alterTableStmt.Table,
-			ColumnName: columnName,
+		diff.dropDefaultList = append(diff.dropDefaultList, &ast.AlterTableStmt{
+			Table: tableName,
+			AlterItemList: []ast.Node{
+				&ast.DropDefaultStmt{
+					Table:      alterTableStmt.Table,
+					ColumnName: columnName,
+				},
+			},
 		})
 	}
 
@@ -637,6 +704,9 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.dropIndexList); err != nil {
 		return "", err
 	}
+	if err := printStmtSlice(&buf, diff.dropDefaultList); err != nil {
+		return "", err
+	}
 	if err := printStmtSlice(&buf, diff.dropColumnList); err != nil {
 		return "", err
 	}
@@ -658,6 +728,9 @@ func (diff *diffNode) deparse() (string, error) {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.alterColumnList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.setDefaultList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.createIndexList); err != nil {
