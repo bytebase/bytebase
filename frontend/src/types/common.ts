@@ -324,8 +324,11 @@ const makeUnknown = (type: ResourceType) => {
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     rowStatus: "NORMAL",
+    resourceType: "",
+    resourceId: UNKNOWN_ID,
     environment: UNKNOWN_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
+    inheritFromParent: false,
     payload: {
       value: DefaultApprovalPolicy,
       assigneeGroupList: [],
@@ -752,8 +755,11 @@ const makeEmpty = (type: ResourceType) => {
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     rowStatus: "NORMAL",
+    resourceType: "",
+    resourceId: EMPTY_ID,
     environment: EMPTY_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
+    inheritFromParent: false,
     payload: {
       value: DefaultApprovalPolicy,
       assigneeGroupList: [],
