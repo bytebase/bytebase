@@ -36,7 +36,7 @@ type ApplicationRunner struct {
 
 // Run runs the ApplicationRunner.
 func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(taskSchedulerInterval)
+	ticker := time.NewTicker(applicationRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Application runner started and will run every %v", applicationRunnerInterval))
