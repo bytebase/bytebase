@@ -6,12 +6,17 @@ type ExternalApprovalType string
 // ExternalApprovalTypeFeishu is the ExternalApproval from feishu.
 const ExternalApprovalTypeFeishu = "bb.plugin.app.feishu"
 
+// ExternalApprovalCancelReason describes why the external approval is canceled by Bytebase.
 type ExternalApprovalCancelReason string
 
 const (
-	ExternalApprovalCancelReasonGeneral               ExternalApprovalCancelReason = "Canceled because the assignee has been changed, or all tasks of the stage have been approved or the issue is no longer open."
-	ExternalApprovalCancelReasonIssueNotOpen          ExternalApprovalCancelReason = "Canceled because the containing issue is no longer open."
-	ExternalApprovalCancelReasonReassigned            ExternalApprovalCancelReason = "Canceled because the assignee has changed."
+	// ExternalApprovalCancelReasonGeneral is the general reason, used as a default.
+	ExternalApprovalCancelReasonGeneral ExternalApprovalCancelReason = "Canceled because the assignee has been changed, or all tasks of the stage have been approved or the issue is no longer open."
+	// ExternalApprovalCancelReasonIssueNotOpen is used if the issue is not open.
+	ExternalApprovalCancelReasonIssueNotOpen ExternalApprovalCancelReason = "Canceled because the containing issue is no longer open."
+	// ExternalApprovalCancelReasonReassigned is used if the assignee has been changed.
+	ExternalApprovalCancelReasonReassigned ExternalApprovalCancelReason = "Canceled because the assignee has changed."
+	// ExternalApprovalCancelReasonNoTaskPendingApproval is used if there is no pending approval tasks.
 	ExternalApprovalCancelReasonNoTaskPendingApproval ExternalApprovalCancelReason = "Canceled because all tasks have benn approved."
 )
 
