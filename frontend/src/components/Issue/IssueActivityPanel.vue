@@ -231,7 +231,7 @@
                       ></textarea>
                     </template>
                     <template v-else>
-                      {{ item.activity.comment }}
+                      <ActivityComment :activity="item.activity" />
                     </template>
                     <template
                       v-if="
@@ -353,6 +353,7 @@ import {
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import ActivityActionSentence from "./activity/ActionSentence.vue";
+import ActivityComment from "./activity/Comment";
 import { isSimilarActivity } from "./activity/utils";
 
 interface LocalState {
