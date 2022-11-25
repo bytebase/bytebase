@@ -490,7 +490,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 }
 
 func (s *Server) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
-	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstance.BaseDir, s.profile.DataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -647,7 +647,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 }
 
 func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
-	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstance.BaseDir, s.profile.DataDir)
 	if err != nil {
 		return err
 	}
