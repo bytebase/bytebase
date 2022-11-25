@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
-	_ "github.com/jackc/pgx/v4/stdlib"
+	// init() in pgx will register it's pgx driver.
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
