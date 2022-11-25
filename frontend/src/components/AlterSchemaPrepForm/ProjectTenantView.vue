@@ -141,7 +141,6 @@ import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 
 export type State = {
   selectedDatabaseName: string | undefined;
-  selectedDatabaseIdListForTenantMode: Set<DatabaseId>;
   deployingTenantDatabaseList: DatabaseId[];
 };
 

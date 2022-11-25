@@ -146,12 +146,6 @@
   />
 
   <GhostDialog ref="ghostDialog" />
-
-  <SchemaEditorModal
-    v-if="state.showSchemaEditorModal"
-    :database-id-list="flattenSelectedDatabaseIdList"
-    @close="state.showSchemaEditorModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -171,20 +165,7 @@ import {
   Repository,
   UNKNOWN_ID,
 } from "@/types";
-import {
-  allowGhostMigration,
-  allowUsingUIEditor,
-  isDev,
-  sortDatabaseList,
-} from "@/utils";
-import {
-  hasFeature,
-  useCurrentUser,
-  useDatabaseStore,
-  useEnvironmentList,
-  useProjectStore,
-  useRepositoryStore,
-} from "@/store";
+import { allowGhostMigration, sortDatabaseList } from "@/utils";
 import ProjectStandardView, {
   State as ProjectStandardState,
 } from "./ProjectStandardView.vue";
@@ -193,15 +174,22 @@ import ProjectTenantView, {
 } from "./ProjectTenantView.vue";
 import { State as CommonTenantState } from "./CommonTenantView.vue";
 import GhostDialog from "./GhostDialog.vue";
-import SchemaEditorModal from "./SchemaEditorModal.vue";
+import {
+  hasFeature,
+  useCurrentUser,
+  useDatabaseStore,
+  useEnvironmentList,
+  useProjectStore,
+  useRepositoryStore,
+} from "@/store";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState &
   CommonTenantState & {
     project?: Project;
-    searchText: string;
-    showSchemaEditorModal: boolean;
     showFeatureModal: boolean;
+    searchText: string;
+    selectedDatabaseIdList: Set<number>;
   };
 
 const props = defineProps({
@@ -241,12 +229,23 @@ const state = reactive<LocalState>({
   selectedDatabaseIdListForEnvironment: new Map(),
   tenantProjectId: undefined,
   selectedDatabaseName: undefined,
-  selectedDatabaseIdListForTenantMode: new Set<number>(),
   deployingTenantDatabaseList: [],
-  searchText: "",
-  showSchemaEditorModal: false,
   showFeatureModal: false,
+  searchText: "",
+  selectedDatabaseIdList: new Set<number>(),
 });
+
+const isDatabaseSelected = (database: Database): boolean => {
+  return state.selectedDatabaseIdList.has(database.id);
+};
+
+const toggleDatabaseSelection = (database: Database, on: boolean) => {
+  if (on) {
+    state.selectedDatabaseIdList.add(database.id);
+  } else {
+    state.selectedDatabaseIdList.delete(database.id);
+  }
+};
 
 // Returns true if alter schema, false if change data.
 const isAlterSchema = computed((): boolean => {
@@ -330,14 +329,10 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 // Also works when single db selected.
 const generateMultiDb = async () => {
   const selectedDatabaseIdList = [...flattenSelectedDatabaseIdList.value];
+
   const selectedDatabaseList = selectedDatabaseIdList.map(
     (id) => databaseList.value.find((db) => db.id === id)!
   );
-
-  if (isDev() && allowUsingUIEditor(selectedDatabaseList)) {
-    state.showSchemaEditorModal = true;
-    return;
-  }
 
   const mode = await isUsingGhostMigration(selectedDatabaseList);
   if (mode === false) {
@@ -377,7 +372,7 @@ const showGenerateTenant = computed(() => {
 
 const allowGenerateTenant = computed(() => {
   if (isTenantProject.value && state.alterType === "MULTI_DB") {
-    if (state.selectedDatabaseIdListForTenantMode.size === 0) {
+    if (state.selectedDatabaseIdList.size === 0) {
       return false;
     }
   }
@@ -393,18 +388,6 @@ const allowGenerateTenant = computed(() => {
 
   return true;
 });
-
-const isDatabaseSelected = (database: Database): boolean => {
-  return state.selectedDatabaseIdListForTenantMode.has(database.id);
-};
-
-const toggleDatabaseSelection = (database: Database, on: boolean) => {
-  if (on) {
-    state.selectedDatabaseIdListForTenantMode.add(database.id);
-  } else {
-    state.selectedDatabaseIdListForTenantMode.delete(database.id);
-  }
-};
 
 const generateTenant = async () => {
   if (!hasFeature("bb.feature.multi-tenancy")) {
@@ -433,16 +416,14 @@ const generateTenant = async () => {
     } else {
       const databaseList: Database[] = [];
       const databaseStore = useDatabaseStore();
-      for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
+      for (const databaseId of state.selectedDatabaseIdList) {
         databaseList.push(databaseStore.getDatabaseById(databaseId));
       }
       query.name = generateIssueName(
         databaseList.map((database) => database.name),
         false
       );
-      query.databaseList = Array.from(
-        state.selectedDatabaseIdListForTenantMode
-      ).join(",");
+      query.databaseList = Array.from(state.selectedDatabaseIdList).join(",");
     }
 
     router.push({
