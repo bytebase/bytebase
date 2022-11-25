@@ -290,7 +290,13 @@ func (p *SensitiveDataPolicy) String() (string, error) {
 // AccessControlPolicy is the policy configuration for database access control.
 // It is only applicable to database and environment resource type.
 type AccessControlPolicy struct {
-	// TODO(d): define access control policy.
+	DisallowRuleList []AccessControlRule `json:"disallowRuleList"`
+}
+
+// AccessControlRule is the disallow rule for access control policy.
+type AccessControlRule struct {
+	// FullDatabase will apply to the full database.
+	FullDatabase bool `json:"fullDatabase"`
 }
 
 // UnmarshalAccessControlPolicy will unmarshal payload to access control policy.
@@ -406,8 +412,7 @@ func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *
 		}
 		return nil
 	case PolicyTypeAccessControl:
-		_, err := UnmarshalAccessControlPolicy(*payload)
-		if err != nil {
+		if _, err := UnmarshalAccessControlPolicy(*payload); err != nil {
 			return err
 		}
 		return nil
