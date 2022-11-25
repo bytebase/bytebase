@@ -218,6 +218,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := oldSchemaMap.addIndex(i, stmt); err != nil {
 				return "", err
 			}
+			// TODO(rebelice): add default back here
 		}
 	}
 
@@ -285,8 +286,6 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := diff.modifyIndex(oldIndex.createIndex, stmt); err != nil {
 				return "", err
 			}
-		default:
-			return "", errors.Errorf("unsupported statement %+v", stmt)
 		}
 	}
 
@@ -723,9 +722,7 @@ func dropTable(m schemaMap) *ast.DropTableStmt {
 		tableDefList = append(tableDefList, table.createTable.Name)
 	}
 	return &ast.DropTableStmt{
-		IfExists:  true,
 		TableList: tableDefList,
-		Behavior:  ast.DropBehaviorCascade,
 	}
 }
 
@@ -749,9 +746,7 @@ func dropSchema(m schemaMap) *ast.DropSchemaStmt {
 		schemaNameList = append(schemaNameList, schema.createSchema.Name)
 	}
 	return &ast.DropSchemaStmt{
-		IfExists:   true,
 		SchemaList: schemaNameList,
-		Behavior:   ast.DropBehaviorCascade,
 	}
 }
 
@@ -785,9 +780,7 @@ func dropIndex(m schemaMap) *ast.DropIndexStmt {
 		})
 	}
 	return &ast.DropIndexStmt{
-		IfExists:  true,
 		IndexList: indexDefList,
-		Behavior:  ast.DropBehaviorCascade,
 	}
 }
 
