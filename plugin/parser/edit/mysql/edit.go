@@ -134,16 +134,24 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) *tidba
 		alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 	}
 
-	if len(alterTableContext.ModifyColumnList) > 0 {
-		for _, modifyColumnContext := range alterTableContext.ModifyColumnList {
+	if len(alterTableContext.ChangeColumnList) > 0 {
+		for _, changeColumnContext := range alterTableContext.ChangeColumnList {
+			oldColumnName := &tidbast.ColumnName{
+				Name: model.NewCIStr(changeColumnContext.OldName),
+			}
+			newColumnName := &tidbast.ColumnName{
+				Name: model.NewCIStr(changeColumnContext.NewName),
+			}
 			alterTableSpec := &tidbast.AlterTableSpec{
-				Tp: tidbast.AlterTableModifyColumn,
+				Tp:            tidbast.AlterTableChangeColumn,
+				OldColumnName: oldColumnName,
+				NewColumnName: newColumnName,
 				// TODO(steven): support modify the column position.
 				Position: &tidbast.ColumnPosition{
 					Tp: tidbast.ColumnPositionNone,
 				},
 			}
-			alterTableSpec.NewColumns = []*tidbast.ColumnDef{transformModifyColumnContext(modifyColumnContext)}
+			alterTableSpec.NewColumns = []*tidbast.ColumnDef{transformChangeColumnContext(changeColumnContext)}
 			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 		}
 	}
@@ -230,37 +238,37 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext) *tidbast.
 	return columnDef
 }
 
-func transformModifyColumnContext(modifyColumnContext *api.ModifyColumnContext) *tidbast.ColumnDef {
+func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) *tidbast.ColumnDef {
 	colName := &tidbast.ColumnName{
-		Name: model.NewCIStr(modifyColumnContext.Name),
+		Name: model.NewCIStr(changeColumnContext.NewName),
 	}
 	columnDef := &tidbast.ColumnDef{
 		Name: colName,
-		Tp:   transformColumnType(modifyColumnContext.Type),
+		Tp:   transformColumnType(changeColumnContext.Type),
 	}
 
 	var columnOptionList []*tidbast.ColumnOption
-	if modifyColumnContext.Comment != "" {
+	if changeColumnContext.Comment != "" {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:   tidbast.ColumnOptionComment,
-			Expr: tidbast.NewValueExpr(interface{}(modifyColumnContext.Comment), modifyColumnContext.CharacterSet, modifyColumnContext.Collation),
+			Expr: tidbast.NewValueExpr(interface{}(changeColumnContext.Comment), changeColumnContext.CharacterSet, changeColumnContext.Collation),
 		})
 	}
-	if modifyColumnContext.Collation != "" {
+	if changeColumnContext.Collation != "" {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:       tidbast.ColumnOptionCollate,
-			StrValue: modifyColumnContext.Collation,
+			StrValue: changeColumnContext.Collation,
 		})
 	}
-	if !modifyColumnContext.Nullable {
+	if !changeColumnContext.Nullable {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp: tidbast.ColumnOptionNotNull,
 		})
 	}
-	if modifyColumnContext.Default != nil {
+	if changeColumnContext.Default != nil {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:   tidbast.ColumnOptionDefaultValue,
-			Expr: tidbast.NewValueExpr(interface{}(*modifyColumnContext.Default), modifyColumnContext.CharacterSet, modifyColumnContext.Collation),
+			Expr: tidbast.NewValueExpr(interface{}(*changeColumnContext.Default), changeColumnContext.CharacterSet, changeColumnContext.Collation),
 		})
 	}
 	columnDef.Options = columnOptionList
