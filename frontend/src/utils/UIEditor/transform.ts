@@ -1,4 +1,10 @@
-import { Column, AddColumnContext, Table, CreateTableContext } from "@/types";
+import {
+  Column,
+  AddColumnContext,
+  Table,
+  CreateTableContext,
+  ChangeColumnContext,
+} from "@/types";
 import { defaultTo } from "lodash-es";
 
 export const transformColumnToAddColumnContext = (
@@ -6,6 +12,22 @@ export const transformColumnToAddColumnContext = (
 ): AddColumnContext => {
   return {
     name: defaultTo(column.name, ""),
+    type: defaultTo(column.type, ""),
+    characterSet: defaultTo(column.characterSet, ""),
+    collation: defaultTo(column.collation, ""),
+    comment: defaultTo(column.comment, ""),
+    nullable: defaultTo(column.nullable, false),
+    default: defaultTo(column.default, undefined),
+  };
+};
+
+export const transformColumnToChangeColumnContext = (
+  originColumn: Column,
+  column: Column
+): ChangeColumnContext => {
+  return {
+    oldName: defaultTo(originColumn.name, ""),
+    newName: defaultTo(column.name, ""),
     type: defaultTo(column.type, ""),
     characterSet: defaultTo(column.characterSet, ""),
     collation: defaultTo(column.collation, ""),

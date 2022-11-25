@@ -55,6 +55,10 @@ type Profile struct {
 	BackupBucket         string
 	BackupCredentialFile string
 
+	// IM integration related fields
+	// FeishuAPIURL is the URL of Feishu API server.
+	FeishuAPIURL string
+
 	// Version is the bytebase's version
 	Version string
 	// Git commit hash of the build

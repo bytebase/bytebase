@@ -266,6 +266,7 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *api.Envi
 			}
 			return nil, FormatError(err)
 		}
+		order++
 	}
 
 	// Insert row into database.
@@ -284,7 +285,7 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *api.Envi
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
-		order+1,
+		order,
 	).Scan(
 		&envRaw.ID,
 		&envRaw.RowStatus,

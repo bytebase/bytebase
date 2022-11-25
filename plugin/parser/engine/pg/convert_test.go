@@ -2380,7 +2380,7 @@ func TestCreateSequence(t *testing.T) {
 				&ast.CreateSequenceStmt{
 					IfNotExists: false,
 					SequenceDef: ast.SequenceDef{
-						SequenceName: ast.SequenceNameDef{
+						SequenceName: &ast.SequenceNameDef{
 							Schema: "public",
 							Name:   "tbl_seq_id_seq",
 						},
@@ -2431,7 +2431,7 @@ func TestCreateSequence(t *testing.T) {
 				&ast.CreateSequenceStmt{
 					IfNotExists: false,
 					SequenceDef: ast.SequenceDef{
-						SequenceName: ast.SequenceNameDef{
+						SequenceName: &ast.SequenceNameDef{
 							Schema: "public",
 							Name:   "tbl_seq_id_seq",
 						},
@@ -2464,7 +2464,7 @@ func TestCreateSequence(t *testing.T) {
 				&ast.CreateSequenceStmt{
 					IfNotExists: true,
 					SequenceDef: ast.SequenceDef{
-						SequenceName: ast.SequenceNameDef{
+						SequenceName: &ast.SequenceNameDef{
 							Schema: "public",
 							Name:   "tbl_seq_id_seq",
 						},
@@ -2490,7 +2490,7 @@ func TestDropSequence(t *testing.T) {
 				&ast.DropSequenceStmt{
 					IfExists: false,
 					Behavior: ast.DropBehaviorRestrict,
-					SequenceNameList: []ast.SequenceNameDef{
+					SequenceNameList: []*ast.SequenceNameDef{
 						{
 							Schema: "public",
 							Name:   "tbl_seq_id_seq",
@@ -2511,7 +2511,7 @@ func TestDropSequence(t *testing.T) {
 				&ast.DropSequenceStmt{
 					IfExists: true,
 					Behavior: ast.DropBehaviorCascade,
-					SequenceNameList: []ast.SequenceNameDef{
+					SequenceNameList: []*ast.SequenceNameDef{
 						{
 							Name: "tbl_seq1",
 						},
@@ -2530,5 +2530,101 @@ func TestDropSequence(t *testing.T) {
 			},
 		},
 	}
+	runTests(t, tests)
+}
+
+func TestAlterSequence(t *testing.T) {
+	one := int32(1)
+	boolFalse := false
+	boolTrue := true
+	tests := []testData{
+		{
+			stmt: `
+        ALTER SEQUENCE IF EXISTS public.tbl_seq_id_seq
+          AS bigint
+          INCREMENT BY 1
+          NO MINVALUE
+          NO MAXVALUE
+          START WITH 1
+          RESTART WITH 1
+          CACHE 1
+          NO CYCLE
+          OWNED BY NONE;`,
+			want: []ast.Node{
+				&ast.AlterSequenceStmt{
+					IfExists: true,
+					Name: &ast.SequenceNameDef{
+						Schema: "public",
+						Name:   "tbl_seq_id_seq",
+					},
+					Type: &ast.Integer{
+						Size: 8,
+					},
+					IncrementBy: &one,
+					NoMinValue:  true,
+					NoMaxValue:  true,
+					StartWith:   &one,
+					RestartWith: &one,
+					Cache:       &one,
+					Cycle:       &boolFalse,
+					OwnedByNone: true,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `ALTER SEQUENCE IF EXISTS public.tbl_seq_id_seq
+          AS bigint
+          INCREMENT BY 1
+          NO MINVALUE
+          NO MAXVALUE
+          START WITH 1
+          RESTART WITH 1
+          CACHE 1
+          NO CYCLE
+          OWNED BY NONE;`,
+					LastLine: 11,
+				},
+			},
+		},
+		{
+			stmt: `
+        ALTER SEQUENCE IF EXISTS public.tbl_seq_id_seq
+          MINVALUE 1
+          MAXVALUE 1
+          CYCLE
+          OWNED BY public.tbl.id;`,
+			want: []ast.Node{
+				&ast.AlterSequenceStmt{
+					IfExists: true,
+					Name: &ast.SequenceNameDef{
+						Schema: "public",
+						Name:   "tbl_seq_id_seq",
+					},
+					MinValue: &one,
+					MaxValue: &one,
+					Cycle:    &boolTrue,
+					OwnedBy: &ast.ColumnNameDef{
+						Table: &ast.TableDef{
+							Type:   ast.TableTypeUnknown,
+							Name:   "tbl",
+							Schema: "public",
+						},
+						ColumnName: "id",
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `ALTER SEQUENCE IF EXISTS public.tbl_seq_id_seq
+          MINVALUE 1
+          MAXVALUE 1
+          CYCLE
+          OWNED BY public.tbl.id;`,
+					LastLine: 6,
+				},
+			},
+		},
+	}
+
 	runTests(t, tests)
 }

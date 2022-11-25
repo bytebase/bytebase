@@ -19,11 +19,11 @@ import (
 const applicationRunnerInterval = time.Duration(60) * time.Second
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *ActivityManager) *ApplicationRunner {
+func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider) *ApplicationRunner {
 	return &ApplicationRunner{
 		store:           store,
 		activityManager: activityManager,
-		p:               feishu.NewProvider(),
+		p:               feishuProvider,
 	}
 }
 
@@ -36,7 +36,7 @@ type ApplicationRunner struct {
 
 // Run runs the ApplicationRunner.
 func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(taskSchedulerInterval)
+	ticker := time.NewTicker(applicationRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Application runner started and will run every %v", applicationRunnerInterval))
@@ -47,7 +47,9 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				settingName := api.SettingAppIM
 				setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 				if err != nil {
-					log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+					if !errors.Is(err, context.Canceled) {
+						log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+					}
 					return
 				}
 				if setting == nil {
@@ -91,10 +93,10 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
 						if issue.Status != api.IssueOpen {
-							if _, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &value); err != nil {
+							if err := r.CancelExternalApproval(ctx, issue.ID); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
-								continue
 							}
+							continue
 						}
 
 						status, err := r.p.GetExternalApprovalStatus(ctx, feishu.TokenCtx{
@@ -102,6 +104,9 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							AppSecret: value.AppSecret,
 						}, payload.InstanceCode)
 						if err != nil {
+							if errors.Is(err, context.Canceled) {
+								break
+							}
 							log.Error("failed to get external approval", zap.String("instanceCode", payload.InstanceCode), zap.Error(err))
 							continue
 						}
@@ -205,7 +210,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 }
 
 // CancelExternalApproval cancels the active external approval of an issue.
-func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *api.Issue) error {
+func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID int) error {
 	settingName := api.SettingAppIM
 	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
@@ -224,7 +229,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issue *a
 	if !value.ExternalApproval.Enabled {
 		return nil
 	}
-	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
+	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issueID)
 	if err != nil {
 		return err
 	}
