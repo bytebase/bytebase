@@ -16,7 +16,18 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-const applicationRunnerInterval = time.Duration(60) * time.Second
+const (
+	applicationRunnerInterval = time.Duration(60) * time.Second
+
+	// externalApprovalCancelReasonGeneral is the general reason, used as a default.
+	externalApprovalCancelReasonGeneral string = "Canceled because the assignee has been changed, or all tasks of the stage have been approved or the issue is no longer open."
+	// externalApprovalCancelReasonIssueNotOpen is used if the issue is not open.
+	externalApprovalCancelReasonIssueNotOpen string = "Canceled because the containing issue is no longer open."
+	// externalApprovalCancelReasonReassigned is used if the assignee has been changed.
+	externalApprovalCancelReasonReassigned string = "Canceled because the assignee has changed."
+	// externalApprovalCancelReasonNoTaskPendingApproval is used if there is no pending approval tasks.
+	externalApprovalCancelReasonNoTaskPendingApproval string = "Canceled because all tasks have benn approved."
+)
 
 // NewApplicationRunner returns a ApplicationRunner.
 func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider) *ApplicationRunner {
@@ -91,7 +102,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
 						if issue.Status != api.IssueOpen {
-							if err := r.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
+							if err := r.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonIssueNotOpen); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
 							}
 							continue
@@ -169,14 +180,14 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 		return nil, err
 	}
 
-	reason := api.ExternalApprovalCancelReasonGeneral
+	reason := externalApprovalCancelReasonGeneral
 	cancelOld := func() bool {
 		if payload.StageID != stage.ID {
-			reason = api.ExternalApprovalCancelReasonNoTaskPendingApproval
+			reason = externalApprovalCancelReasonNoTaskPendingApproval
 			return true
 		}
 		if payload.AssigneeID != issue.AssigneeID {
-			reason = api.ExternalApprovalCancelReasonReassigned
+			reason = externalApprovalCancelReasonReassigned
 			return true
 		}
 		pendingApprovalCount := 0
@@ -186,7 +197,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 			}
 		}
 		if pendingApprovalCount == 0 {
-			reason = api.ExternalApprovalCancelReasonNoTaskPendingApproval
+			reason = externalApprovalCancelReasonNoTaskPendingApproval
 			return true
 		}
 		return false
@@ -290,7 +301,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID 
 		},
 		payload.InstanceCode,
 		botID,
-		string(reason),
+		reason,
 	)
 }
 
