@@ -176,17 +176,79 @@ func (m schemaMap) getIndex(schemaName string, indexName string) *indexInfo {
 	return schema.indexMap[indexName]
 }
 
+// mergeStatements merges some statements into one statement, for example, merge
+// `CREATE TABLE tbl(id INT DEFAULT '3');`,
+// `ALTER TABLE ONLY tbl ALTER COLUMN id nextval('tbl_id_seq'::regclass);`
+// to `CREATE TABLE tbl(id INT DEFAULT nextval('tbl_id_seq'::regclass));`.
+func mergeStatements(statements string) ([]ast.Node, error) {
+	nodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statements)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse statements %q", statements)
+	}
+	var retNodes []ast.Node
+
+	schemaTableNameToRetNodesIdx := make(map[string]int)
+	for _, node := range nodes {
+		switch node := node.(type) {
+		case *ast.CreateTableStmt:
+			schemaTableName := node.Name.Schema + "." + node.Name.Name
+			retNodes = append(retNodes, node)
+			schemaTableNameToRetNodesIdx[schemaTableName] = len(retNodes) - 1
+		case *ast.AlterTableStmt:
+			schemaTableName := node.Table.Schema + "." + node.Table.Name
+			retNodesIdx, ok := schemaTableNameToRetNodesIdx[schemaTableName]
+			if !ok {
+				return nil, errors.Errorf("cannot find table %s when merging statements %q", schemaTableName, statements)
+			}
+			for _, alterItem := range node.AlterItemList {
+				switch item := alterItem.(type) {
+				case *ast.SetDefaultStmt:
+					columnFind := false
+					for _, columnDef := range retNodes[retNodesIdx].(*ast.CreateTableStmt).ColumnList {
+						if columnDef.ColumnName == item.ColumnName {
+							columnFind = true
+							constraintDef := &ast.ConstraintDef{
+								Type:       ast.ConstraintTypeDefault,
+								Expression: item.Expression,
+							}
+							defaultConstraintFind := false
+							for idx, constraint := range columnDef.ConstraintList {
+								if constraint.Type == ast.ConstraintTypeDefault {
+									columnDef.ConstraintList[idx] = constraintDef
+									defaultConstraintFind = true
+									break
+								}
+							}
+							if !defaultConstraintFind {
+								columnDef.ConstraintList = append(columnDef.ConstraintList, constraintDef)
+							}
+							break
+						}
+					}
+					if !columnFind {
+						return nil, errors.Errorf("cannot find column %s when merging statements %q", item.ColumnName, statements)
+					}
+				default:
+					retNodes = append(retNodes, node)
+				}
+			}
+		default:
+			retNodes = append(retNodes, node)
+		}
+	}
+	return retNodes, nil
+}
+
 // SchemaDiff computes the schema differences between old and new schema.
 func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
-	oldNodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, oldStmt)
+	oldNodes, err := mergeStatements(oldStmt)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse old statement %q", oldStmt)
+		return "", errors.Wrapf(err, "failed to merge old statements %q", oldStmt)
 	}
-	newNodes, err := parser.Parse(parser.Postgres, parser.ParseContext{}, newStmt)
+	newNodes, err := mergeStatements(newStmt)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse new statement %q", newStmt)
+		return "", errors.Wrapf(err, "failed to merge new statements %q", newStmt)
 	}
-
 	oldSchemaMap := make(schemaMap)
 	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
 	oldSchemaMap["public"].existsInNew = true
