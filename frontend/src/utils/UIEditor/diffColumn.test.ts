@@ -3,7 +3,7 @@ import {
   AddColumnContext,
   Column,
   DropColumnContext,
-  ModifyColumnContext,
+  ChangeColumnContext,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types/const";
 import { diffColumnList } from "./diffColumn";
@@ -14,7 +14,7 @@ it("diff add column list", () => {
     targetColumnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
-      modifyColumnList: ModifyColumnContext[];
+      changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
   }[] = [
@@ -44,7 +44,7 @@ it("diff add column list", () => {
             default: undefined,
           },
         ],
-        modifyColumnList: [],
+        changeColumnList: [],
         dropColumnList: [],
       },
     },
@@ -62,7 +62,7 @@ it("diff modify column list", () => {
     targetColumnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
-      modifyColumnList: ModifyColumnContext[];
+      changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
   }[] = [
@@ -93,9 +93,10 @@ it("diff modify column list", () => {
       ],
       wanted: {
         addColumnList: [],
-        modifyColumnList: [
+        changeColumnList: [
           {
-            name: "id",
+            oldName: "id",
+            newName: "id",
             type: "varchar",
             characterSet: "",
             collation: "",
@@ -121,7 +122,7 @@ it("diff drop column list", () => {
     targetColumnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
-      modifyColumnList: ModifyColumnContext[];
+      changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
   }[] = [
@@ -141,7 +142,7 @@ it("diff drop column list", () => {
       targetColumnList: [],
       wanted: {
         addColumnList: [],
-        modifyColumnList: [],
+        changeColumnList: [],
         dropColumnList: [
           {
             name: "id",
@@ -163,7 +164,7 @@ it("diff column list", () => {
     targetColumnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
-      modifyColumnList: ModifyColumnContext[];
+      changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
   }[] = [
@@ -244,9 +245,10 @@ it("diff column list", () => {
             default: "",
           },
         ],
-        modifyColumnList: [
+        changeColumnList: [
           {
-            name: "id",
+            oldName: "id",
+            newName: "id",
             type: "int",
             characterSet: "",
             collation: "",
@@ -255,7 +257,8 @@ it("diff column list", () => {
             default: undefined,
           },
           {
-            name: "name",
+            oldName: "name",
+            newName: "name",
             type: "varchar",
             characterSet: "",
             collation: "",
