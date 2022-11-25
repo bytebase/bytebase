@@ -44,6 +44,7 @@ export interface DatabaseEdit {
 
   createTableList: CreateTableContext[];
   alterTableList: AlterTableContext[];
+  renameTableList: RenameTableContext[];
   dropTableList: DropTableContext[];
 }
 
@@ -62,8 +63,13 @@ export interface AlterTableContext {
   name: string;
 
   addColumnList: AddColumnContext[];
-  modifyColumnList: ModifyColumnContext[];
+  changeColumnList: ChangeColumnContext[];
   dropColumnList: DropColumnContext[];
+}
+
+export interface RenameTableContext {
+  oldName: string;
+  newName: string;
 }
 
 export interface DropTableContext {
@@ -80,8 +86,9 @@ export interface AddColumnContext {
   default?: string;
 }
 
-export interface ModifyColumnContext {
-  name: string;
+export interface ChangeColumnContext {
+  oldName: string;
+  newName: string;
   type: string;
   characterSet: string;
   collation: string;

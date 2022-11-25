@@ -4,6 +4,7 @@ import {
   DropTableContext,
   CreateTableContext,
   AlterTableContext,
+  RenameTableContext,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types/const";
 import { diffTableList } from "./diffTable";
@@ -15,6 +16,7 @@ it("diff create table list", () => {
     wanted: {
       createTableList: CreateTableContext[];
       alterTableList: AlterTableContext[];
+      renameTableList: RenameTableContext[];
       dropTableList: DropTableContext[];
     };
   }[] = [
@@ -64,6 +66,7 @@ it("diff create table list", () => {
             ],
           },
         ],
+        renameTableList: [],
         alterTableList: [],
         dropTableList: [],
       },
@@ -83,6 +86,7 @@ it("diff alter table list", () => {
     wanted: {
       createTableList: CreateTableContext[];
       alterTableList: AlterTableContext[];
+      renameTableList: RenameTableContext[];
       dropTableList: DropTableContext[];
     };
   }[] = [
@@ -156,10 +160,11 @@ it("diff alter table list", () => {
                 default: undefined,
               },
             ],
-            modifyColumnList: [],
+            changeColumnList: [],
             dropColumnList: [],
           },
         ],
+        renameTableList: [],
         dropTableList: [],
       },
     },
@@ -178,6 +183,7 @@ it("diff drop table list", () => {
     wanted: {
       createTableList: CreateTableContext[];
       alterTableList: AlterTableContext[];
+      renameTableList: RenameTableContext[];
       dropTableList: DropTableContext[];
     };
   }[] = [
@@ -207,6 +213,7 @@ it("diff drop table list", () => {
       wanted: {
         createTableList: [],
         alterTableList: [],
+        renameTableList: [],
         dropTableList: [
           {
             name: "user",
