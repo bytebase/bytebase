@@ -228,6 +228,79 @@ func TestDeparseAlterTable(t *testing.T) {
 	}
 }
 
+func TestDeparseRenameTable(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "rename table name t1 to t2",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				RenameTableList: []*api.RenameTableContext{
+					{
+						OldName: "t1",
+						NewName: "t2",
+					},
+				},
+			},
+			want: "RENAME TABLE `t1` TO `t2`;",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
+func TestDeparseAlterAndRenameTable(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "alter table t1 and rename to t2",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t1",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name: "id",
+								Type: "int",
+							},
+							{
+								Name: "id_card",
+								Type: "int",
+							},
+						},
+					},
+				},
+				RenameTableList: []*api.RenameTableContext{
+					{
+						OldName: "t1",
+						NewName: "t2",
+					},
+				},
+			},
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);\nRENAME TABLE `t1` TO `t2`;",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
 func TestDeparseDropTable(t *testing.T) {
 	tests := []struct {
 		name         string
