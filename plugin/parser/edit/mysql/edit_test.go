@@ -158,9 +158,10 @@ func TestDeparseAlterTable(t *testing.T) {
 				AlterTableList: []*api.AlterTableContext{
 					{
 						Name: "t1",
-						ModifyColumnList: []*api.ModifyColumnContext{
+						ChangeColumnList: []*api.ChangeColumnContext{
 							{
-								Name:     "id",
+								OldName:  "id",
+								NewName:  "id",
 								Type:     "int",
 								Comment:  "Name",
 								Nullable: true,
@@ -169,7 +170,7 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` MODIFY COLUMN `id` INT COMMENT 'Name';",
+			want: "ALTER TABLE `t1` CHANGE COLUMN `id` `id` INT COMMENT 'Name';",
 		},
 		{
 			name: "alter table t1 and drop column id",
@@ -201,9 +202,10 @@ func TestDeparseAlterTable(t *testing.T) {
 								Type: "int",
 							},
 						},
-						ModifyColumnList: []*api.ModifyColumnContext{
+						ChangeColumnList: []*api.ChangeColumnContext{
 							{
-								Name:    "id_card",
+								OldName: "id_card",
+								NewName: "id_card2",
 								Type:    "int",
 								Comment: "ID Card",
 							},
@@ -216,7 +218,7 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), MODIFY COLUMN `id_card` INT COMMENT 'ID Card' NOT NULL, DROP COLUMN `email`;",
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), CHANGE COLUMN `id_card` `id_card2` INT COMMENT 'ID Card' NOT NULL, DROP COLUMN `email`;",
 		},
 	}
 
