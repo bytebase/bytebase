@@ -50,15 +50,16 @@ func NewFeishu(port int) *Feishu {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	botID := uuid.NewString()
 	f := &Feishu{
 		port:               port,
 		echo:               e,
 		approvalDefinition: map[string]bool{},
 		approvalInstance:   map[string]*approval{},
 		users:              map[string]string{},
-		userIDs:            map[string]bool{},
+		userIDs:            map[string]bool{botID: true},
 		mutex:              sync.Mutex{},
-		botID:              uuid.NewString(),
+		botID:              botID,
 	}
 
 	// Routes
