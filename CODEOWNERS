@@ -10,3 +10,8 @@ go.mod                       @d-bytebase @tianzhou
 
 # Schema files.
 /store/migration             @d-bytebase @tianzhou
+
+# SQL kernel.
+/plugin/advisor              @d-bytebase @rebelice
+/plugin/db                   @d-bytebase @rebelice
+/plugin/parser               @d-bytebase @rebelice
