@@ -33,7 +33,7 @@ func (s *Server) listEnvironment(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list").SetInternal(err)
 	}
 
-	var response []*openAPIV1.Environment
+	response := []*openAPIV1.Environment{}
 	for _, env := range envList {
 		response = append(response, convertToOpenAPIEnvironment(env))
 	}
