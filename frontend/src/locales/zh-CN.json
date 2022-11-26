@@ -386,7 +386,7 @@
       "system-bot": "机器人助手",
       "service-account": "服务助手",
       "copy-token": "复制 Token",
-      "token-copied": "Token 已复制",
+      "token-copied": "Token 已复制，请勿泄漏",
       "create-as-service-account": "创建为服务助手"
     },
     "im-integration": {
