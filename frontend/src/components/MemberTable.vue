@@ -38,30 +38,49 @@
           </template>
           <template v-else>
             <PrincipalAvatar :principal="member.principal" />
-            <div class="flex flex-col">
-              <div class="flex flex-row items-center space-x-2">
-                <router-link
-                  :to="`/u/${member.principal.id}`"
-                  class="normal-link"
-                  >{{ member.principal.name }}</router-link
-                >
+            <div class="flex flex-row">
+              <div class="flex flex-col">
+                <div class="flex flex-row items-center space-x-2">
+                  <router-link
+                    :to="`/u/${member.principal.id}`"
+                    class="normal-link"
+                    >{{ member.principal.name }}</router-link
+                  >
+                  <span
+                    v-if="currentUser.id == member.principal.id"
+                    class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                    >{{ $t("settings.members.yourself") }}</span
+                  >
+                  <span
+                    v-if="member.principal.id === SYSTEM_BOT_ID"
+                    class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                  >
+                    {{ $t("settings.members.system-bot") }}
+                  </span>
+                  <span
+                    v-if="member.principal.type === 'SERVICE_ACCOUNT'"
+                    class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                  >
+                    {{ $t("settings.members.service-account") }}
+                  </span>
+                </div>
                 <span
-                  v-if="currentUser.id == member.principal.id"
-                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-                  >{{ $t("settings.members.yourself") }}</span
+                  v-if="member.principal.id !== SYSTEM_BOT_ID"
+                  class="textlabel"
+                  >{{ member.principal.email }}</span
                 >
-                <span
-                  v-if="member.principal.id === SYSTEM_BOT_ID"
-                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-                >
-                  {{ $t("settings.members.system-bot") }}
-                </span>
               </div>
-              <span
-                v-if="member.principal.id !== SYSTEM_BOT_ID"
-                class="textlabel"
-                >{{ member.principal.email }}</span
+              <button
+                v-if="
+                  member.principal.type === 'SERVICE_ACCOUNT' &&
+                  canManageServiceAccount
+                "
+                class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                @click.prevent="() => copyToken(member.principal.token)"
               >
+                <heroicons-outline:clipboard class="w-4 h-4" />
+                {{ $t("settings.members.copy-token") }}
+              </button>
             </div>
           </template>
         </div>
@@ -125,6 +144,7 @@
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
@@ -137,7 +157,12 @@ import {
 } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { hasWorkspacePermission } from "../utils";
-import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
+import {
+  featureToRef,
+  useCurrentUser,
+  useMemberStore,
+  pushNotification,
+} from "@/store";
 
 const columnList = computed(() => [
   {
@@ -227,6 +252,13 @@ export default defineComponent({
       );
     });
 
+    const canManageServiceAccount = computed(() => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-service-account",
+        currentUser.value.role
+      );
+    });
+
     const allowChangeRole = (member: Member) => {
       if (member.principal.id === SYSTEM_BOT_ID) {
         return false;
@@ -293,6 +325,16 @@ export default defineComponent({
       });
     };
 
+    const copyToken = (token: string) => {
+      toClipboard(token).then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t("settings.members.token-copied"),
+        });
+      });
+    };
+
     return {
       SYSTEM_BOT_ID,
       columnList,
@@ -307,6 +349,8 @@ export default defineComponent({
       allowActivateMember,
       changeRole,
       changeRowStatus,
+      copyToken,
+      canManageServiceAccount,
     };
   },
 });

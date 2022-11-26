@@ -4,81 +4,100 @@
       <div
         v-for="(user, index) in state.userList"
         :key="index"
-        class="flex justify-between py-0.5 select-none"
+        class="flex flex-col py-2 select-none"
       >
-        <p id="add_or_invite_members_helper" class="sr-only">
-          {{ $t("settings.members.helper") }}
-        </p>
-        <div class="flex flex-row space-x-4">
-          <div class="flex-grow">
-            <input
-              v-model="user.email"
-              type="email"
-              name="add_or_invite_members"
-              autocomplete="off"
-              class="w-36 sm:w-64 textfield lowercase"
-              placeholder="foo@example.com"
-              aria-describedby="add_or_invite_members_helper"
-              @blur="validateUser(user, index)"
-              @input="clearValidationError(index)"
-            />
-            <p
-              v-if="state.errorList[index]"
-              id="email-error"
-              class="mt-2 text-sm text-error"
+        <div class="flex justify-between">
+          <p id="add_or_invite_members_helper" class="sr-only">
+            {{ $t("settings.members.helper") }}
+          </p>
+          <div class="flex flex-row space-x-4">
+            <div class="flex-grow">
+              <input
+                v-model="user.email"
+                type="email"
+                name="add_or_invite_members"
+                autocomplete="off"
+                class="w-36 sm:w-64 textfield lowercase"
+                placeholder="foo@example.com"
+                aria-describedby="add_or_invite_members_helper"
+                @blur="validateUser(user, index)"
+                @input="clearValidationError(index)"
+              />
+              <p
+                v-if="state.errorList[index]"
+                id="email-error"
+                class="mt-2 text-sm text-error"
+              >
+                {{ state.errorList[index] }}
+              </p>
+            </div>
+            <div v-if="hasRBACFeature" class="sm:hidden w-36">
+              <RoleSelect
+                :selected-role="user.role"
+                @change-role="
+                  (role) => {
+                    user.role = role;
+                  }
+                "
+              />
+            </div>
+            <div
+              v-if="hasRBACFeature"
+              class="hidden sm:flex sm:flex-row space-x-4"
+              :class="state.errorList[index] ? '-mt-7' : ''"
             >
-              {{ state.errorList[index] }}
-            </p>
-          </div>
-          <div v-if="hasRBACFeature" class="sm:hidden w-36">
-            <RoleSelect
-              :selected-role="user.role"
-              @change-role="
-                (role) => {
-                  user.role = role;
-                }
-              "
-            />
-          </div>
-          <div
-            v-if="hasRBACFeature"
-            class="hidden sm:flex sm:flex-row space-x-4"
-            :class="state.errorList[index] ? '-mt-7' : ''"
-          >
-            <div class="radio">
-              <input
-                v-model="user.role"
-                :name="`add_or_invite_role${index}`"
-                tabindex="-1"
-                type="radio"
-                class="btn"
-                value="OWNER"
-              />
-              <label class="label">{{ $t("common.role.owner") }}</label>
-            </div>
-            <div class="radio">
-              <input
-                v-model="user.role"
-                :name="`add_or_invite_role${index}`"
-                tabindex="-1"
-                type="radio"
-                class="btn"
-                value="DBA"
-              />
-              <label class="label">{{ $t("common.role.dba") }}</label>
-            </div>
-            <div class="radio">
-              <input
-                v-model="user.role"
-                :name="`add_or_invite_role${index}`"
-                tabindex="-1"
-                type="radio"
-                class="btn"
-                value="DEVELOPER"
-              />
-              <label class="label">{{ $t("common.role.developer") }}</label>
+              <div class="radio">
+                <input
+                  v-model="user.role"
+                  :name="`add_or_invite_role${index}`"
+                  tabindex="-1"
+                  type="radio"
+                  class="btn"
+                  value="OWNER"
+                />
+                <label class="label">{{ $t("common.role.owner") }}</label>
+              </div>
+              <div class="radio">
+                <input
+                  v-model="user.role"
+                  :name="`add_or_invite_role${index}`"
+                  tabindex="-1"
+                  type="radio"
+                  class="btn"
+                  value="DBA"
+                />
+                <label class="label">{{ $t("common.role.dba") }}</label>
+              </div>
+              <div class="radio">
+                <input
+                  v-model="user.role"
+                  :name="`add_or_invite_role${index}`"
+                  tabindex="-1"
+                  type="radio"
+                  class="btn"
+                  value="DEVELOPER"
+                />
+                <label class="label">{{ $t("common.role.developer") }}</label>
+              </div>
             </div>
           </div>
+        </div>
+        <div
+          class="flex justify-start gap-x-2 items-center text-sm text-gray-500 pt-2 ml-0.5"
+          v-if="canManageServiceAccount && isAdd"
+        >
+          <NSwitch size="small" v-model:value="user.isServiceAccount" />
+          <span>
+            {{ $t("settings.members.create-as-service-account") }}
+            <a
+              target="_blank"
+              href="https://www.bytebase.com/zh/docs/get-started/work-with-terraform/overview"
+            >
+              <heroicons-outline:question-mark-circle
+                class="w-4 h-4 inline-block"
+              />
+            </a>
+          </span>
         </div>
       </div>
     </div>
@@ -106,6 +125,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
+import { NSwitch } from "naive-ui";
 import RoleSelect from "./RoleSelect.vue";
 import {
   Principal,
@@ -113,6 +133,7 @@ import {
   MemberCreate,
   RoleType,
   UNKNOWN_ID,
+  PrincipalType,
 } from "../types";
 import { isValidEmail, hasWorkspacePermission } from "../utils";
 import {
@@ -126,6 +147,7 @@ import {
 type User = {
   email: string;
   role: RoleType;
+  isServiceAccount: boolean;
 };
 
 interface LocalState {
@@ -135,7 +157,7 @@ interface LocalState {
 
 export default defineComponent({
   name: "MemberAddOrInvite",
-  components: { RoleSelect },
+  components: { RoleSelect, NSwitch },
   setup() {
     const memberStore = useMemberStore();
 
@@ -144,6 +166,13 @@ export default defineComponent({
     const isAdd = computed(() => {
       return hasWorkspacePermission(
         "bb.permission.workspace.manage-member",
+        currentUser.value.role
+      );
+    });
+
+    const canManageServiceAccount = computed(() => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-service-account",
         currentUser.value.role
       );
     });
@@ -159,6 +188,7 @@ export default defineComponent({
       state.userList.push({
         email: "",
         role: "DEVELOPER",
+        isServiceAccount: false,
       });
       state.errorList.push("");
     }
@@ -190,6 +220,7 @@ export default defineComponent({
       state.userList.push({
         email: "",
         role: "DEVELOPER",
+        isServiceAccount: false,
       });
       state.errorList.push("");
     };
@@ -224,6 +255,7 @@ export default defineComponent({
           const newPrincipal: PrincipalCreate = {
             name: user.email.split("@")[0],
             email: user.email,
+            type: user.isServiceAccount ? "SERVICE_ACCOUNT" : "END_USER",
           };
           usePrincipalStore()
             .createPrincipal(newPrincipal)
@@ -248,6 +280,7 @@ export default defineComponent({
       state.userList.forEach((item) => {
         item.email = "";
         item.role = "DEVELOPER";
+        item.isServiceAccount = false;
       });
       state.errorList = [""];
     };
@@ -261,6 +294,7 @@ export default defineComponent({
       addUser,
       hasValidUserOnly,
       addOrInvite,
+      canManageServiceAccount,
     };
   },
 });

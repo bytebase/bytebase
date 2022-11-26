@@ -28,6 +28,7 @@ function convert(principal: ResourceObject): Principal {
     name: principal.attributes.name as string,
     email: principal.attributes.email as string,
     role: principal.attributes.role as RoleType,
+    token: principal.attributes.token as string,
   };
 }
 
@@ -117,6 +118,7 @@ export const usePrincipalStore = defineStore("principal", {
                 name: newPrincipal.name,
                 email: newPrincipal.email,
                 password: randomString(),
+                type: newPrincipal.type,
               },
             },
           })

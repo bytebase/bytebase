@@ -383,7 +383,11 @@
       "change-role-provider-to-bytebase": {
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
       },
-      "system-bot": "机器人助手"
+      "system-bot": "机器人助手",
+      "service-account": "服务助手",
+      "copy-token": "复制 Token",
+      "token-copied": "Token 已复制",
+      "create-as-service-account": "创建为服务助手"
     },
     "im-integration": {
       "enable": "启用",

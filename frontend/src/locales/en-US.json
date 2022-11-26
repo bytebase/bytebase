@@ -383,7 +383,11 @@
       "change-role-provider-to-bytebase": {
         "content": "You are about to restore the following members. All existing members synced from VCS will be removed."
       },
-      "system-bot": "System Bot"
+      "system-bot": "System Bot",
+      "service-account": "Service Account",
+      "copy-token": "Copy token",
+      "token-copied": "Token copied to clipboard",
+      "create-as-service-account": "Create as service account"
     },
     "im-integration": {
       "enable": "Enable",

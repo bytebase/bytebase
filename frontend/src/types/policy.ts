@@ -132,6 +132,6 @@ export type PolicyUpsert = {
   rowStatus?: RowStatus;
 
   // Domain specific fields
-  inheritFromParent: boolean;
-  payload?: PolicyPayload;
+  inheritFromParent?: boolean;
+  payload: PolicyPayload;
 };
