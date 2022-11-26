@@ -85,7 +85,9 @@ func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compose Principal role with principalRaw[%+v]", raw)
 		}
-		principalList = append(principalList, principal)
+		if principal != nil {
+			principalList = append(principalList, principal)
+		}
 	}
 	return principalList, nil
 }
