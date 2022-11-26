@@ -13,6 +13,8 @@ type PrincipalType string
 const (
 	// EndUser is the principal type for END_USER.
 	EndUser PrincipalType = "END_USER"
+	// ServiceAccount is the principal type for SERVICE_ACCOUNT.
+	ServiceAccount PrincipalType = "SERVICE_ACCOUNT"
 	// BOT is the principal type for BOT.
 	BOT PrincipalType = "BOT"
 )
@@ -47,7 +49,8 @@ type Principal struct {
 	PasswordHash string
 	// Role is stored in the member table, but we include it when returning the principal.
 	// This simplifies the client code where it won't require order dependency to fetch the related member info first.
-	Role Role `jsonapi:"attr,role"`
+	Role  Role   `jsonapi:"attr,role"`
+	Token string `jsonapi:"attr,token"`
 }
 
 // MarshalJSON customizes the Principal Marshal method so the returned object
@@ -63,6 +66,7 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 		Name      string        `json:"name"`
 		Email     string        `json:"email"`
 		Role      Role          `json:"role"`
+		Token     string        `json:"token"`
 	}{
 		ID:        p.ID,
 		CreatorID: p.CreatorID,
@@ -73,6 +77,7 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 		Name:      p.Name,
 		Email:     p.Email,
 		Role:      p.Role,
+		Token:     p.Token,
 	})
 }
 
@@ -84,10 +89,10 @@ type PrincipalCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Type         PrincipalType
-	Name         string `jsonapi:"attr,name"`
-	Email        string `jsonapi:"attr,email"`
-	Password     string `jsonapi:"attr,password"`
+	Type         PrincipalType `jsonapi:"attr,type"`
+	Name         string        `jsonapi:"attr,name"`
+	Email        string        `jsonapi:"attr,email"`
+	Password     string        `jsonapi:"attr,password"`
 	PasswordHash string
 }
 

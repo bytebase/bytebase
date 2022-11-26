@@ -18,7 +18,7 @@ CREATE TABLE principal (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT')),
+    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL

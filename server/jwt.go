@@ -79,29 +79,38 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 	return nil
 }
 
+// generateAccessTokenWithoutExpirationTime generates the JWT access token without the expiration time.
+// Used to generate the token for ServiceAccount to provide the token for OpenAPI.
+func generateAccessTokenWithoutExpirationTime(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), nil, []byte(secret))
+}
+
 func generateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(accessTokenDuration)
-	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), &expirationTime, []byte(secret))
 }
 
 func generateRefreshToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(refreshTokenDuration)
-	return generateToken(user, fmt.Sprintf(refreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(user, fmt.Sprintf(refreshTokenAudienceFmt, mode), &expirationTime, []byte(secret))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.
-func generateToken(user *api.Principal, aud string, expirationTime time.Time, secret []byte) (string, error) {
+func generateToken(user *api.Principal, aud string, expirationTime *time.Time, secret []byte) (string, error) {
 	// Create the JWT claims, which includes the username and expiry time.
 	claims := &Claims{
 		Name: user.Name,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience: jwt.ClaimStrings{aud},
-			// In JWT, the expiry time is expressed as unix milliseconds.
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    issuer,
-			Subject:   strconv.Itoa(user.ID),
+			IssuedAt: jwt.NewNumericDate(time.Now()),
+			Issuer:   issuer,
+			Subject:  strconv.Itoa(user.ID),
 		},
+	}
+
+	if expirationTime != nil {
+		// In JWT, the expiry time is expressed as unix milliseconds.
+		claims.RegisteredClaims.ExpiresAt = jwt.NewNumericDate(*expirationTime)
 	}
 
 	// Declare the token with the HS256 algorithm used for signing, and the claims.
@@ -235,15 +244,18 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 				))
 		}
 
-		generateToken := time.Until(claims.ExpiresAt.Time) < refreshThresholdDuration
-		if err != nil {
-			var ve *jwt.ValidationError
-			if errors.As(err, &ve) {
-				// If expiration error is the only error, we will clear the err
-				// and generate new access token and refresh token
-				if ve.Errors == jwt.ValidationErrorExpired {
-					err = nil
-					generateToken = true
+		generateToken := false
+		if claims.ExpiresAt != nil {
+			generateToken = time.Until(claims.ExpiresAt.Time) < refreshThresholdDuration
+			if err != nil {
+				var ve *jwt.ValidationError
+				if errors.As(err, &ve) {
+					// If expiration error is the only error, we will clear the err
+					// and generate new access token and refresh token
+					if ve.Errors == jwt.ValidationErrorExpired {
+						err = nil
+						generateToken = true
+					}
 				}
 			}
 		}

@@ -36,6 +36,11 @@ type principalRaw struct {
 // toPrincipal creates an instance of Principal based on the principalRaw.
 // This is intended to be called when we need to compose a Principal relationship.
 func (raw *principalRaw) toPrincipal() *api.Principal {
+	token := ""
+	if raw.Type == api.ServiceAccount {
+		token = raw.PasswordHash
+	}
+
 	return &api.Principal{
 		ID: raw.ID,
 
@@ -51,6 +56,8 @@ func (raw *principalRaw) toPrincipal() *api.Principal {
 		Email: raw.Email,
 		// Do not return to the client
 		PasswordHash: raw.PasswordHash,
+		// Only return the token if the user is ServiceAccount
+		Token: token,
 	}
 }
 
@@ -262,9 +269,10 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 				zap.Int("id", principal.ID),
 				zap.String("name", principal.Name),
 			)
-			return nil, errors.Wrapf(err, "member with PrincipalID %d not exist", principal.ID)
+			principal.Role = api.Developer
+		} else {
+			principal.Role = memberRaw.Role
 		}
-		principal.Role = memberRaw.Role
 	}
 	return principal, nil
 }

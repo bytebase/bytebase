@@ -22,7 +22,6 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		principalCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		principalCreate.Type = api.EndUser
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(principalCreate.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
@@ -38,6 +37,27 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		// Assign Developer role to the just created principal
 		principal.Role = api.Developer
+
+		if principal.Type == api.ServiceAccount {
+			passwordHash, err := generateAccessTokenWithoutExpirationTime(principal, s.profile.Mode, s.secret)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create ServiceAccount").SetInternal(err)
+			}
+			patch := &api.PrincipalPatch{
+				ID:           principal.ID,
+				UpdaterID:    api.SystemBotID,
+				PasswordHash: &passwordHash,
+			}
+			p, err := s.store.PatchPrincipal(ctx, patch)
+			if err != nil {
+				if common.ErrorCode(err) == common.NotFound {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", principal.ID))
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch principal ID: %v", principal.ID)).SetInternal(err)
+			}
+
+			principal = p
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, principal); err != nil {
