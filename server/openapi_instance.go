@@ -31,7 +31,7 @@ func (s *Server) listInstance(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
 	}
 
-	var response []*openAPIV1.Instance
+	response := []*openAPIV1.Instance{}
 	for _, instance := range instanceList {
 		response = append(response, convertToOpenAPIInstance(instance))
 	}
