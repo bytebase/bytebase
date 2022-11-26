@@ -127,6 +127,12 @@ type GetExternalApprovalResponse struct {
 	} `json:"data"`
 }
 
+// CreateExternalApprovalCommentResponse is the response of CreateExternalApprovalComment.
+type CreateExternalApprovalCommentResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+}
+
 // CancelExternalApprovalResponse is the response of CancelExternalApproval.
 type CancelExternalApprovalResponse struct {
 	Code int    `json:"code"`
@@ -151,6 +157,11 @@ type CreateApprovalInstanceRequest struct {
 		Value []string `json:"value"`
 	} `json:"node_approver_open_id_list"`
 	OpenID string `json:"open_id"`
+}
+
+// CreateExternalApprovalCommentRequest is the request of CreateExternalApprovalComment.
+type CreateExternalApprovalCommentRequest struct {
+	Content string `json:"content"`
 }
 
 // CancelExternalApprovalRequest is the request of CancelExternalApproval.
@@ -425,7 +436,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 	url := fmt.Sprintf("%s/approval/v4/instances", p.APIPath)
 	formValue, err := formatForm(content)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to compose formValue")
+		return "", errors.Wrapf(err, "failed to compose formValue, content %+v", content)
 	}
 	payload := CreateApprovalInstanceRequest{
 		ApprovalCode: approvalCode,
@@ -487,6 +498,44 @@ func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx Token
 	}
 
 	return response.Data.Status, nil
+}
+
+// CreateExternalApprovalComment comments an external approval.
+// https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance-comment/create
+func (p *Provider) CreateExternalApprovalComment(ctx context.Context, tokenCtx TokenCtx, instanceCode string, userID string, msg string) error {
+	url := fmt.Sprintf("%s/approval/v4/instances/%s/comments?user_id=%s", p.APIPath, instanceCode, userID)
+	content, err := json.Marshal(struct {
+		Text string `json:"text"`
+	}{
+		Text: msg,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal content")
+	}
+	payload := CreateExternalApprovalCommentRequest{
+		Content: string(content),
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal payload %+v", payload)
+	}
+	code, _, b, err := p.do(ctx, p.client, http.MethodPost, url, body, p.tokenRefresher(tokenCtx))
+	if err != nil {
+		return err
+	}
+	if code != http.StatusOK {
+		return errors.Errorf("non-200 POST status code %d with body %q", code, b)
+	}
+
+	var response CreateExternalApprovalCommentResponse
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
+		return err
+	}
+	if response.Code != 0 {
+		return errors.Errorf("failed to create external approval comment, code %d, msg %s", response.Code, response.Msg)
+	}
+
+	return nil
 }
 
 // CancelExternalApproval cancels an external approval.

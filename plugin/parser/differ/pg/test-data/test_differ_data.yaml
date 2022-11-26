@@ -51,9 +51,9 @@
   newSchema: create table public.t1(a int DEFAULT 1, b int, c int DEFAULT 1+2+3+4)
   diff: |
     ALTER TABLE "public"."t1"
-        ALTER COLUMN "a" SET DEFAULT 1;
-    ALTER TABLE "public"."t1"
         ALTER COLUMN "b" DROP DEFAULT;
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "a" SET DEFAULT 1;
     ALTER TABLE "public"."t1"
         ALTER COLUMN "c" SET DEFAULT ((1 + 2) + 3) + 4;
 - oldSchema: |
@@ -73,7 +73,7 @@
   diff: |
     ALTER TABLE "s1"."t2"
         DROP COLUMN "b";
-    DROP TABLE IF EXISTS "s1"."t1", "s2"."t4" CASCADE;
+    DROP TABLE "s1"."t1", "s2"."t4";
     CREATE TABLE "s1"."t3" (
         "a" integer,
         "b" integer
@@ -125,7 +125,7 @@
     CREATE INDEX idx3 ON public.t1 USING btree (a, b);
   diff: |
     DROP INDEX "public"."idx2";
-    DROP INDEX IF EXISTS "public"."idx1" CASCADE;
+    DROP INDEX "public"."idx1";
     CREATE INDEX "idx2" ON "public"."t1" USING btree (a);
     CREATE INDEX "idx3" ON "public"."t1" USING btree (a, b);
 - oldSchema: |
