@@ -83,10 +83,10 @@
           </div>
         </div>
         <div
-          class="flex justify-start gap-x-2 items-center text-sm text-gray-500 pt-2 ml-0.5"
           v-if="canManageServiceAccount && isAdd"
+          class="flex justify-start gap-x-2 items-center text-sm text-gray-500 pt-2 ml-0.5"
         >
-          <NSwitch size="small" v-model:value="user.isServiceAccount" />
+          <NSwitch v-model:value="user.isServiceAccount" size="small" />
           <span>
             {{ $t("settings.members.create-as-service-account") }}
             <a
@@ -133,7 +133,6 @@ import {
   MemberCreate,
   RoleType,
   UNKNOWN_ID,
-  PrincipalType,
 } from "../types";
 import { isValidEmail, hasWorkspacePermission } from "../utils";
 import {
