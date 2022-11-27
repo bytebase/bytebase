@@ -40,9 +40,9 @@ func TestRollback(t *testing.T) {
 	a.NoError(err)
 
 	resourceDir := t.TempDir()
-	err = mysqlutil.Install(resourceDir)
+	binDir, err := mysqlutil.Install(resourceDir)
 	a.NoError(err)
-	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, resourceDir)
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, binDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 

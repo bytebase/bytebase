@@ -76,7 +76,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 	if driver.connCfg.Port != "" {
 		args = append(args, "--port", driver.connCfg.Port)
 	}
-	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), args...)
 	log.Debug("mysqlbinlog", zap.String("command", cmd.String()))
 	if driver.connCfg.Password != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("MYSQL_PWD=%s", driver.connCfg.Password))

@@ -142,7 +142,7 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupF
 
 // backupDatabase will take a backup of a database.
 func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, server.pgInstance.BaseDir, server.profile.DataDir)
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, server.pgInstance.BinDir, server.profile.DataDir)
 	if err != nil {
 		return "", err
 	}

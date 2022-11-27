@@ -50,7 +50,7 @@ func init() {
 
 // Driver is the Postgres driver.
 type Driver struct {
-	pgInstanceDir string
+	dbBinDir      string
 	connectionCtx db.ConnectionContext
 	config        db.ConnectionConfig
 
@@ -64,7 +64,7 @@ type Driver struct {
 
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
-		pgInstanceDir: config.PgInstanceDir,
+		dbBinDir: config.DbBinDir,
 	}
 }
 

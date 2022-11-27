@@ -62,7 +62,7 @@ func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (
 
 // connectEmbed starts the embed postgres server and returns an instance of store.DB.
 func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoDataDir, version string, mode common.ReleaseMode) (*DB, error) {
-	if err := postgres.Start(datastorePort, m.pgInstance.BaseDir, m.pgInstance.DataDir, os.Stderr, os.Stderr); err != nil {
+	if err := postgres.Start(datastorePort, m.pgInstance.BinDir, m.pgInstance.DataDir, os.Stderr, os.Stderr); err != nil {
 		return nil, err
 	}
 	m.pgInstance.Port = datastorePort
@@ -77,7 +77,7 @@ func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly boo
 		Port:        fmt.Sprintf("%d", datastorePort),
 		StrictUseDb: false,
 	}
-	db := NewDB(connCfg, m.pgInstance.BaseDir, demoDataDir, readonly, version, mode)
+	db := NewDB(connCfg, m.pgInstance.BinDir, demoDataDir, readonly, version, mode)
 	return db, nil
 }
 
@@ -146,7 +146,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := NewDB(connCfg, m.pgInstance.BaseDir, m.demoDataDir, readonly, version, m.mode)
+	db := NewDB(connCfg, m.pgInstance.BinDir, m.demoDataDir, readonly, version, m.mode)
 	return db, nil
 }
 
@@ -157,7 +157,7 @@ func (m *MetadataDB) Close() error {
 	}
 
 	log.Info("Trying to shutdown postgresql server...")
-	if err := postgres.Stop(m.pgInstance.BaseDir, m.pgInstance.DataDir, os.Stdout, os.Stderr); err != nil {
+	if err := postgres.Stop(m.pgInstance.BinDir, m.pgInstance.DataDir, os.Stdout, os.Stderr); err != nil {
 		return err
 	}
 	m.pgStarted = false
