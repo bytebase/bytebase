@@ -68,7 +68,6 @@ type Server struct {
 
 	profile         Profile
 	e               *echo.Echo
-	pgInstance      *postgres.Instance
 	metaDB          *store.MetadataDB
 	store           *store.Store
 	startedTs       int64
@@ -78,6 +77,8 @@ type Server struct {
 
 	// MySQL utility binaries
 	mysqlBinDir string
+	// Postgres utility binaries
+	pgBinDir string
 
 	s3Client *s3bb.Client
 
@@ -156,33 +157,27 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
-	// Install Postgres.
-	var pgDataDir string
-	if prof.UseEmbedDB() {
-		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
-		log.Info("-----Embedded Postgres Config BEGIN-----")
-		log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
-		log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
-		log.Info("-----Embedded Postgres Config END-----")
-		log.Info("Preparing embedded PostgreSQL instance for metadb and pg_dump...")
-	} else {
-		log.Info("Preparing embedded PostgreSQL instance for pg_dump...")
-	}
-
-	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
+	s.pgBinDir, err = postgres.Install(resourceDir)
 	if err != nil {
 		return nil, err
 	}
-	s.pgInstance = pgInstance
 
 	// New MetadataDB instance.
 	if prof.UseEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
+		pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+		log.Info("-----Embedded Postgres Config BEGIN-----")
+		log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
+		log.Info(fmt.Sprintf("pgDataDir=%s", pgDataDir))
+		log.Info("-----Embedded Postgres Config END-----")
+		if err := postgres.InitDB(s.pgBinDir, pgDataDir, prof.PgUser); err != nil {
+			return nil, err
+		}
+		s.metaDB = store.NewMetadataDBWithEmbedPg(prof.PgUser, pgDataDir, s.pgBinDir, prof.DemoDataDir, prof.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(prof.PgURL, s.pgBinDir, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create MetadataDB instance")

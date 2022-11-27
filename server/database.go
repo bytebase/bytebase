@@ -897,7 +897,7 @@ func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Insta
 	case db.MySQL, db.TiDB:
 		dbBinDir = s.mysqlBinDir
 	case db.Postgres:
-		dbBinDir = s.pgInstance.BinDir
+		dbBinDir = s.pgBinDir
 	}
 
 	driver, err := getDatabaseDriver(
@@ -953,7 +953,7 @@ func (s *Server) tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api
 	case db.MySQL, db.TiDB:
 		dbBinDir = s.mysqlBinDir
 	case db.Postgres:
-		dbBinDir = s.pgInstance.BinDir
+		dbBinDir = s.pgBinDir
 	}
 
 	driver, err := getDatabaseDriver(

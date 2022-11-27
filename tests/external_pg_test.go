@@ -18,9 +18,10 @@ import (
 )
 
 type fakeExternalPg struct {
-	pgIns  *postgres.Instance
-	pgURL  string
-	pgUser string
+	pgBinDir  string
+	pgDataDir string
+	pgURL     string
+	pgUser    string
 }
 
 // newFakeExternalPg will install postgres in tmpDir and listen on Unix domain socket with port.
@@ -28,26 +29,30 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 	resourceDir := path.Join(tmpDir, "resources")
 	dataDir := path.Join(tmpDir, "pgdata")
 	pgUser := "bbexternal"
-	pgIns, err := postgres.Install(resourceDir, dataDir, pgUser)
+	pgBinDir, err := postgres.Install(resourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install postgres")
 	}
 
-	err = postgres.Start(port, pgIns.BinDir, pgIns.DataDir, os.Stderr, os.Stderr)
+	if err := postgres.InitDB(pgBinDir, dataDir, pgUser); err != nil {
+		return nil, errors.Wrap(err, "cannot initdb")
+	}
+
+	err = postgres.Start(port, pgBinDir, dataDir, os.Stderr, os.Stderr)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot start postgres server")
 	}
-	pgIns.Port = port
 
 	return &fakeExternalPg{
-		pgIns:  pgIns,
-		pgURL:  fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", pgUser, port, "postgres", common.GetPostgresSocketDir()),
-		pgUser: pgUser,
+		pgBinDir:  pgBinDir,
+		pgDataDir: dataDir,
+		pgURL:     fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", pgUser, port, "postgres", common.GetPostgresSocketDir()),
+		pgUser:    pgUser,
 	}, nil
 }
 
 func (f *fakeExternalPg) Destroy() error {
-	return postgres.Stop(f.pgIns.BinDir, f.pgIns.DataDir, os.Stderr, os.Stderr)
+	return postgres.Stop(f.pgBinDir, f.pgDataDir, os.Stderr, os.Stderr)
 }
 
 func TestBootWithExternalPg(t *testing.T) {
