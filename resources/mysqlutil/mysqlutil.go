@@ -27,45 +27,40 @@ const (
 	MySQLDump binaryName = "mysqldump"
 )
 
-// GetPath returns the binary path specified by `binName`, `resourceDir` is the path that installed the mysqlutil.
-func GetPath(binName binaryName, resourceDir string) string {
-	_, version, err := getTarNameAndVersion()
-	if err != nil {
-		return "UNEXPECTED_ERROR"
-	}
-	baseDir := filepath.Join(resourceDir, version)
+// GetPath returns the binary path specified by `binName`, `binDir` is the path that installed the mysqlutil.
+func GetPath(binName binaryName, binDir string) string {
 	switch binName {
 	case MySQL:
-		return filepath.Join(baseDir, "bin", "mysql")
+		return filepath.Join(binDir, "mysql")
 	case MySQLBinlog:
-		return filepath.Join(baseDir, "bin", "mysqlbinlog")
+		return filepath.Join(binDir, "mysqlbinlog")
 	case MySQLDump:
-		return filepath.Join(baseDir, "bin", "mysqldump")
+		return filepath.Join(binDir, "mysqldump")
 	}
 	return "UNKNOWN_BINARY"
 }
 
 // getExecutableVersion returns the raw output of "binName -V".
-func getExecutableVersion(binName binaryName, resourceDir string) (string, error) {
+func getExecutableVersion(binName binaryName, binDir string) (string, error) {
 	var cmd *exec.Cmd
-	var version bytes.Buffer
+	var v bytes.Buffer
 	switch binName {
 	case MySQL:
-		cmd = exec.Command(GetPath(MySQL, resourceDir), "-V")
+		cmd = exec.Command(GetPath(MySQL, binDir), "-V")
 	case MySQLBinlog:
-		cmd = exec.Command(GetPath(MySQLBinlog, resourceDir), "-V")
+		cmd = exec.Command(GetPath(MySQLBinlog, binDir), "-V")
 	case MySQLDump:
-		cmd = exec.Command(GetPath(MySQLDump, resourceDir), "-V")
+		cmd = exec.Command(GetPath(MySQLDump, binDir), "-V")
 	default:
 		return "", errors.Errorf("unknown binary name: %s", binName)
 	}
 
-	cmd.Stdout = &version
+	cmd.Stdout = &v
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return "", err
 	}
-	return version.String(), nil
+	return v.String(), nil
 }
 
 func getTarNameAndVersion() (tarname string, version string, err error) {
@@ -84,21 +79,22 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 }
 
 // Install will extract the mysqlutil tar in resourceDir.
-func Install(resourceDir string) error {
+// Returns the bin directory on success.
+func Install(resourceDir string) (string, error) {
 	tarName, version, err := getTarNameAndVersion()
 	if err != nil {
-		return errors.Wrap(err, "failed to get tarball name and version")
+		return "", errors.Wrap(err, "failed to get tarball name and version")
 	}
 
 	mysqlutilDir := path.Join(resourceDir, version)
 
 	if _, err := os.Stat(mysqlutilDir); err != nil {
 		if !os.IsNotExist(err) {
-			return errors.Wrapf(err, "failed to check binary directory path %q", mysqlutilDir)
+			return "", errors.Wrapf(err, "failed to check binary directory path %q", mysqlutilDir)
 		}
 		// Install if not exist yet
 		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
-			return errors.Wrap(err, "cannot install mysqlutil")
+			return "", errors.Wrap(err, "cannot install mysqlutil")
 		}
 	}
 
@@ -117,21 +113,21 @@ func Install(resourceDir string) error {
 	for _, fp := range checks {
 		if _, err := os.Stat(fp); err != nil {
 			if !os.IsNotExist(err) {
-				return errors.Wrapf(err, "failed to check libncurses library path %q", fp)
+				return "", errors.Wrapf(err, "failed to check libncurses library path %q", fp)
 			}
 			// Remove mysqlutil of old version and reinstall it
 			if err := os.RemoveAll(mysqlutilDir); err != nil {
-				return errors.Wrapf(err, "failed to remove the old version mysqlutil binary directory %q", mysqlutilDir)
+				return "", errors.Wrapf(err, "failed to remove the old version mysqlutil binary directory %q", mysqlutilDir)
 			}
 			// Install the current version
 			if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
-				return errors.Wrap(err, "cannot install mysqlutil")
+				return "", errors.Wrap(err, "cannot install mysqlutil")
 			}
 			break
 		}
 	}
 
-	return nil
+	return path.Join(mysqlutilDir, "bin"), nil
 }
 
 // installImpl installs mysqlutil in resourceDir.

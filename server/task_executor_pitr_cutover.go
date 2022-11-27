@@ -92,7 +92,7 @@ func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
 func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */, server.pgInstance.BaseDir, server.profile.DataDir)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */, server.pgInstance.BinDir, server.profile.DataDir)
 	if err != nil {
 		return true, nil, err
 	}

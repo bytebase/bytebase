@@ -402,7 +402,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BaseDir, s.profile.DataDir)
+		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BinDir, s.profile.DataDir)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
@@ -886,7 +886,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir, dataDir string) (db.Driver, error) {
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, dbBinDir, dataDir string) (db.Driver, error) {
 	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
@@ -896,9 +896,8 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 		ctx,
 		instance.Engine,
 		db.DriverConfig{
-			PgInstanceDir: pgInstanceDir,
-			ResourceDir:   common.GetResourceDir(dataDir),
-			BinlogDir:     getBinlogAbsDir(dataDir, instance.ID),
+			DbBinDir:  dbBinDir,
+			BinlogDir: getBinlogAbsDir(dataDir, instance.ID),
 		},
 		connCfg,
 		db.ConnectionContext{
