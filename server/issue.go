@@ -724,6 +724,14 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
+	deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, project.ID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", project.ID)).SetInternal(err)
+	}
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
+	}
 
 	// Tenant mode project pipeline has its own generation.
 	if project.TenantMode == api.TenantModeTenant {
@@ -799,14 +807,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 
 			migrationDetail := c.DetailList[0]
 			baseDatabaseName := migrationDetail.DatabaseName
-			deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, project.ID)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", project.ID)).SetInternal(err)
-			}
-			deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
-			}
 			deployments, matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
