@@ -807,13 +807,17 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 
 			migrationDetail := c.DetailList[0]
 			baseDatabaseName := migrationDetail.DatabaseName
-			deployments, matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
+			matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 			}
 
 			// Convert to pipelineCreate
 			for i, databaseList := range matrix {
+				// Skip the stage if the stage includes no database.
+				if len(databaseList) == 0 {
+					continue
+				}
 				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
 				environmentSet := make(map[string]bool)
 				var environmentID int
@@ -837,7 +841,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				}
 
 				create.StageList = append(create.StageList, api.StageCreate{
-					Name:          deployments[i].Name,
+					Name:          deploySchedule.Deployments[i].Name,
 					EnvironmentID: environmentID,
 					TaskList:      taskCreateList,
 				})
@@ -1455,7 +1459,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	if err != nil {
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
 	}
-	_, matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
+	matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
 	if err != nil {
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
