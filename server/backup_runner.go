@@ -264,7 +264,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		r.downloadBinlogMu.Unlock()
 		r.downloadBinlogWg.Done()
 	}()
-	driver, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, r.server.mysqlBinDir, r.server.profile.DataDir)
+	driver, err := r.server.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
 			log.Debug("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
@@ -360,7 +360,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 
 func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
 	// Store the migration history version if exists.
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BinDir, s.profile.DataDir)
+	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get admin database driver")
 	}
