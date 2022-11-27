@@ -735,7 +735,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 
 	// Validate issue detail list.
 	if len(c.DetailList) == 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have at least one update schema detail")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "migration detail list should not be empty")
 	}
 	databaseNameCount, databaseIDCount := 0, 0
 	for _, detail := range c.DetailList {
