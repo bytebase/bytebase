@@ -17,7 +17,9 @@ import (
 
 // MetadataDB abstracts the underlying Postgres instance.
 type MetadataDB struct {
-	mode        common.ReleaseMode
+	mode common.ReleaseMode
+	// Dir to store Postgres and utility binaries.
+	binDir      string
 	demoDataDir string
 
 	embed bool
@@ -25,30 +27,31 @@ type MetadataDB struct {
 	// Only for external pg
 	pgURL string
 	// Only for embed postgres
-	pgUser     string
-	pgInstance *postgres.Instance
-	pgStarted  bool
+	pgUser    string
+	pgDataDir string
+	pgStarted bool
 }
 
-// NewMetadataDBWithEmbedPg install postgres in `datadir` returns an instance of MetadataDB.
-func NewMetadataDBWithEmbedPg(pgInstance *postgres.Instance, pgUser, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
+// NewMetadataDBWithEmbedPg install postgres in `pgDataDir` returns an instance of MetadataDB.
+func NewMetadataDBWithEmbedPg(pgUser, pgDataDir, binDir, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
 		mode:        mode,
+		binDir:      binDir,
 		demoDataDir: demoDataDir,
 		embed:       true,
 		pgUser:      pgUser,
-		pgInstance:  pgInstance,
+		pgDataDir:   pgDataDir,
 	}
 }
 
 // NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance.
-func NewMetadataDBWithExternalPg(pgInstance *postgres.Instance, pgURL, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
+func NewMetadataDBWithExternalPg(pgURL, binDir, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
 		mode:        mode,
+		binDir:      binDir,
 		demoDataDir: demoDataDir,
 		embed:       false,
 		pgURL:       pgURL,
-		pgInstance:  pgInstance,
 	}
 }
 
@@ -62,10 +65,9 @@ func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (
 
 // connectEmbed starts the embed postgres server and returns an instance of store.DB.
 func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoDataDir, version string, mode common.ReleaseMode) (*DB, error) {
-	if err := postgres.Start(datastorePort, m.pgInstance.BinDir, m.pgInstance.DataDir, os.Stderr, os.Stderr); err != nil {
+	if err := postgres.Start(datastorePort, m.binDir, m.pgDataDir, os.Stderr, os.Stderr); err != nil {
 		return nil, err
 	}
-	m.pgInstance.Port = datastorePort
 	// mark pgStarted if start successfully, used in Close()
 	m.pgStarted = true
 
@@ -77,7 +79,7 @@ func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly boo
 		Port:        fmt.Sprintf("%d", datastorePort),
 		StrictUseDb: false,
 	}
-	db := NewDB(connCfg, m.pgInstance.BinDir, demoDataDir, readonly, version, mode)
+	db := NewDB(connCfg, m.binDir, demoDataDir, readonly, version, mode)
 	return db, nil
 }
 
@@ -146,7 +148,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := NewDB(connCfg, m.pgInstance.BinDir, m.demoDataDir, readonly, version, m.mode)
+	db := NewDB(connCfg, m.binDir, m.demoDataDir, readonly, version, m.mode)
 	return db, nil
 }
 
@@ -157,7 +159,7 @@ func (m *MetadataDB) Close() error {
 	}
 
 	log.Info("Trying to shutdown postgresql server...")
-	if err := postgres.Stop(m.pgInstance.BinDir, m.pgInstance.DataDir, os.Stdout, os.Stderr); err != nil {
+	if err := postgres.Stop(m.binDir, m.pgDataDir, os.Stdout, os.Stderr); err != nil {
 		return err
 	}
 	m.pgStarted = false
