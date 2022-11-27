@@ -33,7 +33,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 		return nil, errors.Wrap(err, "cannot install postgres")
 	}
 
-	err = postgres.Start(port, pgIns.BaseDir, pgIns.DataDir, os.Stderr, os.Stderr)
+	err = postgres.Start(port, pgIns.BinDir, pgIns.DataDir, os.Stderr, os.Stderr)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot start postgres server")
 	}
@@ -47,7 +47,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 }
 
 func (f *fakeExternalPg) Destroy() error {
-	return postgres.Stop(f.pgIns.BaseDir, f.pgIns.DataDir, os.Stderr, os.Stderr)
+	return postgres.Stop(f.pgIns.BinDir, f.pgIns.DataDir, os.Stderr, os.Stderr)
 }
 
 func TestBootWithExternalPg(t *testing.T) {

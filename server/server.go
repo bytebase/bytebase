@@ -76,6 +76,9 @@ type Server struct {
 	workspaceID     string
 	errorRecordRing api.ErrorRecordRing
 
+	// MySQL utility binaries
+	mysqlBinDir string
+
 	s3Client *s3bb.Client
 
 	// boot specifies that whether the server boot correctly
@@ -121,6 +124,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
+	resourceDir := common.GetResourceDir(prof.DataDir)
+
 	// Display config
 	log.Info("-----Config BEGIN-----")
 	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
@@ -130,6 +135,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
 	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
 	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
+	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
 	log.Info(fmt.Sprintf("backupBucket=%s", prof.BackupBucket))
 	log.Info(fmt.Sprintf("backupRegion=%s", prof.BackupRegion))
@@ -144,11 +150,10 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}()
 
 	var err error
-
-	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
-	if err := mysqlutil.Install(resourceDir); err != nil {
-		return nil, errors.Wrap(err, "cannot install mysqlbinlog binary")
+	s.mysqlBinDir, err = mysqlutil.Install(resourceDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
 	// Install Postgres.
@@ -157,7 +162,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
 		log.Info("-----Embedded Postgres Config BEGIN-----")
 		log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
-		log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
 		log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
 		log.Info("-----Embedded Postgres Config END-----")
 		log.Info("Preparing embedded PostgreSQL instance for metadb and pg_dump...")

@@ -148,7 +148,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	pgDir := t.TempDir()
 	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
 	require.NoError(t, err)
-	err = postgres.Start(pgPort, pgInstance.BaseDir, pgInstance.DataDir, os.Stderr, os.Stderr)
+	err = postgres.Start(pgPort, pgInstance.BinDir, pgInstance.DataDir, os.Stderr, os.Stderr)
 	require.NoError(t, err)
 	pgInstance.Port = pgPort
 
@@ -162,7 +162,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{PgInstanceDir: pgInstance.BaseDir},
+		dbdriver.DriverConfig{DbBinDir: pgInstance.BinDir},
 		connCfg,
 		dbdriver.ConnectionContext{},
 	)
@@ -212,7 +212,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	// The extra one is for the initial schema setup.
 	require.Len(t, histories, len(devMigrations)+1)
 
-	err = postgres.Stop(pgInstance.BaseDir, pgInstance.DataDir, os.Stdout, os.Stderr)
+	err = postgres.Stop(pgInstance.BinDir, pgInstance.DataDir, os.Stdout, os.Stderr)
 	require.NoError(t, err)
 }
 

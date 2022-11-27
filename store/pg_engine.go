@@ -64,8 +64,8 @@ type DB struct {
 	// Dir to load demo data
 	demoDataDir string
 
-	// Dir for postgres instance
-	pgBaseDir string
+	// Dir for postgres and its utility binaries
+	binDir string
 
 	// If true, database will be opened in readonly mode
 	readonly bool
@@ -82,11 +82,11 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(connCfg dbdriver.ConnectionConfig, pgBaseDir, demoDataDir string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
+func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoDataDir string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
 	db := &DB{
 		connCfg:       connCfg,
 		demoDataDir:   demoDataDir,
-		pgBaseDir:     pgBaseDir,
+		binDir:        binDir,
 		readonly:      readonly,
 		Now:           time.Now,
 		serverVersion: serverVersion,
@@ -100,7 +100,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{PgInstanceDir: db.pgBaseDir},
+		dbdriver.DriverConfig{DbBinDir: db.binDir},
 		db.connCfg,
 		dbdriver.ConnectionContext{},
 	)
