@@ -763,7 +763,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	}
 	maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaximumTask)
 	if int64(databaseIDCount) > maximumTaskLimit {
-		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, len(c.DetailList)))
+		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, databaseIDCount))
 	}
 
 	if databaseIDCount == 0 {
