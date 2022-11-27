@@ -27,7 +27,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 		mysqlPort := getTestPort()
-		_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
+		stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 		defer stopFn()
 		t.Log("create test database")
 		database := "test_success"
@@ -55,7 +55,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 	t.Run("fail", func(t *testing.T) {
 		t.Parallel()
 		mysqlPort := getTestPort()
-		_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
+		stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 		defer stopFn()
 		t.Log("create test database")
 		database := "test_fail"
@@ -91,7 +91,7 @@ func TestCheckServerVersionAndBinlogForPITR(t *testing.T) {
 	ctx := context.Background()
 
 	mysqlPort := getTestPort()
-	_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
+	stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 	defer stopFn()
 
 	db, err := connectTestMySQL(mysqlPort, "")
@@ -125,7 +125,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	log.SetLevel(zapcore.DebugLevel)
 
 	mysqlPort := getTestPort()
-	_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
+	stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 	defer stopFn()
 
 	db, err := connectTestMySQL(mysqlPort, "")

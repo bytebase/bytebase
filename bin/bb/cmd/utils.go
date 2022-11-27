@@ -39,11 +39,11 @@ func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 		dbBinDir = dir
 	case "postgres":
 		dbType = db.Postgres
-		pgInstance, err := postgres.Install(resourceDir, "" /* pgDataDir */, "" /* pgUser */)
+		dir, err := postgres.Install(resourceDir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot install postgres in directory %q", resourceDir)
 		}
-		dbBinDir = pgInstance.BinDir
+		dbBinDir = dir
 	default:
 		return nil, errors.Errorf("database type %q not supported; supported types: mysql, pg", u.Driver)
 	}

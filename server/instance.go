@@ -388,11 +388,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		// If the data dir does not exist, then we will start a PostgreSQL instance with a fixed port temporarily.
 		if _, err := os.Stat(dataDir); os.IsNotExist(err) {
-			if err := postgres.InitDB(s.pgInstance.BinDir, dataDir, pgUser); err != nil {
+			if err := postgres.InitDB(s.pgBinDir, dataDir, pgUser); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to init embedded postgres database").SetInternal(err)
 			}
 
-			if err := postgres.Start(port, s.pgInstance.BinDir, dataDir, os.Stderr, os.Stderr); err != nil {
+			if err := postgres.Start(port, s.pgBinDir, dataDir, os.Stderr, os.Stderr); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
 			}
 		}

@@ -23,17 +23,6 @@ import (
 	"github.com/bytebase/bytebase/resources/utils"
 )
 
-// Instance is a postgres instance installed by bytebase
-// for backend storage or testing.
-type Instance struct {
-	// BinDir is the directory where the postgres and utility binaries are installed.
-	BinDir string
-	// DataDir is the directory where the postgres data is stored.
-	DataDir string
-	// Port is the port number of the postgres instance.
-	Port int
-}
-
 // isPgDump15 returns true if the pg_dump binary is version 15.
 func isPgDump15(pgDumpPath string) (bool, error) {
 	var cmd *exec.Cmd
@@ -48,8 +37,9 @@ func isPgDump15(pgDumpPath string) (bool, error) {
 	return pgDump15 == version.String(), nil
 }
 
-// Install returns the postgres binary depending on the OS.
-func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
+// Install will extract the postgres and utility tar in resourceDir.
+// Returns the bin directory on success.
+func Install(resourceDir string) (string, error) {
 	var tarName string
 	switch runtime.GOOS {
 	case "darwin":
@@ -57,7 +47,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	case "linux":
 		tarName = "postgres-linux-x86_64.txz"
 	default:
-		return nil, errors.Errorf("OS %q is not supported", runtime.GOOS)
+		return "", errors.Errorf("OS %q is not supported", runtime.GOOS)
 	}
 	version := strings.TrimRight(tarName, ".txz")
 	pgBaseDir := path.Join(resourceDir, version)
@@ -67,7 +57,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 
 	if _, err := os.Stat(pgBaseDir); err != nil {
 		if !os.IsNotExist(err) {
-			return nil, errors.Wrapf(err, "failed to check postgres binary base directory path %q", pgBaseDir)
+			return "", errors.Wrapf(err, "failed to check postgres binary base directory path %q", pgBaseDir)
 		}
 		// Install if not exist yet.
 		needInstall = true
@@ -78,14 +68,14 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		// Check if pg_dump is version 15.
 		isPgDump15, err := isPgDump15(pgDumpPath)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		if !isPgDump15 {
 			needInstall = true
 			// Reinstall if pg_dump is not version 15.
 			log.Info("Remove old postgres binary before installing new pg_dump...")
 			if err := os.RemoveAll(pgBaseDir); err != nil {
-				return nil, errors.Wrapf(err, "failed to remove postgres binary base directory %q", pgBaseDir)
+				return "", errors.Wrapf(err, "failed to remove postgres binary base directory %q", pgBaseDir)
 			}
 		}
 	}
@@ -93,25 +83,15 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		// The ordering below made Postgres installation atomic.
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := installInDir(tarName, tmpDir); err != nil {
-			return nil, err
+			return "", err
 		}
 
 		if err := os.Rename(tmpDir, pgBaseDir); err != nil {
-			return nil, errors.Wrapf(err, "failed to rename postgres binary base directory from %q to %q", tmpDir, pgBaseDir)
+			return "", errors.Wrapf(err, "failed to rename postgres binary base directory from %q to %q", tmpDir, pgBaseDir)
 		}
 	}
 
-	// We will initialize Postgres only when pgDataDir is set.
-	if pgDataDir != "" {
-		if err := InitDB(pgBinDir, pgDataDir, pgUser); err != nil {
-			return nil, err
-		}
-	}
-
-	return &Instance{
-		BinDir:  pgBinDir,
-		DataDir: pgDataDir,
-	}, nil
+	return pgBinDir, nil
 }
 
 // Start starts a postgres database instance.
@@ -274,28 +254,31 @@ func StartForTest(port int, pgBinDir, pgDataDir string, stdout, stderr io.Writer
 }
 
 // SetupTestInstance installs and starts a postgresql instance for testing,
-// returns the instance and the stop function.
-func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
+// returns the stop function.
+func SetupTestInstance(t *testing.T, port int) func() {
 	basedir, datadir := t.TempDir(), t.TempDir()
 	t.Log("Installing PostgreSQL...")
-	i, err := Install(basedir, datadir, "root")
+	binDir, err := Install(basedir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log("Starting PostgreSQL...")
-	if err := StartForTest(port, i.BinDir, i.DataDir, os.Stdout, os.Stderr); err != nil {
+	t.Log("InitDB...")
+	if err := InitDB(binDir, datadir, "root"); err != nil {
 		t.Fatal(err)
 	}
-	i.Port = port
+	t.Log("Starting PostgreSQL...")
+	if err := StartForTest(port, binDir, datadir, os.Stdout, os.Stderr); err != nil {
+		t.Fatal(err)
+	}
 
 	stopFn := func() {
 		t.Log("Stopping PostgreSQL...")
-		if err := Stop(i.BinDir, i.DataDir, os.Stdout, os.Stderr); err != nil {
+		if err := Stop(binDir, datadir, os.Stdout, os.Stderr); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	return i, stopFn
+	return stopFn
 }
 
 func installInDir(tarName string, dir string) error {
