@@ -130,7 +130,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, server.pgInstance.BinDir, server.profile.DataDir)
+	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, databaseName)
 	if err != nil {
 		return 0, "", err
 	}
