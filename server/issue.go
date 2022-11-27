@@ -1100,7 +1100,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	if instance.Engine == db.Snowflake {
 		databaseName = strings.ToUpper(databaseName)
 	}
-	stmt, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.Username)
+	statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -1110,7 +1110,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		Collation:    c.Collation,
 		Labels:       c.Labels,
 		DatabaseName: databaseName,
-		Statement:    stmt,
+		Statement:    statement,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
