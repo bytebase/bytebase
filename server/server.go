@@ -155,13 +155,16 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	var pgDataDir string
 	if prof.UseEmbedDB() {
 		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
+		log.Info("-----Embedded Postgres Config BEGIN-----")
+		log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
+		log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
+		log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
+		log.Info("-----Embedded Postgres Config END-----")
+		log.Info("Preparing embedded PostgreSQL instance for metadb and pg_dump...")
+	} else {
+		log.Info("Preparing embedded PostgreSQL instance for pg_dump...")
 	}
-	log.Info("-----Embedded Postgres Config BEGIN-----")
-	log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
-	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
-	log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
-	log.Info("-----Embedded Postgres Config END-----")
-	log.Info("Preparing embedded PostgreSQL instance...")
+
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
