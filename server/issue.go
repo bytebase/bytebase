@@ -762,12 +762,12 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 	}
 	maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaximumTask)
-	if databaseIDCount > 0 && int64(databaseIDCount) > maximumTaskLimit {
+	if int64(databaseIDCount) > maximumTaskLimit {
 		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, len(c.DetailList)))
 	}
 
 	if databaseIDCount == 0 {
-		// Use database names in the issue.
+		// Deploy to all tenant databases.
 		dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
 			ProjectID: &issueCreate.ProjectID,
 		})
@@ -788,7 +788,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if len(databaseList) == 0 {
 				continue
 			}
-			// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
 			environmentSet := make(map[string]bool)
 			var environmentID int
 			var taskCreateList []api.TaskCreate
