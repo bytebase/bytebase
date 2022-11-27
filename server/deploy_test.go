@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -247,8 +246,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 
 	for _, test := range tests {
 		matrix, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.baseDatabaseName, test.databaseNameTemplate, test.databaseList)
-		fmt.Printf("Barny1: %d\n", len(matrix))
-		fmt.Printf("Barny2: %d\n", len(test.want))
-		assert.EqualValues(t, matrix, test.want, test.name)
+		assert.Equal(t, matrix, test.want, test.name)
 	}
 }
