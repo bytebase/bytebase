@@ -402,7 +402,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BinDir, s.profile.DataDir)
+		driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
@@ -886,10 +886,18 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, dbBinDir, dataDir string) (db.Driver, error) {
+func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
 	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
+	}
+
+	dbBinDir := ""
+	switch instance.Engine {
+	case db.MySQL, db.TiDB:
+		dbBinDir = s.mysqlBinDir
+	case db.Postgres:
+		dbBinDir = s.pgInstance.BinDir
 	}
 
 	driver, err := getDatabaseDriver(
@@ -897,7 +905,7 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 		instance.Engine,
 		db.DriverConfig{
 			DbBinDir:  dbBinDir,
-			BinlogDir: getBinlogAbsDir(dataDir, instance.ID),
+			BinlogDir: getBinlogAbsDir(s.profile.DataDir, instance.ID),
 		},
 		connCfg,
 		db.ConnectionContext{
@@ -935,7 +943,7 @@ func getConnectionConfig(instance *api.Instance, databaseName string) (db.Connec
 
 // We'd like to use read-only data source whenever possible, but fallback to admin data source if there's no read-only data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
+func (s *Server) tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
 	dataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
 	// If there are no read-only data source, fall back to admin data source.
 	if dataSource == nil {
@@ -949,11 +957,22 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 	if dataSource.HostOverride != "" || dataSource.PortOverride != "" {
 		host, port = dataSource.HostOverride, dataSource.PortOverride
 	}
+
+	dbBinDir := ""
+	switch instance.Engine {
+	case db.MySQL, db.TiDB:
+		dbBinDir = s.mysqlBinDir
+	case db.Postgres:
+		dbBinDir = s.pgInstance.BinDir
+	}
+
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
-		// We don't need postgres installation for query.
-		db.DriverConfig{},
+		db.DriverConfig{
+			DbBinDir:  dbBinDir,
+			BinlogDir: getBinlogAbsDir(s.profile.DataDir, instance.ID),
+		},
 		db.ConnectionConfig{
 			Username: dataSource.Username,
 			Password: dataSource.Password,
