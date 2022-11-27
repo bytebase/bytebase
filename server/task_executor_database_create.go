@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 )
@@ -57,9 +58,42 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 	defer driver.Close(ctx)
 
+	project, err := server.store.GetProjectByID(ctx, payload.ProjectID)
+	if err != nil {
+		return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
+	}
+	if project == nil {
+		return true, nil, errors.Errorf("project not found with ID %d", payload.ProjectID)
+	}
+
+	var schemaVersion string
+	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
+	if project.TenantMode == api.TenantModeTenant {
+		baseDatabaseName, err := api.GetBaseDatabaseName(payload.DatabaseName, project.DBNameTemplate, payload.Labels)
+		if err != nil {
+			return true, nil, errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", payload.DatabaseName, project.DBNameTemplate, payload.Labels)
+		}
+		sv, schema, err := server.getSchemaFromPeerTenantDatabase(ctx, instance, project, project.ID, baseDatabaseName)
+		if err != nil {
+			return true, nil, err
+		}
+		schemaVersion = sv
+		connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
+		if err != nil {
+			return true, nil, err
+		}
+		if !strings.Contains(payload.Statement, connectionStmt) {
+			statement = fmt.Sprintf("%s\n%s\n%s", statement, connectionStmt, schema)
+		}
+	}
+	if schemaVersion == "" {
+		schemaVersion = common.DefaultMigrationVersion()
+	}
+
 	log.Debug("Start creating database...",
 		zap.String("instance", instance.Name),
 		zap.String("database", payload.DatabaseName),
+		zap.String("schemaVersion", schemaVersion),
 		zap.String("statement", statement),
 	)
 
@@ -67,7 +101,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.profile.Version,
-		Version:        payload.SchemaVersion,
+		Version:        schemaVersion,
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
 		Environment:    instance.Environment.Name,
@@ -88,7 +122,6 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	} else {
 		mi.Creator = creator.Name
 	}
-
 	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
@@ -135,7 +168,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 			Collation:            payload.Collation,
 			LastSuccessfulSyncTs: time.Now().Unix(),
 			Labels:               &payload.Labels,
-			SchemaVersion:        payload.SchemaVersion,
+			SchemaVersion:        schemaVersion,
 		}
 		createdDatabase, err := server.store.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
@@ -151,6 +184,10 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		}
 		database = updatedDatabase
 	}
+	// Set database labels, except bb.environment is immutable and must match instance environment.
+	if err := server.setDatabaseLabels(ctx, payload.Labels, database, project, database.CreatorID, false); err != nil {
+		return true, nil, errors.Errorf("failed to record database labels after creating database %v", database.ID)
+	}
 
 	// After the task related database entry created successfully,
 	// we need to update task's database_id with the newly created database immediately.
@@ -161,26 +198,11 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		ID:         task.ID,
 		UpdaterID:  api.SystemBotID,
 		DatabaseID: &database.ID,
+		Statement:  &statement,
 	}
 	_, err = server.store.PatchTask(ctx, taskDatabaseIDPatch)
 	if err != nil {
 		return true, nil, err
-	}
-
-	if payload.Labels != "" {
-		project, err := server.store.GetProjectByID(ctx, payload.ProjectID)
-		if err != nil {
-			return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
-		}
-		if project == nil {
-			return true, nil, errors.Errorf("project not found with ID %d", payload.ProjectID)
-		}
-
-		// Set database labels, except bb.environment is immutable and must match instance environment.
-		err = server.setDatabaseLabels(ctx, payload.Labels, database, project, database.CreatorID, false)
-		if err != nil {
-			return true, nil, errors.Errorf("failed to record database labels after creating database %v", database.ID)
-		}
 	}
 
 	return true, &api.TaskRunResultPayload{
@@ -188,4 +210,62 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		MigrationID: migrationID,
 		Version:     mi.Version,
 	}, nil
+}
+
+func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, databaseName, adminDatasourceUser string) (string, error) {
+	var stmt string
+	switch dbType {
+	case db.MySQL, db.TiDB:
+		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation), nil
+	case db.Postgres:
+		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
+		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
+		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
+			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
+		}
+		if createDatabaseContext.Collation == "" {
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, createDatabaseContext.CharacterSet)
+		} else {
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
+		}
+		// Set the database owner.
+		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
+		// However, people can still use ALTER DATABASE to change the owner afterwards.
+		// Error string below:
+		// query: CREATE DATABASE h1 WITH OWNER hello;
+		// ERROR:  must be member of role "hello"
+		//
+		// For tenant project, the schema for the newly created database will belong to the same owner.
+		// TODO(d): alter schema "public" owner to the database owner.
+		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;", stmt, databaseName, createDatabaseContext.Owner), nil
+	case db.ClickHouse:
+		clusterPart := ""
+		if createDatabaseContext.Cluster != "" {
+			clusterPart = fmt.Sprintf(" ON CLUSTER `%s`", createDatabaseContext.Cluster)
+		}
+		return fmt.Sprintf("CREATE DATABASE `%s`%s;", databaseName, clusterPart), nil
+	case db.Snowflake:
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
+	case db.SQLite:
+		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
+		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
+	}
+	return "", errors.Errorf("unsupported database type %s", dbType)
+}
+
+func getConnectionStatement(dbType db.Type, databaseName string) (string, error) {
+	switch dbType {
+	case db.MySQL, db.TiDB:
+		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
+	case db.Postgres:
+		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
+	case db.ClickHouse:
+		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
+	case db.Snowflake:
+		return fmt.Sprintf("USE DATABASE %s;\n", databaseName), nil
+	case db.SQLite:
+		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
+	}
+
+	return "", errors.Errorf("unsupported database type %s", dbType)
 }

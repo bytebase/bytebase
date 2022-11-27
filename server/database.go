@@ -834,6 +834,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 }
 
 func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
+	if labelsJSON == "" {
+		return nil
+	}
 	// NOTE: this is a partially filled DatabaseLabel
 	var labels []*api.DatabaseLabel
 	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {

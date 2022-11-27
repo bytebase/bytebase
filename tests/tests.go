@@ -1297,6 +1297,8 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 	if err != nil {
 		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
 	}
+	// Add a second sleep to avoid schema version conflict.
+	time.Sleep(time.Second)
 	return nil
 }
 
