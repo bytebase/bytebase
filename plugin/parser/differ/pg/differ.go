@@ -33,25 +33,31 @@ type diffNode struct {
 	dropConstraintExceptFkList []ast.Node
 	dropIndexList              []ast.Node
 	dropDefaultList            []ast.Node
+	dropSequenceOwnedByList    []ast.Node
+	dropSequenceList           []ast.Node
 	dropColumnList             []ast.Node
 	dropTableList              []ast.Node
 	dropSchemaList             []ast.Node
 
 	// Create nodes
-	createSchemaList             []ast.Node
-	createTableList              []ast.Node
-	createColumnList             []ast.Node
-	alterColumnList              []ast.Node
-	setDefaultList               []ast.Node
-	createIndexList              []ast.Node
-	createConstraintExceptFkList []ast.Node
-	createForeignKeyList         []ast.Node
+	createSchemaList               []ast.Node
+	createSequenceList             []ast.Node
+	alterSequenceExceptOwnedByList []ast.Node
+	createTableList                []ast.Node
+	createColumnList               []ast.Node
+	alterColumnList                []ast.Node
+	setSequenceOwnedByList         []ast.Node
+	setDefaultList                 []ast.Node
+	createIndexList                []ast.Node
+	createConstraintExceptFkList   []ast.Node
+	createForeignKeyList           []ast.Node
 }
 
 type schemaMap map[string]*schemaInfo
 type tableMap map[string]*tableInfo
 type constraintMap map[string]*constraintInfo
 type indexMap map[string]*indexInfo
+type sequenceMap map[string]*sequenceInfo
 
 type schemaInfo struct {
 	id           int
@@ -59,6 +65,7 @@ type schemaInfo struct {
 	createSchema *ast.CreateSchemaStmt
 	tableMap     tableMap
 	indexMap     indexMap
+	sequenceMap  sequenceMap
 }
 
 func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
@@ -68,6 +75,7 @@ func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 		createSchema: createSchema,
 		tableMap:     make(tableMap),
 		indexMap:     make(indexMap),
+		sequenceMap:  make(sequenceMap),
 	}
 }
 
@@ -112,6 +120,35 @@ func newIndexInfo(id int, createIndex *ast.CreateIndexStmt) *indexInfo {
 		id:          id,
 		existsInNew: false,
 		createIndex: createIndex,
+	}
+}
+
+type sequenceInfo struct {
+	id             int
+	existsInNew    bool
+	createSequence *ast.CreateSequenceStmt
+	ownedByInfo    *sequenceOwnedByInfo
+}
+
+func newSequenceInfo(id int, createSequence *ast.CreateSequenceStmt) *sequenceInfo {
+	return &sequenceInfo{
+		id:             id,
+		existsInNew:    false,
+		createSequence: createSequence,
+	}
+}
+
+type sequenceOwnedByInfo struct {
+	id          int
+	existsInNew bool
+	ownedBy     *ast.AlterSequenceStmt
+}
+
+func newSequenceOwnedByInfo(id int, ownedBy *ast.AlterSequenceStmt) *sequenceOwnedByInfo {
+	return &sequenceOwnedByInfo{
+		id:          id,
+		existsInNew: false,
+		ownedBy:     ownedBy,
 	}
 }
 
@@ -176,6 +213,57 @@ func (m schemaMap) getIndex(schemaName string, indexName string) *indexInfo {
 		return nil
 	}
 	return schema.indexMap[indexName]
+}
+
+func (m schemaMap) addSequence(id int, sequence *ast.CreateSequenceStmt) error {
+	schema, exists := m[sequence.SequenceDef.SequenceName.Schema]
+	if !exists {
+		return errors.Errorf("failed to add sequence: schema %s not found", sequence.SequenceDef.SequenceName.Schema)
+	}
+	schema.sequenceMap[sequence.SequenceDef.SequenceName.Name] = newSequenceInfo(id, sequence)
+	return nil
+}
+
+func (m schemaMap) getSequence(schemaName string, sequenceName string) *sequenceInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.sequenceMap[sequenceName]
+}
+
+func onlySetOwnedBy(sequence *ast.AlterSequenceStmt) bool {
+	return sequence.Type == nil &&
+		sequence.IncrementBy == nil &&
+		!sequence.NoMinValue &&
+		sequence.MinValue == nil &&
+		!sequence.NoMaxValue &&
+		sequence.MaxValue == nil &&
+		sequence.StartWith == nil &&
+		sequence.RestartWith == nil &&
+		sequence.Cache == nil &&
+		sequence.Cycle == nil &&
+		!sequence.OwnedByNone &&
+		sequence.OwnedBy != nil
+}
+
+func (m schemaMap) addSequenceOwnedBy(id int, alterStmt *ast.AlterSequenceStmt) error {
+	// pg_dump will separate the SET OWNED BY clause into a ALTER SEQUENCE statement.
+	// There would be no other ALTER SEQUENCE statements.
+	if !onlySetOwnedBy(alterStmt) {
+		return errors.Errorf("expect OwnedBy only, but found %v", alterStmt)
+	}
+
+	schema, exists := m[alterStmt.Name.Schema]
+	if !exists {
+		return errors.Errorf("failed to add sequence owned by: schema %s not found", alterStmt.Name.Schema)
+	}
+	sequence, exists := schema.sequenceMap[alterStmt.Name.Name]
+	if !exists {
+		return errors.Errorf("failed to add sequence owned by: sequence %s not found", alterStmt.Name.Name)
+	}
+	sequence.ownedByInfo = newSequenceOwnedByInfo(id, alterStmt)
+	return nil
 }
 
 func parseAndPreprocessStatment(statement string) ([]ast.Node, error) {
@@ -275,6 +363,16 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := oldSchemaMap.addIndex(i, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CreateSequenceStmt:
+			if err := oldSchemaMap.addSequence(i, stmt); err != nil {
+				return "", err
+			}
+		case *ast.AlterSequenceStmt:
+			// pg_dump will separate the SET OWNED BY clause into a ALTER SEQUENCE statement.
+			// There would be no other ALTER SEQUENCE statements.
+			if err := oldSchemaMap.addSequenceOwnedBy(i, stmt); err != nil {
+				return "", err
+			}
 			// TODO(rebelice): add default back here
 		}
 	}
@@ -341,6 +439,32 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			oldIndex.existsInNew = true
 			// Modify the index.
 			if err := diff.modifyIndex(oldIndex.createIndex, stmt); err != nil {
+				return "", err
+			}
+		case *ast.CreateSequenceStmt:
+			oldSequence := oldSchemaMap.getSequence(stmt.SequenceDef.SequenceName.Schema, stmt.SequenceDef.SequenceName.Name)
+			// Add the new sequence.
+			if oldSequence == nil {
+				diff.createSequenceList = append(diff.createSequenceList, stmt)
+				continue
+			}
+			oldSequence.existsInNew = true
+			// Modify the sequence.
+			if err := diff.modifySequenceExceptOwnedBy(oldSequence.createSequence, stmt); err != nil {
+				return "", err
+			}
+		case *ast.AlterSequenceStmt:
+			if !onlySetOwnedBy(stmt) {
+				return "", errors.Errorf("expect OwnedBy only, but found %v", stmt)
+			}
+			oldSequence := oldSchemaMap.getSequence(stmt.Name.Schema, stmt.Name.Name)
+			// Add the new sequence owned by.
+			if oldSequence == nil || oldSequence.ownedByInfo == nil {
+				diff.setSequenceOwnedByList = append(diff.setSequenceOwnedByList, stmt)
+				continue
+			}
+			oldSequence.ownedByInfo.existsInNew = true
+			if err := diff.modifySequenceOwnedBy(oldSequence.ownedByInfo.ownedBy, stmt); err != nil {
 				return "", err
 			}
 		}
@@ -429,6 +553,14 @@ func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 	// Drop the remaining old index.
 	if dropIndexStmt := dropIndex(oldSchemaMap); dropIndexStmt != nil {
 		diff.dropIndexList = append(diff.dropIndexList, dropIndexStmt)
+	}
+
+	// Drop the remaining old sequence owned by.
+	diff.dropSequenceOwnedBy(oldSchemaMap)
+
+	// Drop the remaining old sequence.
+	if dropSequenceStmt := dropSequence(oldSchemaMap); dropSequenceStmt != nil {
+		diff.dropSequenceList = append(diff.dropSequenceList, dropSequenceStmt)
 	}
 
 	return nil
@@ -647,6 +779,137 @@ func (diff *diffNode) modifyIndex(oldIndex *ast.CreateIndexStmt, newIndex *ast.C
 	return nil
 }
 
+func (diff *diffNode) modifySequenceOwnedBy(oldSequenceOwnedBy *ast.AlterSequenceStmt, newSequenceOwnedBy *ast.AlterSequenceStmt) error {
+	if !isEqualColumnNameDef(oldSequenceOwnedBy.OwnedBy, newSequenceOwnedBy.OwnedBy) {
+		diff.setDefaultList = append(diff.setDefaultList, newSequenceOwnedBy)
+	}
+	return nil
+}
+
+func (diff *diffNode) modifySequenceExceptOwnedBy(oldSequence *ast.CreateSequenceStmt, newSequence *ast.CreateSequenceStmt) error {
+	isEqual := true
+	alterSequence := &ast.AlterSequenceStmt{
+		Name: oldSequence.SequenceDef.SequenceName,
+	}
+
+	// compare data type
+	if !isEqualInteger(oldSequence.SequenceDef.SequenceDataType, newSequence.SequenceDef.SequenceDataType) {
+		alterSequence.Type = newSequence.SequenceDef.SequenceDataType
+		isEqual = false
+	}
+
+	// compare increment
+	if !isEqualInt32Pointer(oldSequence.SequenceDef.IncrementBy, newSequence.SequenceDef.IncrementBy) {
+		alterSequence.IncrementBy = newSequence.SequenceDef.IncrementBy
+		isEqual = false
+	}
+
+	// compare min value
+	if !isEqualInt32Pointer(oldSequence.SequenceDef.MinValue, newSequence.SequenceDef.MinValue) {
+		if newSequence.SequenceDef.MinValue == nil {
+			alterSequence.NoMinValue = true
+		} else {
+			alterSequence.MinValue = newSequence.SequenceDef.MinValue
+		}
+		isEqual = false
+	}
+
+	// compare max value
+	if !isEqualInt32Pointer(oldSequence.SequenceDef.MaxValue, newSequence.SequenceDef.MaxValue) {
+		if newSequence.SequenceDef.MaxValue == nil {
+			alterSequence.NoMaxValue = true
+		} else {
+			alterSequence.MaxValue = newSequence.SequenceDef.MaxValue
+		}
+		isEqual = false
+	}
+
+	// compare start with
+	if !isEqualInt32Pointer(oldSequence.SequenceDef.StartWith, newSequence.SequenceDef.StartWith) {
+		if newSequence.SequenceDef.StartWith != nil {
+			alterSequence.StartWith = newSequence.SequenceDef.StartWith
+			isEqual = false
+		}
+	}
+
+	// compare cache
+	if !isEqualInt32Pointer(oldSequence.SequenceDef.Cache, newSequence.SequenceDef.Cache) {
+		if newSequence.SequenceDef.Cache != nil {
+			alterSequence.Cache = newSequence.SequenceDef.Cache
+			isEqual = false
+		}
+	}
+
+	// compare cycle
+	if oldSequence.SequenceDef.Cycle != newSequence.SequenceDef.Cycle {
+		alterSequence.Cycle = &newSequence.SequenceDef.Cycle
+		isEqual = false
+	}
+
+	if !isEqual {
+		diff.alterSequenceExceptOwnedByList = append(diff.alterSequenceExceptOwnedByList, alterSequence)
+	}
+	return nil
+}
+
+func isEqualTableDef(tableA *ast.TableDef, tableB *ast.TableDef) bool {
+	if tableA == nil && tableB == nil {
+		return true
+	}
+	if tableA == nil || tableB == nil {
+		return false
+	}
+
+	if tableA.Database != tableB.Database {
+		return false
+	}
+
+	if tableA.Schema != tableB.Schema {
+		return false
+	}
+
+	if tableA.Name != tableB.Name {
+		return false
+	}
+
+	return true
+}
+
+func isEqualColumnNameDef(columnA *ast.ColumnNameDef, columnB *ast.ColumnNameDef) bool {
+	if columnA == nil && columnB == nil {
+		return true
+	}
+	if columnA == nil || columnB == nil {
+		return false
+	}
+
+	if !isEqualTableDef(columnA.Table, columnB.Table) {
+		return false
+	}
+
+	return columnA.ColumnName == columnB.ColumnName
+}
+
+func isEqualInt32Pointer(a *int32, b *int32) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func isEqualInteger(typeA *ast.Integer, typeB *ast.Integer) bool {
+	if typeA == nil && typeB == nil {
+		return true
+	}
+	if typeA == nil || typeB == nil {
+		return false
+	}
+	return typeA.Size == typeB.Size
+}
+
 func getDefault(column *ast.ColumnDef) (string, bool) {
 	for _, constraint := range column.ConstraintList {
 		if constraint.Type == ast.ConstraintTypeDefault {
@@ -707,6 +970,12 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.dropDefaultList); err != nil {
 		return "", err
 	}
+	if err := printStmtSlice(&buf, diff.dropSequenceOwnedByList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.dropSequenceList); err != nil {
+		return "", err
+	}
 	if err := printStmtSlice(&buf, diff.dropColumnList); err != nil {
 		return "", err
 	}
@@ -721,6 +990,12 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.createSchemaList); err != nil {
 		return "", err
 	}
+	if err := printStmtSlice(&buf, diff.createSequenceList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.alterSequenceExceptOwnedByList); err != nil {
+		return "", err
+	}
 	if err := printStmtSlice(&buf, diff.createTableList); err != nil {
 		return "", err
 	}
@@ -728,6 +1003,9 @@ func (diff *diffNode) deparse() (string, error) {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.alterColumnList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.setSequenceOwnedByList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.setDefaultList); err != nil {
@@ -854,6 +1132,64 @@ func dropIndex(m schemaMap) *ast.DropIndexStmt {
 	}
 	return &ast.DropIndexStmt{
 		IndexList: indexDefList,
+	}
+}
+
+func (diff *diffNode) dropSequenceOwnedBy(m schemaMap) {
+	var sequenceOwnedByList []*sequenceOwnedByInfo
+	for _, schema := range m {
+		for _, sequence := range schema.sequenceMap {
+			if sequence.ownedByInfo == nil || sequence.ownedByInfo.existsInNew {
+				// no need to drop
+				continue
+			}
+			sequenceOwnedByList = append(sequenceOwnedByList, sequence.ownedByInfo)
+		}
+	}
+
+	if len(sequenceOwnedByList) == 0 {
+		return
+	}
+	sort.Slice(sequenceOwnedByList, func(i, j int) bool {
+		return sequenceOwnedByList[i].id < sequenceOwnedByList[j].id
+	})
+
+	for _, sequenceOwnedBy := range sequenceOwnedByList {
+		diff.dropSequenceOwnedByList = append(diff.dropSequenceOwnedByList, &ast.AlterSequenceStmt{
+			Name:        sequenceOwnedBy.ownedBy.Name,
+			OwnedByNone: true,
+		})
+	}
+}
+
+func dropSequence(m schemaMap) *ast.DropSequenceStmt {
+	var sequenceList []*sequenceInfo
+	for _, schema := range m {
+		for _, sequence := range schema.sequenceMap {
+			if sequence.existsInNew {
+				// no need to drop
+				continue
+			}
+			sequenceList = append(sequenceList, sequence)
+		}
+	}
+
+	if len(sequenceList) == 0 {
+		return nil
+	}
+	sort.Slice(sequenceList, func(i, j int) bool {
+		return sequenceList[i].id < sequenceList[j].id
+	})
+
+	var sequenceNameList []*ast.SequenceNameDef
+	for _, sequence := range sequenceList {
+		sequenceNameList = append(sequenceNameList, &ast.SequenceNameDef{
+			Schema: sequence.createSequence.SequenceDef.SequenceName.Schema,
+			Name:   sequence.createSequence.SequenceDef.SequenceName.Name,
+		})
+	}
+	return &ast.DropSequenceStmt{
+		SequenceNameList: sequenceNameList,
 	}
 }
 
