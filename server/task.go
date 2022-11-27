@@ -333,9 +333,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			oldStatement = payload.Statement
 			payload.Statement = *taskPatch.Statement
-			// We should update the schema version if we've updated the SQL, otherwise we will
-			// get migration history version conflict if the previous task has been attempted.
-			payload.SchemaVersion = common.DefaultMigrationVersion()
 			bytes, err := json.Marshal(payload)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
