@@ -739,8 +739,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	}
 	databaseNameCount, databaseIDCount := 0, 0
 	for _, detail := range c.DetailList {
-		if detail.MigrationType != db.Migrate && detail.MigrationType != db.Data {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
+		if detail.MigrationType != db.Migrate && detail.MigrationType != db.MigrateSDL && detail.MigrationType != db.Data {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "support migrate, migrateSDL and data type migration only")
 		}
 		if detail.Statement == "" {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
