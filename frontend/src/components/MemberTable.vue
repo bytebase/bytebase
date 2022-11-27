@@ -71,10 +71,7 @@
                 >
               </div>
               <button
-                v-if="
-                  member.principal.type === 'SERVICE_ACCOUNT' &&
-                  canManageServiceAccount
-                "
+                v-if="member.principal.type === 'SERVICE_ACCOUNT' && allowEdit"
                 class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
                 @click.prevent="() => copyToken(member.principal.token)"
               >
@@ -252,13 +249,6 @@ export default defineComponent({
       );
     });
 
-    const canManageServiceAccount = computed(() => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-service-account",
-        currentUser.value.role
-      );
-    });
-
     const allowChangeRole = (member: Member) => {
       if (member.principal.id === SYSTEM_BOT_ID) {
         return false;
@@ -350,7 +340,6 @@ export default defineComponent({
       changeRole,
       changeRowStatus,
       copyToken,
-      canManageServiceAccount,
     };
   },
 });

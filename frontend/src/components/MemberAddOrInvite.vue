@@ -83,7 +83,7 @@
           </div>
         </div>
         <div
-          v-if="canManageServiceAccount && isAdd"
+          v-if="canManageMember"
           class="flex justify-start gap-x-2 items-center text-sm text-gray-500 pt-2 ml-0.5"
         >
           <NSwitch v-model:value="user.isServiceAccount" size="small" />
@@ -115,9 +115,9 @@
         :disabled="!hasValidUserOnly()"
         @click.prevent="addOrInvite"
       >
-        <heroicons-solid:plus v-if="isAdd" class="h-5 w-5" />
+        <heroicons-solid:plus v-if="canManageMember" class="h-5 w-5" />
         <heroicons-outline:mail v-else class="mr-2 h-5 w-5" />
-        {{ $t(`settings.members.${isAdd ? "add" : "invites"}`) }}
+        {{ $t(`settings.members.${canManageMember ? "add" : "invites"}`) }}
       </button>
     </div>
   </div>
@@ -162,16 +162,9 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
 
-    const isAdd = computed(() => {
+    const canManageMember = computed(() => {
       return hasWorkspacePermission(
         "bb.permission.workspace.manage-member",
-        currentUser.value.role
-      );
-    });
-
-    const canManageServiceAccount = computed(() => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-service-account",
         currentUser.value.role
       );
     });
@@ -261,7 +254,7 @@ export default defineComponent({
             .then((principal: Principal) => {
               const newMember: MemberCreate = {
                 principalId: principal.id,
-                status: isAdd.value ? "ACTIVE" : "INVITED",
+                status: canManageMember.value ? "ACTIVE" : "INVITED",
                 role,
               };
               // Note "principal/createdMember" would return the existing role mapping.
@@ -286,14 +279,13 @@ export default defineComponent({
 
     return {
       state,
-      isAdd,
+      canManageMember,
       hasRBACFeature,
       validateUser,
       clearValidationError,
       addUser,
       hasValidUserOnly,
       addOrInvite,
-      canManageServiceAccount,
     };
   },
 });

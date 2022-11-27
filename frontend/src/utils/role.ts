@@ -16,9 +16,7 @@ export type WorkspacePermissionType =
   | "bb.permission.workspace.manage-general"
   | "bb.permission.workspace.manage-sensitive-data"
   // Can execute admininstrive queries such as "SHOW PROCESSLIST"
-  | "bb.permission.workspace.admin-sql-editor"
-  // Can create the service account and get the token
-  | "bb.permission.workspace.manage-service-account";
+  | "bb.permission.workspace.admin-sql-editor";
 
 // A map from a particular workspace permission to the respective enablement of a particular workspace role.
 // The key is the workspace permission type and the value is the workspace [DEVELOPER, DBA, OWNER] triplet.
@@ -39,7 +37,6 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-im-integration", [false, false, true]],
   ["bb.permission.workspace.manage-sensitive-data", [false, true, true]],
   ["bb.permission.workspace.admin-sql-editor", [false, true, true]],
-  ["bb.permission.workspace.manage-service-account", [false, false, true]],
 ]);
 
 // Returns true if RBAC is not enabled or the particular role has the particular permission.
