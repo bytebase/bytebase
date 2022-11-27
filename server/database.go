@@ -887,9 +887,9 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
 func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
-	connCfg, err := getConnectionConfig(instance, databaseName)
-	if err != nil {
-		return nil, err
+	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
+	if adminDataSource == nil {
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
 	}
 
 	dbBinDir := ""
@@ -907,7 +907,18 @@ func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Insta
 			DbBinDir:  dbBinDir,
 			BinlogDir: getBinlogAbsDir(s.profile.DataDir, instance.ID),
 		},
-		connCfg,
+		db.ConnectionConfig{
+			Username: adminDataSource.Username,
+			Password: adminDataSource.Password,
+			TLSConfig: db.TLSConfig{
+				SslCA:   adminDataSource.SslCa,
+				SslCert: adminDataSource.SslCert,
+				SslKey:  adminDataSource.SslKey,
+			},
+			Host:     instance.Host,
+			Port:     instance.Port,
+			Database: databaseName,
+		},
 		db.ConnectionContext{
 			EnvironmentName: instance.Environment.Name,
 			InstanceName:    instance.Name,
@@ -918,27 +929,6 @@ func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Insta
 	}
 
 	return driver, nil
-}
-
-// getConnectionConfig returns the connection config of the `databaseName` on `instance`.
-func getConnectionConfig(instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
-	if adminDataSource == nil {
-		return db.ConnectionConfig{}, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
-	}
-
-	return db.ConnectionConfig{
-		Username: adminDataSource.Username,
-		Password: adminDataSource.Password,
-		TLSConfig: db.TLSConfig{
-			SslCA:   adminDataSource.SslCa,
-			SslCert: adminDataSource.SslCert,
-			SslKey:  adminDataSource.SslKey,
-		},
-		Host:     instance.Host,
-		Port:     instance.Port,
-		Database: databaseName,
-	}, nil
 }
 
 // We'd like to use read-only data source whenever possible, but fallback to admin data source if there's no read-only data source.
