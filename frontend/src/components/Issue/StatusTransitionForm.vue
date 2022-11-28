@@ -46,10 +46,10 @@
       </template>
 
       <div v-if="showTaskCheckBar" class="sm:col-span-4 mb-4 space-y-4">
-        <template v-if="runningCheckCount > 0">
+        <template v-if="checkSummary.runningCount > 0">
           <BBAttention
             :style="'INFO'"
-            :title="`${runningCheckCount} check(s) in progress...`"
+            :title="`${checkSummary.runningCount} check(s) in progress...`"
           />
         </template>
         <template v-else>
