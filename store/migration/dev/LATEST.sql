@@ -278,7 +278,8 @@ CREATE TABLE instance (
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
-    external_link TEXT NOT NULL DEFAULT ''
+    external_link TEXT NOT NULL DEFAULT '',
+    database TEXT NOT NULL DEFAULT ''
 );
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
