@@ -76,7 +76,8 @@ type RepositoryCreate struct {
 	FilePathTemplate   string `jsonapi:"attr,filePathTemplate"`
 	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
 	SheetPathTemplate  string `jsonapi:"attr,sheetPathTemplate"`
-	ExternalID         string `jsonapi:"attr,externalId"`
+	// EnableSQLReviewCI is only supported in the patch API.
+	ExternalID string `jsonapi:"attr,externalId"`
 	// Token belonged by the user linking the project to the VCS repository. We store this token together
 	// with the refresh token in the new repository record so we can use it to call VCS API on
 	// behalf of that user to perform tasks such as webhook CRUD later.
