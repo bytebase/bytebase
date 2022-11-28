@@ -286,7 +286,8 @@
         "row": "行数"
       },
       "counting": "统计中"
-    }
+    },
+    "n-similar-tasks": "({count} 个相似的任务)"
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",

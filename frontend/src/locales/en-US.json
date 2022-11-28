@@ -286,7 +286,8 @@
         "row": "rows"
       },
       "counting": "Counting"
-    }
+    },
+    "n-similar-tasks": "({count} similar tasks)"
   },
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
