@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -61,10 +60,7 @@ type repositoryData struct {
 
 // NewGitHub creates a new fake implementation of GitHub VCS provider.
 func NewGitHub(port int) VCSProvider {
-	e := echo.New()
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
+	e := newEchoServer()
 	gh := &GitHub{
 		port:          port,
 		echo:          e,
