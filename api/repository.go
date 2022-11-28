@@ -76,7 +76,10 @@ type RepositoryCreate struct {
 	FilePathTemplate   string `jsonapi:"attr,filePathTemplate"`
 	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
 	SheetPathTemplate  string `jsonapi:"attr,sheetPathTemplate"`
-	ExternalID         string `jsonapi:"attr,externalId"`
+	// We will always set the "enable_sql_review_ci" to FALSE during creation.
+	// If users need to enable it, the frontend will send another PATCH request after POST repository to update this field.
+	EnableSQLReviewCI bool
+	ExternalID        string `jsonapi:"attr,externalId"`
 	// Token belonged by the user linking the project to the VCS repository. We store this token together
 	// with the refresh token in the new repository record so we can use it to call VCS API on
 	// behalf of that user to perform tasks such as webhook CRUD later.
