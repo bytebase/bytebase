@@ -5,7 +5,7 @@ DROP INDEX idx_policy_unique_environment_id_type;
 
 ALTER TABLE policy ADD COLUMN resource_type resource_type;
 ALTER TABLE policy ADD COLUMN resource_id INTEGER;
-ALTER TABLE policy ADD COLUMN inherit_from_parent BOOLEAN DEFAULT TRUE;
+ALTER TABLE policy ADD COLUMN inherit_from_parent BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE policy DROP CONSTRAINT policy_environment_id_fkey;
 
 UPDATE policy SET resource_type='ENVIRONMENT', resource_id=environment_id;
