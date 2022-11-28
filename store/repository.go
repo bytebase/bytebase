@@ -291,87 +291,6 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 
 	var repository repositoryRaw
 	// Insert row into database.
-	if s.db.mode == common.ReleaseModeDev {
-		query := `
-			INSERT INTO repository (
-				creator_id,
-				updater_id,
-				vcs_id,
-				project_id,
-				name,
-				full_path,
-				web_url,
-				branch_filter,
-				base_directory,
-				file_path_template,
-				schema_path_template,
-				sheet_path_template,
-				external_id,
-				external_webhook_id,
-				webhook_url_host,
-				webhook_endpoint_id,
-				webhook_secret_token,
-				access_token,
-				expires_ts,
-				refresh_token
-			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
-		`
-		if err := tx.QueryRowContext(ctx, query,
-			create.CreatorID,
-			create.CreatorID,
-			create.VCSID,
-			create.ProjectID,
-			create.Name,
-			create.FullPath,
-			create.WebURL,
-			create.BranchFilter,
-			create.BaseDirectory,
-			create.FilePathTemplate,
-			create.SchemaPathTemplate,
-			create.SheetPathTemplate,
-			create.ExternalID,
-			create.ExternalWebhookID,
-			create.WebhookURLHost,
-			create.WebhookEndpointID,
-			create.WebhookSecretToken,
-			create.AccessToken,
-			create.ExpiresTs,
-			create.RefreshToken,
-		).Scan(
-			&repository.ID,
-			&repository.CreatorID,
-			&repository.CreatedTs,
-			&repository.UpdaterID,
-			&repository.UpdatedTs,
-			&repository.VCSID,
-			&repository.ProjectID,
-			&repository.Name,
-			&repository.FullPath,
-			&repository.WebURL,
-			&repository.BranchFilter,
-			&repository.BaseDirectory,
-			&repository.FilePathTemplate,
-			&repository.SchemaPathTemplate,
-			&repository.SheetPathTemplate,
-			&repository.EnableSQLReviewCI,
-			&repository.ExternalID,
-			&repository.ExternalWebhookID,
-			&repository.WebhookURLHost,
-			&repository.WebhookEndpointID,
-			&repository.WebhookSecretToken,
-			&repository.AccessToken,
-			&repository.ExpiresTs,
-			&repository.RefreshToken,
-		); err != nil {
-			if err == sql.ErrNoRows {
-				return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-			}
-			return nil, FormatError(err)
-		}
-		return &repository, nil
-	}
 	query := `
 		INSERT INTO repository (
 			creator_id,
@@ -385,6 +304,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 			base_directory,
 			file_path_template,
 			schema_path_template,
+			sheet_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -394,8 +314,8 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 			expires_ts,
 			refresh_token
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
@@ -409,6 +329,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 		create.BaseDirectory,
 		create.FilePathTemplate,
 		create.SchemaPathTemplate,
+		create.SheetPathTemplate,
 		create.ExternalID,
 		create.ExternalWebhookID,
 		create.WebhookURLHost,
@@ -432,6 +353,8 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 		&repository.BaseDirectory,
 		&repository.FilePathTemplate,
 		&repository.SchemaPathTemplate,
+		&repository.SheetPathTemplate,
+		&repository.EnableSQLReviewCI,
 		&repository.ExternalID,
 		&repository.ExternalWebhookID,
 		&repository.WebhookURLHost,
