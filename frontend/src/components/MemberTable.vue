@@ -169,7 +169,7 @@ import {
   Principal,
 } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { hasWorkspacePermission, randomString } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import {
   featureToRef,
   useCurrentUser,
@@ -348,7 +348,7 @@ export default defineComponent({
           principalId: principal.id,
           principalPatch: {
             type: principal.type,
-            password: randomString(),
+            refreshKey: true,
           },
         })
         .then((principal: Principal) => {

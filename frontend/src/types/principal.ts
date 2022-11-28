@@ -38,4 +38,5 @@ export type PrincipalPatch = {
   password?: string;
   email?: string;
   type: PrincipalType;
+  refreshKey?: boolean;
 };
