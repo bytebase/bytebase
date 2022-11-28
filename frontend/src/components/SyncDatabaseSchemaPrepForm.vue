@@ -388,7 +388,7 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
   );
 
   if (!hasSyncSchemaFeature.value) {
-    return [head(list)];
+    return [list.length > 0 ? head(list) : []];
   }
   return list;
 };
