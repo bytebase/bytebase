@@ -19,15 +19,12 @@
         <div v-for="(query, i) in queryList" :key="i" class="relative">
           <CompactSQLEditor
             v-model:sql="query.sql"
-            class="border-b min-h-[2rem]"
+            class="min-h-[2rem]"
             :readonly="!isEditableQueryItem(query)"
             @save-sheet="trySaveSheet"
             @execute="handleExecute"
           />
-          <div
-            v-if="query.queryResult"
-            class="max-h-[20rem] overflow-y-auto border-b"
-          >
+          <div v-if="query.queryResult" class="max-h-[20rem] overflow-y-auto">
             <TableView
               :query-result="query.queryResult.data"
               :loading="query.isExecutingSQL"
