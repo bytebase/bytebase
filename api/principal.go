@@ -50,36 +50,36 @@ type Principal struct {
 	// Role is stored in the member table, but we include it when returning the principal.
 	// This simplifies the client code where it won't require order dependency to fetch the related member info first.
 	Role Role `jsonapi:"attr,role"`
-	// The token is the password, only used for SERVICE_ACCOUNT.
-	// We only return the token for the first time during SERVICE_ACCOUNT creation.
-	Token string `jsonapi:"attr,token"`
+	// The ServiceKey is the password, only used for SERVICE_ACCOUNT.
+	// We only return the service key for the first time after the creation for SERVICE_ACCOUNT.
+	ServiceKey string `jsonapi:"attr,serviceKey"`
 }
 
 // MarshalJSON customizes the Principal Marshal method so the returned object
 // can map directly to the frontend Principal object without any conversion.
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		ID        int           `json:"id"`
-		CreatorID int           `json:"creatorId"`
-		CreatedTs int64         `json:"createdTs"`
-		UpdaterID int           `json:"updaterId"`
-		UpdatedTs int64         `json:"updatedTs"`
-		Type      PrincipalType `json:"type"`
-		Name      string        `json:"name"`
-		Email     string        `json:"email"`
-		Role      Role          `json:"role"`
-		Token     string        `json:"token"`
+		ID         int           `json:"id"`
+		CreatorID  int           `json:"creatorId"`
+		CreatedTs  int64         `json:"createdTs"`
+		UpdaterID  int           `json:"updaterId"`
+		UpdatedTs  int64         `json:"updatedTs"`
+		Type       PrincipalType `json:"type"`
+		Name       string        `json:"name"`
+		Email      string        `json:"email"`
+		Role       Role          `json:"role"`
+		ServiceKey string        `json:"serviceKey"`
 	}{
-		ID:        p.ID,
-		CreatorID: p.CreatorID,
-		CreatedTs: p.CreatedTs,
-		UpdaterID: p.UpdaterID,
-		UpdatedTs: p.UpdatedTs,
-		Type:      p.Type,
-		Name:      p.Name,
-		Email:     p.Email,
-		Role:      p.Role,
-		Token:     p.Token,
+		ID:         p.ID,
+		CreatorID:  p.CreatorID,
+		CreatedTs:  p.CreatedTs,
+		UpdaterID:  p.UpdaterID,
+		UpdatedTs:  p.UpdatedTs,
+		Type:       p.Type,
+		Name:       p.Name,
+		Email:      p.Email,
+		Role:       p.Role,
+		ServiceKey: p.ServiceKey,
 	})
 }
 

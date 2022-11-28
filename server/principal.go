@@ -49,7 +49,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		// Only return the token if the user is ServiceAccount
 		if principal.Type == api.ServiceAccount {
-			principal.Token = principalCreate.Password
+			principal.ServiceKey = principalCreate.Password
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -138,7 +138,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		// Only return the token if the user is ServiceAccount
 		if principal.Type == api.ServiceAccount && principalPatch.Password != nil {
-			principal.Token = *principalPatch.Password
+			principal.ServiceKey = *principalPatch.Password
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
