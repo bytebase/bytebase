@@ -24,31 +24,33 @@
     <div class="action-right space-x-2 flex justify-end items-center">
       <TabModeSelect />
 
-      <NButton
-        secondary
-        strong
-        type="primary"
-        :disabled="!allowSave"
-        @click="() => emit('save-sheet')"
-      >
-        <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
-      </NButton>
-      <NPopover trigger="click" placement="bottom-end" :show-arrow="false">
-        <template #trigger>
-          <NButton
-            :disabled="
-              isEmptyStatement ||
-              tabStore.isDisconnected ||
-              !tabStore.currentTab.isSaved
-            "
-          >
-            <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
-          </NButton>
-        </template>
-        <template #default>
-          <SharePopover />
-        </template>
-      </NPopover>
+      <template v-if="showSheetsFeature">
+        <NButton
+          secondary
+          strong
+          type="primary"
+          :disabled="!allowSave"
+          @click="() => emit('save-sheet')"
+        >
+          <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
+        </NButton>
+        <NPopover trigger="click" placement="bottom-end" :show-arrow="false">
+          <template #trigger>
+            <NButton
+              :disabled="
+                isEmptyStatement ||
+                tabStore.isDisconnected ||
+                !tabStore.currentTab.isSaved
+              "
+            >
+              <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
+            </NButton>
+          </template>
+          <template #default>
+            <SharePopover />
+          </template>
+        </NPopover>
+      </template>
     </div>
   </div>
 </template>
@@ -61,7 +63,7 @@ import {
   useSQLEditorStore,
   useInstanceById,
 } from "@/store";
-import type { ExecuteConfig, ExecuteOption } from "@/types";
+import { ExecuteConfig, ExecuteOption, TabMode } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import SharePopover from "./SharePopover.vue";
 import TabModeSelect from "./TabModeSelect.vue";
@@ -93,7 +95,15 @@ const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
 
+const showSheetsFeature = computed(() => {
+  return tabStore.currentTab.mode === TabMode.ReadOnly;
+});
+
 const allowSave = computed(() => {
+  if (!showSheetsFeature.value) {
+    return false;
+  }
+
   if (isEmptyStatement.value) {
     return false;
   }
