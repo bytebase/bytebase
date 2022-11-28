@@ -264,10 +264,9 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 				zap.Int("id", principal.ID),
 				zap.String("name", principal.Name),
 			)
-			principal.Role = api.Developer
-		} else {
-			principal.Role = memberRaw.Role
+			return nil, errors.Wrapf(err, "member with PrincipalID %d not exist", principal.ID)
 		}
+		principal.Role = memberRaw.Role
 	}
 	return principal, nil
 }
