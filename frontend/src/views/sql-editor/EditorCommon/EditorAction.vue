@@ -64,8 +64,7 @@ import {
   useInstanceById,
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption } from "@/types";
-import { TabMode } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { TabMode, UNKNOWN_ID } from "@/types";
 import SharePopover from "./SharePopover.vue";
 import TabModeSelect from "./TabModeSelect.vue";
 
