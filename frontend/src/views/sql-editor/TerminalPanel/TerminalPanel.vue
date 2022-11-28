@@ -92,6 +92,11 @@ const handleExecute = async (
     return;
   }
 
+  // Prevent executing empty query;
+  if (!query) {
+    return;
+  }
+
   try {
     queryItem.executeParams = { query, config, option };
     queryItem.isExecutingSQL = true;
@@ -102,6 +107,9 @@ const handleExecute = async (
       sql: "",
       isExecutingSQL: false,
     });
+    // Clear the tab's statement and keep it sync with the latest query
+    tabStore.currentTab.statement = "";
+    tabStore.currentTab.selectedStatement = "";
   } finally {
     queryItem.isExecutingSQL = false;
   }
