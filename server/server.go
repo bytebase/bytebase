@@ -32,6 +32,7 @@ import (
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
+	"github.com/bytebase/bytebase/plugin/app/feishu"
 	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
@@ -67,13 +68,17 @@ type Server struct {
 
 	profile         Profile
 	e               *echo.Echo
-	pgInstance      *postgres.Instance
 	metaDB          *store.MetadataDB
 	store           *store.Store
 	startedTs       int64
 	secret          string
 	workspaceID     string
 	errorRecordRing api.ErrorRecordRing
+
+	// MySQL utility binaries
+	mysqlBinDir string
+	// Postgres utility binaries
+	pgBinDir string
 
 	s3Client *s3bb.Client
 
@@ -120,6 +125,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
+	resourceDir := common.GetResourceDir(prof.DataDir)
+
 	// Display config
 	log.Info("-----Config BEGIN-----")
 	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
@@ -129,6 +136,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
 	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
 	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
+	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
 	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
 	log.Info(fmt.Sprintf("backupBucket=%s", prof.BackupBucket))
 	log.Info(fmt.Sprintf("backupRegion=%s", prof.BackupRegion))
@@ -143,38 +151,33 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}()
 
 	var err error
-
-	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
-	if err := mysqlutil.Install(resourceDir); err != nil {
-		return nil, errors.Wrap(err, "cannot install mysqlbinlog binary")
+	s.mysqlBinDir, err = mysqlutil.Install(resourceDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
-	// Install Postgres.
-	var pgDataDir string
-	if prof.useEmbedDB() {
-		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
-	}
-	log.Info("-----Embedded Postgres Config BEGIN-----")
-	log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
-	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
-	log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
-	log.Info("-----Embedded Postgres Config END-----")
-	log.Info("Preparing embedded PostgreSQL instance...")
-	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
+	s.pgBinDir, err = postgres.Install(resourceDir)
 	if err != nil {
 		return nil, err
 	}
-	s.pgInstance = pgInstance
 
 	// New MetadataDB instance.
-	if prof.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
+	if prof.UseEmbedDB() {
+		pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+		log.Info("-----Embedded Postgres Config BEGIN-----")
+		log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
+		log.Info(fmt.Sprintf("pgDataDir=%s", pgDataDir))
+		log.Info("-----Embedded Postgres Config END-----")
+		if err := postgres.InitDB(s.pgBinDir, pgDataDir, prof.PgUser); err != nil {
+			return nil, err
+		}
+		s.metaDB = store.NewMetadataDBWithEmbedPg(prof.PgUser, pgDataDir, s.pgBinDir, prof.DemoDataDir, prof.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(prof.PgURL, s.pgBinDir, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create MetadataDB instance")
@@ -299,13 +302,13 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
 
-		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager)
+		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager, feishu.NewProvider(prof.FeishuAPIURL))
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
 
 		// Rollback SQL generator
-		s.RollbackRunner = NewRollbackRunner(s.store, s.profile.DataDir)
+		s.RollbackRunner = NewRollbackRunner(s)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
@@ -521,7 +524,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		if err := s.TaskScheduler.ClearRunningTasks(ctx); err != nil {
-			return errors.Wrap(err, "failed to clear existing RUNNING tasks before start the task scheduler")
+			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
 		}
 		// runnerWG waits for all goroutines to complete.
 		s.runnerWG.Add(1)
@@ -550,8 +553,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Trying to stop Bytebase ....")
-	log.Info("Trying to gracefully shutdown server")
+	log.Info("Trying to stop Bytebase...")
+	log.Info("Trying to gracefully shutdown server...")
 
 	// Close the metric reporter
 	if s.MetricReporter != nil {

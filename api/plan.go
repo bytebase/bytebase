@@ -140,6 +140,8 @@ const (
 	//
 	// e.g. set the tier to "PROTECTED" for the production environment.
 	FeatureEnvironmentTierPolicy FeatureType = "bb.feature.environment-tier-policy"
+	// FeatureSensitiveData allows user to annotate and protect sensitive data.
+	FeatureSensitiveData FeatureType = "bb.feature.sensitive-data"
 )
 
 // Name returns a readable name of the feature.
@@ -188,6 +190,8 @@ func (e FeatureType) Name() string {
 		return "Backup policy"
 	case FeatureEnvironmentTierPolicy:
 		return "Environment tier"
+	case FeatureSensitiveData:
+		return "Sensitive data"
 	}
 	return ""
 }
@@ -300,6 +304,10 @@ var featureMatrix = map[FeatureType]featureConfig{
 		enabled:    true,
 		planToggle: [3]bool{false, false, true},
 	},
+	FeatureSensitiveData: {
+		enabled:    true,
+		planToggle: [3]bool{false, false, true},
+	},
 }
 
 // Plan is the API message for a plan.
@@ -325,11 +333,14 @@ type PlanLimit int
 const (
 	// PlanLimitMaximumTask is the key name for maximum number of tasks for a plan.
 	PlanLimitMaximumTask PlanLimit = iota
+	// PlanLimitMaximumEnvironment is the key name for maximum number of environments for a plan.
+	PlanLimitMaximumEnvironment
 )
 
 // PlanLimitValues is the plan limit value mapping.
 var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaximumTask: {4, math.MaxInt64, math.MaxInt64},
+	PlanLimitMaximumTask:        {4, math.MaxInt64, math.MaxInt64},
+	PlanLimitMaximumEnvironment: {2, 3, math.MaxInt64},
 }
 
 // Feature returns whether a particular feature is available in a particular plan.

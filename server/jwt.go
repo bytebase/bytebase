@@ -33,6 +33,7 @@ const (
 	// Expiration section.
 	refreshThresholdDuration = 1 * time.Hour
 	accessTokenDuration      = 24 * time.Hour
+	apiTokenDuration         = 2 * time.Hour
 	refreshTokenDuration     = 7 * 24 * time.Hour
 	// Make cookie expire slightly earlier than the jwt expiration. Client would be logged out if the user
 	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
@@ -45,6 +46,11 @@ const (
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
 	principalIDContextKey = "principal-id"
+
+	// Various access key / token prefix.
+
+	// serviceAccountAccessKeyPrefix is the prefix for service account access key.
+	serviceAccountAccessKeyPrefix = "bbs_"
 )
 
 // Claims creates a struct that will be encoded to a JWT.
@@ -77,6 +83,11 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 	setTokenCookie(c, refreshTokenCookieName, refreshToken, cookieExp)
 
 	return nil
+}
+
+func generateAPIToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+	expirationTime := time.Now().Add(apiTokenDuration)
+	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 func generateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
@@ -200,7 +211,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 
 		method := c.Request().Method
 		// Skip GET /subscription request
-		if common.HasPrefixes(c.Path(), "/subscription") && method == "GET" {
+		if common.HasPrefixes(path, "/subscription") && method == "GET" {
 			return next(c)
 		}
 

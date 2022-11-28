@@ -67,7 +67,7 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 		return nil, err
 	}
 
-	driver, err := tryGetReadOnlyDatabaseDriver(ctx, task.Instance, task.Database.Name)
+	driver, err := server.tryGetReadOnlyDatabaseDriver(ctx, task.Instance, task.Database.Name)
 	if err != nil {
 		return nil, err
 	}

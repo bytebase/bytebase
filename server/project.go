@@ -235,7 +235,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if repositoryCreate.BranchFilter == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Branch must be specified.")
 		}
-		if strings.Contains(repositoryCreate.BranchFilter, "*") && repositoryCreate.SchemaPathTemplate != "" {
+
+		hasWildcard := strings.Contains(repositoryCreate.BranchFilter, "*")
+		if hasWildcard && repositoryCreate.SchemaPathTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
 		}
 
@@ -267,6 +269,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		if vcs == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
+		}
+
+		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
+		if !hasWildcard {
+			if notFound, err := isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); notFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
+			} else if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", repositoryCreate.BranchFilter)).SetInternal(err)
+			}
 		}
 
 		// For a particular VCS repo, all Bytebase projects share the same webhook.
@@ -476,8 +487,27 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if newBranchFilter == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Branch must be specified.")
 		}
-		if strings.Contains(newBranchFilter, "*") && newSchemaPathTemplate != "" {
+
+		hasWildcard := strings.Contains(newBranchFilter, "*")
+		if hasWildcard && newSchemaPathTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
+		}
+
+		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for creating repository: %d", repo.VCSID)).SetInternal(err)
+		}
+		if vcs == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
+		}
+
+		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
+		if !hasWildcard {
+			if notFound, err := isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter); notFound {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
+			} else if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get branch %q", newBranchFilter)).SetInternal(err)
+			}
 		}
 
 		// We need to check the FilePathTemplate in create repository request.
@@ -643,7 +673,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, deploymentConfig); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &deploymentConfig); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get deployment configuration response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -1206,4 +1236,21 @@ func refreshTokenNoop() common.TokenRefresher {
 	return func(newToken, newRefreshToken string, expiresTs int64) error {
 		return nil
 	}
+}
+
+func isBranchNotFound(ctx context.Context, vcs *api.VCS, accessToken, refreshToken, externalID, branch string) (bool, error) {
+	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
+		common.OauthContext{
+			ClientID:     vcs.ApplicationID,
+			ClientSecret: vcs.Secret,
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+			Refresher:    nil,
+		},
+		vcs.InstanceURL, externalID, branch)
+
+	if common.ErrorCode(err) == common.NotFound {
+		return true, nil
+	}
+	return false, err
 }

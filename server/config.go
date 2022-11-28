@@ -55,6 +55,10 @@ type Profile struct {
 	BackupBucket         string
 	BackupCredentialFile string
 
+	// IM integration related fields
+	// FeishuAPIURL is the URL of Feishu API server.
+	FeishuAPIURL string
+
 	// Version is the bytebase's version
 	Version string
 	// Git commit hash of the build
@@ -67,6 +71,7 @@ type Profile struct {
 	DisableMetric bool
 }
 
-func (prof *Profile) useEmbedDB() bool {
+// UseEmbedDB returns whether to use embedDB.
+func (prof *Profile) UseEmbedDB() bool {
 	return len(prof.PgURL) == 0
 }

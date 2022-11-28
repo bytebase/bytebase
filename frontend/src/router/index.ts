@@ -130,7 +130,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
-                      "quickaction.bb.database.troubleshoot",
+                      // "quickaction.bb.database.troubleshoot",
                       "quickaction.bb.instance.create",
                       "quickaction.bb.project.create",
                       "quickaction.bb.user.manage",
@@ -150,7 +150,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.schema.sync",
                       "quickaction.bb.database.create",
-                      "quickaction.bb.database.troubleshoot",
+                      // "quickaction.bb.database.troubleshoot",
                       "quickaction.bb.instance.create",
                       "quickaction.bb.project.create",
                     ]
@@ -343,6 +343,14 @@ const routes: Array<RouteRecordRaw> = [
                 meta: { title: () => t("settings.sidebar.im-integration") },
                 component: () =>
                   import("../views/SettingWorkspaceIMIntegration.vue"),
+                props: true,
+              },
+              {
+                path: "sensitive-data",
+                name: "setting.workspace.sensitive-data",
+                meta: { title: () => t("settings.sidebar.sensitive-data") },
+                component: () =>
+                  import("../views/SettingWorkspaceSensitiveData.vue"),
                 props: true,
               },
               {
@@ -689,7 +697,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
-                      "quickaction.bb.database.troubleshoot",
+                      // "quickaction.bb.database.troubleshoot",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -701,7 +709,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
-                      "quickaction.bb.database.troubleshoot",
+                      // "quickaction.bb.database.troubleshoot",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -962,6 +970,10 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_FORGOT_MODULE
   ) {
     if (isLoggedIn) {
+      if (typeof to.query.redirect === "string") {
+        location.replace(to.query.redirect);
+        return;
+      }
       next({ name: HOME_MODULE, replace: true });
     } else {
       if (to.name === ACTIVATE_MODULE) {

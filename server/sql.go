@@ -182,21 +182,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		var database *api.Database
 		if exec.DatabaseName != "" {
-			databaseFind := &api.DatabaseFind{
-				InstanceID: &instance.ID,
-				Name:       &exec.DatabaseName,
-			}
-			dbList, err := s.store.FindDatabase(ctx, databaseFind)
+			database, err = s.getDatabase(ctx, instance.ID, exec.DatabaseName)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
+				return err
 			}
-			if len(dbList) == 0 {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
-			}
-			if len(dbList) > 1 {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
-			}
-			database = dbList[0]
 		}
 
 		adviceLevel := advisor.Success
@@ -213,7 +202,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
 
-			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
@@ -263,16 +252,34 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
+		var sensitiveDataMap db.SensitiveDataMap
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
+			}
+
+			sensitiveDataMap, err = s.getSensitiveData(ctx, instance.Engine, instance.ID, databaseList, exec.DatabaseName)
+			if err != nil {
+				return err
+			}
+		}
+
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, true /* readOnly */)
+			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+				Limit:            exec.Limit,
+				ReadOnly:         true,
+				CurrentDatabase:  exec.DatabaseName,
+				SensitiveDataMap: sensitiveDataMap,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -410,13 +417,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := getAdminDatabaseDriver(ctx, instance, exec.DatabaseName, s.pgInstance.BaseDir, s.profile.DataDir)
+			driver, err := s.getAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, false /* readOnly */)
+			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+				Limit:            exec.Limit,
+				ReadOnly:         false,
+				CurrentDatabase:  exec.DatabaseName,
+				SensitiveDataMap: nil,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -478,7 +490,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 }
 
 func (s *Server) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
-	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
+	driver, err := s.getAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return nil, err
 	}
@@ -635,7 +647,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 }
 
 func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
-	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
+	driver, err := s.getAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return err
 	}
@@ -809,18 +821,11 @@ func (s *Server) sqlCheck(
 	driver *sql.DB,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
-	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceID: &environmentID})
+	environmentResourceType := api.PolicyResourceTypeEnvironment
+	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			adviceList = []advisor.Advice{
-				{
-					Status:  advisor.Warn,
-					Code:    advisor.NotFound,
-					Title:   "SQL review policy is not configured or disabled",
-					Content: "",
-				},
-			}
-			return advisor.Warn, adviceList, nil
+			return advisor.Success, nil, nil
 		}
 		return advisor.Error, nil, err
 	}
@@ -881,4 +886,87 @@ func checkPostgreSQLIndexHit(statement string, plan string) []advisor.Advice {
 		}
 	}
 	return nil
+}
+
+func (s *Server) getDatabase(ctx context.Context, instanceID int, databaseName string) (*api.Database, error) {
+	databaseFind := &api.DatabaseFind{
+		InstanceID: &instanceID,
+		Name:       &databaseName,
+	}
+	dbList, err := s.store.FindDatabase(ctx, databaseFind)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", databaseName, instanceID)).SetInternal(err)
+	}
+	if len(dbList) == 0 {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", databaseName, instanceID))
+	}
+	if len(dbList) > 1 {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", databaseName, instanceID))
+	}
+	return dbList[0], nil
+}
+
+func (s *Server) getSensitiveData(ctx context.Context, engineType db.Type, instanceID int, databaseList []string, currentDatabase string) (db.SensitiveDataMap, error) {
+	res := make(db.SensitiveDataMap)
+	for _, name := range databaseList {
+		databaseName := name
+		if name == "" {
+			if currentDatabase == "" {
+				continue
+			}
+			databaseName = currentDatabase
+		}
+
+		if isExcludeDatabase(engineType, databaseName) {
+			continue
+		}
+
+		database, err := s.getDatabase(ctx, instanceID, databaseName)
+		if err != nil {
+			return nil, err
+		}
+
+		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.ID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instanceID))
+		}
+		for _, data := range policy.SensitiveDataList {
+			res[db.SensitiveData{
+				Database: databaseName,
+				Table:    data.Table,
+				Column:   data.Column,
+			}] = db.SensitiveDataMaskType(data.Type)
+		}
+	}
+
+	return res, nil
+}
+
+func isExcludeDatabase(dbType db.Type, database string) bool {
+	switch dbType {
+	case db.MySQL:
+		return isMySQLExcludeDatabase(database)
+	case db.TiDB:
+		if isMySQLExcludeDatabase(database) {
+			return true
+		}
+		return database == "metrics_schema"
+	default:
+		return false
+	}
+}
+
+func isMySQLExcludeDatabase(database string) bool {
+	if strings.ToLower(database) == "information_schema" {
+		return true
+	}
+
+	switch database {
+	case "mysql":
+	case "sys":
+	case "performance_schema":
+	default:
+		return false
+	}
+	return true
 }

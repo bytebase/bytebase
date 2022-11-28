@@ -14,7 +14,7 @@ import (
 
 func TestProvider_CreateApprovalDefinition(t *testing.T) {
 	a := require.New(t)
-	p := NewProvider()
+	p := NewProvider(APIPath)
 	p.client = &http.Client{
 		Transport: &common.MockRoundTripper{
 			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -43,7 +43,7 @@ func TestProvider_CreateApprovalDefinition(t *testing.T) {
 
 func TestProvider_CreateExternalApproval(t *testing.T) {
 	a := require.New(t)
-	p := NewProvider()
+	p := NewProvider(APIPath)
 	p.client = &http.Client{
 		Transport: &common.MockRoundTripper{
 			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -71,7 +71,7 @@ func TestProvider_CreateExternalApproval(t *testing.T) {
 
 func TestProvider_GetExternalApprovalStatus(t *testing.T) {
 	a := require.New(t)
-	p := NewProvider()
+	p := NewProvider(APIPath)
 	p.client = &http.Client{
 		Transport: &common.MockRoundTripper{
 			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -132,9 +132,35 @@ func TestProvider_GetExternalApprovalStatus(t *testing.T) {
 	a.Equal(want, status)
 }
 
+func TestProvider_CreateExternalApprovalComemnt(t *testing.T) {
+	a := require.New(t)
+	p := NewProvider(APIPath)
+	p.client = &http.Client{
+		Transport: &common.MockRoundTripper{
+			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body: io.NopCloser(strings.NewReader(`
+{
+    "code": 0,
+    "data": {
+      "comment_id": "7169475380984840194"
+    },
+    "msg": ""
+}
+`)),
+				}, nil
+			},
+		},
+	}
+	ctx := context.Background()
+	err := p.CreateExternalApprovalComment(ctx, TokenCtx{}, "", "", "test")
+	a.NoError(err)
+}
+
 func TestProvider_CancelExternalApproval(t *testing.T) {
 	a := require.New(t)
-	p := NewProvider()
+	p := NewProvider(APIPath)
 	p.client = &http.Client{
 		Transport: &common.MockRoundTripper{
 			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -160,7 +186,7 @@ func TestProvider_CancelExternalApproval(t *testing.T) {
 func TestProvider_GetIDByEmail(t *testing.T) {
 	t.Run("user id not found", func(t *testing.T) {
 		a := require.New(t)
-		p := NewProvider()
+		p := NewProvider(APIPath)
 		p.client = &http.Client{
 			Transport: &common.MockRoundTripper{
 				MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -193,7 +219,7 @@ func TestProvider_GetIDByEmail(t *testing.T) {
 	})
 	t.Run("success", func(t *testing.T) {
 		a := require.New(t)
-		p := NewProvider()
+		p := NewProvider(APIPath)
 		p.client = &http.Client{
 			Transport: &common.MockRoundTripper{
 				MockRoundTrip: func(r *http.Request) (*http.Response, error) {
@@ -226,4 +252,37 @@ func TestProvider_GetIDByEmail(t *testing.T) {
 		a.Equal("ou_979112345678741d29069abcdef089d4", user["zhangsan@a.com"])
 		a.Equal("ou_919112245678741d29069abcdef096af", user["lisi@a.com"])
 	})
+}
+
+func TestProvider_GetBotID(t *testing.T) {
+	a := require.New(t)
+	p := NewProvider(APIPath)
+	p.client = &http.Client{
+		Transport: &common.MockRoundTripper{
+			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body: io.NopCloser(strings.NewReader(`
+{
+    "code":0,
+    "msg":"ok",
+    "bot":{
+        "activate_status":2,
+        "app_name":"name",
+        "avatar_url":"https://s1-imfile.feishucdn.com/static-resource/v1/da5xxxx14b16113",
+        "ip_white_list":[
+
+        ],
+        "open_id":"ou_e6e14f667cfe239d7b129b521dce0569"
+    }
+}`)),
+				}, nil
+			},
+		},
+	}
+	ctx := context.Background()
+	botID, err := p.GetBotID(ctx, TokenCtx{})
+	a.NoError(err)
+	want := "ou_e6e14f667cfe239d7b129b521dce0569"
+	a.Equal(want, botID)
 }

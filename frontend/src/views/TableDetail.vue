@@ -195,8 +195,11 @@
           {{ $t("database.columns") }}
         </div>
         <ColumnTable
+          :database="database"
+          :table="table"
           :column-list="table.columnList"
           :engine="database.instance.engine"
+          :sensitive-data-list="sensitiveDataList"
         />
       </div>
 
@@ -221,8 +224,8 @@ import {
   idFromSlug,
   isGhostTable,
 } from "../utils";
-import { useTableStore } from "@/store";
-import { Table } from "@/types";
+import { usePolicyByDatabaseAndType, useTableStore } from "@/store";
+import { SensitiveData, SensitiveDataPolicyPayload, Table } from "@/types";
 
 export default defineComponent({
   name: "TableDetail",
@@ -259,12 +262,29 @@ export default defineComponent({
       window.open(url);
     };
 
+    const sensitiveDataPolicy = usePolicyByDatabaseAndType(
+      computed(() => ({
+        databaseId: database.value.id,
+        type: "bb.policy.sensitive-data",
+      }))
+    );
+
+    const sensitiveDataList = computed((): SensitiveData[] => {
+      const policy = sensitiveDataPolicy.value;
+      if (!policy) {
+        return [];
+      }
+      const payload = policy.payload as SensitiveDataPolicyPayload;
+      return payload.sensitiveDataList;
+    });
+
     return {
       table,
       database,
       gotoSQLEditor,
       bytesToString,
       isGhostTable,
+      sensitiveDataList,
     };
   },
 });

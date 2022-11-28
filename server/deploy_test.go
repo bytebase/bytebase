@@ -181,6 +181,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			},
 			[][]*api.Database{
 				{dbs[0], dbs[2]},
+				nil,
 			},
 		},
 		{
@@ -244,7 +245,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, matrix, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.baseDatabaseName, test.databaseNameTemplate, test.databaseList)
-		assert.Equal(t, matrix, test.want)
+		matrix, _ := getDatabaseMatrixFromDeploymentSchedule(test.schedule, test.baseDatabaseName, test.databaseNameTemplate, test.databaseList)
+		assert.Equal(t, matrix, test.want, test.name)
 	}
 }

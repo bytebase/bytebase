@@ -51,9 +51,9 @@
   newSchema: create table public.t1(a int DEFAULT 1, b int, c int DEFAULT 1+2+3+4)
   diff: |
     ALTER TABLE "public"."t1"
-        ALTER COLUMN "a" SET DEFAULT 1;
-    ALTER TABLE "public"."t1"
         ALTER COLUMN "b" DROP DEFAULT;
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "a" SET DEFAULT 1;
     ALTER TABLE "public"."t1"
         ALTER COLUMN "c" SET DEFAULT ((1 + 2) + 3) + 4;
 - oldSchema: |
@@ -73,7 +73,7 @@
   diff: |
     ALTER TABLE "s1"."t2"
         DROP COLUMN "b";
-    DROP TABLE IF EXISTS "s1"."t1", "s2"."t4" CASCADE;
+    DROP TABLE "s1"."t1", "s2"."t4";
     CREATE TABLE "s1"."t3" (
         "a" integer,
         "b" integer
@@ -125,6 +125,46 @@
     CREATE INDEX idx3 ON public.t1 USING btree (a, b);
   diff: |
     DROP INDEX "public"."idx2";
-    DROP INDEX IF EXISTS "public"."idx1" CASCADE;
+    DROP INDEX "public"."idx1";
     CREATE INDEX "idx2" ON "public"."t1" USING btree (a);
     CREATE INDEX "idx3" ON "public"."t1" USING btree (a, b);
+- oldSchema: |
+    CREATE TABLE public.t (a int, b varchar(20), c boolean, d bit(2), e jsonb);
+  newSchema: |
+    CREATE TABLE public.t (a integer, b varchar(20), c boolean, d bit(2), e jsonb);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE public.t (a int8, b varchar(220), c date, d varbit(2), e json, f bit(2));
+  newSchema: |
+    CREATE TABLE public.t (a integer, b varchar(20), c boolean, d bit(2), e jsonb, f bit(4));
+  diff: |
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "a" SET DATA TYPE integer;
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "b" SET DATA TYPE character varying(20);
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "c" SET DATA TYPE boolean;
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "d" SET DATA TYPE pg_catalog.bit(2);
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "e" SET DATA TYPE jsonb;
+    ALTER TABLE "public"."t"
+        ALTER COLUMN "f" SET DATA TYPE pg_catalog.bit(4);
+- oldSchema: |
+    create schema schema1;
+    create table schema1.t1(a int, b int, c int);
+    create index idx_t1_a on schema1.t1(a);
+    create sequence schema1.sequence1
+      NO MINVALUE
+      NO MAXVALUE
+      START WITH 1;
+    alter sequence schema1.sequence1 owned by schema1.t1.a;
+    alter table schema1.t1 alter column a set default nextval('schema1.sequence1'::regclass);
+  newSchema: ""
+  diff: |
+    DROP INDEX "schema1"."idx_t1_a";
+    ALTER SEQUENCE "schema1"."sequence1"
+        OWNED BY NONE;
+    DROP TABLE "schema1"."t1";
+    DROP SEQUENCE "schema1"."sequence1";
+    DROP SCHEMA "schema1";

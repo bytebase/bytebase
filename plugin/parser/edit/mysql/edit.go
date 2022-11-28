@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
+	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
 	"github.com/pingcap/tidb/parser/mysql"
@@ -36,52 +36,75 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 	var stmtList []string
 	for _, createTableContext := range databaseEdit.CreateTableList {
 		createTableStmt := transformCreateTableContext(createTableContext)
-		stmt, err := deparseASTNode(createTableStmt)
+		stmt, err := restoreASTNode(createTableStmt)
 		if err != nil {
 			return "", err
 		}
 		stmtList = append(stmtList, stmt)
 	}
-
+	for _, alterTableContext := range databaseEdit.AlterTableList {
+		alterTableStmt := transformAlterTableContext(alterTableContext)
+		stmt, err := restoreASTNode(alterTableStmt)
+		if err != nil {
+			return "", err
+		}
+		stmtList = append(stmtList, stmt)
+	}
+	for _, renameTableContext := range databaseEdit.RenameTableList {
+		renameTableStmt := transformRenameTableContext(renameTableContext)
+		stmt, err := restoreASTNode(renameTableStmt)
+		if err != nil {
+			return "", err
+		}
+		stmtList = append(stmtList, stmt)
+	}
+	for _, dropTableContext := range databaseEdit.DropTableList {
+		dropTableStmt := transformDropTableContext(dropTableContext)
+		stmt, err := restoreASTNode(dropTableStmt)
+		if err != nil {
+			return "", err
+		}
+		stmtList = append(stmtList, stmt)
+	}
 	return strings.Join(stmtList, "\n"), nil
 }
 
-func transformCreateTableContext(createTableContext *api.CreateTableContext) *ast.CreateTableStmt {
-	tableName := &ast.TableName{
+func transformCreateTableContext(createTableContext *api.CreateTableContext) *tidbast.CreateTableStmt {
+	tableName := &tidbast.TableName{
 		Name: model.NewCIStr(createTableContext.Name),
 	}
-	createTableStmt := &ast.CreateTableStmt{
+	createTableStmt := &tidbast.CreateTableStmt{
 		Table: tableName,
 	}
 
-	var createTableOptions []*ast.TableOption
+	var createTableOptions []*tidbast.TableOption
 	if createTableContext.Engine != "" {
-		createTableOptions = append(createTableOptions, &ast.TableOption{
-			Tp:       ast.TableOptionEngine,
+		createTableOptions = append(createTableOptions, &tidbast.TableOption{
+			Tp:       tidbast.TableOptionEngine,
 			StrValue: createTableContext.Engine,
 		})
 	}
 	if createTableContext.CharacterSet != "" {
-		createTableOptions = append(createTableOptions, &ast.TableOption{
-			Tp:       ast.TableOptionCharset,
+		createTableOptions = append(createTableOptions, &tidbast.TableOption{
+			Tp:       tidbast.TableOptionCharset,
 			StrValue: createTableContext.CharacterSet,
 		})
 	}
 	if createTableContext.Collation != "" {
-		createTableOptions = append(createTableOptions, &ast.TableOption{
-			Tp:       ast.TableOptionCollate,
+		createTableOptions = append(createTableOptions, &tidbast.TableOption{
+			Tp:       tidbast.TableOptionCollate,
 			StrValue: createTableContext.Collation,
 		})
 	}
 	if createTableContext.Comment != "" {
-		createTableOptions = append(createTableOptions, &ast.TableOption{
-			Tp:       ast.TableOptionComment,
+		createTableOptions = append(createTableOptions, &tidbast.TableOption{
+			Tp:       tidbast.TableOptionComment,
 			StrValue: createTableContext.Comment,
 		})
 	}
 	createTableStmt.Options = createTableOptions
 
-	var columnDefs []*ast.ColumnDef
+	var columnDefs []*tidbast.ColumnDef
 	for _, addColumnContext := range createTableContext.AddColumnList {
 		columnDef := transformAddColumnContext(addColumnContext)
 		columnDefs = append(columnDefs, columnDef)
@@ -91,37 +114,161 @@ func transformCreateTableContext(createTableContext *api.CreateTableContext) *as
 	return createTableStmt
 }
 
-func transformAddColumnContext(addColumnContext *api.AddColumnContext) *ast.ColumnDef {
-	colName := &ast.ColumnName{
+func transformAlterTableContext(alterTableContext *api.AlterTableContext) *tidbast.AlterTableStmt {
+	tableName := &tidbast.TableName{
+		Name: model.NewCIStr(alterTableContext.Name),
+	}
+	alterTableStmt := &tidbast.AlterTableStmt{
+		Table: tableName,
+		Specs: []*tidbast.AlterTableSpec{},
+	}
+
+	if len(alterTableContext.AddColumnList) > 0 {
+		alterTableSpec := &tidbast.AlterTableSpec{
+			Tp:         tidbast.AlterTableAddColumns,
+			NewColumns: []*tidbast.ColumnDef{},
+		}
+		for _, addColumnContext := range alterTableContext.AddColumnList {
+			alterTableSpec.NewColumns = append(alterTableSpec.NewColumns, transformAddColumnContext(addColumnContext))
+		}
+		alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
+	}
+
+	if len(alterTableContext.ChangeColumnList) > 0 {
+		for _, changeColumnContext := range alterTableContext.ChangeColumnList {
+			oldColumnName := &tidbast.ColumnName{
+				Name: model.NewCIStr(changeColumnContext.OldName),
+			}
+			newColumnName := &tidbast.ColumnName{
+				Name: model.NewCIStr(changeColumnContext.NewName),
+			}
+			alterTableSpec := &tidbast.AlterTableSpec{
+				Tp:            tidbast.AlterTableChangeColumn,
+				OldColumnName: oldColumnName,
+				NewColumnName: newColumnName,
+				// TODO(steven): support modify the column position.
+				Position: &tidbast.ColumnPosition{
+					Tp: tidbast.ColumnPositionNone,
+				},
+			}
+			alterTableSpec.NewColumns = []*tidbast.ColumnDef{transformChangeColumnContext(changeColumnContext)}
+			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
+		}
+	}
+
+	if len(alterTableContext.DropColumnList) > 0 {
+		for _, dropColumnContext := range alterTableContext.DropColumnList {
+			alterTableSpec := &tidbast.AlterTableSpec{
+				Tp: tidbast.AlterTableDropColumn,
+				OldColumnName: &tidbast.ColumnName{
+					Name: model.NewCIStr(dropColumnContext.Name),
+				},
+			}
+			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
+		}
+	}
+
+	return alterTableStmt
+}
+
+func transformRenameTableContext(renameTableContext *api.RenameTableContext) *tidbast.RenameTableStmt {
+	oldTableName := &tidbast.TableName{
+		Name: model.NewCIStr(renameTableContext.OldName),
+	}
+	newTableName := &tidbast.TableName{
+		Name: model.NewCIStr(renameTableContext.NewName),
+	}
+	renameTableStmt := &tidbast.RenameTableStmt{
+		TableToTables: []*tidbast.TableToTable{
+			{
+				OldTable: oldTableName,
+				NewTable: newTableName,
+			},
+		},
+	}
+	return renameTableStmt
+}
+
+func transformDropTableContext(dropTableContext *api.DropTableContext) *tidbast.DropTableStmt {
+	tableName := &tidbast.TableName{
+		Name: model.NewCIStr(dropTableContext.Name),
+	}
+	dropTableStmt := &tidbast.DropTableStmt{
+		Tables:   []*tidbast.TableName{tableName},
+		IfExists: true,
+	}
+	return dropTableStmt
+}
+
+func transformAddColumnContext(addColumnContext *api.AddColumnContext) *tidbast.ColumnDef {
+	colName := &tidbast.ColumnName{
 		Name: model.NewCIStr(addColumnContext.Name),
 	}
-	columnDef := &ast.ColumnDef{
+	columnDef := &tidbast.ColumnDef{
 		Name: colName,
 		Tp:   transformColumnType(addColumnContext.Type),
 	}
 
-	var columnOptionList []*ast.ColumnOption
+	var columnOptionList []*tidbast.ColumnOption
 	if addColumnContext.Comment != "" {
-		columnOptionList = append(columnOptionList, &ast.ColumnOption{
-			Tp:   ast.ColumnOptionComment,
-			Expr: ast.NewValueExpr(interface{}(addColumnContext.Comment), addColumnContext.CharacterSet, addColumnContext.Collation),
+		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
+			Tp:   tidbast.ColumnOptionComment,
+			Expr: tidbast.NewValueExpr(interface{}(addColumnContext.Comment), addColumnContext.CharacterSet, addColumnContext.Collation),
 		})
 	}
 	if addColumnContext.Collation != "" {
-		columnOptionList = append(columnOptionList, &ast.ColumnOption{
-			Tp:       ast.ColumnOptionCollate,
+		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
+			Tp:       tidbast.ColumnOptionCollate,
 			StrValue: addColumnContext.Collation,
 		})
 	}
 	if addColumnContext.Default != nil {
-		columnOptionList = append(columnOptionList, &ast.ColumnOption{
-			Tp:   ast.ColumnOptionDefaultValue,
-			Expr: ast.NewValueExpr(interface{}(*addColumnContext.Default), addColumnContext.CharacterSet, addColumnContext.Collation),
+		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
+			Tp:   tidbast.ColumnOptionDefaultValue,
+			Expr: tidbast.NewValueExpr(interface{}(*addColumnContext.Default), addColumnContext.CharacterSet, addColumnContext.Collation),
 		})
 	}
 	if !addColumnContext.Nullable {
-		columnOptionList = append(columnOptionList, &ast.ColumnOption{
-			Tp: ast.ColumnOptionNotNull,
+		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
+			Tp: tidbast.ColumnOptionNotNull,
+		})
+	}
+	columnDef.Options = columnOptionList
+
+	return columnDef
+}
+
+func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) *tidbast.ColumnDef {
+	colName := &tidbast.ColumnName{
+		Name: model.NewCIStr(changeColumnContext.NewName),
+	}
+	columnDef := &tidbast.ColumnDef{
+		Name: colName,
+		Tp:   transformColumnType(changeColumnContext.Type),
+	}
+
+	var columnOptionList []*tidbast.ColumnOption
+	if changeColumnContext.Comment != "" {
+		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
+			Tp:   tidbast.ColumnOptionComment,
+			Expr: tidbast.NewValueExpr(interface{}(changeColumnContext.Comment), changeColumnContext.CharacterSet, changeColumnContext.Collation),
+		})
+	}
+	if changeColumnContext.Collation != "" {
+		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
+			Tp:       tidbast.ColumnOptionCollate,
+			StrValue: changeColumnContext.Collation,
+		})
+	}
+	if !changeColumnContext.Nullable {
+		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
+			Tp: tidbast.ColumnOptionNotNull,
+		})
+	}
+	if changeColumnContext.Default != nil {
+		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
+			Tp:   tidbast.ColumnOptionDefaultValue,
+			Expr: tidbast.NewValueExpr(interface{}(*changeColumnContext.Default), changeColumnContext.CharacterSet, changeColumnContext.Collation),
 		})
 	}
 	columnDef.Options = columnOptionList
@@ -151,7 +298,7 @@ func getColumnType(typeStr string) byte {
 	return mysql.TypeUnspecified
 }
 
-func deparseASTNode(node ast.Node) (string, error) {
+func restoreASTNode(node tidbast.Node) (string, error) {
 	var buf bytes.Buffer
 	restoreFlag := format.DefaultRestoreFlags | format.RestorePrettyFormat
 	if err := node.Restore(format.NewRestoreCtx(restoreFlag, &buf)); err != nil {

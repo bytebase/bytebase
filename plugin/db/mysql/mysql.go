@@ -36,7 +36,7 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
 	dbType        db.Type
-	resourceDir   string
+	dbBinDir      string
 	binlogDir     string
 	db            *sql.DB
 	// migrationConn is used to execute migrations.
@@ -50,8 +50,8 @@ type Driver struct {
 
 func newDriver(dc db.DriverConfig) db.Driver {
 	return &Driver{
-		resourceDir: dc.ResourceDir,
-		binlogDir:   dc.BinlogDir,
+		dbBinDir:  dc.DbBinDir,
+		binlogDir: dc.BinlogDir,
 	}
 }
 
@@ -196,8 +196,8 @@ func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, limit int, readOnly bool) ([]interface{}, error) {
-	return util.Query(ctx, driver.dbType, driver.db, statement, limit, readOnly)
+func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	return util.Query(ctx, driver.dbType, driver.db, statement, queryContext)
 }
 
 // transformDelimiter transform the delimiter to the MySQL default delimiter.

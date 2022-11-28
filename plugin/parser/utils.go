@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sort"
 	"strings"
 
+	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
@@ -150,4 +152,76 @@ func ExtractDelimiter(stmt string) (string, error) {
 		return matchList[index], nil
 	}
 	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
+}
+
+// ExtractDatabaseList extracts all databases from statement.
+// TODO(rebelice): this function only works for single table in FROM clause, fix it.
+//
+//	e.g. SELECT a, b FROM t;
+func ExtractDatabaseList(engineType EngineType, statement string) ([]string, error) {
+	switch engineType {
+	case MySQL, TiDB:
+		return extractMySQLDatabaseList(statement)
+	default:
+		return nil, errors.Errorf("engine type is not supported: %s", engineType)
+	}
+}
+
+func newMySQLParser() *tidbparser.Parser {
+	p := tidbparser.New()
+
+	// To support MySQL8 window function syntax.
+	// See https://github.com/bytebase/bytebase/issues/175.
+	p.EnableWindowFunc(true)
+
+	return p
+}
+
+func extractMySQLDatabaseList(statement string) ([]string, error) {
+	databaseMap := make(map[string]bool)
+
+	p := newMySQLParser()
+	nodeList, _, err := p.Parse(statement, "", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parser statement %q", statement)
+	}
+
+	for _, node := range nodeList {
+		databaseList := extractDatabaseListFromNode(node)
+		for _, database := range databaseList {
+			databaseMap[database] = true
+		}
+	}
+
+	var databaseList []string
+	for database := range databaseMap {
+		databaseList = append(databaseList, database)
+	}
+	sort.Slice(databaseList, func(i, j int) bool {
+		return databaseList[i] < databaseList[j]
+	})
+	return databaseList, nil
+}
+
+// extractDatabaseListFromNode extracts all the database from node.
+// TODO(rebelice): this function only works for single table in FROM clause, fix it.
+//
+//	e.g. SELECT a, b FROM t;
+func extractDatabaseListFromNode(in tidbast.Node) []string {
+	switch node := in.(type) {
+	case *tidbast.SelectStmt:
+		if node.From != nil {
+			return extractDatabaseListFromNode(node.From.TableRefs)
+		}
+	case *tidbast.Join:
+		var res []string
+		res = append(res, extractDatabaseListFromNode(node.Left)...)
+		res = append(res, extractDatabaseListFromNode(node.Right)...)
+		return res
+	case *tidbast.TableSource:
+		if tableName, ok := node.Source.(*tidbast.TableName); ok {
+			return []string{tableName.Schema.O}
+		}
+	}
+	return nil
 }

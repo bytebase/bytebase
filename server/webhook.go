@@ -338,7 +338,8 @@ func (s *Server) sqlAdviceForFile(
 	// There may exist many databases that match the file name.
 	// We just need to use the first one, which has the SQL review policy and can let us take the check.
 	for _, database := range databases {
-		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceID: &database.Instance.EnvironmentID})
+		environmentResourceType := api.PolicyResourceTypeEnvironment
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &database.Instance.EnvironmentID})
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 				log.Debug("Cannot found SQL review policy in environment", zap.Int("Environment", database.Instance.EnvironmentID), zap.Error(err))
@@ -358,7 +359,7 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
 		}
 
-		driver, err := tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -822,6 +823,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		}
 	}
 	issueCreate := &api.IssueCreate{
+		CreatorID:     creatorID,
 		ProjectID:     projectID,
 		Name:          issueName,
 		Type:          issueType,
@@ -829,7 +831,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	}
-	issue, err := s.createIssue(ctx, issueCreate, creatorID)
+	issue, err := s.createIssue(ctx, issueCreate)
 	if err != nil {
 		errMsg := "Failed to create schema update issue"
 		if issueType == api.IssueDatabaseDataUpdate {

@@ -28,12 +28,17 @@ import {
   useSheetStore,
   useInstanceById,
 } from "@/store";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import { SQLDialect } from "@/types";
+import type { ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
+  (
+    e: "execute",
+    sql: string,
+    config: ExecuteConfig,
+    option?: ExecuteOption
+  ): void;
 }>();
 
 const instanceStore = useInstanceStore();
@@ -44,8 +49,6 @@ const sqlEditorStore = useSQLEditorStore();
 const sheetStore = useSheetStore();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-
-const { execute } = useExecuteSQL();
 
 const sqlCode = computed(() => tabStore.currentTab.statement);
 const selectedInstance = useInstanceById(
@@ -120,7 +123,9 @@ const handleEditorReady = async () => {
           editorRef.value?.editorInstance?.getSelection() as any
         ) as string;
       const query = selectedValue || typedValue || "";
-      await execute(query, { databaseType: selectedInstanceEngine.value });
+      await emit("execute", query, {
+        databaseType: selectedInstanceEngine.value,
+      });
     },
   });
 
@@ -138,7 +143,8 @@ const handleEditorReady = async () => {
           editorRef.value?.editorInstance?.getSelection() as any
         ) as string;
       const query = selectedValue || typedValue || "";
-      await execute(
+      await emit(
+        "execute",
         query,
         { databaseType: selectedInstanceEngine.value },
         { explain: true }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/app/feishu"
 	"github.com/bytebase/bytebase/server"
 )
 
@@ -40,12 +41,13 @@ func getBaseProfile() server.Profile {
 		BackupRegion:         flags.backupRegion,
 		BackupBucket:         flags.backupBucket,
 		BackupCredentialFile: flags.backupCredential,
+		FeishuAPIURL:         feishu.APIPath,
 	}
 }
 
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func GetTestProfile(dataDir string, port int) server.Profile {
+func GetTestProfile(dataDir string, port int, feishuAPIURL string) server.Profile {
 	// Using flags.port + 1 as our datastore port
 	datastorePort := port + 1
 	return server.Profile{
@@ -57,13 +59,14 @@ func GetTestProfile(dataDir string, port int) server.Profile {
 		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
+		FeishuAPIURL:         feishuAPIURL,
 	}
 }
 
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL string) server.Profile {
+func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL string, feishuAPIURL string) server.Profile {
 	return server.Profile{
 		Mode:                 common.ReleaseModeDev,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
@@ -72,6 +75,7 @@ func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL
 		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
+		FeishuAPIURL:         feishuAPIURL,
 		PgURL:                pgURL,
 	}
 }
