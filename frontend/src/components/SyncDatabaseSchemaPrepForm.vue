@@ -267,7 +267,6 @@ import EnvironmentSelect from "./EnvironmentSelect.vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import MonacoEditor from "./MonacoEditor/MonacoEditor.vue";
 import ProjectSelect from "./ProjectSelect.vue";
-import { isDev } from "@/utils";
 
 type LocalState = {
   projectId?: ProjectId;
@@ -325,9 +324,7 @@ const isValidId = (id: any) => {
   return true;
 };
 
-const allowedEngineTypeList: EngineType[] = isDev()
-  ? ["MYSQL", "POSTGRES"]
-  : ["MYSQL"];
+const allowedEngineTypeList: EngineType[] = ["MYSQL", "POSTGRES"];
 
 const hasSyncSchemaFeature = computed(() => {
   return hasFeature("bb.feature.sync-schema-all-versions");
