@@ -22,6 +22,7 @@
         <BBContextMenuButton
           preference-key="task-status-transition"
           data-label="bb-issue-status-transition-button"
+          :disabled="!allowApplyTaskTransition(transition)"
           :action-list="getButtonActionList(transition)"
           @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
         />
@@ -108,7 +109,11 @@
 import { computed, reactive, Ref, ref } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import type { StageStatusTransition, TaskStatusTransition } from "@/utils";
+import {
+  StageStatusTransition,
+  taskCheckRunSummary,
+  TaskStatusTransition,
+} from "@/utils";
 import type {
   Issue,
   IssueCreate,
@@ -257,6 +262,17 @@ const doStageStatusTransition = (
 const currentTask = computed(() => {
   return activeTaskOfPipeline((issue.value as Issue).pipeline);
 });
+
+const allowApplyTaskTransition = (transition: TaskStatusTransition) => {
+  if (transition.to === "PENDING") {
+    // "Approve" is disabled when the task checks are not ready.
+    const summary = taskCheckRunSummary(currentTask.value);
+    if (summary.runningCount > 0 || summary.errorCount > 0) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const getButtonActionList = (transition: TaskStatusTransition) => {
   const actionList: TaskStatusTransitionButtonAction[] = [];

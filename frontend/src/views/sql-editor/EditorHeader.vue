@@ -37,7 +37,17 @@
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
         <div class="ml-2">
-          <ProfileDropdown />
+          <div
+            class="flex justify-center items-center bg-gray-100 rounded-3xl"
+            :class="logoUrl ? 'p-2' : ''"
+          >
+            <img
+              v-if="logoUrl"
+              class="h-7 mr-4 ml-2 bg-no-repeat bg-contain bg-center"
+              :src="logoUrl"
+            />
+            <ProfileDropdown />
+          </div>
         </div>
         <div class="ml-2 -mr-2 flex sm:hidden">
           <!-- Mobile menu button -->
@@ -102,7 +112,7 @@ import { useLocalStorage } from "@vueuse/core";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
 import { hasWorkspacePermission } from "@/utils";
-import { useCurrentUser, useInboxStore } from "@/store";
+import { useCurrentUser, useInboxStore, useSettingStore } from "@/store";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -114,6 +124,7 @@ export default defineComponent({
   setup() {
     const { t, availableLocales, locale } = useI18n();
     const inboxStore = useInboxStore();
+    const settingStore = useSettingStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -121,6 +132,12 @@ export default defineComponent({
     });
 
     const currentUser = useCurrentUser();
+
+    const logoUrl = computed((): string | undefined => {
+      const brandingLogoSetting =
+        settingStore.getSettingByName("bb.branding.logo");
+      return brandingLogoSetting?.value;
+    });
 
     const showInstanceItem = computed((): boolean => {
       return hasWorkspacePermission(
@@ -136,7 +153,12 @@ export default defineComponent({
       }
     };
 
+    const prepareBranding = () => {
+      settingStore.fetchSetting();
+    };
+
     watchEffect(prepareInboxSummary);
+    watchEffect(prepareBranding);
 
     const inboxSummary = computed(() => {
       return inboxStore.getInboxSummaryByUser(currentUser.value.id);
@@ -242,6 +264,7 @@ export default defineComponent({
       state,
       showInstanceItem,
       inboxSummary,
+      logoUrl,
       goBack,
     };
   },
