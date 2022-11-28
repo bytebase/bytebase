@@ -73,7 +73,7 @@
 
       <div v-if="showTaskList" class="sm:col-span-4 mb-4">
         <label for="about" class="textlabel">
-          {{ $t("common.task") }}
+          {{ $t("common.tasks") }}
         </label>
         <ul class="mt-1 max-h-[6rem] overflow-y-auto">
           <li v-for="t in taskList" :key="t.id" class="text-sm textinfolabel">

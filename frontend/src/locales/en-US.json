@@ -97,6 +97,7 @@
     "status": "Status",
     "stage": "Stage",
     "task": "Task",
+    "tasks": "Tasks",
     "sql": "SQL",
     "unassigned": "Unassigned",
     "new": "New",
