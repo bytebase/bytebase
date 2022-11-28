@@ -22,6 +22,15 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		principalCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+
+		if principalCreate.Type == api.ServiceAccount {
+			pwd, err := common.RandomString(20)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
+			}
+			principalCreate.Password = fmt.Sprintf("bb.service_account.%s", pwd)
+		}
+
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(principalCreate.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
@@ -38,25 +47,9 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		// Assign Developer role to the just created principal
 		principal.Role = api.Developer
 
+		// Only return the token if the user is ServiceAccount
 		if principal.Type == api.ServiceAccount {
-			passwordHash, err := generateAccessTokenWithoutExpirationTime(principal, s.profile.Mode, s.secret)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create ServiceAccount").SetInternal(err)
-			}
-			patch := &api.PrincipalPatch{
-				ID:           principal.ID,
-				UpdaterID:    api.SystemBotID,
-				PasswordHash: &passwordHash,
-			}
-			p, err := s.store.PatchPrincipal(ctx, patch)
-			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", principal.ID))
-				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch principal ID: %v", principal.ID)).SetInternal(err)
-			}
-
-			principal = p
+			principal.Token = principalCreate.Password
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -116,6 +109,16 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch principal request").SetInternal(err)
 		}
+
+		if principalPatch.Type == api.ServiceAccount {
+			val, err := common.RandomString(20)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
+			}
+			password := fmt.Sprintf("bb.service_account.%s", val)
+			principalPatch.Password = &password
+		}
+
 		if principalPatch.Password != nil && *principalPatch.Password != "" {
 			passwordHash, err := bcrypt.GenerateFromPassword([]byte(*principalPatch.Password), bcrypt.DefaultCost)
 			if err != nil {
@@ -131,6 +134,11 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch principal ID: %v", id)).SetInternal(err)
+		}
+
+		// Only return the token if the user is ServiceAccount
+		if principal.Type == api.ServiceAccount && principalPatch.Password != nil {
+			principal.Token = *principalPatch.Password
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

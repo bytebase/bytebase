@@ -49,7 +49,9 @@ type Principal struct {
 	PasswordHash string
 	// Role is stored in the member table, but we include it when returning the principal.
 	// This simplifies the client code where it won't require order dependency to fetch the related member info first.
-	Role  Role   `jsonapi:"attr,role"`
+	Role Role `jsonapi:"attr,role"`
+	// The token is the password, only used for SERVICE_ACCOUNT.
+	// We only return the token for the first time during SERVICE_ACCOUNT creation.
 	Token string `jsonapi:"attr,token"`
 }
 
@@ -121,8 +123,9 @@ type PrincipalPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name         *string `jsonapi:"attr,name"`
-	Email        *string `jsonapi:"attr,email"`
-	Password     *string `jsonapi:"attr,password"`
+	Type         PrincipalType `jsonapi:"attr,type"`
+	Name         *string       `jsonapi:"attr,name"`
+	Email        *string       `jsonapi:"attr,email"`
+	Password     *string       `jsonapi:"attr,password"`
 	PasswordHash *string
 }
