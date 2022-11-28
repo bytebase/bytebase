@@ -54,7 +54,7 @@ func (s *Server) openAPIUserLogin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
 	}
 
-	accessToken, err := generateAccessToken(user, s.profile.Mode, s.secret)
+	accessToken, err := generateAPIToken(user, s.profile.Mode, s.secret)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
 	}
