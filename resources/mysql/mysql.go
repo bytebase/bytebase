@@ -157,8 +157,8 @@ user=%s
 }
 
 // SetupTestInstance installs and starts a mysql instance for testing,
-// returns the instance and the stop function.
-func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
+// returns the stop function.
+func SetupTestInstance(t *testing.T, port int) func() {
 	basedir, datadir := t.TempDir(), t.TempDir()
 	t.Log("Installing Mysql...")
 	i, err := Install(basedir, datadir, "root")
@@ -177,7 +177,7 @@ func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
 		}
 	}
 
-	return i, stopFn
+	return stopFn
 }
 
 // Import executes sql script in the given path on the instance.

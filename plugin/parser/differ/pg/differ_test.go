@@ -62,6 +62,8 @@ func TestComputeDiff(t *testing.T) {
 		"test_differ_constraint.yaml",
 		// Merge
 		"test_differ_merge.yaml",
+		// Sequence
+		"test_differ_sequence.yaml",
 	}
 	for _, test := range testFileList {
 		runDifferTest(t, test, false /* record */)

@@ -287,6 +287,12 @@ func TestExtractSensitiveField(t *testing.T) {
 				6: true,
 			},
 		},
+		{
+			statement:        "select 1;",
+			fieldName:        []string{"1"},
+			sensitiveDataMap: db.SensitiveDataMap{},
+			fieldMap:         sensitiveFiledMap{},
+		},
 	}
 
 	for _, test := range tests {

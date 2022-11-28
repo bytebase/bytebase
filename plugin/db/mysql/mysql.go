@@ -36,7 +36,7 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
 	dbType        db.Type
-	resourceDir   string
+	dbBinDir      string
 	binlogDir     string
 	db            *sql.DB
 	// migrationConn is used to execute migrations.
@@ -50,8 +50,8 @@ type Driver struct {
 
 func newDriver(dc db.DriverConfig) db.Driver {
 	return &Driver{
-		resourceDir: dc.ResourceDir,
-		binlogDir:   dc.BinlogDir,
+		dbBinDir:  dc.DbBinDir,
+		binlogDir: dc.BinlogDir,
 	}
 }
 

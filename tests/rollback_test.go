@@ -26,7 +26,7 @@ func TestRollback(t *testing.T) {
 	database := "funny\ndatabase"
 
 	mysqlPort := getTestPort()
-	_, stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
+	stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 	defer stopFn()
 
 	db, err := connectTestMySQL(mysqlPort, "")
@@ -40,9 +40,9 @@ func TestRollback(t *testing.T) {
 	a.NoError(err)
 
 	resourceDir := t.TempDir()
-	err = mysqlutil.Install(resourceDir)
+	binDir, err := mysqlutil.Install(resourceDir)
 	a.NoError(err)
-	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, resourceDir)
+	driver, err := getTestMySQLDriver(ctx, t, strconv.Itoa(mysqlPort), database, binDir)
 	a.NoError(err)
 	defer driver.Close(ctx)
 
@@ -113,7 +113,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
-	_, stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
+	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
 	defer stopInstance()
 
 	// Create a project.

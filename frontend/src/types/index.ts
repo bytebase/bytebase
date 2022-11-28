@@ -31,6 +31,7 @@ export * from "./project";
 export * from "./projectWebhook";
 export * from "./repository";
 export * from "./sql";
+export * from "./sqlAdvice";
 export * from "./store";
 export * from "./table";
 export * from "./tableIndex";

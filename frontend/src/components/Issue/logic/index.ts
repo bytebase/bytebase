@@ -9,7 +9,6 @@ export * from "./common";
 export * from "./extra";
 export * from "./assignee";
 export * from "./transition";
-export * from "./utils";
 
 export {
   IssueLogic,

@@ -74,7 +74,8 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	// Avoid pg_dump v15 generate REVOKE/GRANT statement.
 	args = append(args, "--no-privileges")
 	args = append(args, database)
-	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
+
+	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 	if driver.config.Password != "" {
 		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.

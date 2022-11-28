@@ -146,11 +146,13 @@ var (
 func TestMigrationCompatibility(t *testing.T) {
 	log.SetLevel(zap.DebugLevel)
 	pgDir := t.TempDir()
-	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
+	pgBinDir, err := postgres.Install(path.Join(pgDir, "resource"))
+	pgDataDir := path.Join(pgDir, "data")
 	require.NoError(t, err)
-	err = postgres.Start(pgPort, pgInstance.BaseDir, pgInstance.DataDir, os.Stderr, os.Stderr)
+	err = postgres.InitDB(pgBinDir, pgDataDir, pgUser)
 	require.NoError(t, err)
-	pgInstance.Port = pgPort
+	err = postgres.Start(pgPort, pgBinDir, pgDataDir, os.Stderr, os.Stderr)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	connCfg := dbdriver.ConnectionConfig{
@@ -162,7 +164,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{PgInstanceDir: pgInstance.BaseDir},
+		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		connCfg,
 		dbdriver.ConnectionContext{},
 	)
@@ -212,12 +214,12 @@ func TestMigrationCompatibility(t *testing.T) {
 	// The extra one is for the initial schema setup.
 	require.Len(t, histories, len(devMigrations)+1)
 
-	err = postgres.Stop(pgInstance.BaseDir, pgInstance.DataDir, os.Stdout, os.Stderr)
+	err = postgres.Stop(pgBinDir, pgDataDir, os.Stdout, os.Stderr)
 	require.NoError(t, err)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("1.8.1"), releaseVersion)
+	require.Equal(t, semver.MustParse("1.9.0"), releaseVersion)
 }
