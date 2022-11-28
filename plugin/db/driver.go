@@ -157,10 +157,12 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	PgInstanceDir string
-	// We use resource directory to splice the path of embedded binary, likes binaries in mysqlutil package.
-	ResourceDir string
-	BinlogDir   string
+	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL).
+	DbBinDir string
+
+	// NOTE, introducing db specific fields is the last resort.
+	// MySQL specific
+	BinlogDir string
 }
 
 type driverFunc func(DriverConfig) Driver

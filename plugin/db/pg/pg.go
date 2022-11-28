@@ -9,10 +9,12 @@ import (
 
 	// Import pg driver.
 	// init() in pgx/v4/stdlib will register it's pgx driver.
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
@@ -48,7 +50,7 @@ func init() {
 
 // Driver is the Postgres driver.
 type Driver struct {
-	pgInstanceDir string
+	dbBinDir      string
 	connectionCtx db.ConnectionContext
 	config        db.ConnectionConfig
 
@@ -62,12 +64,18 @@ type Driver struct {
 
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
-		pgInstanceDir: config.PgInstanceDir,
+		dbBinDir: config.DbBinDir,
 	}
 }
 
 // Open opens a Postgres driver.
 func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+	// Require username for Postgres, as the guessDSN 1st guesss is to use the username as the connecting database
+	// if database name is not explicitly specified.
+	if config.Username == "" {
+		return nil, errors.Errorf("user must be set")
+	}
+
 	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
 		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
@@ -142,14 +150,13 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		return database, dsn, nil
 	}
 
-	// Guess default database postgres, template1.
-	guesses := []string{"", "bytebase", "postgres", "template1"}
+	// Some postgres server default behavior is to use username as the database name if not specified,
+	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
+	// Thus we explicitly guess username as the database name at first.
+	guesses := []string{username, "bytebase", "postgres", "template1"}
 	//  dsn+" dbname=bytebase"
 	for _, guessDatabase := range guesses {
-		guessDSN := dsn
-		if guessDatabase != "" {
-			guessDSN = fmt.Sprintf("%s dbname=%s", dsn, guessDatabase)
-		}
+		guessDSN := fmt.Sprintf("%s dbname=%s", dsn, guessDatabase)
 		if err := func() error {
 			db, err := sql.Open(driverName, guessDSN)
 			if err != nil {
@@ -158,6 +165,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 			defer db.Close()
 			return db.Ping()
 		}(); err != nil {
+			log.Debug("guessDSN attempt failed", zap.Error(err))
 			continue
 		}
 		return guessDatabase, guessDSN, nil

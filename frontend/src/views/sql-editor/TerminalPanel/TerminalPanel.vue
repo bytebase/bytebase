@@ -20,7 +20,7 @@
           <CompactSQLEditor
             v-model:sql="query.sql"
             class="border-b min-h-[2rem]"
-            :readonly="query !== currentQuery"
+            :readonly="!isEditableQueryItem(query)"
             @save-sheet="trySaveSheet"
             @execute="handleExecute"
           />
@@ -54,7 +54,7 @@
 import { computed, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
-import { ExecuteConfig, ExecuteOption } from "@/types";
+import { ExecuteConfig, ExecuteOption, WebTerminalQueryItem } from "@/types";
 import { useTabStore, useWebTerminalStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
@@ -82,6 +82,10 @@ const currentQuery = computed(
 
 const { execute } = useExecuteSQL();
 
+const isEditableQueryItem = (query: WebTerminalQueryItem): boolean => {
+  return query === currentQuery.value && !query.isExecutingSQL;
+};
+
 const handleExecute = async (
   query: string,
   config: ExecuteConfig,
@@ -89,6 +93,11 @@ const handleExecute = async (
 ) => {
   const queryItem = currentQuery.value;
   if (queryItem.isExecutingSQL) {
+    return;
+  }
+
+  // Prevent executing empty query;
+  if (!query) {
     return;
   }
 
@@ -102,6 +111,9 @@ const handleExecute = async (
       sql: "",
       isExecutingSQL: false,
     });
+    // Clear the tab's statement and keep it sync with the latest query
+    tabStore.currentTab.statement = "";
+    tabStore.currentTab.selectedStatement = "";
   } finally {
     queryItem.isExecutingSQL = false;
   }

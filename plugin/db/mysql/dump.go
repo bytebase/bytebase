@@ -779,7 +779,7 @@ func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databas
 	if driver.connCfg.Password != "" {
 		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
-	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
+	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
 
 	var stderr bytes.Buffer
 	countingReader := common.NewCountingReader(backup)

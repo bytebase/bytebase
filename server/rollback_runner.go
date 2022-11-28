@@ -14,21 +14,18 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/store"
 )
 
 // NewRollbackRunner creates a new rollback runner.
-func NewRollbackRunner(store *store.Store, dataDir string) *RollbackRunner {
+func NewRollbackRunner(server *Server) *RollbackRunner {
 	return &RollbackRunner{
-		store:   store,
-		dataDir: dataDir,
+		server: server,
 	}
 }
 
 // RollbackRunner is the rollback runner generating rollback SQL statements.
 type RollbackRunner struct {
-	store       *store.Store
-	dataDir     string
+	server      *Server
 	generateMap sync.Map
 }
 
@@ -62,7 +59,7 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
 		Payload:    "payload->>'threadID'!='' AND payload->>'rollbackError' IS NULL AND payload->>'rollbackStatement' IS NULL",
 	}
-	taskList, err := r.store.FindTask(ctx, find, true)
+	taskList, err := r.server.store.FindTask(ctx, find, true)
 	if err != nil {
 		log.Error("Failed to get running DML tasks", zap.Error(err))
 		return
@@ -108,7 +105,7 @@ func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task
 		UpdaterID: api.SystemBotID,
 		Payload:   &payloadString,
 	}
-	if _, err := r.store.PatchTask(ctx, patch); err != nil {
+	if _, err := r.server.store.PatchTask(ctx, patch); err != nil {
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
 		return
 	}
@@ -126,7 +123,7 @@ func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.
 	}
 	binlogFileNameList := mysql.GenBinlogFileNames(basename, seqStart, seqEnd)
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "", r.dataDir)
+	driver, err := r.server.getAdminDatabaseDriver(ctx, task.Instance, "")
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}

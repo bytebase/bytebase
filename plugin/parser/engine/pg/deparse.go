@@ -66,6 +66,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.DropSequenceStmt:
+		if err := deparseDropSequence(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -1098,6 +1103,28 @@ func deparseAlterSequence(ctx parser.DeparseContext, in *ast.AlterSequenceStmt, 
 		}
 	}
 	return nil
+}
+
+func deparseDropSequence(ctx parser.DeparseContext, in *ast.DropSequenceStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("DROP SEQUENCE "); err != nil {
+		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+	for i, sequence := range in.SequenceNameList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if err := deparseSequenceName(ctx, sequence, buf); err != nil {
+			return err
+		}
+	}
+	return deparseDropBehavior(ctx, in.Behavior, buf)
 }
 
 func deparseCreateSequence(ctx parser.DeparseContext, in *ast.CreateSequenceStmt, buf *strings.Builder) error {
