@@ -472,7 +472,9 @@
       "modal": {
         "resolve": "Resolve issue?",
         "cancel": "Cancel this entire issue?",
-        "reopen": "Reopen issue?"
+        "reopen": "Reopen issue?",
+        "title": "{action} {type} [{name}]?",
+        "action-to-stage": "{action} stage ({n} tasks)"
       },
       "dropdown": {
         "resolve": "Resolve issue",
