@@ -825,15 +825,7 @@ func (s *Server) sqlCheck(
 	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			adviceList = []advisor.Advice{
-				{
-					Status:  advisor.Warn,
-					Code:    advisor.NotFound,
-					Title:   "SQL review policy is not configured or disabled",
-					Content: "",
-				},
-			}
-			return advisor.Warn, adviceList, nil
+			return advisor.Success, nil, nil
 		}
 		return advisor.Error, nil, err
 	}
