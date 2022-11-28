@@ -673,7 +673,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, deploymentConfig); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &deploymentConfig); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get deployment configuration response: %v", id)).SetInternal(err)
 		}
 		return nil
