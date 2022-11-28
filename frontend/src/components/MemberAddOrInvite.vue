@@ -212,7 +212,7 @@ export default defineComponent({
       }
       if (user.isServiceAccount) {
         if (isValidEmail(user.email)) {
-          return "Please use name instead of email for service account";
+          return "Do not include @xxx suffix in service account";
         }
       } else {
         if (!isValidEmail(user.email)) {
