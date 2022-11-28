@@ -28,7 +28,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
 			}
-			principalCreate.Password = fmt.Sprintf("bbs_%s", pwd)
+			principalCreate.Password = fmt.Sprintf("%s%s", serviceAccountAccessKeyPrefix, pwd)
 		}
 
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(principalCreate.Password), bcrypt.DefaultCost)
@@ -115,7 +115,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
 			}
-			password := fmt.Sprintf("bbs_%s", val)
+			password := fmt.Sprintf("%s%s", serviceAccountAccessKeyPrefix, val)
 			principalPatch.Password = &password
 		}
 
