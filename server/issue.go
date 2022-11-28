@@ -783,7 +783,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		baseDatabaseName := migrationDetail.DatabaseName
 		matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
 		}
 		aggregatedMatrix = matrix
 		for _, databaseList := range matrix {
