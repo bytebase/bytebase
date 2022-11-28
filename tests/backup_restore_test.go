@@ -288,7 +288,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	defer cleanFn()
 
 	dstPort := getTestPort()
-	_, dstStopFn := resourcemysql.SetupTestInstance(t, dstPort)
+	dstStopFn := resourcemysql.SetupTestInstance(t, dstPort)
 	defer dstStopFn()
 	dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
 
@@ -441,7 +441,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	databaseName := baseName + "_Database"
 
 	mysqlPort := getTestPort()
-	_, stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
+	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,

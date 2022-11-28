@@ -45,10 +45,9 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 }
 
 // getDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
-// The returned matrix doesn't include deployment with no matched database.
-func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, baseDatabaseName, dbNameTemplate string, databaseList []*api.Database) ([]*api.Deployment, [][]*api.Database, error) {
+// The matrix will include the stage even if the stage has no database.
+func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, baseDatabaseName, dbNameTemplate string, databaseList []*api.Database) ([][]*api.Database, error) {
 	var matrix [][]*api.Database
-	var deployments []*api.Deployment
 
 	// idToLabels maps databaseID -> label.Key -> label.Value
 	idToLabels := make(map[int]map[string]string)
@@ -60,7 +59,7 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 		}
 		var labelList []*api.DatabaseLabel
 		if err := json.Unmarshal([]byte(database.Labels), &labelList); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		for _, label := range labelList {
 			idToLabels[database.ID][label.Key] = label.Value
@@ -104,18 +103,17 @@ func getDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 		for _, id := range matchedDatabaseList {
 			databaseList = append(databaseList, databaseMap[id])
 		}
-		// sort databases in stage based on names.
-		sort.Slice(databaseList, func(i, j int) bool {
-			return databaseList[i].Name > databaseList[j].Name
-		})
-
+		// sort databases in stage based on IDs.
 		if len(databaseList) > 0 {
-			matrix = append(matrix, databaseList)
-			deployments = append(deployments, deployment)
+			sort.Slice(databaseList, func(i, j int) bool {
+				return databaseList[i].ID < databaseList[j].ID
+			})
 		}
+
+		matrix = append(matrix, databaseList)
 	}
 
-	return deployments, matrix, nil
+	return matrix, nil
 }
 
 // formatDatabaseName will return the full database name given the dbNameTemplate, base database name, and labels.

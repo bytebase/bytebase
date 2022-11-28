@@ -27,23 +27,23 @@ func getDatabase(u *dburl.URL) string {
 
 func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 	var dbType db.Type
-	var pgInstanceDir string
+	var dbBinDir string
 	resourceDir := os.TempDir()
 	switch u.Driver {
 	case "mysql":
 		dbType = db.MySQL
-		// dburl.Parse() parses 'pg', 'postgresql' and 'pgsql' to 'postgres'.
-		// https://pkg.go.dev/github.com/xo/dburl@v0.9.1#hdr-Protocol_Schemes_and_Aliases
-		if err := mysqlutil.Install(resourceDir); err != nil {
+		dir, err := mysqlutil.Install(resourceDir)
+		if err != nil {
 			return nil, errors.Wrapf(err, "cannot install mysqlutil in directory %q", resourceDir)
 		}
+		dbBinDir = dir
 	case "postgres":
 		dbType = db.Postgres
-		pgInstance, err := postgres.Install(resourceDir, "" /* pgDataDir */, "" /* pgUser */)
+		dir, err := postgres.Install(resourceDir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot install postgres in directory %q", resourceDir)
 		}
-		pgInstanceDir = pgInstance.BaseDir
+		dbBinDir = dir
 	default:
 		return nil, errors.Errorf("database type %q not supported; supported types: mysql, pg", u.Driver)
 	}
@@ -52,8 +52,7 @@ func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 		ctx,
 		dbType,
 		db.DriverConfig{
-			PgInstanceDir: pgInstanceDir,
-			ResourceDir:   resourceDir,
+			DbBinDir: dbBinDir,
 		},
 		db.ConnectionConfig{
 			Host:     u.Hostname(),

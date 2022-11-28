@@ -335,9 +335,6 @@ func ValidatePolicyType(pType PolicyType) error {
 
 // ValidatePolicy will validate the policy resource type, type and payload values.
 func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *string) error {
-	if payload == nil {
-		return errors.Errorf("empty payload")
-	}
 	hasResourceType := false
 	for _, rt := range allowedResourceTypes[pType] {
 		if rt == resourceType {
@@ -346,6 +343,10 @@ func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *
 	}
 	if !hasResourceType {
 		return errors.Errorf("invalid resource type %s and policy type %s pair", resourceType, pType)
+	}
+	// If payload is not changed, we will not check its content.
+	if payload == nil {
+		return nil
 	}
 
 	switch pType {

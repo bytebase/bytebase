@@ -30,8 +30,7 @@ import {
   TaskDatabaseSchemaBaselinePayload,
 } from "@/types";
 import { useIssueLogic } from "./index";
-import { taskCheckRunSummary } from "./utils";
-import { isDev } from "@/utils";
+import { isDev, taskCheckRunSummary } from "@/utils";
 
 export const useCommonLogic = () => {
   const { create, issue, selectedTask, createIssue, onStatusChanged } =
