@@ -386,7 +386,8 @@
       "system-bot": "System Bot",
       "service-account": "Service Account",
       "copy-service-key": "Copy Service Key",
-      "refresh-service-key": "Refresh Service Key",
+      "reset-service-key": "Reset Service Key",
+      "reset-service-key-alert": "The old key will be deprecated, and you need to update other services which use this key.",
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account"
     },

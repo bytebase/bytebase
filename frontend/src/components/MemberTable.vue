@@ -83,15 +83,19 @@
                   <heroicons-outline:clipboard class="w-4 h-4" />
                   {{ $t("settings.members.copy-service-key") }}
                 </button>
-                <button
+                <BBButtonConfirm
                   v-else
-                  class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
-                  @click.prevent="
-                    () => refreshServiceKey(member.id, member.principal)
+                  class="inline-flex text-xs ml-3 my-1 px-2 bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  :style="'RESTORE'"
+                  :require-confirm="true"
+                  :ok-text="$t('settings.members.reset-service-key')"
+                  :button-text="$t('settings.members.reset-service-key')"
+                  :confirm-title="$t('settings.members.reset-service-key')"
+                  :confirm-description="
+                    $t('settings.members.reset-service-key-alert')
                   "
-                >
-                  {{ $t("settings.members.refresh-service-key") }}
-                </button>
+                  @confirm="refreshServiceKey(member.id, member.principal)"
+                />
               </template>
             </div>
           </template>
@@ -193,8 +197,9 @@ const columnList = computed(() => [
   },
 ]);
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+interface LocalState {
+  showResetKeyAlert: boolean;
+}
 
 export default defineComponent({
   name: "MemberTable",
@@ -213,7 +218,9 @@ export default defineComponent({
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
-    const state = reactive<LocalState>({});
+    const state = reactive<LocalState>({
+      showResetKeyAlert: false,
+    });
 
     const dataSource = computed((): BBTableSectionDataSource<Member>[] => {
       const ownerList: Member[] = [];

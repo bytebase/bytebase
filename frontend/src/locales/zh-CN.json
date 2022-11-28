@@ -386,7 +386,7 @@
       "system-bot": "机器人助手",
       "service-account": "服务账号",
       "copy-service-key": "复制 Service Key",
-      "refresh-service-key": "刷新 Service Key",
+      "reset-service-key": "重置 Service Key",
       "service-key-copied": "Service Key 已复制，请勿泄漏",
       "create-as-service-account": "创建为服务账号"
     },
