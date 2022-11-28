@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/app/feishu"
@@ -45,11 +44,7 @@ var _ FeishuProviderCreator = NewFeishu
 
 // NewFeishu creates a new fake feishu provider.
 func NewFeishu(port int) *Feishu {
-	e := echo.New()
-
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
+	e := newEchoServer()
 	botID := uuid.NewString()
 	f := &Feishu{
 		port:               port,
