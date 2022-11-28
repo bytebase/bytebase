@@ -33,6 +33,7 @@ const (
 	// Expiration section.
 	refreshThresholdDuration = 1 * time.Hour
 	accessTokenDuration      = 24 * time.Hour
+	apiTokenDuration         = 2 * time.Hour
 	refreshTokenDuration     = 7 * 24 * time.Hour
 	// Make cookie expire slightly earlier than the jwt expiration. Client would be logged out if the user
 	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
@@ -77,6 +78,11 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 	setTokenCookie(c, refreshTokenCookieName, refreshToken, cookieExp)
 
 	return nil
+}
+
+func generateAPIToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+	expirationTime := time.Now().Add(apiTokenDuration)
+	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 func generateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
