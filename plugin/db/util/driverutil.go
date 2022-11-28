@@ -799,7 +799,13 @@ func extractMySQLStarLength(fieldName []string, selectStmt *tidbast.SelectStmt) 
 }
 
 func extractMySQLSingleTable(fromClause *tidbast.TableRefsClause) (string, string, bool) {
+	if fromClause == nil || fromClause.TableRefs == nil {
+		return "", "", false
+	}
 	if fromClause.TableRefs.Right != nil {
+		return "", "", false
+	}
+	if fromClause.TableRefs.Left == nil {
 		return "", "", false
 	}
 	tableSource, ok := fromClause.TableRefs.Left.(*tidbast.TableSource)
