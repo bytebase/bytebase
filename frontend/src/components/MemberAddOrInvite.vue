@@ -113,7 +113,7 @@
               href="https://www.bytebase.com/zh/docs/get-started/work-with-terraform/overview"
             >
               <heroicons-outline:question-mark-circle
-                class="w-4 h-4 inline-block"
+                class="w-4 h-4 inline-block mb-0.5"
               />
             </a>
           </span>
