@@ -33,6 +33,7 @@ import {
   buildIssueLinkWithTask,
   hasProjectPermission,
   hasWorkspacePermission,
+  isDev,
 } from "@/utils";
 
 enum ButtonState {
@@ -58,6 +59,8 @@ const currentUser = useCurrentUser();
 const { issue, project, create, selectedTask } = useIssueLogic();
 
 const showRollbackButton = computed(() => {
+  if (!isDev()) return false;
+
   if (create.value) return false;
 
   const issueEntity = issue.value as Issue;
