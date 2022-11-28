@@ -121,19 +121,17 @@
 
 <script lang="ts">
 import { computed, reactive, ref, PropType, defineComponent } from "vue";
-import { cloneDeep, groupBy, maxBy } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import DatabaseSelect from "../DatabaseSelect.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
 import { Issue, IssueStatusTransition, Task } from "@/types";
 import { OutputField } from "@/plugins";
-import { activeEnvironment, TaskStatusTransition } from "@/utils";
+import {
+  activeEnvironment,
+  taskCheckRunSummary,
+  TaskStatusTransition,
+} from "@/utils";
 import { useI18n } from "vue-i18n";
-
-type CheckSummary = {
-  successCount: number;
-  warnCount: number;
-  errorCount: number;
-};
 
 interface LocalState {
   comment: string;
@@ -181,6 +179,8 @@ export default defineComponent({
         cloneDeep(props.issue.payload[field.id])
       ),
     });
+
+    const checkSummary = computed(() => taskCheckRunSummary(props.task));
 
     const cancelText = computed(() => t("common.cancel"));
     const displayingOkText = computed(() => {
@@ -252,8 +252,8 @@ export default defineComponent({
             case "RUNNING":
             case "PENDING": // fallthrough
               return (
-                runningCheckCount.value == 0 &&
-                checkSummary.value.errorCount == 0
+                checkSummary.value.runningCount === 0 &&
+                checkSummary.value.errorCount === 0
               );
             default:
               return true;
@@ -263,54 +263,9 @@ export default defineComponent({
       return false; // only to make eslint happy
     });
 
-    const runningCheckCount = computed((): number => {
-      let count = 0;
-      for (const run of props.task!.taskCheckRunList) {
-        if (run.status == "RUNNING") {
-          count++;
-        }
-      }
-      return count;
-    });
-
-    const checkSummary = computed((): CheckSummary => {
-      const summary: CheckSummary = {
-        successCount: 0,
-        warnCount: 0,
-        errorCount: 0,
-      };
-
-      const taskCheckRunList = props.task?.taskCheckRunList ?? [];
-
-      const listGroupByType = groupBy(taskCheckRunList, (run) => run.type);
-      const latestCheckRunOfEachType = Object.keys(listGroupByType).map(
-        (type) => {
-          const listOfType = listGroupByType[type];
-          const latest = maxBy(listOfType, (run) => run.updatedTs)!;
-          return latest;
-        }
-      );
-
-      for (const check of latestCheckRunOfEachType) {
-        if (check.status == "DONE") {
-          for (const result of check.result.resultList) {
-            if (result.status == "SUCCESS") {
-              summary.successCount++;
-            } else if (result.status == "WARN") {
-              summary.warnCount++;
-            } else if (result.status == "ERROR") {
-              summary.errorCount++;
-            }
-          }
-        } else if (check.status == "FAILED") {
-          summary.errorCount++;
-        }
-      }
-      return summary;
-    });
-
     return {
       state,
+      checkSummary,
       cancelText,
       displayingOkText,
       environmentId,
@@ -318,8 +273,6 @@ export default defineComponent({
       commentTextArea,
       submitButtonStyle,
       allowSubmit,
-      runningCheckCount,
-      checkSummary,
     };
   },
 });
