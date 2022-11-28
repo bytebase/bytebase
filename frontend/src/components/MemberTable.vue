@@ -86,7 +86,9 @@
                 <button
                   v-else
                   class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
-                  @click.prevent="() => refreshServiceKey(member.principal)"
+                  @click.prevent="
+                    () => refreshServiceKey(member.id, member.principal)
+                  "
                 >
                   {{ $t("settings.members.refresh-service-key") }}
                 </button>
@@ -340,7 +342,7 @@ export default defineComponent({
       });
     };
 
-    const refreshServiceKey = (principal: Principal) => {
+    const refreshServiceKey = (id: MemberId, principal: Principal) => {
       usePrincipalStore()
         .patchPrincipal({
           principalId: principal.id,
@@ -349,6 +351,7 @@ export default defineComponent({
           },
         })
         .then((principal: Principal) => {
+          memberStore.updatePrincipal(id, principal);
           return toClipboard(principal.serviceKey);
         })
         .then(() => {

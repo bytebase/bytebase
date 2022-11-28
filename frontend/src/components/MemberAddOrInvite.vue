@@ -24,7 +24,7 @@
                   @blur="validateUser(user, index)"
                   @input="clearValidationError(index)"
                 />
-                <span class="ml-1">@service.bytebase.com</span>
+                <span class="ml-1">{{ serviceAccountEmailSuffix }}</span>
               </div>
               <input
                 v-else
@@ -173,6 +173,8 @@ interface LocalState {
   errorList: string[];
 }
 
+const serviceAccountEmailSuffix = "@service.bytebase.com";
+
 export default defineComponent({
   name: "MemberAddOrInvite",
   components: { RoleSelect, NSwitch },
@@ -261,40 +263,49 @@ export default defineComponent({
 
     const addOrInvite = () => {
       for (const user of state.userList) {
-        if (isValidEmail(user.email)) {
-          // Needs to assign to a local variable as user will change after createPrincipal but before createdMember
-          let role = user.role;
-          // If admin feature is NOT enabled, then we set every user to OWNER role.
-          if (!hasRBACFeature.value) {
-            role = "OWNER";
-          }
-          // Note "principal/createPrincipal" would return the existing principal.
-          // This could happen if another client has just created the principal
-          // with this email.
-          const newPrincipal: PrincipalCreate = {
-            name: user.email.split("@")[0],
-            email: user.email,
-            type: user.isServiceAccount ? "SERVICE_ACCOUNT" : "END_USER",
-          };
-          usePrincipalStore()
-            .createPrincipal(newPrincipal)
-            .then((principal: Principal) => {
-              const newMember: MemberCreate = {
-                principalId: principal.id,
-                status: canManageMember.value ? "ACTIVE" : "INVITED",
-                role,
-              };
-              // Note "principal/createdMember" would return the existing role mapping.
-              // This could happen if another client has just created the role mapping with
-              // this principal.
-              memberStore.createdMember(newMember);
-            });
-
-          useUIStateStore().saveIntroStateByKey({
-            key: "member.addOrInvite",
-            newState: true,
-          });
+        if (!user.email) {
+          continue;
         }
+        if (!user.isServiceAccount && !isValidEmail(user.email)) {
+          continue;
+        }
+
+        // Needs to assign to a local variable as user will change after createPrincipal but before createdMember
+        let role = user.role;
+        // If admin feature is NOT enabled, then we set every user to OWNER role.
+        if (!hasRBACFeature.value) {
+          role = "OWNER";
+        }
+        // Note "principal/createPrincipal" would return the existing principal.
+        // This could happen if another client has just created the principal
+        // with this email.
+        const newPrincipal: PrincipalCreate = {
+          name: user.email.split("@")[0],
+          email: user.isServiceAccount
+            ? `${user.email}${serviceAccountEmailSuffix}`
+            : user.email,
+          type: user.isServiceAccount ? "SERVICE_ACCOUNT" : "END_USER",
+        };
+        usePrincipalStore()
+          .createPrincipal(newPrincipal)
+          .then((principal: Principal) => {
+            const newMember: MemberCreate = {
+              principalId: principal.id,
+              status: canManageMember.value ? "ACTIVE" : "INVITED",
+              role,
+            };
+            // Note "principal/createdMember" would return the existing role mapping.
+            // This could happen if another client has just created the role mapping with
+            // this principal.
+            memberStore.createdMember(newMember).then((member) => {
+              memberStore.updatePrincipal(member.id, principal);
+            });
+          });
+
+        useUIStateStore().saveIntroStateByKey({
+          key: "member.addOrInvite",
+          newState: true,
+        });
       }
       state.userList.forEach((item) => {
         item.email = "";
@@ -313,6 +324,7 @@ export default defineComponent({
       addUser,
       hasValidUserOnly,
       addOrInvite,
+      serviceAccountEmailSuffix,
     };
   },
 });
