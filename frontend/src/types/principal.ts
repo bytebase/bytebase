@@ -22,7 +22,7 @@ export type Principal = {
   name: string;
   email: string;
   role: RoleType;
-  token: string;
+  serviceKey: string;
 };
 
 export type PrincipalCreate = {

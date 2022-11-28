@@ -74,9 +74,11 @@
                 v-if="member.principal.type === 'SERVICE_ACCOUNT' && allowEdit"
               >
                 <button
-                  v-if="member.principal.token"
+                  v-if="member.principal.serviceKey"
                   class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
-                  @click.prevent="() => copyServiceKey(member.principal.token)"
+                  @click.prevent="
+                    () => copyServiceKey(member.principal.serviceKey)
+                  "
                 >
                   <heroicons-outline:clipboard class="w-4 h-4" />
                   {{ $t("settings.members.copy-service-key") }}
@@ -328,8 +330,8 @@ export default defineComponent({
       });
     };
 
-    const copyServiceKey = (token: string) => {
-      toClipboard(token).then(() => {
+    const copyServiceKey = (serviceKey: string) => {
+      toClipboard(serviceKey).then(() => {
         pushNotification({
           module: "bytebase",
           style: "INFO",
@@ -347,7 +349,7 @@ export default defineComponent({
           },
         })
         .then((principal: Principal) => {
-          return toClipboard(principal.token);
+          return toClipboard(principal.serviceKey);
         })
         .then(() => {
           pushNotification({
