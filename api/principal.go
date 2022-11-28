@@ -128,4 +128,6 @@ type PrincipalPatch struct {
 	Email        *string       `jsonapi:"attr,email"`
 	Password     *string       `jsonapi:"attr,password"`
 	PasswordHash *string
+	// RefreshKey is used by SERVICE_ACCOUNT to refresh its password
+	RefreshKey bool `jsonapi:"attr,refreshKey"`
 }
