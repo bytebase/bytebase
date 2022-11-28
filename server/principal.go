@@ -110,7 +110,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch principal request").SetInternal(err)
 		}
 
-		if principalPatch.Type == api.ServiceAccount {
+		if principalPatch.Type == api.ServiceAccount && principalPatch.Password != nil {
 			val, err := common.RandomString(20)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
