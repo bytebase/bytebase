@@ -52,20 +52,20 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	if setup {
 		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("database", driver.connectionCtx.InstanceName),
+			zap.String("instance", driver.connectionCtx.InstanceName),
 		)
 		// Should use role SYSADMIN.
 		if err := driver.Execute(ctx, migrationSchema, true /* createDatabase */); err != nil {
 			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
-				zap.String("database", driver.connectionCtx.InstanceName),
+				zap.String("instance", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
 		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("database", driver.connectionCtx.InstanceName),
+			zap.String("instance", driver.connectionCtx.InstanceName),
 		)
 	}
 
