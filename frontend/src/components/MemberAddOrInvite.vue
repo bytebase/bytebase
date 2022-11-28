@@ -12,7 +12,22 @@
           </p>
           <div class="flex flex-row space-x-4">
             <div class="flex-grow">
+              <div v-if="user.isServiceAccount" class="flex items-center">
+                <input
+                  v-model="user.email"
+                  type="text"
+                  name="add_or_invite_members"
+                  autocomplete="off"
+                  class="w-10 sm:w-20 textfield lowercase"
+                  placeholder="foo"
+                  aria-describedby="add_or_invite_members_helper"
+                  @blur="validateUser(user, index)"
+                  @input="clearValidationError(index)"
+                />
+                <span class="ml-1">@service.bytebase.com</span>
+              </div>
               <input
+                v-else
                 v-model="user.email"
                 type="email"
                 name="add_or_invite_members"
@@ -86,7 +101,11 @@
           v-if="canManageMember"
           class="flex justify-start gap-x-2 items-center text-sm text-gray-500 pt-2 ml-0.5"
         >
-          <NSwitch v-model:value="user.isServiceAccount" size="small" />
+          <NSwitch
+            v-model:value="user.isServiceAccount"
+            size="small"
+            @change="validateUser(user, index)"
+          />
           <span>
             {{ $t("settings.members.create-as-service-account") }}
             <a
@@ -186,7 +205,14 @@ export default defineComponent({
     }
 
     const validateUserInternal = (user: User): string => {
-      if (user.email) {
+      if (!user.email) {
+        return "";
+      }
+      if (user.isServiceAccount) {
+        if (isValidEmail(user.email)) {
+          return "Please use name instead of email for service account";
+        }
+      } else {
         if (!isValidEmail(user.email)) {
           return "Invalid email address";
         } else {
@@ -196,6 +222,7 @@ export default defineComponent({
           }
         }
       }
+
       return "";
     };
 
