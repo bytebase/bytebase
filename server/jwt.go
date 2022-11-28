@@ -46,6 +46,11 @@ const (
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
 	principalIDContextKey = "principal-id"
+
+	// Various access key / token prefix.
+
+	// serviceAccountAccessKeyPrefix is the prefix for service account access key.
+	serviceAccountAccessKeyPrefix = "bbs_"
 )
 
 // Claims creates a struct that will be encoded to a JWT.

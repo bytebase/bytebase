@@ -12,11 +12,14 @@ type PrincipalType string
 
 const (
 	// EndUser is the principal type for END_USER.
+	// EndUser represents the human being using Bytebase.
 	EndUser PrincipalType = "END_USER"
 	// ServiceAccount is the principal type for SERVICE_ACCOUNT.
+	// ServiceAcount represents the external service calling Bytebase OpenAPI.
 	ServiceAccount PrincipalType = "SERVICE_ACCOUNT"
-	// BOT is the principal type for BOT.
-	BOT PrincipalType = "BOT"
+	// SystemBot is the principal type for SYSTEM_BOT.
+	// SystemBot represents the internal system bot performing operations.
+	SystemBot PrincipalType = "SYSTEM_BOT"
 )
 
 // PrincipalAuthProvider is the type of an authentication provider.
