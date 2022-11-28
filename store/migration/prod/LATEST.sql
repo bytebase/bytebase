@@ -141,7 +141,7 @@ CREATE TABLE policy (
     payload JSONB NOT NULL DEFAULT '{}',
     resource_type resource_type NOT NULL,
     resource_id INTEGER NOT NULL,
-    inherit_from_parent BOOLEAN DEFAULT TRUE
+    inherit_from_parent BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON policy(resource_type, resource_id, type);
@@ -277,7 +277,8 @@ CREATE TABLE instance (
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
-    external_link TEXT NOT NULL DEFAULT ''
+    external_link TEXT NOT NULL DEFAULT '',
+    database TEXT NOT NULL DEFAULT ''
 );
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;

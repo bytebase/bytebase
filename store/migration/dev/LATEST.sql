@@ -18,7 +18,7 @@ CREATE TABLE principal (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT')),
+    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL
@@ -141,7 +141,7 @@ CREATE TABLE policy (
     payload JSONB NOT NULL DEFAULT '{}',
     resource_type resource_type NOT NULL,
     resource_id INTEGER NOT NULL,
-    inherit_from_parent BOOLEAN DEFAULT TRUE
+    inherit_from_parent BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON policy(resource_type, resource_id, type);
