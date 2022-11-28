@@ -75,7 +75,7 @@
               >
                 <button
                   v-if="member.principal.serviceKey"
-                  class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  class="inline-flex gap-x-1 text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
                   @click.prevent="
                     () => copyServiceKey(member.principal.serviceKey)
                   "
@@ -83,19 +83,14 @@
                   <heroicons-outline:clipboard class="w-4 h-4" />
                   {{ $t("settings.members.copy-service-key") }}
                 </button>
-                <BBButtonConfirm
+                <button
                   v-else
-                  class="inline-flex text-xs ml-3 my-1 px-2 bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
-                  :style="'RESTORE'"
-                  :require-confirm="true"
-                  :ok-text="$t('settings.members.reset-service-key')"
-                  :button-text="$t('settings.members.reset-service-key')"
-                  :confirm-title="$t('settings.members.reset-service-key')"
-                  :confirm-description="
-                    $t('settings.members.reset-service-key-alert')
-                  "
-                  @confirm="resetServiceKey(member.id, member.principal)"
-                />
+                  class="inline-flex gap-x-1 text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  @click.prevent="() => tryResetServiceKey(member)"
+                >
+                  <heroicons-outline:reply class="w-4 h-4" />
+                  {{ $t("settings.members.reset-service-key") }}
+                </button>
               </template>
             </div>
           </template>
@@ -155,6 +150,15 @@
       </BBTableCell>
     </template>
   </BBTable>
+  <BBAlert
+    v-if="state.showResetKeyAlert"
+    :style="'CRITICAL'"
+    :ok-text="$t('settings.members.reset-service-key')"
+    :title="$t('settings.members.reset-service-key')"
+    :description="$t('settings.members.reset-service-key-alert')"
+    @ok="resetServiceKey"
+    @cancel="state.showResetKeyAlert = false"
+  />
 </template>
 
 <script lang="ts">
@@ -199,6 +203,7 @@ const columnList = computed(() => [
 
 interface LocalState {
   showResetKeyAlert: boolean;
+  targetServiceAccount?: Member;
 }
 
 export default defineComponent({
@@ -349,17 +354,28 @@ export default defineComponent({
       });
     };
 
-    const resetServiceKey = (id: MemberId, principal: Principal) => {
+    const tryResetServiceKey = (member: Member) => {
+      state.showResetKeyAlert = true;
+      state.targetServiceAccount = member;
+    };
+
+    const resetServiceKey = () => {
+      state.showResetKeyAlert = false;
+      if (!state.targetServiceAccount) {
+        return;
+      }
+
+      const memberId = state.targetServiceAccount.id;
       usePrincipalStore()
         .patchPrincipal({
-          principalId: principal.id,
+          principalId: memberId,
           principalPatch: {
-            type: principal.type,
+            type: state.targetServiceAccount.principal.type,
             refreshKey: true,
           },
         })
         .then((principal: Principal) => {
-          memberStore.updatePrincipal(id, principal);
+          memberStore.updatePrincipal(memberId, principal);
           return toClipboard(principal.serviceKey);
         })
         .then(() => {
@@ -387,6 +403,7 @@ export default defineComponent({
       changeRowStatus,
       copyServiceKey,
       resetServiceKey,
+      tryResetServiceKey,
     };
   },
 });
