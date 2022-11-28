@@ -331,7 +331,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 		create.FilePathTemplate,
 		create.SchemaPathTemplate,
 		create.SheetPathTemplate,
-		false /* EnableSQLReviewCI */,
+		false, /* EnableSQLReviewCI */
 		create.ExternalID,
 		create.ExternalWebhookID,
 		create.WebhookURLHost,
