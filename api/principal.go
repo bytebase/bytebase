@@ -13,6 +13,8 @@ type PrincipalType string
 const (
 	// EndUser is the principal type for END_USER.
 	EndUser PrincipalType = "END_USER"
+	// ServiceAccount is the principal type for SERVICE_ACCOUNT.
+	ServiceAccount PrincipalType = "SERVICE_ACCOUNT"
 	// BOT is the principal type for BOT.
 	BOT PrincipalType = "BOT"
 )
@@ -48,31 +50,36 @@ type Principal struct {
 	// Role is stored in the member table, but we include it when returning the principal.
 	// This simplifies the client code where it won't require order dependency to fetch the related member info first.
 	Role Role `jsonapi:"attr,role"`
+	// The ServiceKey is the password, only used for SERVICE_ACCOUNT.
+	// We only return the service key for the first time after the creation for SERVICE_ACCOUNT.
+	ServiceKey string `jsonapi:"attr,serviceKey"`
 }
 
 // MarshalJSON customizes the Principal Marshal method so the returned object
 // can map directly to the frontend Principal object without any conversion.
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		ID        int           `json:"id"`
-		CreatorID int           `json:"creatorId"`
-		CreatedTs int64         `json:"createdTs"`
-		UpdaterID int           `json:"updaterId"`
-		UpdatedTs int64         `json:"updatedTs"`
-		Type      PrincipalType `json:"type"`
-		Name      string        `json:"name"`
-		Email     string        `json:"email"`
-		Role      Role          `json:"role"`
+		ID         int           `json:"id"`
+		CreatorID  int           `json:"creatorId"`
+		CreatedTs  int64         `json:"createdTs"`
+		UpdaterID  int           `json:"updaterId"`
+		UpdatedTs  int64         `json:"updatedTs"`
+		Type       PrincipalType `json:"type"`
+		Name       string        `json:"name"`
+		Email      string        `json:"email"`
+		Role       Role          `json:"role"`
+		ServiceKey string        `json:"serviceKey"`
 	}{
-		ID:        p.ID,
-		CreatorID: p.CreatorID,
-		CreatedTs: p.CreatedTs,
-		UpdaterID: p.UpdaterID,
-		UpdatedTs: p.UpdatedTs,
-		Type:      p.Type,
-		Name:      p.Name,
-		Email:     p.Email,
-		Role:      p.Role,
+		ID:         p.ID,
+		CreatorID:  p.CreatorID,
+		CreatedTs:  p.CreatedTs,
+		UpdaterID:  p.UpdaterID,
+		UpdatedTs:  p.UpdatedTs,
+		Type:       p.Type,
+		Name:       p.Name,
+		Email:      p.Email,
+		Role:       p.Role,
+		ServiceKey: p.ServiceKey,
 	})
 }
 
@@ -84,10 +91,10 @@ type PrincipalCreate struct {
 	CreatorID int
 
 	// Domain specific fields
-	Type         PrincipalType
-	Name         string `jsonapi:"attr,name"`
-	Email        string `jsonapi:"attr,email"`
-	Password     string `jsonapi:"attr,password"`
+	Type         PrincipalType `jsonapi:"attr,type"`
+	Name         string        `jsonapi:"attr,name"`
+	Email        string        `jsonapi:"attr,email"`
+	Password     string        `jsonapi:"attr,password"`
 	PasswordHash string
 }
 
@@ -116,8 +123,11 @@ type PrincipalPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name         *string `jsonapi:"attr,name"`
-	Email        *string `jsonapi:"attr,email"`
-	Password     *string `jsonapi:"attr,password"`
+	Type         PrincipalType `jsonapi:"attr,type"`
+	Name         *string       `jsonapi:"attr,name"`
+	Email        *string       `jsonapi:"attr,email"`
+	Password     *string       `jsonapi:"attr,password"`
 	PasswordHash *string
+	// RefreshKey is used by SERVICE_ACCOUNT to refresh its password
+	RefreshKey bool `jsonapi:"attr,refreshKey"`
 }
