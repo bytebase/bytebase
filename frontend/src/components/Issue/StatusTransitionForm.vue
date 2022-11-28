@@ -71,6 +71,30 @@
         <TaskCheckBar :task="task!" :allow-run-task="false" />
       </div>
 
+      <div v-if="showTaskList" class="sm:col-span-4 mb-4">
+        <label for="about" class="textlabel">
+          {{ $t("common.tasks") }}
+        </label>
+        <ul class="mt-1 max-h-[6rem] overflow-y-auto">
+          <li
+            v-for="item in distinctTaskList"
+            :key="item.task.id"
+            class="text-sm textinfolabel"
+          >
+            <span class="textinfolabel">
+              {{ item.task.name }}
+            </span>
+            <span v-if="item.similar.length > 0" class="ml-2 text-gray-400">
+              {{
+                $t("task.n-similar-tasks", {
+                  count: item.similar.length + 1,
+                })
+              }}
+            </span>
+          </li>
+        </ul>
+      </div>
+
       <div class="sm:col-span-4 w-112 min-w-full">
         <label for="about" class="textlabel">
           {{ $t("issue.status-transition.form.note") }}
@@ -121,17 +145,19 @@
 
 <script lang="ts">
 import { computed, reactive, ref, PropType, defineComponent } from "vue";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, groupBy } from "lodash-es";
 import DatabaseSelect from "../DatabaseSelect.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
 import { Issue, IssueStatusTransition, Task } from "@/types";
 import { OutputField } from "@/plugins";
 import {
   activeEnvironment,
+  activeStage,
   taskCheckRunSummary,
   TaskStatusTransition,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
+import { useIssueLogic } from "./logic";
 
 interface LocalState {
   comment: string;
@@ -179,6 +205,8 @@ export default defineComponent({
         cloneDeep(props.issue.payload[field.id])
       ),
     });
+
+    const { allowApplyTaskStatusTransition } = useIssueLogic();
 
     const checkSummary = computed(() => taskCheckRunSummary(props.task));
 
@@ -238,6 +266,28 @@ export default defineComponent({
       return taskCheckCount > 0;
     });
 
+    const showTaskList = computed((): boolean => {
+      return props.mode === "STAGE";
+    });
+
+    const taskList = computed(() => {
+      const stage = activeStage(props.issue.pipeline);
+      const transition = props.transition as TaskStatusTransition;
+      return stage.taskList.filter((task) => {
+        return allowApplyTaskStatusTransition(task, transition.to);
+      });
+    });
+
+    const distinctTaskList = computed(() => {
+      type DistinctTaskList = { task: Task; similar: Task[] };
+      const groups = groupBy(taskList.value, (task) => task.name);
+
+      return Object.keys(groups).map<DistinctTaskList>((taskName) => {
+        const [task, ...similar] = groups[taskName];
+        return { task, similar };
+      });
+    });
+
     // Code block below will raise an eslint ERROR.
     // But I won't change it this time.
     // Disable submit if in TASK mode and there exists RUNNING check or check error and we are transitioning to RUNNING
@@ -270,6 +320,8 @@ export default defineComponent({
       displayingOkText,
       environmentId,
       showTaskCheckBar,
+      showTaskList,
+      distinctTaskList,
       commentTextArea,
       submitButtonStyle,
       allowSubmit,
