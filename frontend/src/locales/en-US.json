@@ -385,8 +385,9 @@
       },
       "system-bot": "System Bot",
       "service-account": "Service Account",
-      "copy-token": "Copy token",
-      "token-copied": "Token copied to clipboard, please keep it in secret.",
+      "copy-service-key": "Copy Service Key",
+      "refresh-service-key": "Refresh Service Key",
+      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account"
     },
     "im-integration": {

@@ -287,6 +287,7 @@ export default defineComponent({
       state.editingPrincipal = {
         name: clone.name,
         email: clone.email,
+        type: clone.type,
       };
       state.editing = true;
 

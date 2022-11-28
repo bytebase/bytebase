@@ -70,14 +70,25 @@
                   >{{ member.principal.email }}</span
                 >
               </div>
-              <button
+              <template
                 v-if="member.principal.type === 'SERVICE_ACCOUNT' && allowEdit"
-                class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
-                @click.prevent="() => copyToken(member.principal.token)"
               >
-                <heroicons-outline:clipboard class="w-4 h-4" />
-                {{ $t("settings.members.copy-token") }}
-              </button>
+                <button
+                  v-if="member.principal.token"
+                  class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  @click.prevent="() => copyServiceKey(member.principal.token)"
+                >
+                  <heroicons-outline:clipboard class="w-4 h-4" />
+                  {{ $t("settings.members.copy-service-key") }}
+                </button>
+                <button
+                  v-else
+                  class="inline-flex text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  @click.prevent="() => refreshServiceKey(member.principal)"
+                >
+                  {{ $t("settings.members.refresh-service-key") }}
+                </button>
+              </template>
             </div>
           </template>
         </div>
@@ -151,6 +162,7 @@ import {
   Member,
   RowStatus,
   SYSTEM_BOT_ID,
+  Principal,
 } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { hasWorkspacePermission } from "../utils";
@@ -158,6 +170,7 @@ import {
   featureToRef,
   useCurrentUser,
   useMemberStore,
+  usePrincipalStore,
   pushNotification,
 } from "@/store";
 
@@ -315,14 +328,34 @@ export default defineComponent({
       });
     };
 
-    const copyToken = (token: string) => {
+    const copyServiceKey = (token: string) => {
       toClipboard(token).then(() => {
         pushNotification({
           module: "bytebase",
           style: "INFO",
-          title: t("settings.members.token-copied"),
+          title: t("settings.members.service-key-copied"),
         });
       });
+    };
+
+    const refreshServiceKey = (principal: Principal) => {
+      usePrincipalStore()
+        .patchPrincipal({
+          principalId: principal.id,
+          principalPatch: {
+            type: principal.type,
+          },
+        })
+        .then((principal: Principal) => {
+          return toClipboard(principal.token);
+        })
+        .then(() => {
+          pushNotification({
+            module: "bytebase",
+            style: "INFO",
+            title: t("settings.members.service-key-copied"),
+          });
+        });
     };
 
     return {
@@ -339,7 +372,8 @@ export default defineComponent({
       allowActivateMember,
       changeRole,
       changeRowStatus,
-      copyToken,
+      copyServiceKey,
+      refreshServiceKey,
     };
   },
 });

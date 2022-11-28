@@ -37,4 +37,5 @@ export type PrincipalPatch = {
   name?: string;
   password?: string;
   email?: string;
+  type: PrincipalType;
 };
