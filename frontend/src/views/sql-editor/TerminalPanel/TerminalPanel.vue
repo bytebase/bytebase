@@ -20,7 +20,7 @@
           <CompactSQLEditor
             v-model:sql="query.sql"
             class="border-b min-h-[2rem]"
-            :readonly="query !== currentQuery"
+            :readonly="!isEditableQueryItem(query)"
             @save-sheet="trySaveSheet"
             @execute="handleExecute"
           />
@@ -54,7 +54,7 @@
 import { computed, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
-import { ExecuteConfig, ExecuteOption } from "@/types";
+import { ExecuteConfig, ExecuteOption, WebTerminalQueryItem } from "@/types";
 import { useTabStore, useWebTerminalStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
@@ -81,6 +81,10 @@ const currentQuery = computed(
 );
 
 const { execute } = useExecuteSQL();
+
+const isEditableQueryItem = (query: WebTerminalQueryItem): boolean => {
+  return query === currentQuery.value && !query.isExecutingSQL;
+};
 
 const handleExecute = async (
   query: string,
