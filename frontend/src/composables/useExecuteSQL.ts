@@ -11,7 +11,13 @@ import {
 } from "../components/MonacoEditor/sqlParser";
 import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
 import { BBNotificationStyle } from "@/bbkit/types";
-import { ExecuteConfig, ExecuteOption, SQLResultSet, TabMode } from "@/types";
+import {
+  ExecuteConfig,
+  ExecuteOption,
+  SQLResultSet,
+  TabMode,
+  SQLAdviceCodeGeneral,
+} from "@/types";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();
@@ -83,6 +89,12 @@ const useExecuteSQL = () => {
       let adviceStatus = "SUCCESS";
       let adviceNotifyMessage = "";
       for (const advice of sqlResultSet.adviceList) {
+        if (advice.code === SQLAdviceCodeGeneral.NotFound) {
+          // Hide the "SQL review policy is not configured or disabled" warning
+          // since it's too annoying.
+          continue;
+        }
+
         if (advice.status === "ERROR") {
           adviceStatus = "ERROR";
         } else if (adviceStatus !== "ERROR") {
