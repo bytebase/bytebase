@@ -94,7 +94,7 @@
                   :confirm-description="
                     $t('settings.members.reset-service-key-alert')
                   "
-                  @confirm="refreshServiceKey(member.id, member.principal)"
+                  @confirm="resetServiceKey(member.id, member.principal)"
                 />
               </template>
             </div>
@@ -349,7 +349,7 @@ export default defineComponent({
       });
     };
 
-    const refreshServiceKey = (id: MemberId, principal: Principal) => {
+    const resetServiceKey = (id: MemberId, principal: Principal) => {
       usePrincipalStore()
         .patchPrincipal({
           principalId: principal.id,
@@ -386,7 +386,7 @@ export default defineComponent({
       changeRole,
       changeRowStatus,
       copyServiceKey,
-      refreshServiceKey,
+      resetServiceKey,
     };
   },
 });
