@@ -97,6 +97,7 @@
     "status": "状态",
     "stage": "阶段",
     "task": "任务",
+    "tasks": "任务",
     "sql": "SQL",
     "unassigned": "未指派",
     "new": "创建",
@@ -285,7 +286,8 @@
         "row": "行数"
       },
       "counting": "统计中"
-    }
+    },
+    "n-similar-tasks": "({count} 个相似的任务)"
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
@@ -478,7 +480,9 @@
       "modal": {
         "resolve": "解决工单?",
         "cancel": "取消整个工单?",
-        "reopen": "重开工单?"
+        "reopen": "重开工单？",
+        "title": "{action}{type} [{name}]？",
+        "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
         "resolve": "解决",

@@ -171,6 +171,7 @@ const {
   issue,
   template: issueTemplate,
   activeTaskOfPipeline,
+  allowApplyTaskStatusTransition,
   doCreate,
 } = useIssueLogic();
 const { changeIssueStatus, changeStageAllTaskStatus, changeTaskStatus } =
@@ -209,9 +210,9 @@ const tryStartStageOrTaskStatusTransition = (
   mode: "STAGE" | "TASK"
 ) => {
   updateStatusModalState.mode = mode;
-  updateStatusModalState.okText = t(transition.buttonName);
   const task = currentTask.value;
   const payload = mode === "TASK" ? task : task.stage;
+  const type = mode === "TASK" ? t("common.task") : t("common.stage");
   const name = payload.name;
   let actionText = "";
   switch (transition.type) {
@@ -236,7 +237,29 @@ const tryStartStageOrTaskStatusTransition = (
     default:
       console.assert(false, "should never reach this line");
   }
-  updateStatusModalState.title = `${actionText} '${name}'?`;
+  updateStatusModalState.title = t("issue.status-transition.modal.title", {
+    action: actionText,
+    type: type.toLowerCase(),
+    name,
+  });
+  const button = t(transition.buttonName);
+  if (mode === "TASK") {
+    updateStatusModalState.okText = button;
+  } else {
+    const pendingApprovalTaskList = task.stage.taskList.filter((task) => {
+      return (
+        task.status === "PENDING_APPROVAL" &&
+        allowApplyTaskStatusTransition(task, "PENDING")
+      );
+    });
+    updateStatusModalState.okText = t(
+      "issue.status-transition.modal.action-to-stage",
+      {
+        action: button,
+        n: pendingApprovalTaskList.length,
+      }
+    );
+  }
   updateStatusModalState.style = "INFO";
   updateStatusModalState.transition = transition;
   updateStatusModalState.payload = payload;
