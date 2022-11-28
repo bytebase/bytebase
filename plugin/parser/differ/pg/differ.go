@@ -34,9 +34,9 @@ type diffNode struct {
 	dropIndexList              []ast.Node
 	dropDefaultList            []ast.Node
 	dropSequenceOwnedByList    []ast.Node
-	dropSequenceList           []ast.Node
 	dropColumnList             []ast.Node
 	dropTableList              []ast.Node
+	dropSequenceList           []ast.Node
 	dropSchemaList             []ast.Node
 
 	// Create nodes
@@ -973,13 +973,13 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.dropSequenceOwnedByList); err != nil {
 		return "", err
 	}
-	if err := printStmtSlice(&buf, diff.dropSequenceList); err != nil {
-		return "", err
-	}
 	if err := printStmtSlice(&buf, diff.dropColumnList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.dropTableList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.dropSequenceList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.dropSchemaList); err != nil {
@@ -1049,10 +1049,6 @@ func (diff *diffNode) dropConstraint(m schemaMap) {
 func dropTable(m schemaMap) *ast.DropTableStmt {
 	var tableList []*tableInfo
 	for _, schema := range m {
-		if !schema.existsInNew {
-			// dropped by DROP SCHEMA ... CASCADE statements
-			continue
-		}
 		for _, table := range schema.tableMap {
 			if table.existsInNew {
 				// no need to drop
@@ -1104,10 +1100,6 @@ func dropSchema(m schemaMap) *ast.DropSchemaStmt {
 func dropIndex(m schemaMap) *ast.DropIndexStmt {
 	var indexList []*indexInfo
 	for _, schema := range m {
-		if !schema.existsInNew {
-			// dropped by DROP SCHEMA ... CASCADE statements
-			continue
-		}
 		for _, index := range schema.indexMap {
 			if index.existsInNew {
 				// no need to drop

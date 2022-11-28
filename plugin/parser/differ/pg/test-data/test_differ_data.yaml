@@ -150,3 +150,21 @@
         ALTER COLUMN "e" SET DATA TYPE jsonb;
     ALTER TABLE "public"."t"
         ALTER COLUMN "f" SET DATA TYPE pg_catalog.bit(4);
+- oldSchema: |
+    create schema schema1;
+    create table schema1.t1(a int, b int, c int);
+    create index idx_t1_a on schema1.t1(a);
+    create sequence schema1.sequence1
+      NO MINVALUE
+      NO MAXVALUE
+      START WITH 1;
+    alter sequence schema1.sequence1 owned by schema1.t1.a;
+    alter table schema1.t1 alter column a set default nextval('schema1.sequence1'::regclass);
+  newSchema: ""
+  diff: |
+    DROP INDEX "schema1"."idx_t1_a";
+    ALTER SEQUENCE "schema1"."sequence1"
+        OWNED BY NONE;
+    DROP TABLE "schema1"."t1";
+    DROP SEQUENCE "schema1"."sequence1";
+    DROP SCHEMA "schema1";
