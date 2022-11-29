@@ -322,7 +322,7 @@ func transformColumnType(typeStr string) (*types.FieldType, error) {
 
 	node, ok := nodeList[0].(*tidbast.CreateTableStmt)
 	if !ok {
-		return nil, errors.New("expected node with CreateTableStmt type")
+		return nil, errors.New("expect the type of the node to be CreateTableStmt")
 	}
 	if len(node.Cols) != 1 {
 		return nil, errors.New("expected node column list length is 1")
