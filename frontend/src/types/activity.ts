@@ -1,3 +1,4 @@
+import { ExternalApprovalEvent } from "./externalApproval";
 import { FieldId } from "../plugins";
 import {
   ActivityId,
@@ -99,6 +100,7 @@ export type ActivityIssueCreatePayload = {
 };
 
 export type ActivityIssueCommentCreatePayload = {
+  externalApprovalEvent: ExternalApprovalEvent;
   issueName: string;
 };
 
