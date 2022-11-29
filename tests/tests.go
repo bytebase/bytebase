@@ -28,6 +28,7 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
 )
@@ -141,10 +142,11 @@ type controller struct {
 	vcsProvider    fake.VCSProvider
 	feishuProvider *fake.Feishu
 
-	rootURL   string
-	apiURL    string
-	vcsURL    string
-	feishuURL string
+	rootURL    string
+	apiURL     string
+	vcsURL     string
+	openApiURL string
+	feishuURL  string
 }
 
 type config struct {
@@ -261,6 +263,7 @@ func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreat
 func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
+	ctl.openApiURL = fmt.Sprintf("http://localhost:%d/v1", port)
 
 	errChan := make(chan error, 1)
 
@@ -458,6 +461,28 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 	resp, err := ctl.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "fail to send a GET request(%q)", gURL)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read http response body")
+		}
+		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
+}
+
+// postOpenAPI sends a openAPI POST request.
+func (ctl *controller) postOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", ctl.openApiURL, shortURL)
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "fail to create a new POST request(%q)", url)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "fail to send a POST request(%q)", url)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -682,6 +707,9 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	}
 	if databaseFind.ProjectID != nil {
 		params["project"] = fmt.Sprintf("%d", *databaseFind.ProjectID)
+	}
+	if databaseFind.Name != nil {
+		params["name"] = *databaseFind.Name
 	}
 	body, err := ctl.get("/database", params)
 	if err != nil {
@@ -2135,4 +2163,33 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 		return "", err
 	}
 	return string(s), nil
+}
+
+type schemaDiffRequest struct {
+	EngineType   parser.EngineType `json:"engineType"`
+	SourceSchema string            `json:"sourceSchema"`
+	TargetSchema string            `json:"targetSchema"`
+}
+
+// getSchemaDiff gets the schema diff.
+func (ctl *controller) getSchemaDiff(schemaDiff schemaDiffRequest) (string, error) {
+	buf, err := json.Marshal(&schemaDiff)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal schemaDiffRequest")
+	}
+
+	body, err := ctl.postOpenAPI("/sql/schema/diff", strings.NewReader(string(buf)))
+	if err != nil {
+		return "", err
+	}
+
+	diff, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	diffString := ""
+	if err := json.Unmarshal(diff, &diffString); err != nil {
+		return "", err
+	}
+	return diffString, nil
 }
