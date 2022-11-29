@@ -75,10 +75,7 @@
                 {{ migrationHistory.version }}
               </NEllipsis>
             </template>
-            <template
-              v-if="!hasSyncSchemaFeature && databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId).length > 0"
-              #suffixItem
-            >
+            <template v-if="shouldShowMoreVersionButton" #suffixItem>
               <div
                 class="w-full pl-3 leading-8 text-gray-600 cursor-pointer hover:text-accent"
                 @click="() => (state.showFeatureModal = true)"
@@ -343,6 +340,14 @@ const engineTypeList = computed((): EngineType[] => {
   } else {
     return [state.engineType];
   }
+});
+
+const shouldShowMoreVersionButton = computed(() => {
+  return (
+    !hasSyncSchemaFeature.value &&
+    databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
+      .length > 0
+  );
 });
 
 const shouldShowDiff = computed(() => {
