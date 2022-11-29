@@ -325,7 +325,7 @@ func transformColumnType(typeStr string) (*types.FieldType, error) {
 		return nil, errors.New("expect the type of the node to be CreateTableStmt")
 	}
 	if len(node.Cols) != 1 {
-		return nil, errors.New("expected node column list length is 1")
+		return nil, errors.Errorf("expect node list length to be 1, get %d", len(nodeList))
 	}
 
 	col := node.Cols[0]
