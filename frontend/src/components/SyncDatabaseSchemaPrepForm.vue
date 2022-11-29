@@ -75,7 +75,10 @@
                 {{ migrationHistory.version }}
               </NEllipsis>
             </template>
-            <template v-if="!hasSyncSchemaFeature" #suffixItem>
+            <template
+              v-if="!hasSyncSchemaFeature && databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId).length > 0"
+              #suffixItem
+            >
               <div
                 class="w-full pl-3 leading-8 text-gray-600 cursor-pointer hover:text-accent"
                 @click="() => (state.showFeatureModal = true)"
@@ -385,7 +388,7 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
   );
 
   if (!hasSyncSchemaFeature.value) {
-    return [list.length > 0 ? head(list) : []];
+    return list.length > 0 ? [head(list)] : [];
   }
   return list;
 };
