@@ -33,9 +33,11 @@ type ExternalApprovalPayloadFeishu struct {
 	StageID    int
 	AssigneeID int
 
-	// feishu
+	// Feishu
 	InstanceCode string
 	RequesterID  string
+	// Rejected tells if the approval has been rejected on Feishu.
+	Rejected bool
 }
 
 // ExternalApprovalCreate is the API message for creating an ExternalApproval.
@@ -59,4 +61,23 @@ type ExternalApprovalFind struct {
 type ExternalApprovalPatch struct {
 	ID        int
 	RowStatus RowStatus
+
+	Payload *string
+}
+
+// ExternalApprovalEventActionType is the type of the action which the user took.
+type ExternalApprovalEventActionType string
+
+const (
+	// ExternalApprovalEventActionApprove means that the user approves via the external approval.
+	ExternalApprovalEventActionApprove ExternalApprovalEventActionType = "APPROVE"
+	// ExternalApprovalEventActionReject means that the user rejects via the external approval.
+	ExternalApprovalEventActionReject ExternalApprovalEventActionType = "REJECT"
+)
+
+// ExternalApprovalEvent is the API message for describing an ExternalApproval.
+type ExternalApprovalEvent struct {
+	Type      ExternalApprovalType            `json:"type"`
+	Action    ExternalApprovalEventActionType `json:"action"`
+	StageName string                          `json:"stageName"`
 }

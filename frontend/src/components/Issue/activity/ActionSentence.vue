@@ -6,6 +6,7 @@
 import { h, PropType } from "vue";
 import {
   Activity,
+  ActivityIssueCommentCreatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
   ActivityTaskFileCommitPayload,
   ActivityTaskStatementUpdatePayload,
@@ -34,6 +35,23 @@ const { t } = useI18n();
 const renderActionSentence = () => {
   const { activity, issue } = props;
   if (activity.type.startsWith("bb.issue.")) {
+    if (activity.type === "bb.issue.comment.create") {
+      const payload = activity.payload as ActivityIssueCommentCreatePayload;
+      if (payload.externalApprovalEvent) {
+        if (payload.externalApprovalEvent.action == "REJECT") {
+          let imName = "";
+          switch (payload.externalApprovalEvent.type) {
+            case "bb.plugin.app.feishu":
+              imName = t("common.feishu");
+              break;
+          }
+          return t("activity.sentence.external-approval-rejected", {
+            stageName: payload.externalApprovalEvent.stageName,
+            imName: imName,
+          });
+        }
+      }
+    }
     const [tid, params] = issueActivityActionSentence(activity);
     return t(tid, params);
   }
