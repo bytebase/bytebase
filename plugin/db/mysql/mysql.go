@@ -97,7 +97,10 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 	}
 	conn, err := db.Conn(ctx)
 	if err != nil {
-		return nil, err
+		var errList error
+		errList = multierr.Append(errList, err)
+		errList = multierr.Append(errList, db.Close())
+		return nil, errList
 	}
 	driver.dbType = dbType
 	driver.db = db
