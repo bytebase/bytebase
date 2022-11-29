@@ -19,7 +19,7 @@ export default defineComponent({
     return parts.map((part) => {
       if (part === "") return null;
 
-      if (part.match(part)) {
+      if (part.startsWith("#")) {
         const id = parseInt(part.slice(1), 10);
         if (!Number.isNaN(id) && id > 0) {
           // we met a valid #{issue_id} in which issue_id is an integer and >= 0
