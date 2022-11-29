@@ -42,8 +42,8 @@ sudo sysctl -w kern.sysv.shmall=12582912
 #### Configure alias
 
 ```shell
-alias t="go test --tags=mysql -v -run "
-alias ta="t \"\" ./..."
+alias t="go test -tags=mysql -v -run "
+alias ta='t "" ./...'
 ```
 
 #### Run all backend tests
