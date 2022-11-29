@@ -29,6 +29,10 @@
       </button>
     </div>
     <div class="w-full h-144 border-b mb-4">
+      <UIEditor
+        v-show="state.selectedTab === 'ui-editor'"
+        :database-id-list="props.databaseIdList"
+      />
       <div
         v-show="state.selectedTab === 'raw-sql'"
         class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto"
@@ -56,10 +60,6 @@
           @change="onStatementChange"
         />
       </div>
-      <UIEditor
-        v-show="state.selectedTab === 'ui-editor'"
-        :database-id-list="props.databaseIdList"
-      />
     </div>
     <div class="flex items-center justify-end">
       <button type="button" class="btn-normal py-2 px-4" @click="dismissModal">

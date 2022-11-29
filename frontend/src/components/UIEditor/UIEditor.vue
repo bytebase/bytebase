@@ -62,6 +62,9 @@ const currentTab = computed(() => {
 });
 
 onMounted(async () => {
+  // Reset UI editor state before fetching latest data when mounted.
+  editorStore.$reset();
+
   // Prepare instance and database data.
   const databaseIdList = props.databaseIdList;
   const databaseList = await editorStore.fetchDatabaseList(databaseIdList);
