@@ -11,13 +11,7 @@
           <input
             v-model="tableCache.name"
             placeholder=""
-            :disabled="tableCache.id !== UNKNOWN_ID"
-            class="w-full leading-6 px-2 py-1 rounded border text-sm"
-            :class="
-              tableCache.id === UNKNOWN_ID
-                ? 'border-gray-200'
-                : 'border-transparent'
-            "
+            class="w-full leading-6 px-2 py-1 rounded border border-gray-200 text-sm"
             type="text"
           />
         </div>
@@ -80,9 +74,8 @@
           <div class="table-body-item-container">
             <input
               v-model="column.name"
-              :disabled="column.id !== UNKNOWN_ID"
               placeholder="column name"
-              class="w-full box-border border-none bg-transparent text-sm focus:bg-white focus:text-black placeholder:italic placeholder:text-gray-400"
+              class="column-field-input"
               type="text"
             />
           </div>
@@ -92,7 +85,7 @@
             <input
               v-model="column.type"
               placeholder="column type"
-              class="w-full pr-8 box-border border-none bg-transparent text-sm focus:bg-white focus:text-black placeholder:italic placeholder:text-gray-400"
+              class="pr-8 column-field-input"
               type="text"
             />
             <NDropdown
@@ -100,7 +93,7 @@
               :options="dataTypeOptions"
               @select="(dataType: string) => (column.type = dataType)"
             >
-              <button class="absolute right-6">
+              <button class="absolute right-5">
                 <heroicons-solid:chevron-up-down
                   class="w-4 h-auto text-gray-400"
                 />
@@ -120,7 +113,7 @@
             <input
               v-model="column.default"
               placeholder="column default value"
-              class="w-full box-border border-none bg-transparent text-sm focus:bg-white focus:text-black placeholder:italic placeholder:text-gray-400"
+              class="column-field-input"
               type="text"
             />
           </div>
@@ -128,7 +121,7 @@
             <input
               v-model="column.comment"
               placeholder="comment"
-              class="w-full box-border border-none bg-transparent text-sm focus:bg-white focus:text-black placeholder:italic placeholder:text-gray-400"
+              class="column-field-input"
               type="text"
             />
           </div>
@@ -160,10 +153,13 @@
       <div>
         <div class="flex flex-row items-center space-x-2">
           <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:bg-gray-100"
+            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="!allowSave"
             @click="handleDiscardChanges"
           >
-            <heroicons-outline:trash class="w-4 h-auto mr-1 text-gray-400" />
+            <heroicons-solid:arrow-uturn-left
+              class="w-4 h-auto mr-1 text-gray-400"
+            />
             Discard changes
           </button>
           <button
@@ -188,17 +184,14 @@ import {
   useTableStore,
   useUIEditorStore,
 } from "@/store/modules";
-import {
-  TableTabContext,
-  Column,
-  UNKNOWN_ID,
-  Table,
-  DatabaseEdit,
-} from "@/types";
+import { TableTabContext, Column, UNKNOWN_ID, DatabaseEdit } from "@/types";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import { getDataTypeSuggestionList } from "@/utils";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+
+const columnNameFieldRegexp = /\S+/;
+const columnTypeFieldRegexp = /\S+/;
 
 interface LocalState {
   isFetchingDDL: boolean;
@@ -213,12 +206,8 @@ const editorStore = useUIEditorStore();
 const tableStore = useTableStore();
 const notificationStore = useNotificationStore();
 const currentTab = editorStore.currentTab as TableTabContext;
+const table = currentTab.table;
 const tableCache = currentTab.tableCache;
-const table = editorStore.findTable(
-  tableCache.id,
-  tableCache.name,
-  tableCache.database.id
-) as Table;
 
 const allowSave = computed(() => {
   return !isEqual(tableCache, table);
@@ -284,6 +273,25 @@ const handleSaveChanges = async () => {
     return;
   }
 
+  for (const column of tableCache.columnList) {
+    if (!columnNameFieldRegexp.test(column.name)) {
+      notificationStore.pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Invalid column name",
+      });
+      return;
+    }
+    if (!columnTypeFieldRegexp.test(column.type)) {
+      notificationStore.pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Invalid column type",
+      });
+      return;
+    }
+  }
+
   table.name = tableCache.name;
   table.columnList = cloneDeep(tableCache.columnList);
 };
@@ -311,18 +319,19 @@ const handleDiscardChanges = () => {
 
 const handlePreviewDDLStatement = async () => {
   const databaseEdit: DatabaseEdit = {
-    databaseId: tableCache.database.id,
+    databaseId: table.database.id,
     createTableList: [],
     alterTableList: [],
+    renameTableList: [],
     dropTableList: [],
   };
   if (table.id === UNKNOWN_ID) {
-    const diffTableListResult = diffTableList([], [tableCache]);
+    const diffTableListResult = diffTableList([], [table]);
     databaseEdit.createTableList = diffTableListResult.createTableList;
   } else {
     const originTable = tableStore.getTableByDatabaseIdAndTableId(
-      tableCache.database.id,
-      tableCache.id
+      table.database.id,
+      table.id
     );
     const isDropped = editorStore.droppedTableList.includes(table);
     if (isDropped) {
@@ -331,6 +340,7 @@ const handlePreviewDDLStatement = async () => {
     } else {
       const diffTableListResult = diffTableList([originTable], [table]);
       databaseEdit.alterTableList = diffTableListResult.alterTableList;
+      databaseEdit.renameTableList = diffTableListResult.renameTableList;
     }
   }
   state.isFetchingDDL = true;
@@ -346,5 +356,8 @@ const handlePreviewDDLStatement = async () => {
 }
 .table-body-item-container {
   @apply w-full box-border p-px pr-2 relative;
+}
+.column-field-input {
+  @apply w-full box-border rounded border-none bg-transparent text-sm focus:bg-white focus:text-black placeholder:italic placeholder:text-gray-400;
 }
 </style>
