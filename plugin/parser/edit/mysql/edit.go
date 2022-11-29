@@ -3,12 +3,13 @@ package mysql
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
+	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 	"github.com/pingcap/tidb/parser/model"
-	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pingcap/tidb/types"
 	"github.com/pkg/errors"
 
@@ -35,19 +36,29 @@ type SchemaEditor struct{}
 func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error) {
 	var stmtList []string
 	for _, createTableContext := range databaseEdit.CreateTableList {
-		createTableStmt := transformCreateTableContext(createTableContext)
+		createTableStmt, err := transformCreateTableContext(createTableContext)
+		if err != nil {
+			return "", err
+		}
+
 		stmt, err := restoreASTNode(createTableStmt)
 		if err != nil {
 			return "", err
 		}
+
 		stmtList = append(stmtList, stmt)
 	}
 	for _, alterTableContext := range databaseEdit.AlterTableList {
-		alterTableStmt := transformAlterTableContext(alterTableContext)
+		alterTableStmt, err := transformAlterTableContext(alterTableContext)
+		if err != nil {
+			return "", err
+		}
+
 		stmt, err := restoreASTNode(alterTableStmt)
 		if err != nil {
 			return "", err
 		}
+
 		stmtList = append(stmtList, stmt)
 	}
 	for _, renameTableContext := range databaseEdit.RenameTableList {
@@ -56,6 +67,7 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 		if err != nil {
 			return "", err
 		}
+
 		stmtList = append(stmtList, stmt)
 	}
 	for _, dropTableContext := range databaseEdit.DropTableList {
@@ -69,7 +81,7 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 	return strings.Join(stmtList, "\n"), nil
 }
 
-func transformCreateTableContext(createTableContext *api.CreateTableContext) *tidbast.CreateTableStmt {
+func transformCreateTableContext(createTableContext *api.CreateTableContext) (*tidbast.CreateTableStmt, error) {
 	tableName := &tidbast.TableName{
 		Name: model.NewCIStr(createTableContext.Name),
 	}
@@ -106,15 +118,18 @@ func transformCreateTableContext(createTableContext *api.CreateTableContext) *ti
 
 	var columnDefs []*tidbast.ColumnDef
 	for _, addColumnContext := range createTableContext.AddColumnList {
-		columnDef := transformAddColumnContext(addColumnContext)
-		columnDefs = append(columnDefs, columnDef)
+		column, err := transformAddColumnContext(addColumnContext)
+		if err != nil {
+			return nil, err
+		}
+		columnDefs = append(columnDefs, column)
 	}
 	createTableStmt.Cols = columnDefs
 
-	return createTableStmt
+	return createTableStmt, nil
 }
 
-func transformAlterTableContext(alterTableContext *api.AlterTableContext) *tidbast.AlterTableStmt {
+func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidbast.AlterTableStmt, error) {
 	tableName := &tidbast.TableName{
 		Name: model.NewCIStr(alterTableContext.Name),
 	}
@@ -129,7 +144,11 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) *tidba
 			NewColumns: []*tidbast.ColumnDef{},
 		}
 		for _, addColumnContext := range alterTableContext.AddColumnList {
-			alterTableSpec.NewColumns = append(alterTableSpec.NewColumns, transformAddColumnContext(addColumnContext))
+			column, err := transformAddColumnContext(addColumnContext)
+			if err != nil {
+				return nil, err
+			}
+			alterTableSpec.NewColumns = append(alterTableSpec.NewColumns, column)
 		}
 		alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 	}
@@ -151,7 +170,11 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) *tidba
 					Tp: tidbast.ColumnPositionNone,
 				},
 			}
-			alterTableSpec.NewColumns = []*tidbast.ColumnDef{transformChangeColumnContext(changeColumnContext)}
+			column, err := transformChangeColumnContext(changeColumnContext)
+			if err != nil {
+				return nil, err
+			}
+			alterTableSpec.NewColumns = []*tidbast.ColumnDef{column}
 			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 		}
 	}
@@ -168,7 +191,7 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) *tidba
 		}
 	}
 
-	return alterTableStmt
+	return alterTableStmt, nil
 }
 
 func transformRenameTableContext(renameTableContext *api.RenameTableContext) *tidbast.RenameTableStmt {
@@ -200,13 +223,18 @@ func transformDropTableContext(dropTableContext *api.DropTableContext) *tidbast.
 	return dropTableStmt
 }
 
-func transformAddColumnContext(addColumnContext *api.AddColumnContext) *tidbast.ColumnDef {
+func transformAddColumnContext(addColumnContext *api.AddColumnContext) (*tidbast.ColumnDef, error) {
 	colName := &tidbast.ColumnName{
 		Name: model.NewCIStr(addColumnContext.Name),
 	}
+	columnType, err := transformColumnType(addColumnContext.Type)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to transform column type")
+	}
+
 	columnDef := &tidbast.ColumnDef{
 		Name: colName,
-		Tp:   transformColumnType(addColumnContext.Type),
+		Tp:   columnType,
 	}
 
 	var columnOptionList []*tidbast.ColumnOption
@@ -235,16 +263,21 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext) *tidbast.
 	}
 	columnDef.Options = columnOptionList
 
-	return columnDef
+	return columnDef, nil
 }
 
-func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) *tidbast.ColumnDef {
+func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) (*tidbast.ColumnDef, error) {
 	colName := &tidbast.ColumnName{
 		Name: model.NewCIStr(changeColumnContext.NewName),
 	}
+	columnType, err := transformColumnType(changeColumnContext.Type)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to transform column type")
+	}
+
 	columnDef := &tidbast.ColumnDef{
 		Name: colName,
-		Tp:   transformColumnType(changeColumnContext.Type),
+		Tp:   columnType,
 	}
 
 	var columnOptionList []*tidbast.ColumnOption
@@ -273,29 +306,30 @@ func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) 
 	}
 	columnDef.Options = columnOptionList
 
-	return columnDef
+	return columnDef, nil
 }
 
-func transformColumnType(typeStr string) *types.FieldType {
-	colType := types.NewFieldType(getColumnType(typeStr))
-	return colType
-}
-
-// TODO(steven): Refine the type conversion.
-func getColumnType(typeStr string) byte {
-	switch typeStr {
-	// Maybe it should be a regexp to match like `varchar(%d+)`.
-	case "varchar":
-		return mysql.TypeVarchar
-	case "int":
-		return mysql.TypeLong
-	case "bigint":
-		return mysql.TypeLonglong
-	case "json":
-		return mysql.TypeJSON
+func transformColumnType(typeStr string) (*types.FieldType, error) {
+	// Use tidb parser to get a column type.
+	stmt := fmt.Sprintf("CREATE TABLE t(a %s);", typeStr)
+	nodeList, _, err := tidbparser.New().Parse(stmt, "", "")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse create table stmt")
+	}
+	if len(nodeList) != 1 {
+		return nil, errors.New("expected node list length is 1")
 	}
 
-	return mysql.TypeUnspecified
+	node, ok := nodeList[0].(*tidbast.CreateTableStmt)
+	if !ok {
+		return nil, errors.New("expected node with CreateTableStmt type")
+	}
+	if len(node.Cols) != 1 {
+		return nil, errors.New("expected node column list length is 1")
+	}
+
+	col := node.Cols[0]
+	return col.Tp, nil
 }
 
 func restoreASTNode(node tidbast.Node) (string, error) {
