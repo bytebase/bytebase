@@ -29,8 +29,6 @@ const (
 	ActivityPipelineTaskStatementUpdate ActivityType = "bb.pipeline.task.statement.update"
 	// ActivityPipelineTaskEarliestAllowedTimeUpdate is the type for updating pipeline task the earliest allowed time.
 	ActivityPipelineTaskEarliestAllowedTimeUpdate ActivityType = "bb.pipeline.task.general.earliest-allowed-time.update"
-	// ActivityIssueExternalApprovalReject is the type for external approvals rejected on the IM side.
-	ActivityIssueExternalApprovalReject ActivityType = "bb.issue.external-approval.reject"
 
 	// Member related.
 
@@ -91,6 +89,8 @@ type ActivityIssueCreatePayload struct {
 
 // ActivityIssueCommentCreatePayload is the API message payloads for creating issue comments.
 type ActivityIssueCommentCreatePayload struct {
+	ExternalApprovalEvent *ExternalApprovalEvent `json:"externalApprovalEvent"`
+
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
@@ -110,12 +110,6 @@ type ActivityIssueStatusUpdatePayload struct {
 	NewStatus IssueStatus `json:"newStatus,omitempty"`
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
-}
-
-// ActivityIssueExternalApprovalRejectPayload is the API message payloads for rejected external approvals.
-type ActivityIssueExternalApprovalRejectPayload struct {
-	StageName            string               `json:"stageName"`
-	ExternalApprovalType ExternalApprovalType `json:"externalApprovalType"`
 }
 
 // ActivityPipelineTaskStatusUpdatePayload is the API message payloads for updating pipeline task status.

@@ -64,3 +64,20 @@ type ExternalApprovalPatch struct {
 
 	Payload *string
 }
+
+// ExternalApprovalEventActionType is the type of the action which the user took.
+type ExternalApprovalEventActionType string
+
+const (
+	// ExternalApprovalEventActionApprove means that the user approves via the external approval.
+	ExternalApprovalEventActionApprove ExternalApprovalEventActionType = "APPROVE"
+	// ExternalApprovalEventActionReject means that the user rejects via the external approval.
+	ExternalApprovalEventActionReject ExternalApprovalEventActionType = "REJECT"
+)
+
+// ExternalApprovalEvent is the API message for describing an ExternalApproval.
+type ExternalApprovalEvent struct {
+	Type      ExternalApprovalType
+	Action    ExternalApprovalEventActionType
+	StageName string
+}

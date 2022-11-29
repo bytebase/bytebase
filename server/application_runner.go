@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/app/feishu"
 	"github.com/bytebase/bytebase/store"
@@ -31,12 +30,11 @@ const (
 )
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider, releaseMode common.ReleaseMode) *ApplicationRunner {
+func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider) *ApplicationRunner {
 	return &ApplicationRunner{
 		store:           store,
 		activityManager: activityManager,
 		p:               feishuProvider,
-		mode:            releaseMode,
 	}
 }
 
@@ -45,7 +43,6 @@ type ApplicationRunner struct {
 	store           *store.Store
 	activityManager *ActivityManager
 	p               *feishu.Provider
-	mode            common.ReleaseMode
 }
 
 // Run runs the ApplicationRunner.
@@ -171,10 +168,6 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 						case feishu.ApprovalStatusRejected:
 							if err := func() error {
-								// TODO(p0ny): remove release guard.
-								if r.mode == common.ReleaseModeProd {
-									return nil
-								}
 								payload := payload
 								payload.Rejected = true
 								bytes, err := json.Marshal(payload)
@@ -198,9 +191,12 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 										break
 									}
 								}
-								activityPayload, err := json.Marshal(api.ActivityIssueExternalApprovalRejectPayload{
-									StageName:            stageName,
-									ExternalApprovalType: api.ExternalApprovalTypeFeishu,
+								activityPayload, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
+									ExternalApprovalEvent: &api.ExternalApprovalEvent{
+										Type:      api.ExternalApprovalTypeFeishu,
+										Action:    api.ExternalApprovalEventActionReject,
+										StageName: stageName,
+									},
 								})
 								if err != nil {
 									return errors.Wrap(err, "failed to marshal ActivityIssueExternalApprovalRejectPayload")
@@ -209,7 +205,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 								activityCreate := &api.ActivityCreate{
 									CreatorID:   payload.AssigneeID,
 									ContainerID: issue.ID,
-									Type:        api.ActivityIssueExternalApprovalReject,
+									Type:        api.ActivityIssueCommentCreate,
 									Level:       api.ActivityInfo,
 									Comment:     "",
 									Payload:     string(activityPayload),
