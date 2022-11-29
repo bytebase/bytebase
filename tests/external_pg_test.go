@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
 	"testing"
 
@@ -38,7 +37,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 		return nil, errors.Wrap(err, "cannot initdb")
 	}
 
-	err = postgres.Start(port, pgBinDir, dataDir, os.Stderr, os.Stderr)
+	err = postgres.Start(port, pgBinDir, dataDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot start postgres server")
 	}
@@ -52,7 +51,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 }
 
 func (f *fakeExternalPg) Destroy() error {
-	return postgres.Stop(f.pgBinDir, f.pgDataDir, os.Stderr, os.Stderr)
+	return postgres.Stop(f.pgBinDir, f.pgDataDir)
 }
 
 func TestBootWithExternalPg(t *testing.T) {

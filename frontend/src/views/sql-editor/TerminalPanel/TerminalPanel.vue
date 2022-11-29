@@ -2,7 +2,7 @@
   <div
     class="flex h-full w-full flex-col justify-start items-start overflow-hidden"
   >
-    <EditorAction @execute="handleExecute" @save-sheet="trySaveSheet" />
+    <EditorAction @execute="handleExecute" />
 
     <ConnectionPathBar />
 
@@ -19,15 +19,11 @@
         <div v-for="(query, i) in queryList" :key="i" class="relative">
           <CompactSQLEditor
             v-model:sql="query.sql"
-            class="border-b min-h-[2rem]"
+            class="min-h-[2rem]"
             :readonly="!isEditableQueryItem(query)"
-            @save-sheet="trySaveSheet"
             @execute="handleExecute"
           />
-          <div
-            v-if="query.queryResult"
-            class="max-h-[20rem] overflow-y-auto border-b"
-          >
+          <div v-if="query.queryResult" class="max-h-[20rem] overflow-y-auto">
             <TableView
               :query-result="query.queryResult.data"
               :loading="query.isExecutingSQL"
@@ -45,8 +41,6 @@
       </div>
     </div>
     <ConnectionHolder v-else />
-
-    <SaveSheetModal ref="saveSheetModal" />
   </div>
 </template>
 
@@ -62,7 +56,6 @@ import {
   ConnectionPathBar,
   ConnectionHolder,
   TableView,
-  SaveSheetModal,
 } from "../EditorCommon";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 
@@ -117,12 +110,6 @@ const handleExecute = async (
   } finally {
     queryItem.isExecutingSQL = false;
   }
-};
-
-const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
-
-const trySaveSheet = (sheetName?: string) => {
-  saveSheetModal.value?.trySaveSheet(sheetName);
 };
 
 const { height: queryListHeight } = useElementSize(queryListRef);

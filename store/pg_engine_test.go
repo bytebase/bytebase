@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
 	"testing"
 
@@ -151,7 +150,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 	err = postgres.InitDB(pgBinDir, pgDataDir, pgUser)
 	require.NoError(t, err)
-	err = postgres.Start(pgPort, pgBinDir, pgDataDir, os.Stderr, os.Stderr)
+	err = postgres.Start(pgPort, pgBinDir, pgDataDir)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -214,12 +213,12 @@ func TestMigrationCompatibility(t *testing.T) {
 	// The extra one is for the initial schema setup.
 	require.Len(t, histories, len(devMigrations)+1)
 
-	err = postgres.Stop(pgBinDir, pgDataDir, os.Stdout, os.Stderr)
+	err = postgres.Stop(pgBinDir, pgDataDir)
 	require.NoError(t, err)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("1.9.1"), releaseVersion)
+	require.Equal(t, semver.MustParse("1.9.2"), releaseVersion)
 }

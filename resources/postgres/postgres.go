@@ -4,7 +4,6 @@ package postgres
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"os/user"
@@ -96,7 +95,7 @@ func Install(resourceDir string) (string, error) {
 
 // Start starts a postgres database instance.
 // If port is 0, then it will choose a random unused port.
-func Start(port int, binDir string, dataDir string, stdout, stderr io.Writer) (err error) {
+func Start(port int, binDir string, dataDir string) (err error) {
 	pgbin := filepath.Join(binDir, "pg_ctl")
 
 	// See -p -k -h option definitions in the link below.
@@ -105,8 +104,6 @@ func Start(port int, binDir string, dataDir string, stdout, stderr io.Writer) (e
 		"-D", dataDir,
 		"-o", fmt.Sprintf(`-p %d -k %s -h "" -c stats_temp_directory=/tmp`, port, common.GetPostgresSocketDir()))
 
-	p.Stdout = stdout
-	p.Stderr = stderr
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
 		return err
@@ -118,6 +115,9 @@ func Start(port int, binDir string, dataDir string, stdout, stderr io.Writer) (e
 		}
 	}
 
+	// Suppress log spam
+	p.Stdout = nil
+	p.Stderr = os.Stderr
 	if err := p.Run(); err != nil {
 		return errors.Wrapf(err, "failed to start postgres %q", p.String())
 	}
@@ -126,13 +126,10 @@ func Start(port int, binDir string, dataDir string, stdout, stderr io.Writer) (e
 }
 
 // Stop stops a postgres instance, outputs to stdout and stderr.
-func Stop(pgBinDir, pgDataDir string, stdout, stderr io.Writer) error {
+func Stop(pgBinDir, pgDataDir string) error {
 	pgbin := filepath.Join(pgBinDir, "pg_ctl")
 	p := exec.Command(pgbin, "stop", "-w",
 		"-D", pgDataDir)
-
-	p.Stderr = stderr
-	p.Stdout = stdout
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
 		return err
@@ -144,6 +141,9 @@ func Stop(pgBinDir, pgDataDir string, stdout, stderr io.Writer) error {
 		}
 	}
 
+	// Suppress log spam
+	p.Stdout = nil
+	p.Stderr = os.Stderr
 	return p.Run()
 }
 
@@ -182,8 +182,6 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 		"LC_ALL=en_US.UTF-8",
 		"LC_CTYPE=en_US.UTF-8",
 	)
-	p.Stderr = os.Stderr
-	p.Stdout = os.Stdout
 	uid, gid, sameUser, err := shouldSwitchUser()
 	if err != nil {
 		return err
@@ -198,9 +196,14 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 		}
 	}
 
+	// Suppress log spam
+	p.Stdout = nil
+	p.Stderr = os.Stderr
+	log.Info("-----Postgres initdb BEGIN-----")
 	if err := p.Run(); err != nil {
 		return errors.Wrapf(err, "failed to initdb %q", p.String())
 	}
+	log.Info("-----Postgres initdb END-----")
 
 	return nil
 }
@@ -234,7 +237,7 @@ func shouldSwitchUser() (int, int, bool, error) {
 
 // StartForTest starts a postgres instance on localhost given port, outputs to stdout and stderr.
 // If port is 0, then it will choose a random unused port.
-func StartForTest(port int, pgBinDir, pgDataDir string, stdout, stderr io.Writer) (err error) {
+func StartForTest(port int, pgBinDir, pgDataDir string) (err error) {
 	pgbin := filepath.Join(pgBinDir, "pg_ctl")
 
 	// See -p -k -h option definitions in the link below.
@@ -243,9 +246,9 @@ func StartForTest(port int, pgBinDir, pgDataDir string, stdout, stderr io.Writer
 		"-D", pgDataDir,
 		"-o", fmt.Sprintf(`-p %d -k %s`, port, common.GetPostgresSocketDir()))
 
-	p.Stdout = stdout
-	p.Stderr = stderr
-
+	// Suppress log spam
+	p.Stdout = nil
+	p.Stderr = os.Stderr
 	if err := p.Run(); err != nil {
 		return errors.Wrapf(err, "failed to start postgres %q", p.String())
 	}
@@ -267,13 +270,13 @@ func SetupTestInstance(t *testing.T, port int) func() {
 		t.Fatal(err)
 	}
 	t.Log("Starting PostgreSQL...")
-	if err := StartForTest(port, binDir, datadir, os.Stdout, os.Stderr); err != nil {
+	if err := StartForTest(port, binDir, datadir); err != nil {
 		t.Fatal(err)
 	}
 
 	stopFn := func() {
 		t.Log("Stopping PostgreSQL...")
-		if err := Stop(binDir, datadir, os.Stdout, os.Stderr); err != nil {
+		if err := Stop(binDir, datadir); err != nil {
 			t.Fatal(err)
 		}
 	}
