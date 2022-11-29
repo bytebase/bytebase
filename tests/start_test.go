@@ -51,11 +51,7 @@ func TestServiceRestart(t *testing.T) {
 }
 
 var (
-	externalPgUser    = "bbexternal"
-	externalPgPort    = 21113
-	externalPgBinDir  string
-	externalPgDataDir string
-	mysqlBinDir       string
+	mysqlBinDir string
 )
 
 func TestMain(m *testing.M) {
