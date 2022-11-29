@@ -77,7 +77,7 @@ const (
 
 // ExternalApprovalEvent is the API message for describing an ExternalApproval.
 type ExternalApprovalEvent struct {
-	Type      ExternalApprovalType
-	Action    ExternalApprovalEventActionType
-	StageName string
+	Type      ExternalApprovalType            `json:"type"`
+	Action    ExternalApprovalEventActionType `json:"action"`
+	StageName string                          `json:"stageName"`
 }
