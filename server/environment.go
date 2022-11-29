@@ -18,20 +18,6 @@ import (
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	g.POST("/environment", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		normalRowStatus := api.Normal
-		envFind := &api.EnvironmentFind{
-			RowStatus: &normalRowStatus,
-		}
-		envList, err := s.store.FindEnvironment(ctx, envFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment list").SetInternal(err)
-		}
-
-		maximumEnvironmentLimit := s.getPlanLimitValue(api.PlanLimitMaximumEnvironment)
-		if int64(len(envList)) >= maximumEnvironmentLimit {
-			return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can create up to %d environments.", s.getEffectivePlan(), maximumEnvironmentLimit))
-		}
-
 		envCreate := &api.EnvironmentCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, envCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create environment request").SetInternal(err)
@@ -158,6 +144,20 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 }
 
 func (s *Server) createEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
+	normalRowStatus := api.Normal
+	envFind := &api.EnvironmentFind{
+		RowStatus: &normalRowStatus,
+	}
+	envList, err := s.store.FindEnvironment(ctx, envFind)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment list").SetInternal(err)
+	}
+
+	maximumEnvironmentLimit := s.getPlanLimitValue(api.PlanLimitMaximumEnvironment)
+	if int64(len(envList)) >= maximumEnvironmentLimit {
+		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can create up to %d environments.", s.getEffectivePlan(), maximumEnvironmentLimit))
+	}
+
 	if err := api.IsValidEnvironmentName(create.Name); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 	}
