@@ -26,7 +26,7 @@ export default defineComponent({
     });
 
     return h(tag, {
-      class: `${language} ${additionalClass ?? ""}`,
+      class: [language, additionalClass],
       innerHTML: result.value,
     });
   },
