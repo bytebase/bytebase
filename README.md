@@ -94,6 +94,12 @@ https://bytebase.com/docs
 
 In particular, get familiar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
 
+### Testing doc
+
+How to run all or a subset of tests
+
+https://github.com/bytebase/bytebase/blob/main/docs/testing.md
+
 ### Design doc
 
 https://github.com/bytebase/bytebase/tree/main/docs/design
