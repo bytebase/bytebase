@@ -1,7 +1,6 @@
 package helm
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,9 +9,12 @@ import (
 // TestArtifactHub tests our artifact metadata exists.
 // We provide the chart template via GitHub Pages.
 func TestArtifactHub(t *testing.T) {
+	metadataFilePaths := []string{
+		"../docs/index.yaml",
+		"../docs/bytebase-1.0.0.tgz",
+	}
 	a := require.New(t)
-	indexURL := "https://bytebase.github.io/bytebase/index.yaml"
-	resp, err := http.Get(indexURL)
-	a.NoError(err)
-	a.Equal(http.StatusOK, resp.StatusCode)
+	for _, path := range metadataFilePaths {
+		a.FileExists(path)
+	}
 }
