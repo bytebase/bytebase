@@ -145,7 +145,7 @@ type controller struct {
 	rootURL    string
 	apiURL     string
 	vcsURL     string
-	openApiURL string
+	openAPIURL string
 	feishuURL  string
 }
 
@@ -263,7 +263,7 @@ func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreat
 func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
-	ctl.openApiURL = fmt.Sprintf("http://localhost:%d/v1", port)
+	ctl.openAPIURL = fmt.Sprintf("http://localhost:%d/v1", port)
 
 	errChan := make(chan error, 1)
 
@@ -474,7 +474,7 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 
 // postOpenAPI sends a openAPI POST request.
 func (ctl *controller) postOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.openApiURL, shortURL)
+	url := fmt.Sprintf("%s%s", ctl.openAPIURL, shortURL)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "fail to create a new POST request(%q)", url)
