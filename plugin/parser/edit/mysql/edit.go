@@ -310,7 +310,7 @@ func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) 
 }
 
 func transformColumnType(typeStr string) (*types.FieldType, error) {
-	// Use tidb parser to get a column type.
+	// Mock a CreateTableStmt with type string to get the actually types.FieldType.
 	stmt := fmt.Sprintf("CREATE TABLE t(a %s);", typeStr)
 	nodeList, _, err := tidbparser.New().Parse(stmt, "", "")
 	if err != nil {
