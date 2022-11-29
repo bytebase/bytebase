@@ -456,7 +456,7 @@
       "completed": "completed",
       "failed": "failed",
       "task-name": " task {name}",
-      "committed-to-at": "committed {file} to{branch}{'@'}{repo}",
+      "committed-to-at": "committed {file} to {branch}{'@'}{repo}",
       "dismissed-stale-approval": "dismissed stale approvals of {task}",
       "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\""
     },
