@@ -317,7 +317,7 @@ func transformColumnType(typeStr string) (*types.FieldType, error) {
 		return nil, errors.Wrap(err, "failed to parse create table stmt")
 	}
 	if len(nodeList) != 1 {
-		return nil, errors.New("expected node list length is 1")
+		return nil, errors.Errorf("expect node list length to be 1, get %d", len(nodeList))
 	}
 
 	node, ok := nodeList[0].(*tidbast.CreateTableStmt)
