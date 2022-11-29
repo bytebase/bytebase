@@ -39,10 +39,16 @@ sudo sysctl -w kern.sysv.shmall=12582912
 
 ### Run tests
 
+#### Configure alias
+
+```shell
+alias t="go test --tags=mysql -v -run "
+alias ta="t \"\" ./..."
+```
+
 #### Run all backend tests
 
 ```shell
-alias ta="go test --tags=mysql -v ./..."
 # This will run all tests in current directory and its sub-directories
 ta
 ```
@@ -50,12 +56,13 @@ ta
 #### Run integration tests
 
 ```shell
-alias t="go test --tags=mysql -v -run "
 cd tests
 # This will run all tests in current directory.
 t ''
-# This will run tests matching TestName in current directory.
+# This will run tests regex matching TestName in current directory.
 t TestName
+# This will run tests regex matching TestName in current directory and its sub-directories.
+t TestName ./...
 ```
 
 For every PR, there is GitHub action to run all integration test. If there is any failure, you can use keyword `FAIL:` to find the failed test and run the test on local workstation to troubleshoot issues.
