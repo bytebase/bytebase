@@ -553,8 +553,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Trying to stop Bytebase...")
-	log.Info("Trying to gracefully shutdown server...")
+	log.Info("Stopping Bytebase...")
+	log.Info("Stopping web server...")
 
 	// Close the metric reporter
 	if s.MetricReporter != nil {

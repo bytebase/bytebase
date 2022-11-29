@@ -392,7 +392,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to init embedded postgres database").SetInternal(err)
 			}
 
-			if err := postgres.Start(port, s.pgBinDir, dataDir, os.Stderr, os.Stderr); err != nil {
+			if err := postgres.Start(port, s.pgBinDir, dataDir); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
 			}
 		}
