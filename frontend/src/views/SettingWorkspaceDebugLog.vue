@@ -16,7 +16,7 @@
         </button>
       </div>
       <DebugLogTable
-        :debug-log-list="debugLogList"
+        :debug-log-list="debugLogList.sort((a, b) => b.RecordTs - a.RecordTs)"
         @view-detail="
           (log: any) => {
             state.modalContent = log
