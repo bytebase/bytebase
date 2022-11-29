@@ -39,19 +39,16 @@ const renderActionSentence = () => {
       const payload = activity.payload as ActivityIssueCommentCreatePayload;
       if (payload.externalApprovalEvent) {
         if (payload.externalApprovalEvent.action == "REJECT") {
-          console.log(payload.externalApprovalEvent);
+          let imName = "";
           switch (payload.externalApprovalEvent.type) {
             case "bb.plugin.app.feishu":
-              return t("activity.sentence.external-approval-rejected", {
-                stageName: payload.externalApprovalEvent.stageName,
-                imName: t("common.feishu"),
-              });
-            default:
-              return t("activity.sentence.external-approval-rejected", {
-                stageName: payload.externalApprovalEvent.stageName,
-                imName: "",
-              });
+              imName = t("common.feishu");
+              break;
           }
+          return t("activity.sentence.external-approval-rejected", {
+            stageName: payload.externalApprovalEvent.stageName,
+            imName: imName,
+          });
         }
       }
     }
