@@ -29,6 +29,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		mysqlPort := getTestPort()
 		stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
 		defer stopFn()
+		// time.Sleep(1 * time.Minute)
 		t.Log("create test database")
 		database := "test_success"
 		db, err := connectTestMySQL(mysqlPort, "")
