@@ -67,11 +67,12 @@
             :key="`${index}-${table.id}`"
             class="grid grid-cols-[repeat(6,_minmax(0,_1fr))_32px] text-sm even:bg-gray-50"
           >
-            <div
-              class="table-body-item-container cursor-pointer hover:opacity-80"
-              @click="handleTableItemClick(table)"
-            >
-              {{ table.name }}
+            <div class="table-body-item-container">
+              <span
+                class="cursor-pointer hover:opacity-60"
+                @click="handleTableItemClick(table)"
+                >{{ table.name }}</span
+              >
             </div>
             <div class="table-body-item-container">
               {{ table.rowCount }}
@@ -118,10 +119,10 @@
       </div>
       <template v-else>
         <HighlightCodeBlock
-          v-if="state.ddlStatement !== ''"
+          v-if="state.statement !== ''"
           class="text-sm px-3 py-2 whitespace-pre-wrap break-all"
           language="sql"
-          :code="state.ddlStatement"
+          :code="state.statement"
         ></HighlightCodeBlock>
         <span v-else class="px-3 my-2 italic">Nothing changed</span>
       </template>
@@ -147,7 +148,7 @@ type TabType = "list" | "er-diagram" | "raw-sql";
 interface LocalState {
   selectedTab: TabType;
   isFetchingDDL: boolean;
-  ddlStatement: string;
+  statement: string;
 }
 
 const editorStore = useUIEditorStore();
@@ -156,7 +157,7 @@ const tableStore = useTableStore();
 const state = reactive<LocalState>({
   selectedTab: "list",
   isFetchingDDL: false,
-  ddlStatement: "",
+  statement: "",
 });
 const currentTab = editorStore.currentTab as DatabaseTabContext;
 const database = databaseStore.getDatabaseById(currentTab.databaseId);
@@ -223,6 +224,7 @@ watch(
       if (
         diffTableListResult.createTableList.length > 0 ||
         diffTableListResult.alterTableList.length > 0 ||
+        diffTableListResult.renameTableList.length > 0 ||
         diffTableListResult.dropTableList.length > 0
       ) {
         const databaseEdit = {
@@ -230,7 +232,7 @@ watch(
           ...diffTableListResult,
         };
         const statement = await editorStore.postDatabaseEdit(databaseEdit);
-        state.ddlStatement = statement;
+        state.statement = statement;
       }
       state.isFetchingDDL = false;
     }
@@ -248,6 +250,7 @@ const handleCreateNewTable = () => {
     type: UIEditorTabType.TabForTable,
     databaseId: database.id,
     tableId: table.id,
+    table: table,
     tableCache: cloneDeep(table),
   });
 };
@@ -258,12 +261,13 @@ const handleTableItemClick = (table: Table) => {
     type: UIEditorTabType.TabForTable,
     databaseId: database.id,
     tableId: table.id,
+    table: table,
     tableCache: cloneDeep(table),
   });
 };
 
 const handleDropTable = (table: Table) => {
-  editorStore.dropTable(table.database.id, table.id, table.name);
+  editorStore.dropTable(table);
 };
 </script>
 
@@ -272,6 +276,6 @@ const handleDropTable = (table: Table) => {
   @apply py-2 px-3;
 }
 .table-body-item-container {
-  @apply w-full box-border p-px pl-3 pr-4 relative leading-8;
+  @apply w-full box-border p-px pl-3 pr-4 relative leading-9;
 }
 </style>

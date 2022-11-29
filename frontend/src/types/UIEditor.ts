@@ -18,6 +18,8 @@ export interface TableTabContext {
   type: UIEditorTabType.TabForTable;
   databaseId: DatabaseId;
   tableId: TableId;
+  // Save the reference for those new tables.
+  table: Table;
   // Save the editing table cache in tab.
   tableCache: Table;
 }
@@ -29,7 +31,7 @@ type TabId = string;
 export interface UIEditorState {
   tabState: {
     tabMap: Map<TabId, TabContext>;
-    currentTabId: TabId;
+    currentTabId?: TabId;
   };
   databaseList: Database[];
   tableList: Table[];
