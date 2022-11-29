@@ -153,7 +153,8 @@
       <div>
         <div class="flex flex-row items-center space-x-2">
           <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:bg-gray-100"
+            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="!allowSave"
             @click="handleDiscardChanges"
           >
             <heroicons-solid:arrow-uturn-left
@@ -318,19 +319,19 @@ const handleDiscardChanges = () => {
 
 const handlePreviewDDLStatement = async () => {
   const databaseEdit: DatabaseEdit = {
-    databaseId: tableCache.database.id,
+    databaseId: table.database.id,
     createTableList: [],
     alterTableList: [],
     renameTableList: [],
     dropTableList: [],
   };
   if (table.id === UNKNOWN_ID) {
-    const diffTableListResult = diffTableList([], [tableCache]);
+    const diffTableListResult = diffTableList([], [table]);
     databaseEdit.createTableList = diffTableListResult.createTableList;
   } else {
     const originTable = tableStore.getTableByDatabaseIdAndTableId(
-      tableCache.database.id,
-      tableCache.id
+      table.database.id,
+      table.id
     );
     const isDropped = editorStore.droppedTableList.includes(table);
     if (isDropped) {
