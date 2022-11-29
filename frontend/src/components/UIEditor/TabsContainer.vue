@@ -27,7 +27,7 @@
           </span>
           <NEllipsis
             class="text-sm w-24"
-            :class="checkTabSaved(tab) ? '' : 'italic'"
+            :class="checkTabSaved(tab) ? '' : 'text-yellow-700 italic'"
             >{{ getTabName(tab) }}</NEllipsis
           >
         </div>
