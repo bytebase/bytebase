@@ -65,4 +65,4 @@ t TestName
 t TestName ./...
 ```
 
-For every PR, there is GitHub action to run all integration test. If there is any failure, you can use keyword `FAIL:` to find the failed test and run the test on local workstation to troubleshoot issues.
+For every PR, there is GitHub action to run all integration test. If there is any failure, you can use keyword `--- FAIL:` to find the failed test and run the test on local workstation to troubleshoot issues.
