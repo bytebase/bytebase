@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         # The first service_id using PG 15 and the second using PG 14
-        service_id: ["srv-c760lk4objdcv67lc6ug","srv-ce02beha6gdsa605m5eg"]
+        service_id: ["srv-c760lk4objdcv67lc6ug", "srv-ce02beha6gdsa605m5eg"]
     steps:
       - uses: actions/checkout@v3
       - name: Extract version
