@@ -10,11 +10,31 @@ All the Go integration tests is at [tests directory](https://github.com/bytebase
 
 ### Prerequisites
 
+#### Prepare MySQL binaries
+
 We embed MySQL binaries for testing. Run following command to download MySQL distributions first.
 
 ```shell
 # Run this from the repo root
 go generate -tags mysql ./...
+```
+
+#### Increase kernel shared memory for PostgreSQL
+
+You may encounter following error while running the test
+
+```shell
+2022-11-29 11:07:36.391 CST [34173] FATAL: could not create shared memory segment: Cannot allocate memory
+2022-11-29 11:07:36.391 CST [34173] DETAIL: Failed system call was shmget(key=41006308, size=56, 03600).
+2022-11-29 11:07:36.391 CST [34173] HINT: This error usually means that PostgreSQL's request for a shared memory segment exceeded your kernel's SHMALL parameter. You might need to reconfigure the kernel with larger SHMALL.
+The PostgreSQL documentation contains more information about shared memory configuration.
+```
+
+You need to increase kernels shared memory ([detailed explanation](https://dansketcher.com/2021/03/30/shmmax-error-on-big-sur)).
+
+```shell
+sudo sysctl -w kern.sysv.shmmax=12582912
+sudo sysctl -w kern.sysv.shmall=12582912
 ```
 
 ### Run tests
