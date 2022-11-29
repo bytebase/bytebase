@@ -94,8 +94,8 @@ func (i *Instance) Stop() error {
 	return i.proc.Kill()
 }
 
-// install installs mysql on basedir, prepares the data directory and default user.
-func install(resourceDir, dataDir, cfgDir, user string) (*Instance, error) {
+// Install installs mysql on basedir, prepares the data directory and default user.
+func Install(resourceDir string) (string, error) {
 	var tarName, version string
 	// Mysql uses both tar.gz and tar.xz, so we use this ugly hack.
 	var extractFn func(io.Reader, string) error
@@ -109,33 +109,48 @@ func install(resourceDir, dataDir, cfgDir, user string) (*Instance, error) {
 		version = "mysql-8.0.28-linux-glibc2.17-x86_64-minimal"
 		extractFn = utils.ExtractTarXz
 	default:
-		return nil, errors.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
+		return "", errors.Errorf("unsupported os %q and arch %q", runtime.GOOS, runtime.GOARCH)
 	}
-	tarF, err := resources.Open(tarName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open mysql dist %q", tarName)
+	mysqlBinDir := filepath.Join(resourceDir, version)
+	needInstall := false
+	if _, err := os.Stat(mysqlBinDir); err != nil {
+		if !os.IsNotExist(err) {
+			return "", errors.Wrapf(err, "failed to check mysql binary directory path %q", mysqlBinDir)
+		}
+		// Install if not exist yet.
+		needInstall = true
 	}
-	defer tarF.Close()
-	if err := extractFn(tarF, resourceDir); err != nil {
-		return nil, errors.Wrapf(err, "failed to extract mysql distribution %q", tarName)
+	if needInstall {
+		tarF, err := resources.Open(tarName)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to open mysql dist %q", tarName)
+		}
+		defer tarF.Close()
+		if err := extractFn(tarF, resourceDir); err != nil {
+			return "", errors.Wrapf(err, "failed to extract mysql distribution %q", tarName)
+		}
 	}
-	resourceDir = filepath.Join(resourceDir, version)
+	return mysqlBinDir, nil
+}
 
+// SetupTestInstance installs and starts a mysql instance for testing,
+// returns the stop function.
+func SetupTestInstance(t *testing.T, port int, mysqlBinDir string) func() {
+	dataDir, cfgDir := t.TempDir(), t.TempDir()
+	t.Log("Installing mysql...")
 	configContent := fmt.Sprintf(`[mysqld]
 basedir=%s
 datadir=%s
 socket=mysql.sock
 mysqlx=0
 user=%s
-`, resourceDir, dataDir, user)
+`, mysqlBinDir, dataDir, "root")
 	defaultCfgFile, err := os.Create(filepath.Join(cfgDir, "my.cnf"))
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
 	}
-	fmt.Printf("Barny1: %s\n", cfgDir)
-	fmt.Printf("Barny2: %s\n", defaultCfgFile.Name())
 	if _, err := fmt.Fprint(defaultCfgFile, configContent); err != nil {
-		return nil, err
+		t.Fatal(err)
 	}
 	defer defaultCfgFile.Close()
 
@@ -144,30 +159,20 @@ user=%s
 		"--initialize-insecure",
 	}
 
-	cmd := exec.Command(filepath.Join(resourceDir, "bin", "mysqld"), args...)
+	cmd := exec.Command(filepath.Join(mysqlBinDir, "bin", "mysqld"), args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return nil, errors.Wrap(err, "failed to initialize mysql")
+		t.Fatal(errors.Wrap(err, "failed to initialize mysql"))
 	}
 
-	return &Instance{
-		baseDir: resourceDir,
+	i := &Instance{
+		baseDir: mysqlBinDir,
 		dataDir: dataDir,
 		cfgPath: defaultCfgFile.Name(),
-	}, nil
-}
-
-// SetupTestInstance installs and starts a mysql instance for testing,
-// returns the stop function.
-func SetupTestInstance(t *testing.T, port int) func() {
-	resourceDir, dataDir, cfgDir := t.TempDir(), t.TempDir(), t.TempDir()
-	t.Log("Installing Mysql...")
-	i, err := install(resourceDir, dataDir, cfgDir, "root")
-	if err != nil {
-		t.Fatal(err)
 	}
-	t.Log("Starting Mysql...")
+
+	t.Log("Starting mysql...")
 	if err := i.Start(port, os.Stdout, os.Stderr); err != nil {
 		t.Fatal(err)
 	}

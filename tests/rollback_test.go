@@ -26,7 +26,7 @@ func TestRollback(t *testing.T) {
 	database := "funny\ndatabase"
 
 	mysqlPort := getTestPort()
-	stopFn := resourcemysql.SetupTestInstance(t, mysqlPort)
+	stopFn := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopFn()
 
 	db, err := connectTestMySQL(mysqlPort, "")
@@ -113,7 +113,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
-	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
+	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
 	// Create a project.
