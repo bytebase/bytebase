@@ -18,12 +18,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { lastTask } from "@/utils";
-import {
-  useDatabaseStore,
-  useInstanceList,
-  useIssueStore,
-  useProjectStore,
-} from "@/store";
+import { useInstanceList, useIssueStore, useProjectStore } from "@/store";
 import GuideDialog from "@/plugins/demo/components/GuideDialog.vue";
 import CreateDatabaseGuideFinished from "./CreateDatabaseGuideFinished.vue";
 import { useI18n } from "vue-i18n";
@@ -165,11 +160,10 @@ watch(
       } else {
         tempGuideIndex = 5;
       }
-    }
 
-    const databaseList = await useDatabaseStore().fetchDatabaseList();
-    if (databaseList.length > 0 && route.name === "workspace.home") {
-      tempGuideIndex = 6;
+      if (tempGuideIndex === 5 && route.name === "workspace.home") {
+        tempGuideIndex = 6;
+      }
     }
 
     guideIndex.value = tempGuideIndex;

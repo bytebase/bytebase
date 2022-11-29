@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/app/feishu"
@@ -28,6 +27,8 @@ type Feishu struct {
 	approvalInstance   map[string]*approval
 	// email to user id mapping.
 	users map[string]string
+	// user id set
+	userIDs map[string]bool
 }
 
 // FeishuProviderCreator is the function to create a fake feishu provider.
@@ -43,19 +44,17 @@ var _ FeishuProviderCreator = NewFeishu
 
 // NewFeishu creates a new fake feishu provider.
 func NewFeishu(port int) *Feishu {
-	e := echo.New()
-
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
+	e := newEchoServer()
+	botID := uuid.NewString()
 	f := &Feishu{
 		port:               port,
 		echo:               e,
 		approvalDefinition: map[string]bool{},
 		approvalInstance:   map[string]*approval{},
 		users:              map[string]string{},
+		userIDs:            map[string]bool{botID: true},
 		mutex:              sync.Mutex{},
-		botID:              uuid.NewString(),
+		botID:              botID,
 	}
 
 	// Routes
@@ -63,6 +62,7 @@ func NewFeishu(port int) *Feishu {
 	g.POST("/approval/v4/approvals", f.createApprovalDefinition)
 	g.POST("/approval/v4/instances", f.createApprovalInstance)
 	g.GET("/approval/v4/instances/:id", f.getApprovalInstanceStatus)
+	g.POST("/approval/v4/instances/:id/comments", f.createApprovalInstanceComment)
 	g.POST("/approval/v4/instances/cancel", f.cancelApprovalInstance)
 	g.POST("/contact/v3/users/batch_get_id", f.getIDByEmail)
 	g.GET("/bot/v3/info", f.getBotID)
@@ -99,7 +99,9 @@ func (f *Feishu) RegisterEmails(emails ...string) error {
 		if ok {
 			return errors.Errorf("register email %s twice", email)
 		}
-		f.users[email] = uuid.NewString()
+		id := uuid.NewString()
+		f.users[email] = id
+		f.userIDs[id] = true
 	}
 	return nil
 }
@@ -158,6 +160,16 @@ func (f *Feishu) createApprovalInstance(c echo.Context) error {
 	if !f.approvalDefinition[create.ApprovalCode] {
 		return errors.Errorf("not found approval code %s", create.ApprovalCode)
 	}
+	if !f.userIDs[create.OpenID] {
+		return errors.Errorf("not found user id %s", create.OpenID)
+	}
+	for _, idList := range create.NodeApproverOpenIDList {
+		for _, id := range idList.Value {
+			if !f.userIDs[id] {
+				return errors.Errorf("not found user id %s", id)
+			}
+		}
+	}
 
 	id := uuid.NewString()
 	f.approvalInstance[id] = &approval{
@@ -174,6 +186,32 @@ func (f *Feishu) createApprovalInstance(c echo.Context) error {
 		}{
 			InstanceCode: id,
 		},
+	})
+}
+
+func (f *Feishu) createApprovalInstanceComment(c echo.Context) error {
+	userID := c.QueryParam("user_id")
+	instanceID := c.Param("id")
+	b, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return errors.Wrap(err, "failed to read create approval instance body")
+	}
+	create := &feishu.CreateExternalApprovalCommentRequest{}
+	if err := json.Unmarshal(b, create); err != nil {
+		return errors.Wrap(err, "failed to unmarshal create approval instance body")
+	}
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	if _, ok := f.approvalInstance[instanceID]; !ok {
+		return errors.Errorf("not found approval instance code %s", instanceID)
+	}
+	if !f.userIDs[userID] {
+		return errors.Errorf("not found user id %s", userID)
+	}
+
+	return c.JSON(http.StatusOK, &feishu.CreateExternalApprovalCommentResponse{
+		Code: 0,
+		Msg:  "",
 	})
 }
 
@@ -211,6 +249,9 @@ func (f *Feishu) cancelApprovalInstance(c echo.Context) error {
 	approval, ok := f.approvalInstance[req.InstanceCode]
 	if !ok {
 		return errors.Errorf("not found approval %s", req.InstanceCode)
+	}
+	if !f.userIDs[req.UserID] {
+		return errors.Errorf("not found user id %s", req.UserID)
 	}
 	if approval.status != feishu.ApprovalStatusPending {
 		return errors.Errorf(`expect to cancel a "pending" approval, but get status %q`, approval.status)

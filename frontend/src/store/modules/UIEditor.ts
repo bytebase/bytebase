@@ -13,7 +13,6 @@ import {
   UIEditorTabType,
   TableTabContext,
   DatabaseEdit,
-  Column,
 } from "@/types";
 import { useDatabaseStore, useTableStore } from "./";
 
@@ -157,15 +156,15 @@ export const useUIEditorStore = defineStore("UIEditor", {
       table.id = UNKNOWN_ID;
       table.name = tableName;
       table.database = database;
-      table.columnList = [
-        {
-          id: UNKNOWN_ID,
-          name: "id",
-          type: "int",
-          nullable: false,
-          comment: "ID",
-        } as Column,
-      ];
+      table.columnList = [];
+
+      // generate a default column.
+      const unknownColumn = unknown("COLUMN");
+      unknownColumn.name = "id";
+      unknownColumn.type = "int";
+      unknownColumn.comment = "ID";
+      table.columnList.push(unknownColumn);
+
       this.tableList.push(table);
       return table;
     },

@@ -356,7 +356,6 @@ const handlePreviewDDLStatement = async () => {
 .table-body-item-container {
   @apply w-full box-border p-px pr-2 relative;
 }
-
 .column-field-input {
   @apply w-full box-border rounded border-none bg-transparent text-sm focus:bg-white focus:text-black placeholder:italic placeholder:text-gray-400;
 }

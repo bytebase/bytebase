@@ -2,7 +2,7 @@
   <div
     class="flex h-full w-full flex-col justify-start items-start overflow-hidden"
   >
-    <EditorAction @execute="handleExecute" @save-sheet="trySaveSheet" />
+    <EditorAction @execute="handleExecute" />
 
     <ConnectionPathBar />
 
@@ -19,15 +19,11 @@
         <div v-for="(query, i) in queryList" :key="i" class="relative">
           <CompactSQLEditor
             v-model:sql="query.sql"
-            class="border-b min-h-[2rem]"
-            :readonly="query !== currentQuery"
-            @save-sheet="trySaveSheet"
+            class="min-h-[2rem]"
+            :readonly="!isEditableQueryItem(query)"
             @execute="handleExecute"
           />
-          <div
-            v-if="query.queryResult"
-            class="max-h-[20rem] overflow-y-auto border-b"
-          >
+          <div v-if="query.queryResult" class="max-h-[20rem] overflow-y-auto">
             <TableView
               :query-result="query.queryResult.data"
               :loading="query.isExecutingSQL"
@@ -45,8 +41,6 @@
       </div>
     </div>
     <ConnectionHolder v-else />
-
-    <SaveSheetModal ref="saveSheetModal" />
   </div>
 </template>
 
@@ -54,7 +48,7 @@
 import { computed, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
-import { ExecuteConfig, ExecuteOption } from "@/types";
+import { ExecuteConfig, ExecuteOption, WebTerminalQueryItem } from "@/types";
 import { useTabStore, useWebTerminalStore } from "@/store";
 import CompactSQLEditor from "./CompactSQLEditor.vue";
 import {
@@ -62,7 +56,6 @@ import {
   ConnectionPathBar,
   ConnectionHolder,
   TableView,
-  SaveSheetModal,
 } from "../EditorCommon";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 
@@ -82,6 +75,10 @@ const currentQuery = computed(
 
 const { execute } = useExecuteSQL();
 
+const isEditableQueryItem = (query: WebTerminalQueryItem): boolean => {
+  return query === currentQuery.value && !query.isExecutingSQL;
+};
+
 const handleExecute = async (
   query: string,
   config: ExecuteConfig,
@@ -89,6 +86,11 @@ const handleExecute = async (
 ) => {
   const queryItem = currentQuery.value;
   if (queryItem.isExecutingSQL) {
+    return;
+  }
+
+  // Prevent executing empty query;
+  if (!query) {
     return;
   }
 
@@ -102,15 +104,12 @@ const handleExecute = async (
       sql: "",
       isExecutingSQL: false,
     });
+    // Clear the tab's statement and keep it sync with the latest query
+    tabStore.currentTab.statement = "";
+    tabStore.currentTab.selectedStatement = "";
   } finally {
     queryItem.isExecutingSQL = false;
   }
-};
-
-const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
-
-const trySaveSheet = (sheetName?: string) => {
-  saveSheetModal.value?.trySaveSheet(sheetName);
 };
 
 const { height: queryListHeight } = useElementSize(queryListRef);

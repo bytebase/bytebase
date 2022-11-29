@@ -184,7 +184,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{}
-		db, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
+		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -217,7 +217,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instanceMigration := &api.InstanceMigration{}
-		db, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
+		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
@@ -262,7 +262,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		find := &db.MigrationHistoryFind{ID: &historyID}
-		driver, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
+		driver, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Name)).SetInternal(err)
 		}
@@ -337,7 +337,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
+		driver, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Name)).SetInternal(err)
 		}
@@ -388,11 +388,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		// If the data dir does not exist, then we will start a PostgreSQL instance with a fixed port temporarily.
 		if _, err := os.Stat(dataDir); os.IsNotExist(err) {
-			if err := postgres.InitDB(s.pgInstance.BaseDir, dataDir, pgUser); err != nil {
+			if err := postgres.InitDB(s.pgBinDir, dataDir, pgUser); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to init embedded postgres database").SetInternal(err)
 			}
 
-			if err := postgres.Start(port, s.pgInstance.BaseDir, dataDir, os.Stderr, os.Stderr); err != nil {
+			if err := postgres.Start(port, s.pgBinDir, dataDir); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
 			}
 		}
@@ -454,7 +454,7 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 	// Try creating the "bytebase" db in the added instance if needed.
 	// Since we allow user to add new instance upfront even providing the incorrect username/password,
 	// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-	db, err := getAdminDatabaseDriver(ctx, instance, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
+	db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err == nil {
 		defer db.Close(ctx)
 		if err := db.SetupMigrationIfNeeded(ctx); err != nil {
@@ -533,7 +533,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 
 	// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
 	if patch.Host != nil || patch.Port != nil {
-		db, err := getAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */, s.pgInstance.BaseDir, s.profile.DataDir)
+		db, err := s.getAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */)
 		if err == nil {
 			defer db.Close(ctx)
 			if err := db.SetupMigrationIfNeeded(ctx); err != nil {

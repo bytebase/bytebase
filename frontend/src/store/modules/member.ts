@@ -8,6 +8,7 @@ import {
   MemberPatch,
   MemberState,
   ResourceObject,
+  Principal,
   PrincipalId,
   unknown,
   empty,
@@ -67,6 +68,19 @@ export const useMemberStore = defineStore("member", {
     },
     setMemberList(memberList: Member[]) {
       this.memberList = memberList;
+    },
+    updatePrincipal(memberId: MemberId, principal: Principal) {
+      const index = this.memberList.findIndex((m) => m.id === memberId);
+      if (index >= 0) {
+        this.memberList = [
+          ...this.memberList.slice(0, index),
+          {
+            ...this.memberList[index],
+            principal: principal,
+          },
+          ...this.memberList.slice(index + 1),
+        ];
+      }
     },
     appendMember(newMember: Member) {
       this.memberList.push(newMember);

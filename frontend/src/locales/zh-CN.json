@@ -97,6 +97,7 @@
     "status": "状态",
     "stage": "阶段",
     "task": "任务",
+    "tasks": "任务",
     "sql": "SQL",
     "unassigned": "未指派",
     "new": "创建",
@@ -138,6 +139,7 @@
     "Default": "默认",
     "definition": "定义",
     "empty": "空",
+    "connecting": "连接中...",
     "creating": "创建中...",
     "updating": "更新中...",
     "Address": "地址",
@@ -284,7 +286,8 @@
         "row": "行数"
       },
       "counting": "统计中"
-    }
+    },
+    "n-similar-tasks": "({count} 个相似的任务)"
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
@@ -382,7 +385,13 @@
       "change-role-provider-to-bytebase": {
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
       },
-      "system-bot": "机器人助手"
+      "system-bot": "机器人助手",
+      "service-account": "服务账号",
+      "copy-service-key": "复制 Service Key",
+      "reset-service-key": "重置 Service Key",
+      "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
+      "service-key-copied": "Service Key 已复制，请勿泄漏",
+      "create-as-service-account": "创建为服务账号"
     },
     "im-integration": {
       "enable": "启用",
@@ -471,7 +480,9 @@
       "modal": {
         "resolve": "解决工单?",
         "cancel": "取消整个工单?",
-        "reopen": "重开工单?"
+        "reopen": "重开工单？",
+        "title": "{action}{type} [{name}]？",
+        "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
         "resolve": "解决",

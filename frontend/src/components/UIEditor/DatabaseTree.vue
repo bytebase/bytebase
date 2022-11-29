@@ -47,6 +47,7 @@
 import { cloneDeep, escape, isEqual, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
+import scrollIntoView from "scroll-into-view-if-needed";
 import {
   DatabaseId,
   InstanceId,
@@ -263,7 +264,7 @@ watch(
     if (state.shouldRelocateTreeNode) {
       nextTick(() => {
         const element = treeRef.value?.querySelector(".n-tree-node--selected");
-        element?.scrollIntoView();
+        scrollIntoView(element);
       });
     }
   }
@@ -311,7 +312,6 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
         treeNode.databaseId,
         treeNode.tableId
       );
-
       const isDropped = editorStore.droppedTableList.includes(treeNode.table);
       if (isDropped) {
         additionalClassList.push("text-red-700 line-through");

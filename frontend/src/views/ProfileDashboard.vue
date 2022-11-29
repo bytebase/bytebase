@@ -76,6 +76,12 @@
             <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
               {{ principal.name }}
             </h1>
+            <span
+              v-if="principal.type === 'SERVICE_ACCOUNT'"
+              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+            >
+              {{ $t("settings.members.service-account") }}
+            </span>
           </div>
         </div>
       </div>
@@ -287,6 +293,7 @@ export default defineComponent({
       state.editingPrincipal = {
         name: clone.name,
         email: clone.email,
+        type: clone.type,
       };
       state.editing = true;
 

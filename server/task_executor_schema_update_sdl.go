@@ -53,7 +53,7 @@ func (*SchemaUpdateSDLTaskExecutor) GetProgress() api.Progress {
 // and the given schema. It returns an empty string if there is no applicable
 // diff.
 func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Database, newSchemaStr string) (string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BaseDir, s.profile.DataDir)
+	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return "", errors.Wrap(err, "get admin driver")
 	}

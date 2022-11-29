@@ -33,6 +33,7 @@ import {
   buildIssueLinkWithTask,
   hasProjectPermission,
   hasWorkspacePermission,
+  isDev,
 } from "@/utils";
 
 enum ButtonState {
@@ -55,9 +56,11 @@ const router = useRouter();
 const issueStore = useIssueStore();
 const currentUser = useCurrentUser();
 
-const { issue, project, create, selectedTask } = useIssueLogic();
+const { issue, create, selectedTask } = useIssueLogic();
 
 const showRollbackButton = computed(() => {
+  if (!isDev()) return false;
+
   if (create.value) return false;
 
   const issueEntity = issue.value as Issue;
@@ -67,7 +70,6 @@ const showRollbackButton = computed(() => {
     issueEntity.type === "bb.issue.database.data.update" &&
     task.type === "bb.task.database.data.update" &&
     task.status === "DONE" &&
-    project.value.workflowType === "UI" &&
     task.database?.instance.engine === "MYSQL"
   );
 });

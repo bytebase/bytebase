@@ -8,9 +8,10 @@
         v-for="tab in tabList"
         :key="tab.id"
         class="tab-container px-1 pl-2 py-2 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
-        :class="`tab-${tab.id} ${
-          tab.id === currentTab?.id ? 'bg-white border-gray-200' : ''
-        }`"
+        :class="[
+          `tab-${tab.id}`,
+          tab.id === currentTab?.id && 'bg-white border-gray-200',
+        ]"
         @click="handleSelectTab(tab)"
       >
         <div class="flex flex-row justify-start items-center mr-1">
@@ -45,6 +46,7 @@
 import { isEqual } from "lodash-es";
 import { NEllipsis, useDialog } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
+import scrollIntoView from "scroll-into-view-if-needed";
 import { useUIEditorStore } from "@/store";
 import { TabContext, UIEditorTabType } from "@/types";
 
@@ -65,7 +67,7 @@ watch(
       const element = tabsContainerRef.value?.querySelector(
         `.tab-${currentTab.value?.id}`
       );
-      element?.scrollIntoView();
+      scrollIntoView(element);
     });
   }
 );

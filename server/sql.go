@@ -202,7 +202,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
 
-			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
@@ -268,7 +268,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -417,7 +417,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := getAdminDatabaseDriver(ctx, instance, exec.DatabaseName, s.pgInstance.BaseDir, s.profile.DataDir)
+			driver, err := s.getAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -490,7 +490,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 }
 
 func (s *Server) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstance.BaseDir, s.profile.DataDir)
+	driver, err := s.getAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return nil, err
 	}
@@ -647,7 +647,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 }
 
 func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
-	driver, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstance.BaseDir, s.profile.DataDir)
+	driver, err := s.getAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return err
 	}
@@ -825,15 +825,7 @@ func (s *Server) sqlCheck(
 	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			adviceList = []advisor.Advice{
-				{
-					Status:  advisor.Warn,
-					Code:    advisor.NotFound,
-					Title:   "SQL review policy is not configured or disabled",
-					Content: "",
-				},
-			}
-			return advisor.Warn, adviceList, nil
+			return advisor.Success, nil, nil
 		}
 		return advisor.Error, nil, err
 	}

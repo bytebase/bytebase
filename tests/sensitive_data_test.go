@@ -53,7 +53,7 @@ func TestSensitiveData(t *testing.T) {
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
-	_, stopInstance := mysql.SetupTestInstance(t, mysqlPort)
+	stopInstance := mysql.SetupTestInstance(t, mysqlPort)
 	defer stopInstance()
 
 	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", mysqlPort))

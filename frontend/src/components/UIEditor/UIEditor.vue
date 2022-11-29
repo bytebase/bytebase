@@ -30,6 +30,7 @@
 </template>
 
 <script lang="ts" setup>
+import { uniq } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, onMounted, PropType, reactive } from "vue";
 import { useInstanceStore, useUIEditorStore } from "@/store";
@@ -64,8 +65,11 @@ onMounted(async () => {
   // Prepare instance and database data.
   const databaseIdList = props.databaseIdList;
   const databaseList = await editorStore.fetchDatabaseList(databaseIdList);
-  for (const database of databaseList) {
-    await instanceStore.getOrFetchInstanceById(database.instanceId);
+  const instanceIdList = uniq(
+    databaseList.map((database) => database.instanceId)
+  );
+  for (const instanceId of instanceIdList) {
+    await instanceStore.getOrFetchInstanceById(instanceId);
   }
   state.isLoading = false;
 });
