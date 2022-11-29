@@ -77,10 +77,7 @@ func TestRetentionPolicy(t *testing.T) {
 	_, _, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
-	serverPort, err := strconv.Atoi(strings.TrimPrefix(ctl.server.GetEcho().Server.Addr, ":"))
-	a.NoError(err)
-	pgMetaPort := serverPort + 1
-	metaDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=bbtest database=bbtest", pgMetaPort))
+	metaDB, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
 	a.NoError(metaDB.Ping())
 
@@ -403,7 +400,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	a := require.New(t)
 
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
