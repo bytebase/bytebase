@@ -29,7 +29,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
-	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
 )
@@ -134,16 +133,6 @@ CREATE TABLE book3 (
 		},
 	}
 )
-
-var mysqlBinDir string
-
-func init() {
-	binDir, err := resourcemysql.Install(os.TempDir())
-	if err != nil {
-		panic(err)
-	}
-	mysqlBinDir = binDir
-}
 
 type controller struct {
 	server         *server.Server
