@@ -1,5 +1,10 @@
 <template>
-  <div v-for="item in filteredFormItemList" :key="item.label" class="w-full">
+  <div
+    v-for="item in filteredFormItemList"
+    :key="item.label"
+    class="w-full"
+    v-bind="$attrs"
+  >
     <div class="flex flex-row items-center space-x-1">
       <label for="instance" class="textlabel capitalize">
         {{ hidePrefix(item.label) }}
