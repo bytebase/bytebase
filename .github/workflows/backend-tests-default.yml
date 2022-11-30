@@ -18,7 +18,7 @@ jobs:
     steps:
       - run: 'echo "Not required"'
 
- go-tests:
+  go-tests:
     strategy:
       matrix:
         release-tags:
