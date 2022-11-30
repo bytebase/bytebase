@@ -264,7 +264,11 @@ watch(
     if (state.shouldRelocateTreeNode) {
       nextTick(() => {
         const element = treeRef.value?.querySelector(".n-tree-node--selected");
-        scrollIntoView(element);
+        if (element) {
+          scrollIntoView(element, {
+            scrollMode: "if-needed",
+          });
+        }
       });
     }
   }
@@ -326,7 +330,7 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
     {
       class: additionalClassList.join(" "),
     },
-    [
+    () => [
       h("span", {
         innerHTML: getHighlightHTMLByKeyWords(
           escape(treeNode.label),

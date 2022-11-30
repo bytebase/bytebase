@@ -80,7 +80,8 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { head } from "lodash-es";
+import { head, isEqual } from "lodash-es";
+import { useDialog } from "naive-ui";
 import { onMounted, PropType, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -88,6 +89,8 @@ import {
   DatabaseEdit,
   DatabaseId,
   SQLDialect,
+  TabContext,
+  UIEditorTabType,
   UNKNOWN_ID,
 } from "@/types";
 import { allowGhostMigration } from "@/utils";
@@ -122,6 +125,7 @@ const state = reactive<LocalState>({
 const editorStore = useUIEditorStore();
 const tableStore = useTableStore();
 const databaseStore = useDatabaseStore();
+const dialog = useDialog();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseList = props.databaseIdList.map((databaseId) => {
@@ -182,11 +186,11 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 };
 
 const handleSyncSQLFromUIEditor = async () => {
-  const statement = await fetchDDLStatementWithUIEditor();
-  state.editStatement = statement;
+  const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
+  state.editStatement = Array.from(databaseEditMap.values()).join("\n");
 };
 
-const fetchDDLStatementWithUIEditor = async () => {
+const fetchDatabaseEditMapWithUIEditor = async () => {
   const databaseEditList: DatabaseEdit[] = [];
   for (const database of editorStore.databaseList) {
     const originTableList = await tableStore.getOrFetchTableListByDatabaseId(
@@ -212,16 +216,35 @@ const fetchDDLStatementWithUIEditor = async () => {
     }
   }
 
-  const statmentList = [];
+  const databaseEditMap: Map<DatabaseId, string> = new Map();
   if (databaseEditList.length > 0) {
-    const databaseIdList: DatabaseId[] = [];
     for (const databaseEdit of databaseEditList) {
-      databaseIdList.push(databaseEdit.databaseId);
       const statement = await editorStore.postDatabaseEdit(databaseEdit);
-      statmentList.push(statement);
+      databaseEditMap.set(databaseEdit.databaseId, statement);
     }
   }
-  return statmentList.join("\n");
+  return databaseEditMap;
+};
+
+const unsavedDialogWarning = (): Promise<string> => {
+  return new Promise((resolve) => {
+    dialog.warning({
+      title: "Confirm to close",
+      content:
+        "There are unsaved changes. Are you sure you want to close the panel? Your changes will be lost.",
+      negativeText: "Discard",
+      positiveText: "Save",
+      onClose: () => {
+        resolve("Close");
+      },
+      onNegativeClick: () => {
+        resolve("NegativeClick");
+      },
+      onPositiveClick: () => {
+        resolve("PositiveClick");
+      },
+    });
+  });
 };
 
 const handlePreviewIssue = async () => {
@@ -252,39 +275,34 @@ const handlePreviewIssue = async () => {
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
   } else {
-    const databaseEditList: DatabaseEdit[] = [];
-    for (const database of editorStore.databaseList) {
-      const originTableList = await tableStore.getOrFetchTableListByDatabaseId(
-        database.id
-      );
-      const updatedTableList = (
-        await editorStore.getOrFetchTableListByDatabaseId(database.id)
-      ).filter((table) => !editorStore.droppedTableList.includes(table));
-      const diffTableListResult = diffTableList(
-        originTableList,
-        updatedTableList
-      );
-      if (
-        diffTableListResult.createTableList.length > 0 ||
-        diffTableListResult.alterTableList.length > 0 ||
-        diffTableListResult.renameTableList.length > 0 ||
-        diffTableListResult.dropTableList.length > 0
-      ) {
-        databaseEditList.push({
-          databaseId: database.id,
-          ...diffTableListResult,
-        });
+    // Check whether tabs saved.
+    const unsavedTabList: TabContext[] = [];
+    for (const tab of editorStore.tabList) {
+      if (tab.type === UIEditorTabType.TabForTable) {
+        if (!isEqual(tab.tableCache, tab.table)) {
+          unsavedTabList.push(tab);
+        }
+      }
+    }
+    if (unsavedTabList.length > 0) {
+      const action = await unsavedDialogWarning();
+      if (action === "NegativeClick") {
+        for (const unsavedTab of unsavedTabList) {
+          editorStore.discardTabChanges(unsavedTab);
+        }
+      } else if (action === "PositiveClick") {
+        for (const unsavedTab of unsavedTabList) {
+          editorStore.saveTab(unsavedTab);
+        }
+      } else {
+        return;
       }
     }
 
-    if (databaseEditList.length > 0) {
-      const databaseIdList: DatabaseId[] = [];
-      const statmentList = [];
-      for (const databaseEdit of databaseEditList) {
-        databaseIdList.push(databaseEdit.databaseId);
-        const statement = await editorStore.postDatabaseEdit(databaseEdit);
-        statmentList.push(statement);
-      }
+    const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
+    const databaseIdList = Array.from(databaseEditMap.keys());
+    if (databaseIdList.length > 0) {
+      const statmentList = Array.from(databaseEditMap.values());
       query.databaseList = databaseIdList.join(",");
       query.name = generateIssueName(
         databaseList
