@@ -285,7 +285,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 			},
 			settingValue.ExternalApproval.ApprovalDefinitionID,
 			payload.InstanceCode,
-			botID,
+			payload.RequesterID,
 		); err != nil {
 			return nil, err
 		}
@@ -353,7 +353,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID 
 		},
 		value.ExternalApproval.ApprovalDefinitionID,
 		payload.InstanceCode,
-		botID,
+		payload.RequesterID,
 	); err != nil {
 		return err
 	}
