@@ -229,9 +229,8 @@ const fetchDatabaseEditMapWithUIEditor = async () => {
 const unsavedDialogWarning = (): Promise<string> => {
   return new Promise((resolve) => {
     dialog.warning({
-      title: "Confirm to close",
-      content:
-        "There are unsaved changes. Are you sure you want to close the panel? Your changes will be lost.",
+      title: "Confirm to continue",
+      content: "There are unsaved changes. Are you sure confirm to continue?",
       negativeText: "Discard",
       positiveText: "Save",
       onClose: () => {
