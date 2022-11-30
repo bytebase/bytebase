@@ -18,19 +18,22 @@
 
     <template v-else>
       <div class="flex justify-between items-center py-0.5 space-x-2">
-        <select
-          v-model="state.selectedDatabaseName"
-          class="btn-select w-40 disabled:cursor-not-allowed"
-        >
-          <option disabled>{{ $t("db.select") }}</option>
-          <option
-            v-for="(group, i) in databaseListGroupByName"
-            :key="i"
-            :value="group.name"
+        <div class="flex-1">
+          <select
+            v-if="databaseListGroupByName.length > 1"
+            v-model="state.selectedDatabaseName"
+            class="btn-select w-40 disabled:cursor-not-allowed"
           >
-            {{ group.name }}
-          </option>
-        </select>
+            <option disabled>{{ $t("db.select") }}</option>
+            <option
+              v-for="(group, i) in databaseListGroupByName"
+              :key="i"
+              :value="group.name"
+            >
+              {{ group.name }}
+            </option>
+          </select>
+        </div>
 
         <YAxisRadioGroup v-model:label="state.label" class="text-sm" />
       </div>
@@ -80,6 +83,10 @@ const state = reactive({
 const databaseListGroupByName = computed((): DatabaseGroup[] => {
   const { dbNameTemplate } = props.project;
 
+  if (!dbNameTemplate) {
+    return [{ name: "", list: props.databaseList }];
+  }
+
   const dict = groupBy(props.databaseList, (db) => {
     if (dbNameTemplate) {
       return parseDatabaseNameByTemplate(db.name, dbNameTemplate);
@@ -107,8 +114,6 @@ watch(
 );
 
 const selectedDatabaseGroup = computed((): DatabaseGroup | undefined => {
-  if (!state.selectedDatabaseName) return undefined;
-
   return databaseListGroupByName.value.find(
     (group) => group.name === state.selectedDatabaseName
   );

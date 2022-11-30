@@ -438,7 +438,8 @@
       "project-member-delete": "delete project member",
       "project-member-role-update": "change project member role",
       "pipeline-task-earliest-allowed-time-update": "update earliest allowed time",
-      "database-recovery-pitr-done": "restore database to point in time"
+      "database-recovery-pitr-done": "restore database to point in time",
+      "external-approval-rejected": "external approval rejected"
     },
     "sentence": {
       "created-issue": "created issue",
@@ -464,8 +465,9 @@
       "completed": "completed",
       "failed": "failed",
       "task-name": " task {name}",
-      "committed-to-at": "committed {file} to{branch}{'@'}{repo}",
-      "dismissed-stale-approval": "dismissed stale approvals of {task}"
+      "committed-to-at": "committed {file} to {branch}{'@'}{repo}",
+      "dismissed-stale-approval": "dismissed stale approvals of {task}",
+      "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\""
     },
     "subject-prefix": {
       "task": "Task"
@@ -756,6 +758,7 @@
       "new-user": "New to Bytebase?",
       "demo-note": "Please use demo account to sign in",
       "gitlab": "Login with GitLab",
+      "github": "Login with GitHub",
       "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login"
     },
@@ -956,6 +959,9 @@
       "no-difference-tip": "No diff found.",
       "more-version": "more...",
       "character-sets-diff-found": "There are differences between character sets.",
+      "preview-issue": "Preview issue"
+    },
+    "ui-editor": {
       "preview-issue": "Preview issue"
     },
     "sensitive": "Sensitive"

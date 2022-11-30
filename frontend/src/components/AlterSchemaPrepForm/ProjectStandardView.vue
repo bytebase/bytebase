@@ -1,6 +1,4 @@
 <template>
-  <!-- eslint-disable vue/no-mutating-props -->
-
   <template v-if="state.alterType === 'MULTI_DB'">
     <!-- multiple stage view -->
     <div v-if="databaseList.length === 0" class="textinfolabel">

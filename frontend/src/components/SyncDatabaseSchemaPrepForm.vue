@@ -75,7 +75,7 @@
                 {{ migrationHistory.version }}
               </NEllipsis>
             </template>
-            <template v-if="!hasSyncSchemaFeature" #suffixItem>
+            <template v-if="shouldShowMoreVersionButton" #suffixItem>
               <div
                 class="w-full pl-3 leading-8 text-gray-600 cursor-pointer hover:text-accent"
                 @click="() => (state.showFeatureModal = true)"
@@ -267,7 +267,6 @@ import EnvironmentSelect from "./EnvironmentSelect.vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import MonacoEditor from "./MonacoEditor/MonacoEditor.vue";
 import ProjectSelect from "./ProjectSelect.vue";
-import { isDev } from "@/utils";
 
 type LocalState = {
   projectId?: ProjectId;
@@ -325,9 +324,7 @@ const isValidId = (id: any) => {
   return true;
 };
 
-const allowedEngineTypeList: EngineType[] = isDev()
-  ? ["MYSQL", "POSTGRES"]
-  : ["MYSQL"];
+const allowedEngineTypeList: EngineType[] = ["MYSQL", "POSTGRES"];
 
 const hasSyncSchemaFeature = computed(() => {
   return hasFeature("bb.feature.sync-schema-all-versions");
@@ -343,6 +340,14 @@ const engineTypeList = computed((): EngineType[] => {
   } else {
     return [state.engineType];
   }
+});
+
+const shouldShowMoreVersionButton = computed(() => {
+  return (
+    !hasSyncSchemaFeature.value &&
+    databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
+      .length > 0
+  );
 });
 
 const shouldShowDiff = computed(() => {
@@ -388,7 +393,7 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
   );
 
   if (!hasSyncSchemaFeature.value) {
-    return [head(list)];
+    return list.length > 0 ? [head(list)] : [];
   }
   return list;
 };

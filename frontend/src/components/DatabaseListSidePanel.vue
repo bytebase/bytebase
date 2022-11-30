@@ -134,13 +134,19 @@ export default defineComponent({
           return {
             id: `bb.project.${project.id}.databases`,
             name: project.name,
-            childList: databaseListGroupByNameAndCount.map(
+            childList: databaseListGroupByNameAndCount.map<BBOutlineItem>(
               ({ name, count }) => {
+                const label = [name];
+                if (count > 1) {
+                  // Add a number beside the name when there are more than 1
+                  // databases in single group.
+                  label.push(`(${count})`);
+                }
                 return {
                   id: `bb.project.${project.id}.database.${name}`,
-                  name: `${name} (${count})`,
+                  name: label.join(" "),
                   link: `/project/${projectSlug(project)}`,
-                } as BBOutlineItem;
+                };
               }
             ),
             childCollapse: true,

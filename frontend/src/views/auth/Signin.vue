@@ -31,7 +31,9 @@
           <span class="text-center font-semibold align-middle">
             {{
               authProviderList.length == 1
-                ? $t("auth.sign-in.gitlab")
+                ? authProvider.type.includes("GITHUB")
+                  ? $t("auth.sign-in.github")
+                  : $t("auth.sign-in.gitlab")
                 : authProvider.name
             }}
           </span>

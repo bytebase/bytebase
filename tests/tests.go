@@ -4,6 +4,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -22,12 +23,18 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	// Import pg driver.
+	// init() in pgx/v4/stdlib will register it's pgx driver.
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
 )
@@ -141,24 +148,29 @@ type controller struct {
 	vcsProvider    fake.VCSProvider
 	feishuProvider *fake.Feishu
 
-	rootURL   string
-	apiURL    string
-	vcsURL    string
-	feishuURL string
+	rootURL    string
+	apiURL     string
+	vcsURL     string
+	openAPIURL string
+	feishuURL  string
 }
 
 type config struct {
 	dataDir                 string
 	vcsProviderCreator      fake.VCSProviderCreator
 	feishuProverdierCreator fake.FeishuProviderCreator
-
-	pgUser string
-	pgURL  string
 }
 
 var (
 	mu       sync.Mutex
 	nextPort = 1234
+
+	// Shared external PG server variables.
+	externalPgUser     = "bbexternal"
+	externalPgPort     = 21113
+	externalPgBinDir   string
+	externalPgDataDir  string
+	nextDatabaseNumber = 20210113
 )
 
 // getTestPort reserves and returns a port.
@@ -179,14 +191,36 @@ func getTestPortForEmbeddedPg() int {
 	return p
 }
 
+// getTestDatabaseString returns a unique database name in external pg database server.
+func getTestDatabaseString() string {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextDatabaseNumber
+	nextDatabaseNumber++
+	return fmt.Sprintf("bbtest%d", p)
+}
+
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
 	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
 		return err
 	}
+
+	pgMainURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, "postgres", common.GetPostgresSocketDir())
+	db, err := sql.Open("pgx", pgMainURL)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	databaseName := getTestDatabaseString()
+	if _, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", databaseName)); err != nil {
+		return err
+	}
+
+	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, config.pgUser, config.pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -261,6 +295,7 @@ func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreat
 func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
+	ctl.openAPIURL = fmt.Sprintf("http://localhost:%d/v1", port)
 
 	errChan := make(chan error, 1)
 
@@ -458,6 +493,28 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 	resp, err := ctl.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "fail to send a GET request(%q)", gURL)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read http response body")
+		}
+		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
+}
+
+// postOpenAPI sends a openAPI POST request.
+func (ctl *controller) postOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", ctl.openAPIURL, shortURL)
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "fail to create a new POST request(%q)", url)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "fail to send a POST request(%q)", url)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -682,6 +739,9 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	}
 	if databaseFind.ProjectID != nil {
 		params["project"] = fmt.Sprintf("%d", *databaseFind.ProjectID)
+	}
+	if databaseFind.Name != nil {
+		params["name"] = *databaseFind.Name
 	}
 	body, err := ctl.get("/database", params)
 	if err != nil {
@@ -2135,4 +2195,33 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 		return "", err
 	}
 	return string(s), nil
+}
+
+type schemaDiffRequest struct {
+	EngineType   parser.EngineType `json:"engineType"`
+	SourceSchema string            `json:"sourceSchema"`
+	TargetSchema string            `json:"targetSchema"`
+}
+
+// getSchemaDiff gets the schema diff.
+func (ctl *controller) getSchemaDiff(schemaDiff schemaDiffRequest) (string, error) {
+	buf, err := json.Marshal(&schemaDiff)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal schemaDiffRequest")
+	}
+
+	body, err := ctl.postOpenAPI("/sql/schema/diff", strings.NewReader(string(buf)))
+	if err != nil {
+		return "", err
+	}
+
+	diff, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	diffString := ""
+	if err := json.Unmarshal(diff, &diffString); err != nil {
+		return "", err
+	}
+	return diffString, nil
 }

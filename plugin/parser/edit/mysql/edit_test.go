@@ -104,14 +104,14 @@ func TestDeparseCreateTable(t *testing.T) {
 							},
 							{
 								Name:    "name",
-								Type:    "varchar",
+								Type:    "varchar(32)",
 								Comment: "Name",
 							},
 						},
 					},
 				},
 			},
-			want: "CREATE TABLE `t1` (\n  `id` INT COMMENT 'ID' DEFAULT '0',\n  `name` VARCHAR CHARACTER SET UTF8MB4 COLLATE utf8mb4_bin COMMENT 'Name' NOT NULL\n) ENGINE=InnoDB;",
+			want: "CREATE TABLE `t1` (\n  `id` INT COMMENT 'ID' DEFAULT '0',\n  `name` VARCHAR(32) COMMENT 'Name' NOT NULL\n) ENGINE=InnoDB;",
 		},
 	}
 

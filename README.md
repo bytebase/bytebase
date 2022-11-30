@@ -94,6 +94,12 @@ https://bytebase.com/docs
 
 In particular, get familiar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
 
+### Testing doc
+
+How to run all or a subset of tests
+
+https://github.com/bytebase/bytebase/blob/main/docs/testing.md
+
 ### Design doc
 
 https://github.com/bytebase/bytebase/tree/main/docs/design
@@ -145,15 +151,12 @@ working on the code:
 
 - [Go](https://golang.org/doc/install) (1.19 or later)
 - [pnpm](https://pnpm.io/installation)
-- [Air](https://github.com/cosmtrek/air#installation) (**must use forked repo 87187cc**). This is for backend live reload.
+- [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
+  ```bash
+  go install github.com/bytebase/air@87187cc
+  ```
 
 ### Steps
-
-1. Install forked Air 87187cc. Use 87187cc because it has the cherrypicked fix.
-
-   ```bash
-   go install github.com/bytebase/air@87187cc
-   ```
 
 1. Pull source.
 
