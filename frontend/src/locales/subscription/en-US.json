@@ -108,7 +108,8 @@
         "dba-workflow": "DBA workflow",
         "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
         "environment-tier": "Environment tier",
-        "sensitive-data": "Sensitive data masking"
+        "sensitive-data": "Sensitive data masking",
+        "access-control": "Access control"
       }
     },
     "branding": {

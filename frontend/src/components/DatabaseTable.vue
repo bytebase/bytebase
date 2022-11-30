@@ -77,7 +77,7 @@
           </NTooltip>
         </div>
       </BBTableCell>
-      <BBTableCell class="w-[10%]">
+      <BBTableCell v-if="showSchemaVersionColumn" class="w-[10%]">
         {{ database.schemaVersion }}
       </BBTableCell>
       <BBTableCell v-if="showProjectColumn" class="w-[15%]">
@@ -236,7 +236,13 @@ import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
 
-type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
+type Mode =
+  | "ALL"
+  | "ALL_SHORT"
+  | "ALL_TINY"
+  | "INSTANCE"
+  | "PROJECT"
+  | "PROJECT_SHORT";
 
 interface State {
   showIncorrectProjectModal: boolean;
@@ -364,6 +370,23 @@ const columnListMap = computed(() => {
       ],
     ],
     [
+      "ALL_TINY",
+      [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.project"),
+        },
+        {
+          title: t("common.environment"),
+        },
+        {
+          title: t("common.instance"),
+        },
+      ],
+    ],
+    [
       "INSTANCE",
       [
         {
@@ -422,6 +445,10 @@ const columnListMap = computed(() => {
   ]);
 });
 
+const showSchemaVersionColumn = computed(() => {
+  return props.mode !== "ALL_TINY";
+});
+
 const showInstanceColumn = computed(() => {
   return props.mode != "INSTANCE";
 });
@@ -435,7 +462,14 @@ const showEnvironmentColumn = computed(() => {
 });
 
 const showMiscColumn = computed(() => {
-  return props.mode != "ALL_SHORT" && props.mode != "PROJECT_SHORT";
+  if (
+    props.mode === "ALL_SHORT" ||
+    props.mode === "ALL_TINY" ||
+    props.mode === "PROJECT_SHORT"
+  ) {
+    return false;
+  }
+  return true;
 });
 
 const columnList = computed(() => {
@@ -447,7 +481,11 @@ const columnList = computed(() => {
 });
 
 const showSQLEditorLink = computed(() => {
-  if (props.mode == "ALL_SHORT" || props.mode == "PROJECT_SHORT") {
+  if (
+    props.mode === "ALL_SHORT" ||
+    props.mode === "ALL_TINY" ||
+    props.mode === "PROJECT_SHORT"
+  ) {
     return false;
   }
   return true;
