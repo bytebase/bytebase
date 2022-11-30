@@ -223,9 +223,9 @@ const handleEditorReady = async () => {
         databaseType: selectedInstanceEngine.value,
       });
     },
-    "endsWithSemicolon && cursorAtLast"
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
+    "endsWithSemicolon && cursorAtLast"
   );
 
   watchEffect(() => {
