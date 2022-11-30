@@ -47,7 +47,7 @@ func getBaseProfile() server.Profile {
 
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func GetTestProfile(dataDir string, port int, feishuAPIURL string) server.Profile {
+func GetTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL string) server.Profile {
 	// Using flags.port + 1 as our datastore port
 	datastorePort := port + 1
 	return server.Profile{
@@ -56,6 +56,7 @@ func GetTestProfile(dataDir string, port int, feishuAPIURL string) server.Profil
 		DatastorePort:        datastorePort,
 		PgUser:               "bbtest",
 		DataDir:              dataDir,
+		ResourceDirOverride:  resourceDirOverride,
 		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
@@ -66,12 +67,13 @@ func GetTestProfile(dataDir string, port int, feishuAPIURL string) server.Profil
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL string, feishuAPIURL string) server.Profile {
+func GetTestProfileWithExternalPg(dataDir, resourceDirOverride string, port int, pgUser string, pgURL string, feishuAPIURL string) server.Profile {
 	return server.Profile{
 		Mode:                 common.ReleaseModeDev,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		PgUser:               pgUser,
 		DataDir:              dataDir,
+		ResourceDirOverride:  resourceDirOverride,
 		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
