@@ -38,6 +38,8 @@ type FeishuProviderCreator func(int) *Feishu
 type approval struct {
 	approvalCode string
 	instanceCode string
+	requesterID  string
+	approverID   string
 	status       feishu.ApprovalStatus
 }
 
@@ -168,12 +170,16 @@ func (f *Feishu) createApprovalInstance(c echo.Context) error {
 	if !f.userIDs[create.OpenID] {
 		return errors.Errorf("not found user id %s", create.OpenID)
 	}
-	for _, idList := range create.NodeApproverOpenIDList {
-		for _, id := range idList.Value {
-			if !f.userIDs[id] {
-				return errors.Errorf("not found user id %s", id)
-			}
-		}
+	if len(create.NodeApproverOpenIDList) != 1 {
+		return errors.New("expect the length of NodeApproverOpenIDList to be 1")
+	}
+	if len(create.NodeApproverOpenIDList[0].Value) != 1 {
+		return errors.New("expect the length of NodeApproverOpenIDList[0].Value to be 1")
+	}
+
+	approverID := create.NodeApproverOpenIDList[0].Value[0]
+	if !f.userIDs[approverID] {
+		return errors.Errorf("not found user id %s", approverID)
 	}
 
 	id := uuid.NewString()
@@ -181,6 +187,8 @@ func (f *Feishu) createApprovalInstance(c echo.Context) error {
 		approvalCode: create.ApprovalCode,
 		instanceCode: id,
 		status:       feishu.ApprovalStatusPending,
+		approverID:   approverID,
+		requesterID:  create.OpenID,
 	}
 
 	return c.JSON(http.StatusOK, &feishu.ExternalApprovalResponse{
@@ -257,6 +265,9 @@ func (f *Feishu) cancelApprovalInstance(c echo.Context) error {
 	}
 	if !f.userIDs[req.UserID] {
 		return errors.Errorf("not found user id %s", req.UserID)
+	}
+	if req.UserID != approval.requesterID {
+		return errors.New("the request user id should match the requester id")
 	}
 	if approval.status != feishu.ApprovalStatusPending {
 		return errors.Errorf(`expect to cancel a "pending" approval, but get status %q`, approval.status)
