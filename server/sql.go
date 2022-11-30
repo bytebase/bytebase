@@ -198,7 +198,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			// Disallow cross-database query if specify database.
 			if exec.DatabaseName != "" {
 				for _, databaseName := range databaseList {
-					if databaseName != "" && databaseName != exec.DatabaseName {
+					upperDatabaseName := strings.ToUpper(databaseName)
+					// We allow querying information schema.
+					if upperDatabaseName == "" || upperDatabaseName == "INFORMATION_SCHEMA" {
+						continue
+					}
+					if databaseName != exec.DatabaseName {
 						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", exec.DatabaseName, databaseName))
 					}
 				}
