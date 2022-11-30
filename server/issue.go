@@ -319,19 +319,23 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 	if err != nil {
 		return nil, err
 	}
+	if len(pipelineCreate.StageList) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "no database matched for deployment")
+	}
+	firstEnvironmentID := pipelineCreate.StageList[0].EnvironmentID
 
 	if issueCreate.AssigneeID == api.UnknownID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, assignee missing")
 	}
 	// Try to find a more appropriate assignee if the current assignee is the system bot, indicating that the caller might not be sure about who should be the assignee.
 	if issueCreate.AssigneeID == api.SystemBotID {
-		assigneeID, err := s.getDefaultAssigneeID(ctx, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+		assigneeID, err := s.getDefaultAssigneeID(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
 		}
 		issueCreate.AssigneeID = assigneeID
 	}
-	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, pipelineCreate.StageList[0].EnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
 	}
