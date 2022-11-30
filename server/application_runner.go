@@ -567,6 +567,8 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 	}
 }
 
+// tryUpdateApprovalDefinition is run on application runner start.
+// The approval definition may have changed so we make idempotent POST request to patch the definition.
 func (r *ApplicationRunner) tryUpdateApprovalDefinition(ctx context.Context) error {
 	settingName := api.SettingAppIM
 	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
