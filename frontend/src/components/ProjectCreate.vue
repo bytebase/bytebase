@@ -99,7 +99,7 @@
           class="mt-2 w-full placeholder-gray-300"
           :required="true"
           :value="state.project.dbNameTemplate"
-          placeholder="e.g. {{DB_NAME}}__{{TENANT}}"
+          :placeholder="`e.g. ${DEFAULT_DB_NAME_TEMPLATE}`"
           @input="
             state.project.dbNameTemplate = (
               $event.target as HTMLInputElement
@@ -163,6 +163,8 @@ interface LocalState {
   isCreating: boolean;
 }
 
+const DEFAULT_DB_NAME_TEMPLATE = "{{DB_NAME}}__{{TENANT}}";
+
 export default defineComponent({
   name: "ProjectCreate",
   emits: ["dismiss"],
@@ -206,7 +208,7 @@ export default defineComponent({
       () => state.enableDbNameTemplate,
       (on) => {
         if (on) {
-          state.project.dbNameTemplate = "{{DB_NAME}}_{{TENANT}}";
+          state.project.dbNameTemplate = DEFAULT_DB_NAME_TEMPLATE;
         } else {
           state.project.dbNameTemplate = "";
         }
@@ -262,6 +264,7 @@ export default defineComponent({
     };
 
     return {
+      DEFAULT_DB_NAME_TEMPLATE,
       state,
       allowCreate,
       cancel,
