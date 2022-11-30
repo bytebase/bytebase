@@ -369,9 +369,8 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, isEqual, pick } from "lodash-es";
 import { computed, reactive, PropType } from "vue";
-import cloneDeep from "lodash-es/cloneDeep";
-import isEqual from "lodash-es/isEqual";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { SslCertificateForm } from "./InstanceForm";
@@ -631,10 +630,27 @@ const handleCurrentDataSourceSslChange = (
 const updateInstanceDataSource = () => {
   const curr = currentDataSource.value;
   const index = state.dataSourceList.findIndex((ds) => ds === curr);
-  const newValue = {
+  let newValue = {
     ...state.instance.dataSourceList[index],
     username: curr.username,
   };
+
+  if (curr.type === "RO") {
+    if (!hasFeature("bb.feature.read-replica-connection")) {
+      if (curr.hostOverride || curr.portOverride) {
+        state.dataSourceList[index].hostOverride = "";
+        state.dataSourceList[index].portOverride = "";
+        newValue.hostOverride = "";
+        newValue.portOverride = "";
+        state.showFeatureModal = true;
+      }
+    } else {
+      newValue = {
+        ...newValue,
+        ...pick(curr, ["hostOverride", "portOverride"]),
+      };
+    }
+  }
 
   if (curr.useEmptyPassword) {
     // When 'Password: Empty' is checked, we set the password to empty string.
@@ -656,18 +672,6 @@ const updateInstanceDataSource = () => {
     delete newValue.sslCa;
     delete newValue.sslCert;
     delete newValue.sslKey;
-  }
-
-  if (curr.type === "RO") {
-    if (!hasFeature("bb.feature.read-replica-connection")) {
-      if (curr.hostOverride || curr.portOverride) {
-        state.dataSourceList[index].hostOverride = "";
-        state.dataSourceList[index].portOverride = "";
-        newValue.hostOverride = "";
-        newValue.portOverride = "";
-        state.showFeatureModal = true;
-      }
-    }
   }
 
   state.instance.dataSourceList[index] = newValue;
