@@ -296,7 +296,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				// Use superuser privilege to run privileged statements.
 				stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
 				remainingStmts = append(remainingStmts, stmt)
-			} else {
+			} else if !isIgnoredStatement(stmt) {
 				remainingStmts = append(remainingStmts, stmt)
 			}
 		}
@@ -335,6 +335,13 @@ func isSuperuserStatement(stmt string) bool {
 		return true
 	}
 	return false
+}
+
+func isIgnoredStatement(stmt string) bool {
+	// Extensions created in AWS Aurora PostgreSQL are owned by rdsadmin.
+	// We don't have privileges to comment on the extension and have to ignore it.
+	upperCaseStmt := strings.ToUpper(stmt)
+	return strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION")
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
