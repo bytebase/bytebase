@@ -6,7 +6,7 @@ on:
       - main
       - "release/*.*.*"
     paths:
-      - "frontned/**"
+      - "frontend/**"
 
 jobs:
   eslint-checks:
