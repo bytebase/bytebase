@@ -203,8 +203,7 @@ func extractMySQLDatabaseList(statement string) ([]string, error) {
 
 // extractDatabaseListFromNode extracts all the database from node.
 func extractDatabaseListFromNode(in tidbast.Node) []string {
-	tableNameList := []*tidbast.TableName{}
-	tableNameList = extractMySQLTableList(in, tableNameList, false /* asName */)
+	tableNameList := extractMySQLTableList(in, false /* asName */)
 
 	databaseMap := make(map[string]bool)
 	for _, tableName := range tableNameList {
@@ -220,82 +219,90 @@ func extractDatabaseListFromNode(in tidbast.Node) []string {
 	return databaseList
 }
 
-// extractMySQLTableList extracts all the TableNames from node.
+func extractMySQLTableList(in tidbast.Node, asName bool) []*tidbast.TableName {
+	input := []*tidbast.TableName{}
+	return extractTableList(in, input, asName)
+}
+
+// -------------------------------------------- DO NOT TOUCH --------------------------------------------
+
+// extractTableList extracts all the TableNames from node.
 // If asName is true, extract AsName prior to OrigName.
-// Privilege check should use OrigName, while expression may use AsName
-func extractMySQLTableList(node tidbast.Node, input []*tidbast.TableName, asName bool) []*tidbast.TableName {
+// Privilege check should use OrigName, while expression may use AsName.
+// WARNING: copy from TiDB core code, do NOT touch!
+func extractTableList(node tidbast.Node, input []*tidbast.TableName, asName bool) []*tidbast.TableName {
 	switch x := node.(type) {
 	case *tidbast.SelectStmt:
 		if x.From != nil {
-			input = extractMySQLTableList(x.From.TableRefs, input, asName)
+			input = extractTableList(x.From.TableRefs, input, asName)
 		}
 		if x.Where != nil {
-			input = extractMySQLTableList(x.Where, input, asName)
+			input = extractTableList(x.Where, input, asName)
 		}
 		if x.With != nil {
 			for _, cte := range x.With.CTEs {
-				input = extractMySQLTableList(cte.Query, input, asName)
+				input = extractTableList(cte.Query, input, asName)
 			}
 		}
 		for _, f := range x.Fields.Fields {
 			if s, ok := f.Expr.(*tidbast.SubqueryExpr); ok {
-				input = extractMySQLTableList(s, input, asName)
+				input = extractTableList(s, input, asName)
 			}
 		}
 	case *tidbast.DeleteStmt:
-		input = extractMySQLTableList(x.TableRefs.TableRefs, input, asName)
+		input = extractTableList(x.TableRefs.TableRefs, input, asName)
 		if x.IsMultiTable {
 			for _, t := range x.Tables.Tables {
-				input = extractMySQLTableList(t, input, asName)
+				input = extractTableList(t, input, asName)
 			}
 		}
 		if x.Where != nil {
-			input = extractMySQLTableList(x.Where, input, asName)
+			input = extractTableList(x.Where, input, asName)
 		}
 		if x.With != nil {
 			for _, cte := range x.With.CTEs {
-				input = extractMySQLTableList(cte.Query, input, asName)
+				input = extractTableList(cte.Query, input, asName)
 			}
 		}
 	case *tidbast.UpdateStmt:
-		input = extractMySQLTableList(x.TableRefs.TableRefs, input, asName)
+		input = extractTableList(x.TableRefs.TableRefs, input, asName)
 		for _, e := range x.List {
-			input = extractMySQLTableList(e.Expr, input, asName)
+			input = extractTableList(e.Expr, input, asName)
 		}
 		if x.Where != nil {
-			input = extractMySQLTableList(x.Where, input, asName)
+			input = extractTableList(x.Where, input, asName)
 		}
 		if x.With != nil {
 			for _, cte := range x.With.CTEs {
-				input = extractMySQLTableList(cte.Query, input, asName)
+				input = extractTableList(cte.Query, input, asName)
 			}
 		}
 	case *tidbast.InsertStmt:
-		input = extractMySQLTableList(x.Table.TableRefs, input, asName)
-		input = extractMySQLTableList(x.Select, input, asName)
+		input = extractTableList(x.Table.TableRefs, input, asName)
+		input = extractTableList(x.Select, input, asName)
 	case *tidbast.SetOprStmt:
 		l := &tidbast.SetOprSelectList{}
 		unfoldSelectList(x.SelectList, l)
 		for _, s := range l.Selects {
-			input = extractMySQLTableList(s.(tidbast.ResultSetNode), input, asName)
+			input = extractTableList(s.(tidbast.ResultSetNode), input, asName)
 		}
 	case *tidbast.PatternInExpr:
 		if s, ok := x.Sel.(*tidbast.SubqueryExpr); ok {
-			input = extractMySQLTableList(s, input, asName)
+			input = extractTableList(s, input, asName)
 		}
 	case *tidbast.ExistsSubqueryExpr:
 		if s, ok := x.Sel.(*tidbast.SubqueryExpr); ok {
-			input = extractMySQLTableList(s, input, asName)
+			input = extractTableList(s, input, asName)
 		}
 	case *tidbast.BinaryOperationExpr:
 		if s, ok := x.R.(*tidbast.SubqueryExpr); ok {
-			input = extractMySQLTableList(s, input, asName)
+			input = extractTableList(s, input, asName)
 		}
 	case *tidbast.SubqueryExpr:
-		input = extractMySQLTableList(x.Query, input, asName)
+		input = extractTableList(x.Query, input, asName)
 	case *tidbast.Join:
-		input = extractMySQLTableList(x.Left, input, asName)
-		input = extractMySQLTableList(x.Right, input, asName)
+		input = extractTableList(x.Left, input, asName)
+		input = extractTableList(x.Right, input, asName)
 	case *tidbast.TableSource:
 		if s, ok := x.Source.(*tidbast.TableName); ok {
 			if x.AsName.L != "" && asName {
@@ -309,7 +316,7 @@ func extractMySQLTableList(node tidbast.Node, input []*tidbast.TableName, asName
 		} else if s, ok := x.Source.(*tidbast.SelectStmt); ok {
 			if s.From != nil {
 				var innerList []*tidbast.TableName
-				innerList = extractMySQLTableList(s.From.TableRefs, innerList, asName)
+				innerList = extractTableList(s.From.TableRefs, innerList, asName)
 				if len(innerList) > 0 {
 					innerTableName := innerList[0]
 					if x.AsName.L != "" && asName {
@@ -326,6 +333,7 @@ func extractMySQLTableList(node tidbast.Node, input []*tidbast.TableName, asName
 	return input
 }
 
+// WARNING: copy from TiDB core code, do NOT touch!
 func unfoldSelectList(list *tidbast.SetOprSelectList, unfoldList *tidbast.SetOprSelectList) {
 	for _, sel := range list.Selects {
 		switch s := sel.(type) {
