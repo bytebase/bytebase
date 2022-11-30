@@ -332,7 +332,8 @@
       "subscription": "Subscription",
       "labels": "Labels",
       "debug-log": "Debug Log",
-      "sensitive-data": "Sensitive Data"
+      "sensitive-data": "Sensitive Data",
+      "access-control": "Access Control"
     },
     "profile": {
       "email": "Email",
@@ -413,6 +414,11 @@
     "sensitive-data": {
       "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
       "remove-sensitive-column-tips": "Expose this column?"
+    },
+    "access-control": {
+      "description": "Allow developers to execute queries for the following databases in the protected environments from SQL Editor.",
+      "add-rule": "Add rule",
+      "remove-policy-tips": "Remove this rule?"
     }
   },
   "activity": {
@@ -804,7 +810,7 @@
     },
     "environment-tier": {
       "name": "Environment tier",
-      "description": "The environment will appear differently from other environments.",
+      "description": "The environment will appear differently from other environments.{newline}Developers cannot execute any query on this environment's databases \nusing SQL Editor by default. ",
       "mark-env-as-protected": "Mark as protected environment"
     }
   },
@@ -1467,6 +1473,10 @@
       "bb-feature-sensitive-data": {
         "title": "Sensitive data",
         "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
+      },
+      "bb-feature-access-control": {
+        "title": "Access control",
+        "desc": "Change query permission for databases in the protected environments."
       },
       "bb-feature-lgtm": {
         "title": "LGTM check",
