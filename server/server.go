@@ -126,6 +126,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
+	if prof.ResourceDirOverride != "" {
+		resourceDir = prof.ResourceDirOverride
+	}
 
 	// Display config
 	log.Info("-----Config BEGIN-----")

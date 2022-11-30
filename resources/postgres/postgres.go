@@ -258,25 +258,25 @@ func StartForTest(port int, pgBinDir, pgDataDir string) (err error) {
 
 // SetupTestInstance installs and starts a postgresql instance for testing,
 // returns the stop function.
-func SetupTestInstance(t *testing.T, port int) func() {
-	basedir, datadir := t.TempDir(), t.TempDir()
+func SetupTestInstance(t *testing.T, port int, resourceDir string) func() {
+	dataDir := t.TempDir()
 	t.Log("Installing PostgreSQL...")
-	binDir, err := Install(basedir)
+	binDir, err := Install(resourceDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log("InitDB...")
-	if err := InitDB(binDir, datadir, "root"); err != nil {
+	if err := InitDB(binDir, dataDir, "root"); err != nil {
 		t.Fatal(err)
 	}
 	t.Log("Starting PostgreSQL...")
-	if err := StartForTest(port, binDir, datadir); err != nil {
+	if err := StartForTest(port, binDir, dataDir); err != nil {
 		t.Fatal(err)
 	}
 
 	stopFn := func() {
 		t.Log("Stopping PostgreSQL...")
-		if err := Stop(binDir, datadir); err != nil {
+		if err := Stop(binDir, dataDir); err != nil {
 			t.Fatal(err)
 		}
 	}
