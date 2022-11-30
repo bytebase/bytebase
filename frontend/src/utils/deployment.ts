@@ -61,8 +61,8 @@ export const buildDatabaseNameRegExpByTemplate = (template: string): RegExp => {
 
   /*
     Rewrite the placeholder-based template to a big RegExp
-    e.g. template = "{{DB_NAME}}_{{TENANT}}"
-    here regex will be /^(?<DB_NAME>.+?)_(?<TENANT>.+?)$/
+    e.g. template = "{{DB_NAME}}__{{TENANT}}"
+    here regex will be /^(?<DB_NAME>.+?)__(?<TENANT>.+?)$/
   */
   PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS.forEach((placeholder) => {
     const pattern = `{{${placeholder}}}`;
