@@ -188,6 +188,23 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
+		// Database Access Control
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", exec.Statement)).SetInternal(err)
+			}
+
+			// Disallow cross-database query if specify database.
+			if exec.DatabaseName != "" {
+				for _, databaseName := range databaseList {
+					if databaseName != "" && databaseName != exec.DatabaseName {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", exec.DatabaseName, databaseName))
+					}
+				}
+			}
+		}
+
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
