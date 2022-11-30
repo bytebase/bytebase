@@ -208,6 +208,25 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					}
 				}
 			}
+
+			// Check database access rights.
+			principalID := c.Get(getPrincipalIDContextKey()).(int)
+			for _, databaseName := range databaseList {
+				accessDatabase := databaseName
+				if accessDatabase == "" {
+					if exec.DatabaseName == "" {
+						continue
+					}
+					accessDatabase = exec.DatabaseName
+				}
+				allowAccess, err := s.allowAccessDatabase(ctx, principalID, instance.ID, accessDatabase)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control policy: %q", exec.Statement)).SetInternal(err)
+				}
+				if !allowAccess {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", databaseName))
+				}
+			}
 		}
 
 		adviceLevel := advisor.Success
@@ -991,4 +1010,45 @@ func isMySQLExcludeDatabase(database string) bool {
 		return false
 	}
 	return true
+}
+
+func (s *Server) allowAccessDatabase(ctx context.Context, principalID int, instanceID int, databaseName string) (bool, error) {
+	database, err := s.getDatabase(ctx, instanceID, databaseName)
+	if err != nil {
+		if httpError, ok := err.(*echo.HTTPError); ok && httpError.Code == echo.ErrNotFound.Code {
+			return true, nil
+		}
+		return false, err
+	}
+
+	isDeveloper := false
+	for _, member := range database.Project.ProjectMemberList {
+		if member.PrincipalID == principalID && member.Role == string(api.Developer) {
+			isDeveloper = true
+			break
+		}
+	}
+
+	if !isDeveloper {
+		return true, nil
+	}
+
+	// Database level access control policy is the allowlist style.
+	databasePolicy, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.ID)
+	if err != nil {
+		return false, nil
+	}
+	if databasePolicy != nil {
+		return true, nil
+	}
+
+	// Environment level access control policy is the disallowlist style.
+	environmentPolicy, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, database.Instance.EnvironmentID)
+	if err != nil {
+		return false, err
+	}
+	if environmentPolicy != nil {
+		return false, nil
+	}
+	return true, nil
 }
