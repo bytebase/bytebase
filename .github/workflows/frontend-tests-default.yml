@@ -10,7 +10,12 @@ on:
       - "frontend/**"
 
 jobs:
-  job-ignored:
+  eslint-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "Not required"'
+
+  frontend-tests:
     runs-on: ubuntu-latest
     steps:
       - run: 'echo "Not required"'

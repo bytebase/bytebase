@@ -13,7 +13,12 @@ on:
       - "quickstart/**"
 
 jobs:
-  job-ignored:
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "Not required"'
+
+  go-tests:
     runs-on: ubuntu-latest
     steps:
       - run: 'echo "Not required"'
