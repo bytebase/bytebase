@@ -13,7 +13,7 @@ on:
       - "quickstart/**"
 
 jobs:
-  build:
+  job-ignored:
     runs-on: ubuntu-latest
     steps:
-      - run: 'echo "No build required"'
+      - run: 'echo "Not required"'
