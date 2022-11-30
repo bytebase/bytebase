@@ -177,32 +177,53 @@ const handleEditorReady = async () => {
     },
   });
 
-  editor?.addCommand(monaco.KeyCode.Enter, (...args: any[]) => {
-    // When
-    // - the SQL ends with ";"
-    // - and the cursor is at the end of the editor
-    // - then press "Enter"
-    // We trigger the "execute" event
-    if (props.sql.endsWith(";")) {
-      const model = editor.getModel();
-      if (model) {
-        const maxLine = model.getLineCount();
-        const maxColumn = model.getLineMaxColumn(maxLine);
-        const cursor = editor.getPosition();
-        const isCursorAtLast = !!cursor?.equals({
-          lineNumber: maxLine,
-          column: maxColumn,
-        });
-        if (isCursorAtLast) {
-          emit("execute", props.sql, {
-            databaseType: selectedInstanceEngine.value,
-          });
-          return false;
-        }
+  const endsWithSemicolon = editor?.createContextKey<boolean>(
+    "endsWithSemicolon",
+    false
+  );
+  const cursorAtLast = editor?.createContextKey<boolean>("cursorAtLast", false);
+
+  editor?.onDidChangeModelContent(() => {
+    const value = editor.getValue();
+    if (value.endsWith(";")) {
+      endsWithSemicolon?.set(true);
+    } else {
+      endsWithSemicolon?.set(false);
+    }
+  });
+
+  editor?.onDidChangeCursorPosition(() => {
+    const model = editor.getModel();
+    if (model) {
+      const maxLine = model.getLineCount();
+      const maxColumn = model.getLineMaxColumn(maxLine);
+      const cursor = editor.getPosition();
+      const isCursorAtLast = !!cursor?.equals({
+        lineNumber: maxLine,
+        column: maxColumn,
+      });
+      if (isCursorAtLast) {
+        cursorAtLast?.set(true);
+        return;
       }
     }
-    return true;
+    cursorAtLast?.set(false);
   });
+
+  editor?.addCommand(
+    monaco.KeyCode.Enter,
+    () => {
+      // When
+      // - the SQL ends with ";"
+      // - and the cursor is at the end of the editor
+      // - then press "Enter"
+      // We trigger the "execute" event
+      emit("execute", props.sql, {
+        databaseType: selectedInstanceEngine.value,
+      });
+    },
+    "endsWithSemicolon && cursorAtLast"
+  );
 
   watchEffect(() => {
     if (selectedInstance.value) {
