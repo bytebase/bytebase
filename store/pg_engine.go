@@ -14,6 +14,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
@@ -180,6 +181,20 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 
 	for _, h := range history {
 		if h.Status != dbdriver.Done {
+			stmt := h.Statement
+			// Only print out first 200 chars.
+			if len(stmt) > 200 {
+				stmt = stmt[:200]
+			}
+			// Non-success migration history record is an anomaly, in the case where the actual
+			// migration has been applied, the followup migration will likely fail because the
+			// schema has already been applied. Thus emitting a warning here will assist debugging.
+			log.Warn(fmt.Sprintf("Found %s migration history", h.Status),
+				zap.String("type", string(h.Type)),
+				zap.String("version", h.Version),
+				zap.String("description", h.Description),
+				zap.String("statement", stmt),
+			)
 			continue
 		}
 		v, err := semver.Make(h.Version)
