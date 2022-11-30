@@ -13,7 +13,7 @@
         </template>
       </n-input>
     </div>
-    <div class="databases-tree--tree overflow-y-scroll">
+    <div class="databases-tree--tree overflow-y-auto">
       <n-tree
         block-line
         :data="treeData"

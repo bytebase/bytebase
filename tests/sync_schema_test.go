@@ -43,7 +43,7 @@ DROP SCHEMA "schema_a";
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -54,7 +54,7 @@ DROP SCHEMA "schema_a";
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(t, pgPort)
+	stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
 	defer stopInstance()
 
 	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))

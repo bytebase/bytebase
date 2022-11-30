@@ -77,10 +77,7 @@ func TestRetentionPolicy(t *testing.T) {
 	_, _, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
-	serverPort, err := strconv.Atoi(strings.TrimPrefix(ctl.server.GetEcho().Server.Addr, ":"))
-	a.NoError(err)
-	pgMetaPort := serverPort + 1
-	metaDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=bbtest database=bbtest", pgMetaPort))
+	metaDB, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
 	a.NoError(metaDB.Ping())
 
@@ -288,7 +285,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	defer cleanFn()
 
 	dstPort := getTestPort()
-	dstStopFn := resourcemysql.SetupTestInstance(t, dstPort)
+	dstStopFn := resourcemysql.SetupTestInstance(t, dstPort, mysqlBinDir)
 	defer dstStopFn()
 	dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
 
@@ -403,7 +400,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	a := require.New(t)
 
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -441,7 +438,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	databaseName := baseName + "_Database"
 
 	mysqlPort := getTestPort()
-	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
+	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,

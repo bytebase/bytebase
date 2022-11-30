@@ -254,7 +254,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -265,7 +265,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(t, pgPort)
+	stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
 	defer stopInstance()
 
 	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -988,7 +988,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -999,7 +999,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
-	stopInstance := mysql.SetupTestInstance(t, mysqlPort)
+	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
 	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", mysqlPort))

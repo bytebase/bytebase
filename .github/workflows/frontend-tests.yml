@@ -1,0 +1,46 @@
+name: Frontend Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "release/*.*.*"
+    paths:
+      - "frontend/**"
+
+jobs:
+  eslint-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 7.11.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Run pnpm lint
+        run: pnpm lint
+        working-directory: frontend
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 7.11.0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Run pnpm test
+        run: pnpm test
+        working-directory: frontend

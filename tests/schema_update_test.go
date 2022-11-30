@@ -34,7 +34,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -358,7 +358,7 @@ func TestVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -739,7 +739,7 @@ func TestVCS_SDL(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -755,7 +755,7 @@ func TestVCS_SDL(t *testing.T) {
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(t, pgPort)
+			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
 			defer stopInstance()
 
 			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -1242,7 +1242,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1470,7 +1470,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1486,7 +1486,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(t, pgPort)
+			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
 			defer stopInstance()
 
 			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -1750,7 +1750,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			ctl := &controller{}
 
 			// Create a server.
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: vcsTest.vcsProviderCreator,
 			})
@@ -1902,7 +1902,7 @@ CREATE TABLE public.book (
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            t.TempDir(),
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -1924,7 +1924,7 @@ CREATE TABLE public.book (
 			dbPort := getTestPort()
 			switch test.dbType {
 			case db.Postgres:
-				stopInstance := postgres.SetupTestInstance(t, dbPort)
+				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDirOverride)
 				defer stopInstance()
 			default:
 				a.FailNow("unsupported db type")

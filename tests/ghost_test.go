@@ -70,7 +70,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -82,7 +82,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 
 	mysqlPort := getTestPort()
-	stopInstance := mysql.SetupTestInstance(t, mysqlPort)
+	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
 	mysqlDB, err := connectTestMySQL(mysqlPort, "")

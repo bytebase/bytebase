@@ -4,6 +4,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -22,8 +23,13 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	// Import pg driver.
+	// init() in pgx/v4/stdlib will register it's pgx driver.
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -153,14 +159,21 @@ type config struct {
 	dataDir                 string
 	vcsProviderCreator      fake.VCSProviderCreator
 	feishuProverdierCreator fake.FeishuProviderCreator
-
-	pgUser string
-	pgURL  string
 }
 
 var (
 	mu       sync.Mutex
 	nextPort = 1234
+
+	// Shared external PG server variables.
+	externalPgUser     = "bbexternal"
+	externalPgPort     = 21113
+	externalPgBinDir   string
+	externalPgDataDir  string
+	nextDatabaseNumber = 20210113
+
+	// resourceDirOverride is the shared resource directory.
+	resourceDirOverride string
 )
 
 // getTestPort reserves and returns a port.
@@ -181,14 +194,36 @@ func getTestPortForEmbeddedPg() int {
 	return p
 }
 
+// getTestDatabaseString returns a unique database name in external pg database server.
+func getTestDatabaseString() string {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextDatabaseNumber
+	nextDatabaseNumber++
+	return fmt.Sprintf("bbtest%d", p)
+}
+
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
 	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
 		return err
 	}
+
+	pgMainURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, "postgres", common.GetPostgresSocketDir())
+	db, err := sql.Open("pgx", pgMainURL)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	databaseName := getTestDatabaseString()
+	if _, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", databaseName)); err != nil {
+		return err
+	}
+
+	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, config.pgUser, config.pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, resourceDirOverride, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -206,7 +241,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 		return err
 	}
 	serverPort := getTestPortForEmbeddedPg()
-	profile := cmd.GetTestProfile(config.dataDir, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := cmd.GetTestProfile(config.dataDir, resourceDirOverride, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
