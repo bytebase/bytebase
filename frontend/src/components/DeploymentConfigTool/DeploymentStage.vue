@@ -129,9 +129,6 @@ export default defineComponent({
         operator: "In",
         values: [],
       };
-      // if (label && label.valueList.length > 0) {
-      //   rule.values.push(label.valueList[0]);
-      // }
       array.push(rule);
     };
 
