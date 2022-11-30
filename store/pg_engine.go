@@ -189,7 +189,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		return &v, nil
 	}
 
-	return nil, errors.Errorf("failed to find a successful migration history")
+	return nil, nil
 }
 
 // setupDemoData loads the setupDemoData data for testing.
