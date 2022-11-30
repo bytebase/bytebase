@@ -10,6 +10,7 @@ import (
 
 	tidbparser "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
+	"github.com/pingcap/tidb/parser/model"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/parser/ast"
@@ -155,9 +156,6 @@ func ExtractDelimiter(stmt string) (string, error) {
 }
 
 // ExtractDatabaseList extracts all databases from statement.
-// TODO(rebelice): this function only works for single table in FROM clause, fix it.
-//
-//	e.g. SELECT a, b FROM t;
 func ExtractDatabaseList(engineType EngineType, statement string) ([]string, error) {
 	switch engineType {
 	case MySQL, TiDB:
@@ -204,24 +202,137 @@ func extractMySQLDatabaseList(statement string) ([]string, error) {
 }
 
 // extractDatabaseListFromNode extracts all the database from node.
-// TODO(rebelice): this function only works for single table in FROM clause, fix it.
-//
-//	e.g. SELECT a, b FROM t;
 func extractDatabaseListFromNode(in tidbast.Node) []string {
-	switch node := in.(type) {
+	tableNameList := []*tidbast.TableName{}
+	tableNameList = extractMySQLTableList(in, tableNameList, false /* asName */)
+
+	databaseMap := make(map[string]bool)
+	for _, tableName := range tableNameList {
+		databaseMap[tableName.Schema.O] = true
+	}
+
+	var databaseList []string
+	for databaseName := range databaseMap {
+		databaseList = append(databaseList, databaseName)
+	}
+
+	sort.Strings(databaseList)
+	return databaseList
+}
+
+// extractMySQLTableList extracts all the TableNames from node.
+// If asName is true, extract AsName prior to OrigName.
+// Privilege check should use OrigName, while expression may use AsName
+func extractMySQLTableList(node tidbast.Node, input []*tidbast.TableName, asName bool) []*tidbast.TableName {
+	switch x := node.(type) {
 	case *tidbast.SelectStmt:
-		if node.From != nil {
-			return extractDatabaseListFromNode(node.From.TableRefs)
+		if x.From != nil {
+			input = extractMySQLTableList(x.From.TableRefs, input, asName)
 		}
+		if x.Where != nil {
+			input = extractMySQLTableList(x.Where, input, asName)
+		}
+		if x.With != nil {
+			for _, cte := range x.With.CTEs {
+				input = extractMySQLTableList(cte.Query, input, asName)
+			}
+		}
+		for _, f := range x.Fields.Fields {
+			if s, ok := f.Expr.(*tidbast.SubqueryExpr); ok {
+				input = extractMySQLTableList(s, input, asName)
+			}
+		}
+	case *tidbast.DeleteStmt:
+		input = extractMySQLTableList(x.TableRefs.TableRefs, input, asName)
+		if x.IsMultiTable {
+			for _, t := range x.Tables.Tables {
+				input = extractMySQLTableList(t, input, asName)
+			}
+		}
+		if x.Where != nil {
+			input = extractMySQLTableList(x.Where, input, asName)
+		}
+		if x.With != nil {
+			for _, cte := range x.With.CTEs {
+				input = extractMySQLTableList(cte.Query, input, asName)
+			}
+		}
+	case *tidbast.UpdateStmt:
+		input = extractMySQLTableList(x.TableRefs.TableRefs, input, asName)
+		for _, e := range x.List {
+			input = extractMySQLTableList(e.Expr, input, asName)
+		}
+		if x.Where != nil {
+			input = extractMySQLTableList(x.Where, input, asName)
+		}
+		if x.With != nil {
+			for _, cte := range x.With.CTEs {
+				input = extractMySQLTableList(cte.Query, input, asName)
+			}
+		}
+	case *tidbast.InsertStmt:
+		input = extractMySQLTableList(x.Table.TableRefs, input, asName)
+		input = extractMySQLTableList(x.Select, input, asName)
+	case *tidbast.SetOprStmt:
+		l := &tidbast.SetOprSelectList{}
+		unfoldSelectList(x.SelectList, l)
+		for _, s := range l.Selects {
+			input = extractMySQLTableList(s.(tidbast.ResultSetNode), input, asName)
+		}
+	case *tidbast.PatternInExpr:
+		if s, ok := x.Sel.(*tidbast.SubqueryExpr); ok {
+			input = extractMySQLTableList(s, input, asName)
+		}
+	case *tidbast.ExistsSubqueryExpr:
+		if s, ok := x.Sel.(*tidbast.SubqueryExpr); ok {
+			input = extractMySQLTableList(s, input, asName)
+		}
+	case *tidbast.BinaryOperationExpr:
+		if s, ok := x.R.(*tidbast.SubqueryExpr); ok {
+			input = extractMySQLTableList(s, input, asName)
+		}
+	case *tidbast.SubqueryExpr:
+		input = extractMySQLTableList(x.Query, input, asName)
 	case *tidbast.Join:
-		var res []string
-		res = append(res, extractDatabaseListFromNode(node.Left)...)
-		res = append(res, extractDatabaseListFromNode(node.Right)...)
-		return res
+		input = extractMySQLTableList(x.Left, input, asName)
+		input = extractMySQLTableList(x.Right, input, asName)
 	case *tidbast.TableSource:
-		if tableName, ok := node.Source.(*tidbast.TableName); ok {
-			return []string{tableName.Schema.O}
+		if s, ok := x.Source.(*tidbast.TableName); ok {
+			if x.AsName.L != "" && asName {
+				newTableName := *s
+				newTableName.Name = x.AsName
+				newTableName.Schema = model.NewCIStr("")
+				input = append(input, &newTableName)
+			} else {
+				input = append(input, s)
+			}
+		} else if s, ok := x.Source.(*tidbast.SelectStmt); ok {
+			if s.From != nil {
+				var innerList []*tidbast.TableName
+				innerList = extractMySQLTableList(s.From.TableRefs, innerList, asName)
+				if len(innerList) > 0 {
+					innerTableName := innerList[0]
+					if x.AsName.L != "" && asName {
+						newTableName := *innerList[0]
+						newTableName.Name = x.AsName
+						newTableName.Schema = model.NewCIStr("")
+						innerTableName = &newTableName
+					}
+					input = append(input, innerTableName)
+				}
+			}
 		}
 	}
-	return nil
+	return input
+}
+
+func unfoldSelectList(list *tidbast.SetOprSelectList, unfoldList *tidbast.SetOprSelectList) {
+	for _, sel := range list.Selects {
+		switch s := sel.(type) {
+		case *tidbast.SelectStmt:
+			unfoldList.Selects = append(unfoldList.Selects, s)
+		case *tidbast.SetOprSelectList:
+			unfoldSelectList(s, unfoldList)
+		}
+	}
 }
