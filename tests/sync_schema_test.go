@@ -54,7 +54,7 @@ DROP SCHEMA "schema_a";
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(t, pgPort)
+	stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
 	defer stopInstance()
 
 	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))

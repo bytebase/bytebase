@@ -171,6 +171,9 @@ var (
 	externalPgBinDir   string
 	externalPgDataDir  string
 	nextDatabaseNumber = 20210113
+
+	// resourceDirOverride is the shared resource directory.
+	resourceDirOverride string
 )
 
 // getTestPort reserves and returns a port.
@@ -220,7 +223,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, resourceDirOverride, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -238,7 +241,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 		return err
 	}
 	serverPort := getTestPortForEmbeddedPg()
-	profile := cmd.GetTestProfile(config.dataDir, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := cmd.GetTestProfile(config.dataDir, resourceDirOverride, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
