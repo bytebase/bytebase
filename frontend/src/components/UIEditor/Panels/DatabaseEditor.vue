@@ -231,8 +231,12 @@ watch(
           databaseId: database.id,
           ...diffTableListResult,
         };
-        const statement = await editorStore.postDatabaseEdit(databaseEdit);
-        state.statement = statement;
+        try {
+          const statement = await editorStore.postDatabaseEdit(databaseEdit);
+          state.statement = statement;
+        } catch (error) {
+          state.statement = "";
+        }
       }
       state.isFetchingDDL = false;
     }
@@ -276,6 +280,6 @@ const handleDropTable = (table: Table) => {
   @apply py-2 px-3;
 }
 .table-body-item-container {
-  @apply w-full box-border p-px pl-3 pr-4 relative leading-9;
+  @apply w-full h-10 box-border p-px pl-3 pr-4 relative leading-9;
 }
 </style>
