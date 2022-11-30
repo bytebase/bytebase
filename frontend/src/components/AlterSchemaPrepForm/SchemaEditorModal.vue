@@ -226,7 +226,9 @@ const fetchDatabaseEditMapWithUIEditor = async () => {
   return databaseEditMap;
 };
 
-const unsavedDialogWarning = (): Promise<string> => {
+const unsavedDialogWarning = (): Promise<
+  "Close" | "NegativeClick" | "PositiveClick"
+> => {
   return new Promise((resolve) => {
     dialog.warning({
       title: "Confirm to continue",
