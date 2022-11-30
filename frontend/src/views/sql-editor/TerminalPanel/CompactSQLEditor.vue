@@ -177,12 +177,11 @@ const handleEditorReady = async () => {
     },
   });
 
+  // Create an editor context value to check if the SQL ends with semicolon ";"
   const endsWithSemicolon = editor?.createContextKey<boolean>(
     "endsWithSemicolon",
     false
   );
-  const cursorAtLast = editor?.createContextKey<boolean>("cursorAtLast", false);
-
   editor?.onDidChangeModelContent(() => {
     const value = editor.getValue();
     if (value.endsWith(";")) {
@@ -191,7 +190,9 @@ const handleEditorReady = async () => {
       endsWithSemicolon?.set(false);
     }
   });
-
+  // Another editor context value to check if the cursor is at the end of the
+  // editor.
+  const cursorAtLast = editor?.createContextKey<boolean>("cursorAtLast", false);
   editor?.onDidChangeCursorPosition(() => {
     const model = editor.getModel();
     if (model) {
@@ -223,6 +224,8 @@ const handleEditorReady = async () => {
       });
     },
     "endsWithSemicolon && cursorAtLast"
+    // Tell the editor this should be only
+    // triggered when both of the two conditions are satisfied.
   );
 
   watchEffect(() => {
