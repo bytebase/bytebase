@@ -72,11 +72,34 @@ export const useUIEditorStore = defineStore("UIEditor", {
       if (tabCache !== undefined) {
         tab = tabCache;
       } else {
+        // Don't show tab for dropped table.
+        if (tab.type === UIEditorTabType.TabForTable) {
+          if (this.droppedTableList.includes(tab.table)) {
+            return;
+          }
+        }
+
         this.tabState.tabMap.set(tab.id, tab);
       }
 
       if (setAsCurrentTab) {
         this.setCurrentTab(tab.id);
+      }
+    },
+    saveTab(tab: TabContext) {
+      if (tab.type === UIEditorTabType.TabForDatabase) {
+        // Edit database metadata is not allowed.
+      } else if (tab.type === UIEditorTabType.TabForTable) {
+        tab.table.name = tab.tableCache.name;
+        tab.table.columnList = cloneDeep(tab.tableCache.columnList);
+      }
+    },
+    discardTabChanges(tab: TabContext) {
+      if (tab.type === UIEditorTabType.TabForDatabase) {
+        // Edit database metadata is not allowed.
+      } else if (tab.type === UIEditorTabType.TabForTable) {
+        tab.tableCache.name = tab.table.name;
+        tab.tableCache.columnList = cloneDeep(tab.table.columnList);
       }
     },
     setCurrentTab(tabId: string) {

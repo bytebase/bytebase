@@ -51,6 +51,7 @@ import { useUIEditorStore } from "@/store";
 import { TabContext, UIEditorTabType } from "@/types";
 
 const editorStore = useUIEditorStore();
+const dialog = useDialog();
 const tabsContainerRef = ref();
 const tabList = computed(() => {
   return Array.from(editorStore.tabState.tabMap.values());
@@ -58,7 +59,6 @@ const tabList = computed(() => {
 const currentTab = computed(() => {
   return editorStore.currentTab;
 });
-const dialog = useDialog();
 
 watch(
   () => currentTab.value,
@@ -67,26 +67,23 @@ watch(
       const element = tabsContainerRef.value?.querySelector(
         `.tab-${currentTab.value?.id}`
       );
-      scrollIntoView(element);
+      if (element) {
+        scrollIntoView(element, {
+          scrollMode: "if-needed",
+        });
+      }
     });
   }
 );
 
 const checkTabSaved = (tab: TabContext) => {
-  if (tab.type === UIEditorTabType.TabForTable) {
-    const table = editorStore.tableList.find((table) => {
-      return (
-        table.id === tab.tableCache.id &&
-        table.database.id === tab.tableCache.database.id &&
-        table.name === tab.tableCache.name
-      );
-    });
-    if (!isEqual(tab.tableCache, table)) {
-      return false;
-    }
-  } else if (tab.type === UIEditorTabType.TabForDatabase) {
+  if (tab.type === UIEditorTabType.TabForDatabase) {
     // Edit database metadata is not allowed.
     return true;
+  } else if (tab.type === UIEditorTabType.TabForTable) {
+    if (!isEqual(tab.tableCache, tab.table)) {
+      return false;
+    }
   }
 
   return true;
@@ -114,17 +111,7 @@ const handleCloseTab = (tab: TabContext) => {
   if (tab.type === UIEditorTabType.TabForDatabase) {
     editorStore.closeTab(tab.id);
   } else if (tab.type === UIEditorTabType.TabForTable) {
-    const table = editorStore.tableList.find((table) => {
-      return (
-        table.id === tab.tableCache.id &&
-        table.database.id === tab.tableCache.database.id &&
-        table.name === tab.tableCache.name
-      );
-    });
-    if (!table) {
-      return;
-    }
-    if (isEqual(tab.tableCache, table)) {
+    if (isEqual(tab.tableCache, tab.table)) {
       editorStore.closeTab(tab.id);
     } else {
       dialog.warning({
