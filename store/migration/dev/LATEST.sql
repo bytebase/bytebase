@@ -776,7 +776,7 @@ CREATE TABLE issue (
     description TEXT NOT NULL DEFAULT '',
     -- While changing assignee_id, one should only change it to a non-robot DBA/owner.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
-    assignee_attetion BOOLEAN NOT NULL DEFAULT FALSE, 
+    assignee_need_attention BOOLEAN NOT NULL DEFAULT FALSE, 
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
