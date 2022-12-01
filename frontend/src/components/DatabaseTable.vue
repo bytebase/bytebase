@@ -42,14 +42,11 @@
           <button
             v-if="showSQLEditorLink"
             class="btn-icon tooltip-wrapper disabled:hover:text-control"
-            :disabled="isSQLEditorLinkDisabled(database)"
+            :disabled="!allowQuery(database)"
             @click.stop="gotoSQLEditor(database)"
           >
             <heroicons-solid:terminal class="w-5 h-5" />
-            <div
-              v-if="!isSQLEditorLinkDisabled(database)"
-              class="tooltip whitespace-nowrap"
-            >
+            <div v-if="allowQuery(database)" class="tooltip whitespace-nowrap">
               {{ $t("sql-editor.self") }}
             </div>
           </button>
@@ -506,8 +503,8 @@ const showSQLEditorLink = computed(() => {
   return true;
 });
 
-const isSQLEditorLinkDisabled = (database: Database) => {
-  return !isDatabaseAccessible(database, props.policyList, currentUser.value);
+const allowQuery = (database: Database) => {
+  return isDatabaseAccessible(database, props.policyList, currentUser.value);
 };
 
 const showTenantIcon = computed(() => {
@@ -515,7 +512,7 @@ const showTenantIcon = computed(() => {
 });
 
 const gotoSQLEditor = (database: Database) => {
-  if (isSQLEditorLinkDisabled(database)) {
+  if (!allowQuery(database)) {
     return;
   }
   // SQL editors can only query databases in the projects available to the user.
