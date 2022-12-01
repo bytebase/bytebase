@@ -939,3 +939,13 @@ func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error
 	}
 	return nil
 }
+
+func getTaskStatement(task *api.Task) (string, error) {
+	var taskStatement struct {
+		Statement string `json:"statement"`
+	}
+	if err := json.Unmarshal([]byte(task.Payload), &taskStatement); err != nil {
+		return "", err
+	}
+	return taskStatement.Statement, nil
+}
