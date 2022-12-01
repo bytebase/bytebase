@@ -96,7 +96,12 @@
               </dd>
             </template>
             <dd
-              class="flex items-center text-sm md:mr-4 cursor-pointer textlabel hover:text-accent"
+              class="flex items-center text-sm md:mr-4"
+              :class="
+                allowQuery
+                  ? ['textlabel cursor-pointer hover:text-accent']
+                  : ['text-gray-400 cursor-not-allowed']
+              "
               @click.prevent="gotoSQLEditor"
             >
               <span class="mr-1">{{ $t("sql-editor.self") }}</span>
@@ -309,6 +314,7 @@ import {
   hidePrefix,
   allowGhostMigration,
   isPITRDatabase,
+  isDatabaseAccessible,
 } from "@/utils";
 import {
   ProjectId,
@@ -327,6 +333,7 @@ import {
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
+  usePolicyByDatabaseAndType,
   useRepositoryStore,
   useSQLStore,
 } from "@/store";
@@ -381,6 +388,18 @@ const currentUser = useCurrentUser();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
+});
+
+const accessControlPolicy = usePolicyByDatabaseAndType(
+  computed(() => ({
+    databaseId: database.value.id,
+    type: "bb.policy.access-control",
+  }))
+);
+const allowQuery = computed(() => {
+  const policy = accessControlPolicy.value;
+  const list = policy ? [policy] : [];
+  return isDatabaseAccessible(database.value, list, currentUser.value);
 });
 
 // Project can be transferred if meets either of the condition below:
@@ -641,6 +660,10 @@ const selectDatabaseTabOnHash = () => {
 };
 
 const gotoSQLEditor = () => {
+  if (!allowQuery.value) {
+    return;
+  }
+
   // SQL editors can only query databases in the projects available to the user.
   if (
     database.value.projectId === UNKNOWN_ID ||
