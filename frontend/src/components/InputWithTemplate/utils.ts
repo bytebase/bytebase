@@ -90,6 +90,7 @@ export const getTemplateInputs = (
 // [{value: "abc", type: "string"}, {value: "template", type: "template"}] -> "abc{{template}}"
 export const templateInputsToString = (inputs: TemplateInput[]): string => {
   return inputs
+    .filter((input) => input.value)
     .map((input) =>
       input.type === InputType.String
         ? input.value
