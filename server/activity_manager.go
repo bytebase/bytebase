@@ -104,7 +104,7 @@ func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx contex
 		CreatorEmail: anyActivity.Creator.Email,
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go postWebhookList(webhookCtx, webhookList, issue)
+	go postWebhookList(webhookCtx, webhookList)
 
 	return nil
 }
@@ -157,12 +157,12 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return activity, nil
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go postWebhookList(webhookCtx, webhookList, meta.issue)
+	go postWebhookList(webhookCtx, webhookList)
 
 	return activity, nil
 }
 
-func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebhook, issue *api.Issue) {
+func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebhook) {
 	for _, hook := range webhookList {
 		webhookCtx.URL = hook.URL
 		webhookCtx.CreatedTs = time.Now().Unix()
