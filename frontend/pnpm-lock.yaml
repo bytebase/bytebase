@@ -3,7 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@bytebase/vue-kbar': 0.1.8
   '@codingame/monaco-vscode-api': 1.69.12
-  '@iconify/json': 2.1.133
+  '@iconify/json': 2.1.146
   '@intlify/vite-plugin-vue-i18n': 6.0.3
   '@joe-re/sql-parser': ^1.2.1
   '@markdoc/markdoc': 0.2.1
@@ -140,7 +140,7 @@ dependencies:
   vueuc: 0.4.49_vue@3.2.41
 
 devDependencies:
-  '@iconify/json': 2.1.133
+  '@iconify/json': 2.1.146
   '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.2.2+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 4.0.1_rollup@3.2.5
@@ -380,8 +380,8 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json/2.1.133:
-    resolution: {integrity: sha512-m/BRPD74mGJNrQXByCK40VymdGocBko3SmPCIp3IV2mRY9EWa3tmCnn+HpqsMg0IZJAWMi9dQfI8bIShs+ZSrg==}
+  /@iconify/json/2.1.146:
+    resolution: {integrity: sha512-wIGCtWvxNjWbHPOuJK1e7VaRn0EVrcpzTyC1TaSDRJFsBoGki9Z2NEPEPOS4VaEukh8MLHzLor1IMGgiLhfohg==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 0.3.9
