@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/server/factory/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -24,17 +25,19 @@ const (
 )
 
 // NewAnomalyScanner creates a anomaly scanner.
-func NewAnomalyScanner(server *Server, store *store.Store) *AnomalyScanner {
+func NewAnomalyScanner(server *Server, store *store.Store, dbFactory *dbfactory.DBFactory) *AnomalyScanner {
 	return &AnomalyScanner{
-		server: server,
-		store:  store,
+		server:    server,
+		store:     store,
+		dbFactory: dbFactory,
 	}
 }
 
 // AnomalyScanner is the anomaly scanner.
 type AnomalyScanner struct {
-	server *Server
-	store  *store.Store
+	server    *Server
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the anomaly scanner once.
@@ -152,7 +155,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
-	driver, err := s.server.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 
 	// Check connection
 	if err != nil {
@@ -230,7 +233,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 }
 
 func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
-	driver, err := s.server.getAdminDatabaseDriver(ctx, instance, database.Name)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.Name)
 
 	// Check connection
 	if err != nil {

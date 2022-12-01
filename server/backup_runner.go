@@ -19,14 +19,16 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewBackupRunner creates a new backup runner.
-func NewBackupRunner(server *Server, store *store.Store, profile *Profile) *BackupRunner {
+func NewBackupRunner(server *Server, store *store.Store, s3Client *s3.Client, profile *Profile) *BackupRunner {
 	return &BackupRunner{
 		server:                    server,
 		store:                     store,
+		s3Client:                  s3Client,
 		profile:                   profile,
 		downloadBinlogInstanceIDs: make(map[int]bool),
 	}
@@ -36,6 +38,7 @@ func NewBackupRunner(server *Server, store *store.Store, profile *Profile) *Back
 type BackupRunner struct {
 	server                    *Server
 	store                     *store.Store
+	s3Client                  *s3.Client
 	profile                   *Profile
 	downloadBinlogInstanceIDs map[int]bool
 	backupWg                  sync.WaitGroup
@@ -150,20 +153,20 @@ func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Conte
 }
 
 func (r *BackupRunner) purgeBinlogFiles(ctx context.Context, instanceID, retentionPeriodTs int) error {
-	binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instanceID)
-	switch r.server.profile.BackupStorageBackend {
+	binlogDir := common.GetBinlogAbsDir(r.profile.DataDir, instanceID)
+	switch r.profile.BackupStorageBackend {
 	case api.BackupStorageBackendLocal:
 		return r.purgeBinlogFilesLocal(binlogDir, retentionPeriodTs)
 	case api.BackupStorageBackendS3:
 		return r.purgeBinlogFilesOnCloud(ctx, binlogDir, retentionPeriodTs)
 	default:
-		return errors.Errorf("purge binlog files not implemented for storage backend %s", r.server.profile.BackupStorageBackend)
+		return errors.Errorf("purge binlog files not implemented for storage backend %s", r.profile.BackupStorageBackend)
 	}
 }
 
 func (r *BackupRunner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir string, retentionPeriodTs int) error {
 	binlogDirOnCloud := common.GetBinlogRelativeDir(binlogDir)
-	listOutput, err := r.server.s3Client.ListObjects(ctx, binlogDirOnCloud)
+	listOutput, err := r.s3Client.ListObjects(ctx, binlogDirOnCloud)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list binlog dir %q in the cloud storage", binlogDirOnCloud)
 	}
@@ -176,7 +179,7 @@ func (r *BackupRunner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir st
 	}
 	if len(purgeBinlogPathList) > 0 {
 		log.Debug(fmt.Sprintf("Deleting %d expired binlog files from the cloud storage.", len(purgeBinlogPathList)))
-		if _, err := r.server.s3Client.DeleteObjects(ctx, purgeBinlogPathList...); err != nil {
+		if _, err := r.s3Client.DeleteObjects(ctx, purgeBinlogPathList...); err != nil {
 			return errors.Wrapf(err, "failed to delete %d expired binlog files from the cloud storage", len(purgeBinlogPathList))
 		}
 	}
@@ -226,14 +229,14 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 
 	switch backup.StorageBackend {
 	case api.BackupStorageBackendLocal:
-		backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, backup.DatabaseID, backup.Name)
+		backupFilePath := getBackupAbsFilePath(r.profile.DataDir, backup.DatabaseID, backup.Name)
 		if err := os.Remove(backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete an expired backup file %q", backupFilePath)
 		}
 		log.Debug(fmt.Sprintf("Deleted expired local backup file %s", backupFilePath))
 	case api.BackupStorageBackendS3:
 		backupFilePath := getBackupRelativeFilePath(backup.DatabaseID, backup.Name)
-		if _, err := r.server.s3Client.DeleteObjects(ctx, backupFilePath); err != nil {
+		if _, err := r.s3Client.DeleteObjects(ctx, backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete backup file %s in the cloud storage", backupFilePath)
 		}
 		log.Debug(fmt.Sprintf("Deleted expired backup file %s in the cloud storage", backupFilePath))
@@ -267,7 +270,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		r.downloadBinlogMu.Unlock()
 		r.downloadBinlogWg.Done()
 	}()
-	driver, err := r.server.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := r.server.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
 			log.Debug("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
@@ -283,7 +286,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */, r.server.s3Client); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */, r.s3Client); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
 	}
@@ -363,7 +366,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 
 func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
 	// Store the migration history version if exists.
-	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get admin database driver")
 	}

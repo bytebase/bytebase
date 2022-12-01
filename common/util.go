@@ -138,3 +138,8 @@ func TruncateStringWithDescription(str string) string {
 	}
 	return str
 }
+
+// GetBinlogAbsDir gets the binary log directory for an instance.
+func GetBinlogAbsDir(dataDir string, instanceID int) string {
+	return filepath.Join(dataDir, "backup", "instance", fmt.Sprintf("%d", instanceID))
+}
