@@ -340,22 +340,19 @@ export const usePolicyByEnvironmentAndType = (
 };
 
 export const usePolicyByDatabaseAndType = (
-  params: Ref<{ databaseId: DatabaseId; type: PolicyType }>
+  params: MaybeRef<{ databaseId: DatabaseId; type: PolicyType }>
 ) => {
   const store = usePolicyStore();
   const currentUser = useCurrentUser();
   watchEffect(() => {
     if (currentUser.value.id === UNKNOWN_ID) return;
-
-    store.fetchPolicyByDatabaseAndType(params.value);
+    store.fetchPolicyByDatabaseAndType(unref(params));
   });
 
-  return computed(() =>
-    store.getPolicyByDatabaseIdAndType(
-      params.value.databaseId,
-      params.value.type
-    )
-  );
+  return computed(() => {
+    const { databaseId, type } = unref(params);
+    return store.getPolicyByDatabaseIdAndType(databaseId, type);
+  });
 };
 
 export const usePolicyListByResourceTypeAndPolicyType = (
