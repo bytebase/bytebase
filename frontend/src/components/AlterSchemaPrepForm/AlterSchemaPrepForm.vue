@@ -149,7 +149,8 @@
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
-    :database-id-list="flattenSelectedDatabaseIdList"
+    :database-id-list="schemaEditorContext.databaseIdList"
+    :tenant-mode="schemaEditorContext.tenantMode"
     @close="state.showSchemaEditorModal = false"
   />
 </template>
@@ -160,7 +161,7 @@ import { computed, reactive, PropType, ref } from "vue";
 import { useRouter } from "vue-router";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, groupBy } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
 import {
   baseDirectoryWebUrl,
@@ -174,7 +175,7 @@ import {
 import {
   allowGhostMigration,
   allowUsingUIEditor,
-  isDev,
+  parseDatabaseNameByTemplate,
   sortDatabaseList,
 } from "@/utils";
 import {
@@ -182,6 +183,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentList,
+  useLabelList,
   useProjectStore,
   useRepositoryStore,
 } from "@/store";
@@ -226,6 +228,13 @@ const projectStore = useProjectStore();
 const repositoryStore = useRepositoryStore();
 
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
+const schemaEditorContext = ref<{
+  databaseIdList: DatabaseId[];
+  tenantMode: boolean;
+}>({
+  databaseIdList: [],
+  tenantMode: false,
+});
 
 useEventListener(window, "keydown", (e) => {
   if (e.code === "Escape") {
@@ -334,7 +343,10 @@ const generateMultiDb = async () => {
     (id) => databaseList.value.find((db) => db.id === id)!
   );
 
-  if (isDev() && allowUsingUIEditor(selectedDatabaseList)) {
+  if (allowUsingUIEditor(selectedDatabaseList)) {
+    schemaEditorContext.value.databaseIdList = cloneDeep(
+      flattenSelectedDatabaseIdList.value
+    );
     state.showSchemaEditorModal = true;
     return;
   }
@@ -412,8 +424,6 @@ const generateTenant = async () => {
     return;
   }
 
-  emit("dismiss");
-
   const projectId = props.projectId || state.tenantProjectId;
   if (!projectId) return;
 
@@ -428,6 +438,31 @@ const generateTenant = async () => {
       mode: "tenant",
     };
     if (state.alterType === "DB_GROUP") {
+      const databaseList = useDatabaseStore().getDatabaseListByProjectId(
+        project.id
+      );
+      const labelList = useLabelList();
+      const databaseListGroupByName = groupBy(databaseList, (db) => {
+        if (project.dbNameTemplate) {
+          return parseDatabaseNameByTemplate(
+            db.name,
+            project.dbNameTemplate,
+            labelList.value
+          );
+        } else {
+          return "";
+        }
+      });
+      const selectedDatabaseList =
+        databaseListGroupByName[state.selectedDatabaseName!];
+      if (allowUsingUIEditor(selectedDatabaseList)) {
+        schemaEditorContext.value.databaseIdList = selectedDatabaseList.map(
+          (database) => database.id
+        );
+        schemaEditorContext.value.tenantMode = true;
+        state.showSchemaEditorModal = true;
+        return;
+      }
       query.name = generateIssueName([state.selectedDatabaseName!], false);
       query.databaseName = state.selectedDatabaseName;
     } else {
@@ -436,6 +471,15 @@ const generateTenant = async () => {
       for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
         databaseList.push(databaseStore.getDatabaseById(databaseId));
       }
+      if (allowUsingUIEditor(databaseList)) {
+        schemaEditorContext.value.databaseIdList = Array.from(
+          state.selectedDatabaseIdListForTenantMode.values()
+        );
+        schemaEditorContext.value.tenantMode = true;
+        state.showSchemaEditorModal = true;
+        return;
+      }
+
       query.name = generateIssueName(
         databaseList.map((database) => database.name),
         false
@@ -444,6 +488,8 @@ const generateTenant = async () => {
         state.selectedDatabaseIdListForTenantMode
       ).join(",");
     }
+
+    emit("dismiss");
 
     router.push({
       name: "workspace.issue.detail",
@@ -465,11 +511,18 @@ const generateTenant = async () => {
           "_blank"
         );
       });
+    emit("dismiss");
   }
 };
 
 const selectDatabase = async (database: Database) => {
   if (database.project.workflowType == "UI") {
+    if (allowUsingUIEditor([database])) {
+      schemaEditorContext.value.databaseIdList = [database.id];
+      state.showSchemaEditorModal = true;
+      return;
+    }
+
     const mode = await isUsingGhostMigration([database]);
     if (mode === false) {
       return;

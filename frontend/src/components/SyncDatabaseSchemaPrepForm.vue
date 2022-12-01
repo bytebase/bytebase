@@ -252,6 +252,7 @@ import {
   EngineType,
   EnvironmentId,
   MigrationHistory,
+  MigrationType,
   ProjectId,
   SQLDialect,
   UNKNOWN_ID,
@@ -325,6 +326,11 @@ const isValidId = (id: any) => {
 };
 
 const allowedEngineTypeList: EngineType[] = ["MYSQL", "POSTGRES"];
+const allowedMigrationTypeList: MigrationType[] = [
+  "BASELINE",
+  "MIGRATE",
+  "BRANCH",
+];
 
 const hasSyncSchemaFeature = computed(() => {
   return hasFeature("bb.feature.sync-schema-all-versions");
@@ -387,10 +393,14 @@ const hasDiffBetweenCharactorSets = computed(() => {
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
   const database = databaseStore.getDatabaseById(databaseId);
-  const list = instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-    database.instance.id,
-    database.name
-  );
+  const list = instanceStore
+    .getMigrationHistoryListByInstanceIdAndDatabaseName(
+      database.instance.id,
+      database.name
+    )
+    .filter((migrationHistory) =>
+      allowedMigrationTypeList.includes(migrationHistory.type)
+    );
 
   if (!hasSyncSchemaFeature.value) {
     return list.length > 0 ? [head(list)] : [];
@@ -418,12 +428,6 @@ const handleBaseDatabaseSelect = async (databaseId: DatabaseId) => {
     if (database) {
       state.baseSchemaInfo.environmentId = database.instance.environment.id;
       state.baseSchemaInfo.databaseId = databaseId;
-      const migrationHistoryList = await instanceStore.fetchMigrationHistory({
-        instanceId: database.instance.id,
-        databaseName: database.name,
-      });
-      // Default select the first migration history.
-      state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
     }
   }
 };
@@ -565,13 +569,16 @@ watch(
     }
 
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
-    state.baseSchemaInfo.migrationHistory = undefined;
     if (database) {
       state.engineType = database.instance.engine;
-      const migrationHistoryList = await instanceStore.fetchMigrationHistory({
-        instanceId: database.instance.id,
-        databaseName: database.name,
-      });
+      const migrationHistoryList = (
+        await instanceStore.fetchMigrationHistory({
+          instanceId: database.instance.id,
+          databaseName: database.name,
+        })
+      ).filter((migrationHistory) =>
+        allowedMigrationTypeList.includes(migrationHistory.type)
+      );
       // Default select the first migration history.
       state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
 
@@ -586,6 +593,8 @@ watch(
           state.targetDatabaseInfo.databaseId = undefined;
         }
       }
+    } else {
+      state.baseSchemaInfo.migrationHistory = undefined;
     }
   }
 );
