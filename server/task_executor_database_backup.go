@@ -142,7 +142,7 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupF
 
 // backupDatabase will take a backup of a database.
 func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
-	driver, err := server.getAdminDatabaseDriver(ctx, instance, databaseName)
+	driver, err := server.dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
 	}
@@ -201,8 +201,4 @@ func createBackupDirectory(dataDir string, databaseID int) error {
 	dir := getBackupRelativeDir(databaseID)
 	absDir := filepath.Join(dataDir, dir)
 	return os.MkdirAll(absDir, os.ModePerm)
-}
-
-func getBinlogAbsDir(dataDir string, instanceID int) string {
-	return filepath.Join(dataDir, "backup", "instance", fmt.Sprintf("%d", instanceID))
 }
