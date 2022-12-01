@@ -12,7 +12,7 @@ specifiers:
   '@soerenmartius/vue3-clipboard': 0.1.2
   '@tailwindcss/forms': 0.5.3
   '@tailwindcss/line-clamp': 0.4.2
-  '@tailwindcss/typography': 0.5.7
+  '@tailwindcss/typography': 0.5.8
   '@tanstack/table-core': 8.5.22
   '@tanstack/vue-table': 8.5.22
   '@types/canvas-confetti': 1.4.3
@@ -146,7 +146,7 @@ devDependencies:
   '@rollup/plugin-yaml': 4.0.1_rollup@3.2.5
   '@tailwindcss/forms': 0.5.3_tailwindcss@3.2.1
   '@tailwindcss/line-clamp': 0.4.2_tailwindcss@3.2.1
-  '@tailwindcss/typography': 0.5.7_tailwindcss@3.2.1
+  '@tailwindcss/typography': 0.5.8_tailwindcss@3.2.1
   '@types/canvas-confetti': 1.4.3
   '@types/dompurify': 2.3.4
   '@types/downloadjs': 1.4.3
@@ -606,8 +606,8 @@ packages:
       tailwindcss: 3.2.1_postcss@8.4.18
     dev: true
 
-  /@tailwindcss/typography/0.5.7_tailwindcss@3.2.1:
-    resolution: {integrity: sha512-JTTSTrgZfp6Ki4svhPA4mkd9nmQ/j9EfE7SbHJ1cLtthKkpW2OxsFXzSmxbhYbEkfNIyAyhle5p4SYyKRbz/jg==}
+  /@tailwindcss/typography/0.5.8_tailwindcss@3.2.1:
+    resolution: {integrity: sha512-xGQEp8KXN8Sd8m6R4xYmwxghmswrd0cPnNI2Lc6fmrC3OojysTBJJGSIVwPV56q4t6THFUK3HJ0EaWwpglSxWw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
     dependencies:
