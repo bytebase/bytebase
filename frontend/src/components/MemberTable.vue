@@ -368,7 +368,7 @@ export default defineComponent({
       const memberId = state.targetServiceAccount.id;
       usePrincipalStore()
         .patchPrincipal({
-          principalId: memberId,
+          principalId: state.targetServiceAccount.principal.id,
           principalPatch: {
             type: state.targetServiceAccount.principal.type,
             refreshKey: true,
