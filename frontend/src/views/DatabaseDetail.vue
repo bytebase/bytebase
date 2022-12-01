@@ -96,7 +96,12 @@
               </dd>
             </template>
             <dd
-              class="flex items-center text-sm md:mr-4 cursor-pointer textlabel hover:text-accent"
+              class="flex items-center text-sm md:mr-4"
+              :class="
+                allowQuery
+                  ? ['textlabel cursor-pointer hover:text-accent']
+                  : ['text-gray-400 cursor-not-allowed']
+              "
               @click.prevent="gotoSQLEditor"
             >
               <span class="mr-1">{{ $t("sql-editor.self") }}</span>
@@ -289,6 +294,12 @@
   </div>
 
   <GhostDialog ref="ghostDialog" />
+
+  <SchemaEditorModal
+    v-if="state.showSchemaEditorModal"
+    :database-id-list="[database.id]"
+    @close="state.showSchemaEditorModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -309,6 +320,8 @@ import {
   hidePrefix,
   allowGhostMigration,
   isPITRDatabase,
+  isDatabaseAccessible,
+  allowUsingUIEditor,
 } from "@/utils";
 import {
   ProjectId,
@@ -327,6 +340,7 @@ import {
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
+  usePolicyByDatabaseAndType,
   useRepositoryStore,
   useSQLStore,
 } from "@/store";
@@ -344,6 +358,7 @@ type DatabaseTabItem = {
 interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
+  showSchemaEditorModal: boolean;
   editingProjectId: ProjectId;
   selectedIndex: number;
   syncingSchema: boolean;
@@ -372,6 +387,7 @@ const databaseTabItemList: DatabaseTabItem[] = [
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
+  showSchemaEditorModal: false,
   editingProjectId: UNKNOWN_ID,
   selectedIndex: OVERVIEW_TAB,
   syncingSchema: false,
@@ -381,6 +397,18 @@ const currentUser = useCurrentUser();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
+});
+
+const accessControlPolicy = usePolicyByDatabaseAndType(
+  computed(() => ({
+    databaseId: database.value.id,
+    type: "bb.policy.access-control",
+  }))
+);
+const allowQuery = computed(() => {
+  const policy = accessControlPolicy.value;
+  const list = policy ? [policy] : [];
+  return isDatabaseAccessible(database.value, list, currentUser.value);
 });
 
 // Project can be transferred if meets either of the condition below:
@@ -537,6 +565,11 @@ const createMigration = async (
   if (database.value.project.workflowType == "UI") {
     let mode: "online" | "normal" | false = "normal";
     if (type === "bb.issue.database.schema.update") {
+      if (allowUsingUIEditor([database.value])) {
+        state.showSchemaEditorModal = true;
+        return;
+      }
+
       // Check and show a normal/online selection modal dialog if needed.
       mode = await isUsingGhostMigration([database.value]);
     }
@@ -641,6 +674,10 @@ const selectDatabaseTabOnHash = () => {
 };
 
 const gotoSQLEditor = () => {
+  if (!allowQuery.value) {
+    return;
+  }
+
   // SQL editors can only query databases in the projects available to the user.
   if (
     database.value.projectId === UNKNOWN_ID ||

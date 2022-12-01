@@ -19,13 +19,14 @@ export default defineComponent({
   },
   render() {
     const { code, language, tag } = this.$props;
+    const { class: additionalClass } = this.$attrs;
 
     const result = hljs.highlight(code, {
       language: language,
     });
 
     return h(tag, {
-      class: language,
+      class: [language, additionalClass],
       innerHTML: result.value,
     });
   },

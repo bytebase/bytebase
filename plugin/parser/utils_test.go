@@ -187,6 +187,20 @@ func TestExtractDatabaseList(t *testing.T) {
 			`,
 			want: []string{"", "db1", "db2"},
 		},
+		{
+			stmt: `
+				SELECT 1;
+			`,
+			want: nil,
+		},
+		{
+			stmt: `SELECT * FROM t, db1.t1;`,
+			want: []string{"", "db1"},
+		},
+		{
+			stmt: `select * from t join db1.t as t1 where t.a != t1.a;`,
+			want: []string{"", "db1"},
+		},
 	}
 
 	for _, test := range tests {

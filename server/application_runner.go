@@ -51,6 +51,10 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Application runner started and will run every %v", applicationRunnerInterval))
+	// Try to update approval definition if external approval is enabled, because our approval definition may have changed.
+	if err := r.tryUpdateApprovalDefinition(ctx); err != nil {
+		log.Error("failed to update approval definition on application runner start", zap.Error(err))
+	}
 	for {
 		select {
 		case <-ticker.C:
@@ -72,7 +76,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				var value api.SettingAppIMValue
 				if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
-					log.Error("failed to unmarshal IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
+					log.Error("failed to unmarshal IM setting value", zap.String("settingName", string(settingName)), zap.Any("settingValue", setting.Value), zap.Error(err))
 					return
 				}
 				if !value.ExternalApproval.Enabled {
@@ -91,6 +95,10 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						var payload api.ExternalApprovalPayloadFeishu
 						if err := json.Unmarshal([]byte(externalApproval.Payload), &payload); err != nil {
 							log.Error("failed to unmarshal to ExternalApprovalPayloadFeishu", zap.String("payload", externalApproval.Payload), zap.Error(err))
+							continue
+						}
+
+						if payload.Rejected {
 							continue
 						}
 
@@ -122,7 +130,8 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 
-						if status == feishu.ApprovalStatusApproved {
+						switch status {
+						case feishu.ApprovalStatusApproved:
 							// double check
 							if stage.ID == payload.StageID && payload.AssigneeID == issue.AssigneeID {
 								// approve stage
@@ -161,8 +170,59 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									continue
 								}
 							}
+						case feishu.ApprovalStatusRejected:
+							if err := func() error {
+								payload := payload
+								payload.Rejected = true
+								bytes, err := json.Marshal(payload)
+								if err != nil {
+									return errors.Wrapf(err, "failed to marshal payload %+v", payload)
+								}
+								payloadString := string(bytes)
+
+								if _, err := r.store.PatchExternalApproval(ctx, &api.ExternalApprovalPatch{
+									ID:        externalApproval.ID,
+									RowStatus: api.Normal,
+									Payload:   &payloadString,
+								}); err != nil {
+									return errors.Wrap(err, "failed to patch external approval")
+								}
+
+								stageName := "UNKNOWN"
+								for _, stage := range issue.Pipeline.StageList {
+									if stage.ID == payload.StageID {
+										stageName = stage.Name
+										break
+									}
+								}
+								activityPayload, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
+									ExternalApprovalEvent: &api.ExternalApprovalEvent{
+										Type:      api.ExternalApprovalTypeFeishu,
+										Action:    api.ExternalApprovalEventActionReject,
+										StageName: stageName,
+									},
+								})
+								if err != nil {
+									return errors.Wrap(err, "failed to marshal ActivityIssueExternalApprovalRejectPayload")
+								}
+
+								activityCreate := &api.ActivityCreate{
+									CreatorID:   payload.AssigneeID,
+									ContainerID: issue.ID,
+									Type:        api.ActivityIssueCommentCreate,
+									Level:       api.ActivityInfo,
+									Comment:     "",
+									Payload:     string(activityPayload),
+								}
+
+								if _, err = r.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+									return errors.Wrap(err, "failed to create activity after external approval rejected")
+								}
+								return nil
+							}(); err != nil {
+								log.Error("failed to handle rejected feishu approval", zap.Error(err))
+							}
 						}
-						// Do nothing for ApprovalStatusRejected
 					default:
 						log.Error("Unknown ExternalApproval.Type", zap.Any("ExternalApproval", externalApproval))
 					}
@@ -229,7 +289,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 			},
 			settingValue.ExternalApproval.ApprovalDefinitionID,
 			payload.InstanceCode,
-			botID,
+			payload.RequesterID,
 		); err != nil {
 			return nil, err
 		}
@@ -297,7 +357,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID 
 		},
 		value.ExternalApproval.ApprovalDefinitionID,
 		payload.InstanceCode,
-		botID,
+		payload.RequesterID,
 	); err != nil {
 		return err
 	}
@@ -410,6 +470,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 		AssigneeID:   issue.AssigneeID,
 		InstanceCode: instanceCode,
 		RequesterID:  users[issue.Creator.Email],
+		Rejected:     false,
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {
@@ -504,4 +565,38 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 		log.Error("failed to create external approval", zap.Error(err))
 		return
 	}
+}
+
+// tryUpdateApprovalDefinition is run on application runner start.
+// The approval definition may have changed so we make idempotent POST request to patch the definition.
+func (r *ApplicationRunner) tryUpdateApprovalDefinition(ctx context.Context) error {
+	settingName := api.SettingAppIM
+	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			return errors.Wrapf(err, "failed to get IM setting")
+		}
+		return nil
+	}
+	if setting == nil {
+		return errors.New("cannot find IM setting")
+	}
+	if setting.Value == "" {
+		return nil
+	}
+	var value api.SettingAppIMValue
+	if err := json.Unmarshal([]byte(setting.Value), &value); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal setting value %+v", setting.Value)
+	}
+	if !value.ExternalApproval.Enabled {
+		return nil
+	}
+	// pass in ApprovalDefinitionID so that this would be a PATCH.
+	if _, err := r.p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
+		AppID:     value.AppID,
+		AppSecret: value.AppSecret,
+	}, value.ExternalApproval.ApprovalDefinitionID); err != nil {
+		return errors.Wrap(err, "failed to update approval definition")
+	}
+	return nil
 }

@@ -75,6 +75,13 @@
             {{ $t("settings.sidebar.sensitive-data") }}
           </router-link>
           <router-link
+            v-if="showAccessControlItem"
+            to="/setting/access-control"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.access-control") }}
+          </router-link>
+          <router-link
             v-if="showIMIntegrationItem"
             to="/setting/im-integration"
             class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
@@ -147,6 +154,13 @@ const showProjectItem = computed((): boolean => {
 const showSensitiveDataItem = computed((): boolean => {
   return hasWorkspacePermission(
     "bb.permission.workspace.manage-sensitive-data",
+    currentUser.value.role
+  );
+});
+
+const showAccessControlItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-access-control",
     currentUser.value.role
   );
 });

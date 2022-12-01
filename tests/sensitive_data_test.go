@@ -42,7 +42,7 @@ func TestSensitiveData(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -53,7 +53,7 @@ func TestSensitiveData(t *testing.T) {
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
-	stopInstance := mysql.SetupTestInstance(t, mysqlPort)
+	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer stopInstance()
 
 	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", mysqlPort))

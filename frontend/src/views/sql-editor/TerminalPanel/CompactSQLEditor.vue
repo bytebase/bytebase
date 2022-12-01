@@ -177,6 +177,57 @@ const handleEditorReady = async () => {
     },
   });
 
+  // Create an editor context value to check if the SQL ends with semicolon ";"
+  const endsWithSemicolon = editor?.createContextKey<boolean>(
+    "endsWithSemicolon",
+    false
+  );
+  editor?.onDidChangeModelContent(() => {
+    const value = editor.getValue();
+    if (value.endsWith(";")) {
+      endsWithSemicolon?.set(true);
+    } else {
+      endsWithSemicolon?.set(false);
+    }
+  });
+  // Another editor context value to check if the cursor is at the end of the
+  // editor.
+  const cursorAtLast = editor?.createContextKey<boolean>("cursorAtLast", false);
+  editor?.onDidChangeCursorPosition(() => {
+    const model = editor.getModel();
+    if (model) {
+      const maxLine = model.getLineCount();
+      const maxColumn = model.getLineMaxColumn(maxLine);
+      const cursor = editor.getPosition();
+      const isCursorAtLast = !!cursor?.equals({
+        lineNumber: maxLine,
+        column: maxColumn,
+      });
+      if (isCursorAtLast) {
+        cursorAtLast?.set(true);
+        return;
+      }
+    }
+    cursorAtLast?.set(false);
+  });
+
+  editor?.addCommand(
+    monaco.KeyCode.Enter,
+    () => {
+      // When
+      // - the SQL ends with ";"
+      // - and the cursor is at the end of the editor
+      // - then press "Enter"
+      // We trigger the "execute" event
+      emit("execute", props.sql, {
+        databaseType: selectedInstanceEngine.value,
+      });
+    },
+    // Tell the editor this should be only
+    // triggered when both of the two conditions are satisfied.
+    "endsWithSemicolon && cursorAtLast"
+  );
+
   watchEffect(() => {
     if (selectedInstance.value) {
       const databaseList = databaseStore.getDatabaseListByInstanceId(

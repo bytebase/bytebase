@@ -41,11 +41,12 @@
         <div class="flex items-center space-x-2">
           <button
             v-if="showSQLEditorLink"
-            class="btn-icon tooltip-wrapper"
+            class="btn-icon tooltip-wrapper disabled:hover:text-control"
+            :disabled="!allowQuery(database)"
             @click.stop="gotoSQLEditor(database)"
           >
             <heroicons-solid:terminal class="w-5 h-5" />
-            <div class="tooltip whitespace-nowrap">
+            <div v-if="allowQuery(database)" class="tooltip whitespace-nowrap">
               {{ $t("sql-editor.self") }}
             </div>
           </button>
@@ -77,7 +78,7 @@
           </NTooltip>
         </div>
       </BBTableCell>
-      <BBTableCell class="w-[10%]">
+      <BBTableCell v-if="showSchemaVersionColumn" class="w-[10%]">
         {{ database.schemaVersion }}
       </BBTableCell>
       <BBTableCell v-if="showProjectColumn" class="w-[15%]">
@@ -224,19 +225,31 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import { computed, PropType, reactive, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import cloneDeep from "lodash-es/cloneDeep";
-import { connectionSlug, databaseSlug, isPITRDatabase } from "../utils";
-import type { Database } from "../types";
+import {
+  connectionSlug,
+  databaseSlug,
+  isDatabaseAccessible,
+  isPITRDatabase,
+} from "../utils";
+import type { Database, Policy } from "../types";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
+import { useCurrentUser, usePolicyStore } from "@/store";
 
-type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
+type Mode =
+  | "ALL"
+  | "ALL_SHORT"
+  | "ALL_TINY"
+  | "INSTANCE"
+  | "PROJECT"
+  | "PROJECT_SHORT";
 
 interface State {
   showIncorrectProjectModal: boolean;
@@ -278,6 +291,7 @@ const props = defineProps({
 const emit = defineEmits(["select-database"]);
 
 const router = useRouter();
+const currentUser = useCurrentUser();
 const { t } = useI18n();
 const state = reactive<State>({
   showIncorrectProjectModal: false,
@@ -317,6 +331,19 @@ const mixedDatabaseList = computed(() => {
   return tableList;
 });
 
+const policyList = ref<Policy[]>([]);
+
+const preparePolicyList = () => {
+  if (showSQLEditorLink.value) {
+    usePolicyStore()
+      .fetchPolicyListByResourceTypeAndPolicyType(
+        "database",
+        "bb.policy.access-control"
+      )
+      .then((list) => (policyList.value = list));
+  }
+};
+
 const columnListMap = computed(() => {
   return new Map([
     [
@@ -351,6 +378,23 @@ const columnListMap = computed(() => {
         },
         {
           title: t("common.schema-version"),
+        },
+        {
+          title: t("common.project"),
+        },
+        {
+          title: t("common.environment"),
+        },
+        {
+          title: t("common.instance"),
+        },
+      ],
+    ],
+    [
+      "ALL_TINY",
+      [
+        {
+          title: t("common.name"),
         },
         {
           title: t("common.project"),
@@ -422,6 +466,10 @@ const columnListMap = computed(() => {
   ]);
 });
 
+const showSchemaVersionColumn = computed(() => {
+  return props.mode !== "ALL_TINY";
+});
+
 const showInstanceColumn = computed(() => {
   return props.mode != "INSTANCE";
 });
@@ -435,7 +483,14 @@ const showEnvironmentColumn = computed(() => {
 });
 
 const showMiscColumn = computed(() => {
-  return props.mode != "ALL_SHORT" && props.mode != "PROJECT_SHORT";
+  if (
+    props.mode === "ALL_SHORT" ||
+    props.mode === "ALL_TINY" ||
+    props.mode === "PROJECT_SHORT"
+  ) {
+    return false;
+  }
+  return true;
 });
 
 const columnList = computed(() => {
@@ -447,17 +502,28 @@ const columnList = computed(() => {
 });
 
 const showSQLEditorLink = computed(() => {
-  if (props.mode == "ALL_SHORT" || props.mode == "PROJECT_SHORT") {
+  if (
+    props.mode === "ALL_SHORT" ||
+    props.mode === "ALL_TINY" ||
+    props.mode === "PROJECT_SHORT"
+  ) {
     return false;
   }
   return true;
 });
+
+const allowQuery = (database: Database) => {
+  return isDatabaseAccessible(database, policyList.value, currentUser.value);
+};
 
 const showTenantIcon = computed(() => {
   return ["ALL", "ALL_SHORT", "INSTANCE"].includes(props.mode);
 });
 
 const gotoSQLEditor = (database: Database) => {
+  if (!allowQuery(database)) {
+    return;
+  }
   // SQL editors can only query databases in the projects available to the user.
   if (
     database.projectId === UNKNOWN_ID ||
@@ -497,4 +563,6 @@ const clickDatabase = (section: number, row: number, e: MouseEvent) => {
     }
   }
 };
+
+watchEffect(preparePolicyList);
 </script>

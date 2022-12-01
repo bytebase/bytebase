@@ -38,53 +38,76 @@ export const useUIEditorStore = defineStore("UIEditor", {
   },
   getters: {
     currentTab(state) {
+      if (isUndefined(state.tabState.currentTabId)) {
+        return undefined;
+      }
       return state.tabState.tabMap.get(state.tabState.currentTabId);
+    },
+    tabList(state) {
+      return Array.from(state.tabState.tabMap.values());
     },
   },
   actions: {
-    getTabById(tabId: string) {
-      return this.tabState.tabMap.get(tabId);
-    },
-    // getTabByDatabaseIdAndTableName gets tab by database id and table name.
-    // * tableName is used to position those new tables with UNKNOWN_ID.
-    getTabByDatabaseIdAndTableName(databaseId: DatabaseId, tableName?: string) {
-      const wantedTabType = isUndefined(tableName)
-        ? UIEditorTabType.TabForDatabase
-        : UIEditorTabType.TabForTable;
-      for (const [_, tab] of this.tabState.tabMap) {
-        if (tab.type === wantedTabType && tab.databaseId === databaseId) {
-          if (wantedTabType === UIEditorTabType.TabForTable) {
-            if ((tab as TableTabContext).tableCache.name === tableName) {
-              return tab;
-            }
-          } else {
-            return tab;
+    addTab(tab: TabContext, setAsCurrentTab = true) {
+      const tabCache = this.tabList.find((item) => {
+        if (item.type !== tab.type) {
+          return false;
+        }
+
+        if (
+          item.type === UIEditorTabType.TabForDatabase &&
+          item.databaseId === tab.databaseId
+        ) {
+          return true;
+        }
+        if (
+          item.type === UIEditorTabType.TabForTable &&
+          item.table === (tab as TableTabContext).table
+        ) {
+          return true;
+        }
+        return false;
+      });
+
+      if (tabCache !== undefined) {
+        tab = tabCache;
+      } else {
+        // Don't show tab for dropped table.
+        if (tab.type === UIEditorTabType.TabForTable) {
+          if (this.droppedTableList.includes(tab.table)) {
+            return;
           }
         }
-      }
-      return undefined;
-    },
-    addTab(tab: TabContext, setAsCurrentTab = true) {
-      const tabTemp = this.getTabByDatabaseIdAndTableName(
-        tab.databaseId,
-        tab.type === UIEditorTabType.TabForTable
-          ? tab.tableCache.name
-          : undefined
-      );
-      if (!isUndefined(tabTemp)) {
-        tab = tabTemp;
-      } else {
+
         this.tabState.tabMap.set(tab.id, tab);
       }
+
       if (setAsCurrentTab) {
         this.setCurrentTab(tab.id);
       }
     },
-    setCurrentTab(tabId: string) {
-      if (isUndefined(this.getTabById(tabId))) {
-        return;
+    saveTab(tab: TabContext) {
+      if (tab.type === UIEditorTabType.TabForDatabase) {
+        // Edit database metadata is not allowed.
+      } else if (tab.type === UIEditorTabType.TabForTable) {
+        tab.table.name = tab.tableCache.name;
+        tab.table.columnList = cloneDeep(tab.tableCache.columnList);
       }
-      this.tabState.currentTabId = tabId;
+    },
+    discardTabChanges(tab: TabContext) {
+      if (tab.type === UIEditorTabType.TabForDatabase) {
+        // Edit database metadata is not allowed.
+      } else if (tab.type === UIEditorTabType.TabForTable) {
+        tab.tableCache.name = tab.table.name;
+        tab.tableCache.columnList = cloneDeep(tab.table.columnList);
+      }
+    },
+    setCurrentTab(tabId: string) {
+      if (isUndefined(this.tabState.tabMap.get(tabId))) {
+        this.tabState.currentTabId = undefined;
+      } else {
+        this.tabState.currentTabId = tabId;
+      }
     },
     closeTab(tabId: string) {
       const tabList = Array.from(this.tabState.tabMap.values());
@@ -134,15 +157,6 @@ export const useUIEditorStore = defineStore("UIEditor", {
       }
       return tableList;
     },
-    // findTable tries to find the table from the table list including existing tables and created tables.
-    findTable(tableId: TableId, tableName: string, databaseId: DatabaseId) {
-      return this.tableList.find(
-        (table) =>
-          table.id === tableId &&
-          table.name === tableName &&
-          table.database.id === databaseId
-      );
-    },
     // createNewTable creates a temp table with databaseId.
     // Its ID is UNKNOWN_ID and name should be an unique temp name.
     createNewTable(databaseId: DatabaseId) {
@@ -165,24 +179,29 @@ export const useUIEditorStore = defineStore("UIEditor", {
       table.id = UNKNOWN_ID;
       table.name = tableName;
       table.database = database;
+      table.columnList = [];
+
+      // generate a default column.
+      const unknownColumn = unknown("COLUMN");
+      unknownColumn.name = "id";
+      unknownColumn.type = "int";
+      unknownColumn.comment = "ID";
+      table.columnList.push(unknownColumn);
+
       this.tableList.push(table);
       return table;
     },
-    dropTable(databaseId: DatabaseId, tableId: TableId, tableName: string) {
-      const index = this.tableList.findIndex(
-        (table) =>
-          table.database.id === databaseId &&
-          table.id === tableId &&
-          table.name === tableName
-      );
-      const table = this.tableList[index];
+    dropTable(table: Table) {
+      const index = this.tableList.findIndex((item) => item === table);
       if (table.id === UNKNOWN_ID) {
         this.tableList.splice(index, 1);
       } else {
         this.droppedTableList.push(table);
       }
 
-      const tab = this.getTabByDatabaseIdAndTableName(databaseId, tableName);
+      const tab = this.tabList.find(
+        (tab) => tab.type === UIEditorTabType.TabForTable && tab.table === table
+      );
       if (tab) {
         this.closeTab(tab.id);
       }
