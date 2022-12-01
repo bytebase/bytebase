@@ -1047,7 +1047,7 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, d
 
 	if !inheritFromEnvironment {
 		// Use database policy.
-		return databasePolicy != nil, nil
+		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, nil
 	}
 	// Use both database policy and environment policy.
 	hasAccessRights := true
