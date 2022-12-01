@@ -694,7 +694,7 @@ func formatForm(content Content) (string, error) {
 
 func formatFormSQL(contentTaskList []Task) (string, error) {
 	const taskSQLDisplayLimit = 5
-	delimiter := fmt.Sprintf("%s", strings.Repeat("=", 25))
+	delimiter := strings.Repeat("=", 25)
 	var sql strings.Builder
 
 	sqlHashToTaskGroup := make(map[string]int)
