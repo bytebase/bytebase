@@ -13,8 +13,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // Response code definition in feishu response body.
@@ -696,7 +697,8 @@ func formatFormSQL(contentTaskList []Task) (string, error) {
 	delimiter := fmt.Sprintf("%s", strings.Repeat("=", 25))
 	var sql strings.Builder
 
-	sqlHashToTaskList := make(map[string][]int)
+	sqlHashToTaskGroup := make(map[string]int)
+	var taskGroup [][]int
 
 	// divide tasks with the same SQLs to groups.
 	for i, task := range contentTaskList {
@@ -704,32 +706,33 @@ func formatFormSQL(contentTaskList []Task) (string, error) {
 			continue
 		}
 		hash := fmt.Sprintf("%x", sha1.Sum([]byte(task.Statement)))
-		sqlHashToTaskList[hash] = append(sqlHashToTaskList[hash], i)
+		group, ok := sqlHashToTaskGroup[hash]
+		if ok {
+			taskGroup[group] = append(taskGroup[group], i)
+		} else {
+			taskGroup = append(taskGroup, []int{i})
+			sqlHashToTaskGroup[hash] = len(taskGroup) - 1
+		}
 	}
 
 	// Check if every task has the same SQL.
 	// For tenant mode, it's very likely for tasks to have identical SQLs.
-	// If there is one unique sql,
-	if len(sqlHashToTaskList) == 1 {
-		for _, taskList := range sqlHashToTaskList {
-			// and every task has the sql.
-			if len(taskList) == len(contentTaskList) {
-				if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of every task\n%s\n", delimiter, delimiter)); err != nil {
-					return "", err
-				}
-				truncated := common.TruncateStringWithDescription(contentTaskList[taskList[0]].Statement, 450)
-				if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
-					return "", err
-				}
-				return sql.String(), nil
-			}
+	// If there is one unique sql, and every task has the sql.
+	if len(taskGroup) == 1 && len(taskGroup[0]) == len(contentTaskList) {
+		if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of every task\n%s\n", delimiter, delimiter)); err != nil {
+			return "", err
 		}
+		truncated := common.TruncateStringWithDescription(contentTaskList[taskGroup[0][0]].Statement, 450)
+		if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
+			return "", err
+		}
+		return sql.String(), nil
 	}
 
 	count := 0
-	for _, taskList := range sqlHashToTaskList {
+	for _, taskList := range taskGroup {
 		if count >= taskSQLDisplayLimit {
-			if _, err := sql.WriteString(fmt.Sprintf("%s\nDisplay %d SQL statements, view more in Bytebase", delimiter, count)); err != nil {
+			if _, err := sql.WriteString(fmt.Sprintf("%s\nDisplaying %d SQL statements, view more in Bytebase\n", delimiter, count)); err != nil {
 				return "", err
 			}
 			break

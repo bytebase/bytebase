@@ -5,8 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 var (

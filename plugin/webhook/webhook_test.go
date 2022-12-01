@@ -4,8 +4,9 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 func TestContext_getMetaList(t *testing.T) {
