@@ -14,14 +14,16 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/server/factory/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewRollbackRunner creates a new rollback runner.
-func NewRollbackRunner(server *Server, store *store.Store) *RollbackRunner {
+func NewRollbackRunner(server *Server, store *store.Store, dbFactory *dbfactory.DBFactory) *RollbackRunner {
 	return &RollbackRunner{
-		server: server,
-		store:  store,
+		server:    server,
+		store:     store,
+		dbFactory: dbFactory,
 	}
 }
 
@@ -29,6 +31,7 @@ func NewRollbackRunner(server *Server, store *store.Store) *RollbackRunner {
 type RollbackRunner struct {
 	server      *Server
 	store       *store.Store
+	dbFactory   *dbfactory.DBFactory
 	generateMap sync.Map
 }
 
@@ -126,7 +129,7 @@ func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.
 	}
 	binlogFileNameList := mysql.GenBinlogFileNames(basename, seqStart, seqEnd)
 
-	driver, err := r.server.getAdminDatabaseDriver(ctx, task.Instance, "")
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "")
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}

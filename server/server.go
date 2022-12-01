@@ -36,6 +36,7 @@ import (
 	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server/factory/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -70,6 +71,7 @@ type Server struct {
 	e               *echo.Echo
 	metaDB          *store.MetadataDB
 	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
 	secret          string
 	workspaceID     string
@@ -215,6 +217,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.workspaceID = config.workspaceID
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
+	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir)
 
 	e := echo.New()
 	e.Debug = prof.Debug
@@ -303,15 +306,15 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		s.SchemaSyncer = NewSchemaSyncer(s, s.store)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(s, s.store, &prof)
+		s.BackupRunner = NewBackupRunner(s, s.store, s.s3Client, &prof)
 
 		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager, feishu.NewProvider(prof.FeishuAPIURL))
 
 		// Anomaly scanner
-		s.AnomalyScanner = NewAnomalyScanner(s, s.store)
+		s.AnomalyScanner = NewAnomalyScanner(s, s.store, s.dbFactory)
 
 		// Rollback SQL generator
-		s.RollbackRunner = NewRollbackRunner(s, s.store)
+		s.RollbackRunner = NewRollbackRunner(s, s.store, s.dbFactory)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
