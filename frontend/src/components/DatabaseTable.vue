@@ -41,11 +41,15 @@
         <div class="flex items-center space-x-2">
           <button
             v-if="showSQLEditorLink"
-            class="btn-icon tooltip-wrapper"
+            class="btn-icon tooltip-wrapper disabled:hover:text-control"
+            :disabled="isSQLEditorLinkDisabled(database)"
             @click.stop="gotoSQLEditor(database)"
           >
             <heroicons-solid:terminal class="w-5 h-5" />
-            <div class="tooltip whitespace-nowrap">
+            <div
+              v-if="!isSQLEditorLinkDisabled(database)"
+              class="tooltip whitespace-nowrap"
+            >
               {{ $t("sql-editor.self") }}
             </div>
           </button>
@@ -229,12 +233,18 @@ import { useRouter } from "vue-router";
 import { NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import cloneDeep from "lodash-es/cloneDeep";
-import { connectionSlug, databaseSlug, isPITRDatabase } from "../utils";
-import type { Database } from "../types";
+import {
+  connectionSlug,
+  databaseSlug,
+  isDatabaseAccessible,
+  isPITRDatabase,
+} from "../utils";
+import type { Database, Policy } from "../types";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
+import { useCurrentUser } from "@/store";
 
 type Mode =
   | "ALL"
@@ -279,11 +289,16 @@ const props = defineProps({
     required: true,
     type: Object as PropType<Database[]>,
   },
+  policyList: {
+    type: Array as PropType<Policy[]>,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["select-database"]);
 
 const router = useRouter();
+const currentUser = useCurrentUser();
 const { t } = useI18n();
 const state = reactive<State>({
   showIncorrectProjectModal: false,
@@ -491,11 +506,18 @@ const showSQLEditorLink = computed(() => {
   return true;
 });
 
+const isSQLEditorLinkDisabled = (database: Database) => {
+  return !isDatabaseAccessible(database, props.policyList, currentUser.value);
+};
+
 const showTenantIcon = computed(() => {
   return ["ALL", "ALL_SHORT", "INSTANCE"].includes(props.mode);
 });
 
 const gotoSQLEditor = (database: Database) => {
+  if (isSQLEditorLinkDisabled(database)) {
+    return;
+  }
   // SQL editors can only query databases in the projects available to the user.
   if (
     database.projectId === UNKNOWN_ID ||
