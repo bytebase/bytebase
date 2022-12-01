@@ -30,8 +30,8 @@
             :value="data.value"
             :max-width="state.inputMaxWidth"
             @keyup="(e) => onKeyup(i, e)"
-            @keydown="(e) => onKeydown(i, e)"
-            @mouseup="(e) => onKeydown(i, e)"
+            @keydown="onKeydown(i, itemRefs[i].querySelector('input'))"
+            @mouseup="onKeydown(i, itemRefs[i].querySelector('input'))"
             @change="(val) => onTemplateChange(i, val)"
           />
         </div>
@@ -42,8 +42,9 @@
           type="text"
           @keydown.delete="onInputDataDeleteEnter"
           @keyup.delete="onInputDataDeleteLeave"
-          @keydown="onLastInputKeyDown"
-          @keyup="onLastInputKeyUp"
+          @keydown="onKeydown(state.templateInputs.length, inputRef)"
+          @mouseup="onKeydown(state.templateInputs.length, inputRef)"
+          @keyup.left="(e) => onKeyup(state.templateInputs.length, e)"
         />
       </div>
     </div>
@@ -132,25 +133,6 @@ const onWindowResize = () => {
   }
 };
 
-const onLastInputKeyDown = () => {
-  const selectionEnd = inputRef.value?.selectionEnd;
-  if (!Number.isNaN(selectionEnd)) {
-    state.inputCursorPosition.set(state.templateInputs.length, selectionEnd!);
-  }
-};
-
-const onLastInputKeyUp = (e: KeyboardEvent) => {
-  if (e.key !== KEY_EVENT.LEFT) {
-    return;
-  }
-
-  const left = state.inputCursorPosition.get(state.templateInputs.length);
-  if (left === 0) {
-    focusPreInput(state.templateInputs.length - 1);
-    state.inputCursorPosition.delete(state.templateInputs.length);
-  }
-};
-
 const onInputDataDeleteEnter = (e: KeyboardEvent) => {
   if (!state.inputData && state.templateInputs.length > 0) {
     const last = state.templateInputs.slice(-1)[0];
@@ -169,23 +151,19 @@ const onInputDataDeleteLeave = (e: KeyboardEvent) => {
   }
 };
 
-const onKeydown = (i: number, e: KeyboardEvent) => {
-  const selectionEnd = itemRefs.value[i].querySelector("input")?.selectionEnd;
+// Store the cursor position in key down event.
+const onKeydown = (i: number, input: HTMLInputElement | null | undefined) => {
+  const selectionEnd = input?.selectionEnd;
   if (!Number.isNaN(selectionEnd)) {
     state.inputCursorPosition.set(i, selectionEnd!);
   }
 };
 
 const onKeyup = (i: number, e: KeyboardEvent) => {
-  const data = state.templateInputs[i];
-  if (!data) {
-    return;
-  }
-
   switch (e.key) {
     case KEY_EVENT.BACKSPACE:
     case KEY_EVENT.DELETE:
-      if (data.value === "") {
+      if (state.templateInputs[i].value === "") {
         if (i === 0 || state.inputCursorPosition.get(i) === 0) {
           // remove the empty data
           onTemplateRemove(i);
@@ -208,7 +186,7 @@ const onKeyup = (i: number, e: KeyboardEvent) => {
     case KEY_EVENT.RIGHT: {
       const right = state.inputCursorPosition.get(i);
       // if the cursor is at the last position, we try to focus on the next input.
-      if (right === data.value.length) {
+      if (right === state.templateInputs[i].value.length) {
         focusNextInput(i + 1);
         state.inputCursorPosition.delete(i);
       }
