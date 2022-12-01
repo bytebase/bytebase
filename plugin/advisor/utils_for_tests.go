@@ -187,8 +187,8 @@ func (*MockDriver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error)
 }
 
 // Execute implements the Driver interface.
-func (*MockDriver) Execute(_ context.Context, _ string, _ bool) error {
-	return nil
+func (*MockDriver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
+	return 0, nil
 }
 
 // Query implements the Driver interface.

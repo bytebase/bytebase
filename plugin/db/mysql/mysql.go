@@ -166,27 +166,31 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
 	var buf bytes.Buffer
 	if err := transformDelimiter(&buf, statement); err != nil {
-		return err
+		return 0, err
 	}
 	transformedStatement := buf.String()
 	tx, err := driver.migrationConn.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, transformedStatement)
-
-	if err == nil {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
+	sqlResult, err := tx.ExecContext(ctx, transformedStatement)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	rowsEffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		return 0, err
 	}
 
-	return err
+	return rowsEffected, nil
 }
 
 // GetMigrationConnID gets the ID of the connection executing migrations.
