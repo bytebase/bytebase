@@ -117,8 +117,8 @@ func GetBinlogRelativeDir(binlogDir string) string {
 	return filepath.Join("backup", "instance", instanceID)
 }
 
-// TruncateString truncates the string to have a maximum length of `limit` characters.
-func TruncateString(str string, limit int) (string, bool) {
+// truncateString truncates the string to have a maximum length of `limit` characters.
+func truncateString(str string, limit int) (string, bool) {
 	chars := 0
 	// The string may contain unicode characters, so we iterate here.
 	for i := range str {
@@ -132,7 +132,7 @@ func TruncateString(str string, limit int) (string, bool) {
 
 // TruncateStringWithDescription tries to truncate the string and append "... (view details in Bytebase)" if truncated.
 func TruncateStringWithDescription(str string, limit int) string {
-	if truncatedStr, truncated := TruncateString(str, limit); truncated {
+	if truncatedStr, truncated := truncateString(str, limit); truncated {
 		return fmt.Sprintf("%s... (view details in Bytebase)", truncatedStr)
 	}
 	return str
