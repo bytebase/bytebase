@@ -20,6 +20,7 @@ export const isDatabaseAccessible = (
     )
   ) {
     // The current user has the super privilege to access all databases.
+    // AKA. Owners and DBAs
     return true;
   }
 
