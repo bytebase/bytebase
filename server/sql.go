@@ -228,17 +228,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					accessDatabase, err := s.getDatabase(ctx, instance.ID, databaseName)
 					if err != nil {
 						if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
-							// If database not found, use instance instead.
-							allowAccess, err := s.hasInstanceAccessRights(ctx, principalID, instance)
-							if err != nil {
-								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for instance: %d", exec.InstanceID)).SetInternal(err)
-							}
-							if !allowAccess {
-								return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access instance: %d", exec.InstanceID))
-							}
-						} else {
-							return err
+							// If database not found, skip.
+							continue
 						}
+						return err
 					}
 
 					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, accessDatabase)
@@ -1033,23 +1026,6 @@ func isMySQLExcludeDatabase(database string) bool {
 		return false
 	}
 	return true
-}
-
-// hasInstanceAccessRights checks the access control policy for instance level.
-// It's only used for MySQL dialect. Because MySQL dialect database can run SQL without specify database.
-func (s *Server) hasInstanceAccessRights(ctx context.Context, principalID int, instance *api.Instance) (bool, error) {
-	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, instance.EnvironmentID)
-	if err != nil {
-		return false, err
-	}
-	hasAccessRights := true
-	for _, rule := range environmentPolicy.DisallowRuleList {
-		if rule.FullDatabase {
-			hasAccessRights = false
-			break
-		}
-	}
-	return hasAccessRights, nil
 }
 
 func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, database *api.Database) (bool, error) {
