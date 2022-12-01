@@ -191,6 +191,9 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 		if isSuperuserStatement(stmt) {
 			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
 		}
+		if isIgnoredStatement(stmt) {
+			return nil
+		}
 		if _, err := txn.Exec(stmt); err != nil {
 			return err
 		}
