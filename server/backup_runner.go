@@ -19,13 +19,15 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewBackupRunner creates a new backup runner.
-func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *BackupRunner {
+func NewBackupRunner(server *Server, store *store.Store, profile *Profile) *BackupRunner {
 	return &BackupRunner{
 		server:                    server,
-		backupRunnerInterval:      backupRunnerInterval,
+		store:                     store,
+		profile:                   profile,
 		downloadBinlogInstanceIDs: make(map[int]bool),
 	}
 }
@@ -33,7 +35,8 @@ func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *Backup
 // BackupRunner is the backup runner scheduling automatic backups.
 type BackupRunner struct {
 	server                    *Server
-	backupRunnerInterval      time.Duration
+	store                     *store.Store
+	profile                   *Profile
 	downloadBinlogInstanceIDs map[int]bool
 	backupWg                  sync.WaitGroup
 	downloadBinlogWg          sync.WaitGroup
@@ -42,10 +45,10 @@ type BackupRunner struct {
 
 // Run is the runner for backup runner.
 func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(r.backupRunnerInterval)
+	ticker := time.NewTicker(r.profile.BackupRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug("Auto backup runner started", zap.Duration("interval", r.backupRunnerInterval))
+	log.Debug("Auto backup runner started", zap.Duration("interval", r.profile.BackupRunnerInterval))
 	runningTasks := make(map[int]bool)
 	var mu sync.RWMutex
 	for {
@@ -76,7 +79,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 // TODO(dragonly): Make best effort to assure that users could recover to at least RetentionPeriodTs ago.
 // This may require pending deleting expired backup files and binlog files.
 func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
-	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{})
+	backupSettingList, err := r.store.FindBackupSetting(ctx, api.BackupSettingFind{})
 	if err != nil {
 		log.Error("Failed to find all the backup settings.", zap.Error(err))
 		return
@@ -87,7 +90,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 			continue // next database
 		}
 		statusNormal := api.Normal
-		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{
+		backupList, err := r.store.FindBackup(ctx, &api.BackupFind{
 			DatabaseID: &bs.DatabaseID,
 			RowStatus:  &statusNormal,
 		})
@@ -107,7 +110,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 		}
 	}
 
-	instanceList, err := r.server.store.FindInstance(ctx, &api.InstanceFind{})
+	instanceList, err := r.store.FindInstance(ctx, &api.InstanceFind{})
 	if err != nil {
 		log.Error("Failed to find non-archived instances.", zap.Error(err))
 		return
@@ -132,7 +135,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 }
 
 func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *api.Instance) (int, error) {
-	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{InstanceID: &instance.ID})
+	backupSettingList, err := r.store.FindBackupSetting(ctx, api.BackupSettingFind{InstanceID: &instance.ID})
 	if err != nil {
 		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
 		return 0, errors.Wrapf(err, "failed to find backup settings for instance %q", instance.Name)
@@ -216,7 +219,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 		UpdaterID: api.SystemBotID,
 		RowStatus: &archive,
 	}
-	if _, err := r.server.store.PatchBackup(ctx, &backupPatch); err != nil {
+	if _, err := r.store.PatchBackup(ctx, &backupPatch); err != nil {
 		return errors.Wrapf(err, "failed to update status for deleted backup %q for database with ID %d", backup.Name, backup.DatabaseID)
 	}
 	log.Debug("Archived expired backup record", zap.String("name", backup.Name), zap.Int("id", backup.ID))
@@ -240,7 +243,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 }
 
 func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
-	instanceList, err := r.server.store.FindInstanceWithDatabaseBackupEnabled(ctx, db.MySQL)
+	instanceList, err := r.store.FindInstanceWithDatabaseBackupEnabled(ctx, db.MySQL)
 	if err != nil {
 		log.Error("Failed to retrieve MySQL instance list with at least one database backup enabled", zap.Error(err))
 		return
@@ -293,7 +296,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 		Hour:      t.Hour(),
 		DayOfWeek: int(t.Weekday()),
 	}
-	backupSettingList, err := r.server.store.FindBackupSettingsMatch(ctx, match)
+	backupSettingList, err := r.store.FindBackupSettingsMatch(ctx, match)
 	if err != nil {
 		log.Error("Failed to retrieve backup settings match", zap.Error(err))
 		return
@@ -314,7 +317,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 			continue
 		}
 		backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
-		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{
+		backupList, err := r.store.FindBackup(ctx, &api.BackupFind{
 			DatabaseID: &db.ID,
 			Name:       &backupName,
 		})
