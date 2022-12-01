@@ -110,7 +110,7 @@
             {{ $t("settings.members.create-as-service-account") }}
             <a
               target="_blank"
-              href="https://www.bytebase.com/docs/get-started/terraform"
+              href="https://www.bytebase.com/docs/get-started/terraform?source=console"
             >
               <heroicons-outline:question-mark-circle
                 class="w-4 h-4 inline-block mb-0.5"
