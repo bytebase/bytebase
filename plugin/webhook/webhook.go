@@ -103,7 +103,7 @@ func (c *Context) getMetaList() []meta {
 		// view it easily in the corresponding webhook client.
 		m = append(m, meta{
 			Name:  "Issue Description",
-			Value: common.TruncateStringWithDescription(c.Issue.Description, 200),
+			Value: common.TruncateStringWithDescription(c.Issue.Description),
 		})
 	}
 
@@ -119,7 +119,7 @@ func (c *Context) getMetaList() []meta {
 		if c.TaskResult.Detail != "" {
 			m = append(m, meta{
 				Name:  "Result Detail",
-				Value: common.TruncateStringWithDescription(c.TaskResult.Detail, 200),
+				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
 			})
 		}
 	}

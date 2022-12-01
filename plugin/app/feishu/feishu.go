@@ -722,7 +722,7 @@ func formatFormSQL(contentTaskList []Task) (string, error) {
 		if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of every task\n%s\n", delimiter, delimiter)); err != nil {
 			return "", err
 		}
-		truncated := common.TruncateStringWithDescription(contentTaskList[taskGroup[0][0]].Statement, 450)
+		truncated := common.TruncateStringWithDescription(contentTaskList[taskGroup[0][0]].Statement)
 		if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
 			return "", err
 		}
@@ -749,7 +749,7 @@ func formatFormSQL(contentTaskList []Task) (string, error) {
 		if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of task %s\n%s\n", delimiter, strings.Join(tasks, ","), delimiter)); err != nil {
 			return "", err
 		}
-		truncated := common.TruncateStringWithDescription(contentTaskList[taskList[0]].Statement, 450)
+		truncated := common.TruncateStringWithDescription(contentTaskList[taskList[0]].Statement)
 		if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
 			return "", err
 		}
