@@ -4,6 +4,7 @@ package feishu
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // Response code definition in feishu response body.
@@ -178,17 +181,18 @@ type GetIDByEmailRequest struct {
 
 // Content is the content of the approval.
 type Content struct {
-	Issue       string
-	Stage       string
-	Link        string
-	TaskList    []Task
-	Description string
+	Issue    string
+	Stage    string
+	Link     string
+	TaskList []Task
+	SQL      string
 }
 
 // Task is the content of a task.
 type Task struct {
-	Name   string
-	Status string
+	Name      string
+	Status    string
+	Statement string
 }
 
 const (
@@ -233,7 +237,7 @@ const (
 				},
 				{
 					"key": "@i18n@widget5",
-					"value": "描述"
+					"value": "SQL"
 				}
 			]
 		},
@@ -267,7 +271,7 @@ const (
 				},
 				{
 					"key": "@i18n@widget5",
-					"value": "Description"
+					"value": "SQL"
 				}
 			]
     }
@@ -565,7 +569,7 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx
 	}
 
 	if response.Code != 0 {
-		return errors.Errorf("failed to create external approval, code %d, msg %s", response.Code, response.Msg)
+		return errors.Errorf("failed to cancel external approval, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return nil
@@ -627,7 +631,7 @@ func (p *Provider) GetBotID(ctx context.Context, tokenCtx TokenCtx) (string, err
 		return "", err
 	}
 	if response.Code != 0 {
-		return "", errors.Errorf("failed to create external approval, code %d, msg %s", response.Code, response.Msg)
+		return "", errors.Errorf("failed to get bot id, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return response.Bot.OpenID, nil
@@ -648,6 +652,12 @@ func formatForm(content Content) (string, error) {
 			return "", err
 		}
 	}
+
+	sql, err := formatFormSQL(content.TaskList)
+	if err != nil {
+		return "", err
+	}
+
 	forms := []form{
 		{
 			ID:    "1",
@@ -672,7 +682,7 @@ func formatForm(content Content) (string, error) {
 		{
 			ID:    "5",
 			Type:  "textarea",
-			Value: content.Description,
+			Value: sql,
 		},
 	}
 	b, err := json.Marshal(forms)
@@ -680,4 +690,70 @@ func formatForm(content Content) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func formatFormSQL(contentTaskList []Task) (string, error) {
+	const taskSQLDisplayLimit = 5
+	delimiter := strings.Repeat("=", 25)
+	var sql strings.Builder
+
+	sqlHashToTaskGroup := make(map[string]int)
+	var taskGroup [][]int
+
+	// divide tasks with the same SQLs to groups.
+	for i, task := range contentTaskList {
+		if task.Statement == "" {
+			continue
+		}
+		hash := fmt.Sprintf("%x", sha1.Sum([]byte(task.Statement)))
+		group, ok := sqlHashToTaskGroup[hash]
+		if ok {
+			taskGroup[group] = append(taskGroup[group], i)
+		} else {
+			taskGroup = append(taskGroup, []int{i})
+			sqlHashToTaskGroup[hash] = len(taskGroup) - 1
+		}
+	}
+
+	// Check if every task has the same SQL.
+	// For tenant mode, it's very likely for tasks to have identical SQLs.
+	// If there is one unique sql, and every task has the sql.
+	if len(taskGroup) == 1 && len(taskGroup[0]) == len(contentTaskList) {
+		if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of every task\n%s\n", delimiter, delimiter)); err != nil {
+			return "", err
+		}
+		truncated := common.TruncateStringWithDescription(contentTaskList[taskGroup[0][0]].Statement)
+		if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
+			return "", err
+		}
+		return sql.String(), nil
+	}
+
+	count := 0
+	for _, taskList := range taskGroup {
+		if count >= taskSQLDisplayLimit {
+			if _, err := sql.WriteString(fmt.Sprintf("%s\nDisplaying %d SQL statements, view more in Bytebase\n", delimiter, count)); err != nil {
+				return "", err
+			}
+			break
+		}
+
+		if len(taskList) == 0 {
+			continue
+		}
+		var tasks []string
+		for _, taskIndex := range taskList {
+			tasks = append(tasks, fmt.Sprintf("%d", taskIndex+1))
+		}
+
+		if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of task %s\n%s\n", delimiter, strings.Join(tasks, ","), delimiter)); err != nil {
+			return "", err
+		}
+		truncated := common.TruncateStringWithDescription(contentTaskList[taskList[0]].Statement)
+		if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
+			return "", err
+		}
+		count++
+	}
+	return sql.String(), nil
 }
