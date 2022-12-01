@@ -4,6 +4,7 @@ package feishu
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -651,36 +652,9 @@ func formatForm(content Content) (string, error) {
 		}
 	}
 
-	const taskSQLDisplayLimit = 5
-	delimiter := fmt.Sprintf("%s\n", strings.Repeat("=", 25))
-	var statementValue strings.Builder
-	count := 0
-	for i, task := range content.TaskList {
-		if count >= taskSQLDisplayLimit {
-			if _, err := statementValue.WriteString(delimiter); err != nil {
-				return "", err
-			}
-			if _, err := statementValue.WriteString(fmt.Sprintf("Display the SQL statements of %d task(s), view more in Bytebase", count)); err != nil {
-				return "", err
-			}
-			break
-		}
-		if task.Statement != "" {
-			count++
-			if _, err := statementValue.WriteString(delimiter); err != nil {
-				return "", err
-			}
-			if _, err := statementValue.WriteString(fmt.Sprintf("The SQL statement of task %d\n", i+1)); err != nil {
-				return "", err
-			}
-			if _, err := statementValue.WriteString(delimiter); err != nil {
-				return "", err
-			}
-			truncated := common.TruncateStringWithDescription(task.Statement, 450)
-			if _, err := statementValue.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
-				return "", err
-			}
-		}
+	sql, err := formatFormSQL(content.TaskList)
+	if err != nil {
+		return "", err
 	}
 
 	forms := []form{
@@ -707,7 +681,7 @@ func formatForm(content Content) (string, error) {
 		{
 			ID:    "5",
 			Type:  "textarea",
-			Value: statementValue.String(),
+			Value: sql,
 		},
 	}
 	b, err := json.Marshal(forms)
@@ -715,4 +689,68 @@ func formatForm(content Content) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func formatFormSQL(contentTaskList []Task) (string, error) {
+	const taskSQLDisplayLimit = 5
+	delimiter := fmt.Sprintf("%s", strings.Repeat("=", 25))
+	var sql strings.Builder
+
+	sqlHashToTaskList := make(map[string][]int)
+
+	// divide tasks with the same SQLs to groups.
+	for i, task := range contentTaskList {
+		if task.Statement == "" {
+			continue
+		}
+		hash := fmt.Sprintf("%x", sha1.Sum([]byte(task.Statement)))
+		sqlHashToTaskList[hash] = append(sqlHashToTaskList[hash], i)
+	}
+
+	// Check if every task has the same SQL.
+	// For tenant mode, it's very likely for tasks to have identical SQLs.
+	// If there is one unique sql,
+	if len(sqlHashToTaskList) == 1 {
+		for _, taskList := range sqlHashToTaskList {
+			// and every task has the sql.
+			if len(taskList) == len(contentTaskList) {
+				if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of every task\n%s\n", delimiter, delimiter)); err != nil {
+					return "", err
+				}
+				truncated := common.TruncateStringWithDescription(contentTaskList[taskList[0]].Statement, 450)
+				if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
+					return "", err
+				}
+				return sql.String(), nil
+			}
+		}
+	}
+
+	count := 0
+	for _, taskList := range sqlHashToTaskList {
+		if count >= taskSQLDisplayLimit {
+			if _, err := sql.WriteString(fmt.Sprintf("%s\nDisplay %d SQL statements, view more in Bytebase", delimiter, count)); err != nil {
+				return "", err
+			}
+			break
+		}
+
+		if len(taskList) == 0 {
+			continue
+		}
+		var tasks []string
+		for _, taskIndex := range taskList {
+			tasks = append(tasks, fmt.Sprintf("%d", taskIndex+1))
+		}
+
+		if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of task %s\n%s\n", delimiter, strings.Join(tasks, ","), delimiter)); err != nil {
+			return "", err
+		}
+		truncated := common.TruncateStringWithDescription(contentTaskList[taskList[0]].Statement, 450)
+		if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
+			return "", err
+		}
+		count++
+	}
+	return sql.String(), nil
 }
