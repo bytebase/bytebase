@@ -252,6 +252,7 @@ import {
   EngineType,
   EnvironmentId,
   MigrationHistory,
+  MigrationType,
   ProjectId,
   SQLDialect,
   UNKNOWN_ID,
@@ -325,6 +326,11 @@ const isValidId = (id: any) => {
 };
 
 const allowedEngineTypeList: EngineType[] = ["MYSQL", "POSTGRES"];
+const allowedMigrationTypeList: MigrationType[] = [
+  "BASELINE",
+  "MIGRATE",
+  "BRANCH",
+];
 
 const hasSyncSchemaFeature = computed(() => {
   return hasFeature("bb.feature.sync-schema-all-versions");
@@ -392,11 +398,8 @@ const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
       database.instance.id,
       database.name
     )
-    .filter(
-      (migrationHistory) =>
-        migrationHistory.type === "BASELINE" ||
-        migrationHistory.type === "MIGRATE" ||
-        migrationHistory.type === "BRANCH"
+    .filter((migrationHistory) =>
+      allowedMigrationTypeList.includes(migrationHistory.type)
     );
 
   if (!hasSyncSchemaFeature.value) {
@@ -573,11 +576,8 @@ watch(
           instanceId: database.instance.id,
           databaseName: database.name,
         })
-      ).filter(
-        (migrationHistory) =>
-          migrationHistory.type === "BASELINE" ||
-          migrationHistory.type === "MIGRATE" ||
-          migrationHistory.type === "BRANCH"
+      ).filter((migrationHistory) =>
+        allowedMigrationTypeList.includes(migrationHistory.type)
       );
       // Default select the first migration history.
       state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
