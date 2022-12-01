@@ -6,20 +6,31 @@
         <AsidePanel />
       </Pane>
       <Pane size="80" class="relative">
-        <Splitpanes
-          v-if="tabStore.currentTab.mode === TabMode.ReadOnly"
-          horizontal
-          class="default-theme"
-        >
-          <Pane :size="isDisconnected ? 100 : 60">
-            <EditorPanel />
-          </Pane>
-          <Pane :size="isDisconnected ? 0 : 40">
-            <TablePanel />
-          </Pane>
-        </Splitpanes>
+        <template v-if="allowQuery">
+          <Splitpanes
+            v-if="tabStore.currentTab.mode === TabMode.ReadOnly"
+            horizontal
+            class="default-theme"
+          >
+            <Pane :size="isDisconnected ? 100 : 60">
+              <EditorPanel />
+            </Pane>
+            <Pane :size="isDisconnected ? 0 : 40">
+              <TablePanel />
+            </Pane>
+          </Splitpanes>
 
-        <TerminalPanel v-if="tabStore.currentTab.mode === TabMode.Admin" />
+          <TerminalPanel v-if="tabStore.currentTab.mode === TabMode.Admin" />
+        </template>
+        <div
+          v-else
+          class="w-full h-full flex flex-col items-center justify-center"
+        >
+          <img src="../../assets/illustration/403.webp" class="max-h-[40%]" />
+          <div class="textinfolabel">
+            {{ $t("database.access-denied") }}
+          </div>
+        </div>
 
         <div
           v-if="isFetchingSheet"
@@ -36,19 +47,41 @@
 import { computed } from "vue";
 import { Splitpanes, Pane } from "splitpanes";
 
-import { TabMode } from "@/types";
-import { useSQLEditorStore, useTabStore } from "@/store";
+import { TabMode, UNKNOWN_ID } from "@/types";
+import {
+  useCurrentUser,
+  useDatabaseStore,
+  useSQLEditorStore,
+  useTabStore,
+} from "@/store";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
 import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
+import { isDatabaseAccessible } from "@/utils";
 
 const tabStore = useTabStore();
+const databaseStore = useDatabaseStore();
 const sqlEditorStore = useSQLEditorStore();
+const currentUser = useCurrentUser();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
+
+const allowQuery = computed(() => {
+  const { databaseId } = tabStore.currentTab.connection;
+  const database = databaseStore.getDatabaseById(databaseId);
+  if (database.id === UNKNOWN_ID) {
+    return true; // fallback
+  }
+  const { accessControlPolicyList } = sqlEditorStore;
+  return isDatabaseAccessible(
+    database,
+    accessControlPolicyList,
+    currentUser.value
+  );
+});
 </script>
 
 <style>
