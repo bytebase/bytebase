@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/store"
 
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -167,25 +166,20 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebho
 	for _, hook := range webhookList {
 		webhookCtx.URL = hook.URL
 		webhookCtx.CreatedTs = time.Now().Unix()
-		suceeded, err := webhook.PostWithRetry(hook.Type, webhookCtx)
-		// Don't log if we succeeded post webhook without retrying.
-		if suceeded && len(multierr.Errors(err)) == 0 {
-			return
+		const maxRetries = 3
+		for retries := 0; retries < maxRetries; retries++ {
+			if err := webhook.Post(hook.Type, webhookCtx); err != nil {
+				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
+				log.Warn("Failed to post webhook event on activity",
+					zap.String("webhook type", hook.Type),
+					zap.String("webhook name", hook.Name),
+					zap.String("activity type", webhookCtx.ActivityType),
+					zap.String("title", webhookCtx.Title),
+					zap.Error(err))
+			} else {
+				break
+			}
 		}
-		var msg string
-		if suceeded {
-			msg = "Suceeded to post webhook with retry event on activity"
-		} else {
-			msg = "Failed to post webhook with retry event on activity"
-		}
-		// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-		log.Warn(msg,
-			zap.String("webhook type", hook.Type),
-			zap.String("webhook name", hook.Name),
-			zap.String("activity type", webhookCtx.ActivityType),
-			zap.String("title", webhookCtx.Title),
-			zap.Error(err))
-
 	}
 }
 

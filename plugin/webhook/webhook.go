@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 )
 
 var (
@@ -150,19 +149,6 @@ func register(host string, r Receiver) {
 		panic("webhook: Register called twice for host " + host)
 	}
 	receivers[host] = r
-}
-
-// PostWithRetry posts the message to webhook with retrying.
-// It posts 3 times maximum and returns if succeeded posting and the errors.
-func PostWithRetry(webhookType string, context Context) (bool, error) {
-	var errs error
-	const maxRetries = 3
-	for retries := 0; retries < maxRetries; retries++ {
-		if !multierr.AppendInto(&errs, Post(webhookType, context)) {
-			return true, errs
-		}
-	}
-	return false, errs
 }
 
 // Post posts the message to webhook.
