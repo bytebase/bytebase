@@ -15,7 +15,11 @@
     </div>
     <div class="p-2 border-t border-gray-300">
       <div ref="containerRef" class="flex flex-wrap items-center gap-1">
-        <div v-for="(data, i) in state.templateInputs" :key="i">
+        <div
+          v-for="(data, i) in state.templateInputs"
+          :key="i"
+          :ref="(el: any) => (itemRefs[i] = el)"
+        >
           <BBBadge
             v-if="data.type == 'template'"
             :text="data.value"
@@ -26,6 +30,8 @@
             :value="data.value"
             :max-width="state.inputMaxWidth"
             @keyup="(e) => onKeyup(i, e)"
+            @keydown="(e) => onKeydown(i, e)"
+            @mouseup="(e) => onMouseup(i, e)"
             @change="(val) => onTemplateChange(i, val)"
           />
         </div>
@@ -59,6 +65,7 @@ interface LocalState {
   inputData: string;
   inputMaxWidth: number;
   templateInputs: TemplateInput[];
+  inputCursorPosition: Map<number, number>;
 }
 
 const props = defineProps({
@@ -89,6 +96,7 @@ const state = reactive<LocalState>({
   inputData,
   inputMaxWidth: 0,
   templateInputs,
+  inputCursorPosition: new Map<number, number>(),
 });
 
 watch(
@@ -106,6 +114,7 @@ watch(
   }
 );
 
+const itemRefs = ref<HTMLElement[]>([]);
 const containerRef = ref<HTMLDivElement>();
 const inputRef = ref<HTMLInputElement>();
 
@@ -139,17 +148,89 @@ const onInputDataDeleteLeave = (e: KeyboardEvent) => {
   }
 };
 
+const onKeydown = (i: number, e: KeyboardEvent) => {
+  if (
+    e.key !== "ArrowLeft" &&
+    e.key !== "ArrowRight" &&
+    e.key !== "Backspace" &&
+    e.key !== "Delete"
+  ) {
+    return;
+  }
+
+  const selectionEnd = itemRefs.value[i].querySelector("input")?.selectionEnd;
+  if (!Number.isNaN(selectionEnd)) {
+    state.inputCursorPosition.set(i, selectionEnd!);
+  }
+};
+
+const onMouseup = (i: number, _: MouseEvent) => {
+  const position = itemRefs.value[i].querySelector("input")?.selectionStart;
+  if (!Number.isNaN(position)) {
+    state.inputCursorPosition.set(i, position!);
+  }
+};
+
 const onKeyup = (i: number, e: KeyboardEvent) => {
   const data = state.templateInputs[i];
   if (!data) {
     return;
   }
 
-  if (e.key !== "Delete" || data.value !== "") {
-    return;
+  switch (e.key) {
+    case "Backspace":
+    case "Delete":
+      if (data.value === "") {
+        if (i === 0 || state.inputCursorPosition.get(i) === 0) {
+          onTemplateRemove(i);
+          onTemplateRemove(i - 1);
+          focusPreInput(i - 2);
+        }
+      }
+      break;
+    case "ArrowLeft":
+      const left = state.inputCursorPosition.get(i);
+      if (left === 0) {
+        focusPreInput(i - 1);
+      }
+      state.inputCursorPosition.delete(i);
+      break;
+    case "ArrowRight":
+      const right = state.inputCursorPosition.get(i);
+      if (right === data.value.length) {
+        focusNextInput(i + 1);
+      }
+      state.inputCursorPosition.delete(i);
+      break;
   }
+};
 
-  onTemplateRemove(i);
+const focusNextInput = (i: number) => {
+  let j = i;
+  while (j <= state.templateInputs.length - 1) {
+    const input = state.templateInputs[j];
+    if (input.type === InputType.String) {
+      itemRefs.value[j].querySelector("input")?.setSelectionRange(0, 0);
+      itemRefs.value[j].querySelector("input")?.focus();
+      break;
+    }
+    j++;
+  }
+};
+
+const focusPreInput = (i: number) => {
+  let j = i;
+  while (j >= 0) {
+    const input = state.templateInputs[j];
+    if (input.type === InputType.String) {
+      itemRefs.value[j]
+        .querySelector("input")
+        ?.setSelectionRange(input.value.length, input.value.length);
+      itemRefs.value[j].querySelector("input")?.focus();
+      break;
+    }
+    j--;
+  }
 };
 
 const onTemplateChange = (i: number, data: string) => {
@@ -189,6 +270,10 @@ const onTemplateAdd = (template: Template) => {
 };
 
 const onTemplateRemove = (i: number) => {
+  if (i < 0 || i >= state.templateInputs.length) {
+    return;
+  }
+
   state.templateInputs = [
     ...state.templateInputs.slice(0, i),
     ...state.templateInputs.slice(i + 1),
