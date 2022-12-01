@@ -89,7 +89,7 @@ type ActivityIssueCreatePayload struct {
 
 // ActivityIssueCommentCreatePayload is the API message payloads for creating issue comments.
 type ActivityIssueCommentCreatePayload struct {
-	ExternalApprovalEvent *ExternalApprovalEvent `json:"externalApprovalEvent"`
+	ExternalApprovalEvent *ExternalApprovalEvent `json:"externalApprovalEvent,omitempty"`
 
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
