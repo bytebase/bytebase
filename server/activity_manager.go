@@ -173,10 +173,10 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebho
 			return
 		}
 		var msg string
-		if !suceeded {
-			msg = "Failed to post webhook with retry event on activity"
-		} else {
+		if suceeded {
 			msg = "Suceeded to post webhook with retry event on activity"
+		} else {
+			msg = "Failed to post webhook with retry event on activity"
 		}
 		// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
 		log.Warn(msg,
