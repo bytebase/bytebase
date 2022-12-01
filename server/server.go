@@ -300,18 +300,18 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Schema syncer
-		s.SchemaSyncer = NewSchemaSyncer(s)
+		s.SchemaSyncer = NewSchemaSyncer(s, s.store)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
+		s.BackupRunner = NewBackupRunner(s, s.store, &prof)
 
 		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager, feishu.NewProvider(prof.FeishuAPIURL))
 
 		// Anomaly scanner
-		s.AnomalyScanner = NewAnomalyScanner(s)
+		s.AnomalyScanner = NewAnomalyScanner(s, s.store)
 
 		// Rollback SQL generator
-		s.RollbackRunner = NewRollbackRunner(s)
+		s.RollbackRunner = NewRollbackRunner(s, s.store)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
