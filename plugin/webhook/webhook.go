@@ -159,6 +159,5 @@ func Post(webhookType string, context Context) error {
 	if !ok {
 		return errors.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
 	}
-
 	return r.post(context)
 }
