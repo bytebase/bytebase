@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -22,15 +23,17 @@ var (
 )
 
 // NewSchemaSyncer creates a schema syncer.
-func NewSchemaSyncer(server *Server) *SchemaSyncer {
+func NewSchemaSyncer(server *Server, store *store.Store) *SchemaSyncer {
 	return &SchemaSyncer{
 		server: server,
+		store:  store,
 	}
 }
 
 // SchemaSyncer is the schema syncer.
 type SchemaSyncer struct {
 	server *Server
+	store  *store.Store
 }
 
 // Run will run the schema syncer once.
@@ -69,7 +72,7 @@ func (s *SchemaSyncer) syncAllInstances(ctx context.Context) {
 	instanceFind := &api.InstanceFind{
 		RowStatus: &rowStatus,
 	}
-	instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
+	instanceList, err := s.store.FindInstance(ctx, instanceFind)
 	if err != nil {
 		log.Error("Failed to retrieve instances", zap.Error(err))
 		return
@@ -105,7 +108,7 @@ func (s *SchemaSyncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 	}()
 
 	okSyncStatus := api.OK
-	databaseList, err := s.server.store.FindDatabase(ctx, &api.DatabaseFind{
+	databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
 		InstanceID: instanceID,
 		SyncStatus: &okSyncStatus,
 	})
