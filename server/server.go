@@ -36,7 +36,8 @@ import (
 	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/bytebase/bytebase/server/factory/dbfactory"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -67,7 +68,7 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile         Profile
+	profile         config.Profile
 	e               *echo.Echo
 	metaDB          *store.MetadataDB
 	store           *store.Store
@@ -120,7 +121,7 @@ var casbinDeveloperPolicy string
 // @schemes http
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, prof Profile) (*Server, error) {
+func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 	s := &Server{
 		profile:         prof,
 		startedTs:       time.Now().Unix(),
@@ -413,7 +414,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof Profile) {
+func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof config.Profile) {
 	openAPIGroup := e.Group(openAPIPrefix)
 
 	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -460,7 +461,15 @@ func (s *Server) initMetricReporter(workspaceID string) {
 	}
 }
 
-func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
+// retrieved via the SettingService upon startup.
+type workspaceConfig struct {
+	// secret used to sign the JWT auth token
+	secret string
+	// workspaceID used to initial the identify for a new workspace.
+	workspaceID string
+}
+
+func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, error) {
 	// initial branding
 	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
@@ -471,7 +480,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 		return nil, err
 	}
 
-	conf := &config{}
+	conf := &workspaceConfig{}
 
 	// initial JWT token
 	value, err := common.RandomString(secretLength)

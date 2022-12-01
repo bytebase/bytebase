@@ -14,7 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/server/factory/dbfactory"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 

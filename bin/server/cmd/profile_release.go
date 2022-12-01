@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/server"
+	"github.com/bytebase/bytebase/server/component/config"
 )
 
-func activeProfile(dataDir string) server.Profile {
+func activeProfile(dataDir string) config.Profile {
 	p := getBaseProfile()
 	p.Mode = common.ReleaseModeProd
 	p.PgUser = "bb"
