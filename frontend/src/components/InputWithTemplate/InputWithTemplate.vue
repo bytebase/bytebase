@@ -31,7 +31,7 @@
             :max-width="state.inputMaxWidth"
             @keyup="(e) => onKeyup(i, e)"
             @keydown="(e) => onKeydown(i, e)"
-            @mouseup="(e) => onMouseup(i, e)"
+            @mouseup="(e) => onKeydown(i, e)"
             @change="(val) => onTemplateChange(i, val)"
           />
         </div>
@@ -42,6 +42,8 @@
           type="text"
           @keydown.delete="onInputDataDeleteEnter"
           @keyup.delete="onInputDataDeleteLeave"
+          @keydown="onLastInputKeyDown"
+          @keyup="onLastInputUp"
         />
       </div>
     </div>
@@ -130,6 +132,25 @@ const onWindowResize = () => {
   }
 };
 
+const onLastInputKeyDown = () => {
+  const selectionEnd = inputRef.value?.selectionEnd;
+  if (!Number.isNaN(selectionEnd)) {
+    state.inputCursorPosition.set(state.templateInputs.length, selectionEnd!);
+  }
+};
+
+const onLastInputUp = (e: KeyboardEvent) => {
+  if (e.key !== "ArrowLeft") {
+    return;
+  }
+
+  const left = state.inputCursorPosition.get(state.templateInputs.length);
+  if (left === 0) {
+    focusPreInput(state.templateInputs.length - 1);
+    state.inputCursorPosition.delete(state.templateInputs.length);
+  }
+};
+
 const onInputDataDeleteEnter = (e: KeyboardEvent) => {
   if (!state.inputData && state.templateInputs.length > 0) {
     const last = state.templateInputs.slice(-1)[0];
@@ -149,25 +170,9 @@ const onInputDataDeleteLeave = (e: KeyboardEvent) => {
 };
 
 const onKeydown = (i: number, e: KeyboardEvent) => {
-  if (
-    e.key !== "ArrowLeft" &&
-    e.key !== "ArrowRight" &&
-    e.key !== "Backspace" &&
-    e.key !== "Delete"
-  ) {
-    return;
-  }
-
   const selectionEnd = itemRefs.value[i].querySelector("input")?.selectionEnd;
   if (!Number.isNaN(selectionEnd)) {
     state.inputCursorPosition.set(i, selectionEnd!);
-  }
-};
-
-const onMouseup = (i: number, _: MouseEvent) => {
-  const position = itemRefs.value[i].querySelector("input")?.selectionStart;
-  if (!Number.isNaN(position)) {
-    state.inputCursorPosition.set(i, position!);
   }
 };
 
@@ -182,8 +187,11 @@ const onKeyup = (i: number, e: KeyboardEvent) => {
     case "Delete":
       if (data.value === "") {
         if (i === 0 || state.inputCursorPosition.get(i) === 0) {
+          // remove the empty data
           onTemplateRemove(i);
+          // remove the previous data (should be the template type)
           onTemplateRemove(i - 1);
+          // try to focus the input from i-2 index
           focusPreInput(i - 2);
         }
       }
@@ -215,6 +223,10 @@ const focusNextInput = (i: number) => {
       break;
     }
     j++;
+  }
+  if (j === state.templateInputs.length) {
+    inputRef.value?.setSelectionRange(0, 0);
+    inputRef.value?.focus();
   }
 };
 
@@ -250,6 +262,9 @@ const onTemplateChange = (i: number, data: string) => {
 };
 
 const onTemplateAdd = (template: Template) => {
+  // clear position cache.
+  state.inputCursorPosition = new Map<number, number>();
+
   if (state.inputData) {
     // If the last input contains user's input, we also need to add it
     state.templateInputs.push({
@@ -264,15 +279,16 @@ const onTemplateAdd = (template: Template) => {
   });
 
   state.inputData = "";
-  if (inputRef.value) {
-    inputRef.value.focus();
-  }
+  inputRef.value?.focus();
 };
 
 const onTemplateRemove = (i: number) => {
   if (i < 0 || i >= state.templateInputs.length) {
     return;
   }
+
+  // clear position cache.
+  state.inputCursorPosition = new Map<number, number>();
 
   state.templateInputs = [
     ...state.templateInputs.slice(0, i),
