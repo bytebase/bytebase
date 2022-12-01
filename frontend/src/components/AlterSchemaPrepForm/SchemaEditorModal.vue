@@ -57,7 +57,7 @@
           :value="state.editStatement"
           :auto-focus="false"
           :dialect="(databaseEngineType as SQLDialect)"
-          @change="onStatementChange"
+          @change="handleStatementChange"
         />
       </div>
     </div>
@@ -111,6 +111,10 @@ const props = defineProps({
     type: Array as PropType<DatabaseId[]>,
     required: true,
   },
+  tenantMode: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits<{
@@ -154,7 +158,7 @@ const handleChangeTab = (tab: TabType) => {
   state.selectedTab = tab;
 };
 
-const onStatementChange = (value: string) => {
+const handleStatementChange = (value: string) => {
   state.editStatement = value;
 };
 
@@ -255,11 +259,19 @@ const handlePreviewIssue = async () => {
     return;
   }
 
-  const mode = await isUsingGhostMigration(databaseList);
-  if (mode === false) {
-    return;
+  let issueMode = "normal";
+
+  if (props.tenantMode) {
+    issueMode = "tenant";
+  } else {
+    const actionResult = await isUsingGhostMigration(databaseList);
+    if (actionResult === false) {
+      return;
+    }
+    issueMode = actionResult;
   }
-  const isGhostMode = mode === "online";
+
+  const isGhostMode = issueMode === "online";
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     name: generateIssueName(
@@ -267,6 +279,7 @@ const handlePreviewIssue = async () => {
       isGhostMode
     ),
     project: projectId,
+    mode: issueMode,
     databaseList: props.databaseIdList.join(","),
   };
   if (isGhostMode) {
@@ -304,14 +317,17 @@ const handlePreviewIssue = async () => {
     const databaseIdList = Array.from(databaseEditMap.keys());
     if (databaseIdList.length > 0) {
       const statmentList = Array.from(databaseEditMap.values());
-      query.databaseList = databaseIdList.join(",");
-      query.name = generateIssueName(
-        databaseList
-          .filter((database) => databaseIdList.includes(database.id))
-          .map((db) => db.name),
-        isGhostMode
-      );
       query.sql = statmentList.join("\n");
+
+      if (!props.tenantMode) {
+        query.databaseList = databaseIdList.join(",");
+        query.name = generateIssueName(
+          databaseList
+            .filter((database) => databaseIdList.includes(database.id))
+            .map((db) => db.name),
+          isGhostMode
+        );
+      }
     }
   }
 
