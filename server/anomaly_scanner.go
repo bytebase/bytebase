@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -23,16 +24,17 @@ const (
 )
 
 // NewAnomalyScanner creates a anomaly scanner.
-func NewAnomalyScanner(server *Server) *AnomalyScanner {
+func NewAnomalyScanner(server *Server, store *store.Store) *AnomalyScanner {
 	return &AnomalyScanner{
-
 		server: server,
+		store:  store,
 	}
 }
 
 // AnomalyScanner is the anomaly scanner.
 type AnomalyScanner struct {
 	server *Server
+	store  *store.Store
 }
 
 // Run will run the anomaly scanner once.
@@ -60,7 +62,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				envList, err := s.server.store.FindEnvironment(ctx, &api.EnvironmentFind{})
+				envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{})
 				if err != nil {
 					log.Error("Failed to retrieve instance list", zap.Error(err))
 					return
@@ -68,7 +70,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				backupPlanPolicyMap := make(map[int]*api.BackupPlanPolicy)
 				for _, env := range envList {
-					policy, err := s.server.store.GetBackupPlanPolicyByEnvID(ctx, env.ID)
+					policy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, env.ID)
 					if err != nil {
 						log.Error("Failed to retrieve backup policy",
 							zap.String("environment", env.Name),
@@ -82,7 +84,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
 				}
-				instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
+				instanceList, err := s.store.FindInstance(ctx, instanceFind)
 				if err != nil {
 					log.Error("Failed to retrieve instance list", zap.Error(err))
 					return
@@ -126,7 +128,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						databaseFind := &api.DatabaseFind{
 							InstanceID: &instance.ID,
 						}
-						dbList, err := s.server.store.FindDatabase(ctx, databaseFind)
+						dbList, err := s.store.FindDatabase(ctx, databaseFind)
 						if err != nil {
 							log.Error("Failed to retrieve database list",
 								zap.String("instance", instance.Name),
@@ -164,7 +166,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyInstanceConnection)),
 				zap.Error(err))
 		} else {
-			if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				Type:       api.AnomalyInstanceConnection,
@@ -180,7 +182,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 	}
 
 	defer driver.Close(ctx)
-	err = s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+	err = s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		InstanceID: &instance.ID,
 		Type:       api.AnomalyInstanceConnection,
 	})
@@ -201,7 +203,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 				zap.Error(err))
 		} else {
 			if setup {
-				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
@@ -212,7 +214,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 						zap.Error(err))
 				}
 			} else {
-				err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+				err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 					InstanceID: &instance.ID,
 					Type:       api.AnomalyInstanceMigrationSchema,
 				})
@@ -243,7 +245,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 				zap.String("type", string(api.AnomalyDatabaseConnection)),
 				zap.Error(err))
 		} else {
-			if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+			if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
 				DatabaseID: &database.ID,
@@ -260,7 +262,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 		return
 	}
 	defer driver.Close(ctx)
-	err = s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+	err = s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		DatabaseID: &database.ID,
 		Type:       api.AnomalyDatabaseConnection,
 	})
@@ -332,7 +334,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 						zap.Error(err))
 				} else {
-					if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+					if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 						CreatorID:  api.SystemBotID,
 						InstanceID: instance.ID,
 						DatabaseID: &database.ID,
@@ -347,7 +349,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 					}
 				}
 			} else {
-				err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+				err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 					DatabaseID: &database.ID,
 					Type:       api.AnomalyDatabaseSchemaDrift,
 				})
@@ -365,7 +367,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 
 func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *api.Database, policyMap map[int]*api.BackupPlanPolicy) {
 	schedule := api.BackupPlanPolicyScheduleUnset
-	backupSetting, err := s.server.store.GetBackupSettingByDatabaseID(ctx, database.ID)
+	backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, database.ID)
 	if err != nil {
 		log.Error("Failed to retrieve backup setting",
 			zap.String("instance", instance.Name),
@@ -412,7 +414,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
-				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
@@ -427,7 +429,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 			}
 		} else {
-			err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+			err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseBackupPolicyViolation,
 			})
@@ -460,7 +462,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					DatabaseID: &database.ID,
 					Status:     &status,
 				}
-				backupList, err := s.server.store.FindBackup(ctx, backupFind)
+				backupList, err := s.store.FindBackup(ctx, backupFind)
 				if err != nil {
 					log.Error("Failed to retrieve backup list",
 						zap.String("instance", instance.Name),
@@ -495,7 +497,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			} else {
-				if _, err = s.server.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
+				if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
 					DatabaseID: &database.ID,
@@ -510,7 +512,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 			}
 		} else {
-			err := s.server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+			err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 				DatabaseID: &database.ID,
 				Type:       api.AnomalyDatabaseBackupMissing,
 			})
