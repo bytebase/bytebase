@@ -1,8 +1,10 @@
 import { defineStore } from "pinia";
+import { computed, Ref, unref, watchEffect } from "vue";
 import axios from "axios";
 import {
   DatabaseId,
   EnvironmentId,
+  MaybeRef,
   PolicyState,
   ResourceIdentifier,
   ResourceObject,
@@ -19,7 +21,6 @@ import {
 } from "@/types/policy";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
-import { computed, Ref, watchEffect } from "vue";
 import { useCurrentUser } from "./auth";
 
 function convertEnvironment(
@@ -358,23 +359,22 @@ export const usePolicyByDatabaseAndType = (
 };
 
 export const usePolicyListByResourceTypeAndPolicyType = (
-  params: Ref<{ resourceType: PolicyResourceType; policyType: PolicyType }>
+  params: MaybeRef<{ resourceType: PolicyResourceType; policyType: PolicyType }>
 ) => {
   const store = usePolicyStore();
   const currentUser = useCurrentUser();
   watchEffect(() => {
     if (currentUser.value.id === UNKNOWN_ID) return;
+    const { resourceType, policyType } = unref(params);
 
-    store.fetchPolicyListByResourceTypeAndPolicyType(
-      params.value.resourceType,
-      params.value.policyType
-    );
+    store.fetchPolicyListByResourceTypeAndPolicyType(resourceType, policyType);
   });
 
-  return computed(() =>
-    store.getPolicyListByResourceTypeAndPolicyType(
-      params.value.resourceType,
-      params.value.policyType
-    )
-  );
+  return computed(() => {
+    const { resourceType, policyType } = unref(params);
+    return store.getPolicyListByResourceTypeAndPolicyType(
+      resourceType,
+      policyType
+    );
+  });
 };
