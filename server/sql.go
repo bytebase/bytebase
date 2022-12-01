@@ -1036,7 +1036,7 @@ func (s *Server) allowAccessDatabase(ctx context.Context, principalID int, insta
 	// Database level access control policy is the allowlist style.
 	databasePolicy, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.ID)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	if databasePolicy != nil {
 		return true, nil
