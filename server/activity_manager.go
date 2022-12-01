@@ -104,7 +104,7 @@ func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx contex
 		CreatorEmail: anyActivity.Creator.Email,
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go postWebhookList(webhookCtx, webhookList, issue)
+	go postWebhookList(webhookCtx, webhookList)
 
 	return nil
 }
@@ -157,23 +157,28 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return activity, nil
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go postWebhookList(webhookCtx, webhookList, meta.issue)
+	go postWebhookList(webhookCtx, webhookList)
 
 	return activity, nil
 }
 
-func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebhook, issue *api.Issue) {
+func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebhook) {
 	for _, hook := range webhookList {
 		webhookCtx.URL = hook.URL
 		webhookCtx.CreatedTs = time.Now().Unix()
-		if err := webhook.Post(hook.Type, webhookCtx); err != nil {
-			// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-			log.Warn("Failed to post webhook event after changing the issue status",
-				zap.String("webhook_type", hook.Type),
-				zap.String("webhook_name", hook.Name),
-				zap.String("issue_name", issue.Name),
-				zap.String("status", string(issue.Status)),
-				zap.Error(err))
+		const maxRetries = 3
+		for retries := 0; retries < maxRetries; retries++ {
+			if err := webhook.Post(hook.Type, webhookCtx); err != nil {
+				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
+				log.Warn("Failed to post webhook event on activity",
+					zap.String("webhook type", hook.Type),
+					zap.String("webhook name", hook.Name),
+					zap.String("activity type", webhookCtx.ActivityType),
+					zap.String("title", webhookCtx.Title),
+					zap.Error(err))
+			} else {
+				break
+			}
 		}
 	}
 }
