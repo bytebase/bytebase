@@ -1077,22 +1077,21 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, d
 	if !inheritFromEnvironment {
 		// Use database policy.
 		return databasePolicy != nil, nil
-	} else {
-		// Use both database policy and environment policy.
-		hasAccessRights := true
-		if environmentPolicy != nil {
-			// Disallow by environment access policy.
-			for _, rule := range environmentPolicy.DisallowRuleList {
-				if rule.FullDatabase {
-					hasAccessRights = false
-					break
-				}
+	}
+	// Use both database policy and environment policy.
+	hasAccessRights := true
+	if environmentPolicy != nil {
+		// Disallow by environment access policy.
+		for _, rule := range environmentPolicy.DisallowRuleList {
+			if rule.FullDatabase {
+				hasAccessRights = false
+				break
 			}
 		}
-		if databasePolicy != nil {
-			// Allow by database access policy.
-			hasAccessRights = true
-		}
-		return hasAccessRights, nil
 	}
+	if databasePolicy != nil {
+		// Allow by database access policy.
+		hasAccessRights = true
+	}
+	return hasAccessRights, nil
 }
