@@ -294,6 +294,12 @@
   </div>
 
   <GhostDialog ref="ghostDialog" />
+
+  <SchemaEditorModal
+    v-if="state.showSchemaEditorModal"
+    :database-id-list="[database.id]"
+    @close="state.showSchemaEditorModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -315,6 +321,7 @@ import {
   allowGhostMigration,
   isPITRDatabase,
   isDatabaseAccessible,
+  allowUsingUIEditor,
 } from "@/utils";
 import {
   ProjectId,
@@ -351,6 +358,7 @@ type DatabaseTabItem = {
 interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
+  showSchemaEditorModal: boolean;
   editingProjectId: ProjectId;
   selectedIndex: number;
   syncingSchema: boolean;
@@ -379,6 +387,7 @@ const databaseTabItemList: DatabaseTabItem[] = [
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
+  showSchemaEditorModal: false,
   editingProjectId: UNKNOWN_ID,
   selectedIndex: OVERVIEW_TAB,
   syncingSchema: false,
@@ -556,6 +565,11 @@ const createMigration = async (
   if (database.value.project.workflowType == "UI") {
     let mode: "online" | "normal" | false = "normal";
     if (type === "bb.issue.database.schema.update") {
+      if (allowUsingUIEditor([database.value])) {
+        state.showSchemaEditorModal = true;
+        return;
+      }
+
       // Check and show a normal/online selection modal dialog if needed.
       mode = await isUsingGhostMigration([database.value]);
     }
