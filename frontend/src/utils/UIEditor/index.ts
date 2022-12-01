@@ -1,10 +1,14 @@
 import { Database, EngineType } from "@/types";
+import { isDev } from "..";
 
-// Only allow UI Editor with MySQL.
+// Only allow using UI Editor with MySQL.
 export const allowUsingUIEditor = (databaseList: Database[]): boolean => {
-  return databaseList.every((db) => {
-    return db.instance.engine === "MYSQL";
-  });
+  return (
+    isDev() &&
+    databaseList.every((db) => {
+      return db.instance.engine === "MYSQL";
+    })
+  );
 };
 
 export const getDataTypeSuggestionList = (engineType: EngineType = "MYSQL") => {
