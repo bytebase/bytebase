@@ -180,23 +180,34 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
 		var database *api.Database
 		if exec.DatabaseName != "" {
 			database, err = s.getDatabase(ctx, instance.ID, exec.DatabaseName)
 			if err != nil {
 				return err
 			}
+			// Database Access Control
+			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, database)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", exec.DatabaseName)).SetInternal(err)
+			}
+			if !hasAccessRights {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", exec.DatabaseName))
+			}
 		}
 
-		// Database Access Control
+		// Database Access Control for MySQL dialect.
+		// MySQL dialect can query cross the database.
+		// We need special check.
 		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", exec.Statement)).SetInternal(err)
 			}
 
-			// Disallow cross-database query if specify database.
 			if exec.DatabaseName != "" {
+				// Disallow cross-database query if specify database.
 				for _, databaseName := range databaseList {
 					upperDatabaseName := strings.ToUpper(databaseName)
 					// We allow querying information schema.
@@ -207,24 +218,36 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", exec.DatabaseName, databaseName))
 					}
 				}
-			}
-
-			// Check database access rights.
-			principalID := c.Get(getPrincipalIDContextKey()).(int)
-			for _, databaseName := range databaseList {
-				accessDatabase := databaseName
-				if accessDatabase == "" {
-					if exec.DatabaseName == "" {
+			} else {
+				// Check database access rights.
+				for _, databaseName := range databaseList {
+					if databaseName == "" {
+						// We have already checked the current database access rights.
 						continue
 					}
-					accessDatabase = exec.DatabaseName
-				}
-				allowAccess, err := s.allowAccessDatabase(ctx, principalID, instance.ID, accessDatabase)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control policy: %q", exec.Statement)).SetInternal(err)
-				}
-				if !allowAccess {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", databaseName))
+					accessDatabase, err := s.getDatabase(ctx, instance.ID, databaseName)
+					if err != nil {
+						if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+							// If database not found, use instance instead.
+							allowAccess, err := s.hasInstanceAccessRights(ctx, principalID, instance)
+							if err != nil {
+								return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for instance: %d", exec.InstanceID)).SetInternal(err)
+							}
+							if !allowAccess {
+								return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access instance: %d", exec.InstanceID))
+							}
+						} else {
+							return err
+						}
+					}
+
+					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, accessDatabase)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.Name)).SetInternal(err)
+					}
+					if !hasAccessRights {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.Name))
+					}
 				}
 			}
 		}
@@ -1012,43 +1035,64 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
-func (s *Server) allowAccessDatabase(ctx context.Context, principalID int, instanceID int, databaseName string) (bool, error) {
-	database, err := s.getDatabase(ctx, instanceID, databaseName)
+// hasInstanceAccessRights checks the access control policy for instance level.
+// It's only used for MySQL dialect. Because MySQL dialect database can run SQL without specify database.
+func (s *Server) hasInstanceAccessRights(ctx context.Context, principalID int, instance *api.Instance) (bool, error) {
+	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, instance.EnvironmentID)
 	if err != nil {
-		if httpError, ok := err.(*echo.HTTPError); ok && httpError.Code == echo.ErrNotFound.Code {
-			return true, nil
-		}
 		return false, err
 	}
-
-	isDeveloper := false
-	for _, member := range database.Project.ProjectMemberList {
-		if member.PrincipalID == principalID && member.Role == string(api.Developer) {
-			isDeveloper = true
+	hasAccessRights := true
+	for _, rule := range environmentPolicy.DisallowRuleList {
+		if rule.FullDatabase {
+			hasAccessRights = false
 			break
 		}
 	}
+	return hasAccessRights, nil
+}
 
-	if !isDeveloper {
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, database *api.Database) (bool, error) {
+	// Project owner has all database access rights.
+	if api.HasActiveProjectOwnership(principalID, database.Project) {
 		return true, nil
 	}
 
-	// Database level access control policy is the allowlist style.
-	databasePolicy, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.ID)
-	if err != nil {
-		return false, err
-	}
-	if databasePolicy != nil {
-		return true, nil
-	}
-
-	// Environment level access control policy is the disallowlist style.
-	environmentPolicy, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, database.Instance.EnvironmentID)
-	if err != nil {
-		return false, err
-	}
-	if environmentPolicy != nil {
+	// Only project member can access database.
+	if !api.HasActiveProjectMembership(principalID, database.Project) {
 		return false, nil
 	}
-	return true, nil
+
+	// calculate the effective policy.
+	databasePolicy, inheritFromEnvironment, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.ID)
+	if err != nil {
+		return false, err
+	}
+
+	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, database.Instance.EnvironmentID)
+	if err != nil {
+		return false, err
+	}
+
+	if !inheritFromEnvironment {
+		// Use database policy.
+		return databasePolicy != nil, nil
+	} else {
+		// Use both database policy and environment policy.
+		hasAccessRights := true
+		if environmentPolicy != nil {
+			// Disallow by environment access policy.
+			for _, rule := range environmentPolicy.DisallowRuleList {
+				if rule.FullDatabase {
+					hasAccessRights = false
+					break
+				}
+			}
+		}
+		if databasePolicy != nil {
+			// Allow by database access policy.
+			hasAccessRights = true
+		}
+		return hasAccessRights, nil
+	}
 }

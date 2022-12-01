@@ -187,3 +187,15 @@ func HasActiveProjectMembership(principalID int, project *Project) bool {
 	}
 	return false
 }
+
+// HasActiveProjectOwnership returns whether a principal has active ownership in a project.
+func HasActiveProjectOwnership(principalID int, project *Project) bool {
+	for _, projectMember := range project.ProjectMemberList {
+		// Must match role provider. e.g. A member with the built-in Bytebase role provider should be ignored
+		// if the project's current role provider is VCS.
+		if projectMember.PrincipalID == principalID && projectMember.RoleProvider == project.RoleProvider && projectMember.Role == string(common.ProjectOwner) {
+			return true
+		}
+	}
+	return false
+}
