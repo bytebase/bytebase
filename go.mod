@@ -167,6 +167,6 @@ replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20220728
 
 replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-20221028035959-5d3b71eadf24
 
-replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20221028035959-5d3b71eadf24
+replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20221121071545-b41f6f3ae14f
 
 replace github.com/pganalyze/pg_query_go/v2 => github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7
