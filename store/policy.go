@@ -265,6 +265,30 @@ func (s *Store) GetSensitiveDataPolicy(ctx context.Context, databaseID int) (*ap
 	return api.UnmarshalSensitiveDataPolicy(policy.Payload)
 }
 
+// GetNormalAccessControlPolicy will get the normal access control polciy. Return nil if InheritFromParent is true.
+func (s *Store) GetNormalAccessControlPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.AccessControlPolicy, bool, error) {
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		ResourceType: &resourceType,
+		ResourceID:   &resourceID,
+		Type:         api.PolicyTypeAccessControl,
+	})
+	if err != nil {
+		// For access constrol policy, the default value for InheritFromParent is true.
+		return nil, true, err
+	}
+	if policy == nil || policy.RowStatus != api.Normal {
+		// For access constrol policy, the default value for InheritFromParent is true.
+		return nil, true, nil
+	}
+
+	accessControlPolicy, err := api.UnmarshalAccessControlPolicy(policy.Payload)
+	if err != nil {
+		// For access constrol policy, the default value for InheritFromParent is true.
+		return nil, true, err
+	}
+	return accessControlPolicy, policy.InheritFromParent, nil
+}
+
 //
 // private functions
 //
@@ -319,6 +343,10 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 		}
 		if find.ResourceID != nil {
 			ret.ResourceID = *find.ResourceID
+		}
+		if find.Type == api.PolicyTypeAccessControl {
+			// For access constrol policy, the default value for InheritFromParent is true.
+			ret.InheritFromParent = true
 		}
 	} else if len(policyRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}
