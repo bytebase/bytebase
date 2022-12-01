@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/pkg/errors"
 )
 
@@ -178,17 +179,18 @@ type GetIDByEmailRequest struct {
 
 // Content is the content of the approval.
 type Content struct {
-	Issue       string
-	Stage       string
-	Link        string
-	TaskList    []Task
-	Description string
+	Issue    string
+	Stage    string
+	Link     string
+	TaskList []Task
+	SQL      string
 }
 
 // Task is the content of a task.
 type Task struct {
-	Name   string
-	Status string
+	Name      string
+	Status    string
+	Statement string
 }
 
 const (
@@ -233,7 +235,7 @@ const (
 				},
 				{
 					"key": "@i18n@widget5",
-					"value": "描述"
+					"value": "SQL"
 				}
 			]
 		},
@@ -267,7 +269,7 @@ const (
 				},
 				{
 					"key": "@i18n@widget5",
-					"value": "Description"
+					"value": "SQL"
 				}
 			]
     }
@@ -565,7 +567,7 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx
 	}
 
 	if response.Code != 0 {
-		return errors.Errorf("failed to create external approval, code %d, msg %s", response.Code, response.Msg)
+		return errors.Errorf("failed to cancel external approval, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return nil
@@ -627,7 +629,7 @@ func (p *Provider) GetBotID(ctx context.Context, tokenCtx TokenCtx) (string, err
 		return "", err
 	}
 	if response.Code != 0 {
-		return "", errors.Errorf("failed to create external approval, code %d, msg %s", response.Code, response.Msg)
+		return "", errors.Errorf("failed to get bot id, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return response.Bot.OpenID, nil
@@ -648,6 +650,39 @@ func formatForm(content Content) (string, error) {
 			return "", err
 		}
 	}
+
+	const taskSQLDisplayLimit = 5
+	delimiter := fmt.Sprintf("%s\n", strings.Repeat("=", 25))
+	var statementValue strings.Builder
+	count := 0
+	for i, task := range content.TaskList {
+		if count >= taskSQLDisplayLimit {
+			if _, err := statementValue.WriteString(delimiter); err != nil {
+				return "", err
+			}
+			if _, err := statementValue.WriteString(fmt.Sprintf("Display the SQL statements of %d task(s), view more in Bytebase", count)); err != nil {
+				return "", err
+			}
+			break
+		}
+		if task.Statement != "" {
+			count++
+			if _, err := statementValue.WriteString(delimiter); err != nil {
+				return "", err
+			}
+			if _, err := statementValue.WriteString(fmt.Sprintf("The SQL statement of task %d\n", i+1)); err != nil {
+				return "", err
+			}
+			if _, err := statementValue.WriteString(delimiter); err != nil {
+				return "", err
+			}
+			truncated := common.TruncateStringWithDescription(task.Statement, 450)
+			if _, err := statementValue.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
+				return "", err
+			}
+		}
+	}
+
 	forms := []form{
 		{
 			ID:    "1",
@@ -672,7 +707,7 @@ func formatForm(content Content) (string, error) {
 		{
 			ID:    "5",
 			Type:  "textarea",
-			Value: content.Description,
+			Value: statementValue.String(),
 		},
 	}
 	b, err := json.Marshal(forms)

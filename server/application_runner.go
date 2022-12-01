@@ -448,6 +448,17 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 		})
 	}
 
+	for i, task := range stage.TaskList {
+		statement, err := getTaskStatement(task)
+		if err != nil {
+			return err
+		}
+		if statement == "" {
+			continue
+		}
+		taskList[i].Statement = statement
+	}
+
 	instanceCode, err := r.p.CreateExternalApproval(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,

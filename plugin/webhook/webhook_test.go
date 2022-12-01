@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"testing"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -63,12 +64,6 @@ func TestContext_getMetaList(t *testing.T) {
 		detail := string(b)
 		a.Equal(300, len(detail))
 
-		resultDetailRune := []rune(detail)
-		if len(resultDetailRune) > 200 {
-			resultDetailRune = resultDetailRune[:200]
-			resultDetailRune = append(resultDetailRune, []rune("... (view details in Bytebase)")...)
-		}
-
 		context := Context{
 			TaskResult: &TaskResult{
 				Name:   "task name",
@@ -87,7 +82,7 @@ func TestContext_getMetaList(t *testing.T) {
 			},
 			{
 				Name:  "Result Detail",
-				Value: string(resultDetailRune),
+				Value: common.TruncateStringWithDescription(detail, 200),
 			},
 		}
 		a.Equal(want, context.getMetaList())
