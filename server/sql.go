@@ -259,7 +259,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
 
-			driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
@@ -325,7 +325,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -474,7 +474,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.getAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -547,7 +547,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 }
 
 func (s *Server) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
-	driver, err := s.getAdminDatabaseDriver(ctx, instance, "")
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return nil, err
 	}
@@ -704,7 +704,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 }
 
 func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
-	driver, err := s.getAdminDatabaseDriver(ctx, instance, "")
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return err
 	}

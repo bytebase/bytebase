@@ -359,7 +359,7 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
 		}
 
-		driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
 		if err != nil {
 			return nil, err
 		}
