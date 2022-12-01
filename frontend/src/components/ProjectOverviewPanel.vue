@@ -71,12 +71,7 @@
             <NSpin />
           </div>
         </template>
-        <DatabaseTable
-          v-else
-          :mode="'PROJECT'"
-          :database-list="databaseList"
-          :policy-list="accessControlPolicyList"
-        />
+        <DatabaseTable v-else :mode="'PROJECT'" :database-list="databaseList" />
       </template>
       <div v-else class="text-center textinfolabel">
         <i18n-t keypath="project.overview.no-db-prompt" tag="p">

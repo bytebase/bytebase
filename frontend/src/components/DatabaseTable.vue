@@ -225,7 +225,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import { computed, PropType, reactive, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
@@ -241,7 +241,7 @@ import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import TenantIcon from "./TenantIcon.vue";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, usePolicyStore } from "@/store";
 
 type Mode =
   | "ALL"
@@ -285,10 +285,6 @@ const props = defineProps({
   databaseList: {
     required: true,
     type: Object as PropType<Database[]>,
-  },
-  policyList: {
-    type: Array as PropType<Policy[]>,
-    default: () => [],
   },
 });
 
@@ -334,6 +330,19 @@ const mixedDatabaseList = computed(() => {
 
   return tableList;
 });
+
+const policyList = ref<Policy[]>([]);
+
+const preparePolicyList = () => {
+  if (showSQLEditorLink.value) {
+    usePolicyStore()
+      .fetchPolicyListByResourceTypeAndPolicyType(
+        "database",
+        "bb.policy.access-control"
+      )
+      .then((list) => (policyList.value = list));
+  }
+};
 
 const columnListMap = computed(() => {
   return new Map([
@@ -504,7 +513,7 @@ const showSQLEditorLink = computed(() => {
 });
 
 const allowQuery = (database: Database) => {
-  return isDatabaseAccessible(database, props.policyList, currentUser.value);
+  return isDatabaseAccessible(database, policyList.value, currentUser.value);
 };
 
 const showTenantIcon = computed(() => {
@@ -554,4 +563,6 @@ const clickDatabase = (section: number, row: number, e: MouseEvent) => {
     }
   }
 };
+
+watchEffect(preparePolicyList);
 </script>
