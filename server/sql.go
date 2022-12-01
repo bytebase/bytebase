@@ -1029,11 +1029,6 @@ func isMySQLExcludeDatabase(database string) bool {
 }
 
 func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, database *api.Database) (bool, error) {
-	// Project owner has all database access rights.
-	if api.HasActiveProjectOwnership(principalID, database.Project) {
-		return true, nil
-	}
-
 	// Only project member can access database.
 	if !api.HasActiveProjectMembership(principalID, database.Project) {
 		return false, nil
