@@ -97,3 +97,10 @@ export const templateInputsToString = (inputs: TemplateInput[]): string => {
     )
     .join("");
 };
+
+export const KEY_EVENT = {
+  LEFT: "ArrowLeft",
+  RIGHT: "ArrowRight",
+  DELETE: "Delete",
+  BACKSPACE: "Backspace",
+};

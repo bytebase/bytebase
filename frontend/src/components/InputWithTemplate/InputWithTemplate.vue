@@ -43,7 +43,7 @@
           @keydown.delete="onInputDataDeleteEnter"
           @keyup.delete="onInputDataDeleteLeave"
           @keydown="onLastInputKeyDown"
-          @keyup="onLastInputUp"
+          @keyup="onLastInputKeyUp"
         />
       </div>
     </div>
@@ -61,7 +61,7 @@ import {
   onMounted,
 } from "vue";
 import { Template, TemplateInput, InputType } from "./types";
-import { getTemplateInputs, templateInputsToString } from "./utils";
+import { getTemplateInputs, templateInputsToString, KEY_EVENT } from "./utils";
 
 interface LocalState {
   inputData: string;
@@ -139,8 +139,8 @@ const onLastInputKeyDown = () => {
   }
 };
 
-const onLastInputUp = (e: KeyboardEvent) => {
-  if (e.key !== "ArrowLeft") {
+const onLastInputKeyUp = (e: KeyboardEvent) => {
+  if (e.key !== KEY_EVENT.LEFT) {
     return;
   }
 
@@ -183,8 +183,8 @@ const onKeyup = (i: number, e: KeyboardEvent) => {
   }
 
   switch (e.key) {
-    case "Backspace":
-    case "Delete":
+    case KEY_EVENT.BACKSPACE:
+    case KEY_EVENT.DELETE:
       if (data.value === "") {
         if (i === 0 || state.inputCursorPosition.get(i) === 0) {
           // remove the empty data
@@ -196,20 +196,24 @@ const onKeyup = (i: number, e: KeyboardEvent) => {
         }
       }
       break;
-    case "ArrowLeft":
+    case KEY_EVENT.LEFT: {
       const left = state.inputCursorPosition.get(i);
+      // if the cursor is at the first position, we try to focus on the previous input.
       if (left === 0) {
         focusPreInput(i - 1);
+        state.inputCursorPosition.delete(i);
       }
-      state.inputCursorPosition.delete(i);
       break;
-    case "ArrowRight":
+    }
+    case KEY_EVENT.RIGHT: {
       const right = state.inputCursorPosition.get(i);
+      // if the cursor is at the last position, we try to focus on the next input.
       if (right === data.value.length) {
         focusNextInput(i + 1);
+        state.inputCursorPosition.delete(i);
       }
-      state.inputCursorPosition.delete(i);
       break;
+    }
   }
 };
 
@@ -218,6 +222,7 @@ const focusNextInput = (i: number) => {
   while (j <= state.templateInputs.length - 1) {
     const input = state.templateInputs[j];
     if (input.type === InputType.String) {
+      // make sure the next input will be focused on the first position.
       itemRefs.value[j].querySelector("input")?.setSelectionRange(0, 0);
       itemRefs.value[j].querySelector("input")?.focus();
       break;
@@ -235,6 +240,7 @@ const focusPreInput = (i: number) => {
   while (j >= 0) {
     const input = state.templateInputs[j];
     if (input.type === InputType.String) {
+      // make sure the next input will be focused on the last position.
       itemRefs.value[j]
         .querySelector("input")
         ?.setSelectionRange(input.value.length, input.value.length);
