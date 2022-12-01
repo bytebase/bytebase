@@ -339,6 +339,7 @@ import type {
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
   Task,
+  ActivityIssueCommentCreatePayload,
 } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, SYSTEM_BOT_ID } from "@/types";
 import { findTaskById, issueSlug, sizeToFit, taskSlug } from "@/utils";
@@ -533,10 +534,17 @@ const lgtm = (e: Event) => {
 };
 
 const allowEditActivity = (activity: Activity) => {
-  return (
-    activity.type === "bb.issue.comment.create" &&
-    currentUser.value.id === activity.creator.id
-  );
+  if (activity.type !== "bb.issue.comment.create") {
+    return false;
+  }
+  if (currentUser.value.id !== activity.creator.id) {
+    return false;
+  }
+  const payload = activity.payload as ActivityIssueCommentCreatePayload;
+  if (payload && payload.externalApprovalEvent) {
+    return false;
+  }
+  return true;
 };
 
 const onUpdateComment = (activity: Activity) => {
