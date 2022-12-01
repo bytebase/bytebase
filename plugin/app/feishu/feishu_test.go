@@ -286,3 +286,167 @@ func TestProvider_GetBotID(t *testing.T) {
 	want := "ou_e6e14f667cfe239d7b129b521dce0569"
 	a.Equal(want, botID)
 }
+
+func TestFormatSQL(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		name            string
+		contentTaskList []Task
+		want            string
+	}{
+		{
+			name: "one group",
+			contentTaskList: []Task{
+				{
+					Statement: "-- 1",
+				},
+				{
+					Statement: "-- 1",
+				},
+				{
+					Statement: "-- 1",
+				},
+			},
+			want: `=========================
+The SQL statement of every task
+=========================
+-- 1
+
+`,
+		},
+		{
+			name: "two groups",
+			contentTaskList: []Task{
+				{
+					Statement: "-- 1",
+				},
+				{
+					Statement: "-- 1",
+				},
+				{
+					Statement: "-- 2",
+				},
+			},
+			want: `=========================
+The SQL statement of task 1,2
+=========================
+-- 1
+
+=========================
+The SQL statement of task 3
+=========================
+-- 2
+
+`,
+		},
+		{
+			name: "five groups",
+			contentTaskList: []Task{
+				{
+					Statement: "-- 1",
+				},
+				{
+					Statement: "-- 2",
+				},
+				{
+					Statement: "-- 3",
+				},
+				{
+					Statement: "-- 3",
+				},
+				{
+					Statement: "-- 4",
+				},
+				{
+					Statement: "-- 5",
+				},
+			},
+			want: `=========================
+The SQL statement of task 1
+=========================
+-- 1
+
+=========================
+The SQL statement of task 2
+=========================
+-- 2
+
+=========================
+The SQL statement of task 3,4
+=========================
+-- 3
+
+=========================
+The SQL statement of task 5
+=========================
+-- 4
+
+=========================
+The SQL statement of task 6
+=========================
+-- 5
+
+`,
+		},
+		{
+			name: "six groups",
+			contentTaskList: []Task{
+				{
+					Statement: "-- 1",
+				},
+				{
+					Statement: "-- 2",
+				},
+				{
+					Statement: "-- 3",
+				},
+				{
+					Statement: "-- 7",
+				},
+				{
+					Statement: "-- 4",
+				},
+				{
+					Statement: "-- 5",
+				},
+			},
+			want: `=========================
+The SQL statement of task 1
+=========================
+-- 1
+
+=========================
+The SQL statement of task 2
+=========================
+-- 2
+
+=========================
+The SQL statement of task 3
+=========================
+-- 3
+
+=========================
+The SQL statement of task 4
+=========================
+-- 7
+
+=========================
+The SQL statement of task 5
+=========================
+-- 4
+
+=========================
+Displaying 5 SQL statements, view more in Bytebase
+`,
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+		t.Run(test.name, func(t *testing.T) {
+			sql, err := formatFormSQL(test.contentTaskList)
+			a.NoError(err)
+			a.Equal(test.want, sql)
+		})
+	}
+}
