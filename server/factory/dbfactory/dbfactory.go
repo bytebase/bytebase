@@ -17,10 +17,11 @@ type DBFactory struct {
 }
 
 // New creates a new database driver factory.
-func New(mysqlBinDir, pgBinDir string) *DBFactory {
+func New(mysqlBinDir, pgBinDir, dataDir string) *DBFactory {
 	return &DBFactory{
 		mysqlBinDir: mysqlBinDir,
 		pgBinDir:    pgBinDir,
+		dataDir:     dataDir,
 	}
 }
 

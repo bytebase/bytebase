@@ -217,7 +217,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.workspaceID = config.workspaceID
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
-	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir)
+	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, prof.DataDir)
 
 	e := echo.New()
 	e.Debug = prof.Debug
