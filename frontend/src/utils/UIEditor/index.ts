@@ -1,7 +1,7 @@
 import { Database, EngineType } from "@/types";
 import { isDev } from "..";
 
-// Only allow using UI Editor with MySQL.
+// Only allow using UI Editor with MySQL in dev mode.
 export const allowUsingUIEditor = (databaseList: Database[]): boolean => {
   return (
     isDev() &&

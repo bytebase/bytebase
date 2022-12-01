@@ -272,7 +272,6 @@ const handlePreviewIssue = async () => {
   }
 
   const isGhostMode = issueMode === "online";
-
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     name: generateIssueName(
@@ -283,6 +282,9 @@ const handlePreviewIssue = async () => {
     mode: issueMode,
     databaseList: props.databaseIdList.join(","),
   };
+  if (isGhostMode) {
+    query.ghost = 1;
+  }
 
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
@@ -316,15 +318,16 @@ const handlePreviewIssue = async () => {
     if (databaseIdList.length > 0) {
       const statmentList = Array.from(databaseEditMap.values());
       query.sql = statmentList.join("\n");
-    }
-    if (!props.tenantMode) {
-      query.databaseList = databaseIdList.join(",");
-      query.name = generateIssueName(
-        databaseList
-          .filter((database) => databaseIdList.includes(database.id))
-          .map((db) => db.name),
-        isGhostMode
-      );
+
+      if (!props.tenantMode) {
+        query.databaseList = databaseIdList.join(",");
+        query.name = generateIssueName(
+          databaseList
+            .filter((database) => databaseIdList.includes(database.id))
+            .map((db) => db.name),
+          isGhostMode
+        );
+      }
     }
   }
 
