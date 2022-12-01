@@ -16,6 +16,7 @@ export interface ConnectionAtom {
   label: string;
   type?: ConnectionAtomType;
   children?: ConnectionAtom[];
+  disabled?: boolean;
   isLeaf?: boolean;
 }
 
