@@ -970,7 +970,8 @@
     "ui-editor": {
       "preview-issue": "Preview issue"
     },
-    "sensitive": "Sensitive"
+    "sensitive": "Sensitive",
+    "access-denied": "You don't have the permission to access this database."
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
