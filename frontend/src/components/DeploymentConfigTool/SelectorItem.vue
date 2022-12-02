@@ -35,14 +35,10 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { computed, defineComponent, PropType, watch } from "vue";
-import {
-  AvailableLabel,
-  LabelSelectorRequirement,
-  OperatorType,
-} from "../../types";
-import { hidePrefix } from "../../utils";
+import { Database, LabelSelectorRequirement, OperatorType } from "../../types";
+import { getLabelValuesFromDatabaseList, hidePrefix } from "../../utils";
 import LabelSelect from "./LabelSelect.vue";
-import { lowerCase } from "lodash-es";
+import { lowerCase, uniq } from "lodash-es";
 
 const OPERATORS: OperatorType[] = ["In", "Exists"];
 
@@ -54,8 +50,8 @@ export default defineComponent({
       type: Object as PropType<LabelSelectorRequirement>,
       required: true,
     },
-    labelList: {
-      type: Array as PropType<AvailableLabel[]>,
+    databaseList: {
+      type: Array as PropType<Database[]>,
       default: () => [],
     },
     editable: {
@@ -65,14 +61,19 @@ export default defineComponent({
   },
   emits: ["remove"],
   setup(props) {
-    const keys = computed(() => props.labelList.map((label) => label.key));
+    const keys = computed(() => {
+      const allKeys = props.databaseList.flatMap((db) =>
+        db.labels.map((label) => label.key)
+      );
+      return uniq(allKeys);
+    });
     const values = computed(() => {
       if (!props.selector.key) return [];
-      const labelDefinition = props.labelList.find(
-        (l) => l.key === props.selector.key
+      return getLabelValuesFromDatabaseList(
+        props.selector.key,
+        props.databaseList,
+        false /* !withEmptyValue */
       );
-      if (!labelDefinition) return [];
-      return labelDefinition.valueList;
     });
 
     const resetValues = () => {

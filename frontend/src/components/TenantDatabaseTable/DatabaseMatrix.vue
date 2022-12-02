@@ -50,7 +50,6 @@
             v-for="db in dbList"
             :key="db.id"
             :database="db"
-            :label-list="labelList"
           />
           <span v-if="dbList.length === 0">-</span>
         </div>
@@ -64,13 +63,17 @@ import { computed, defineComponent, PropType, ref, watchEffect } from "vue";
 import {
   Database,
   Environment,
-  Label,
   LabelKeyType,
   LabelValueType,
 } from "../../types";
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
-import { groupBy } from "lodash-es";
-import { hidePrefix, getLabelValue } from "../../utils";
+import { groupBy, last } from "lodash-es";
+import {
+  hidePrefix,
+  getLabelValue,
+  getLabelValuesFromDatabaseList,
+  LABEL_VALUE_EMPTY,
+} from "../../utils";
 
 type DatabaseMatrix = {
   labelValue: LabelValueType;
@@ -101,10 +104,6 @@ export default defineComponent({
       type: Array as PropType<Environment[]>,
       required: true,
     },
-    labelList: {
-      type: Array as PropType<Label[]>,
-      required: true,
-    },
     xAxisLabel: {
       type: String as PropType<LabelKeyType>,
       required: true,
@@ -129,21 +128,23 @@ export default defineComponent({
         return [];
       }
 
-      // order based on label.valueList
-      // plus one more "<empty value>"
-      const label = props.labelList.find((label) => label.key === key);
-      if (!label) return [];
-      return [...label.valueList, ""];
+      return getLabelValuesFromDatabaseList(
+        key,
+        props.databaseList,
+        true /* withEmptyValue */
+      );
     });
 
     // pre-filtered x-axis values
     const xAxisValueList = computed(() => {
-      // order based on label.valueList
-      // plus one more "<empty value>"
+      // Select all distinct database label values of {{key}}
       const key = props.xAxisLabel;
-      const label = props.labelList.find((label) => label.key === key);
-      if (!label) return [];
-      return [...label.valueList, ""];
+
+      return getLabelValuesFromDatabaseList(
+        key,
+        props.databaseList,
+        true /* withEmptyValue */
+      );
     });
 
     // first, group databases by `yAxisLabel` into some rows
@@ -192,14 +193,12 @@ export default defineComponent({
     //   no such an environment named "Prod" or "Prod" has no databases.
     watchEffect(() => {
       filteredXAxisValueList.value = [...xAxisValueList.value];
-      // if every row's "<empty value>" has no databases
-      // we should hide the "<empty value>" col
-      const shouldClipLastCol = matrixList.value.every(
-        (row) =>
-          row.databaseMatrix.length > 0 &&
-          row.databaseMatrix[row.databaseMatrix.length - 1].length === 0
+
+      // Hide the "<empty value>" COL if every row of this col has no databases.
+      const hideLastCol = shouldHideEmptyValueCol(
+        filteredXAxisValueList.value,
+        matrixList.value
       );
-      if (shouldClipLastCol) filteredXAxisValueList.value.pop();
 
       filteredMatrixList.value = [];
       for (let i = 0; i < matrixList.value.length; i++) {
@@ -207,19 +206,14 @@ export default defineComponent({
           labelValue: matrixList.value[i].labelValue,
           databaseMatrix: [...matrixList.value[i].databaseMatrix],
         };
-        if (shouldClipLastCol) {
+        if (hideLastCol) {
           row.databaseMatrix.pop();
         }
         filteredMatrixList.value.push(row);
       }
-      // if every col of "<empty value>" row is empty
-      // we should hide the "<empty value>" row
-      if (
-        filteredMatrixList.value.length > 0 &&
-        filteredMatrixList.value[
-          filteredMatrixList.value.length - 1
-        ].databaseMatrix.every((item) => item.length === 0)
-      ) {
+
+      // Hide the "<empty value>" ROW if every col of this row has no databases.
+      if (shouldHideEmptyValueRow(filteredMatrixList.value)) {
         filteredMatrixList.value.pop();
       }
     });
@@ -233,4 +227,35 @@ export default defineComponent({
     };
   },
 });
+
+const shouldHideEmptyValueCol = (
+  valueList: string[],
+  matrixList: DatabaseMatrix[]
+): boolean => {
+  const lastValue = valueList[valueList.length - 1];
+  if (lastValue === LABEL_VALUE_EMPTY) {
+    // if every row's "<empty value>" has no databases
+    // we should hide the "<empty value>" col
+    if (
+      matrixList.every((row) => {
+        const lastCol = last(row.databaseMatrix) ?? [];
+        return lastCol.length === 0;
+      })
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const shouldHideEmptyValueRow = (matrixList: DatabaseMatrix[]) => {
+  const lastRow = last(matrixList);
+  if (
+    lastRow?.labelValue === LABEL_VALUE_EMPTY &&
+    lastRow?.databaseMatrix.every((databases) => databases.length === 0)
+  ) {
+    return true;
+  }
+  return false;
+};
 </script>

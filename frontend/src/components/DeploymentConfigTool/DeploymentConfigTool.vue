@@ -9,7 +9,6 @@
       :allow-edit="allowEdit"
       :show-header="true"
       :database-list="databaseList"
-      :label-list="labelList"
       @remove="removeStage(deployment)"
       @prev="reorder(i, -1)"
       @next="reorder(i, 1)"
@@ -22,12 +21,7 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { defineComponent, PropType } from "vue";
-import {
-  AvailableLabel,
-  Database,
-  Deployment,
-  DeploymentSchedule,
-} from "../../types";
+import { Database, Deployment, DeploymentSchedule } from "../../types";
 import DeploymentStage from "./DeploymentStage.vue";
 
 export default defineComponent({
@@ -44,10 +38,6 @@ export default defineComponent({
     },
     databaseList: {
       type: Array as PropType<Database[]>,
-      default: () => [],
-    },
-    labelList: {
-      type: Array as PropType<AvailableLabel[]>,
       default: () => [],
     },
   },

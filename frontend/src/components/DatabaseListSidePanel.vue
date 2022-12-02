@@ -21,12 +21,7 @@ import {
   parseDatabaseNameByTemplate,
   projectSlug,
 } from "@/utils";
-import {
-  useEnvironmentList,
-  useCurrentUser,
-  useDatabaseStore,
-  useLabelList,
-} from "@/store";
+import { useEnvironmentList, useCurrentUser, useDatabaseStore } from "@/store";
 
 export default defineComponent({
   name: "DatabaseListSidePanel",
@@ -55,9 +50,6 @@ export default defineComponent({
     const databaseList = computed((): Database[] => {
       return databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
     });
-
-    // Use this to parse database name from name template
-    const labelList = useLabelList();
 
     const databaseListByEnvironment = computed(() => {
       const envToDbMap: Map<EnvironmentId, BBOutlineItem[]> = new Map();
@@ -97,12 +89,6 @@ export default defineComponent({
     });
 
     const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
-      if (labelList.value.length === 0) {
-        // wait for the labelList to be loaded
-        // to prevent UI jitter
-        return [];
-      }
-
       const list = databaseList.value.filter(
         (db) => db.project.tenantMode === "TENANT"
       );
@@ -130,8 +116,7 @@ export default defineComponent({
               // parse db name from template if possible
               return parseDatabaseNameByTemplate(
                 db.name,
-                project.dbNameTemplate,
-                labelList.value
+                project.dbNameTemplate
               );
             } else {
               // use raw db.name otherwise
