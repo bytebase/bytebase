@@ -167,10 +167,15 @@ const onKeyup = (i: number, e: KeyboardEvent) => {
         if (i === 0 || state.inputCursorPosition.get(i) === 0) {
           // remove the empty data
           onTemplateRemove(i);
-          // remove the previous data (should be the template type)
-          onTemplateRemove(i - 1);
-          // try to focus the input from i-2 index
-          focusPreInput(i - 2);
+          if (
+            i - 1 >= 0 &&
+            state.templateInputs[i - 1].type === InputType.Template
+          ) {
+            // remove the previous data (should be the template type)
+            onTemplateRemove(i - 1);
+          }
+          // try to focus the input from i-1 index
+          focusPreInput(i - 1);
         }
       }
       break;
@@ -199,7 +204,7 @@ const focusNextInput = (i: number) => {
   let j = i;
   while (j <= state.templateInputs.length - 1) {
     const input = state.templateInputs[j];
-    if (input.type === InputType.String) {
+    if (input && input.type === InputType.String) {
       // make sure the next input will be focused on the first position.
       itemRefs.value[j].querySelector("input")?.setSelectionRange(0, 0);
       itemRefs.value[j].querySelector("input")?.focus();
@@ -217,7 +222,7 @@ const focusPreInput = (i: number) => {
   let j = i;
   while (j >= 0) {
     const input = state.templateInputs[j];
-    if (input.type === InputType.String) {
+    if (input && input.type === InputType.String) {
       // make sure the next input will be focused on the last position.
       itemRefs.value[j]
         .querySelector("input")
