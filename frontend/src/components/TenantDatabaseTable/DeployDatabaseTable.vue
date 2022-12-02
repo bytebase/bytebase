@@ -75,7 +75,6 @@
               v-for="db in dbList"
               :key="db.id"
               :database="db"
-              :label-list="labelList"
             />
             <span v-if="dbList.length === 0">-</span>
           </div>
@@ -87,7 +86,6 @@
               v-for="db in matrix.rest"
               :key="db.id"
               :database="db"
-              :label-list="labelList"
             />
             <span v-if="matrix.rest.length === 0">-</span>
           </div>
@@ -104,13 +102,13 @@ import type {
   Database,
   DeploymentConfig,
   Environment,
-  Label,
   LabelKeyType,
 } from "../../types";
 import {
   hidePrefix,
   getLabelValue,
   getPipelineFromDeploymentSchedule,
+  getLabelValuesFromDatabaseList,
 } from "../../utils";
 import { NPopover } from "naive-ui";
 import { DeploymentStage } from "../DeploymentConfigTool";
@@ -119,7 +117,6 @@ const props = withDefaults(
   defineProps<{
     databaseList: Database[];
     label: LabelKeyType;
-    labelList: Label[];
     environmentList: Environment[];
     deployment: DeploymentConfig;
     bordered?: boolean;
@@ -132,12 +129,11 @@ const props = withDefaults(
 );
 
 const yAxisValueList = computed(() => {
-  // order based on label.valueList
-  // plus one more "<empty value>"
-  const key = props.label;
-  const label = props.labelList.find((label) => label.key === key);
-  if (!label) return [];
-  return [...label.valueList, ""];
+  return getLabelValuesFromDatabaseList(
+    props.label,
+    props.databaseList,
+    true /* withEmptyValue */
+  );
 });
 
 const xAxisValueList = computed(() => {
