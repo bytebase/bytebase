@@ -63,7 +63,7 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 }
 
 // LoadSubscription will load subscription.
-func (s *LicenseService) LoadSubscription(ctx context.Context) (enterpriseAPI.Subscription, error) {
+func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Subscription {
 	subscription := enterpriseAPI.Subscription{
 		Plan: api.FREE,
 		// -1 means not expire, just for free plan
@@ -82,7 +82,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) (enterpriseAPI.Su
 			OrgName:       license.OrgName,
 		}
 	}
-	return subscription, nil
+	return subscription
 }
 
 // loadLicense will load license and validate it.

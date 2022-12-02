@@ -40,11 +40,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store license").SetInternal(err)
 		}
 
-		subscription, err := s.LicenseService.LoadSubscription(ctx)
-		if err != nil {
-			return err
-		}
-		s.subscription = subscription
+		s.subscription = s.LicenseService.LoadSubscription(ctx)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &s.subscription); err != nil {
@@ -128,11 +124,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 
 		basePlan := s.subscription.Plan
-		subscription, err := s.LicenseService.LoadSubscription(ctx)
-		if err != nil {
-			return err
-		}
-		s.subscription = subscription
+		s.subscription = s.LicenseService.LoadSubscription(ctx)
 		currentPlan := s.subscription.Plan
 
 		if s.MetricReporter != nil {

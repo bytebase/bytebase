@@ -61,5 +61,5 @@ type LicenseService interface {
 	// StoreLicense will store license into file.
 	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
 	// LoadSubscription will load subscription.
-	LoadSubscription(ctx context.Context) (Subscription, error)
+	LoadSubscription(ctx context.Context) Subscription
 }
