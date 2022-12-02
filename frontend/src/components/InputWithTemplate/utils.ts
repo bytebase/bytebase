@@ -90,10 +90,18 @@ export const getTemplateInputs = (
 // [{value: "abc", type: "string"}, {value: "template", type: "template"}] -> "abc{{template}}"
 export const templateInputsToString = (inputs: TemplateInput[]): string => {
   return inputs
+    .filter((input) => input.value)
     .map((input) =>
       input.type === InputType.String
         ? input.value
         : `${TEMPLATE_BRACKET_LEFT}${input.value}${TEMPLATE_BRACKET_RIGHT}`
     )
     .join("");
+};
+
+export const KEY_EVENT = {
+  LEFT: "ArrowLeft",
+  RIGHT: "ArrowRight",
+  DELETE: "Delete",
+  BACKSPACE: "Backspace",
 };
