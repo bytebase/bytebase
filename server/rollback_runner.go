@@ -19,9 +19,8 @@ import (
 )
 
 // NewRollbackRunner creates a new rollback runner.
-func NewRollbackRunner(server *Server, store *store.Store, dbFactory *dbfactory.DBFactory) *RollbackRunner {
+func NewRollbackRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *RollbackRunner {
 	return &RollbackRunner{
-		server:    server,
 		store:     store,
 		dbFactory: dbFactory,
 	}
@@ -29,7 +28,6 @@ func NewRollbackRunner(server *Server, store *store.Store, dbFactory *dbfactory.
 
 // RollbackRunner is the rollback runner generating rollback SQL statements.
 type RollbackRunner struct {
-	server      *Server
 	store       *store.Store
 	dbFactory   *dbfactory.DBFactory
 	generateMap sync.Map
