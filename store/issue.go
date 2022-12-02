@@ -671,6 +671,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 			type,
 			description,
 			assignee_id,
+      assignee_need_attention,
 			payload
 		FROM issue
 		WHERE ` + strings.Join(where, " AND ")
