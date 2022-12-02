@@ -609,7 +609,7 @@
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
-    "select-label-value": "选择 {key}"
+    "input-label-value": "输入 {key}"
   },
   "db": {
     "encoding": "字符编码",

@@ -16,7 +16,6 @@ export * from "./issue";
 export * from "./issueSubscriber";
 export * from "./inbox";
 export * from "./instance";
-export * from "./label";
 export * from "./member";
 export * from "./notification";
 export * from "./oauth";

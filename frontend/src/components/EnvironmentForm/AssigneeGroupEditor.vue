@@ -121,4 +121,11 @@ watch(
   },
   { immediate: true }
 );
+
+watch(
+  () => props.policy,
+  () => {
+    state.assigneeGroup = getAssigneeGroup();
+  }
+);
 </script>

@@ -456,6 +456,21 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 	if err != nil {
 		return err
 	}
+	// assignee who approves the external approval is a must-have, so we returns error if we failed to find the user id.
+	if _, ok := users[issue.Assignee.Email]; !ok {
+		return errors.Errorf("failed to get user_id for issue assignee, email: %s", issue.Assignee.Email)
+	}
+	// if the creator is not found, the application bot will represent the creator.
+	if _, ok := users[issue.Creator.Email]; !ok {
+		botID, err := r.p.GetBotID(ctx, feishu.TokenCtx{
+			AppID:     settingValue.AppID,
+			AppSecret: settingValue.AppSecret,
+		})
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		users[issue.Creator.Email] = botID
+	}
 
 	var taskList []feishu.Task
 	for _, task := range stage.TaskList {
