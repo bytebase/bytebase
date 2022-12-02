@@ -83,6 +83,23 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 
+				assigneeNeedAtterntion := true
+				find := &api.IssueFind{
+					StatusList:            []api.IssueStatus{api.IssueOpen},
+					AssigneeNeedAttention: &assigneeNeedAtterntion,
+				}
+
+				issueByID := make(map[int]*api.Issue)
+				issues, err := r.store.FindIssue(ctx, find)
+				if err != nil {
+					log.Error("failed to find issue stripped", zap.Any("issueFind", find), zap.Error(err))
+					return
+				}
+				for _, issue := range issues {
+					issueByID[issue.ID] = issue
+					r.scheduleApproval(ctx, issue, &value)
+				}
+
 				externalApprovalList, err := r.store.FindExternalApproval(ctx, &api.ExternalApprovalFind{})
 				if err != nil {
 					log.Error("failed to find external approval list", zap.Error(err))
@@ -102,9 +119,9 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							continue
 						}
 
-						issue, err := r.store.GetIssueByID(ctx, externalApproval.IssueID)
-						if err != nil {
-							log.Error("failed to get issue by issue id", zap.Int("issueID", externalApproval.IssueID), zap.Error(err))
+						issue, ok := issueByID[externalApproval.IssueID]
+						if !ok {
+							log.Error("expect to have found issue in application runner", zap.Int("issue_id", externalApproval.IssueID))
 							continue
 						}
 						stage := getActiveStage(issue.Pipeline.StageList)
@@ -514,27 +531,8 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 	return nil
 }
 
-// ScheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
-func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.Pipeline) {
-	settingName := api.SettingAppIM
-	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
-	if err != nil {
-		log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
-		return
-	}
-	if setting == nil {
-		log.Error("cannot find IM setting")
-		return
-	}
-	if setting.Value == "" {
-		return
-	}
-	var settingValue api.SettingAppIMValue
-	if err := json.Unmarshal([]byte(setting.Value), &settingValue); err != nil {
-		log.Error("failed to unmarshal IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
-		return
-	}
-
+// scheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
+func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Issue, settingValue *api.SettingAppIMValue) {
 	if !settingValue.ExternalApproval.Enabled {
 		return
 	}
@@ -544,30 +542,12 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 		return
 	}
 
-	find := &api.IssueFind{
-		PipelineID: &pipeline.ID,
-		StatusList: []api.IssueStatus{api.IssueOpen},
-	}
-	issues, err := r.store.FindIssueStripped(ctx, find)
-	if err != nil {
-		log.Error("failed to find issues", zap.Any("issueFind", find), zap.Error(err))
-		return
-	}
-	if len(issues) > 1 {
-		log.Error("expect 0 or 1 issue, get more than 1 issues", zap.Any("issues", issues))
-		return
-	}
-	if len(issues) == 0 {
-		// no containing issue, skip
-		return
-	}
-	issue := issues[0]
-	stage := getActiveStage(pipeline.StageList)
+	stage := getActiveStage(issue.Pipeline.StageList)
 	if stage == nil {
-		stage = pipeline.StageList[len(pipeline.StageList)-1]
+		stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 	}
 
-	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &settingValue)
+	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, settingValue)
 	if err != nil {
 		log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
 		return
@@ -587,7 +567,7 @@ func (r *ApplicationRunner) ScheduleApproval(ctx context.Context, pipeline *api.
 		return
 	}
 
-	if err := r.createExternalApproval(ctx, issue, stage, &settingValue); err != nil {
+	if err := r.createExternalApproval(ctx, issue, stage, settingValue); err != nil {
 		log.Error("failed to create external approval", zap.Error(err))
 		return
 	}
