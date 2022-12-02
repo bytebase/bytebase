@@ -472,7 +472,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 
 // initSubscription will initial the subscription cache in memory.
 func (s *Server) initSubscription(ctx context.Context) {
-	s.subscription = s.loadSubscription(ctx)
+	s.subscription, _ = s.LicenseService.LoadSubscription(ctx)
 }
 
 // initMetricReporter will initial the metric scheduler.

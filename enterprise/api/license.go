@@ -60,6 +60,6 @@ func (l *License) OrgID() string {
 type LicenseService interface {
 	// StoreLicense will store license into file.
 	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
-	// LoadLicense will load license from file and validate it.
-	LoadLicense(ctx context.Context) (*License, error)
+	// LoadSubscription will load subscription.
+	LoadSubscription(ctx context.Context) (Subscription, error)
 }

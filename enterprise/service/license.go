@@ -62,8 +62,31 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 	return err
 }
 
-// LoadLicense will load license from file and validate it.
-func (s *LicenseService) LoadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+// LoadSubscription will load subscription.
+func (s *LicenseService) LoadSubscription(ctx context.Context) (enterpriseAPI.Subscription, error) {
+	subscription := enterpriseAPI.Subscription{
+		Plan: api.FREE,
+		// -1 means not expire, just for free plan
+		ExpiresTs:     -1,
+		InstanceCount: 5,
+	}
+	license, _ := s.loadLicense(ctx)
+	if license != nil {
+		subscription = enterpriseAPI.Subscription{
+			Plan:          license.Plan,
+			ExpiresTs:     license.ExpiresTs,
+			StartedTs:     license.IssuedTs,
+			InstanceCount: license.InstanceCount,
+			Trialing:      license.Trialing,
+			OrgID:         license.OrgID(),
+			OrgName:       license.OrgName,
+		}
+	}
+	return subscription, nil
+}
+
+// loadLicense will load license and validate it.
+func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	// Find enterprise license.
 	settingName := api.SettingEnterpriseLicense
 	settings, err := s.store.FindSetting(ctx, &api.SettingFind{

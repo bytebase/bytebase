@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -41,7 +40,11 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store license").SetInternal(err)
 		}
 
-		s.subscription = s.loadSubscription(ctx)
+		subscription, err := s.LicenseService.LoadSubscription(ctx)
+		if err != nil {
+			return err
+		}
+		s.subscription = subscription
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &s.subscription); err != nil {
@@ -125,7 +128,11 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 
 		basePlan := s.subscription.Plan
-		s.subscription = s.loadSubscription(ctx)
+		subscription, err := s.LicenseService.LoadSubscription(ctx)
+		if err != nil {
+			return err
+		}
+		s.subscription = subscription
 		currentPlan := s.subscription.Plan
 
 		if s.MetricReporter != nil {
@@ -146,32 +153,6 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-// loadLicense will load current subscription by license.
-// Return subscription with free plan if no license found.
-func (s *Server) loadSubscription(ctx context.Context) enterpriseAPI.Subscription {
-	subscription := enterpriseAPI.Subscription{
-		Plan: api.FREE,
-		// -1 means not expire, just for free plan
-		ExpiresTs:     -1,
-		InstanceCount: 5,
-	}
-
-	license, _ := s.LicenseService.LoadLicense(ctx)
-	if license != nil {
-		subscription = enterpriseAPI.Subscription{
-			Plan:          license.Plan,
-			ExpiresTs:     license.ExpiresTs,
-			StartedTs:     license.IssuedTs,
-			InstanceCount: license.InstanceCount,
-			Trialing:      license.Trialing,
-			OrgID:         license.OrgID(),
-			OrgName:       license.OrgName,
-		}
-	}
-
-	return subscription
 }
 
 func (s *Server) feature(feature api.FeatureType) bool {
