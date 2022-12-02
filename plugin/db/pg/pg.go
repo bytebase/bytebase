@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
+	// init() in pgx/v5/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -407,6 +407,23 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
+	// https://github.com/postgres/postgres/blob/master/src/bin/psql/common.c#L969
+	if len(singleSQLs) == 1 && isAffectedRowsStatement(singleSQLs[0].Text) {
+		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
+		if err != nil {
+			return nil, err
+		}
+		return []interface{}{affectedRows}, nil
+	}
 	return util.Query(ctx, db.Postgres, driver.db, statement, queryContext)
 }
 
@@ -425,4 +442,15 @@ func (driver *Driver) switchDatabase(dbName string) error {
 	driver.db = db
 	driver.databaseName = dbName
 	return nil
+}
+
+func isAffectedRowsStatement(stmt string) bool {
+	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
+	upperStatement := strings.ToUpper(stmt)
+	for _, prefix := range affectedRowsStatementPrefix {
+		if strings.HasPrefix(upperStatement, prefix) {
+			return true
+		}
+	}
+	return false
 }

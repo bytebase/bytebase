@@ -204,6 +204,22 @@ func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+	// https://dev.mysql.com/doc/c-api/8.0/en/mysql-affected-rows.html
+	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
+	if len(singleSQLs) == 1 && isAffectedRowsStatement(singleSQLs[0].Text) {
+		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
+		if err != nil {
+			return nil, err
+		}
+		return []interface{}{affectedRows}, nil
+	}
 	return util.Query(ctx, driver.dbType, driver.db, statement, queryContext)
 }
 
@@ -232,4 +248,15 @@ func transformDelimiter(out io.Writer, statement string) error {
 		}
 	}
 	return nil
+}
+
+func isAffectedRowsStatement(stmt string) bool {
+	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
+	upperStatement := strings.ToUpper(stmt)
+	for _, prefix := range affectedRowsStatementPrefix {
+		if strings.HasPrefix(upperStatement, prefix) {
+			return true
+		}
+	}
+	return false
 }
