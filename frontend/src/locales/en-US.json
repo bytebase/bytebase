@@ -967,9 +967,6 @@
       "character-sets-diff-found": "There are differences between character sets.",
       "preview-issue": "Preview issue"
     },
-    "ui-editor": {
-      "preview-issue": "Preview issue"
-    },
     "sensitive": "Sensitive",
     "access-denied": "You don't have the permission to access this database."
   },
@@ -1392,6 +1389,21 @@
       "admin": "Admin"
     },
     "close-sheet": "Close sheet"
+  },
+  "ui-editor": {
+    "self": "UI Editor",
+    "use-tips": "Click a database/table to start.",
+    "preview-issue": "Preview issue",
+    "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
+    "tables": "Tables",
+    "actions": {
+      "new-table": "New table",
+      "drop-table": "Drop table",
+      "drop": "Drop",
+      "restore": "Restore",
+      "add-column": "Add column",
+      "drop-column": "Drop column"
+    }
   },
   "label": {
     "empty-label-value": "<Empty Value>",

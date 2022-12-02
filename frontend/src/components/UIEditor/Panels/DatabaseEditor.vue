@@ -41,7 +41,7 @@
           @click="handleCreateNewTable"
         >
           <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-          New Table
+          {{ $t("ui-editor.actions.create-table") }}
         </button>
       </div>
       <!-- table list -->
@@ -97,7 +97,7 @@
                     @click="handleDropTable(table)"
                   />
                 </template>
-                <span>Drop Table</span>
+                <span>{{ $t("ui-editor.actions.drop-table") }}</span>
               </n-tooltip>
             </div>
           </div>

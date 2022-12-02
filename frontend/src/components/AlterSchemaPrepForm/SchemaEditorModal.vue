@@ -1,6 +1,6 @@
 <template>
   <BBModal
-    :title="'Alter Schema'"
+    :title="$t('database.alter-schema')"
     class="ui-editor-modal-container !w-320 !max-w-[calc(100%-80px)]"
     @close="dismissModal"
   >
@@ -15,7 +15,7 @@
         "
         @click="handleChangeTab('ui-editor')"
       >
-        UI Editor
+        {{ $t("ui-editor.self") }}
       </button>
       <button
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
@@ -40,13 +40,13 @@
         <div
           class="w-full h-full pl-3 shrink-0 flex flex-row justify-between items-center"
         >
-          <div>SQL Editor</div>
+          <div>{{ $t("sql-editor.self") }}</div>
           <div>
             <button
               class="text-sm border px-3 leading-8 rounded cursor-pointer hover:bg-gray-100"
               @click="handleSyncSQLFromUIEditor"
             >
-              Sync SQL from UI Editor
+              {{ $t("ui-editor.sync-sql-from-ui-editor") }}
             </button>
           </div>
         </div>
@@ -69,7 +69,7 @@
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         @click="handlePreviewIssue"
       >
-        {{ $t("database.ui-editor.preview-issue") }}
+        {{ $t("ui-editor.preview-issue") }}
       </button>
     </div>
   </BBModal>
