@@ -35,18 +35,13 @@
           </select>
         </div>
 
-        <YAxisRadioGroup
-          v-model:label="state.label"
-          :label-list="labelList"
-          class="text-sm"
-        />
+        <YAxisRadioGroup v-model:label="state.label" class="text-sm" />
       </div>
 
       <div v-if="selectedDatabaseGroup">
         <DeployDatabaseTable
           :database-list="selectedDatabaseGroup.list"
           :label="state.label"
-          :label-list="labelList"
           :environment-list="environmentList"
           :deployment="deployment"
         />
@@ -62,7 +57,6 @@ import {
   DeploymentConfig,
   Environment,
   Database,
-  Label,
   LabelKeyType,
 } from "@/types";
 import { groupBy } from "lodash-es";
@@ -79,7 +73,6 @@ const props = defineProps<{
   deployment: DeploymentConfig;
   environmentList: Environment[];
   databaseList: Database[];
-  labelList: Label[];
 }>();
 
 const state = reactive({
@@ -94,19 +87,9 @@ const databaseListGroupByName = computed((): DatabaseGroup[] => {
     return [{ name: "", list: props.databaseList }];
   }
 
-  if (dbNameTemplate && props.labelList.length === 0) {
-    // We can't calculate dbname correctly if labelList hasn't been fetched
-    // So return empty array as a fallback
-    return [];
-  }
-
   const dict = groupBy(props.databaseList, (db) => {
     if (dbNameTemplate) {
-      return parseDatabaseNameByTemplate(
-        db.name,
-        dbNameTemplate,
-        props.labelList
-      );
+      return parseDatabaseNameByTemplate(db.name, dbNameTemplate);
     } else {
       return db.name;
     }
