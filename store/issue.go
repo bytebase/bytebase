@@ -574,7 +574,7 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 			type,
 			description,
 			assignee_id,
-			assignee_need_attetion,
+			assignee_need_attention,
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9, $10)
