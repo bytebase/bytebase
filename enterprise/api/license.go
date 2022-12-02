@@ -60,6 +60,12 @@ func (l *License) OrgID() string {
 type LicenseService interface {
 	// StoreLicense will store license into file.
 	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
-	// LoadLicense will load license from file and validate it.
-	LoadLicense(ctx context.Context) (*License, error)
+	// LoadSubscription will load subscription.
+	LoadSubscription(ctx context.Context) Subscription
+	// IsFeatureEnabled returns whether a feature is enabled.
+	IsFeatureEnabled(feature api.FeatureType) bool
+	// GetEffectivePlan gets the effective plan.
+	GetEffectivePlan() api.PlanType
+	// GetPlanLimitValue gets the limit value for the plan.
+	GetPlanLimitValue(name api.PlanLimit) int64
 }

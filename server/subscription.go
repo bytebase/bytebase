@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,8 +18,10 @@ import (
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		subscription := s.licenseService.LoadSubscription(ctx)
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, &s.subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
@@ -34,23 +35,24 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 		patch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		if err := s.LicenseService.StoreLicense(ctx, patch); err != nil {
+		if err := s.licenseService.StoreLicense(ctx, patch); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store license").SetInternal(err)
 		}
 
-		s.subscription = s.loadSubscription(ctx)
-
+		subscription := s.licenseService.LoadSubscription(ctx)
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, &s.subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
 	})
 
 	g.POST("/subscription/trial", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
 		create := &api.TrialPlanCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, create); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create trial request").SetInternal(err)
@@ -67,10 +69,12 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			OrgName:  s.workspaceID,
 		}
 
-		upgradeTrial := s.subscription.Trialing && license.Plan.Priority() > s.subscription.Plan.Priority()
+		subscription := s.licenseService.LoadSubscription(ctx)
+		basePlan := subscription.Plan
+		upgradeTrial := subscription.Trialing && license.Plan.Priority() > subscription.Plan.Priority()
 		if upgradeTrial {
-			license.ExpiresTs = s.subscription.ExpiresTs
-			license.IssuedTs = s.subscription.StartedTs
+			license.ExpiresTs = subscription.ExpiresTs
+			license.IssuedTs = subscription.StartedTs
 		}
 
 		value, err := json.Marshal(license)
@@ -78,7 +82,6 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal license").SetInternal(err)
 		}
 
-		ctx := c.Request().Context()
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
 		settingName := api.SettingEnterpriseTrial
 		settings, err := s.store.FindSetting(ctx, &api.SettingFind{
@@ -124,10 +127,8 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			}
 		}
 
-		basePlan := s.subscription.Plan
-		s.subscription = s.loadSubscription(ctx)
-		currentPlan := s.subscription.Plan
-
+		subscription = s.licenseService.LoadSubscription(ctx)
+		currentPlan := subscription.Plan
 		if s.MetricReporter != nil {
 			s.MetricReporter.report(&metric.Metric{
 				Name:  metricAPI.SubscriptionTrialMetricName,
@@ -141,54 +142,9 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, &s.subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
 	})
-}
-
-// loadLicense will load current subscription by license.
-// Return subscription with free plan if no license found.
-func (s *Server) loadSubscription(ctx context.Context) enterpriseAPI.Subscription {
-	subscription := enterpriseAPI.Subscription{
-		Plan: api.FREE,
-		// -1 means not expire, just for free plan
-		ExpiresTs:     -1,
-		InstanceCount: 5,
-	}
-
-	license, _ := s.LicenseService.LoadLicense(ctx)
-	if license != nil {
-		subscription = enterpriseAPI.Subscription{
-			Plan:          license.Plan,
-			ExpiresTs:     license.ExpiresTs,
-			StartedTs:     license.IssuedTs,
-			InstanceCount: license.InstanceCount,
-			Trialing:      license.Trialing,
-			OrgID:         license.OrgID(),
-			OrgName:       license.OrgName,
-		}
-	}
-
-	return subscription
-}
-
-func (s *Server) feature(feature api.FeatureType) bool {
-	return api.Feature(feature, s.getEffectivePlan())
-}
-
-func (s *Server) getPlanLimitValue(name api.PlanLimit) int64 {
-	v, ok := api.PlanLimitValues[name]
-	if !ok {
-		return 0
-	}
-	return v[s.getEffectivePlan()]
-}
-
-func (s *Server) getEffectivePlan() api.PlanType {
-	if expireTime := time.Unix(s.subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
-		return api.FREE
-	}
-	return s.subscription.Plan
 }

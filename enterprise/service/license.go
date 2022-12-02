@@ -22,6 +22,8 @@ import (
 type LicenseService struct {
 	config *config.Config
 	store  *store.Store
+
+	cachedSubscription *enterpriseAPI.Subscription
 }
 
 // Claims creates a struct that will be encoded to a JWT.
@@ -54,16 +56,78 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 			return err
 		}
 	}
-	_, err := s.store.PatchSetting(ctx, &api.SettingPatch{
+	if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
 		UpdaterID: patch.UpdaterID,
 		Name:      api.SettingEnterpriseLicense,
 		Value:     patch.License,
-	})
-	return err
+	}); err != nil {
+		return err
+	}
+
+	// Invalidate and refresh the subscription cache.
+	s.cachedSubscription = nil
+	s.LoadSubscription(ctx)
+	return nil
 }
 
-// LoadLicense will load license from file and validate it.
-func (s *LicenseService) LoadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+// LoadSubscription will load subscription.
+func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Subscription {
+	if s.cachedSubscription != nil {
+		return *s.cachedSubscription
+	}
+
+	license, err := s.loadLicense(ctx)
+	if err != nil {
+		log.Error("failed to load license", zap.Error(err))
+	}
+	if license == nil {
+		return enterpriseAPI.Subscription{
+			Plan: api.FREE,
+			// -1 means not expire, just for free plan
+			ExpiresTs:     -1,
+			InstanceCount: 5,
+		}
+	}
+
+	// Cache the subscription.
+	s.cachedSubscription = &enterpriseAPI.Subscription{
+		Plan:          license.Plan,
+		ExpiresTs:     license.ExpiresTs,
+		StartedTs:     license.IssuedTs,
+		InstanceCount: license.InstanceCount,
+		Trialing:      license.Trialing,
+		OrgID:         license.OrgID(),
+		OrgName:       license.OrgName,
+	}
+	return *s.cachedSubscription
+}
+
+// IsFeatureEnabled returns whether a feature is enabled.
+func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) bool {
+	return api.Feature(feature, s.GetEffectivePlan())
+}
+
+// GetEffectivePlan gets the effective plan.
+func (s *LicenseService) GetEffectivePlan() api.PlanType {
+	ctx := context.Background()
+	subscription := s.LoadSubscription(ctx)
+	if expireTime := time.Unix(subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
+		return api.FREE
+	}
+	return subscription.Plan
+}
+
+// GetPlanLimitValue gets the limit value for the plan.
+func (s *LicenseService) GetPlanLimitValue(name api.PlanLimit) int64 {
+	v, ok := api.PlanLimitValues[name]
+	if !ok {
+		return 0
+	}
+	return v[s.GetEffectivePlan()]
+}
+
+// loadLicense will load license and validate it.
+func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	// Find enterprise license.
 	settingName := api.SettingEnterpriseLicense
 	settings, err := s.store.FindSetting(ctx, &api.SettingFind{
