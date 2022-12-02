@@ -153,9 +153,9 @@ func (s *Server) createEnvironment(ctx context.Context, create *api.EnvironmentC
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment list").SetInternal(err)
 	}
 
-	maximumEnvironmentLimit := s.getPlanLimitValue(api.PlanLimitMaximumEnvironment)
+	maximumEnvironmentLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumEnvironment)
 	if int64(len(envList)) >= maximumEnvironmentLimit {
-		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can create up to %d environments.", s.getEffectivePlan(), maximumEnvironmentLimit))
+		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can create up to %d environments.", maximumEnvironmentLimit))
 	}
 
 	if err := api.IsValidEnvironmentName(create.Name); err != nil {

@@ -62,4 +62,10 @@ type LicenseService interface {
 	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
 	// LoadSubscription will load subscription.
 	LoadSubscription(ctx context.Context) Subscription
+	// IsFeatureEnabled returns whether a feature is enabled.
+	IsFeatureEnabled(feature api.FeatureType) bool
+	// GetEffectivePlan gets the effective plan.
+	GetEffectivePlan() api.PlanType
+	// GetPlanLimitValue gets the limit value for the plan.
+	GetPlanLimitValue(name api.PlanLimit) int64
 }

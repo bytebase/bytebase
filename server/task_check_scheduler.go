@@ -403,7 +403,7 @@ func (*TaskCheckScheduler) getPITRTaskCheck(_ context.Context, task *api.Task, c
 }
 
 func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
-	if !s.server.feature(api.FeatureLGTM) {
+	if !s.server.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
 		return nil, nil
 	}
 	issues, err := s.server.store.FindIssueStripped(ctx, &api.IssueFind{PipelineID: &task.PipelineID})

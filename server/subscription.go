@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -148,25 +147,4 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) feature(feature api.FeatureType) bool {
-	return api.Feature(feature, s.getEffectivePlan())
-}
-
-func (s *Server) getPlanLimitValue(name api.PlanLimit) int64 {
-	v, ok := api.PlanLimitValues[name]
-	if !ok {
-		return 0
-	}
-	return v[s.getEffectivePlan()]
-}
-
-func (s *Server) getEffectivePlan() api.PlanType {
-	ctx := context.Background()
-	subscription := s.licenseService.LoadSubscription(ctx)
-	if expireTime := time.Unix(subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
-		return api.FREE
-	}
-	return subscription.Plan
 }

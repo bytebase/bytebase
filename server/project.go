@@ -40,7 +40,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectCreate.Key == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
 		}
-		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+		if projectCreate.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 		projectCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
@@ -161,7 +161,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project key cannot be empty")
 		}
 		if v := projectPatch.LGTMCheckSetting; v != nil {
-			if !s.feature(api.FeatureLGTM) {
+			if !s.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
 				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureLGTM.AccessErrorMessage())
 			}
 			if v.Value != api.LGTMValueDisabled && v.Value != api.LGTMValueProjectMember && v.Value != api.LGTMValueProjectOwner {
@@ -169,7 +169,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 		if v := projectPatch.TenantMode; v != nil {
-			if *v == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+			if *v == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 			}
 		}
@@ -356,7 +356,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project %d is archived", projectID))
 		}
 
-		if !s.feature(api.FeatureVCSSQLReviewWorkflow) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureVCSSQLReviewWorkflow) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureVCSSQLReviewWorkflow.AccessErrorMessage())
 		}
 

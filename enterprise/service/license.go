@@ -102,6 +102,30 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 	return *s.cachedSubscription
 }
 
+// IsFeatureEnabled returns whether a feature is enabled.
+func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) bool {
+	return api.Feature(feature, s.GetEffectivePlan())
+}
+
+// GetEffectivePlan gets the effective plan.
+func (s *LicenseService) GetEffectivePlan() api.PlanType {
+	ctx := context.Background()
+	subscription := s.LoadSubscription(ctx)
+	if expireTime := time.Unix(subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
+		return api.FREE
+	}
+	return subscription.Plan
+}
+
+// GetPlanLimitValue gets the limit value for the plan.
+func (s *LicenseService) GetPlanLimitValue(name api.PlanLimit) int64 {
+	v, ok := api.PlanLimitValues[name]
+	if !ok {
+		return 0
+	}
+	return v[s.GetEffectivePlan()]
+}
+
 // loadLicense will load license and validate it.
 func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
 	// Find enterprise license.
