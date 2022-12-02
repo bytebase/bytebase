@@ -422,7 +422,10 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 		if err != nil {
 			return nil, err
 		}
-		return []interface{}{affectedRows}, nil
+		field := []string{"Affected Rows"}
+		types := []string{"INT"}
+		rows := [][]interface{}{{affectedRows}}
+		return []interface{}{field, types, rows}, nil
 	}
 	return util.Query(ctx, db.Postgres, driver.db, statement, queryContext)
 }

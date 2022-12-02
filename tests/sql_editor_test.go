@@ -31,30 +31,28 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1);",
-			want:              true,
-			affectedRows:      "[1]",
+			affectedRows:      `[["Affected Rows"],["INT"],[[1]]]`,
 		},
 		{
 			databaseName:      "Test2",
 			dbType:            db.MySQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
-			want:              false,
+			affectedRows:      `[[],null,[]]`,
 		},
 		{
 			databaseName:      "Test3",
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1),(2);",
-			want:              true,
-			affectedRows:      "[2]",
+			affectedRows:      `[["Affected Rows"],["INT"],[[2]]]`,
 		},
 		{
 			databaseName:      "Test4",
 			dbType:            db.Postgres,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
-			want:              false,
+			affectedRows:      `[[],null,[]]`,
 		},
 	}
 
@@ -170,10 +168,6 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 
 		affectedRows, err := ctl.adminQuery(instance, tt.databaseName, tt.query)
 		a.NoError(err)
-		if tt.want {
-			a.Equal(tt.affectedRows, affectedRows)
-		} else {
-			a.Equal(tt.affectedRows, "")
-		}
+		a.Equal(tt.affectedRows, affectedRows)
 	}
 }
