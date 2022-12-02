@@ -819,6 +819,7 @@ func extractMySQLSingleTable(fromClause *tidbast.TableRefsClause) (string, strin
 	return tableName.Schema.O, tableName.Name.O, true
 }
 
+// IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
 func IsAffectedRowsStatement(stmt string) bool {
 	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
 	upperStatement := strings.ToUpper(stmt)
