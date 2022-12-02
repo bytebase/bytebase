@@ -64,7 +64,8 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 		return err
 	}
 
-	// Cache the subscription.
+	// Invalidate and refresh the subscription cache.
+	s.cachedSubscription = nil
 	s.LoadSubscription(ctx)
 	return nil
 }
