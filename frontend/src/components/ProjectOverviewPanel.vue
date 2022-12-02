@@ -166,7 +166,6 @@ import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
 import {
   useActivityStore,
-  useLabelList,
   usePolicyListByResourceTypeAndPolicyType,
 } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
@@ -277,8 +276,6 @@ export default defineComponent({
       isTenantProject,
       filteredDatabaseList,
       excludedKeyList,
-      labelList,
-      selectableLabelList,
       accessControlPolicyList,
     };
   },
