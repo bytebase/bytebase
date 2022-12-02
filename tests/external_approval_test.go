@@ -144,8 +144,8 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 
-	// Sleep for 5 seconds, giving time to ApplicationRunner to create external approvals.
-	time.Sleep(5 * time.Second)
+	// Sleep for 65 seconds, giving time to ApplicationRunner to create external approvals.
+	time.Sleep(65 * time.Second)
 	issue, err = ctl.getIssue(issue.ID)
 	a.NoError(err)
 	taskStatus, err := getNextTaskStatus(issue)
@@ -294,8 +294,8 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 
-	// Sleep for 5 seconds, giving time to ApplicationRunner to create external approvals.
-	time.Sleep(5 * time.Second)
+	// Sleep for 65 seconds, giving time to ApplicationRunner to create external approvals.
+	time.Sleep(65 * time.Second)
 	issue, err = ctl.getIssue(issue.ID)
 	a.NoError(err)
 	taskStatus, err := getNextTaskStatus(issue)
