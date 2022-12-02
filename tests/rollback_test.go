@@ -49,9 +49,9 @@ func TestRollback(t *testing.T) {
 	// Rotate to binlog.000002 so that it's easy to rollback the following transactions and check that the state is the same as now.
 	_, err = db.ExecContext(ctx, "FLUSH BINARY LOGS;")
 	a.NoError(err)
-	err = driver.Execute(ctx, "UPDATE user SET balance=0;", false)
+	_, err = driver.Execute(ctx, "UPDATE user SET balance=0;", false)
 	a.NoError(err)
-	err = driver.Execute(ctx, "DELETE FROM user;", false)
+	_, err = driver.Execute(ctx, "DELETE FROM user;", false)
 	a.NoError(err)
 
 	// Restore data using generated rollback SQL.

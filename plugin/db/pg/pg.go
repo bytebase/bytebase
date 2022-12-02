@@ -227,14 +227,15 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
 	owner, err := driver.GetCurrentDatabaseOwner()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	connected := false
 	var remainingStmts []string
+	totalRowsEffected := int64(0)
 	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
 		// We will execute the statement directly before "\\connect" statement.
@@ -280,9 +281,15 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				}
 				connected = true
 			} else {
-				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+				sqlResult, err := driver.db.ExecContext(ctx, stmt)
+				if err != nil {
 					return err
 				}
+				rowsEffected, err := sqlResult.RowsAffected()
+				if err != nil {
+					return err
+				}
+				totalRowsEffected += rowsEffected
 			}
 		} else {
 			if isSuperuserStatement(stmt) {
@@ -304,29 +311,38 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	}
 
 	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
-		return err
+		return 0, err
 	}
 
 	if len(remainingStmts) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
 	// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s", owner)); err != nil {
-		return err
+		return 0, err
 	}
 
-	if _, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err != nil {
-		return err
+	sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
+	if err != nil {
+		return 0, err
 	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	rowsEffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	totalRowsEffected += rowsEffected
 
-	return tx.Commit()
+	return totalRowsEffected, nil
 }
 
 func isSuperuserStatement(stmt string) bool {

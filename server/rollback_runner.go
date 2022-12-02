@@ -14,18 +14,24 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewRollbackRunner creates a new rollback runner.
-func NewRollbackRunner(server *Server) *RollbackRunner {
+func NewRollbackRunner(server *Server, store *store.Store, dbFactory *dbfactory.DBFactory) *RollbackRunner {
 	return &RollbackRunner{
-		server: server,
+		server:    server,
+		store:     store,
+		dbFactory: dbFactory,
 	}
 }
 
 // RollbackRunner is the rollback runner generating rollback SQL statements.
 type RollbackRunner struct {
 	server      *Server
+	store       *store.Store
+	dbFactory   *dbfactory.DBFactory
 	generateMap sync.Map
 }
 
@@ -59,7 +65,7 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
 		Payload:    "payload->>'threadID'!='' AND payload->>'rollbackError' IS NULL AND payload->>'rollbackStatement' IS NULL",
 	}
-	taskList, err := r.server.store.FindTask(ctx, find, true)
+	taskList, err := r.store.FindTask(ctx, find, true)
 	if err != nil {
 		log.Error("Failed to get running DML tasks", zap.Error(err))
 		return
@@ -105,7 +111,7 @@ func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task
 		UpdaterID: api.SystemBotID,
 		Payload:   &payloadString,
 	}
-	if _, err := r.server.store.PatchTask(ctx, patch); err != nil {
+	if _, err := r.store.PatchTask(ctx, patch); err != nil {
 		log.Error("Failed to patch task with the MySQL thread ID", zap.Int("taskID", task.ID))
 		return
 	}
@@ -123,7 +129,7 @@ func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.
 	}
 	binlogFileNameList := mysql.GenBinlogFileNames(basename, seqStart, seqEnd)
 
-	driver, err := r.server.getAdminDatabaseDriver(ctx, task.Instance, "")
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "")
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}
