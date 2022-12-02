@@ -577,7 +577,7 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attetion, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload
 	`
 	var issueRaw issueRaw
 	if err := tx.QueryRowContext(ctx, query,
