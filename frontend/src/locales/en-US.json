@@ -1424,9 +1424,9 @@
     "column": {
       "name": "Name",
       "type": "Type",
-      "nullable": "Nullable",
       "default": "Default",
-      "comment": "Comment"
+      "comment": "Comment",
+      "is-nullable": "Is Nullable"
     },
     "nothing-changed": "Nothing changed"
   },

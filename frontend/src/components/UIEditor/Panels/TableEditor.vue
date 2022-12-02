@@ -89,7 +89,7 @@
     >
       <!-- column table header -->
       <div
-        class="sticky top-0 z-10 grid grid-cols-[repeat(5,_minmax(0,_1fr))_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
+        class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_112px_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
         :class="tableCache.columnList.length > 0 && 'border-b'"
       >
         <span
@@ -105,7 +105,7 @@
         <div
           v-for="(column, index) in tableCache.columnList"
           :key="`${index}-${column.id}`"
-          class="grid grid-cols-[repeat(5,_minmax(0,_1fr))_32px] gr text-sm even:bg-gray-50"
+          class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_112px_32px] gr text-sm even:bg-gray-50"
         >
           <div class="table-body-item-container">
             <input
@@ -136,15 +136,6 @@
               </button>
             </NDropdown>
           </div>
-          <div
-            class="table-body-item-container flex justify-start items-center"
-          >
-            <BBCheckbox
-              class="ml-3"
-              :value="column.nullable"
-              @toggle="(value) => (column.nullable = value)"
-            />
-          </div>
           <div class="table-body-item-container">
             <input
               v-model="column.default"
@@ -159,6 +150,15 @@
               placeholder="comment"
               class="column-field-input"
               type="text"
+            />
+          </div>
+          <div
+            class="table-body-item-container flex justify-start items-center"
+          >
+            <BBCheckbox
+              class="ml-3"
+              :value="column.nullable"
+              @toggle="(value) => (column.nullable = value)"
             />
           </div>
           <div class="w-full flex justify-start items-center">
@@ -228,16 +228,16 @@ const columnHeaderList = computed(() => {
       label: t("ui-editor.column.type"),
     },
     {
-      key: "nullable",
-      label: t("ui-editor.column.nullable"),
-    },
-    {
       key: "default",
       label: t("ui-editor.column.default"),
     },
     {
       key: "comment",
       label: t("ui-editor.column.comment"),
+    },
+    {
+      key: "nullable",
+      label: t("ui-editor.column.is-nullable"),
     },
   ];
 });
