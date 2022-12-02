@@ -90,7 +90,11 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				issueByID := make(map[int]*api.Issue)
-				issues, err := r.store.FindIssueStripped(ctx, find)
+				issues, err := r.store.FindIssue(ctx, find)
+				if err != nil {
+					log.Error("failed to find issue stripped", zap.Any("issueFind", find), zap.Error(err))
+					return
+				}
 				for _, issue := range issues {
 					issueByID[issue.ID] = issue
 					r.scheduleApproval(ctx, issue)
