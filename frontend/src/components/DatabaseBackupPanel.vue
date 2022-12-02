@@ -71,6 +71,7 @@
             :disabled="!allowEdit"
           />
           <button
+            v-if="allowEdit"
             class="btn-primary mt-2"
             :disabled="!allowEdit || !urlChanged"
             @click.prevent="updateBackupHookUrl()"
