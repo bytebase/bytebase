@@ -1398,7 +1398,7 @@
     "list": "List",
     "raw-sql": "Raw SQL",
     "actions": {
-      "new-table": "New table",
+      "create-table": "New table",
       "drop-table": "Drop table",
       "drop": "Drop",
       "restore": "Restore",

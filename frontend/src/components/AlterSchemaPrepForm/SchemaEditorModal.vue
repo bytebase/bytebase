@@ -25,7 +25,7 @@
         "
         @click="handleChangeTab('raw-sql')"
       >
-        Raw SQL
+        {{ $t("ui-editor.raw-sql") }}
       </button>
     </div>
     <div class="w-full h-full max-h-full overflow-auto border-b mb-4">

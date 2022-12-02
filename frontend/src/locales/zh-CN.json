@@ -1396,7 +1396,7 @@
     "preview-issue": "预览工单",
     "sync-sql-from-ui-editor": "从 UI 编辑器中同步 SQL",
     "list": "列表",
-    "raw-sql": "Raw SQL",
+    "raw-sql": "SQL 语句",
     "actions": {
       "create-table": "新建表",
       "drop-table": "删除表",
