@@ -275,7 +275,7 @@ var featureMatrix = map[FeatureType]featureConfig{
 		planToggle: [3]bool{false, true, true},
 	},
 	FeatureVCSSQLReviewWorkflow: {
-		enabled:    false,
+		enabled:    true,
 		planToggle: [3]bool{false, false, true},
 	},
 	// Database management
