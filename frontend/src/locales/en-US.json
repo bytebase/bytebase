@@ -1395,15 +1395,40 @@
     "use-tips": "Click a database/table to start.",
     "preview-issue": "Preview issue",
     "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
-    "tables": "Tables",
+    "list": "List",
+    "raw-sql": "Raw SQL",
     "actions": {
       "new-table": "New table",
       "drop-table": "Drop table",
       "drop": "Drop",
       "restore": "Restore",
       "add-column": "Add column",
-      "drop-column": "Drop column"
-    }
+      "drop-column": "Drop column",
+      "sql-preview": "SQL Preview",
+      "discard-changes": "Discard Changes",
+      "save": "Save"
+    },
+    "database": {
+      "name": "Name",
+      "row-count": "Row count",
+      "data-size": "Data size",
+      "engine": "Engine",
+      "collation": "Collation",
+      "comment": "Comment"
+    },
+    "tables": "Tables",
+    "table": {
+      "name": "Table Name"
+    },
+    "columns": "Columns",
+    "column": {
+      "name": "Name",
+      "type": "Type",
+      "nullable": "Nullable",
+      "default": "Default",
+      "comment": "Comment"
+    },
+    "nothing-changed": "Nothing changed"
   },
   "label": {
     "empty-label-value": "<Empty Value>",

@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="$t('database.alter-schema')"
-    class="ui-editor-modal-container !w-320 !max-w-[calc(100%-80px)]"
+    class="ui-editor-modal-container !w-320 h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
     @close="dismissModal"
   >
     <div
@@ -28,7 +28,7 @@
         Raw SQL
       </button>
     </div>
-    <div class="w-full h-144 border-b mb-4">
+    <div class="w-full h-full max-h-full overflow-auto border-b mb-4">
       <UIEditor
         v-show="state.selectedTab === 'ui-editor'"
         :database-id-list="props.databaseIdList"
@@ -61,14 +61,11 @@
         />
       </div>
     </div>
-    <div class="flex items-center justify-end">
-      <button type="button" class="btn-normal py-2 px-4" @click="dismissModal">
+    <div class="w-full flex items-center justify-end mt-2 space-x-3">
+      <button type="button" class="btn-normal" @click="dismissModal">
         {{ $t("common.cancel") }}
       </button>
-      <button
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        @click="handlePreviewIssue"
-      >
+      <button class="btn-primary" @click="handlePreviewIssue">
         {{ $t("ui-editor.preview-issue") }}
       </button>
     </div>
@@ -365,6 +362,7 @@ const generateIssueName = (
 
 <style>
 .ui-editor-modal-container > .modal-container {
-  @apply w-full h-full overflow-auto;
+  @apply w-full h-160 overflow-auto grid;
+  grid-template-rows: min-content 1fr min-content;
 }
 </style>

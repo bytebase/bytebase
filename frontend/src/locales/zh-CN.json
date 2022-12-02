@@ -1395,18 +1395,40 @@
     "use-tips": "选择需要编辑的数据库或者表",
     "preview-issue": "预览工单",
     "sync-sql-from-ui-editor": "从 UI 编辑器中同步 SQL",
+    "list": "列表",
+    "raw-sql": "Raw SQL",
     "actions": {
       "create-table": "新建表",
       "drop-table": "删除表",
       "drop": "删除",
       "restore": "恢复",
-      "add-column": "Add column",
-      "drop-column": "Drop column"
+      "add-column": "添加列",
+      "drop-column": "删除列",
+      "sql-preview": "预览 SQL",
+      "discard-changes": "撤销更改",
+      "save": "保存"
     },
+    "database": {
+      "name": "名称",
+      "row-count": "数据行数",
+      "data-size": "数据大小",
+      "engine": "引擎",
+      "collation": "字符排序规则",
+      "comment": "注释"
+    },
+    "tables": "数据表",
     "table": {
-      "name": "表名",
-      "": ""
-    }
+      "name": "表名"
+    },
+    "columns": "数据列",
+    "column": {
+      "name": "名称",
+      "type": "类型",
+      "nullable": "可为空",
+      "default": "默认值",
+      "comment": "注释"
+    },
+    "nothing-changed": "无任何改动"
   },
   "label": {
     "empty-label-value": "<空值>",
