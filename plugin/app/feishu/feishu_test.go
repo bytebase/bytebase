@@ -214,8 +214,11 @@ func TestProvider_GetIDByEmail(t *testing.T) {
 			},
 		}
 		ctx := context.Background()
-		_, err := p.GetIDByEmail(ctx, TokenCtx{}, []string{"zhangsan@a.com", "lisi@a.com"})
-		a.Error(err)
+		users, err := p.GetIDByEmail(ctx, TokenCtx{}, []string{"zhangsan@a.com", "lisi@a.com"})
+		a.NoError(err)
+		a.Equal("ou_979112345678741d29069abcdef089d4", users["zhangsan@a.com"])
+		_, ok := users["lisi@a.com"]
+		a.Equal(false, ok)
 	})
 	t.Run("success", func(t *testing.T) {
 		a := require.New(t)
