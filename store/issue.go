@@ -32,12 +32,13 @@ type issueRaw struct {
 	PipelineID int
 
 	// Domain specific fields
-	Name        string
-	Status      api.IssueStatus
-	Type        api.IssueType
-	Description string
-	AssigneeID  int
-	Payload     string
+	Name                  string
+	Status                api.IssueStatus
+	Type                  api.IssueType
+	Description           string
+	AssigneeID            int
+	AssigneeNeedAttention bool
+	Payload               string
 }
 
 // toIssue creates an instance of Issue based on the issueRaw.
@@ -57,12 +58,13 @@ func (raw *issueRaw) toIssue() *api.Issue {
 		PipelineID: raw.PipelineID,
 
 		// Domain specific fields
-		Name:        raw.Name,
-		Status:      raw.Status,
-		Type:        raw.Type,
-		Description: raw.Description,
-		AssigneeID:  raw.AssigneeID,
-		Payload:     raw.Payload,
+		Name:                  raw.Name,
+		Status:                raw.Status,
+		Type:                  raw.Type,
+		Description:           raw.Description,
+		AssigneeID:            raw.AssigneeID,
+		AssigneeNeedAttention: raw.AssigneeNeedAttention,
+		Payload:               raw.Payload,
 	}
 }
 
@@ -575,7 +577,7 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload
 	`
 	var issueRaw issueRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -601,6 +603,7 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 		&issueRaw.Type,
 		&issueRaw.Description,
 		&issueRaw.AssigneeID,
+		&issueRaw.AssigneeNeedAttention,
 		&issueRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -668,6 +671,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 			type,
 			description,
 			assignee_id,
+			assignee_need_attention,
 			payload
 		FROM issue
 		WHERE ` + strings.Join(where, " AND ")
@@ -699,6 +703,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 			&issueRaw.Type,
 			&issueRaw.Description,
 			&issueRaw.AssigneeID,
+			&issueRaw.AssigneeNeedAttention,
 			&issueRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
@@ -745,7 +750,7 @@ func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch)
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload
 	`, len(args)),
 		args...,
 	).Scan(
@@ -761,6 +766,7 @@ func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch)
 		&issueRaw.Type,
 		&issueRaw.Description,
 		&issueRaw.AssigneeID,
+		&issueRaw.AssigneeNeedAttention,
 		&issueRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
