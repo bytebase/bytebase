@@ -22,6 +22,8 @@ import (
 type LicenseService struct {
 	config *config.Config
 	store  *store.Store
+
+	cachedSubscription *enterpriseAPI.Subscription
 }
 
 // Claims creates a struct that will be encoded to a JWT.
@@ -54,35 +56,49 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 			return err
 		}
 	}
-	_, err := s.store.PatchSetting(ctx, &api.SettingPatch{
+	if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
 		UpdaterID: patch.UpdaterID,
 		Name:      api.SettingEnterpriseLicense,
 		Value:     patch.License,
-	})
-	return err
+	}); err != nil {
+		return err
+	}
+
+	// Cache the subscription.
+	s.LoadSubscription(ctx)
+	return nil
 }
 
 // LoadSubscription will load subscription.
 func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Subscription {
-	subscription := enterpriseAPI.Subscription{
-		Plan: api.FREE,
-		// -1 means not expire, just for free plan
-		ExpiresTs:     -1,
-		InstanceCount: 5,
+	if s.cachedSubscription != nil {
+		return *s.cachedSubscription
 	}
-	license, _ := s.loadLicense(ctx)
-	if license != nil {
-		subscription = enterpriseAPI.Subscription{
-			Plan:          license.Plan,
-			ExpiresTs:     license.ExpiresTs,
-			StartedTs:     license.IssuedTs,
-			InstanceCount: license.InstanceCount,
-			Trialing:      license.Trialing,
-			OrgID:         license.OrgID(),
-			OrgName:       license.OrgName,
+
+	license, err := s.loadLicense(ctx)
+	if err != nil {
+		log.Error("failed to load license", zap.Error(err))
+	}
+	if license == nil {
+		return enterpriseAPI.Subscription{
+			Plan: api.FREE,
+			// -1 means not expire, just for free plan
+			ExpiresTs:     -1,
+			InstanceCount: 5,
 		}
 	}
-	return subscription
+
+	// Cache the subscription.
+	s.cachedSubscription = &enterpriseAPI.Subscription{
+		Plan:          license.Plan,
+		ExpiresTs:     license.ExpiresTs,
+		StartedTs:     license.IssuedTs,
+		InstanceCount: license.InstanceCount,
+		Trialing:      license.Trialing,
+		OrgID:         license.OrgID(),
+		OrgName:       license.OrgName,
+	}
+	return *s.cachedSubscription
 }
 
 // loadLicense will load license and validate it.
