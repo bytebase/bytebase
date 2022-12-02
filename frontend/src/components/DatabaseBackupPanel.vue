@@ -21,6 +21,7 @@
               <span>{{ $t("database.backup-policy-violation") }}</span>
             </router-link>
             <button
+              v-if="allowAdmin"
               type="button"
               class="ml-4 btn-normal"
               @click.prevent="state.showBackupSettingModal = true"
