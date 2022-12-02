@@ -108,7 +108,6 @@ func (s *LicenseService) LoadLicense(ctx context.Context) (*enterpriseAPI.Licens
 		return nil, errors.Wrapf(err, "failed to parse trial license")
 	}
 	return &data, nil
-
 }
 
 func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
