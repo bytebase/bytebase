@@ -14,13 +14,22 @@
           :style="'DISABLED'"
         />
       </div>
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="emit('click', reviewPolicy)"
-      >
-        {{ $t("common.view") }}
-      </button>
+      <div class="flex gap-x-3">
+        <button
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="emit('duplicate', reviewPolicy)"
+        >
+          {{ $t("common.duplicate") }}
+        </button>
+        <button
+          type="button"
+          class="btn-primary py-2 px-4"
+          @click.prevent="emit('click', reviewPolicy)"
+        >
+          {{ $t("common.view") }}
+        </button>
+      </div>
     </div>
     <div class="border-t border-block-border">
       <dl class="divide-y divide-block-border">
@@ -81,5 +90,8 @@ defineProps({
     type: Object as PropType<SQLReviewPolicy>,
   },
 });
-const emit = defineEmits(["click"]);
+const emit = defineEmits<{
+  (event: "click", policy: SQLReviewPolicy): void;
+  (event: "duplicate", policy: SQLReviewPolicy): void;
+}>();
 </script>
