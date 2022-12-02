@@ -967,9 +967,6 @@
       "character-sets-diff-found": "There are differences between character sets.",
       "preview-issue": "Preview issue"
     },
-    "ui-editor": {
-      "preview-issue": "Preview issue"
-    },
     "sensitive": "Sensitive",
     "access-denied": "You don't have the permission to access this database."
   },
@@ -1392,6 +1389,46 @@
       "admin": "Admin"
     },
     "close-sheet": "Close sheet"
+  },
+  "ui-editor": {
+    "self": "UI Editor",
+    "use-tips": "Click a database/table to start.",
+    "preview-issue": "Preview issue",
+    "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
+    "list": "List",
+    "raw-sql": "Raw SQL",
+    "actions": {
+      "create-table": "New table",
+      "drop-table": "Drop table",
+      "drop": "Drop",
+      "restore": "Restore",
+      "add-column": "Add column",
+      "drop-column": "Drop column",
+      "sql-preview": "SQL Preview",
+      "discard-changes": "Discard Changes",
+      "save": "Save"
+    },
+    "database": {
+      "name": "Name",
+      "row-count": "Row count",
+      "data-size": "Data size",
+      "engine": "Engine",
+      "collation": "Collation",
+      "comment": "Comment"
+    },
+    "tables": "Tables",
+    "table": {
+      "name": "Table Name"
+    },
+    "columns": "Columns",
+    "column": {
+      "name": "Name",
+      "type": "Type",
+      "default": "Default",
+      "comment": "Comment",
+      "is-nullable": "Is Nullable"
+    },
+    "nothing-changed": "Nothing changed"
   },
   "label": {
     "empty-label-value": "<Empty Value>",
