@@ -39,6 +39,37 @@ import (
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
+
+	// Register clickhouse driver.
+	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
+	// Register mysql driver.
+	_ "github.com/bytebase/bytebase/plugin/db/mysql"
+	// Register postgres driver.
+	_ "github.com/bytebase/bytebase/plugin/db/pg"
+	// Register snowflake driver.
+	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
+	// Register sqlite driver.
+	_ "github.com/bytebase/bytebase/plugin/db/sqlite"
+
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+	// Register fake advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
+	// Register mysql advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
+	// Register postgresql advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
+
+	// Register mysql differ driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/differ/mysql"
+	// Register postgres differ driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/differ/pg"
+	// Register postgres parser driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
+	// Register mysql transform driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
+	// Register mysql edit driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/edit/mysql"
 )
 
 const (
