@@ -823,13 +823,14 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		}
 	}
 	issueCreate := &api.IssueCreate{
-		CreatorID:     creatorID,
-		ProjectID:     projectID,
-		Name:          issueName,
-		Type:          issueType,
-		Description:   issueDescription,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
+		CreatorID:             creatorID,
+		ProjectID:             projectID,
+		Name:                  issueName,
+		Type:                  issueType,
+		Description:           issueDescription,
+		AssigneeID:            api.SystemBotID,
+		AssigneeNeedAttention: true,
+		CreateContext:         string(createContext),
 	}
 	issue, err := s.createIssue(ctx, issueCreate)
 	if err != nil {

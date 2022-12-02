@@ -641,6 +641,9 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 	if v := find.AssigneeID; v != nil {
 		where, args = append(where, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.AssigneeNeedAttention; v != nil {
+		where, args = append(where, fmt.Sprintf("assignee_need_attetion = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
