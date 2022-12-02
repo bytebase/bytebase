@@ -183,7 +183,6 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentList,
-  useLabelList,
   useProjectStore,
   useRepositoryStore,
 } from "@/store";
@@ -441,14 +440,9 @@ const generateTenant = async () => {
       const databaseList = useDatabaseStore().getDatabaseListByProjectId(
         project.id
       );
-      const labelList = useLabelList();
       const databaseListGroupByName = groupBy(databaseList, (db) => {
         if (project.dbNameTemplate) {
-          return parseDatabaseNameByTemplate(
-            db.name,
-            project.dbNameTemplate,
-            labelList.value
-          );
+          return parseDatabaseNameByTemplate(db.name, project.dbNameTemplate);
         } else {
           return "";
         }
