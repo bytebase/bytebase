@@ -20,11 +20,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/storage/s3"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewBackupRunner creates a new backup runner.
-func NewBackupRunner(server *Server, store *store.Store, s3Client *s3.Client, profile *Profile) *BackupRunner {
+func NewBackupRunner(server *Server, store *store.Store, s3Client *s3.Client, profile *config.Profile) *BackupRunner {
 	return &BackupRunner{
 		server:                    server,
 		store:                     store,
@@ -39,7 +40,7 @@ type BackupRunner struct {
 	server                    *Server
 	store                     *store.Store
 	s3Client                  *s3.Client
-	profile                   *Profile
+	profile                   *config.Profile
 	downloadBinlogInstanceIDs map[int]bool
 	backupWg                  sync.WaitGroup
 	downloadBinlogWg          sync.WaitGroup
