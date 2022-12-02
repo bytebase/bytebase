@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
+	// init() in pgx/v5/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/bytebase/bytebase/api"
