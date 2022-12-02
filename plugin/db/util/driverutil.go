@@ -328,7 +328,7 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 	readOnly := queryContext.ReadOnly
 	limit := queryContext.Limit
 	if !readOnly {
-		return queryAdmin(ctx, sqldb, dbType, statement, limit)
+		return queryAdmin(ctx, sqldb, statement, limit)
 	}
 	// Limit SQL query result size.
 	if dbType == db.MySQL {
@@ -443,7 +443,7 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 }
 
 // query will execute a query.
-func queryAdmin(ctx context.Context, sqldb *sql.DB, dbType db.Type, statement string, _ int) ([]interface{}, error) {
+func queryAdmin(ctx context.Context, sqldb *sql.DB, statement string, _ int) ([]interface{}, error) {
 	rows, err := sqldb.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
