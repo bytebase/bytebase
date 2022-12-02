@@ -83,14 +83,13 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					log.Error("Failed to retrieve open pipelines", zap.Error(err))
 					return
 				}
-				for i, pipeline := range pipelineList {
+				for _, pipeline := range pipelineList {
 					if err := s.server.ScheduleActiveStage(ctx, pipeline); err != nil {
 						log.Error("Failed to schedule tasks in the active stage",
 							zap.Int("pipeline_id", pipeline.ID),
 							zap.Error(err),
 						)
 					}
-					s.server.ApplicationRunner.ScheduleApproval(ctx, pipelineList[i])
 				}
 
 				// Inspect all running tasks
