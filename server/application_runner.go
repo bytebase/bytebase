@@ -97,7 +97,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				for _, issue := range issues {
 					issueByID[issue.ID] = issue
-					r.scheduleApproval(ctx, issue)
+					r.scheduleApproval(ctx, issue, &value)
 				}
 
 				externalApprovalList, err := r.store.FindExternalApproval(ctx, &api.ExternalApprovalFind{})
@@ -517,26 +517,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 }
 
 // scheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
-func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Issue) {
-	settingName := api.SettingAppIM
-	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
-	if err != nil {
-		log.Error("failed to get IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
-		return
-	}
-	if setting == nil {
-		log.Error("cannot find IM setting")
-		return
-	}
-	if setting.Value == "" {
-		return
-	}
-	var settingValue api.SettingAppIMValue
-	if err := json.Unmarshal([]byte(setting.Value), &settingValue); err != nil {
-		log.Error("failed to unmarshal IM setting", zap.String("settingName", string(settingName)), zap.Error(err))
-		return
-	}
-
+func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Issue, settingValue *api.SettingAppIMValue) {
 	if !settingValue.ExternalApproval.Enabled {
 		return
 	}
@@ -551,7 +532,7 @@ func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Iss
 		stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 	}
 
-	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, &settingValue)
+	oldApproval, err := r.cancelOldExternalApprovalIfNeeded(ctx, issue, stage, settingValue)
 	if err != nil {
 		log.Error("failed to cancelOldExternalApprovalIfNeeded", zap.Error(err))
 		return
@@ -571,7 +552,7 @@ func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Iss
 		return
 	}
 
-	if err := r.createExternalApproval(ctx, issue, stage, &settingValue); err != nil {
+	if err := r.createExternalApproval(ctx, issue, stage, settingValue); err != nil {
 		log.Error("failed to create external approval", zap.Error(err))
 		return
 	}
