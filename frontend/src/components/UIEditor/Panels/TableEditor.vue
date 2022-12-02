@@ -6,7 +6,7 @@
       <div class="flex flex-row items-center space-x-2">
         <div class="flex flex-row justify-start items-center">
           <span class="mr-1 text-sm ml-3 whitespace-nowrap text-gray-500"
-            >Table Name:
+            >{{ $t("ui-editor.table.name") }}:
           </span>
           <input
             v-model="tableCache.name"
@@ -26,7 +26,7 @@
             <button
               class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:bg-gray-100"
             >
-              SQL Preview
+              {{ $t("ui-editor.actions.sql-preview") }}
             </button>
           </template>
           <div class="w-112 min-h-[16em] max-h-[32em] overflow-y-auto">
@@ -43,7 +43,9 @@
                 language="sql"
                 :code="state.statement"
               ></HighlightCodeBlock>
-              <span v-else class="py-2 italic">Nothing changed</span>
+              <span v-else class="py-2 italic">{{
+                $t("ui-editor.nothing-changed")
+              }}</span>
             </template>
           </div>
         </NPopover>
@@ -55,7 +57,7 @@
           <heroicons-solid:arrow-uturn-left
             class="w-4 h-auto mr-1 text-gray-400"
           />
-          Discard changes
+          {{ $t("ui-editor.actions.discard-changes") }}
         </button>
         <button
           class="flex flex-row bg-accent text-white justify-center items-center px-3 py-1 leading-6 text-sm rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
@@ -63,20 +65,22 @@
           @click="handleSaveChanges"
         >
           <heroicons-outline:save class="w-4 h-auto mr-1" />
-          Save
+          {{ $t("ui-editor.actions.save") }}
         </button>
       </div>
     </div>
     <!-- column table -->
     <div class="w-full py-2 flex flex-row justify-between items-center">
-      <span class="ml-3 text-gray-500 font-normal text-sm">Columns</span>
+      <span class="ml-3 text-gray-500 font-normal text-sm">{{
+        t("ui-editor.columns")
+      }}</span>
       <div>
         <button
           class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:bg-gray-100"
           @click="handleAddColumn"
         >
           <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-          Add column
+          {{ $t("ui-editor.actions.add-column") }}
         </button>
       </div>
     </div>
@@ -85,7 +89,7 @@
     >
       <!-- column table header -->
       <div
-        class="sticky top-0 z-10 grid grid-cols-[repeat(5,_minmax(0,_1fr))_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
+        class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_112px_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
         :class="tableCache.columnList.length > 0 && 'border-b'"
       >
         <span
@@ -101,7 +105,7 @@
         <div
           v-for="(column, index) in tableCache.columnList"
           :key="`${index}-${column.id}`"
-          class="grid grid-cols-[repeat(5,_minmax(0,_1fr))_32px] gr text-sm even:bg-gray-50"
+          class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_112px_32px] gr text-sm even:bg-gray-50"
         >
           <div class="table-body-item-container">
             <input
@@ -132,15 +136,6 @@
               </button>
             </NDropdown>
           </div>
-          <div
-            class="table-body-item-container flex justify-start items-center"
-          >
-            <BBCheckbox
-              class="ml-3"
-              :value="column.nullable"
-              @toggle="(value) => (column.nullable = value)"
-            />
-          </div>
           <div class="table-body-item-container">
             <input
               v-model="column.default"
@@ -157,10 +152,19 @@
               type="text"
             />
           </div>
+          <div
+            class="table-body-item-container flex justify-start items-center"
+          >
+            <BBCheckbox
+              class="ml-3"
+              :value="column.nullable"
+              @toggle="(value) => (column.nullable = value)"
+            />
+          </div>
           <div class="w-full flex justify-start items-center">
             <n-tooltip trigger="hover">
               <template #trigger>
-                <heroicons-solid:x-mark
+                <heroicons:trash
                   class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
                   @click="handleRemoveColumn(column)"
                 />
@@ -177,6 +181,7 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   useNotificationStore,
   useTableStore,
@@ -196,6 +201,7 @@ interface LocalState {
   statement: string;
 }
 
+const { t } = useI18n();
 const state = reactive<LocalState>({
   isFetchingDDL: false,
   statement: "",
@@ -215,23 +221,23 @@ const columnHeaderList = computed(() => {
   return [
     {
       key: "name",
-      label: "Name",
+      label: t("ui-editor.column.name"),
     },
     {
       key: "type",
-      label: "Type",
-    },
-    {
-      key: "nullable",
-      label: "Nullable",
+      label: t("ui-editor.column.type"),
     },
     {
       key: "default",
-      label: "Default",
+      label: t("ui-editor.column.default"),
     },
     {
       key: "comment",
-      label: "Comment",
+      label: t("ui-editor.column.comment"),
+    },
+    {
+      key: "nullable",
+      label: t("ui-editor.column.is-nullable"),
     },
   ];
 });

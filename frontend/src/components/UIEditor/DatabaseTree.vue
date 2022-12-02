@@ -67,6 +67,7 @@ import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import DatabaseIcon from "~icons/heroicons-outline/database";
 import TableIcon from "~icons/heroicons-outline/table";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { useI18n } from "vue-i18n";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -107,6 +108,7 @@ interface LocalState {
   shouldRelocateTreeNode: boolean;
 }
 
+const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const instanceStore = useInstanceStore();
 const tableStore = useTableStore();
@@ -136,8 +138,8 @@ const contextMenuOptions = computed(() => {
   if (treeNode?.type === "database") {
     const options = [];
     options.push({
-      key: "new-table",
-      label: "New Table",
+      key: "create-table",
+      label: t("ui-editor.actions.create-table"),
     });
     return options;
   } else if (treeNode?.type === "table") {
@@ -146,12 +148,12 @@ const contextMenuOptions = computed(() => {
     if (isDropped) {
       options.push({
         key: "restore",
-        label: "Restore",
+        label: t("ui-editor.actions.restore"),
       });
     } else {
       options.push({
         key: "drop",
-        label: "Drop",
+        label: t("ui-editor.actions.drop"),
       });
     }
     return options;
@@ -470,7 +472,7 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
 const handleContextMenuDropdownSelect = async (key: string) => {
   const treeNode = contextMenu.treeNode;
   if (treeNode?.type === "database") {
-    if (key === "new-table") {
+    if (key === "create-table") {
       await editorStore.getOrFetchTableListByDatabaseId(treeNode.databaseId);
       const table = editorStore.createNewTable(treeNode.databaseId);
       editorStore.addTab({
