@@ -31,21 +31,21 @@ func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
 	}
 	switch policyUpsert.Type {
 	case api.PolicyTypePipelineApproval:
-		if !s.feature(api.FeatureApprovalPolicy) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy) {
 			return errors.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
 		}
 	case api.PolicyTypeBackupPlan:
-		if !s.feature(api.FeatureBackupPolicy) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureBackupPolicy) {
 			return errors.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
 		}
 	case api.PolicyTypeSQLReview:
 		return nil
 	case api.PolicyTypeEnvironmentTier:
-		if !s.feature(api.FeatureEnvironmentTierPolicy) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy) {
 			return errors.Errorf(api.FeatureEnvironmentTierPolicy.AccessErrorMessage())
 		}
 	case api.PolicyTypeSensitiveData:
-		if !s.feature(api.FeatureSensitiveData) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData) {
 			return errors.Errorf(api.FeatureSensitiveData.AccessErrorMessage())
 		}
 	}

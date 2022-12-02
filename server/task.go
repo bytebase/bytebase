@@ -75,7 +75,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
 
-		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+		if taskPatch.EarliestAllowedTs != nil && !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
@@ -132,7 +132,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
 
-		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+		if taskPatch.EarliestAllowedTs != nil && !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
@@ -556,7 +556,7 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		if principal == nil {
 			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
 		}
-		if !s.feature(api.FeatureRBAC) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
 			principal.Role = api.Owner
 		}
 		if principal.Role == api.Owner || principal.Role == api.DBA {
@@ -574,7 +574,7 @@ func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, en
 		if member == nil {
 			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
 		}
-		if !s.feature(api.FeatureRBAC) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
 			member.Role = string(api.Owner)
 		}
 		if member.Role == string(api.Owner) {
