@@ -606,7 +606,7 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 	userID := make(map[string]string)
 	for _, user := range response.Data.UserList {
 		if user.UserID == "" {
-			return nil, errors.Errorf("id not found for email %s", user.Email)
+			continue
 		}
 		userID[user.Email] = user.UserID
 	}
