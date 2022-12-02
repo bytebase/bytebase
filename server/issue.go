@@ -34,6 +34,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		issueCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		// TODO(p0ny): remove this line when manually sending external approval is ready. This is to temporarily keep our auto sending behaviour.
+		issueCreate.AssigneeNeedAttention = true
+
 		issue, err := s.createIssue(ctx, issueCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
