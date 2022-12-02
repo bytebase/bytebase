@@ -123,7 +123,7 @@ func (driver *Driver) hasBytebaseDatabase() (bool, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
 	var remainingStmts []string
 	f := func(stmt string) error {
 		// This is a fake CREATE DATABASE statement. Engine driver will recognize it and establish a connection to create the database.
@@ -138,7 +138,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) err
 				return err
 			}
 			// We need to query to persist the database file.
-			if _, err := db.Exec("SELECT 1;"); err != nil {
+			if _, err := db.ExecContext(ctx, "SELECT 1;"); err != nil {
 				return err
 			}
 		} else if !strings.HasPrefix(stmt, "USE ") { // ignore the fake use database statement.
@@ -148,26 +148,32 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) err
 	}
 
 	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
-		return err
+		return 0, err
 	}
 
 	if len(remainingStmts) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	if _, err = tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err == nil {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
+	sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	rowsEffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		return 0, err
 	}
 
-	return err
+	return rowsEffected, nil
 }
 
 // Query queries a SQL statement.

@@ -354,6 +354,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "access-control",
+                name: "setting.workspace.access-control",
+                meta: { title: () => t("settings.sidebar.access-control") },
+                component: () =>
+                  import("../views/SettingWorkspaceAccessControl.vue"),
+                props: true,
+              },
+              {
                 path: "version-control",
                 name: "setting.workspace.version-control",
                 meta: { title: () => t("settings.sidebar.version-control") },

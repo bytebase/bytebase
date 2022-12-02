@@ -87,7 +87,6 @@ func Install(resourceDir string) (string, error) {
 	}
 
 	mysqlutilDir := path.Join(resourceDir, version)
-
 	if _, err := os.Stat(mysqlutilDir); err != nil {
 		if !os.IsNotExist(err) {
 			return "", errors.Wrapf(err, "failed to check binary directory path %q", mysqlutilDir)
@@ -95,35 +94,6 @@ func Install(resourceDir string) (string, error) {
 		// Install if not exist yet
 		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
 			return "", errors.Wrap(err, "cannot install mysqlutil")
-		}
-	}
-
-	checks := []string{
-		// TODO(zp): remove this line in the next few months
-		// We change Dockerfile's base image from alpine to debian slim in v1.2.1,
-		// and add libncurses.so.5 and libtinfo.so.5 to make mysqlbinlog run successfully.
-		// So we need to reinstall mysqlutil if the users upgrade from an older version that missing these shared libraries.
-		path.Join(mysqlutilDir, "lib", "private", "libncurses.so.5"),
-		path.Join(mysqlutilDir, "lib", "private", "libtinfo.so.5"),
-
-		// We embed mysqldump in version v1.2.3.
-		path.Join(mysqlutilDir, "bin", "mysqldump"),
-	}
-
-	for _, fp := range checks {
-		if _, err := os.Stat(fp); err != nil {
-			if !os.IsNotExist(err) {
-				return "", errors.Wrapf(err, "failed to check libncurses library path %q", fp)
-			}
-			// Remove mysqlutil of old version and reinstall it
-			if err := os.RemoveAll(mysqlutilDir); err != nil {
-				return "", errors.Wrapf(err, "failed to remove the old version mysqlutil binary directory %q", mysqlutilDir)
-			}
-			// Install the current version
-			if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
-				return "", errors.Wrap(err, "cannot install mysqlutil")
-			}
-			break
 		}
 	}
 

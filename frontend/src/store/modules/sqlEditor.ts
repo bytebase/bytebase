@@ -23,6 +23,7 @@ export const RESULT_ROWS_LIMIT = 10000;
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SQLEditorState => ({
+    accessControlPolicyList: [],
     connectionTree: {
       data: [],
       state: ConnectionTreeState.UNSET,

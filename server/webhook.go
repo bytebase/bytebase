@@ -359,7 +359,7 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
 		}
 
-		driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -784,7 +784,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	// The files are grouped by database names before calling this function, so they have the same database name here.
 	databaseName := fileInfoList[0].migrationInfo.Database
 	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType)
-	issueDescription := fmt.Sprintf("By VCS files %s", strings.Join(fileNameList, ", "))
+	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
 	if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}

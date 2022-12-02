@@ -30,6 +30,7 @@ categoryList:
       - dba-workflow
       - environment-tier
       - sensitive-data
+      - access-control
   - type: branding
     featureList:
       - branding-logo
@@ -172,6 +173,7 @@ planList:
         tooltip: dba-workflow-tooltip
       - type: environment-tier
       - type: sensitive-data
+      - type: access-control
       - type: branding-logo
     mainFeatureList:
       - sla

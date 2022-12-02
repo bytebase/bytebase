@@ -180,11 +180,68 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
 		var database *api.Database
 		if exec.DatabaseName != "" {
 			database, err = s.getDatabase(ctx, instance.ID, exec.DatabaseName)
 			if err != nil {
 				return err
+			}
+			// Database Access Control
+			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, database)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", exec.DatabaseName)).SetInternal(err)
+			}
+			if !hasAccessRights {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", exec.DatabaseName))
+			}
+		}
+
+		// Database Access Control for MySQL dialect.
+		// MySQL dialect can query cross the database.
+		// We need special check.
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", exec.Statement)).SetInternal(err)
+			}
+
+			if exec.DatabaseName != "" {
+				// Disallow cross-database query if specify database.
+				for _, databaseName := range databaseList {
+					upperDatabaseName := strings.ToUpper(databaseName)
+					// We allow querying information schema.
+					if upperDatabaseName == "" || upperDatabaseName == "INFORMATION_SCHEMA" {
+						continue
+					}
+					if databaseName != exec.DatabaseName {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", exec.DatabaseName, databaseName))
+					}
+				}
+			} else {
+				// Check database access rights.
+				for _, databaseName := range databaseList {
+					if databaseName == "" {
+						// We have already checked the current database access rights.
+						continue
+					}
+					accessDatabase, err := s.getDatabase(ctx, instance.ID, databaseName)
+					if err != nil {
+						if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+							// If database not found, skip.
+							continue
+						}
+						return err
+					}
+
+					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, accessDatabase)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.Name)).SetInternal(err)
+					}
+					if !hasAccessRights {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.Name))
+					}
+				}
 			}
 		}
 
@@ -202,7 +259,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
 
-			driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
@@ -268,7 +325,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -417,7 +474,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.getAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -490,7 +547,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 }
 
 func (s *Server) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
-	driver, err := s.getAdminDatabaseDriver(ctx, instance, "")
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return nil, err
 	}
@@ -647,7 +704,7 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 }
 
 func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
-	driver, err := s.getAdminDatabaseDriver(ctx, instance, "")
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return err
 	}
@@ -969,4 +1026,43 @@ func isMySQLExcludeDatabase(database string) bool {
 		return false
 	}
 	return true
+}
+
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, database *api.Database) (bool, error) {
+	// Only project member can access database.
+	if !api.HasActiveProjectMembership(principalID, database.Project) {
+		return false, nil
+	}
+
+	// calculate the effective policy.
+	databasePolicy, inheritFromEnvironment, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.ID)
+	if err != nil {
+		return false, err
+	}
+
+	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, database.Instance.EnvironmentID)
+	if err != nil {
+		return false, err
+	}
+
+	if !inheritFromEnvironment {
+		// Use database policy.
+		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, nil
+	}
+	// Use both database policy and environment policy.
+	hasAccessRights := true
+	if environmentPolicy != nil {
+		// Disallow by environment access policy.
+		for _, rule := range environmentPolicy.DisallowRuleList {
+			if rule.FullDatabase {
+				hasAccessRights = false
+				break
+			}
+		}
+	}
+	if databasePolicy != nil {
+		// Allow by database access policy.
+		hasAccessRights = true
+	}
+	return hasAccessRights, nil
 }

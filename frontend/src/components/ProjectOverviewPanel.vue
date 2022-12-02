@@ -164,7 +164,11 @@ import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
 import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
-import { useActivityStore } from "@/store";
+import {
+  useActivityStore,
+  useLabelList,
+  usePolicyListByResourceTypeAndPolicyType,
+} from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
 // Show at most 5 activity
@@ -212,6 +216,10 @@ export default defineComponent({
       yAxisLabel: undefined,
     });
     const activityStore = useActivityStore();
+    const accessControlPolicyList = usePolicyListByResourceTypeAndPolicyType({
+      resourceType: "database",
+      policyType: "bb.policy.access-control",
+    });
 
     const prepareActivityList = () => {
       state.isFetchingActivityList = true;
@@ -269,6 +277,9 @@ export default defineComponent({
       isTenantProject,
       filteredDatabaseList,
       excludedKeyList,
+      labelList,
+      selectableLabelList,
+      accessControlPolicyList,
     };
   },
 });

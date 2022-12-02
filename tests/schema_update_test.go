@@ -491,7 +491,7 @@ func TestVCS(t *testing.T) {
 			// TODO(p0ny): expose task DAG list and check the dependency.
 			a.Equal(api.TaskDatabaseSchemaUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Name)
-			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql, Prod/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql, Prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql", issue.Description)
+			a.Equal("By VCS files:\n\nProd/testVCSSchemaUpdate##ver1##migrate##create_table_book.sql\nProd/testVCSSchemaUpdate##ver2##migrate##create_table_book2.sql\nProd/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -576,7 +576,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(api.TaskDatabaseDataUpdate, issue.Pipeline.StageList[0].TaskList[0].Type)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
-			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver4##data##insert_data.sql", issue.Description)
+			a.Equal("By VCS files:\n\nProd/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -755,7 +755,7 @@ func TestVCS_SDL(t *testing.T) {
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(t, pgPort)
+			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
 			defer stopInstance()
 
 			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -925,7 +925,7 @@ func TestVCS_SDL(t *testing.T) {
 			issue, err = ctl.getIssue(issue.ID)
 			a.NoError(err)
 			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
-			a.Equal("By VCS files Prod/testVCSSchemaUpdate##ver2##data##insert_data.sql", issue.Description)
+			a.Equal("By VCS files:\n\nProd/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
 			_, err = ctl.patchIssueStatus(
 				api.IssueStatusPatch{
 					ID:     issue.ID,
@@ -1486,7 +1486,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(t, pgPort)
+			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDirOverride)
 			defer stopInstance()
 
 			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -1924,7 +1924,7 @@ CREATE TABLE public.book (
 			dbPort := getTestPort()
 			switch test.dbType {
 			case db.Postgres:
-				stopInstance := postgres.SetupTestInstance(t, dbPort)
+				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDirOverride)
 				defer stopInstance()
 			default:
 				a.FailNow("unsupported db type")

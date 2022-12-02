@@ -36,7 +36,40 @@ import (
 	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
+
+	// Register clickhouse driver.
+	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
+	// Register mysql driver.
+	_ "github.com/bytebase/bytebase/plugin/db/mysql"
+	// Register postgres driver.
+	_ "github.com/bytebase/bytebase/plugin/db/pg"
+	// Register snowflake driver.
+	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
+	// Register sqlite driver.
+	_ "github.com/bytebase/bytebase/plugin/db/sqlite"
+
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+	// Register fake advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
+	// Register mysql advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
+	// Register postgresql advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
+
+	// Register mysql differ driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/differ/mysql"
+	// Register postgres differ driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/differ/pg"
+	// Register postgres parser driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
+	// Register mysql transform driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
+	// Register mysql edit driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/edit/mysql"
 )
 
 const (
@@ -66,10 +99,11 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile         Profile
+	profile         config.Profile
 	e               *echo.Echo
 	metaDB          *store.MetadataDB
 	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
 	secret          string
 	workspaceID     string
@@ -118,7 +152,7 @@ var casbinDeveloperPolicy string
 // @schemes http
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, prof Profile) (*Server, error) {
+func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 	s := &Server{
 		profile:         prof,
 		startedTs:       time.Now().Unix(),
@@ -126,6 +160,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
+	if prof.ResourceDirOverride != "" {
+		resourceDir = prof.ResourceDirOverride
+	}
 
 	// Display config
 	log.Info("-----Config BEGIN-----")
@@ -212,6 +249,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.workspaceID = config.workspaceID
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
+	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, prof.DataDir)
 
 	e := echo.New()
 	e.Debug = prof.Debug
@@ -297,18 +335,18 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Schema syncer
-		s.SchemaSyncer = NewSchemaSyncer(s)
+		s.SchemaSyncer = NewSchemaSyncer(s, s.store)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
+		s.BackupRunner = NewBackupRunner(s, s.store, s.s3Client, &prof)
 
 		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager, feishu.NewProvider(prof.FeishuAPIURL))
 
 		// Anomaly scanner
-		s.AnomalyScanner = NewAnomalyScanner(s)
+		s.AnomalyScanner = NewAnomalyScanner(s, s.store, s.dbFactory)
 
 		// Rollback SQL generator
-		s.RollbackRunner = NewRollbackRunner(s)
+		s.RollbackRunner = NewRollbackRunner(s, s.store, s.dbFactory)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
@@ -407,7 +445,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof Profile) {
+func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof config.Profile) {
 	openAPIGroup := e.Group(openAPIPrefix)
 
 	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -454,7 +492,15 @@ func (s *Server) initMetricReporter(workspaceID string) {
 	}
 }
 
-func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
+// retrieved via the SettingService upon startup.
+type workspaceConfig struct {
+	// secret used to sign the JWT auth token
+	secret string
+	// workspaceID used to initial the identify for a new workspace.
+	workspaceID string
+}
+
+func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, error) {
 	// initial branding
 	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
@@ -465,7 +511,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 		return nil, err
 	}
 
-	conf := &config{}
+	conf := &workspaceConfig{}
 
 	// initial JWT token
 	value, err := common.RandomString(secretLength)
@@ -539,8 +585,10 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.RollbackRunner.Run(ctx, &s.runnerWG)
+		if s.profile.Mode == common.ReleaseModeDev {
+			s.runnerWG.Add(1)
+			go s.RollbackRunner.Run(ctx, &s.runnerWG)
+		}
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)

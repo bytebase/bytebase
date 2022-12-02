@@ -222,20 +222,24 @@ watch(tableList.value, () => {
         databaseTableList.push(table);
       }
     }
-    if (databaseTableList.length > 0) {
-      databaseTreeNode.children = databaseTableList.map((table) => {
-        return {
-          type: "table",
-          key: `t-${table.id}-${table.name}`,
-          label: table.name,
-          children: [],
-          isLeaf: true,
-          instanceId: database.instance.id,
-          databaseId: database.id,
-          tableId: table.id,
-          table: table,
-        };
-      });
+    databaseTreeNode.children = databaseTableList.map((table) => {
+      return {
+        type: "table",
+        key: `t-${table.database.id}-${table.id}-${table.name}`,
+        label: table.name,
+        children: [],
+        isLeaf: true,
+        instanceId: database.instance.id,
+        databaseId: database.id,
+        tableId: table.id,
+        table: table,
+      };
+    });
+
+    if (databaseTreeNode.children.length > 0) {
+      databaseTreeNode.isLeaf = false;
+    } else {
+      databaseTreeNode.isLeaf = true;
     }
   }
 });
@@ -257,14 +261,18 @@ watch(
       if (!expandedKeysRef.value.includes(databaseTreeNodeKey)) {
         expandedKeysRef.value.push(databaseTreeNodeKey);
       }
-      const tableTreeNodeKey = `t-${currentTab.tableId}-${currentTab.tableCache.name}`;
+      const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableId}-${currentTab.tableCache.name}`;
       selectedKeysRef.value = [tableTreeNodeKey];
     }
 
     if (state.shouldRelocateTreeNode) {
       nextTick(() => {
         const element = treeRef.value?.querySelector(".n-tree-node--selected");
-        scrollIntoView(element);
+        if (element) {
+          scrollIntoView(element, {
+            scrollMode: "if-needed",
+          });
+        }
       });
     }
   }
@@ -326,7 +334,7 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
     {
       class: additionalClassList.join(" "),
     },
-    [
+    () => [
       h("span", {
         innerHTML: getHighlightHTMLByKeyWords(
           escape(treeNode.label),
@@ -384,7 +392,7 @@ const loadSubTree = async (treeNode: TreeNode) => {
       treeNode.children = knownTableList.map((table) => {
         return {
           type: "table",
-          key: `t-${table.id}-${table.name}`,
+          key: `t-${table.database.id}-${table.id}-${table.name}`,
           label: table.name,
           children: [],
           isLeaf: true,
@@ -441,7 +449,9 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
           if (treeNode.type === "database") {
             selectedKeysRef.value = [`d-${treeNode.databaseId}`];
           } else if (treeNode.type === "table") {
-            selectedKeysRef.value = [`t-${treeNode.tableId}-${treeNode.label}`];
+            selectedKeysRef.value = [
+              `t-${treeNode.databaseId}-${treeNode.tableId}-${treeNode.label}`,
+            ];
           }
           state.shouldRelocateTreeNode = true;
         });

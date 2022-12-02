@@ -1,7 +1,7 @@
 <template>
   <div class="grid auto-rows-auto w-full h-full overflow-y-auto">
     <div
-      class="my-2 w-full flex justify-start items-center border-b border-b-gray-300"
+      class="pt-3 w-full flex justify-start items-center border-b border-b-gray-300"
     >
       <span
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
@@ -34,10 +34,10 @@
 
     <!-- List view -->
     <template v-if="state.selectedTab === 'list'">
-      <div class="mb-2 w-full flex justify-between items-center space-x-2">
+      <div class="py-2 w-full flex justify-between items-center space-x-2">
         <span class="ml-3 text-sm text-gray-500">Tables</span>
         <button
-          class="flex flex-row justify-center items-center border px-2 py-1 rounded text-sm hover:bg-gray-100"
+          class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:bg-gray-100"
           @click="handleCreateNewTable"
         >
           <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
@@ -69,7 +69,7 @@
           >
             <div class="table-body-item-container">
               <span
-                class="cursor-pointer hover:opacity-60"
+                class="cursor-pointer hover:text-accent"
                 @click="handleTableItemClick(table)"
                 >{{ table.name }}</span
               >
@@ -231,8 +231,12 @@ watch(
           databaseId: database.id,
           ...diffTableListResult,
         };
-        const statement = await editorStore.postDatabaseEdit(databaseEdit);
-        state.statement = statement;
+        try {
+          const statement = await editorStore.postDatabaseEdit(databaseEdit);
+          state.statement = statement;
+        } catch (error) {
+          state.statement = "";
+        }
       }
       state.isFetchingDDL = false;
     }
@@ -276,6 +280,6 @@ const handleDropTable = (table: Table) => {
   @apply py-2 px-3;
 }
 .table-body-item-container {
-  @apply w-full box-border p-px pl-3 pr-4 relative leading-9;
+  @apply w-full h-10 box-border p-px pl-3 pr-4 relative leading-9;
 }
 </style>

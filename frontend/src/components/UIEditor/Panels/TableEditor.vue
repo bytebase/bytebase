@@ -17,11 +17,14 @@
         </div>
       </div>
       <div class="flex flex-row items-center space-x-2">
-        <NPopover trigger="click" placement="bottom-end">
+        <NPopover
+          trigger="click"
+          placement="bottom-center"
+          @update:show="handlePreviewDDLStatement"
+        >
           <template #trigger>
             <button
-              class="flex flex-row justify-center items-center border px-2 py-1 text-sm text-gray-700 rounded cursor-pointer hover:bg-gray-100"
-              @click="handlePreviewDDLStatement"
+              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:bg-gray-100"
             >
               SQL Preview
             </button>
@@ -35,19 +38,48 @@
             </div>
             <template v-else>
               <HighlightCodeBlock
-                v-if="state.ddlStatement !== ''"
+                v-if="state.statement !== ''"
                 class="text-sm whitespace-pre-wrap break-all"
                 language="sql"
-                :code="state.ddlStatement"
+                :code="state.statement"
               ></HighlightCodeBlock>
               <span v-else class="py-2 italic">Nothing changed</span>
             </template>
           </div>
         </NPopover>
+        <button
+          class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="!allowSave"
+          @click="handleDiscardChanges"
+        >
+          <heroicons-solid:arrow-uturn-left
+            class="w-4 h-auto mr-1 text-gray-400"
+          />
+          Discard changes
+        </button>
+        <button
+          class="flex flex-row bg-accent text-white justify-center items-center px-3 py-1 leading-6 text-sm rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="!allowSave"
+          @click="handleSaveChanges"
+        >
+          <heroicons-outline:save class="w-4 h-auto mr-1" />
+          Save
+        </button>
       </div>
     </div>
     <!-- column table -->
-    <p class="py-2 mt-2 ml-3 text-gray-500 font-normal text-sm">Columns</p>
+    <div class="w-full py-2 flex flex-row justify-between items-center">
+      <span class="ml-3 text-gray-500 font-normal text-sm">Columns</span>
+      <div>
+        <button
+          class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:bg-gray-100"
+          @click="handleAddColumn"
+        >
+          <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+          Add column
+        </button>
+      </div>
+    </div>
     <div
       class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
     >
@@ -85,7 +117,7 @@
             <input
               v-model="column.type"
               placeholder="column type"
-              class="pr-8 column-field-input"
+              class="column-field-input !pr-8"
               type="text"
             />
             <NDropdown
@@ -139,40 +171,6 @@
         </div>
       </div>
     </div>
-    <!-- Action buttons container -->
-    <div
-      class="py-2 w-full flex flex-row justify-between items-center space-x-2"
-    >
-      <button
-        class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:bg-gray-100"
-        @click="handleAddColumn"
-      >
-        <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-        Add column
-      </button>
-      <div>
-        <div class="flex flex-row items-center space-x-2">
-          <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="!allowSave"
-            @click="handleDiscardChanges"
-          >
-            <heroicons-solid:arrow-uturn-left
-              class="w-4 h-auto mr-1 text-gray-400"
-            />
-            Discard changes
-          </button>
-          <button
-            class="flex flex-row bg-accent text-white justify-center items-center px-3 py-1 leading-6 text-sm rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="!allowSave"
-            @click="handleSaveChanges"
-          >
-            <heroicons-outline:save class="w-4 h-auto mr-1" />
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -195,12 +193,12 @@ const columnTypeFieldRegexp = /\S+/;
 
 interface LocalState {
   isFetchingDDL: boolean;
-  ddlStatement: string;
+  statement: string;
 }
 
 const state = reactive<LocalState>({
   isFetchingDDL: false,
-  ddlStatement: "",
+  statement: "",
 });
 const editorStore = useUIEditorStore();
 const tableStore = useTableStore();
@@ -292,8 +290,7 @@ const handleSaveChanges = async () => {
     }
   }
 
-  table.name = tableCache.name;
-  table.columnList = cloneDeep(tableCache.columnList);
+  editorStore.saveTab(currentTab);
 };
 
 const handleAddColumn = () => {
@@ -317,7 +314,11 @@ const handleDiscardChanges = () => {
   tableCache.columnList = cloneDeep(table.columnList);
 };
 
-const handlePreviewDDLStatement = async () => {
+const handlePreviewDDLStatement = async (show: boolean) => {
+  if (!show) {
+    return;
+  }
+
   const databaseEdit: DatabaseEdit = {
     databaseId: table.database.id,
     createTableList: [],
@@ -344,8 +345,12 @@ const handlePreviewDDLStatement = async () => {
     }
   }
   state.isFetchingDDL = true;
-  const statement = await editorStore.postDatabaseEdit(databaseEdit);
-  state.ddlStatement = statement;
+  try {
+    const statement = await editorStore.postDatabaseEdit(databaseEdit);
+    state.statement = statement;
+  } catch (error) {
+    state.statement = "";
+  }
   state.isFetchingDDL = false;
 };
 </script>
@@ -355,9 +360,9 @@ const handlePreviewDDLStatement = async () => {
   @apply py-2 px-3;
 }
 .table-body-item-container {
-  @apply w-full box-border p-px pr-2 relative;
+  @apply w-full h-10 box-border p-px pr-2 relative;
 }
 .column-field-input {
-  @apply w-full box-border rounded border-none bg-transparent text-sm focus:bg-white focus:text-black placeholder:italic placeholder:text-gray-400;
+  @apply w-full pr-1 box-border border-transparent text-ellipsis rounded bg-transparent text-sm placeholder:italic placeholder:text-gray-400 focus:bg-white focus:text-black;
 }
 </style>

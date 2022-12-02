@@ -201,6 +201,7 @@ export enum ConnectionTreeState {
 }
 
 export interface SQLEditorState {
+  accessControlPolicyList: Policy[];
   connectionTree: {
     data: ConnectionAtom[];
     state: ConnectionTreeState;

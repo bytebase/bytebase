@@ -332,7 +332,8 @@
       "subscription": "订阅",
       "labels": "标签",
       "debug-log": "Debug 日志",
-      "sensitive-data": "敏感数据"
+      "sensitive-data": "敏感数据",
+      "access-control": "访问控制"
     },
     "profile": {
       "email": "邮箱",
@@ -413,6 +414,11 @@
     "sensitive-data": {
       "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，你可以将多个列标记为敏感数据。",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？"
+    },
+    "access-control": {
+      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。",
+      "add-rule": "添加规则",
+      "remove-policy-tips": "删除这条规则？"
     }
   },
   "activity": {
@@ -804,7 +810,7 @@
     },
     "environment-tier": {
       "name": "环境级别",
-      "description": "使该环境在显示上不同于其他环境。",
+      "description": "使该环境在显示上不同于其他环境。{newline}默认情况下，开发者无法通过 SQL 编辑器在这个环境的数据库上执行任何查询。",
       "mark-env-as-protected": "标记为受保护的环境"
     }
   },
@@ -964,7 +970,8 @@
     "ui-editor": {
       "preview-issue": "预览工单"
     },
-    "sensitive": "敏感"
+    "sensitive": "敏感",
+    "access-denied": "你没有访问该数据库的权限"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1468,6 +1475,10 @@
         "title": "敏感数据",
         "desc": "将数据表的列标记为敏感数据，它们在查询结果中将会被显示成 \"******\"。"
       },
+      "bb-feature-access-control": {
+        "title": "访问控制",
+        "desc": "可以修改受保护的环境中的数据库的查询权限。"
+      },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",
         "desc": "检查工单是否有 \"LGTM\" 评论。"
@@ -1543,11 +1554,13 @@
     "disabled": "已禁用",
     "no-policy-set": "没有 SQL 审核策略",
     "create-policy": "创建审核策略",
+    "duplicate-policy": "复制审核策略",
     "configure-policy": "配置审核策略",
     "search-rule-name": "搜索规则名称",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
     "policy-updated": "审核策略已更新",
+    "policy-duplicated": "审核策略已复制",
     "rules": "规则",
     "filter": "筛选",
     "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",

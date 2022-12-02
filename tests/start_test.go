@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
@@ -55,16 +56,20 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	dir, err := resourcemysql.Install(os.TempDir())
-	if err != nil {
-		log.Fatal(err)
-	}
-	mysqlBinDir = dir
-	dir, err = postgres.Install(os.TempDir())
+	resourceDirOverride = os.TempDir()
+	dir, err := postgres.Install(resourceDirOverride)
 	if err != nil {
 		log.Fatal(err)
 	}
 	externalPgBinDir = dir
+	if _, err := mysqlutil.Install(resourceDirOverride); err != nil {
+		log.Fatal(err)
+	}
+	dir, err = resourcemysql.Install(resourceDirOverride)
+	if err != nil {
+		log.Fatal(err)
+	}
+	mysqlBinDir = dir
 
 	dir, err = os.MkdirTemp("", "bbtest-pgdata")
 	if err != nil {
