@@ -818,3 +818,14 @@ func extractMySQLSingleTable(fromClause *tidbast.TableRefsClause) (string, strin
 	}
 	return tableName.Schema.O, tableName.Name.O, true
 }
+
+func IsAffectedRowsStatement(stmt string) bool {
+	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
+	upperStatement := strings.ToUpper(stmt)
+	for _, prefix := range affectedRowsStatementPrefix {
+		if strings.HasPrefix(upperStatement, prefix) {
+			return true
+		}
+	}
+	return false
+}

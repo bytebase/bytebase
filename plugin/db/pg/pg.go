@@ -417,7 +417,7 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 
 	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
 	// https://github.com/postgres/postgres/blob/master/src/bin/psql/common.c#L969
-	if len(singleSQLs) == 1 && isAffectedRowsStatement(singleSQLs[0].Text) {
+	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
 		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
 		if err != nil {
 			return nil, err
@@ -445,15 +445,4 @@ func (driver *Driver) switchDatabase(dbName string) error {
 	driver.db = db
 	driver.databaseName = dbName
 	return nil
-}
-
-func isAffectedRowsStatement(stmt string) bool {
-	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
-	upperStatement := strings.ToUpper(stmt)
-	for _, prefix := range affectedRowsStatementPrefix {
-		if strings.HasPrefix(upperStatement, prefix) {
-			return true
-		}
-	}
-	return false
 }
