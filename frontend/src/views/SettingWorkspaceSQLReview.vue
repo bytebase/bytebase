@@ -40,9 +40,9 @@
     </template>
   </div>
   <BBModal
+    v-if="state.showDuplicateModal && state.duplicatePolicy"
     :title="$t('sql-review.duplicate-policy')"
     @close="state.showDuplicateModal = false"
-    v-if="state.showDuplicateModal && state.duplicatePolicy"
   >
     <div class="min-w-0 md:min-w-400">
       <div class="mt-2">
@@ -113,8 +113,8 @@
         <button
           type="button"
           class="btn-primary"
-          @click.prevent="duplicatePolicy"
           :disabled="duplicateButtonDisabled"
+          @click.prevent="duplicatePolicy"
         >
           {{ $t("common.duplicate") }}
         </button>
