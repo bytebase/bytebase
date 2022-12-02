@@ -626,7 +626,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
-		if !s.feature(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
@@ -702,7 +702,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
-		if !s.feature(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
 			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())

@@ -96,8 +96,7 @@ type Server struct {
 
 	ActivityManager *ActivityManager
 
-	LicenseService enterpriseAPI.LicenseService
-	subscription   enterpriseAPI.Subscription
+	licenseService enterpriseAPI.LicenseService
 
 	profile         config.Profile
 	e               *echo.Echo
@@ -434,12 +433,12 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
+	s.licenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}
-
-	s.initSubscription(ctx)
+	// Cache the license.
+	s.licenseService.LoadSubscription(ctx)
 
 	serverStarted = true
 	return s, nil
@@ -470,16 +469,11 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 	})
 }
 
-// initSubscription will initial the subscription cache in memory.
-func (s *Server) initSubscription(ctx context.Context) {
-	s.subscription = s.loadSubscription(ctx)
-}
-
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter(workspaceID string) {
 	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo && !s.profile.DisableMetric
 	if enabled {
-		metricReporter := NewMetricReporter(s, workspaceID)
+		metricReporter := NewMetricReporter(s.store, s.licenseService, s.profile, workspaceID)
 		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
 		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
 		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))

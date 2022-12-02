@@ -678,7 +678,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if c.PointInTimeTs != nil && !s.feature(api.FeaturePITR) {
+	if c.PointInTimeTs != nil && !s.licenseService.IsFeatureEnabled(api.FeaturePITR) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
 	}
 
@@ -716,7 +716,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if !s.feature(api.FeatureTaskScheduleTime) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 		for _, detail := range c.DetailList {
 			if detail.EarliestAllowedTs != 0 {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -765,12 +765,12 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if databaseNameCount > 1 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with database name.")
 	}
-	if project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 	}
-	maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaximumTask)
+	maximumTaskLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumTask)
 	if int64(databaseIDCount) > maximumTaskLimit {
-		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, databaseIDCount))
+		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can update up to %d databases, got %d.", maximumTaskLimit, databaseIDCount))
 	}
 
 	// aggregatedMatrix is the aggregated matrix by deployments.
@@ -860,14 +860,14 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 }
 
 func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
-	if !s.feature(api.FeatureOnlineMigration) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureOnlineMigration) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureOnlineMigration.AccessErrorMessage())
 	}
 	c := api.UpdateSchemaGhostContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if !s.feature(api.FeatureTaskScheduleTime) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 		for _, detail := range c.DetailList {
 			if detail.EarliestAllowedTs != 0 {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -1016,7 +1016,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	if project.TenantMode == api.TenantModeTenant {
-		if !s.feature(api.FeatureMultiTenancy) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 		if _, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels); err != nil {
