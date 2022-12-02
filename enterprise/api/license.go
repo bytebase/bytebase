@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -58,7 +59,7 @@ func (l *License) OrgID() string {
 // LicenseService is the service for enterprise license.
 type LicenseService interface {
 	// StoreLicense will store license into file.
-	StoreLicense(patch *SubscriptionPatch) error
+	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
 	// LoadLicense will load license from file and validate it.
-	LoadLicense() (*License, error)
+	LoadLicense(ctx context.Context) (*License, error)
 }
