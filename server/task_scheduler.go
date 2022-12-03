@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -26,12 +27,13 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
 		server:                 server,
 		store:                  store,
 		activityManager:        activityManager,
 		licenseService:         licenseService,
+		profile:                profile,
 		executorGetters:        make(map[api.TaskType]func() TaskExecutor),
 		runningExecutors:       make(map[int]TaskExecutor),
 		runningExecutorsCancel: make(map[int]context.CancelFunc),
@@ -44,6 +46,7 @@ type TaskScheduler struct {
 	store           *store.Store
 	activityManager *ActivityManager
 	licenseService  enterpriseAPI.LicenseService
+	profile         config.Profile
 
 	executorGetters        map[api.TaskType]func() TaskExecutor
 	runningExecutors       map[int]TaskExecutor
@@ -359,7 +362,7 @@ func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
 				return errors.Wrapf(err, "failed to patch backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed)
 			}
 			log.Debug(fmt.Sprintf("Changed backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed))
-			if err := removeLocalBackupFile(s.server.profile.DataDir, backup); err != nil {
+			if err := removeLocalBackupFile(s.profile.DataDir, backup); err != nil {
 				log.Warn(err.Error())
 			}
 		}
