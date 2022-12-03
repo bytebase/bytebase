@@ -26,10 +26,11 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, licenseService enterpriseAPI.LicenseService) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService) *TaskScheduler {
 	return &TaskScheduler{
 		server:                 server,
 		store:                  store,
+		activityManager:        activityManager,
 		licenseService:         licenseService,
 		executorGetters:        make(map[api.TaskType]func() TaskExecutor),
 		runningExecutors:       make(map[int]TaskExecutor),
@@ -39,9 +40,10 @@ func NewTaskScheduler(server *Server, store *store.Store, licenseService enterpr
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	server         *Server
-	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	server          *Server
+	store           *store.Store
+	activityManager *ActivityManager
+	licenseService  enterpriseAPI.LicenseService
 
 	executorGetters        map[api.TaskType]func() TaskExecutor
 	runningExecutors       map[int]TaskExecutor
@@ -708,7 +710,7 @@ func (s *TaskScheduler) createTaskStatusUpdateActivity(ctx context.Context, task
 		activityCreate.Comment = *taskStatusPatch.Comment
 	}
 
-	if _, err := s.server.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue}); err != nil {
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue}); err != nil {
 		return err
 	}
 	return nil
