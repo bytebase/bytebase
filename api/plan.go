@@ -3,8 +3,6 @@ package api
 import (
 	"fmt"
 	"math"
-
-	"github.com/bytebase/bytebase/common"
 )
 
 // PlanType is the type for a plan.
@@ -204,7 +202,7 @@ func (e FeatureType) AccessErrorMessage() string {
 
 // minimumSupportedPlan will find the minimum plan which supports the target feature.
 func (e FeatureType) minimumSupportedPlan() PlanType {
-	for i, enabled := range featureMatrix[e].planToggle {
+	for i, enabled := range featureMatrix[e] {
 		if enabled {
 			return PlanType(i)
 		}
@@ -213,101 +211,34 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 	return ENTERPRISE
 }
 
-type featureConfig struct {
-	// whether a particular feature is enabled in the release build. This allows us to progressively develop the feature
-	// without exposing to the public.
-	enabled bool
-	// whether a particular feature is available in [FREE, TEAM, Enterprise] plan respectively.
-	planToggle [3]bool
-}
-
-// featureMatrix is a map from the a particular feature to the respective enablement of a particular plan.
-var featureMatrix = map[FeatureType]featureConfig{
+// featureMatrix is a map from the a particular feature to the respective enablement of a particular
+// plan in [FREE, TEAM, Enterprise].
+var featureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	Feature3rdPartyAuth: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
-	FeatureRBAC: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
+	Feature3rdPartyAuth: {false, true, true},
+	FeatureRBAC:         {false, true, true},
 	// Branding
-	FeatureBranding: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
+	FeatureBranding: {false, false, true},
 	// Change Workflow
-	FeatureDataSource: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, false},
-	},
-	FeatureDBAWorkflow: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
-	FeatureLGTM: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
-	FeatureIMApproval: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
-	FeatureMultiTenancy: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
-	FeatureOnlineMigration: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
-	FeatureSchemaDrift: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
-	FeatureSQLReview: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
-	FeatureTaskScheduleTime: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
-	FeatureVCSSQLReviewWorkflow: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
+	FeatureDataSource:           {false, false, false},
+	FeatureDBAWorkflow:          {false, false, true},
+	FeatureLGTM:                 {false, false, true},
+	FeatureIMApproval:           {false, false, true},
+	FeatureMultiTenancy:         {false, false, true},
+	FeatureOnlineMigration:      {false, true, true},
+	FeatureSchemaDrift:          {false, true, true},
+	FeatureSQLReview:            {false, true, true},
+	FeatureTaskScheduleTime:     {false, true, true},
+	FeatureVCSSQLReviewWorkflow: {false, false, true},
 	// Database management
-	FeaturePITR: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
-	FeatureReadReplicaConnection: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
-	FeatureSyncSchemaAllVersions: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
+	FeaturePITR:                  {false, true, true},
+	FeatureReadReplicaConnection: {false, false, true},
+	FeatureSyncSchemaAllVersions: {false, false, true},
 	// Policy Control
-	FeatureApprovalPolicy: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
-	FeatureBackupPolicy: {
-		enabled:    true,
-		planToggle: [3]bool{false, true, true},
-	},
-	FeatureEnvironmentTierPolicy: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
-	FeatureSensitiveData: {
-		enabled:    true,
-		planToggle: [3]bool{false, false, true},
-	},
+	FeatureApprovalPolicy:        {false, true, true},
+	FeatureBackupPolicy:          {false, true, true},
+	FeatureEnvironmentTierPolicy: {false, false, true},
+	FeatureSensitiveData:         {false, false, true},
 }
 
 // Plan is the API message for a plan.
@@ -345,14 +276,5 @@ var PlanLimitValues = map[PlanLimit][3]int64{
 
 // Feature returns whether a particular feature is available in a particular plan.
 func Feature(feature FeatureType, plan PlanType) bool {
-	return featureMatrix[feature].planToggle[plan]
-}
-
-// FeatureEnabled returns whether a particular feature is enabled.
-func FeatureEnabled(feature FeatureType, mode common.ReleaseMode) bool {
-	// Feature is always enabled in dev mode.
-	if mode == common.ReleaseModeDev {
-		return true
-	}
-	return featureMatrix[feature].enabled
+	return featureMatrix[feature][plan]
 }

@@ -1,7 +1,7 @@
 //go:build release
 // +build release
 
-package store
+package common
 
 // FeatureFlag in release build always returns false.
 // Because we would remove the FeatureFlag check entirely after the schema change for the feature
