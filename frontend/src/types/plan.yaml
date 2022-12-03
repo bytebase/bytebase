@@ -2,6 +2,8 @@ categoryList:
   - type: database-management
     featureList:
       - instance-count
+      - environment-count
+      - task-count-in-issue
       - schema-change
       - sync-schema
       - migration-history
@@ -45,6 +47,10 @@ planList:
     featureList:
       - type: instance-count
         content: instance-upto-5
+      - type: environment-count
+        content: environment-upto-2
+      - type: task-count-in-issue
+        content: task-upto-4
       - type: schema-change
         content: schema-change-basic
         tooltip: schema-change-basic-tooltip
@@ -87,6 +93,10 @@ planList:
     featureList:
       - type: instance-count
         content: instance-minimum-5
+      - type: environment-count
+        content: environment-unlimited
+      - type: task-count-in-issue
+        content: task-unlimited
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
@@ -136,6 +146,10 @@ planList:
     featureList:
       - type: instance-count
         content: instance-customized
+      - type: environment-count
+        content: environment-unlimited
+      - type: task-count-in-issue
+        content: task-unlimited
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
