@@ -21,7 +21,7 @@ type TaskCheckStatementAdvisorSimpleExecutor struct {
 }
 
 // Run will run the task check statement advisor executor once.
-func (*TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, _ *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (*TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")

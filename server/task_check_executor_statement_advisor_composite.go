@@ -8,6 +8,8 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/store"
 )
 
 // SQL review policy consists of a list of SQL review rules.
@@ -17,16 +19,21 @@ import (
 //   3. Each [db.Type][AdvisorType] maps an advisor.
 
 // NewTaskCheckStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
-func NewTaskCheckStatementAdvisorCompositeExecutor() TaskCheckExecutor {
-	return &TaskCheckStatementAdvisorCompositeExecutor{}
+func NewTaskCheckStatementAdvisorCompositeExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) TaskCheckExecutor {
+	return &TaskCheckStatementAdvisorCompositeExecutor{
+		store:     store,
+		dbFactory: dbFactory,
+	}
 }
 
 // TaskCheckStatementAdvisorCompositeExecutor is the task check statement advisor composite executor with has sub-advisor.
 type TaskCheckStatementAdvisorCompositeExecutor struct {
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
-func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	if taskCheckRun.Type != api.TaskCheckDatabaseStatementAdvise {
 		return nil, common.Errorf(common.Invalid, "invalid check statement advisor composite type: %v", taskCheckRun.Type)
 	}
@@ -36,7 +43,7 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")
 	}
 
-	policy, err := server.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ID: &payload.PolicyID})
+	policy, err := e.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ID: &payload.PolicyID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return []api.TaskCheckResult{
@@ -52,12 +59,12 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 		return nil, common.Wrapf(err, common.Internal, "failed to get SQL review policy")
 	}
 
-	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to get task by id")
 	}
 
-	catalog, err := server.store.NewCatalog(ctx, *task.DatabaseID, payload.DbType)
+	catalog, err := e.store.NewCatalog(ctx, *task.DatabaseID, payload.DbType)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
@@ -67,7 +74,7 @@ func (*TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, serv
 		return nil, err
 	}
 
-	driver, err := server.dbFactory.GetReadOnlyDatabaseDriver(ctx, task.Instance, task.Database.Name)
+	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, task.Instance, task.Database.Name)
 	if err != nil {
 		return nil, err
 	}

@@ -12,17 +12,20 @@ import (
 )
 
 // NewTaskCheckLGTMExecutor creates a task check LGTM executor.
-func NewTaskCheckLGTMExecutor() TaskCheckExecutor {
-	return &TaskCheckLGTMExecutor{}
+func NewTaskCheckLGTMExecutor(store *store.Store) TaskCheckExecutor {
+	return &TaskCheckLGTMExecutor{
+		store: store,
+	}
 }
 
 // TaskCheckLGTMExecutor is the task check LGTM executor. It checks if "LGTM" comments are present.
 type TaskCheckLGTMExecutor struct {
+	store *store.Store
 }
 
 // Run will run the task check LGTM executor once.
-func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+func (e *TaskCheckLGTMExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)
 	}
@@ -37,7 +40,7 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 		}, nil
 	}
 
-	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := e.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)
 	}
@@ -65,7 +68,7 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 	}
 
 	activityType := string(api.ActivityIssueCommentCreate)
-	activityList, err := server.store.FindActivity(ctx, &api.ActivityFind{
+	activityList, err := e.store.FindActivity(ctx, &api.ActivityFind{
 		TypePrefix:  &activityType,
 		ContainerID: &issue.ID,
 	})
@@ -73,7 +76,7 @@ func (*TaskCheckLGTMExecutor) Run(ctx context.Context, server *Server, taskCheck
 		return nil, common.Wrap(err, common.Internal)
 	}
 
-	ok, err := checkLGTMcomments(ctx, server.store, activityList, issue)
+	ok, err := checkLGTMcomments(ctx, e.store, activityList, issue)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to check LGTM comments")
 	}
