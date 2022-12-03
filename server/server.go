@@ -310,31 +310,31 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler
-		taskCheckScheduler := NewTaskCheckScheduler(s)
+		taskCheckScheduler := NewTaskCheckScheduler(s, storeInstance, s.licenseService)
 
 		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor()
 		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
 		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
 
-		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor()
+		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory)
 		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
 
-		statementTypeExecutor := NewTaskCheckStatementTypeExecutor()
+		statementTypeExecutor := NewTaskCheckStatementTypeExecutor(storeInstance)
 		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
 
-		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor()
+		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor(storeInstance, s.dbFactory)
 		taskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
 
-		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor()
+		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor(storeInstance, s.dbFactory)
 		taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
 
-		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor()
+		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor(storeInstance)
 		taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
 
-		checkLGTMExecutor := NewTaskCheckLGTMExecutor()
+		checkLGTMExecutor := NewTaskCheckLGTMExecutor(storeInstance)
 		taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
 
-		pitrMySQLExecutor := NewTaskCheckPITRMySQLExecutor()
+		pitrMySQLExecutor := NewTaskCheckPITRMySQLExecutor(storeInstance, s.dbFactory)
 		taskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
 
 		s.TaskCheckScheduler = taskCheckScheduler

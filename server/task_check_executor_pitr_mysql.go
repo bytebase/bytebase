@@ -9,20 +9,27 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewTaskCheckPITRMySQLExecutor creates a task check migration schema executor.
-func NewTaskCheckPITRMySQLExecutor() TaskCheckExecutor {
-	return &TaskCheckPITRMySQLExecutor{}
+func NewTaskCheckPITRMySQLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) TaskCheckExecutor {
+	return &TaskCheckPITRMySQLExecutor{
+		store:     store,
+		dbFactory: dbFactory,
+	}
 }
 
 // TaskCheckPITRMySQLExecutor is the task check migration schema executor.
 type TaskCheckPITRMySQLExecutor struct {
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check migration schema executor once.
-func (*TaskCheckPITRMySQLExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+func (e *TaskCheckPITRMySQLExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get task by ID %d", taskCheckRun.TaskID)
 	}
@@ -54,12 +61,12 @@ func (*TaskCheckPITRMySQLExecutor) Run(ctx context.Context, server *Server, task
 		databaseName = *payload.DatabaseName
 	}
 
-	instance, err := server.store.GetInstanceByID(ctx, instanceID)
+	instance, err := e.store.GetInstanceByID(ctx, instanceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance by ID %d", instanceID)
 	}
 
-	driver, err := server.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		return nil, err
 	}

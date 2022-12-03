@@ -6,20 +6,27 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewTaskCheckMigrationSchemaExecutor creates a task check migration schema executor.
-func NewTaskCheckMigrationSchemaExecutor() TaskCheckExecutor {
-	return &TaskCheckMigrationSchemaExecutor{}
+func NewTaskCheckMigrationSchemaExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) TaskCheckExecutor {
+	return &TaskCheckMigrationSchemaExecutor{
+		store:     store,
+		dbFactory: dbFactory,
+	}
 }
 
 // TaskCheckMigrationSchemaExecutor is the task check migration schema executor.
 type TaskCheckMigrationSchemaExecutor struct {
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check migration schema executor once.
-func (*TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+func (e *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
 	}
@@ -35,12 +42,12 @@ func (*TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *Server
 		}, nil
 	}
 
-	instance, err := server.store.GetInstanceByID(ctx, task.InstanceID)
+	instance, err := e.store.GetInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}
 
-	driver, err := server.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}

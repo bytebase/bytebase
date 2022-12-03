@@ -13,21 +13,26 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewTaskCheckScheduler creates a task check scheduler.
-func NewTaskCheckScheduler(server *Server) *TaskCheckScheduler {
+func NewTaskCheckScheduler(server *Server, store *store.Store, licenseService enterpriseAPI.LicenseService) *TaskCheckScheduler {
 	return &TaskCheckScheduler{
-		executors: make(map[api.TaskCheckType]TaskCheckExecutor),
-		server:    server,
+		server:         server,
+		store:          store,
+		licenseService: licenseService,
+		executors:      make(map[api.TaskCheckType]TaskCheckExecutor),
 	}
 }
 
 // TaskCheckScheduler is the task check scheduler.
 type TaskCheckScheduler struct {
-	executors map[api.TaskCheckType]TaskCheckExecutor
-
-	server *Server
+	server         *Server
+	store          *store.Store
+	licenseService enterpriseAPI.LicenseService
+	executors      map[api.TaskCheckType]TaskCheckExecutor
 }
 
 // Run will run the task check scheduler once.
@@ -59,7 +64,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				taskCheckRunFind := &api.TaskCheckRunFind{
 					StatusList: &taskCheckRunStatusList,
 				}
-				taskCheckRunList, err := s.server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+				taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
 				if err != nil {
 					log.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
@@ -89,7 +94,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							delete(runningTaskChecks, taskCheckRun.ID)
 							mu.Unlock()
 						}()
-						checkResultList, err := executor.Run(ctx, s.server, taskCheckRun)
+						checkResultList, err := executor.Run(ctx, taskCheckRun)
 
 						if err == nil {
 							bytes, err := json.Marshal(api.TaskCheckRunResultPayload{
@@ -112,7 +117,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      common.Ok,
 								Result:    string(bytes),
 							}
-							_, err = s.server.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
+							_, err = s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
@@ -148,7 +153,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      common.ErrorCode(err),
 								Result:    string(bytes),
 							}
-							_, err = s.server.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
+							_, err = s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
@@ -213,7 +218,7 @@ func (s *TaskCheckScheduler) getTaskCheck(ctx context.Context, task *api.Task, c
 	if err != nil {
 		return nil, err
 	}
-	database, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+	database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +253,7 @@ func (s *TaskCheckScheduler) ScheduleCheck(ctx context.Context, task *api.Task, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to getTaskCheck")
 	}
-	taskCheckRunList, err := s.server.store.BatchCreateTaskCheckRun(ctx, createList)
+	taskCheckRunList, err := s.store.BatchCreateTaskCheckRun(ctx, createList)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +319,7 @@ func (s *TaskCheckScheduler) getSQLReviewTaskCheck(ctx context.Context, task *ap
 	if !api.IsSQLReviewSupported(database.Instance.Engine) {
 		return nil, nil
 	}
-	policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
 	}
@@ -403,10 +408,10 @@ func (*TaskCheckScheduler) getPITRTaskCheck(_ context.Context, task *api.Task, c
 }
 
 func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
-	if !s.server.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
 		return nil, nil
 	}
-	issues, err := s.server.store.FindIssueStripped(ctx, &api.IssueFind{PipelineID: &task.PipelineID})
+	issues, err := s.store.FindIssueStripped(ctx, &api.IssueFind{PipelineID: &task.PipelineID})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -421,7 +426,7 @@ func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Tas
 		// don't schedule LGTM check if it's disabled.
 		return nil, nil
 	}
-	approvalPolicy, err := s.server.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
+	approvalPolicy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
