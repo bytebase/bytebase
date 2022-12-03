@@ -424,7 +424,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				}
 			}
 
-			if api.IsSyntaxCheckSupported(task.Database.Instance.Engine, s.profile.Mode) {
+			if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
 				payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 					Statement: *taskPatch.Statement,
 					DbType:    task.Database.Instance.Engine,
@@ -450,7 +450,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				}
 			}
 
-			if api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
+			if api.IsSQLReviewSupported(task.Database.Instance.Engine) {
 				if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 				}
@@ -735,7 +735,7 @@ func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatus
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
 		}
-		if err := s.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
+		if err := s.SchemaSyncer.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
 			log.Error("failed to sync database schema",
 				zap.String("instanceName", instance.Name),
 				zap.String("databaseName", taskPatched.Database.Name),

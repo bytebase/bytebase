@@ -221,7 +221,7 @@ func (s *TaskCheckScheduler) getTaskCheck(ctx context.Context, task *api.Task, c
 		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
 	}
 
-	create, err = s.getSyntaxCheckTaskCheck(ctx, task, creatorID, database, statement)
+	create, err = getSyntaxCheckTaskCheck(ctx, task, creatorID, database, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
@@ -311,7 +311,7 @@ func (*TaskCheckScheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Tas
 }
 
 func (s *TaskCheckScheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
-	if !api.IsSQLReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
+	if !api.IsSQLReviewSupported(database.Instance.Engine) {
 		return nil, nil
 	}
 	policyID, err := s.server.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
@@ -338,8 +338,8 @@ func (s *TaskCheckScheduler) getSQLReviewTaskCheck(ctx context.Context, task *ap
 	}, nil
 }
 
-func (s *TaskCheckScheduler) getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
-	if !api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
+func getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
+	if !api.IsSyntaxCheckSupported(database.Instance.Engine) {
 		return nil, nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{

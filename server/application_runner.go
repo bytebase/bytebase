@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/app/feishu"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -30,11 +31,12 @@ const (
 )
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider) *ApplicationRunner {
+func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider, profile config.Profile) *ApplicationRunner {
 	return &ApplicationRunner{
 		store:           store,
 		activityManager: activityManager,
 		p:               feishuProvider,
+		profile:         profile,
 	}
 }
 
@@ -43,6 +45,7 @@ type ApplicationRunner struct {
 	store           *store.Store
 	activityManager *ActivityManager
 	p               *feishu.Provider
+	profile         config.Profile
 }
 
 // Run runs the ApplicationRunner.
@@ -499,7 +502,7 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 		feishu.Content{
 			Issue:    issue.Name,
 			Stage:    stage.Name,
-			Link:     fmt.Sprintf("%s/issue/%s", r.activityManager.s.profile.ExternalURL, api.IssueSlug(issue)),
+			Link:     fmt.Sprintf("%s/issue/%s", r.profile.ExternalURL, api.IssueSlug(issue)),
 			TaskList: taskList,
 		},
 		settingValue.ExternalApproval.ApprovalDefinitionID,

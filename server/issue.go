@@ -1319,45 +1319,6 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	return updatedIssue, nil
 }
 
-func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, activityID int) error {
-	if issue.CreatorID != api.SystemBotID {
-		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.CreatorID,
-			ActivityID: activityID,
-		}
-		_, err := s.store.CreateInbox(ctx, inboxCreate)
-		if err != nil {
-			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.CreatorID)
-		}
-	}
-
-	if issue.AssigneeID != api.SystemBotID && issue.AssigneeID != issue.CreatorID {
-		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.AssigneeID,
-			ActivityID: activityID,
-		}
-		_, err := s.store.CreateInbox(ctx, inboxCreate)
-		if err != nil {
-			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.AssigneeID)
-		}
-	}
-
-	for _, subscriber := range issue.SubscriberList {
-		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.CreatorID && subscriber.ID != issue.AssigneeID {
-			inboxCreate := &api.InboxCreate{
-				ReceiverID: subscriber.ID,
-				ActivityID: activityID,
-			}
-			_, err := s.store.CreateInbox(ctx, inboxCreate)
-			if err != nil {
-				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
-			}
-		}
-	}
-
-	return nil
-}
-
 // getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
