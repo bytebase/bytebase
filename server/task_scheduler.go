@@ -375,7 +375,7 @@ func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
 func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
 	// schema update, data update and gh-ost sync task have required task check.
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect, allowedStatus)
+		pass, err := s.passCheck(ctx, task, api.TaskCheckDatabaseConnect, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -383,7 +383,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 			return false, nil
 		}
 
-		pass, err = s.server.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema, allowedStatus)
+		pass, err = s.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -400,7 +400,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine) {
-			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
+			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -410,7 +410,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 		}
 
 		if api.IsSQLReviewSupported(instance.Engine) {
-			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
+			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -420,7 +420,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 		}
 
 		if instance.Engine == db.Postgres {
-			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementType, allowedStatus)
+			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementType, allowedStatus)
 			if err != nil {
 				return false, err
 			}
@@ -431,11 +431,58 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGhostSync, allowedStatus)
+		pass, err := s.passCheck(ctx, task, api.TaskCheckGhostSync, allowedStatus)
 		if err != nil {
 			return false, err
 		}
 		if !pass {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// Returns true only if the task check run result is at least the minimum required level.
+// For PendingApproval->Pending transitions, the minimum level is SUCCESS.
+// For Pending->Running transitions, the minimum level is WARN.
+// TODO(dragonly): refactor arguments.
+func (s *TaskScheduler) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID:     &task.ID,
+		Type:       &checkType,
+		StatusList: &statusList,
+		Latest:     true,
+	}
+
+	taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+	if err != nil {
+		return false, err
+	}
+
+	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
+		log.Debug("Task is waiting for check to pass",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.String("task_type", string(task.Type)),
+			zap.String("task_check_type", string(checkType)),
+		)
+		return false, nil
+	}
+
+	checkResult := &api.TaskCheckRunResultPayload{}
+	if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+		return false, err
+	}
+	for _, result := range checkResult.ResultList {
+		if result.Status.LessThan(allowedStatus) {
+			log.Debug("Task is waiting for check to pass",
+				zap.Int("task_id", task.ID),
+				zap.String("task_name", task.Name),
+				zap.String("task_type", string(task.Type)),
+				zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
+			)
 			return false, nil
 		}
 	}
