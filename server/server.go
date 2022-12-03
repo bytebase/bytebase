@@ -283,6 +283,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	if !profile.Readonly {
 		s.SchemaSyncer = NewSchemaSyncer(storeInstance, s.dbFactory)
+		s.ApplicationRunner = NewApplicationRunner(storeInstance, s.ActivityManager, feishu.NewProvider(profile.FeishuAPIURL), profile)
 
 		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
 
@@ -342,8 +343,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
-
-		s.ApplicationRunner = NewApplicationRunner(storeInstance, s.ActivityManager, feishu.NewProvider(profile.FeishuAPIURL), profile)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(storeInstance, s.dbFactory, s.licenseService)
