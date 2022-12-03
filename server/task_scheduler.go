@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/store"
 )
@@ -25,10 +26,11 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, licenseService enterpriseAPI.LicenseService) *TaskScheduler {
 	return &TaskScheduler{
 		server:                 server,
 		store:                  store,
+		licenseService:         licenseService,
 		executorGetters:        make(map[api.TaskType]func() TaskExecutor),
 		runningExecutors:       make(map[int]TaskExecutor),
 		runningExecutorsCancel: make(map[int]context.CancelFunc),
@@ -37,8 +39,10 @@ func NewTaskScheduler(server *Server, store *store.Store) *TaskScheduler {
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	server                 *Server
-	store                  *store.Store
+	server         *Server
+	store          *store.Store
+	licenseService enterpriseAPI.LicenseService
+
 	executorGetters        map[api.TaskType]func() TaskExecutor
 	runningExecutors       map[int]TaskExecutor
 	runningExecutorsCancel map[int]context.CancelFunc
@@ -841,7 +845,7 @@ func (s *TaskScheduler) canPrincipalBeAssignee(ctx context.Context, principalID 
 		if principal == nil {
 			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
 		}
-		if !s.server.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
 			principal.Role = api.Owner
 		}
 		if principal.Role == api.Owner || principal.Role == api.DBA {
@@ -859,7 +863,7 @@ func (s *TaskScheduler) canPrincipalBeAssignee(ctx context.Context, principalID 
 		if member == nil {
 			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
 		}
-		if !s.server.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
 			member.Role = string(api.Owner)
 		}
 		if member.Role == string(api.Owner) {
