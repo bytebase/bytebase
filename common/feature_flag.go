@@ -1,4 +1,4 @@
-package store
+package common
 
 // Have a single place to track all ongoing feature development that requires code to work with both
 // old and new schecma. We need to gate the feature to make the code be compatible with both dev
