@@ -495,7 +495,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 	}
 
 	var instancePatched *api.Instance
-	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil {
+	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil || patch.Database != nil {
 		// Users can switch instance status from ARCHIVED to NORMAL.
 		// So we need to check the current instance count with NORMAL status for quota limitation.
 		if patch.RowStatus != nil && *patch.RowStatus == string(api.Normal) {
@@ -531,7 +531,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 	}
 
 	// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
-	if patch.Host != nil || patch.Port != nil {
+	if patch.Host != nil || patch.Port != nil || patch.Database != nil {
 		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */)
 		if err == nil {
 			defer db.Close(ctx)
