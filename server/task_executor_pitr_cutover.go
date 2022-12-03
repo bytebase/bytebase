@@ -127,12 +127,12 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 
 	// TODO(dragonly): Only needed for in-place PITR.
 	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
-	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
+	if _, err := server.BackupRunner.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
 		return true, nil, errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
 	}
 
 	// Sync database schema after restore is completed.
-	if err := server.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
+	if err := server.SchemaSyncer.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Database.Instance.Name),
 			zap.String("databaseName", task.Database.Name),

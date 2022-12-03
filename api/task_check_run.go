@@ -207,7 +207,7 @@ type TaskCheckRunStatusPatch struct {
 }
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType db.Type, _ common.ReleaseMode) bool {
+func IsSyntaxCheckSupported(dbType db.Type) bool {
 	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
@@ -221,7 +221,7 @@ func IsSyntaxCheckSupported(dbType db.Type, _ common.ReleaseMode) bool {
 }
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
-func IsSQLReviewSupported(dbType db.Type, _ common.ReleaseMode) bool {
+func IsSQLReviewSupported(dbType db.Type) bool {
 	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
