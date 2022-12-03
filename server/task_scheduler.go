@@ -27,11 +27,12 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *ApplicationRunner, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *ApplicationRunner, schemaSyncer *SchemaSyncer, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
 		server:                 server,
 		store:                  store,
 		applicationRunner:      applicationRunner,
+		schemaSyncer:           schemaSyncer,
 		activityManager:        activityManager,
 		licenseService:         licenseService,
 		profile:                profile,
@@ -46,6 +47,7 @@ type TaskScheduler struct {
 	server            *Server
 	store             *store.Store
 	applicationRunner *ApplicationRunner
+	schemaSyncer      *SchemaSyncer
 	activityManager   *ActivityManager
 	licenseService    enterpriseAPI.LicenseService
 	profile           config.Profile
@@ -679,7 +681,7 @@ func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, tas
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
 		}
-		if err := s.server.SchemaSyncer.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
+		if err := s.schemaSyncer.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
 			log.Error("failed to sync database schema",
 				zap.String("instanceName", instance.Name),
 				zap.String("databaseName", taskPatched.Database.Name),
