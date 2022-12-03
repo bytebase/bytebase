@@ -15,11 +15,9 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -1229,94 +1227,6 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		}
 	}
 	return nil
-}
-
-func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
-	var pipelineStatus api.PipelineStatus
-	switch newStatus {
-	case api.IssueOpen:
-		pipelineStatus = api.PipelineOpen
-	case api.IssueDone:
-		// Returns error if any of the tasks is not DONE.
-		for _, stage := range issue.Pipeline.StageList {
-			for _, task := range stage.TaskList {
-				if task.Status != api.TaskDone {
-					return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
-				}
-			}
-		}
-		pipelineStatus = api.PipelineDone
-	case api.IssueCanceled:
-		// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
-		// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
-		// keep those tasks in the same state before the issue was canceled.
-		for _, stage := range issue.Pipeline.StageList {
-			for _, task := range stage.TaskList {
-				if task.Status == api.TaskRunning {
-					if _, err := s.TaskScheduler.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						IDList:    []int{task.ID},
-						UpdaterID: updaterID,
-						Status:    api.TaskCanceled,
-					}); err != nil {
-						return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Name, task.Name)
-					}
-				}
-			}
-		}
-		pipelineStatus = api.PipelineCanceled
-	}
-
-	pipelinePatch := &api.PipelinePatch{
-		ID:        issue.PipelineID,
-		UpdaterID: updaterID,
-		Status:    &pipelineStatus,
-	}
-	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Name, pipelinePatch)
-	}
-
-	issuePatch := &api.IssuePatch{
-		ID:        issue.ID,
-		UpdaterID: updaterID,
-		Status:    &newStatus,
-	}
-	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Name, issuePatch)
-	}
-
-	// Cancel external approval, it's ok if we failed.
-	if newStatus != api.IssueOpen {
-		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonIssueNotOpen); err != nil {
-			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
-		}
-	}
-
-	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-		OldStatus: issue.Status,
-		NewStatus: newStatus,
-		IssueName: updatedIssue.Name,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Name)
-	}
-
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   updaterID,
-		ContainerID: issue.ID,
-		Type:        api.ActivityIssueStatusUpdate,
-		Level:       api.ActivityInfo,
-		Comment:     comment,
-		Payload:     string(payload),
-	}
-
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-		issue: updatedIssue,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
-	}
-
-	return updatedIssue, nil
 }
 
 // getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.

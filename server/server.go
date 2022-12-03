@@ -283,7 +283,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	if !profile.Readonly {
 		// Task scheduler
-		taskScheduler := NewTaskScheduler(s, storeInstance, s.ActivityManager, s.licenseService, profile)
+		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.ActivityManager, s.licenseService, profile)
 
 		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
 

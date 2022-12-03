@@ -27,10 +27,11 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *ApplicationRunner, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
 		server:                 server,
 		store:                  store,
+		applicationRunner:      applicationRunner,
 		activityManager:        activityManager,
 		licenseService:         licenseService,
 		profile:                profile,
@@ -42,11 +43,12 @@ func NewTaskScheduler(server *Server, store *store.Store, activityManager *Activ
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	server          *Server
-	store           *store.Store
-	activityManager *ActivityManager
-	licenseService  enterpriseAPI.LicenseService
-	profile         config.Profile
+	server            *Server
+	store             *store.Store
+	applicationRunner *ApplicationRunner
+	activityManager   *ActivityManager
+	licenseService    enterpriseAPI.LicenseService
+	profile           config.Profile
 
 	executorGetters        map[api.TaskType]func() TaskExecutor
 	runningExecutors       map[int]TaskExecutor
@@ -671,8 +673,7 @@ func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, tas
 				}
 			} else {
 				issue.Pipeline = pipeline
-				_, err := s.server.changeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, "")
-				if err != nil {
+				if _, err := s.changeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, ""); err != nil {
 					return nil, errors.Wrapf(err, "failed to mark issue %v as DONE after completing task %v", issue.Name, taskPatched.Name)
 				}
 			}
@@ -876,4 +877,92 @@ func (s *TaskScheduler) canPrincipalBeAssignee(ctx context.Context, principalID 
 		}
 	}
 	return false, nil
+}
+
+func (s *TaskScheduler) changeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
+	var pipelineStatus api.PipelineStatus
+	switch newStatus {
+	case api.IssueOpen:
+		pipelineStatus = api.PipelineOpen
+	case api.IssueDone:
+		// Returns error if any of the tasks is not DONE.
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				if task.Status != api.TaskDone {
+					return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
+				}
+			}
+		}
+		pipelineStatus = api.PipelineDone
+	case api.IssueCanceled:
+		// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
+		// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
+		// keep those tasks in the same state before the issue was canceled.
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				if task.Status == api.TaskRunning {
+					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+						IDList:    []int{task.ID},
+						UpdaterID: updaterID,
+						Status:    api.TaskCanceled,
+					}); err != nil {
+						return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Name, task.Name)
+					}
+				}
+			}
+		}
+		pipelineStatus = api.PipelineCanceled
+	}
+
+	pipelinePatch := &api.PipelinePatch{
+		ID:        issue.PipelineID,
+		UpdaterID: updaterID,
+		Status:    &pipelineStatus,
+	}
+	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Name, pipelinePatch)
+	}
+
+	issuePatch := &api.IssuePatch{
+		ID:        issue.ID,
+		UpdaterID: updaterID,
+		Status:    &newStatus,
+	}
+	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Name, issuePatch)
+	}
+
+	// Cancel external approval, it's ok if we failed.
+	if newStatus != api.IssueOpen {
+		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonIssueNotOpen); err != nil {
+			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
+		}
+	}
+
+	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+		OldStatus: issue.Status,
+		NewStatus: newStatus,
+		IssueName: updatedIssue.Name,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Name)
+	}
+
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   updaterID,
+		ContainerID: issue.ID,
+		Type:        api.ActivityIssueStatusUpdate,
+		Level:       api.ActivityInfo,
+		Comment:     comment,
+		Payload:     string(payload),
+	}
+
+	if _, err = s.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
+		issue: updatedIssue,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
+	}
+
+	return updatedIssue, nil
 }
