@@ -86,9 +86,11 @@ to prepare those instances ready for application use.
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
 
-<figcaption align = "center">Fig.4 - Built-in SQL Editor</figcaption>
+<figcaption align = "center">Fig.4 - Built-in SQL Editor (read-only and admin mode)</figcaption>
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp)
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor-admin-mode.webp)
 
 ## 📕 Docs
 
