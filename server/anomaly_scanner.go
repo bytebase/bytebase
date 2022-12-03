@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
@@ -25,19 +26,19 @@ const (
 )
 
 // NewAnomalyScanner creates a anomaly scanner.
-func NewAnomalyScanner(server *Server, store *store.Store, dbFactory *dbfactory.DBFactory) *AnomalyScanner {
+func NewAnomalyScanner(store *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterpriseAPI.LicenseService) *AnomalyScanner {
 	return &AnomalyScanner{
-		server:    server,
-		store:     store,
-		dbFactory: dbFactory,
+		store:          store,
+		dbFactory:      dbFactory,
+		licenseService: licenseService,
 	}
 }
 
 // AnomalyScanner is the anomaly scanner.
 type AnomalyScanner struct {
-	server    *Server
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
+	store          *store.Store
+	dbFactory      *dbfactory.DBFactory
+	licenseService enterpriseAPI.LicenseService
 }
 
 // Run will run the anomaly scanner once.
@@ -278,7 +279,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 	}
 
 	// Check schema drift
-	if s.server.licenseService.IsFeatureEnabled(api.FeatureSchemaDrift) {
+	if s.licenseService.IsFeatureEnabled(api.FeatureSchemaDrift) {
 		setup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
 			log.Debug("Failed to check anomaly",

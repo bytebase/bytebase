@@ -462,7 +462,7 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 				zap.String("engine", string(instance.Engine)),
 				zap.Error(err))
 		}
-		if _, err := s.syncInstance(ctx, instance); err != nil {
+		if _, err := s.SchemaSyncer.syncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", instance.ID),
 				zap.Error(err))
@@ -541,7 +541,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 					zap.String("engine", string(instancePatched.Engine)),
 					zap.Error(err))
 			}
-			if _, err := s.syncInstance(ctx, instancePatched); err != nil {
+			if _, err := s.SchemaSyncer.syncInstance(ctx, instancePatched); err != nil {
 				log.Warn("Failed to sync instance",
 					zap.Int("instance_id", instancePatched.ID),
 					zap.Error(err))

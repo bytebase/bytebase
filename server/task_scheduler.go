@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -24,24 +25,26 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store) *TaskScheduler {
 	return &TaskScheduler{
+		server:                 server,
+		store:                  store,
 		executorGetters:        make(map[api.TaskType]func() TaskExecutor),
 		runningExecutors:       make(map[int]TaskExecutor),
 		runningExecutorsCancel: make(map[int]context.CancelFunc),
-		server:                 server,
 	}
 }
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
+	server                 *Server
+	store                  *store.Store
 	executorGetters        map[api.TaskType]func() TaskExecutor
 	runningExecutors       map[int]TaskExecutor
 	runningExecutorsCancel map[int]context.CancelFunc
 	runningExecutorsMutex  sync.Mutex
 	taskProgress           sync.Map // map[taskID]api.Progress
 	sharedTaskState        sync.Map // map[taskID]interface{}
-	server                 *Server
 }
 
 // Run will run the task scheduler.
@@ -78,7 +81,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				pipelineFind := &api.PipelineFind{
 					Status: &pipelineStatus,
 				}
-				pipelineList, err := s.server.store.FindPipeline(ctx, pipelineFind, false)
+				pipelineList, err := s.store.FindPipeline(ctx, pipelineFind, false)
 				if err != nil {
 					log.Error("Failed to retrieve open pipelines", zap.Error(err))
 					return
@@ -99,7 +102,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
 				// We may optimize this in the future since only some relationship info is needed by the executor
-				taskList, err := s.server.store.FindTask(ctx, taskFind, false)
+				taskList, err := s.store.FindTask(ctx, taskFind, false)
 				if err != nil {
 					log.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
@@ -260,7 +263,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								return
 							}
 
-							issue, err := s.server.store.GetIssueByPipelineID(ctx, taskPatched.PipelineID)
+							issue, err := s.store.GetIssueByPipelineID(ctx, taskPatched.PipelineID)
 							if err != nil {
 								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", taskPatched.PipelineID), zap.Error(err))
 								return
@@ -287,7 +290,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 											UpdaterID:  api.SystemBotID,
 											AssigneeID: &assigneeID,
 										}
-										if _, err := s.server.store.PatchIssue(ctx, patch); err != nil {
+										if _, err := s.store.PatchIssue(ctx, patch); err != nil {
 											log.Error("failed to update the issue assignee", zap.Any("issuePatch", patch))
 											return
 										}
@@ -322,12 +325,12 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() Ta
 // So we change their status to CANCELED before starting the scheduler.
 func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
 	taskFind := &api.TaskFind{StatusList: &[]api.TaskStatus{api.TaskRunning}}
-	runningTasks, err := s.server.store.FindTask(ctx, taskFind, false)
+	runningTasks, err := s.store.FindTask(ctx, taskFind, false)
 	if err != nil {
 		return errors.Wrap(err, "failed to get running tasks")
 	}
 	for _, task := range runningTasks {
-		if _, err := s.server.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
+		if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
 			IDList:    []int{task.ID},
 			UpdaterID: api.SystemBotID,
 			Status:    api.TaskCanceled,
@@ -342,7 +345,7 @@ func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
 				return errors.Wrapf(err, "failed to parse the payload of backup task %d", task.ID)
 			}
 			statusFailed := string(api.BackupStatusFailed)
-			backup, err := s.server.store.PatchBackup(ctx, &api.BackupPatch{
+			backup, err := s.store.PatchBackup(ctx, &api.BackupPatch{
 				ID:        payload.BackupID,
 				UpdaterID: api.SystemBotID,
 				Status:    &statusFailed,
@@ -378,7 +381,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 			return false, nil
 		}
 
-		instance, err := s.server.store.GetInstanceByID(ctx, task.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return false, err
 		}
@@ -386,7 +389,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 			return false, errors.Errorf("instance ID not found %v", task.InstanceID)
 		}
 
-		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
+		if api.IsSyntaxCheckSupported(instance.Engine) {
 			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
 				return false, err
@@ -396,7 +399,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 			}
 		}
 
-		if api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
+		if api.IsSQLReviewSupported(instance.Engine) {
 			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
 			if err != nil {
 				return false, err
@@ -482,7 +485,7 @@ func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool
 		if err != nil {
 			return true, errors.Wrapf(err, "failed to convert id string to int, id string: %v", blockingTaskIDString)
 		}
-		blockingTask, err := s.server.store.GetTaskByID(ctx, blockingTaskID)
+		blockingTask, err := s.store.GetTaskByID(ctx, blockingTaskID)
 		if err != nil {
 			return true, errors.Wrapf(err, "failed to fetch the blocking task, id: %v", blockingTaskID)
 		}

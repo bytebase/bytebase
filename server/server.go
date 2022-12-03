@@ -151,32 +151,32 @@ var casbinDeveloperPolicy string
 // @schemes http
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
+func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s := &Server{
-		profile:         prof,
+		profile:         profile,
 		startedTs:       time.Now().Unix(),
 		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
-	resourceDir := common.GetResourceDir(prof.DataDir)
-	if prof.ResourceDirOverride != "" {
-		resourceDir = prof.ResourceDirOverride
+	resourceDir := common.GetResourceDir(profile.DataDir)
+	if profile.ResourceDirOverride != "" {
+		resourceDir = profile.ResourceDirOverride
 	}
 
 	// Display config
 	log.Info("-----Config BEGIN-----")
-	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
-	log.Info(fmt.Sprintf("externalURL=%s", prof.ExternalURL))
-	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
-	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
-	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
-	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
-	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
+	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
+	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
+	log.Info(fmt.Sprintf("demoDataDir=%s", profile.DemoDataDir))
+	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
+	log.Info(fmt.Sprintf("demo=%t", profile.Demo))
+	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
+	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
-	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
-	log.Info(fmt.Sprintf("backupBucket=%s", prof.BackupBucket))
-	log.Info(fmt.Sprintf("backupRegion=%s", prof.BackupRegion))
-	log.Info(fmt.Sprintf("backupCredentialFile=%s", prof.BackupCredentialFile))
+	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
+	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
+	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
+	log.Info(fmt.Sprintf("backupCredentialFile=%s", profile.BackupCredentialFile))
 	log.Info("-----Config END-------")
 
 	serverStarted := false
@@ -202,25 +202,25 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 	}
 
 	// New MetadataDB instance.
-	if prof.UseEmbedDB() {
-		pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+	if profile.UseEmbedDB() {
+		pgDataDir := common.GetPostgresDataDir(profile.DataDir)
 		log.Info("-----Embedded Postgres Config BEGIN-----")
-		log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
+		log.Info(fmt.Sprintf("datastorePort=%d", profile.DatastorePort))
 		log.Info(fmt.Sprintf("pgDataDir=%s", pgDataDir))
 		log.Info("-----Embedded Postgres Config END-----")
-		if err := postgres.InitDB(s.pgBinDir, pgDataDir, prof.PgUser); err != nil {
+		if err := postgres.InitDB(s.pgBinDir, pgDataDir, profile.PgUser); err != nil {
 			return nil, err
 		}
-		s.metaDB = store.NewMetadataDBWithEmbedPg(prof.PgUser, pgDataDir, s.pgBinDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoDataDir, profile.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(prof.PgURL, s.pgBinDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoDataDir, profile.Mode)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create MetadataDB instance")
 	}
 
 	// New store.DB instance that represents the db connection.
-	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
+	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot new db")
 	}
@@ -234,11 +234,17 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 	cacheService := NewCacheService()
 	storeInstance := store.New(storeDB, cacheService)
 	s.store = storeInstance
-
-	// Backfill activity.
+	// TODO(d): backfill activity. Remove this whenever the backfill is completed over the time.
 	if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
 		return nil, errors.Wrap(err, "cannot backfill SQL editor activities")
 	}
+
+	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create license service")
+	}
+	// Cache the license.
+	s.licenseService.LoadSubscription(ctx)
 
 	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
@@ -247,11 +253,11 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
-	s.ActivityManager = NewActivityManager(s, storeInstance)
-	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, prof.DataDir)
+	s.ActivityManager = NewActivityManager(storeInstance, profile)
+	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, profile.DataDir)
 
 	e := echo.New()
-	e.Debug = prof.Debug
+	e.Debug = profile.Debug
 	e.HideBanner = true
 	e.HidePort = true
 
@@ -263,21 +269,21 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 	embedFrontend(e)
 	s.e = e
 
-	if prof.BackupBucket != "" {
-		credentials, err := s3bb.GetCredentialsFromFile(ctx, prof.BackupCredentialFile)
+	if profile.BackupBucket != "" {
+		credentials, err := s3bb.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get credentials from file")
 		}
-		s3Client, err := s3bb.NewClient(ctx, prof.BackupRegion, prof.BackupBucket, credentials)
+		s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create AWS S3 client")
 		}
 		s.s3Client = s3Client
 	}
 
-	if !prof.Readonly {
+	if !profile.Readonly {
 		// Task scheduler
-		taskScheduler := NewTaskScheduler(s)
+		taskScheduler := NewTaskScheduler(s, storeInstance)
 
 		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
 
@@ -334,18 +340,18 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Schema syncer
-		s.SchemaSyncer = NewSchemaSyncer(s, s.store)
+		s.SchemaSyncer = NewSchemaSyncer(storeInstance, s.dbFactory)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(s, s.store, s.s3Client, &prof)
+		s.BackupRunner = NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
 
-		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager, feishu.NewProvider(prof.FeishuAPIURL))
+		s.ApplicationRunner = NewApplicationRunner(storeInstance, s.ActivityManager, feishu.NewProvider(profile.FeishuAPIURL), profile)
 
 		// Anomaly scanner
-		s.AnomalyScanner = NewAnomalyScanner(s, s.store, s.dbFactory)
+		s.AnomalyScanner = NewAnomalyScanner(storeInstance, s.dbFactory, s.licenseService)
 
 		// Rollback SQL generator
-		s.RollbackRunner = NewRollbackRunner(s, s.store, s.dbFactory)
+		s.RollbackRunner = NewRollbackRunner(storeInstance, s.dbFactory)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
@@ -375,7 +381,7 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 
 	apiGroup := e.Group(internalAPIPrefix)
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(internalAPIPrefix, s.store, next, prof.Mode, config.secret)
+		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -388,7 +394,7 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, internalAPIPrefix, ce, next, prof.Readonly)
+		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
@@ -425,20 +431,13 @@ func NewServer(ctx context.Context, prof config.Profile) (*Server, error) {
 	})
 
 	// Register open API routes
-	s.registerOpenAPIRoutes(e, ce, prof)
+	s.registerOpenAPIRoutes(e, ce, profile)
 
 	// Register pprof endpoints.
 	pprof.Register(e)
 	// Register prometheus metrics endpoint.
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
-
-	s.licenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create license service")
-	}
-	// Cache the license.
-	s.licenseService.LoadSubscription(ctx)
 
 	serverStarted = true
 	return s, nil

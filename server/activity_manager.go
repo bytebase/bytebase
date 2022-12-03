@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/webhook"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/store"
 
 	"github.com/pkg/errors"
@@ -19,8 +20,8 @@ import (
 
 // ActivityManager is the activity manager.
 type ActivityManager struct {
-	s     *Server
-	store *store.Store
+	store   *store.Store
+	profile config.Profile
 }
 
 // ActivityMeta is the activity metadata.
@@ -29,10 +30,10 @@ type ActivityMeta struct {
 }
 
 // NewActivityManager creates an activity manager.
-func NewActivityManager(server *Server, store *store.Store) *ActivityManager {
+func NewActivityManager(store *store.Store, profile config.Profile) *ActivityManager {
 	return &ActivityManager{
-		s:     server,
-		store: store,
+		store:   store,
+		profile: profile,
 	}
 }
 
@@ -71,7 +72,7 @@ func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx contex
 	anyActivity := activityList[0]
 
 	activityType := api.ActivityPipelineTaskStatusUpdate
-	webhookList, err := m.s.store.FindProjectWebhook(ctx, &api.ProjectWebhookFind{
+	webhookList, err := m.store.FindProjectWebhook(ctx, &api.ProjectWebhookFind{
 		ProjectID:    &issue.ProjectID,
 		ActivityType: &activityType,
 	})
@@ -98,7 +99,7 @@ func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx contex
 			Name: issue.Project.Name,
 		},
 		Description:  anyActivity.Comment,
-		Link:         fmt.Sprintf("%s/issue/%s", m.s.profile.ExternalURL, api.IssueSlug(issue)),
+		Link:         fmt.Sprintf("%s/issue/%s", m.profile.ExternalURL, api.IssueSlug(issue)),
 		CreatorID:    anyActivity.CreatorID,
 		CreatorName:  anyActivity.Creator.Name,
 		CreatorEmail: anyActivity.Creator.Email,
@@ -124,7 +125,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, errors.Wrapf(err, "failed to post webhook event after changing the issue task status: %s", meta.issue.Name)
 	}
 	if postInbox {
-		if err := m.s.postInboxIssueActivity(ctx, meta.issue, activity.ID); err != nil {
+		if err := m.postInboxIssueActivity(ctx, meta.issue, activity.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -133,7 +134,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		ProjectID:    &meta.issue.ProjectID,
 		ActivityType: &create.Type,
 	}
-	webhookList, err := m.s.store.FindProjectWebhook(ctx, hookFind)
+	webhookList, err := m.store.FindProjectWebhook(ctx, hookFind)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", meta.issue.Name)
 	}
@@ -141,7 +142,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return activity, nil
 	}
 
-	updater, err := m.s.store.GetPrincipalByID(ctx, create.CreatorID)
+	updater, err := m.store.GetPrincipalByID(ctx, create.CreatorID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find updater for posting webhook event after changing the issue status: %v", meta.issue.Name)
 	}
@@ -188,7 +189,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	var webhookTaskResult *webhook.TaskResult
 	level := webhook.WebhookInfo
 	title := ""
-	link := fmt.Sprintf("%s/issue/%s", m.s.profile.ExternalURL, api.IssueSlug(meta.issue))
+	link := fmt.Sprintf("%s/issue/%s", m.profile.ExternalURL, api.IssueSlug(meta.issue))
 	switch activity.Type {
 	case api.ActivityIssueCreate:
 		title = fmt.Sprintf("Issue created - %s", meta.issue.Name)
@@ -226,7 +227,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					oldAssignee, err = m.s.store.GetPrincipalByID(ctx, oldID)
+					oldAssignee, err = m.store.GetPrincipalByID(ctx, oldID)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
 							zap.String("issue_name", meta.issue.Name),
@@ -253,7 +254,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					newAssignee, err = m.s.store.GetPrincipalByID(ctx, newID)
+					newAssignee, err = m.store.GetPrincipalByID(ctx, newID)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
 							zap.String("issue_name", meta.issue.Name),
@@ -295,7 +296,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 
-		task, err := m.s.store.GetTaskByID(ctx, update.TaskID)
+		task, err := m.store.GetTaskByID(ctx, update.TaskID)
 		if err != nil {
 			log.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
 				zap.String("issue_name", meta.issue.Name),
@@ -383,6 +384,42 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		CreatorEmail: updater.Email,
 	}
 	return webhookCtx, nil
+}
+
+func (m *ActivityManager) postInboxIssueActivity(ctx context.Context, issue *api.Issue, activityID int) error {
+	if issue.CreatorID != api.SystemBotID {
+		inboxCreate := &api.InboxCreate{
+			ReceiverID: issue.CreatorID,
+			ActivityID: activityID,
+		}
+		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.CreatorID)
+		}
+	}
+
+	if issue.AssigneeID != api.SystemBotID && issue.AssigneeID != issue.CreatorID {
+		inboxCreate := &api.InboxCreate{
+			ReceiverID: issue.AssigneeID,
+			ActivityID: activityID,
+		}
+		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.AssigneeID)
+		}
+	}
+
+	for _, subscriber := range issue.SubscriberList {
+		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.CreatorID && subscriber.ID != issue.AssigneeID {
+			inboxCreate := &api.InboxCreate{
+				ReceiverID: subscriber.ID,
+				ActivityID: activityID,
+			}
+			if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
+			}
+		}
+	}
+
+	return nil
 }
 
 func shouldPostInbox(activity *api.Activity, createType api.ActivityType) (bool, error) {
