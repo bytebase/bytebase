@@ -197,7 +197,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 			}
-			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.ProjectID, issue.Type)
+			ok, err := s.TaskScheduler.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.ProjectID, issue.Type)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 			}
@@ -332,13 +332,13 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 	}
 	// Try to find a more appropriate assignee if the current assignee is the system bot, indicating that the caller might not be sure about who should be the assignee.
 	if issueCreate.AssigneeID == api.SystemBotID {
-		assigneeID, err := s.getDefaultAssigneeID(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+		assigneeID, err := s.TaskScheduler.getDefaultAssigneeID(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
 		}
 		issueCreate.AssigneeID = assigneeID
 	}
-	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+	ok, err := s.TaskScheduler.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
 	}
@@ -380,7 +380,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Name)
 	}
 
-	if err := s.ScheduleActiveStage(ctx, issue.Pipeline); err != nil {
+	if err := s.TaskScheduler.ScheduleActiveStage(ctx, issue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}
 
@@ -1253,7 +1253,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+					if _, err := s.TaskScheduler.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
 						IDList:    []int{task.ID},
 						UpdaterID: updaterID,
 						Status:    api.TaskCanceled,

@@ -87,7 +87,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 				for _, pipeline := range pipelineList {
-					if err := s.server.ScheduleActiveStage(ctx, pipeline); err != nil {
+					if err := s.ScheduleActiveStage(ctx, pipeline); err != nil {
 						log.Error("Failed to schedule tasks in the active stage",
 							zap.Int("pipeline_id", pipeline.ID),
 							zap.Error(err),
@@ -224,8 +224,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							_, err = s.server.patchTaskStatus(ctx, task, taskStatusPatch)
-							if err != nil {
+							if _, err := s.patchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 								log.Error("Failed to mark task as FAILED",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
@@ -253,7 +252,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							taskPatched, err := s.server.patchTaskStatus(ctx, task, taskStatusPatch)
+							taskPatched, err := s.patchTaskStatus(ctx, task, taskStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task as DONE",
 									zap.Int("id", task.ID),
@@ -273,14 +272,14 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							if issue != nil {
 								if stage := getActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != taskPatched.StageID {
 									environmentID := stage.EnvironmentID
-									ok, err := s.server.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+									ok, err := s.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
 									if err != nil {
 										log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
 										return
 									}
 									if !ok {
 										// reassign the issue to a new assignee if the current one doesn't fit.
-										assigneeID, err := s.server.getDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
+										assigneeID, err := s.getDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
 										if err != nil {
 											log.Error("failed to get a default assignee", zap.Error(err))
 											return
@@ -467,7 +466,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		return task, nil
 	}
 
-	updatedTask, err := s.server.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+	updatedTask, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
 		IDList:    []int{task.ID},
 		UpdaterID: api.SystemBotID,
 		Status:    api.TaskRunning,
@@ -505,4 +504,367 @@ func getActiveStage(stageList []*api.Stage) *api.Stage {
 		}
 	}
 	return nil
+}
+
+// ScheduleActiveStage tries to schedule the tasks in the active stage.
+func (s *TaskScheduler) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline) error {
+	stage := getActiveStage(pipeline.StageList)
+	if stage == nil {
+		return nil
+	}
+	for _, task := range stage.TaskList {
+		switch task.Status {
+		case api.TaskPendingApproval:
+			policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get approval policy for environment ID %d", task.Instance.EnvironmentID)
+			}
+			if policy.Value == api.PipelineApprovalValueManualNever {
+				// transit into Pending for ManualNever (auto-approval) tasks if all required task checks passed.
+				ok, err := s.canAutoApprove(ctx, task)
+				if err != nil {
+					return errors.Wrap(err, "failed to check if can auto-approve")
+				}
+				if ok {
+					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+						IDList:    []int{task.ID},
+						UpdaterID: api.SystemBotID,
+						Status:    api.TaskPending,
+					}); err != nil {
+						return errors.Wrap(err, "failed to change task status")
+					}
+				}
+			}
+		case api.TaskPending:
+			_, err := s.ScheduleIfNeeded(ctx, task)
+			if err != nil {
+				return errors.Wrap(err, "failed to schedule task")
+			}
+		}
+	}
+	return nil
+}
+
+// patchTaskStatus patches a single task.
+func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+	defer func() {
+		if err != nil {
+			log.Error("Failed to change task status.",
+				zap.Int("id", task.ID),
+				zap.String("name", task.Name),
+				zap.String("old_status", string(task.Status)),
+				zap.String("new_status", string(taskStatusPatch.Status)),
+				zap.Error(err))
+		}
+	}()
+
+	if !isTaskStatusTransitionAllowed(task.Status, taskStatusPatch.Status) {
+		return nil, &common.Error{
+			Code: common.Invalid,
+			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]),
+		}
+	}
+
+	if len(taskStatusPatch.IDList) != 1 {
+		return nil, errors.Errorf("expect to patch 1 task, get %d", len(taskStatusPatch.IDList))
+	}
+
+	if taskStatusPatch.Status == api.TaskCanceled {
+		if !taskCancellationImplemented[task.Type] {
+			return nil, common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
+		}
+		s.runningExecutorsMutex.Lock()
+		cancel, ok := s.runningExecutorsCancel[task.ID]
+		s.runningExecutorsMutex.Unlock()
+		if !ok {
+			return nil, errors.New("failed to cancel task")
+		}
+		cancel()
+		result, err := json.Marshal(api.TaskRunResultPayload{
+			Detail: "Task cancellation requested.",
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal TaskRunResultPayload")
+		}
+		resultStr := string(result)
+		taskStatusPatch.Result = &resultStr
+	}
+
+	taskPatchedList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
+	}
+	taskPatched := taskPatchedList[0]
+
+	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
+	// behaves differently depending on whether the task is wrapped in an issue.
+	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
+	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch containing issue after changing the task status: %v", task.Name)
+	}
+	// Not all pipelines belong to an issue, so it's OK if issue is not found.
+	if issue == nil {
+		log.Debug("Pipeline has no linking issue",
+			zap.Int("pipelineID", task.PipelineID),
+			zap.String("task", task.Name))
+	}
+
+	// Create an activity
+	if err := s.createTaskStatusUpdateActivity(ctx, task, taskStatusPatch, issue); err != nil {
+		return nil, err
+	}
+
+	// If create database, schema update and gh-ost cutover task completes, we sync the corresponding instance schema immediately.
+	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
+		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
+		}
+		if err := s.server.SchemaSyncer.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
+			log.Error("failed to sync database schema",
+				zap.String("instanceName", instance.Name),
+				zap.String("databaseName", taskPatched.Database.Name),
+				zap.Error(err),
+			)
+		}
+	}
+
+	// Cancel every task depending on the canceled task.
+	if taskPatched.Status == api.TaskCanceled {
+		if err := s.cancelDependingTasks(ctx, taskPatched); err != nil {
+			return nil, errors.Wrapf(err, "failed to cancel depending tasks for task %d", taskPatched.ID)
+		}
+	}
+
+	// If every task in the pipeline completes, and the assignee is system bot:
+	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
+	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
+	if taskPatched.Status == api.TaskDone && (issue == nil || issue.AssigneeID == api.SystemBotID) {
+		pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
+		if err != nil {
+			return nil, errors.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
+		}
+		if pipeline == nil {
+			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
+		}
+		if areAllTasksDone(pipeline) {
+			if issue == nil {
+				// System-generated tasks such as backup tasks don't have corresponding issues.
+				status := api.PipelineDone
+				pipelinePatch := &api.PipelinePatch{
+					ID:        pipeline.ID,
+					UpdaterID: taskStatusPatch.UpdaterID,
+					Status:    &status,
+				}
+				if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
+					return nil, errors.Wrapf(err, "failed to mark pipeline %v as DONE after completing task %v", pipeline.Name, taskPatched.Name)
+				}
+			} else {
+				issue.Pipeline = pipeline
+				_, err := s.server.changeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, "")
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to mark issue %v as DONE after completing task %v", issue.Name, taskPatched.Name)
+				}
+			}
+		}
+	}
+
+	return taskPatched, nil
+}
+
+func (s *TaskScheduler) createTaskStatusUpdateActivity(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue) error {
+	var issueName string
+	if issue != nil {
+		issueName = issue.Name
+	}
+	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+		TaskID:    task.ID,
+		OldStatus: task.Status,
+		NewStatus: taskStatusPatch.Status,
+		IssueName: issueName,
+		TaskName:  task.Name,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
+	}
+
+	level := api.ActivityInfo
+	if taskStatusPatch.Status == api.TaskFailed {
+		level = api.ActivityError
+	}
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   taskStatusPatch.UpdaterID,
+		ContainerID: task.PipelineID,
+		Type:        api.ActivityPipelineTaskStatusUpdate,
+		Level:       level,
+		Payload:     string(payload),
+	}
+	if taskStatusPatch.Comment != nil {
+		activityCreate.Comment = *taskStatusPatch.Comment
+	}
+
+	if _, err := s.server.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *TaskScheduler) cancelDependingTasks(ctx context.Context, task *api.Task) error {
+	queue := []int{task.ID}
+	seen := map[int]bool{task.ID: true}
+	var idList []int
+	for len(queue) != 0 {
+		fromTaskID := queue[0]
+		queue = queue[1:]
+		dagList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: &fromTaskID})
+		if err != nil {
+			return err
+		}
+		for _, dag := range dagList {
+			if seen[dag.ToTaskID] {
+				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
+			}
+			seen[dag.ToTaskID] = true
+			idList = append(idList, dag.ToTaskID)
+			queue = append(queue, dag.ToTaskID)
+		}
+	}
+	if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
+		IDList:    idList,
+		UpdaterID: api.SystemBotID,
+		Status:    api.TaskCanceled,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func areAllTasksDone(pipeline *api.Pipeline) bool {
+	for _, stage := range pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status != api.TaskDone {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (s *TaskScheduler) getDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return api.UnknownID, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
+	}
+	if policy.Value == api.PipelineApprovalValueManualNever {
+		// use SystemBot for auto approval tasks.
+		return api.SystemBotID, nil
+	}
+
+	var groupValue *api.AssigneeGroupValue
+	for i, group := range policy.AssigneeGroupList {
+		if group.IssueType == issueType {
+			groupValue = &policy.AssigneeGroupList[i].Value
+			break
+		}
+	}
+	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
+		member, err := s.getAnyWorkspaceOwnerOrDBA(ctx)
+		if err != nil {
+			return api.UnknownID, errors.Wrap(err, "failed to get a workspace owner or DBA")
+		}
+		return member.PrincipalID, nil
+	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
+		projectMember, err := s.getAnyProjectOwner(ctx, projectID)
+		if err != nil {
+			return api.UnknownID, errors.Wrap(err, "failed to get a project owner")
+		}
+		return projectMember.PrincipalID, nil
+	}
+	// never reached
+	return api.UnknownID, errors.New("invalid assigneeGroupValue")
+}
+
+// getAnyFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
+func (s *TaskScheduler) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Member, error) {
+	for _, role := range []api.Role{api.Owner, api.DBA} {
+		memberList, err := s.store.FindMember(ctx, &api.MemberFind{
+			Role: &role,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get role %v", role)
+		}
+		if len(memberList) > 0 {
+			return memberList[0], nil
+		}
+	}
+	return nil, errors.New("failed to get a workspace owner or DBA")
+}
+
+// getAnyProjectOwner gets a default assignee from the project owners.
+func (s *TaskScheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*api.ProjectMember, error) {
+	role := api.Owner
+	find := &api.ProjectMemberFind{
+		ProjectID: &projectID,
+		Role:      &role,
+	}
+	projectMemberList, err := s.store.FindProjectMember(ctx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
+	}
+	if len(projectMemberList) > 0 {
+		return projectMemberList[0], nil
+	}
+	return nil, errors.New("failed to get a project owner")
+}
+
+// canPrincipalBeAssignee checks if a principal could be the assignee of an issue, judging by the principal role and the environment policy.
+func (s *TaskScheduler) canPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return false, err
+	}
+	var groupValue *api.AssigneeGroupValue
+	for i, group := range policy.AssigneeGroupList {
+		if group.IssueType == issueType {
+			groupValue = &policy.AssigneeGroupList[i].Value
+			break
+		}
+	}
+	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
+		// no value is set, fallback to default.
+		// the assignee group is the workspace owner or DBA.
+		principal, err := s.store.GetPrincipalByID(ctx, principalID)
+		if err != nil {
+			return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
+		}
+		if principal == nil {
+			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
+		}
+		if !s.server.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
+			principal.Role = api.Owner
+		}
+		if principal.Role == api.Owner || principal.Role == api.DBA {
+			return true, nil
+		}
+	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
+		// the assignee group is the project owner.
+		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
+			ProjectID:   &projectID,
+			PrincipalID: &principalID,
+		})
+		if err != nil {
+			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", projectID, principalID)
+		}
+		if member == nil {
+			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
+		}
+		if !s.server.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
+			member.Role = string(api.Owner)
+		}
+		if member.Role == string(api.Owner) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
