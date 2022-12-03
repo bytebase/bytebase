@@ -534,6 +534,16 @@ func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *a
 	return nil
 }
 
+func getTaskStatement(task *api.Task) (string, error) {
+	var taskStatement struct {
+		Statement string `json:"statement"`
+	}
+	if err := json.Unmarshal([]byte(task.Payload), &taskStatement); err != nil {
+		return "", err
+	}
+	return taskStatement.Statement, nil
+}
+
 // scheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
 func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Issue, settingValue *api.SettingAppIMValue) {
 	if !settingValue.ExternalApproval.Enabled {
