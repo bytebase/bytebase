@@ -282,7 +282,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	if !profile.Readonly {
-		// Task scheduler
+		s.SchemaSyncer = NewSchemaSyncer(storeInstance, s.dbFactory)
+
 		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
 
 		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
@@ -338,9 +339,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		taskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
 
 		s.TaskCheckScheduler = taskCheckScheduler
-
-		// Schema syncer
-		s.SchemaSyncer = NewSchemaSyncer(storeInstance, s.dbFactory)
 
 		// Backup runner
 		s.BackupRunner = NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
