@@ -31,7 +31,9 @@ type Instance struct {
 	ExternalLink  string  `jsonapi:"attr,externalLink"`
 	Host          string  `jsonapi:"attr,host"`
 	Port          string  `jsonapi:"attr,port"`
-	Username      string  `jsonapi:"attr,username"`
+	// Database is the initial connection database for PostgreSQL only.
+	Database string `jsonapi:"attr,database"`
+	Username string `jsonapi:"attr,username"`
 	// Password is not returned to the client
 	Password string
 }
@@ -51,6 +53,7 @@ type InstanceCreate struct {
 	ExternalLink string  `jsonapi:"attr,externalLink"`
 	Host         string  `jsonapi:"attr,host"`
 	Port         string  `jsonapi:"attr,port"`
+	Database     string  `jsonapi:"attr,database"`
 	Username     string  `jsonapi:"attr,username"`
 	Password     string  `jsonapi:"attr,password"`
 	SslCa        string  `jsonapi:"attr,sslCa"`
@@ -96,6 +99,7 @@ type InstancePatch struct {
 	ExternalLink  *string `jsonapi:"attr,externalLink"`
 	Host          *string `jsonapi:"attr,host"`
 	Port          *string `jsonapi:"attr,port"`
+	Database      *string `jsonapi:"attr,database"`
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from a instance.
