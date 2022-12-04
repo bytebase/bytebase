@@ -71,7 +71,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 func cutover(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 
-	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
+	mi, err := preMigration(ctx, server.store, server.profile, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
@@ -140,7 +140,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 		return true, nil, err
 	}
 
-	return postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, server.store, server.ActivityManager, server.profile, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {

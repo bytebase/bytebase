@@ -36,7 +36,7 @@ func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, server *Se
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
-	return runMigration(ctx, server, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, server.store, server.dbFactory, server.RollbackRunner, server.ActivityManager, server.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.

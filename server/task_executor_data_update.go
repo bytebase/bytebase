@@ -28,7 +28,7 @@ func (*DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
-	return runMigration(ctx, server, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, server.store, server.dbFactory, server.RollbackRunner, server.ActivityManager, server.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
