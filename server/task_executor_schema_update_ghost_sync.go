@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewSchemaUpdateGhostSyncTaskExecutor creates a schema update (gh-ost) sync task executor.
@@ -38,7 +39,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
-	return exec.runGhostMigration(ctx, server, task, payload.Statement)
+	return exec.runGhostMigration(ctx, server.store, server.TaskScheduler, task, payload.Statement)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
@@ -209,7 +210,7 @@ func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.
 	}
 }
 
-func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, store *store.Store, taskScheduler *TaskScheduler, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -227,7 +228,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.Instance.ID)
 	}
 
-	instanceUserList, err := server.store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
+	instanceUserList, err := store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
 	if err != nil {
 		return true, nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
 	}
@@ -286,7 +287,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 
 	select {
 	case <-syncDone:
-		server.TaskScheduler.sharedTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
+		taskScheduler.sharedTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-migrationError:
 		return true, nil, err
