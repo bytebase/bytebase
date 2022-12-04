@@ -287,7 +287,9 @@
       },
       "counting": "Counting"
     },
-    "n-similar-tasks": "({count} similar tasks)"
+    "n-similar-tasks": "({count} similar tasks)",
+    "mark-as-done": "Mark as done",
+    "mark-as-done-modal-title": "Mark task [{name}] as done?"
   },
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",

@@ -35,11 +35,17 @@
                 </span>
               </div>
             </div>
-            <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
-              <InstanceEngineIcon :instance="databaseForTask(task).instance" />
-              <span class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap">{{
-                instanceName(databaseForTask(task).instance)
-              }}</span>
+            <div class="flex items-center justify-between px-1 py-1">
+              <div class="flex flex-1 items-center whitespace-pre-wrap">
+                <InstanceEngineIcon
+                  :instance="databaseForTask(task).instance"
+                />
+                <span class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap">
+                  {{ instanceName(databaseForTask(task).instance) }}
+                </span>
+
+                <TaskMarkAsDoneButton :task="(task as Task)" />
+              </div>
             </div>
           </div>
         </div>
@@ -49,6 +55,8 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, watchEffect } from "vue";
+
 import { useDatabaseStore } from "@/store";
 import {
   Database,
@@ -61,8 +69,8 @@ import {
   unknown,
 } from "@/types";
 import { activeTaskInStage, taskSlug } from "@/utils";
-import { computed, watchEffect } from "vue";
 import { useIssueLogic } from "./logic";
+import TaskMarkAsDoneButton from "./TaskMarkAsDoneButton.vue";
 
 const {
   create,
