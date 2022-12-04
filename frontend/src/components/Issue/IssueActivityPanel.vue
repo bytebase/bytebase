@@ -141,8 +141,11 @@
                           :activity="item.activity"
                         />
 
-                        {{ humanizeTs(item.activity.createdTs) }}
-                        <template
+                        <HumanizeTs
+                          :ts="item.activity.createdTs"
+                          class="ml-1"
+                        />
+                        <span
                           v-if="
                             item.activity.createdTs !=
                               item.activity.updatedTs &&
@@ -150,8 +153,11 @@
                           "
                         >
                           ({{ $t("common.edited") }}
-                          {{ humanizeTs(item.activity.updatedTs) }})
-                        </template>
+                          <HumanizeTs
+                            :ts="item.activity.updatedTs"
+                            class="ml-1"
+                          />)
+                        </span>
                       </a>
                       <span
                         v-if="item.similar.length > 0"
@@ -330,6 +336,7 @@ import {
 } from "vue";
 import { useRoute } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
+import HumanizeTs from "../misc/HumanizeTs.vue";
 import type {
   Issue,
   Activity,
