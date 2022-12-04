@@ -18,6 +18,8 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
@@ -43,7 +45,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
 
-	terminated, result, err = exec.pitrCutover(ctx, task, server, issue)
+	terminated, result, err = exec.pitrCutover(ctx, server.dbFactory, server.BackupRunner, server.SchemaSyncer, server.profile, task, issue)
 	if err != nil {
 		return terminated, result, err
 	}
@@ -91,8 +93,8 @@ func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
-func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	driver, err := server.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
+func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *BackupRunner, schemaSyncer *SchemaSyncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
 	}
@@ -107,7 +109,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	// database's migration history, and append a new BRANCH migration.
 	log.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
-		ReleaseVersion: server.profile.Version,
+		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      task.Database.Name,
 		Database:       task.Database.Name,
@@ -127,12 +129,12 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 
 	// TODO(dragonly): Only needed for in-place PITR.
 	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
-	if _, err := server.BackupRunner.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
+	if _, err := backupRunner.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
 		return true, nil, errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
 	}
 
 	// Sync database schema after restore is completed.
-	if err := server.SchemaSyncer.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
+	if err := schemaSyncer.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Database.Instance.Name),
 			zap.String("databaseName", task.Database.Name),
