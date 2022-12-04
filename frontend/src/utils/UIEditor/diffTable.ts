@@ -54,7 +54,7 @@ export const diffTableList = (
         columnListDiffResult.dropColumnList.length > 0
       ) {
         alterTableContextList.push({
-          name: table.name,
+          name: originTable.name,
           ...columnListDiffResult,
         });
       }
