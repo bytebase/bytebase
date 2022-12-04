@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -1227,111 +1226,6 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		}
 	}
 	return nil
-}
-
-// getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
-// It's used for creating a database in a tenant mode project.
-// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-// Otherwise, we will create a blank database without schema.
-func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, project *api.Project, projectID int, baseDatabaseName string) (string, string, error) {
-	// Find all databases in the project.
-	dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-		ProjectID: &projectID,
-	})
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
-	}
-
-	deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, projectID)
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
-	}
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
-	}
-	matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
-	}
-	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
-
-	// When there is no existing tenant, we will look at all existing databases in the tenant mode project.
-	// If there are existing databases with the same name, we will disallow the database creation.
-	// Otherwise, we will create a blank new database.
-	if similarDB == nil {
-		// Ignore the database name conflict if the template is empty.
-		if project.DBNameTemplate == "" {
-			return "", "", nil
-		}
-
-		found := false
-		for _, db := range dbList {
-			var labelList []*api.DatabaseLabel
-			if err := json.Unmarshal([]byte(db.Labels), &labelList); err != nil {
-				return "", "", errors.Wrapf(err, "failed to unmarshal labels for database ID %v name %q", db.ID, db.Name)
-			}
-			labelMap := map[string]string{}
-			for _, label := range labelList {
-				labelMap[label.Key] = label.Value
-			}
-			dbName, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, labelMap)
-			if err != nil {
-				return "", "", errors.Wrapf(err, "failed to format database name formatDatabaseName(%q, %q, %+v)", baseDatabaseName, project.DBNameTemplate, labelMap)
-			}
-			if db.Name == dbName {
-				found = true
-				break
-			}
-		}
-		if found {
-			err := errors.Errorf("conflicting database name, project has existing base database named %q, but it's not from the selected peer tenants", baseDatabaseName)
-			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-		return "", "", nil
-	}
-
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name)
-	if err != nil {
-		return "", "", err
-	}
-	defer driver.Close(ctx)
-	schemaVersion, err := getLatestSchemaVersion(ctx, driver, similarDB.Name)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.Name)
-	}
-
-	var schemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-		return "", "", err
-	}
-	return schemaVersion, schemaBuf.String(), nil
-}
-
-func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) *api.Database {
-	var similarDB *api.Database
-	// We try to use an existing tenant with the same environment, if possible.
-	for _, databaseList := range databaseMatrix {
-		for _, db := range databaseList {
-			if db.Instance.EnvironmentID == environmentID {
-				similarDB = db
-				break
-			}
-		}
-		if similarDB != nil {
-			break
-		}
-	}
-	if similarDB == nil {
-		for _, stage := range databaseMatrix {
-			if len(stage) > 0 {
-				similarDB = stage[0]
-				break
-			}
-		}
-	}
-
-	return similarDB
 }
 
 func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
