@@ -66,7 +66,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 		return true, resultPayload, err
 	}
 
-	resultPayload, err := exec.doPITRRestore(ctx, server, task, payload)
+	resultPayload, err := exec.doPITRRestore(ctx, server.store, server.dbFactory, server.s3Client, server.profile, task, payload)
 	return true, resultPayload, err
 }
 
@@ -174,8 +174,8 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, store 
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	sourceDriver, err := server.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "")
+func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+	sourceDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "")
 	if err != nil {
 		return nil, err
 	}
@@ -183,24 +183,24 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 
 	targetDriver := sourceDriver
 	if payload.TargetInstanceID != nil {
-		targetInstance, err := server.store.GetInstanceByID(ctx, *payload.TargetInstanceID)
+		targetInstance, err := store.GetInstanceByID(ctx, *payload.TargetInstanceID)
 		if err != nil {
 			return nil, err
 		}
-		if targetDriver, err = server.dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, ""); err != nil {
+		if targetDriver, err = dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, ""); err != nil {
 			return nil, err
 		}
 	}
 	// DB.Close is idempotent, so we can feel free to assign sourceDriver to targetDriver first.
 	defer targetDriver.Close(ctx)
 
-	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
+	issue, err := getIssueByPipelineID(ctx, store, task.PipelineID)
 	if err != nil {
 		return nil, err
 	}
 
 	backupStatus := api.BackupStatusDone
-	backupList, err := server.store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
+	backupList, err := store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
 	if err != nil {
 		return nil, err
 	}
@@ -214,13 +214,13 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	}
 
 	log.Debug("Downloading all binlog files")
-	if err := mysqlSourceDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */, server.s3Client); err != nil {
+	if err := mysqlSourceDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */, s3Client); err != nil {
 		return nil, err
 	}
 
 	targetTs := *payload.PointInTimeTs
 	log.Debug("Getting latest backup before or equal to targetTs", zap.Int64("targetTs", targetTs))
-	backup, targetBinlogInfo, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, server.s3Client)
+	backup, targetBinlogInfo, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, s3Client)
 	if err != nil {
 		targetTsHuman := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
@@ -230,16 +230,16 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 		return nil, errors.Wrapf(err, "failed to get latest backup before or equal to %s", targetTsHuman)
 	}
 	startBinlogInfo := backup.Payload.BinlogInfo
-	binlogDir := common.GetBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
+	binlogDir := common.GetBinlogAbsDir(profile.DataDir, task.Instance.ID)
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 
-	backupAbsPathLocal := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
+	backupAbsPathLocal := getBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
 	if backup.StorageBackend == api.BackupStorageBackendS3 {
-		if err := downloadBackupFileFromCloud(ctx, server.s3Client, backup.Path, backupAbsPathLocal); err != nil {
+		if err := downloadBackupFileFromCloud(ctx, s3Client, backup.Path, backupAbsPathLocal); err != nil {
 			return nil, errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
 		}
 		defer os.Remove(backupAbsPathLocal)
-		replayBinlogPathList, err := downloadBinlogFilesFromCloud(ctx, server.s3Client, startBinlogInfo, *targetBinlogInfo, binlogDir)
+		replayBinlogPathList, err := downloadBinlogFilesFromCloud(ctx, s3Client, startBinlogInfo, *targetBinlogInfo, binlogDir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to download binlog files from %s to %s from S3", startBinlogInfo.FileName, targetBinlogInfo.FileName)
 		}
