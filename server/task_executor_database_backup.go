@@ -15,6 +15,9 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
 )
 
 const (
@@ -70,7 +73,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	log.Debug("Start database backup.", zap.String("instance", task.Instance.Name), zap.String("database", task.Database.Name), zap.String("backup", backup.Name))
-	backupPayload, backupErr := exec.backupDatabase(ctx, server, task.Instance, task.Database.Name, backup)
+	backupPayload, backupErr := exec.backupDatabase(ctx, server.dbFactory, server.s3Client, server.profile, task.Instance, task.Database.Name, backup)
 	backupStatus := string(api.BackupStatusDone)
 	comment := ""
 	if backupErr != nil {
@@ -141,14 +144,14 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupF
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
-	driver, err := server.dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
+func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
 	}
 	defer driver.Close(ctx)
 
-	backupFilePathLocal := filepath.Join(server.profile.DataDir, backup.Path)
+	backupFilePathLocal := filepath.Join(profile.DataDir, backup.Path)
 	payload, err := dumpBackupFile(ctx, driver, databaseName, backupFilePathLocal)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to dump backup file %q", backupFilePathLocal)
@@ -158,14 +161,14 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 	case api.BackupStorageBackendLocal:
 		return payload, nil
 	case api.BackupStorageBackendS3:
-		log.Debug("Uploading backup to s3 bucket.", zap.String("bucket", server.s3Client.GetBucket()), zap.String("path", backupFilePathLocal))
+		log.Debug("Uploading backup to s3 bucket.", zap.String("bucket", s3Client.GetBucket()), zap.String("path", backupFilePathLocal))
 		bucketFileToUpload, err := os.Open(backupFilePathLocal)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to open backup file %q for uploading to s3 bucket", backupFilePathLocal)
 		}
 		defer bucketFileToUpload.Close()
 
-		if _, err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
+		if _, err := s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
 			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
 		}
 		log.Debug("Successfully uploaded backup to s3 bucket.")
