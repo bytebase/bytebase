@@ -41,8 +41,7 @@ import { reactive, computed, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "../components/VCSCard.vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
-import { featureToRef, useCurrentUser, useVCSStore } from "@/store";
-import { hasWorkspacePermission } from "@/utils";
+import { featureToRef, useVCSStore } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -57,7 +56,6 @@ export default defineComponent({
     const vcsStore = useVCSStore();
     const router = useRouter();
     const state = reactive<LocalState>({});
-    const currentUser = useCurrentUser();
 
     const prepareVCSList = () => {
       vcsStore.fetchVCSList();
