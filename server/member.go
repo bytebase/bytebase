@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -88,11 +86,11 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/member/:id", func(c echo.Context) error {
+	g.PATCH("/member/:memberID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("memberID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberID"))).SetInternal(err)
 		}
 
 		member, err := s.store.GetMemberByID(ctx, id)
@@ -194,20 +192,4 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-// getAnyFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
-func (s *Server) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Member, error) {
-	for _, role := range []api.Role{api.Owner, api.DBA} {
-		memberList, err := s.store.FindMember(ctx, &api.MemberFind{
-			Role: &role,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get role %v", role)
-		}
-		if len(memberList) > 0 {
-			return memberList[0], nil
-		}
-	}
-	return nil, errors.New("failed to get a workspace owner or DBA")
 }

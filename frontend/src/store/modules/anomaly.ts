@@ -10,17 +10,39 @@ import {
   ResponseWithData,
   UNKNOWN_ID,
   MaybeRef,
+  unknown,
+  Instance,
+  Database,
+  InstanceId,
+  DatabaseId,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
+import { useDatabaseStore, useInstanceStore } from ".";
 
 function convert(
   anomaly: ResourceObject,
   includedList: ResourceObject[]
 ): Anomaly {
+  const instanceId = anomaly.attributes.instanceId as InstanceId;
+  let instance: Instance = unknown("INSTANCE") as Instance;
+  const databaseId = anomaly.attributes.databaseId as DatabaseId;
+  let database: Database = unknown("DATABASE") as Database;
+
+  const instanceStore = useInstanceStore();
+  const databaseStore = useDatabaseStore();
+  for (const item of includedList || []) {
+    if (item.type == "instance" && item.id == String(instanceId)) {
+      instance = instanceStore.convert(item, includedList);
+    }
+    if (item.type == "database" && item.id == String(databaseId)) {
+      database = databaseStore.convert(item, includedList);
+    }
+  }
+
   return {
     ...(anomaly.attributes as Omit<
       Anomaly,
-      "id" | "payload" | "creator" | "updater"
+      "id" | "payload" | "creator" | "updater" | "instance" | "database"
     >),
     creator: getPrincipalFromIncludedList(
       anomaly.relationships!.creator.data,
@@ -32,6 +54,8 @@ function convert(
     ),
     id: parseInt(anomaly.id),
     payload: JSON.parse((anomaly.attributes.payload as string) || "{}"),
+    instance,
+    database,
   };
 }
 
@@ -63,6 +87,12 @@ const buildQueryByAnomalyFind = (find: AnomalyFind): string => {
   }
   if (find.databaseId && find.databaseId !== UNKNOWN_ID) {
     query.database = find.databaseId;
+  }
+  if (find.rowStatus) {
+    query.rowStatus = find.rowStatus;
+  }
+  if (find.type) {
+    query.type = find.type;
   }
   return QueryString.stringify(query);
 };

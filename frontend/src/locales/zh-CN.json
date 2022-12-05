@@ -77,11 +77,6 @@
       "developer": "开发者",
       "member": "成员"
     },
-    "role-switch": {
-      "dba": "切换到 DBA",
-      "owner": "切换到所有者",
-      "developer": "切换到开发者"
-    },
     "assignee": "审核人",
     "revert": "恢复",
     "apply": "应用",
@@ -102,6 +97,7 @@
     "status": "状态",
     "stage": "阶段",
     "task": "任务",
+    "tasks": "任务",
     "sql": "SQL",
     "unassigned": "未指派",
     "new": "创建",
@@ -143,6 +139,7 @@
     "Default": "默认",
     "definition": "定义",
     "empty": "空",
+    "connecting": "连接中...",
     "creating": "创建中...",
     "updating": "更新中...",
     "Address": "地址",
@@ -208,7 +205,15 @@
     "sync-now": "现在同步",
     "show-help": "查看帮助",
     "success": "成功",
-    "load-more": "加载更多"
+    "load-more": "加载更多",
+    "access-denied": "拒绝访问",
+    "no": "否",
+    "yes": "是",
+    "advanced": "高级",
+    "restart": "重启",
+    "want-help": "加入用户群",
+    "operation": "操作",
+    "rollback": "回滚"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -246,7 +251,9 @@
       "sql-review": "SQL 审查",
       "earliest-allowed-time": "最早执行时间",
       "ghost-sync": "gh-ost 同步",
-      "statement-type": "语句类型"
+      "statement-type": "语句类型",
+      "lgtm": "LGTM",
+      "pitr": "PITR"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
     "comment": "评论",
@@ -279,7 +286,10 @@
         "row": "行数"
       },
       "counting": "统计中"
-    }
+    },
+    "n-similar-tasks": "({count} 个相似的任务)",
+    "mark-as-done": "标记为已完成",
+    "mark-as-done-modal-title": "将任务[{name}]标记为已完成？"
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
@@ -319,10 +329,13 @@
       "workspace": "工作空间",
       "general": "通用",
       "members": "成员",
+      "im-integration": "IM 集成管理",
       "version-control": "版本控制",
       "subscription": "订阅",
       "labels": "标签",
-      "debug-log": "Debug 日志"
+      "debug-log": "Debug 日志",
+      "sensitive-data": "敏感数据",
+      "access-control": "访问控制"
     },
     "profile": {
       "email": "邮箱",
@@ -375,7 +388,18 @@
       "change-role-provider-to-bytebase": {
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
       },
-      "system-bot": "机器人助手"
+      "system-bot": "机器人助手",
+      "service-account": "服务账号",
+      "copy-service-key": "复制 Service Key",
+      "reset-service-key": "重置 Service Key",
+      "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
+      "service-key-copied": "Service Key 已复制，请勿泄漏",
+      "create-as-service-account": "创建为服务账号"
+    },
+    "im-integration": {
+      "enable": "启用",
+      "description": "可以让用户在 IM 里直接审批工单。",
+      "feishu-updated-tip": "飞书配置更新成功"
     },
     "general": {
       "workspace": {
@@ -388,6 +412,15 @@
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
         "logo-upload-succeed": "Logo 更新完成"
       }
+    },
+    "sensitive-data": {
+      "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，你可以将多个列标记为敏感数据。",
+      "remove-sensitive-column-tips": "不再对此列数据脱敏？"
+    },
+    "access-control": {
+      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。",
+      "add-rule": "添加规则",
+      "remove-policy-tips": "删除这条规则？"
     }
   },
   "activity": {
@@ -413,7 +446,8 @@
       "project-member-delete": "删除项目成员",
       "project-member-role-update": "变更项目成员角色",
       "pipeline-task-earliest-allowed-time-update": "更新最早允许执行时间",
-      "database-recovery-pitr-done": "将数据库恢复到指定时间点"
+      "database-recovery-pitr-done": "将数据库恢复到指定时间点",
+      "external-approval-rejected": "拒绝外部审批"
     },
     "sentence": {
       "created-issue": "创建工单",
@@ -440,11 +474,13 @@
       "failed": "失败",
       "task-name": "任务 {name}",
       "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
-      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销"
+      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销",
+      "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批"
     },
     "subject-prefix": {
       "task": "任务"
-    }
+    },
+    "n-similar-activities": "({count} 个相似的活动)"
   },
   "issue": {
     "waiting-approval": "等待批准",
@@ -454,7 +490,9 @@
       "modal": {
         "resolve": "解决工单?",
         "cancel": "取消整个工单?",
-        "reopen": "重开工单?"
+        "reopen": "重开工单？",
+        "title": "{action}{type} [{name}]？",
+        "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
         "resolve": "解决",
@@ -513,14 +551,35 @@
     "edit-sql-statement": "编辑 SQL 语句",
     "upload-sql": "上传 SQL",
     "override-current-statement": "覆盖当前的 SQL 语句",
-    "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。"
+    "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
+    "waiting-earliest-allowed-time": "将于 {time} 之后执行",
+    "batch-transition": {
+      "not-allowed-tips": "部分选中的工单无法被{operation}",
+      "resolve": "解决",
+      "resolved": "解决",
+      "cancel": "取消",
+      "cancelled": "取消",
+      "reopen": "重开",
+      "reopened": "重开",
+      "action-n-issues": "{action} {n} 个工单",
+      "successfully-action-n-issues": "成功更新 {n} 个工单"
+    },
+    "sql-hint": {
+      "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
+      "dont-apply-to-database-in-baseline-migration": "对于建立基线的迁移，Bytebase 不会应用到数据库，只会记录一个基线历史",
+      "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
+    },
+    "rollback-from": "当前任务回滚自 {link}。",
+    "issue-link-with-task": "工单 {issue} - 任务 {task}"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
     "vcs-info": "已开启 VCS 版本管理。选择该数据库会跳转到对应的 Git 仓库以发起变更流程。",
     "alter-single-db": "变更单个数据库",
-    "alter-multiple-db": "变更多个数据库",
-    "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。"
+    "alter-multiple-db": "手动选择数据库",
+    "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。",
+    "alter-db-group": "按部署的配置",
+    "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
   },
   "quick-action": {
     "create-db": "创建数据库",
@@ -535,6 +594,7 @@
     "create-project": "@:common.create@:common.project",
     "edit-data": "编辑数据",
     "troubleshoot": "问题排查",
+    "sync-schema": "库表同步",
     "transfer-in-db": "转移数据库",
     "request-db": "申请数据库",
     "from-unassigned-databases": "从未分配的数据库",
@@ -551,7 +611,7 @@
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
-    "select-label-value": "选择 {key}"
+    "input-label-value": "输入 {key}"
   },
   "db": {
     "encoding": "字符编码",
@@ -574,7 +634,6 @@
     "select-database-user": "选择数据库用户",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
-    "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
@@ -608,7 +667,7 @@
     "show-how-to-create": "如何创建",
     "below-is-an-example-to-create-user-bytebase-with-password": "创建用户 'bytebase{'@'}%' 及其密码的例子如下",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn": "该实例没有配置只读用户，请考虑配置。",
+    "no-read-only-data-source-warn": "该实例没有配置只读连接，请考虑配置。",
     "sentence": {
       "host": {
         "snowflake": "例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
@@ -646,8 +705,8 @@
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
-    "add-a-postgresql-sample-instance": "创建一个 PostgreSQL 样式实例",
-    "successfully-created-postgresql-instance": "成功创建临时的 PostgreSQL 数据库实例，并已经自动填充至表单。",
+    "add-a-postgresql-sample-instance": "创建一个 PostgreSQL 样本实例",
+    "successfully-created-postgresql-instance": "成功创建了 PostgreSQL 样本实例。并且填好了连接信息。",
     "connection-info-seems-to-be-incorrect": "连接信息似乎错误",
     "new-instance": "新实例",
     "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{0}",
@@ -658,7 +717,6 @@
     "failed-to-connect-instance": "连接到实例失败。",
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "search-instance-name": "搜索实例名称",
-    "no-read-only-data-source-support": "暂时不支持 {database} 创建只读连接",
     "grants": "权限"
   },
   "environment": {
@@ -668,7 +726,11 @@
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{0}'更新成功",
-    "protected": "受保护的"
+    "protected": "受保护的",
+    "disable-auto-backup": {
+      "self": "禁用数据库自动备份",
+      "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
+    }
   },
   "quick-start": {
     "bookmark-an-issue": "收藏工单",
@@ -704,6 +766,7 @@
       "new-user": "第一次使用 Bytebase?",
       "demo-note": "请使用 demo 账号登录",
       "gitlab": "通过 GitLab 登录",
+      "github": "通过 GitHub 登录",
       "3rd-party-auth-demo": "演示模式不支持第三方账号登录",
       "gitlab-oauth": "您可联系管理员开启 GitLab 登录"
     },
@@ -749,11 +812,13 @@
     },
     "environment-tier": {
       "name": "环境级别",
+      "description": "使该环境在显示上不同于其他环境。{newline}默认情况下，开发者无法通过 SQL 编辑器在这个环境的数据库上执行任何查询。",
       "mark-env-as-protected": "标记为受保护的环境"
     }
   },
   "migration-history": {
     "self": "变更历史",
+    "select": "选择版本",
     "workflow": "工作流",
     "commit-info": "由 {author} 于 {time}",
     "no-schema-change": "本次变更没有任何 Schema 的改动",
@@ -778,10 +843,10 @@
     "establish-database-baseline": "建立「{name}」基线",
     "instance-missing-migration-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
     "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
-    "contact-dba": "请联系您的 DBA 进行配置。",
-    "no-succeed-vcs-migration-record": "没有来自 VCS 的变更历史。"
+    "contact-dba": "请联系您的 DBA 进行配置。"
   },
   "database": {
+    "select": "选择数据库",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "该表每隔约10分钟刷新一次，所以展示的可能不是最新信息。",
     "last-successful-sync": "最后一次成功的同步",
     "no-anomalies-detected": "没有检测到异常",
@@ -846,6 +911,7 @@
     "row-count-estimate": "估计行数",
     "data-size": "数据大小",
     "index-size": "索引大小",
+    "column": "列",
     "columns": "列",
     "indexes": "索引",
     "row-count-est": "估计行数",
@@ -888,10 +954,27 @@
     "view-unassigned-databases": "查看未分配的数据库",
     "unassigned-databases": "未分配的数据库",
     "restore-database": "恢复数据库",
-    "selected-n-databases": "已选择 {n} 个数据库"
+    "selected-n-databases": "已选择 {n} 个数据库",
+    "sync-schema": {
+      "title": "库表同步",
+      "select-project": "步骤 1. 选择项目",
+      "select-schema": "步骤 2. 选择 Schema",
+      "select-database": "步骤 3. 选择待同步的数据库",
+      "schema-diff": "Schema 对比结果",
+      "synchronize-statements": "DDL 语句",
+      "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句。",
+      "select-schema-and-target-database-tip": "请先选择 Schema 和数据库。",
+      "no-difference-tip": "没有发现差异。",
+      "more-version": "更多...",
+      "character-sets-diff-found": "Schema 之间的字符集不同",
+      "preview-issue": "预览工单"
+    },
+    "sensitive": "敏感",
+    "access-denied": "你没有访问该数据库的权限"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
+    "branch-specify-tip": "诀窍: 可以使用空字符串跟踪所有分支的变更.",
     "base-directory": "根目录",
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
     "file-path-template": "文件路径模版",
@@ -905,6 +988,21 @@
     "schema-path-example": "Schema 路径样例",
     "sheet-path-template": "工作表路径模板",
     "sheet-path-template-description": "Bytebase 仅跟踪文件路径匹配模版 (相对于指定根目录）的文件。匹配的文件将被同步到 SQL Editor 以供使用。",
+    "sql-review-ci": "SQL 审核 CI",
+    "sql-review-ci-enable": "开启 SQL 审核 CI",
+    "sql-review-ci-enable-gitlab": "基于 GitLab CI 开启 SQL 审核",
+    "sql-review-ci-enable-github": "基于 GitHub Action 开启 SQL 审核",
+    "sql-review-ci-description": "Bytebase 会发起{pr}为您的代码仓库配置 SQL 审核 CI。配置完成后，在每一个{pr}中，SQL 审核策略将应用于任何匹配上「{pathTemplate}」的文件修改。",
+    "sql-review-ci-setup": "配置 SQL 审核 CI",
+    "sql-review-ci-setup-failed": "SQL 审核 CI 创建失败",
+    "sql-review-ci-setup-pr": "查看{pr}",
+    "merge-request": "合并请求",
+    "pull-request": "拉取请求",
+    "sql-review-ci-loading-modal": "我们正在为您准备{pr}来配置 SQL 审核 CI。完成之后您将会被重定向到{pr}页面。",
+    "sql-review-ci-setup-modal": "我们为您的代码仓库创建了一个{pr}来配置 SQL 审核 CI。请审核并合并该{pr}。",
+    "sql-review-ci-remove": "清除 SQL 审核 CI",
+    "sql-review-ci-remove-modal": "SQL 审核 CI 已禁用。您可以手动删除 {repository} 的 {vcs} 文件。",
+    "sql-review-ci-restore-modal": "恢复到 UI 工作流后，SQL 审核 CI 将会被禁用，您可以手动删除 {repository} 的 {vcs} 文件。",
     "git-provider": "Git 提供方",
     "version-control-status": "@.capitalize:common.version-control 已{status}",
     "version-control-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
@@ -1074,7 +1172,13 @@
       "tenant": "多租户"
     },
     "db-name-template": "数据库名称模板",
-    "select": "选择项目"
+    "select": "选择项目",
+    "lgtm-check": {
+      "self": "LGTM 检查",
+      "disabled": "跳过 LGTM 检查",
+      "project-member": "需要来自项目成员的 LGTM",
+      "project-owner": "需要来自项目所有者的 LGTM"
+    }
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",
@@ -1171,7 +1275,7 @@
     "preview-deployment-pipeline": "预览部署流水线",
     "select-database-group": "选择数据库分组"
   },
-  "datasource": {
+  "data-source": {
     "role-type": "权限类型",
     "successfully-deleted-data-source-name": "成功删除数据源'{0}'。",
     "create-data-source": "创建数据源",
@@ -1197,8 +1301,8 @@
     "connection-name-string-copied-to-clipboard": "{0} 字符串已复制到剪贴板。",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} ",
     "ssl-type": {
-      "ca": "@:{'datasource.ssl.ca-cert'}",
-      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "ca": "@:{'data-source.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
       "none": "不使用"
     },
     "ssl": {
@@ -1206,7 +1310,10 @@
       "client-key": "客户端密钥",
       "client-cert": "客户端证书"
     },
-    "ssl-connection": "SSL 连接"
+    "ssl-connection": "SSL 连接",
+    "read-replica-host": "只读副本 Host",
+    "read-replica-port": "只读副本端口",
+    "delete-read-only-data-source": "删除只读数据源"
   },
   "setting": {
     "project": {
@@ -1231,9 +1338,7 @@
     "download-as-csv": "下载为 CSV 格式",
     "download-as-json": "下载为 JSON 格式",
     "only-select-allowed": "只允许执行 {select} 语句",
-    "want-to-change-schema": "如果您想要 {changeschema}",
-    "change-schema": "变更 Schema",
-    "go-to-alter-schema": "您可以点击 “{alterschema}” 按钮，提交一个工单",
+    "want-to-action": "如果您想要{action}，点击“{action}”按钮并提交一个工单。",
     "table-schema-placeholder": "选择一个表进行查看 Schema",
     "notify-empty-statement": "请在编辑器中输入 SQL 语句",
     "notify-multiple-statements": "检测到您输入了多条 SQL 语句。SQL 编辑器只支持执行第一条语句。您可以选择其他语句单独执行。",
@@ -1247,7 +1352,10 @@
     "search-sheets": "搜索工作表",
     "hint-tips": {
       "confirm-to-delete-this-history": "确定删除这条记录？",
-      "confirm-to-close-unsaved-tab": "确定关闭未保存的标签页？"
+      "confirm-to-close-unsaved-sheet": {
+        "title": "确定关闭未保存的工作表？",
+        "content": "关闭当前工作表会丢失所有未保存的数据？"
+      }
     },
     "please-input-the-tab-label": "请输入标签页名称!",
     "copy-code": "复制代码",
@@ -1259,7 +1367,7 @@
     "view-all-tabs": "查看所有标签页",
     "sheet": "工作表",
     "sheets": "工作表",
-    "connection-holder": "请先从左侧数据库列表中设置一个连接上下文",
+    "connection-holder": "点击左侧数据库列表中的节点来建立连接",
     "link-access": "链接访问权限",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
@@ -1276,7 +1384,60 @@
     "alter-table": "修改表结构",
     "open-connection": "打开连接",
     "visualize-explain": "可视化 Explain",
-    "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。"
+    "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。",
+    "rows-upper-limit": "到达查询结果条数上限",
+    "tab-mode": {
+      "readonly": "只读",
+      "admin": "管理员"
+    },
+    "close-sheet": "关闭工作表"
+  },
+  "ui-editor": {
+    "self": "UI 编辑器",
+    "use-tips": "选择需要编辑的数据库或者表",
+    "preview-issue": "预览工单",
+    "sync-sql-from-ui-editor": "从 UI 编辑器中同步 SQL",
+    "list": "列表",
+    "raw-sql": "SQL 语句",
+    "actions": {
+      "create-table": "新建表",
+      "drop-table": "删除表",
+      "drop": "删除",
+      "restore": "恢复",
+      "add-column": "添加列",
+      "drop-column": "删除列",
+      "sql-preview": "预览 SQL",
+      "discard-changes": "撤销更改",
+      "save": "保存"
+    },
+    "database": {
+      "name": "名称",
+      "row-count": "数据行数",
+      "data-size": "数据大小",
+      "engine": "引擎",
+      "collation": "字符排序规则",
+      "comment": "注释"
+    },
+    "tables": "数据表",
+    "table": {
+      "name": "表名"
+    },
+    "columns": "数据列",
+    "column": {
+      "name": "名称",
+      "type": "类型",
+      "default": "默认值",
+      "comment": "注释",
+      "nullable": "是否可为空"
+    },
+    "nothing-changed": "无任何改动",
+    "message": {
+      "invalid-table-name": "无效的表名",
+      "duplicated-table-name": "重复的表名",
+      "invalid-column-name": "无效的列名",
+      "duplicated-column-name": "重复的列名",
+      "invalid-column-type": "无效的列类型"
+    }
   },
   "label": {
     "empty-label-value": "<空值>",
@@ -1298,7 +1459,7 @@
     "setting": {
       "description": "标签是一组可用于标识数据库租户的键值对。{link}。"
     },
-    "db-name-template-tips": "让您能够把属于不同租户但是有相同 {placeholder} 的数据库分成一组。{link}。",
+    "db-name-template-tips": "所有租户数据库名字遵循命名模版。有着相同 {placeholder} 的数据库会被分成一组。{link}。",
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。"
@@ -1309,6 +1470,15 @@
   "subscription": {
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "upload-license": "上传证书",
+    "upgrade-trial-button": "升级试用",
+    "start-n-days-trial": "开启 {days} 天试用",
+    "successfully-start-trial": "成功开启 {days} 天的免费试用",
+    "successfully-upgrade-trial": "成功升级为{plan}试用",
+    "require-subscription": "这个功能需要{requiredPlan}订阅，请购买的 Bytebase 证书来解锁该功能。",
+    "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，但是{startTrial}。",
+    "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
+    "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
+    "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
     "update": {
       "success": {
         "title": "证书更新成功",
@@ -1347,13 +1517,33 @@
         "title": "环境级别",
         "desc": "「环境级别」可以将环境标记为受保护的"
       },
+      "bb-feature-sensitive-data": {
+        "title": "敏感数据",
+        "desc": "将数据表的列标记为敏感数据，它们在查询结果中将会被显示成 \"******\"。"
+      },
+      "bb-feature-access-control": {
+        "title": "访问控制",
+        "desc": "可以修改受保护的环境中的数据库的查询权限。"
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM 检查",
+        "desc": "检查工单是否有 \"LGTM\" 评论。"
+      },
+      "bb-feature-im-approval": {
+        "title": "IM 集成",
+        "desc": "通过集成 IM 来批准工单。"
+      },
       "bb-feature-sql-review": {
         "title": "Schema 审核策略",
-        "desc": "给不同的环境定制 schema 审核策略，可以通过@:{'subscription.upgrade'}来开启该功能。"
+        "desc": "给不同的环境定制 schema 审核策略，免费版仅可使用部分规则。"
+      },
+      "bb-feature-vcs-sql-review": {
+        "title": "GitOps 工作流中的 SQL 审核",
+        "desc": "在您的 VCS 仓库流水线上添加 SQL 审核 CI，以便在拉取请求中对变动的 SQL 文件进行自动审核。"
       },
       "bb-feature-rbac": {
         "title": "角色管理",
-        "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色，可以通过@:{'subscription.upgrade'}来开启该功能。"
+        "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
       },
       "bb-feature-schema-drift": {
         "title": "Schema 偏差",
@@ -1361,7 +1551,7 @@
       },
       "bb-feature-3rd-party-auth": {
         "title": "第三方认证 & 授权",
-        "desc": "Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。请通过@:{'subscription.upgrade'}来开启该功能。",
+        "desc": "Bytebase 可根据您配置的 VCS 来支持相应的第三方认证 & 授权。",
         "login": "请@:{'subscription.upgrade'}来开启该功能"
       },
       "bb-feature-branding": {
@@ -1375,6 +1565,14 @@
       "bb-feature-disaster-recovery-pitr": {
         "title": "恢复到指定时间点 (PITR)",
         "desc": "将数据库的状态恢复到一个时间点。"
+      },
+      "bb-feature-sync-schema-all-versions": {
+        "title": "库表同步",
+        "desc": "选择某个数据库的任意一个 Schema 版本，并将其同步到目标数据库。"
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "Read replica connection",
+        "desc": "使用只读副本连接到只读数据源。"
       }
     }
   },
@@ -1398,14 +1596,17 @@
   },
   "sql-review": {
     "title": "SQL 审核策略",
+    "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
     "disabled": "已禁用",
     "no-policy-set": "没有 SQL 审核策略",
     "create-policy": "创建审核策略",
+    "duplicate-policy": "复制审核策略",
     "configure-policy": "配置审核策略",
     "search-rule-name": "搜索规则名称",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
     "policy-updated": "审核策略已更新",
+    "policy-duplicated": "审核策略已复制",
     "rules": "规则",
     "filter": "筛选",
     "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",
@@ -1413,6 +1614,7 @@
     "enable": "开启审查策略",
     "delete": "删除审核策略",
     "input-then-press-enter": "输入后按下回车来添加",
+    "not-available-for-free": "{plan}订阅不能使用该规则",
     "create": {
       "breadcrumb": "创建审核策略",
       "basic-info": {
@@ -1473,7 +1675,7 @@
       "wait-issue-finished": "等待工单执行完成...",
       "back-to-home": "回到主页",
       "finished-dialog": {
-        "you-have-done": "你已经完成了:",
+        "you-have-done": "您成功完成了:",
         "add-an-instance": "添加了一个实例",
         "create-a-project": "创建了一个项目",
         "create-an-issue": "创建了一个工单",

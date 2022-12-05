@@ -13,12 +13,15 @@
    - Collaborate with peers and tech leads.
    - Write docs including comments in English. We are doing open-source with contributors globally.
 1. Coding.
-   - Follow [code review guide](code-review-guide.md) (small changes, effective communication, collaboration, and ```respect```).
+   - Follow [code review guide](code-review-guide.md) (small changes, effective communication, collaboration, and `respect`).
    - Split changes to database schema, API, backend, frontend if possible, because you will get different reviewers looking at different parts. For example, we can make the backend do dual writes for any API changes, switch the reads on UI, and clean up the dual writes in the backend.
    - **(IMPORTANT)** Think about compatibility and don't break existing users. This usually happens if we change database schemas or APIs.
-   - Guard new features behind a release flag, especially for frontend using [`isDev()`](https://github.com/bytebase/bytebase/blob/4fd7ea41a716dbd72c85b0bc02f04fff5e08370f/frontend/src/main.ts#L41). We should release the feature only when it's mature.
+   - Guard new features behind a release flag. We should release the feature only when it's mature.
+     - For frontend using [`isDev()`](https://github.com/bytebase/bytebase/blob/4fd7ea41a716dbd72c85b0bc02f04fff5e08370f/frontend/src/main.ts#L41).
+     - For backend using [`FeatureFlag(xxx)`](https://github.com/bytebase/bytebase/blob/main/store/feature_flag.go)
+       to make the code work with both old and new schema.
    - Testing is the key to product quality. This includes unit tests, [backend integration tests](https://github.com/bytebase/bytebase/tree/main/tests), frontend manual tests. Tests should cover critical user journeys. While writing backend integration tests, you will have an even better idea of how users will use the product from end to end.
-   - Golang code follows [Go Wiki](https://github.com/golang/go/wiki/CodeReviewComments) and [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md).
+   - Golang code follows [Google Go Style](https://google.github.io/styleguide/go/).
    - Collaborate if a feature requires multiple developers to work on.
    - (Optional) After code is submitted, you can wait for a while and use a docker image with tag `bytebase/bytebase:dev-ci` for testing release build. See [Docker Deployment Guide](https://www.bytebase.com/docs/get-started/install/deploy-with-docker).
 1. Success metrics

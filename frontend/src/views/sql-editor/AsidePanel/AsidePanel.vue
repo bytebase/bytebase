@@ -6,13 +6,9 @@
           horizontal
           class="default-theme"
           :dbl-click-splitter="false"
-          @resized="handleResized"
         >
           <Pane :size="databasePaneSize"><DatabaseTree /></Pane>
-          <Pane
-            :size="FULL_HEIGHT - databasePaneSize"
-            :max-size="TABLE_SCHEMA_PANE_SIZE"
-          >
+          <Pane :size="FULL_HEIGHT - databasePaneSize">
             <TableSchema @close-pane="handleCloseTableSchemaPane" />
           </Pane>
         </Splitpanes>
@@ -25,39 +21,28 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from "vue";
+import { computed } from "vue";
 import { useSQLEditorStore } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import TableSchema from "./TableSchema.vue";
 import { Splitpanes, Pane } from "splitpanes";
+import { unknown, UNKNOWN_ID } from "@/types";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
-const TABLE_SCHEMA_PANE_SIZE = FULL_HEIGHT - DATABASE_PANE_SIZE;
 
 const sqlEditorStore = useSQLEditorStore();
-const databasePaneSize = ref(FULL_HEIGHT);
-
-const handleResized = (data: any) => {
-  const [top] = data;
-  databasePaneSize.value = top.size;
-};
+const databasePaneSize = computed(() => {
+  if (sqlEditorStore.selectedTable.id !== UNKNOWN_ID) {
+    return DATABASE_PANE_SIZE;
+  }
+  return FULL_HEIGHT;
+});
 
 const handleCloseTableSchemaPane = () => {
-  databasePaneSize.value = FULL_HEIGHT;
+  sqlEditorStore.selectedTable = unknown("TABLE");
 };
-
-watch(
-  () => sqlEditorStore.connectionContext.option,
-  (option) => {
-    if (option && option.type === "table") {
-      databasePaneSize.value = DATABASE_PANE_SIZE;
-    } else {
-      databasePaneSize.value = FULL_HEIGHT;
-    }
-  }
-);
 </script>
 
 <style scoped>

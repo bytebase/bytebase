@@ -4,6 +4,7 @@ package github
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -14,9 +15,14 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/nacl/box"
+
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
@@ -197,6 +203,8 @@ type WebhookCommit struct {
 // WebhookPushEvent is the API message for webhook push event.
 type WebhookPushEvent struct {
 	Ref        string            `json:"ref"`
+	Before     string            `json:"before"`
+	After      string            `json:"after"`
 	Repository WebhookRepository `json:"repository"`
 	Sender     WebhookSender     `json:"sender"`
 	Commits    []WebhookCommit   `json:"commits"`
@@ -206,7 +214,7 @@ type WebhookPushEvent struct {
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfoImpl(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -272,7 +280,7 @@ type FileCommit struct {
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/repos/%s/git/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -307,6 +315,67 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		AuthorName: commit.Author.Name,
 		CreatedTs:  commit.Author.Date.Unix(),
 	}, nil
+}
+
+// CommitsDiff represents a GitHub API response for comparing two commits.
+type CommitsDiff struct {
+	Files []PullRequestFile `json:"files"`
+}
+
+// GetDiffFileList gets the diff files list between two commits.
+func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
+	url := fmt.Sprintf("%s/repos/%s/compare/%s...%s", p.APIURL(instanceURL), repositoryID, beforeCommit, afterCommit)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get file diff list from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to get file diff list from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	diffs := &CommitsDiff{}
+	if err := json.Unmarshal([]byte(body), diffs); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal file diff data from GitHub instance %s", instanceURL)
+	}
+
+	var ret []vcs.FileDiff
+	for _, file := range diffs.Files {
+		item := vcs.FileDiff{
+			Path: file.FileName,
+		}
+		switch file.Status {
+		case "added":
+			item.Type = vcs.FileDiffTypeAdded
+		case "modified":
+			item.Type = vcs.FileDiffTypeModified
+		case "removed":
+			item.Type = vcs.FileDiffTypeRemoved
+		}
+		ret = append(ret, item)
+	}
+
+	return ret, nil
 }
 
 // FetchUserInfo fetches user info of given user ID.
@@ -389,7 +458,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 // indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, page int) (collaborators []RepositoryCollaborator, hasNextPage bool, err error) {
 	url := fmt.Sprintf("%s/repos/%s/collaborators?page=%d&per_page=%d", p.APIURL(instanceURL), repositoryID, page, apiPageSize)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -535,7 +604,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // with a boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []Repository, hasNextPage bool, err error) {
 	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -586,7 +655,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 // maximum limit and requires making non-recursive request to each sub-tree.
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	url := fmt.Sprintf("%s/repos/%s/git/trees/%s?recursive=true", p.APIURL(instanceURL), repositoryID, ref)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -658,7 +727,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	}
 
 	url := fmt.Sprintf("%s/repos/%s/contents/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
-	code, _, err := oauth.Put(
+	code, _, resp, err := oauth.Put(
 		ctx,
 		p.client,
 		url,
@@ -684,7 +753,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		return errors.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
 			url,
 			code,
-			body,
+			resp,
 		)
 	}
 	return nil
@@ -728,7 +797,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 // readFile reads the given file in the repository.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*File, error) {
 	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), ref)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -779,12 +848,448 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 	return &file, nil
 }
 
+// PullRequestFile is the API message for files in GitHub pull request.
+type PullRequestFile struct {
+	FileName string `json:"filename"`
+	SHA      string `json:"sha"`
+	// The file status in GitHub PR.
+	// Available values: "added", "removed", "modified", "renamed", "copied", "changed", "unchanged"
+	Status string `json:"status"`
+	// The file content API URL, which contains the ref value in the query.
+	// Example: https://api.github.com/repos/octocat/Hello-World/contents/file1.txt?ref=6dcb09b5b57875f334f61aebed695e2e4193db5e
+	ContentsURL string `json:"contents_url"`
+}
+
+// ListPullRequestFile lists the changed files in the pull request.
+//
+// Docs: https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+	var allPRFiles []PullRequestFile
+	page := 1
+	for {
+		fileList, err := p.listPaginatedPullRequestFile(ctx, oauthCtx, instanceURL, repositoryID, pullRequestID, page)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to list pull request file")
+		}
+
+		if len(fileList) == 0 {
+			break
+		}
+		allPRFiles = append(allPRFiles, fileList...)
+		page++
+	}
+
+	var res []*vcs.PullRequestFile
+	for _, file := range allPRFiles {
+		u, err := url.Parse(file.ContentsURL)
+		if err != nil {
+			log.Debug("Failed to parse content url for file",
+				zap.String("content_url", file.ContentsURL),
+				zap.String("file", file.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		m, err := url.ParseQuery(u.RawQuery)
+		if err != nil {
+			log.Debug("Failed to parse query for file",
+				zap.String("content_url", file.ContentsURL),
+				zap.String("file", file.FileName),
+				zap.Error(err),
+			)
+			continue
+		}
+		refs, ok := m["ref"]
+		if !ok || len(refs) != 1 {
+			continue
+		}
+
+		res = append(res, &vcs.PullRequestFile{
+			Path:         file.FileName,
+			LastCommitID: refs[0],
+			IsDeleted:    file.Status == "removed",
+		})
+	}
+
+	return res, nil
+}
+
+// listPaginatedPullRequestFile lists the changed files in the pull request with pagination.
+func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string, page int) ([]PullRequestFile, error) {
+	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%s/files?per_page=%d&page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize, page)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		requestURL,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", requestURL)
+	}
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to list pull request file from URL %s", requestURL)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to list pull request file from URL %s, status code: %d, body: %s",
+			requestURL,
+			code,
+			body,
+		)
+	}
+
+	var prFiles []PullRequestFile
+	if err := json.Unmarshal([]byte(body), &prFiles); err != nil {
+		return nil, err
+	}
+	return prFiles, nil
+}
+
+// BranchCreate is the API message to create the branch.
+type BranchCreate struct {
+	Ref string `json:"ref"`
+	SHA string `json:"sha"`
+}
+
+// Branch is the API message for GitHub branch.
+type Branch struct {
+	Ref    string          `json:"ref"`
+	Object ReferenceObject `json:"object"`
+}
+
+// ReferenceObject is the reference for the GitHub branch.
+type ReferenceObject struct {
+	SHA string `json:"sha"`
+}
+
+// GetBranch gets the given branch in the repository.
+//
+// Docs: https://docs.github.com/en/rest/git/refs#get-a-reference
+func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(instanceURL), repositoryID, branchName)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get branch from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to get branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	res := new(Branch)
+	if err := json.Unmarshal([]byte(body), res); err != nil {
+		return nil, err
+	}
+
+	name, err := vcs.Branch(res.Ref)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vcs.BranchInfo{
+		Name:         name,
+		LastCommitID: res.Object.SHA,
+	}, nil
+}
+
+// CreateBranch creates the branch in the repository.
+//
+// Docs: https://docs.github.com/en/rest/git/refs#create-a-reference
+func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
+	body, err := json.Marshal(
+		BranchCreate{
+			Ref: fmt.Sprintf("refs/heads/%s", branch.Name),
+			SHA: branch.LastCommitID,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal branch create")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/git/refs", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
+// PullRequest is the API message for GitHub pull request.
+type PullRequest struct {
+	HTMLURL string `json:"html_url"`
+}
+
+// CreatePullRequest creates the pull request in the repository.
+//
+// Docs: https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
+	body, err := json.Marshal(pullRequestCreate)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal pull request create")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/pulls", p.APIURL(instanceURL), repositoryID)
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	var res PullRequest
+	if err := json.Unmarshal([]byte(resp), &res); err != nil {
+		return nil, err
+	}
+
+	return &vcs.PullRequest{
+		URL: res.HTMLURL,
+	}, nil
+}
+
+// RepositorySecretUpdate is the API message to update the repository secret.
+type RepositorySecretUpdate struct {
+	EncryptedValue string `json:"encrypted_value"`
+	KeyID          string `json:"key_id"`
+}
+
+// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+//
+// https://docs.github.com/en/rest/actions/secrets#create-or-update-a-repository-secret
+func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	// We have to encrypt the secret value using the public key in the repository.
+	// Docs: https://docs.github.com/en/rest/actions/secrets#example-encrypting-a-secret-using-nodejs
+	publicKey, err := p.getRepositoryPublicKey(ctx, oauthCtx, instanceURL, repositoryID)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get public key")
+	}
+	encryptValue, err := encryptEnvironmentVariable(publicKey.Key, value)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to encrypt environment variable")
+	}
+
+	body, err := json.Marshal(
+		RepositorySecretUpdate{
+			KeyID:          publicKey.KeyID,
+			EncryptedValue: encryptValue,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal environment variable")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/actions/secrets/%s", p.APIURL(instanceURL), repositoryID, key)
+	code, _, resp, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to upsert environment variable from URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to upsert environment variable from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+
+	return nil
+}
+
+// encryptEnvironmentVariable encrypt the value with public key
+//
+// https://github.com/jefflinse/githubsecret
+func encryptEnvironmentVariable(publicKey, value string) (string, error) {
+	const keySize = 32
+	const nonceSize = 24
+
+	// decode the provided public key from base64
+	recipientKey := new([keySize]byte)
+	b, err := base64.StdEncoding.DecodeString(publicKey)
+	if err != nil {
+		return "", err
+	} else if size := len(b); size != keySize {
+		return "", errors.Errorf("Public key has invalid length, expect %d bytes but found %d", keySize, size)
+	}
+
+	copy(recipientKey[:], b)
+
+	// create an ephemeral key pair
+	pubKey, privKey, err := box.GenerateKey(rand.Reader)
+	if err != nil {
+		return "", err
+	}
+
+	// create the nonce by hashing together the two public keys
+	nonce := new([nonceSize]byte)
+	nonceHash, err := blake2b.New(nonceSize, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := nonceHash.Write(pubKey[:]); err != nil {
+		return "", err
+	}
+
+	if _, err := nonceHash.Write(recipientKey[:]); err != nil {
+		return "", err
+	}
+
+	copy(nonce[:], nonceHash.Sum(nil))
+
+	// begin the output with the ephemeral public key and append the encrypted content
+	out := box.Seal(pubKey[:], []byte(value), nonce, recipientKey, privKey)
+
+	// base64-encode the final output
+	return base64.StdEncoding.EncodeToString(out), nil
+}
+
+// RepositorySecret is the secret for repository.
+type RepositorySecret struct {
+	KeyID string `json:"key_id"`
+	Key   string `json:"key"`
+}
+
+// getRepositoryPublicKey returns the public key in the GitHub repository.
+//
+// https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
+func (p *Provider) getRepositoryPublicKey(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) (*RepositorySecret, error) {
+	url := fmt.Sprintf("%s/repos/%s/actions/secrets/public-key", p.APIURL(instanceURL), repositoryID)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get repo public key from URL %s", url)
+	} else if code >= 300 {
+		return nil, errors.Errorf("failed to get repo public key from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	res := new(RepositorySecret)
+	if err := json.Unmarshal([]byte(body), res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/repos/%s/hooks", p.APIURL(instanceURL), repositoryID)
-	code, body, err := oauth.Post(
+	code, _, body, err := oauth.Post(
 		ctx,
 		p.client,
 		url,
@@ -830,7 +1335,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 // Docs: https://docs.github.com/en/rest/webhooks/repos#update-a-repository-webhook
 func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
 	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, body, err := oauth.Patch(
+	code, _, body, err := oauth.Patch(
 		ctx,
 		p.client,
 		url,
@@ -867,7 +1372,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 // Docs: https://docs.github.com/en/rest/webhooks/repos#delete-a-repository-webhook
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, body, err := oauth.Delete(
+	code, _, body, err := oauth.Delete(
 		ctx,
 		p.client,
 		url,
@@ -959,5 +1464,42 @@ func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.
 			expireAt = r.CreatedAt + expiresIn
 		}
 		return refresher(r.AccessToken, r.RefreshToken, expireAt)
+	}
+}
+
+// ToVCS returns the push event in VCS format.
+func (p WebhookPushEvent) ToVCS() vcs.PushEvent {
+	var commitList []vcs.Commit
+	for _, commit := range p.Commits {
+		// The Distinct is false if the commit has not been pushed before.
+		if !commit.Distinct {
+			continue
+		}
+		// Per Git convention, the message title and body are separated by two new line characters.
+		messages := strings.SplitN(commit.Message, "\n\n", 2)
+		messageTitle := messages[0]
+
+		commitList = append(commitList, vcs.Commit{
+			ID:           commit.ID,
+			Title:        messageTitle,
+			Message:      commit.Message,
+			CreatedTs:    commit.Timestamp.Unix(),
+			URL:          commit.URL,
+			AuthorName:   commit.Author.Name,
+			AuthorEmail:  commit.Author.Email,
+			AddedList:    commit.Added,
+			ModifiedList: commit.Modified,
+		})
+	}
+	return vcs.PushEvent{
+		VCSType:            vcs.GitHubCom,
+		Ref:                p.Ref,
+		Before:             p.Before,
+		After:              p.After,
+		RepositoryID:       p.Repository.FullName,
+		RepositoryURL:      p.Repository.HTMLURL,
+		RepositoryFullPath: p.Repository.FullName,
+		AuthorName:         p.Sender.Login,
+		CommitList:         commitList,
 	}
 }

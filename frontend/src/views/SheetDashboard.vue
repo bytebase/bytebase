@@ -7,9 +7,9 @@
         v-for="nav in navigationList"
         :key="nav.path"
         :to="nav.path"
-        class="text-base p-2 px-3 rounded-lg mt-1 select-none hover:bg-gray-100"
-        active-class="actived-link"
-        exact-active-class="actived-link"
+        class="text-base w-full p-2 px-3 rounded-lg mt-1 select-none hover:bg-gray-100"
+        active-class="active-link"
+        exact-active-class="active-link"
         >{{ nav.label }}</router-link
       >
     </div>
@@ -23,7 +23,7 @@
               >{{ $t("common.project") }}:
             </span>
             <n-select
-              v-model:value="projectSeletorValue"
+              v-model:value="projectSelectorValue"
               :consistent-menu-width="false"
               :options="projectSelectOptions"
             />
@@ -126,7 +126,12 @@ import { t } from "@/plugins/i18n";
 import dayjs from "@/plugins/dayjs";
 import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
 import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
-import { isDev } from "@/utils";
+import {
+  getDefaultSheetPayloadWithSource,
+  isDev,
+  isSheetWritable,
+  sheetSlug,
+} from "@/utils";
 
 interface LocalState {
   isLoading: boolean;
@@ -144,7 +149,7 @@ const currentUser = useCurrentUser();
 const projectStore = useProjectStore();
 const sheetStore = useSheetStore();
 
-const projectSeletorValue = ref("");
+const projectSelectorValue = ref("");
 const sheetSearchValue = ref("");
 
 const navigationList = computed(() => {
@@ -172,8 +177,8 @@ const shownSheetList = computed(() => {
       let t = true;
 
       if (
-        projectSeletorValue.value !== "" &&
-        projectSeletorValue.value !== sheet.project.name
+        projectSelectorValue.value !== "" &&
+        projectSelectorValue.value !== sheet.project.name
       ) {
         t = false;
       }
@@ -197,7 +202,7 @@ const projectList = computed(() => {
 
 const selectedProject = computed(() => {
   for (const project of projectList.value) {
-    if (project.name === projectSeletorValue.value) {
+    if (project.name === projectSelectorValue.value) {
       return project;
     }
   }
@@ -222,7 +227,7 @@ const projectSelectOptions = computed(() => {
 });
 
 const shouldShowClearSearchBtn = computed(() => {
-  return projectSeletorValue.value !== "" || sheetSearchValue.value !== "";
+  return projectSelectorValue.value !== "" || sheetSearchValue.value !== "";
 });
 
 const currentSubPath = computed(() => {
@@ -257,15 +262,15 @@ watch(
 
 const handleSheetClick = (sheet: Sheet) => {
   router.push({
-    name: "sql-editor.home",
-    query: {
-      sheetId: sheet.id,
+    name: "sql-editor.share",
+    params: {
+      sheetSlug: sheetSlug(sheet),
     },
   });
 };
 
 const handleClearSearchBtnClick = () => {
-  projectSeletorValue.value = "";
+  projectSelectorValue.value = "";
   sheetSearchValue.value = "";
 };
 
@@ -333,6 +338,7 @@ const handleDropDownActionBtnClick = async (key: string, sheet: Sheet) => {
           name: sheet.name,
           statement: sheet.statement,
           visibility: "PRIVATE",
+          payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
         };
         if (sheet.databaseId) {
           sheetCreate.databaseId = sheet.databaseId;
@@ -365,12 +371,20 @@ const getSheetDropDownOptions = (sheet: Sheet) => {
     });
   }
 
-  if (currentSubPath.value === "my" || currentSubPath.value === "starred") {
+  if (currentSubPath.value === "my") {
     options.push({
       key: "delete",
       label: t("common.delete"),
     });
   } else if (currentSubPath.value === "shared") {
+    const canDeleteSheet = isSheetWritable(sheet, currentUser.value);
+    if (canDeleteSheet) {
+      options.push({
+        key: "delete",
+        label: t("common.delete"),
+      });
+    }
+
     options.push({
       key: "duplicate",
       label: t("common.duplicate"),
@@ -444,7 +458,7 @@ const getSheetTableContentValueList = (sheet: Sheet) => {
 </script>
 
 <style scoped>
-.actived-link {
+.active-link {
   @apply bg-gray-100 text-accent;
 }
 .sheet-list-container {

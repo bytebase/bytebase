@@ -14,6 +14,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
@@ -34,7 +35,7 @@ const (
 	// 11001 -> Major version 1, minor version 1001
 	// 20001 -> Major version 2, minor version 1
 	//
-	// The migration file follows the name pattern of {{version_number}}__{{description}}.
+	// The migration file follows the name pattern of {{version_number}}##{{description}}.
 	//
 	// Though minor version is backward compatible, we require the schema version must match both the MAJOR and MINOR version,
 	// otherwise, Bytebase will fail to start. We choose this because otherwise failed minor migration changes like adding an
@@ -64,8 +65,8 @@ type DB struct {
 	// Dir to load demo data
 	demoDataDir string
 
-	// Dir for postgres instance
-	pgBaseDir string
+	// Dir for postgres and its utility binaries
+	binDir string
 
 	// If true, database will be opened in readonly mode
 	readonly bool
@@ -82,11 +83,11 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(connCfg dbdriver.ConnectionConfig, pgBaseDir, demoDataDir string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
+func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoDataDir string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
 	db := &DB{
 		connCfg:       connCfg,
 		demoDataDir:   demoDataDir,
-		pgBaseDir:     pgBaseDir,
+		binDir:        binDir,
 		readonly:      readonly,
 		Now:           time.Now,
 		serverVersion: serverVersion,
@@ -100,7 +101,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{PgInstanceDir: db.pgBaseDir},
+		dbdriver.DriverConfig{DbBinDir: db.binDir},
 		db.connCfg,
 		dbdriver.ConnectionContext{},
 	)
@@ -180,6 +181,20 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 
 	for _, h := range history {
 		if h.Status != dbdriver.Done {
+			stmt := h.Statement
+			// Only print out first 200 chars.
+			if len(stmt) > 200 {
+				stmt = stmt[:200]
+			}
+			// Non-success migration history record is an anomaly, in the case where the actual
+			// migration has been applied, the followup migration will likely fail because the
+			// schema has already been applied. Thus emitting a warning here will assist debugging.
+			log.Warn(fmt.Sprintf("Found %s migration history", h.Status),
+				zap.String("type", string(h.Type)),
+				zap.String("version", h.Version),
+				zap.String("description", h.Description),
+				zap.String("statement", stmt),
+			)
 			continue
 		}
 		v, err := semver.Make(h.Version)
@@ -189,7 +204,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		return &v, nil
 	}
 
-	return nil, errors.Errorf("failed to find a successful migration history")
+	return nil, nil
 }
 
 // setupDemoData loads the setupDemoData data for testing.
@@ -507,7 +522,7 @@ func getDevMigrations() ([]devMigration, error) {
 			continue
 		}
 
-		parts := strings.Split(baseName, "__")
+		parts := strings.Split(baseName, "##")
 		if len(parts) != 2 {
 			return nil, errors.Errorf("invalid migration file name %q", name)
 		}
@@ -547,9 +562,9 @@ func getPatchVersions(minorVersion semver.Version, currentVersion semver.Version
 	var patchVersions []patchVersion
 	for _, name := range names {
 		baseName := filepath.Base(name)
-		parts := strings.Split(baseName, "__")
+		parts := strings.Split(baseName, "##")
 		if len(parts) != 2 {
-			return nil, errors.Errorf("migration filename %q should include '__'", name)
+			return nil, errors.Errorf("migration filename %q should include '##'", name)
 		}
 		patch, err := strconv.ParseInt(parts[0], 10, 64)
 		if err != nil {
@@ -680,7 +695,7 @@ func FormatError(err error) error {
 		case strings.Contains(err.Error(), "idx_policy_unique_environment_id_type"):
 			return common.Errorf(common.Conflict, "policy environment and type already exists")
 		case strings.Contains(err.Error(), "idx_project_unique_key"):
-			return common.Errorf(common.Conflict, "project key already exists")
+			return common.Errorf(common.Conflict, "The project key already exists")
 		case strings.Contains(err.Error(), "idx_project_member_unique_project_id_role_provider_principal_id"):
 			return common.Errorf(common.Conflict, "project member already exists")
 		case strings.Contains(err.Error(), "idx_project_webhook_unique_project_id_url"):

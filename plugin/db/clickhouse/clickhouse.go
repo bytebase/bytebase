@@ -115,32 +115,40 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
+	totalRowsEffected := int64(0)
 	f := func(stmt string) error {
-		if _, err := tx.ExecContext(ctx, stmt); err != nil {
+		sqlResult, err := tx.ExecContext(ctx, stmt)
+		if err != nil {
 			return err
 		}
+		rowsEffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			return err
+		}
+		totalRowsEffected += rowsEffected
+
 		return nil
 	}
 
 	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return 0, err
 	}
 
-	return err
+	return 0, err
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.dbType, driver.db, statement, limit)
+func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	return util.Query(ctx, driver.dbType, driver.db, statement, queryContext)
 }

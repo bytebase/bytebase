@@ -10,13 +10,14 @@ import {
   IssueStatusTransition,
 } from "@/types";
 import {
+  activeStage,
   allTaskList,
-  applicableStageTransition,
   applicableTaskTransition,
-  isDBAOrOwner,
+  hasWorkspacePermission,
   isOwnerOfProject,
   StageStatusTransition,
   TaskStatusTransition,
+  TASK_STATUS_TRANSITION_LIST,
 } from "@/utils";
 import { useAllowProjectOwnerToApprove, useIssueLogic } from ".";
 
@@ -39,7 +40,12 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
 
     // Applying task transition is decoupled with the issue's Assignee.
     // But relative to the task's environment's approval policy.
-    if (isDBAOrOwner(currentUser.value.role)) {
+    if (
+      hasWorkspacePermission(
+        "bb.permission.workspace.manage-issue",
+        currentUser.value.role
+      )
+    ) {
       return true;
     }
     if (
@@ -62,11 +68,14 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
 
     const issueEntity = issue as Issue;
     const list: IssueStatusTransitionType[] = [];
-    // Allow assignee, or assignee is the system bot and current user is DBA or owner
+    // Allow assignee, or assignee is the system bot and current user can manage issue
     if (
       currentUser.value.id === issueEntity.assignee?.id ||
       (issueEntity.assignee?.id == SYSTEM_BOT_ID &&
-        isDBAOrOwner(currentUser.value.role))
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-issue",
+          currentUser.value.role
+        ))
     ) {
       list.push(...ASSIGNEE_APPLICABLE_ACTION_LIST.get(issueEntity.status)!);
     }
@@ -118,11 +127,24 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
         return [];
       case "OPEN": {
         if (isAllowedToApplyTaskTransition.value) {
-          const currentTask = activeTaskOfPipeline(issue.pipeline);
-          return applicableStageTransition(issue.pipeline).filter(
-            (transition) =>
-              allowApplyTaskStatusTransition(currentTask, transition.to)
+          // Only "Approve" can be applied to current stage by now.
+          const APPROVE = TASK_STATUS_TRANSITION_LIST.get("APPROVE")!;
+          const currentStage = activeStage(issue.pipeline);
+
+          const pendingApprovalTaskList = currentStage.taskList.filter(
+            (task) => {
+              return (
+                task.status === "PENDING_APPROVAL" &&
+                allowApplyTaskStatusTransition(task, APPROVE.to)
+              );
+            }
           );
+
+          // Allowing "Approve" a stage when it has TWO OR MORE tasks
+          // are "PENDING_APPROVAL" (including the "activeTask" itself)
+          if (pendingApprovalTaskList.length >= 2) {
+            return [APPROVE];
+          }
         }
 
         return [];

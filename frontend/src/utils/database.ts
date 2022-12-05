@@ -1,7 +1,7 @@
 import { groupBy } from "lodash-es";
 import semverCompare from "semver/functions/compare";
 import { Database, DataSourceType, Environment, Principal } from "../types";
-import { isDBAOrOwner } from "./role";
+import { hasWorkspacePermission } from "./role";
 import { isDev } from "./util";
 
 export function allowDatabaseAccess(
@@ -23,7 +23,12 @@ export function allowDatabaseAccess(
     return false;
   }
 
-  if (isDBAOrOwner(principal.role)) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      principal.role
+    )
+  ) {
     return true;
   }
 
@@ -85,4 +90,14 @@ export function isPITRDatabase(db: Database): boolean {
   const { name } = db;
   // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
   return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
+}
+
+export function isArchivedDatabase(db: Database): boolean {
+  if (db.instance.rowStatus === "ARCHIVED") {
+    return true;
+  }
+  if (db.instance.environment.rowStatus === "ARCHIVED") {
+    return true;
+  }
+  return false;
 }

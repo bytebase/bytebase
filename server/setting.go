@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -9,14 +10,14 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/app/feishu"
 )
 
-var (
-	// Some settings contain secret info so we only return settings that are needed by the client.
-	whitelistSettings = []api.SettingName{
-		api.SettingBrandingLogo,
-	}
-)
+// Some settings contain secret info so we only return settings that are needed by the client.
+var whitelistSettings = []api.SettingName{
+	api.SettingBrandingLogo,
+	api.SettingAppIM,
+}
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
 	g.GET("/setting", func(c echo.Context) error {
@@ -51,12 +52,57 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 
-		if settingPatch.Name == api.SettingBrandingLogo && !s.feature(api.FeatureBranding) {
+		if settingPatch.Name == api.SettingBrandingLogo && !s.licenseService.IsFeatureEnabled(api.FeatureBranding) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureBranding.AccessErrorMessage())
 		}
 
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update setting request").SetInternal(err)
+		}
+
+		if settingPatch.Name == api.SettingAppIM {
+			var value api.SettingAppIMValue
+			if err := json.Unmarshal([]byte(settingPatch.Value), &value); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed setting value for IM").SetInternal(err)
+			}
+			if value.IMType != api.IMTypeFeishu {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unknown IM Type %s", value.IMType))
+			}
+			if value.ExternalApproval.Enabled && !s.licenseService.IsFeatureEnabled(api.FeatureIMApproval) {
+				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureIMApproval.AccessErrorMessage())
+			}
+			if value.ExternalApproval.Enabled {
+				if value.AppID == "" || value.AppSecret == "" {
+					return echo.NewHTTPError(http.StatusBadRequest, "Application ID and secret cannot be empty")
+				}
+				p := s.ApplicationRunner.p
+				// clear token cache so that we won't use the previous token.
+				p.ClearTokenCache()
+
+				// check bot info
+				if _, err := p.GetBotID(ctx, feishu.TokenCtx{
+					AppID:     value.AppID,
+					AppSecret: value.AppSecret,
+				}); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Failed to get bot id. Hint: check if bot is enabled.").SetInternal(err)
+				}
+
+				// create approval definition
+				approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
+					AppID:     value.AppID,
+					AppSecret: value.AppSecret,
+				}, "")
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Failed to create approval definition").SetInternal(err)
+				}
+
+				value.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
+				b, err := json.Marshal(value)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal updated setting value").SetInternal(err)
+				}
+				settingPatch.Value = string(b)
+			}
 		}
 
 		setting, err := s.store.PatchSetting(ctx, settingPatch)

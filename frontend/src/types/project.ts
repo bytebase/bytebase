@@ -20,6 +20,12 @@ export type ProjectRoleProvider =
 
 export type SchemaChangeType = "DDL" | "SDL";
 
+export type LGTMCheckValue = "DISABLED" | "PROJECT_OWNER" | "PROJECT_MEMBER";
+
+export type LGTMCheckSetting = {
+  value: LGTMCheckValue;
+};
+
 export type ProjectRoleProviderPayload = {
   vcsRole: string;
   lastSyncTs: number;
@@ -53,6 +59,13 @@ export type Project = {
   dbNameTemplate: string;
   roleProvider: ProjectRoleProvider;
   schemaChangeType: SchemaChangeType;
+  lgtmCheckSetting: LGTMCheckSetting;
+};
+
+export const getDefaultLGTMCheckSetting = (): LGTMCheckSetting => {
+  return {
+    value: "DISABLED",
+  };
 };
 
 export type ProjectCreate = {
@@ -71,8 +84,10 @@ export type ProjectPatch = {
 
   // Domain specific fields
   name?: string;
+  key?: string;
   roleProvider?: ProjectRoleProvider;
   schemaChangeType?: SchemaChangeType;
+  lgtmCheckSetting?: LGTMCheckSetting;
 };
 
 // Project Member

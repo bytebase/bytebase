@@ -1,9 +1,9 @@
 <template>
-  <div v-if="tableInfo" class="table-schema">
+  <div v-if="table.id !== UNKNOWN_ID" class="table-schema">
     <div class="table-schema--header">
       <div class="table-schema--header-title mr-1 flex items-center">
         <heroicons-outline:table class="h-4 w-4 mr-1" />
-        <span class="font-semibold">{{ tableInfo.name }}</span>
+        <span class="font-semibold">{{ table.name }}</span>
       </div>
       <div
         class="table-schema--header-actions flex-1 flex justify-end space-x-2"
@@ -32,7 +32,7 @@
     </div>
     <div class="table-schema--meta text-gray-500 text-sm">
       <div class="pb-1">
-        <span>{{ tableInfo.rowCount }} rows</span>
+        <span>{{ table.rowCount }} rows</span>
       </div>
       <div class="flex justify-between items-center w-full text-xs py-2">
         <div class="table-schema--content-column">
@@ -45,7 +45,7 @@
     </div>
     <div class="table-schema--content text-sm text-gray-400 overflow-y-auto">
       <div
-        v-for="(column, index) in tableInfo.columnList"
+        v-for="(column, index) in table.columnList"
         :key="index"
         class="flex justify-between items-center w-full p-1 hover:bg-link-hover"
       >
@@ -64,73 +64,57 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { computed } from "vue";
+import { stringify } from "qs";
 
-import { Database } from "@/types";
-import { useSQLEditorStore, useTableStore } from "@/store";
+import type { Repository } from "@/types";
+import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
+import { useRepositoryStore, useSQLEditorStore } from "@/store";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;
 }>();
 
-const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
-
-const tableInfo = ref();
-const router = useRouter();
+const table = computed(() => sqlEditorStore.selectedTable);
 
 const gotoAlterSchema = () => {
-  // TODO(Jim): Remove the dependency of `sqlEditorStore.connectionContext.option`
-  // after refactoring <DatabaseTree>
-  const { option } = sqlEditorStore.connectionContext;
-  if (option.type !== "table") {
+  if (table.value.id === UNKNOWN_ID) {
     return;
   }
-  const tableName = option.label;
-  const databaseId = option.parentId;
 
-  const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
-  const databaseList =
-    sqlEditorStore.connectionInfo.databaseListByProjectId.get(projectId) as any;
-  const databaseName = databaseList.find(
-    (database: Database) => database.id === databaseId
-  ).name;
-  router.push({
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query: {
-      template: "bb.issue.database.schema.update",
-      name: `[${databaseName}] Alter schema`,
-      project: projectId,
-      databaseList: databaseId,
-      sql: `ALTER TABLE ${tableName}`,
-    },
-  });
+  const { database } = table.value;
+  const { project } = database;
+  if (project.workflowType === "VCS") {
+    useRepositoryStore()
+      .fetchRepositoryByProjectId(database.project.id)
+      .then((repository: Repository) => {
+        window.open(
+          baseDirectoryWebUrl(repository, {
+            DB_NAME: database.name,
+            ENV_NAME: database.instance.environment.name,
+            TYPE: "ddl",
+          }),
+          "_blank"
+        );
+      });
+    return;
+  }
+
+  const query = {
+    template: "bb.issue.database.schema.update",
+    name: `[${database.name}] Alter schema`,
+    project: database.project.id,
+    databaseList: database.id,
+    sql: `ALTER TABLE ${table.value.name}`,
+  };
+  const url = `/issue/new?${stringify(query)}`;
+  window.open(url, "_blank");
 };
 
 const handleClosePane = () => {
   emit("close-pane");
 };
-
-watch(
-  () => sqlEditorStore.connectionContext.option,
-  async (option) => {
-    if (option && option.type === "table") {
-      const res = await tableStore.fetchTableByDatabaseIdAndTableName({
-        databaseId: option.parentId as number,
-        tableName: option.label as string,
-      });
-
-      tableInfo.value = res;
-    } else {
-      tableInfo.value = null;
-    }
-  },
-  { deep: true }
-);
 </script>
 
 <style scoped>

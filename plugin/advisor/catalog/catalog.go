@@ -7,7 +7,6 @@ import (
 
 // Catalog is the service for catalog.
 type Catalog interface {
-	GetDatabase() *Database
 	GetFinder() *Finder
 }
 

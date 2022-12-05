@@ -136,43 +136,94 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 	tests := []struct {
 		name   string
 		prefix string
-		expect int64
+		base   string
+		seq    int64
 		err    bool
 	}{
 		{
-			name:   "binlog.096865",
-			expect: 96865,
-			err:    false,
+			name: "binlog.096865",
+			base: "binlog",
+			seq:  96865,
+			err:  false,
 		},
 		{
-			name:   "binlog.999999",
-			expect: 999999,
-			err:    false,
+			name: "binlog.999999",
+			base: "binlog",
+			seq:  999999,
+			err:  false,
 		},
 		{
-			name:   "binlog.1000000",
-			expect: 1000000,
-			err:    false,
+			name: "binlog.1000000",
+			base: "binlog",
+			seq:  1000000,
+			err:  false,
 		},
 		{
-			name:   "binlog.000001",
-			expect: 1,
-			err:    false,
+			name: "binlog.000001",
+			base: "binlog",
+			seq:  1,
+			err:  false,
 		},
 		{
-			name:   "binlog.x8dft",
-			expect: 0,
-			err:    true,
+			name: "binlog.x8dft",
+			base: "",
+			seq:  0,
+			err:  true,
 		},
 	}
 	for _, test := range tests {
-		ext, err := GetBinlogNameSeq(test.name)
-		a.EqualValues(test.expect, ext)
+		base, ext, err := ParseBinlogName(test.name)
+		a.EqualValues(test.seq, ext)
+		a.Equal(test.base, base)
 		if test.err {
 			a.Error(err)
 		} else {
 			a.NoError(err)
 		}
+	}
+}
+
+func TestGenBinlogFileNames(t *testing.T) {
+	tests := []struct {
+		name     string
+		base     string
+		seqStart int64
+		seqEnd   int64
+		want     []string
+	}{
+		{
+			name:     "empty",
+			seqStart: 2,
+			seqEnd:   1,
+			want:     nil,
+		},
+		{
+			name:     "single",
+			base:     "binlog",
+			seqStart: 1,
+			seqEnd:   1,
+			want:     []string{"binlog.000001"},
+		},
+		{
+			name:     "less than 6 digits",
+			base:     "binlog",
+			seqStart: 1,
+			seqEnd:   4,
+			want:     []string{"binlog.000001", "binlog.000002", "binlog.000003", "binlog.000004"},
+		},
+		{
+			name:     "more than 6 digits",
+			base:     "binlog",
+			seqStart: 1000001,
+			seqEnd:   1000004,
+			want:     []string{"binlog.1000001", "binlog.1000002", "binlog.1000003", "binlog.1000004"},
+		},
+	}
+
+	for _, test := range tests {
+		a := require.New(t)
+		result := GenBinlogFileNames(test.base, test.seqStart, test.seqEnd)
+		a.Equal(test.want, result)
 	}
 }
 

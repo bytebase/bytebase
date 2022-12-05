@@ -5,15 +5,10 @@
 </template>
 
 <script lang="ts" setup>
+import axios from "axios";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  useCurrentUser,
-  useProjectStore,
-  useInstanceStore,
-  useDatabaseStore,
-  useOnboardingGuideStore,
-} from "@/store";
+import { useCurrentUser, useOnboardingGuideStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { isDev, isOwner } from "@/utils";
 import CreateDatabaseGuide from "./OnboardingGuides/CreateDatabaseGuide.vue";
@@ -45,9 +40,10 @@ const checkShouldShowCreateDatabaseGuide = async () => {
 
   // Show create database guide when user is owner and no data at all.
   if (isOwner(currentUser.value.role)) {
-    const instanceList = await useInstanceStore().fetchInstanceList();
-    const projectList = await useProjectStore().fetchAllProjectList();
-    const databaseList = await useDatabaseStore().fetchDatabaseList();
+    // Fetch data directly instead of useStore to prevent data from being cached in store.
+    const { data: instanceList } = (await axios.get(`/api/instance`)).data;
+    const { data: projectList } = (await axios.get(`/api/project`)).data;
+    const { data: databaseList } = (await axios.get(`/api/database`)).data;
 
     if (
       instanceList.length === 0 &&
@@ -63,13 +59,19 @@ const checkShouldShowCreateDatabaseGuide = async () => {
 };
 
 watch(currentUser, async () => {
-  // Check should show guide only when user is logged in.
-  if (currentUser.value.id !== UNKNOWN_ID) {
-    shouldShowCreateDatabaseGuide.value =
-      await checkShouldShowCreateDatabaseGuide();
-    if (shouldShowCreateDatabaseGuide.value) {
-      guideStore.setGuideName("create-database");
+  try {
+    // Check should show guide only when user is logged in.
+    if (currentUser.value.id !== UNKNOWN_ID) {
+      shouldShowCreateDatabaseGuide.value =
+        await checkShouldShowCreateDatabaseGuide();
+      if (shouldShowCreateDatabaseGuide.value) {
+        guideStore.setGuideName("create-database");
+      }
     }
+  } catch (error) {
+    // When the data requests failed in onboarding guide checking,
+    // we just need to log it instead of notify.
+    console.error(error);
   }
 });
 

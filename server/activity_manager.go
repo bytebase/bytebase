@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/webhook"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/store"
 
 	"github.com/pkg/errors"
@@ -18,8 +20,8 @@ import (
 
 // ActivityManager is the activity manager.
 type ActivityManager struct {
-	s     *Server
-	store *store.Store
+	store   *store.Store
+	profile config.Profile
 }
 
 // ActivityMeta is the activity metadata.
@@ -28,11 +30,84 @@ type ActivityMeta struct {
 }
 
 // NewActivityManager creates an activity manager.
-func NewActivityManager(server *Server, store *store.Store) *ActivityManager {
+func NewActivityManager(store *store.Store, profile config.Profile) *ActivityManager {
 	return &ActivityManager{
-		s:     server,
-		store: store,
+		store:   store,
+		profile: profile,
 	}
+}
+
+// BatchCreateTaskStatusUpdateApprovalActivity creates a batch task status update activities for task approvals.
+func (m *ActivityManager) BatchCreateTaskStatusUpdateApprovalActivity(ctx context.Context, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue, stage *api.Stage, taskList []*api.Task) error {
+	var createList []*api.ActivityCreate
+	for _, task := range taskList {
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+			TaskID:    task.ID,
+			OldStatus: task.Status,
+			NewStatus: taskStatusPatch.Status,
+			IssueName: issue.Name,
+			TaskName:  task.Name,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
+		}
+
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   taskStatusPatch.UpdaterID,
+			ContainerID: task.PipelineID,
+			Type:        api.ActivityPipelineTaskStatusUpdate,
+			Level:       api.ActivityInfo,
+			Payload:     string(payload),
+		}
+		createList = append(createList, activityCreate)
+	}
+
+	activityList, err := m.store.BatchCreateActivity(ctx, createList)
+	if err != nil {
+		return err
+	}
+	if len(activityList) == 0 {
+		return errors.Errorf("failed to create any activity")
+	}
+	anyActivity := activityList[0]
+
+	activityType := api.ActivityPipelineTaskStatusUpdate
+	webhookList, err := m.store.FindProjectWebhook(ctx, &api.ProjectWebhookFind{
+		ProjectID:    &issue.ProjectID,
+		ActivityType: &activityType,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", issue.Name)
+	}
+	if len(webhookList) == 0 {
+		return nil
+	}
+	// Send one webhook post for all activities.
+	webhookCtx := webhook.Context{
+		Level:        webhook.WebhookInfo,
+		ActivityType: string(activityType),
+		Title:        fmt.Sprintf("Stage tasks approved - %s", stage.Name),
+		Issue: &webhook.Issue{
+			ID:          issue.ID,
+			Name:        issue.Name,
+			Status:      string(issue.Status),
+			Type:        string(issue.Type),
+			Description: issue.Description,
+		},
+		Project: &webhook.Project{
+			ID:   issue.ProjectID,
+			Name: issue.Project.Name,
+		},
+		Description:  anyActivity.Comment,
+		Link:         fmt.Sprintf("%s/issue/%s", m.profile.ExternalURL, api.IssueSlug(issue)),
+		CreatorID:    anyActivity.CreatorID,
+		CreatorName:  anyActivity.Creator.Name,
+		CreatorEmail: anyActivity.Creator.Email,
+	}
+	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
+	go postWebhookList(webhookCtx, webhookList)
+
+	return nil
 }
 
 // CreateActivity creates an activity.
@@ -50,7 +125,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, errors.Wrapf(err, "failed to post webhook event after changing the issue task status: %s", meta.issue.Name)
 	}
 	if postInbox {
-		if err := m.s.postInboxIssueActivity(ctx, meta.issue, activity.ID); err != nil {
+		if err := m.postInboxIssueActivity(ctx, meta.issue, activity.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -59,7 +134,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		ProjectID:    &meta.issue.ProjectID,
 		ActivityType: &create.Type,
 	}
-	webhookList, err := m.s.store.FindProjectWebhook(ctx, hookFind)
+	webhookList, err := m.store.FindProjectWebhook(ctx, hookFind)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find project webhook after changing the issue status: %v", meta.issue.Name)
 	}
@@ -67,7 +142,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return activity, nil
 	}
 
-	updater, err := m.s.store.GetPrincipalByID(ctx, create.CreatorID)
+	updater, err := m.store.GetPrincipalByID(ctx, create.CreatorID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find updater for posting webhook event after changing the issue status: %v", meta.issue.Name)
 	}
@@ -75,51 +150,61 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, errors.Errorf("updater principal not found for ID %v", create.CreatorID)
 	}
 
+	webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
+	if err != nil {
+		log.Warn("Failed to get webhook context",
+			zap.String("issue_name", meta.issue.Name),
+			zap.Error(err))
+		return activity, nil
+	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go func() {
-		webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
-		if err != nil {
-			return
-		}
-
-		for _, hook := range webhookList {
-			webhookCtx.URL = hook.URL
-			webhookCtx.CreatedTs = time.Now().Unix()
-			if err := webhook.Post(hook.Type, webhookCtx); err != nil {
-				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-				log.Warn("Failed to post webhook event after changing the issue status",
-					zap.String("webhook_type", hook.Type),
-					zap.String("webhook_name", hook.Name),
-					zap.String("issue_name", meta.issue.Name),
-					zap.String("status", string(meta.issue.Status)),
-					zap.Error(err))
-			}
-		}
-	}()
+	go postWebhookList(webhookCtx, webhookList)
 
 	return activity, nil
 }
 
+func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebhook) {
+	for _, hook := range webhookList {
+		webhookCtx.URL = hook.URL
+		webhookCtx.CreatedTs = time.Now().Unix()
+		const maxRetries = 3
+		for retries := 0; retries < maxRetries; retries++ {
+			if err := webhook.Post(hook.Type, webhookCtx); err != nil {
+				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
+				log.Warn("Failed to post webhook event on activity",
+					zap.String("webhook type", hook.Type),
+					zap.String("webhook name", hook.Name),
+					zap.String("activity type", webhookCtx.ActivityType),
+					zap.String("title", webhookCtx.Title),
+					zap.Error(err))
+			} else {
+				break
+			}
+		}
+	}
+}
+
 func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.Context, error) {
 	var webhookCtx webhook.Context
+	var webhookTaskResult *webhook.TaskResult
 	level := webhook.WebhookInfo
 	title := ""
-	link := fmt.Sprintf("%s/issue/%s", m.s.profile.ExternalURL, api.IssueSlug(meta.issue))
+	link := fmt.Sprintf("%s/issue/%s", m.profile.ExternalURL, api.IssueSlug(meta.issue))
 	switch activity.Type {
 	case api.ActivityIssueCreate:
-		title = "Issue created - " + meta.issue.Name
+		title = fmt.Sprintf("Issue created - %s", meta.issue.Name)
 	case api.ActivityIssueStatusUpdate:
 		switch meta.issue.Status {
 		case "OPEN":
-			title = "Issue reopened - " + meta.issue.Name
+			title = fmt.Sprintf("Issue reopened - %s", meta.issue.Name)
 		case "DONE":
 			level = webhook.WebhookSuccess
-			title = "Issue resolved - " + meta.issue.Name
+			title = fmt.Sprintf("Issue resolved - %s", meta.issue.Name)
 		case "CANCELED":
-			title = "Issue canceled - " + meta.issue.Name
+			title = fmt.Sprintf("Issue canceled - %s", meta.issue.Name)
 		}
 	case api.ActivityIssueCommentCreate:
-		title = "Comment created"
+		title = fmt.Sprintf("Comment created - %s", meta.issue.Name)
 		link += fmt.Sprintf("#activity%d", activity.ID)
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
@@ -142,7 +227,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					oldAssignee, err = m.s.store.GetPrincipalByID(ctx, oldID)
+					oldAssignee, err = m.store.GetPrincipalByID(ctx, oldID)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
 							zap.String("issue_name", meta.issue.Name),
@@ -169,7 +254,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					newAssignee, err = m.s.store.GetPrincipalByID(ctx, newID)
+					newAssignee, err = m.store.GetPrincipalByID(ctx, newID)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
 							zap.String("issue_name", meta.issue.Name),
@@ -187,20 +272,20 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					}
 
 					if oldAssignee != nil && newAssignee != nil {
-						title = fmt.Sprintf("Reassigned issue from %s to %s", oldAssignee.Name, newAssignee.Name)
+						title = fmt.Sprintf("Reassigned issue from %s to %s - %s", oldAssignee.Name, newAssignee.Name, meta.issue.Name)
 					} else if newAssignee != nil {
-						title = fmt.Sprintf("Assigned issue to %s", newAssignee.Name)
+						title = fmt.Sprintf("Assigned issue to %s - %s", newAssignee.Name, meta.issue.Name)
 					} else if oldAssignee != nil {
-						title = fmt.Sprintf("Unassigned issue from %s", newAssignee.Name)
+						title = fmt.Sprintf("Unassigned issue from %s - %s", newAssignee.Name, meta.issue.Name)
 					}
 				}
 			}
 		case api.IssueFieldDescription:
-			title = "Changed issue description"
+			title = fmt.Sprintf("Changed issue description - %s", meta.issue.Name)
 		case api.IssueFieldName:
-			title = "Changed issue name"
+			title = fmt.Sprintf("Changed issue name - %s", meta.issue.Name)
 		default:
-			title = "Updated issue"
+			title = fmt.Sprintf("Updated issue - %s", meta.issue.Name)
 		}
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
@@ -211,7 +296,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 
-		task, err := m.s.store.GetTaskByID(ctx, update.TaskID)
+		task, err := m.store.GetTaskByID(ctx, update.TaskID)
 		if err != nil {
 			log.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
 				zap.String("issue_name", meta.issue.Name),
@@ -226,6 +311,11 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 				zap.Int("task_id", update.TaskID),
 				zap.Error(err))
 			return webhookCtx, err
+		}
+
+		webhookTaskResult = &webhook.TaskResult{
+			Name:   task.Name,
+			Status: string(task.Status),
 		}
 
 		title = "Task changed - " + task.Name
@@ -245,6 +335,29 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		case api.TaskFailed:
 			level = webhook.WebhookError
 			title = "Task failed - " + task.Name
+
+			if len(task.TaskRunList) == 0 {
+				err := errors.Errorf("expect at least 1 TaskRun, get 0")
+				log.Warn(err.Error(),
+					zap.Any("task", task),
+					zap.Error(err))
+				return webhookCtx, err
+			}
+
+			// sort TaskRunList to get the most recent task run result.
+			sort.Slice(task.TaskRunList, func(i int, j int) bool {
+				return task.TaskRunList[i].UpdatedTs > task.TaskRunList[j].UpdatedTs || (task.TaskRunList[i].UpdatedTs == task.TaskRunList[j].UpdatedTs && task.TaskRunList[i].ID > task.TaskRunList[j].ID)
+			})
+
+			var result api.TaskRunResultPayload
+			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
+				err := errors.Wrapf(err, "failed to unmarshal TaskRun Result")
+				log.Warn(err.Error(),
+					zap.Any("TaskRun", task.TaskRunList[0]),
+					zap.Error(err))
+				return webhookCtx, err
+			}
+			webhookTaskResult.Detail = result.Detail
 		}
 	}
 
@@ -263,6 +376,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			ID:   meta.issue.ProjectID,
 			Name: meta.issue.Project.Name,
 		},
+		TaskResult:   webhookTaskResult,
 		Description:  activity.Comment,
 		Link:         link,
 		CreatorID:    updater.ID,
@@ -270,6 +384,42 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		CreatorEmail: updater.Email,
 	}
 	return webhookCtx, nil
+}
+
+func (m *ActivityManager) postInboxIssueActivity(ctx context.Context, issue *api.Issue, activityID int) error {
+	if issue.CreatorID != api.SystemBotID {
+		inboxCreate := &api.InboxCreate{
+			ReceiverID: issue.CreatorID,
+			ActivityID: activityID,
+		}
+		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.CreatorID)
+		}
+	}
+
+	if issue.AssigneeID != api.SystemBotID && issue.AssigneeID != issue.CreatorID {
+		inboxCreate := &api.InboxCreate{
+			ReceiverID: issue.AssigneeID,
+			ActivityID: activityID,
+		}
+		if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.AssigneeID)
+		}
+	}
+
+	for _, subscriber := range issue.SubscriberList {
+		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.CreatorID && subscriber.ID != issue.AssigneeID {
+			inboxCreate := &api.InboxCreate{
+				ReceiverID: subscriber.ID,
+				ActivityID: activityID,
+			}
+			if _, err := m.store.CreateInbox(ctx, inboxCreate); err != nil {
+				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
+			}
+		}
+	}
+
+	return nil
 }
 
 func shouldPostInbox(activity *api.Activity, createType api.ActivityType) (bool, error) {

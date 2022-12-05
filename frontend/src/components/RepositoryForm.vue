@@ -54,9 +54,12 @@
         name="branch"
         type="text"
         class="textfield mt-2 w-full"
-        placeholder="e.g. master"
+        placeholder="e.g. main"
         :disabled="!allowEdit"
       />
+      <div class="mt-2 textinfolabel">
+        {{ $t("repository.branch-specify-tip") }}
+      </div>
     </div>
     <div>
       <div class="textlabel">{{ $t("repository.base-directory") }}</div>
@@ -73,13 +76,14 @@
       />
     </div>
     <!-- Project schemaChangeType selector -->
-    <div>
+    <div v-if="isDev">
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
         <span class="text-red-600">*</span>
       </div>
       <BBSelect
         id="schemamigrationtype"
+        :disabled="!allowEdit"
         :selected-item="schemaChangeType"
         :item-list="['DDL', 'SDL']"
         class="mt-1"
@@ -95,10 +99,11 @@
               `project.settings.select-schema-change-type-${item.toLowerCase()}`
             )
           }}
+          <BBBetaBadge v-if="item === 'SDL'" />
         </template>
       </BBSelect>
     </div>
-    <div>
+    <div v-if="isProjectSchemaChangeTypeDDL">
       <div class="textlabel">
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
@@ -138,7 +143,7 @@
           sampleFilePath(
             repositoryConfig.baseDirectory,
             repositoryConfig.filePathTemplate,
-            "migrate"
+            "ddl"
           )
         }}
       </div>
@@ -148,7 +153,7 @@
           sampleFilePath(
             repositoryConfig.baseDirectory,
             repositoryConfig.filePathTemplate,
-            "data"
+            "dml"
           )
         }}
       </div>
@@ -165,14 +170,14 @@
         >
       </div>
       <div class="mt-1 textinfolabel">
-        <template v-if="isProjectSchemaChangeTypeDDL">
+        <template v-if="isDev && !isProjectSchemaChangeTypeDDL">
+          {{ $t("project.settings.schema-path-template-sdl-description") }}
+        </template>
+        <template v-else>
           {{ $t("repository.schema-writeback-description") }}
           <span class="font-medium text-main">{{
             $t("repository.schema-writeback-protected-branch")
           }}</span>
-        </template>
-        <template v-else>
-          {{ $t("project.settings.schema-path-template-sdl-description") }}
         </template>
       </div>
       <input
@@ -227,11 +232,47 @@
         </template>
       </div>
     </div>
+    <div>
+      <div class="textlabel flex gap-x-1">
+        {{ $t("repository.sql-review-ci") }}
+        <FeatureBadge feature="bb.feature.vcs-sql-review" class="text-accent" />
+      </div>
+      <div class="mt-1 textinfolabel">
+        {{
+          $t("repository.sql-review-ci-description", {
+            pr: vcsType.startsWith("GITLAB")
+              ? $t("repository.merge-request")
+              : $t("repository.pull-request"),
+            pathTemplate:
+              schemaChangeType == "DDL"
+                ? $t("repository.file-path-template")
+                : $t("repository.schema-path-template"),
+          })
+        }}
+      </div>
+      <div class="flex space-x-4 mt-2">
+        <BBCheckbox
+          :disabled="!allowEdit"
+          :title="enableSQLReviewTitle"
+          :value="repositoryConfig.enableSQLReviewCI"
+          @toggle="(on: boolean) => {
+            repositoryConfig.enableSQLReviewCI = on;
+            onSQLReviewCIToggle(on);
+          }"
+        />
+      </div>
+    </div>
+    <FeatureModal
+      v-if="state.showFeatureModal"
+      feature="bb.feature.vcs-sql-review"
+      @cancel="state.showFeatureModal = false"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { reactive, PropType, defineComponent, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   ExternalRepositoryInfo,
   Project,
@@ -239,6 +280,8 @@ import {
   SchemaChangeType,
   VCSType,
 } from "@/types";
+import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
+import { hasFeature } from "@/store";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -247,10 +290,13 @@ const SINGLE_ASTERISK_REGEX = /\/\*\//g;
 const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+interface LocalState {
+  showFeatureModal: boolean;
+}
 
 export default defineComponent({
   name: "RepositoryForm",
+  components: { BBBetaBadge },
   props: {
     allowEdit: {
       default: true,
@@ -287,14 +333,22 @@ export default defineComponent({
   },
   emits: ["change-repository", "change-schema-change-type"],
   setup(props) {
-    const state = reactive<LocalState>({});
+    const { t } = useI18n();
+
+    const state = reactive<LocalState>({
+      showFeatureModal: false,
+    });
 
     const isTenantProject = computed(() => {
       return props.project.tenantMode === "TENANT";
     });
-
     const isProjectSchemaChangeTypeDDL = computed(() => {
       return (props.schemaChangeType || "DDL") === "DDL";
+    });
+    const enableSQLReviewTitle = computed(() => {
+      return props.vcsType.startsWith("GITLAB")
+        ? t("repository.sql-review-ci-enable-gitlab")
+        : t("repository.sql-review-ci-enable-github");
     });
 
     const sampleFilePath = (
@@ -306,7 +360,6 @@ export default defineComponent({
         placeholder: string;
         sampleText: string;
       };
-
       const placeholderList: Item[] = [
         {
           placeholder: "{{VERSION}}",
@@ -329,13 +382,10 @@ export default defineComponent({
           sampleText: "create_tablefoo_for_bar",
         },
       ];
-
       let result = `${baseDirectory}/${filePathTemplate}`;
-
       // To replace the wildcard.
       result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
       result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
-
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
         result = result.replace(re, item.sampleText);
@@ -351,14 +401,12 @@ export default defineComponent({
         placeholder: string;
         sampleText: string;
       };
-
       const placeholderList: Item[] = [
         {
           placeholder: "{{DB_NAME}}",
           sampleText: "db1",
         },
       ];
-
       let result = `${baseDirectory}/${schemaPathTemplate}`;
       for (const item of placeholderList) {
         const re = new RegExp(item.placeholder, "g");
@@ -382,6 +430,12 @@ export default defineComponent({
       return tags;
     });
 
+    const onSQLReviewCIToggle = (on: boolean) => {
+      if (on && !hasFeature("bb.feature.vcs-sql-review")) {
+        state.showFeatureModal = true;
+      }
+    };
+
     return {
       FILE_REQUIRED_PLACEHOLDER,
       SCHEMA_REQUIRED_PLACEHOLDER,
@@ -390,8 +444,10 @@ export default defineComponent({
       schemaOptionalTagPlaceholder,
       state,
       isProjectSchemaChangeTypeDDL,
+      enableSQLReviewTitle,
       sampleFilePath,
       sampleSchemaPath,
+      onSQLReviewCIToggle,
     };
   },
 });

@@ -1,32 +1,27 @@
 <template>
-  <select
-    class="btn-select disabled:cursor-not-allowed"
+  <BBSelect
+    :selected-item="state.selectedDatabase"
+    :item-list="databaseList"
     :disabled="disabled"
-    @change="onSelectChange"
+    :placeholder="$t('database.select')"
+    :show-prefix-item="true"
+    @select-item="(database: Database) => $emit('select-database-id', database.id)"
   >
-    <option disabled :selected="UNKNOWN_ID === state.selectedId">
-      <template v-if="mode == 'INSTANCE' && instanceId == UNKNOWN_ID">
-        {{ $t("db.select-instance-first") }}
-      </template>
-      <template
-        v-else-if="mode == 'ENVIRONMENT' && environmentId == UNKNOWN_ID"
-      >
-        {{ $t("db.select-environment-first") }}
-      </template>
-      <template v-else> {{ $t("db.select") }} </template>
-    </option>
-    <option
-      v-for="(database, index) in databaseList"
-      :key="index"
-      :value="database.id"
-      :selected="database.id == state.selectedId"
-    >
-      {{ database.name }}
-    </option>
-  </select>
+    <template #menuItem="{ item: database }">
+      <slot
+        v-if="customizeItem"
+        name="customizeItem"
+        :database="database"
+      ></slot>
+      <div v-else class="flex items-center">
+        <span>{{ database.name }}</span>
+      </div>
+    </template>
+  </BBSelect>
 </template>
 
 <script lang="ts">
+import { isNullOrUndefined } from "@/plugins/demo/utils";
 import { useCurrentUser, useDatabaseStore } from "@/store";
 import {
   computed,
@@ -42,10 +37,13 @@ import {
   ProjectId,
   InstanceId,
   EnvironmentId,
+  EngineType,
+  DatabaseSyncStatus,
 } from "../types";
 
 interface LocalState {
   selectedId?: number;
+  selectedDatabase?: Database;
 }
 
 export default defineComponent({
@@ -60,20 +58,36 @@ export default defineComponent({
       type: String as PropType<"INSTANCE" | "ENVIRONMENT" | "USER">,
     },
     environmentId: {
-      default: UNKNOWN_ID,
       type: Number as PropType<EnvironmentId>,
+      default: UNKNOWN_ID,
     },
     instanceId: {
-      default: UNKNOWN_ID,
       type: Number as PropType<InstanceId>,
+      default: UNKNOWN_ID,
     },
     projectId: {
-      default: UNKNOWN_ID,
       type: Number as PropType<ProjectId>,
+      default: UNKNOWN_ID,
+    },
+    engineTypeList: {
+      type: Array as PropType<EngineType[]>,
+      default: undefined,
+    },
+    engineType: {
+      type: String as PropType<EngineType>,
+      default: undefined,
+    },
+    syncStatus: {
+      type: String as PropType<DatabaseSyncStatus>,
+      default: undefined,
     },
     disabled: {
-      default: false,
       type: Boolean,
+      default: false,
+    },
+    customizeItem: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ["select-database-id"],
@@ -123,6 +137,19 @@ export default defineComponent({
           });
         }
       }
+
+      if (!isNullOrUndefined(props.engineTypeList)) {
+        list = list.filter((database: Database) => {
+          return props.engineTypeList?.includes(database.instance.engine);
+        });
+      }
+
+      if (!isNullOrUndefined(props.syncStatus)) {
+        list = list.filter((database: Database) => {
+          return database.syncStatus === props.syncStatus;
+        });
+      }
+
       return list;
     });
 
@@ -156,8 +183,12 @@ export default defineComponent({
 
     watch(
       () => props.selectedId,
-      (cur) => {
-        state.selectedId = cur;
+      (selectedId) => {
+        invalidateSelectionIfNeeded();
+        state.selectedId = selectedId;
+        state.selectedDatabase = databaseList.value.find(
+          (database) => database.id === selectedId
+        );
       }
     );
 

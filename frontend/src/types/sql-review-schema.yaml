@@ -1,10 +1,12 @@
 categoryList:
   - ENGINE
+  - INDEX
   - NAMING
   - STATEMENT
   - TABLE
   - SCHEMA
   - COLUMN
+  - SYSTEM
   - DATABASE
 ruleList:
   - type: engine.mysql.use-innodb
@@ -36,6 +38,26 @@ ruleList:
         payload:
           type: STRING
           default: _del$
+  - type: table.comment
+    category: TABLE
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: required
+        payload:
+          type: BOOLEAN
+          default: false
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
+  - type: table.disallow-partition
+    category: TABLE
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
@@ -56,6 +78,66 @@ ruleList:
       - MYSQL
       - TIDB
       - POSTGRES
+    componentList: []
+  - type: statement.disallow-commit
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.disallow-limit
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.disallow-order-by
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.merge-alter-table
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.insert.row-limit
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - POSTGRES
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 1000
+  - type: statement.insert.must-specify-column
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.insert.disallow-order-by-rand
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: statement.affected-row-limit
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 1000
+  - type: statement.dml-dry-run
+    category: STATEMENT
+    engineList:
+      - MYSQL
     componentList: []
   - type: naming.table
     category: NAMING
@@ -159,6 +241,20 @@ ruleList:
         payload:
           type: NUMBER
           default: 63
+  - type: naming.column.auto-increment
+    category: NAMING
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: format
+        payload:
+          type: STRING
+          default: "^id$"
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
   - type: column.required
     category: COLUMN
     engineList:
@@ -166,7 +262,7 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList:
-      - key: columnList
+      - key: list
         payload:
           type: STRING_ARRAY
           default:
@@ -182,6 +278,104 @@ ruleList:
       - TIDB
       - POSTGRES
     componentList: []
+  - type: column.disallow-change-type
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.set-default-for-not-null
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.disallow-change
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.disallow-changing-order
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.comment
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: required
+        payload:
+          type: BOOLEAN
+          default: false
+      - key: maxLength
+        payload:
+          type: NUMBER
+          default: 64
+  - type: column.auto-increment-must-integer
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.type-disallow-list
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: list
+        payload:
+          type: STRING_ARRAY
+          default: []
+  - type: column.disallow-set-charset
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.maximum-character-length
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 20
+  - type: column.auto-increment-initial-value
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 1
+  - type: column.auto-increment-must-unsigned
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.current-time-count-limit
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: column.require-default
+    category: COLUMN
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
   - type: schema.backward-compatibility
     category: SCHEMA
     engineList:
@@ -195,3 +389,62 @@ ruleList:
       - MYSQL
       - TIDB
     componentList: []
+  - type: index.no-duplicate-column
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: index.key-number-limit
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 5
+  - type: index.pk-type-limit
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: index.type-no-blob
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList: []
+  - type: index.total-number-limit
+    category: INDEX
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 5
+  - type: system.charset.allowlist
+    category: SYSTEM
+    engineList:
+      - MYSQL
+      - TIDB
+      - POSTGRES
+    componentList:
+      - key: list
+        payload:
+          type: STRING_ARRAY
+          default: []
+  - type: system.collation.allowlist
+    category: SYSTEM
+    engineList:
+      - MYSQL
+      - TIDB
+    componentList:
+      - key: list
+        payload:
+          type: STRING_ARRAY
+          default: []

@@ -35,10 +35,10 @@ func TestS3Operations(t *testing.T) {
 	a.NoError(err)
 
 	t.Run("ListObjects", func(t *testing.T) {
-		resp, err := client.ListObjects(ctx, "backup/")
+		list, err := client.ListObjects(ctx, "backup/")
 		a.NoError(err)
-		for _, obj := range resp.Contents {
-			log.Info("Object", zap.Any("*", obj))
+		for _, obj := range list {
+			log.Info("Object", zap.String("Key", *obj.Key), zap.Time("LastModified", *obj.LastModified))
 		}
 	})
 

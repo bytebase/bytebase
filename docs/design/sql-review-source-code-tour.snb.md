@@ -71,7 +71,7 @@ https://sourcegraph.com/github.com/bytebase/bytebase@72e8995/-/blob/plugin/advis
 
 ## The Catalog
 
-The catalog is the schema information for a database. For some rules, we need some information from the catalog. e.g. if we have a SQL `ALTER TABLE t RENAME INDEX uk to uk_name;` and want to check the columns in this index, we can not get this information from this SQL statement. So we need a catalog to retrieve the column info.
+The catalog is the schema information for a database. For some rules, we need some information from the catalog. e.g. if we have a SQL `ALTER TABLE t RENAME INDEX uk to uk_name;` and want to check the columns in this index, we cannot get this information from this SQL statement. So we need a catalog to retrieve the column info.
 
 
 ## How to Implement a SQL Advisor

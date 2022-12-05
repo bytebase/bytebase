@@ -8,11 +8,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/segment"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/store"
 
 	"go.uber.org/zap"
@@ -24,6 +24,8 @@ const (
 	identifyTraitForPlan = "plan"
 	// identifyTraitForOrgID is the trait key for organization id.
 	identifyTraitForOrgID = "org_id"
+	// identifyTraitForOrgName is the trait key for organization name.
+	identifyTraitForOrgName = "org_name"
 	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
 	// principalIDForFirstUser is the principal id for the first user in workspace.
@@ -32,9 +34,7 @@ const (
 
 // MetricReporter is the metric reporter.
 type MetricReporter struct {
-	// subscription is the pointer to the server.subscription.
-	// the subscription can be updated by users so we need the pointer to get the latest value.
-	subscription *enterpriseAPI.Subscription
+	licenseService enterpriseAPI.LicenseService
 	// Version is the bytebase's version
 	version     string
 	workspaceID string
@@ -44,16 +44,16 @@ type MetricReporter struct {
 }
 
 // NewMetricReporter creates a new metric scheduler.
-func NewMetricReporter(server *Server, workspaceID string) *MetricReporter {
-	r := segment.NewReporter(server.profile.MetricConnectionKey, workspaceID)
+func NewMetricReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string) *MetricReporter {
+	r := segment.NewReporter(profile.MetricConnectionKey, workspaceID)
 
 	return &MetricReporter{
-		subscription: &server.subscription,
-		version:      server.profile.Version,
-		workspaceID:  workspaceID,
-		reporter:     r,
-		collectors:   make(map[string]metric.Collector),
-		store:        server.store,
+		licenseService: licenseService,
+		version:        profile.Version,
+		workspaceID:    workspaceID,
+		reporter:       r,
+		collectors:     make(map[string]metric.Collector),
+		store:          store,
 	}
 }
 
@@ -118,15 +118,10 @@ func (m *MetricReporter) Register(metricName metric.Name, collector metric.Colle
 
 // Identify will identify the workspace and update the subscription plan.
 func (m *MetricReporter) identify(ctx context.Context) {
-	plan := api.FREE.String()
-	orgID := ""
-	orgName := ""
-
-	if m.subscription != nil {
-		plan = m.subscription.Plan.String()
-		orgID = m.subscription.OrgID
-		orgName = m.subscription.OrgName
-	}
+	subscription := m.licenseService.LoadSubscription(ctx)
+	plan := subscription.Plan.String()
+	orgID := subscription.OrgID
+	orgName := subscription.OrgName
 
 	principal, err := m.store.GetPrincipalByID(ctx, principalIDForFirstUser)
 	if err != nil {
@@ -140,11 +135,12 @@ func (m *MetricReporter) identify(ctx context.Context) {
 	if err := m.reporter.Identify(&metric.Identifier{
 		ID:    m.workspaceID,
 		Email: email,
-		Name:  orgName,
+		Name:  principal.Name,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,
 			identifyTraitForVersion: m.version,
 			identifyTraitForOrgID:   orgID,
+			identifyTraitForOrgName: orgName,
 		},
 	}); err != nil {
 		log.Debug("reporter identify failed", zap.Error(err))

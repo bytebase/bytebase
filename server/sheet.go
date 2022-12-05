@@ -1,15 +1,11 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -17,7 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 )
 
 func (s *Server) registerSheetRoutes(g *echo.Group) {
@@ -56,6 +51,14 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))
 		}
 
+		role := c.Get(getRoleContextKey()).(api.Role)
+		if role != api.Owner && role != api.DBA {
+			// Non-workspace Owner or DBA can only create sheet into the project where she has the membership.
+			if !api.HasActiveProjectMembership(currentPrincipalID, project) {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Must be a project member to create new sheet")
+			}
+		}
+
 		sheetCreate.Source = api.SheetFromBytebase
 		sheetCreate.Type = api.SheetForSQL
 		sheet, err := s.store.CreateSheet(ctx, sheetCreate)
@@ -70,221 +73,12 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/sheet/project/:projectID/sync", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		projectID, err := strconv.Atoi(c.Param("projectID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
-		}
-
-		project, err := s.store.GetProjectByID(ctx, projectID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Project not found: %d", projectID)).SetInternal(err)
-		}
-		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found by ID: %d", projectID))
-		}
-		if project.WorkflowType != api.VCSWorkflow {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
-		}
-
-		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{ProjectID: &projectID})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find relevant VCS repo, Project ID: %d", projectID)).SetInternal(err)
-		}
-		if repo == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository not found by project ID: %d", projectID))
-		}
-
-		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find VCS for sync sheet: %d", repo.VCSID)).SetInternal(err)
-		}
-		if vcs == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found by ID: %d", repo.VCSID))
-		}
-
-		basePath := filepath.Dir(repo.SheetPathTemplate)
-		// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
-		fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.ID),
-			},
-			vcs.InstanceURL,
-			repo.ExternalID,
-			repo.BranchFilter,
-			basePath,
-		)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository file list from VCS, instance URL: %s", vcs.InstanceURL)).SetInternal(err)
-		}
-
-		for _, file := range fileList {
-			sheetInfo, err := parseSheetInfo(file.Path, repo.SheetPathTemplate)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse sheet info from template").SetInternal(err)
-			}
-			if sheetInfo.SheetName == "" {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("sheet name cannot be empty from sheet path %s with template %s", file.Path, repo.SheetPathTemplate)).SetInternal(err)
-			}
-
-			fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(ctx,
-				common.OauthContext{
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
-				},
-				vcs.InstanceURL,
-				repo.ExternalID,
-				file.Path,
-				repo.BranchFilter,
-			)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file content from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
-			}
-
-			fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(ctx,
-				common.OauthContext{
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
-				},
-				vcs.InstanceURL,
-				repo.ExternalID,
-				file.Path,
-				repo.BranchFilter,
-			)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
-			}
-
-			lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchCommitByID(ctx,
-				common.OauthContext{
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
-				},
-				vcs.InstanceURL,
-				repo.ExternalID,
-				fileMeta.LastCommitID,
-			)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch commit data from VCS, instance URL: %s, repo ID: %s, commit ID: %s", vcs.InstanceURL, repo.ExternalID, fileMeta.LastCommitID)).SetInternal(err)
-			}
-
-			sheetVCSPayload := &api.SheetVCSPayload{
-				FileName:     fileMeta.Name,
-				FilePath:     fileMeta.Path,
-				Size:         fileMeta.Size,
-				Author:       lastCommit.AuthorName,
-				LastCommitID: lastCommit.ID,
-				LastSyncTs:   time.Now().Unix(),
-			}
-			payload, err := json.Marshal(sheetVCSPayload)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sheetVCSPayload").SetInternal(err)
-			}
-
-			var databaseID *int
-			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME,
-			// and ENV_NAME and DB_NAME is either both present or neither present.
-			if project.TenantMode != api.TenantModeDisabled {
-				if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
-					databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-						Name:      &sheetInfo.DatabaseName,
-						ProjectID: &projectID,
-					})
-					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
-					}
-
-					for _, database := range databaseList {
-						database := database // create a new var "database".
-						if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
-							databaseID = &database.ID
-							break
-						}
-					}
-				}
-			}
-
-			var sheetSource api.SheetSource
-			switch vcs.Type {
-			case vcsPlugin.GitLabSelfHost:
-				sheetSource = api.SheetFromGitLabSelfHost
-			case vcsPlugin.GitHubCom:
-				sheetSource = api.SheetFromGitHubCom
-			}
-			vscSheetType := api.SheetForSQL
-			sheetFind := &api.SheetFind{
-				Name:      &sheetInfo.SheetName,
-				ProjectID: &project.ID,
-				Source:    &sheetSource,
-				Type:      &vscSheetType,
-			}
-			sheet, err := s.store.GetSheet(ctx, sheetFind, currentPrincipalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheet with name: %s, project ID: %d", sheetInfo.SheetName, projectID)).SetInternal(err)
-			}
-
-			if sheet == nil {
-				sheetCreate := api.SheetCreate{
-					ProjectID:  projectID,
-					CreatorID:  currentPrincipalID,
-					Name:       sheetInfo.SheetName,
-					Statement:  fileContent,
-					Visibility: api.ProjectSheet,
-					Source:     sheetSource,
-					Type:       api.SheetForSQL,
-					Payload:    string(payload),
-				}
-				if databaseID != nil {
-					sheetCreate.DatabaseID = databaseID
-				}
-
-				if _, err := s.store.CreateSheet(ctx, &sheetCreate); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet from VCS").SetInternal(err)
-				}
-			} else {
-				payloadString := string(payload)
-				sheetPatch := api.SheetPatch{
-					ID:        sheet.ID,
-					UpdaterID: currentPrincipalID,
-					Statement: &fileContent,
-					Payload:   &payloadString,
-				}
-				if databaseID != nil {
-					sheetPatch.DatabaseID = databaseID
-				}
-
-				if _, err := s.store.PatchSheet(ctx, &sheetPatch); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch sheet from VCS").SetInternal(err)
-				}
-			}
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		return nil
-	})
-
 	// Get current user created sheet list.
 	g.GET("/sheet/my", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind, err := composeCommonSheetFindByQueryParams(c.QueryParams())
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bad request: %s", err.Error())).SetInternal(err)
+		sheetFind := api.SheetFind{
+			CreatorID: &currentPrincipalID,
 		}
 
 		if rowStatusStr := c.QueryParam("rowStatus"); rowStatusStr != "" {
@@ -292,9 +86,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetFind.RowStatus = &rowStatus
 		}
 
-		sheetFind.CreatorID = &currentPrincipalID
-
-		mySheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+		mySheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch sheet list").SetInternal(err)
 		}
@@ -311,17 +103,14 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.GET("/sheet/shared", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind, err := composeCommonSheetFindByQueryParams(c.QueryParams())
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bad request: %s", err.Error())).SetInternal(err)
+		sheetFind := api.SheetFind{
+			PrincipalID: &currentPrincipalID,
 		}
-
-		sheetFind.PrincipalID = &currentPrincipalID
 
 		var sheetList []*api.Sheet
 		projectSheetVisibility := api.ProjectSheet
 		sheetFind.Visibility = &projectSheetVisibility
-		projectSheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+		projectSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared project sheet list").SetInternal(err)
 		}
@@ -329,7 +118,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		publicSheetVisibility := api.PublicSheet
 		sheetFind.Visibility = &publicSheetVisibility
-		publicSheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+		publicSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared public sheet list").SetInternal(err)
 		}
@@ -347,14 +136,11 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.GET("/sheet/starred", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind, err := composeCommonSheetFindByQueryParams(c.QueryParams())
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bad request: %s", err.Error())).SetInternal(err)
+		sheetFind := api.SheetFind{
+			OrganizerPrincipalID: &currentPrincipalID,
 		}
 
-		sheetFind.OrganizerID = &currentPrincipalID
-
-		starredSheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+		starredSheetList, err := s.store.FindSheet(ctx, &sheetFind, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch starred sheet list").SetInternal(err)
 		}
@@ -366,12 +152,12 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/sheet/:id", func(c echo.Context) error {
+	g.GET("/sheet/:sheetID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("sheetID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
 		}
 
 		sheetFind := &api.SheetFind{
@@ -392,12 +178,12 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/sheet/:id", func(c echo.Context) error {
+	g.PATCH("/sheet/:sheetID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("sheetID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
 		}
 
 		sheetPatch := &api.SheetPatch{
@@ -423,11 +209,11 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.DELETE("/sheet/:id", func(c echo.Context) error {
+	g.DELETE("/sheet/:sheetID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("sheetID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("sheetID"))).SetInternal(err)
 		}
 
 		sheetDelete := &api.SheetDelete{
@@ -443,28 +229,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-}
-
-// composeCommonSheetFindByQueryParams is a common function to compose sheetFind by request query params.
-func composeCommonSheetFindByQueryParams(queryParams url.Values) (*api.SheetFind, error) {
-	sheetFind := &api.SheetFind{}
-
-	if projectIDStr := queryParams.Get("projectId"); projectIDStr != "" {
-		projectID, err := strconv.Atoi(projectIDStr)
-		if err != nil {
-			return nil, errors.Errorf("project ID is not a number: %s", queryParams.Get("projectId"))
-		}
-		sheetFind.ProjectID = &projectID
-	}
-	if databaseIDStr := queryParams.Get("databaseId"); databaseIDStr != "" {
-		databaseID, err := strconv.Atoi(databaseIDStr)
-		if err != nil {
-			return nil, errors.Errorf("database ID is not a number: %s", queryParams.Get("databaseId"))
-		}
-		sheetFind.DatabaseID = &databaseID
-	}
-
-	return sheetFind, nil
 }
 
 // SheetInfo represents the sheet related information from sheetPathTemplate.

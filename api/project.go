@@ -77,12 +77,18 @@ type Project struct {
 	WorkflowType ProjectWorkflowType `jsonapi:"attr,workflowType"`
 	Visibility   ProjectVisibility   `jsonapi:"attr,visibility"`
 	TenantMode   ProjectTenantMode   `jsonapi:"attr,tenantMode"`
-	// DBNameTemplate is only used when a project is in tenant mode.
-	// Empty value means {{DB_NAME}}.
+	// DBNameTemplate is only used when a project is in tenant mode and the name of tenant databases follows a format.
+	// {{DB_NAME}} is used for each tenant belonging to an individual database instance and all tenant databases have the same database name.
+	// The template can include label keys such as {{DB_NAME}}_{{TENANT}}. It allows all tenant databases to belong to one or a few database instances.
+	// All database with the same {{DB_NAME}} (base database name) belong to one group.
+	//
+	// Empty value means all tenant databases in the project belonging to the same group.
 	DBNameTemplate string              `jsonapi:"attr,dbNameTemplate"`
 	RoleProvider   ProjectRoleProvider `jsonapi:"attr,roleProvider"`
 	// SchemaChangeType is the type of the schema migration script.
 	SchemaChangeType ProjectSchemaChangeType `jsonapi:"attr,schemaChangeType"`
+	// LGTMCheckSetting is the setting of the LGTM check.
+	LGTMCheckSetting LGTMCheckSetting `jsonapi:"attr,lgtmCheckSetting"`
 }
 
 // ProjectCreate is the API message for creating a project.
@@ -130,10 +136,14 @@ type ProjectPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name             *string `jsonapi:"attr,name"`
-	WorkflowType     *string `jsonapi:"attr,workflowType"` // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
-	RoleProvider     *string `jsonapi:"attr,roleProvider"`
-	SchemaChangeType *string `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
+	Name             *string            `jsonapi:"attr,name"`
+	Key              *string            `jsonapi:"attr,key"`
+	TenantMode       *ProjectTenantMode `jsonapi:"attr,tenantMode"`
+	DBNameTemplate   *string            `jsonapi:"attr,dbNameTemplate"`
+	WorkflowType     *string            `jsonapi:"attr,workflowType"` // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
+	RoleProvider     *string            `jsonapi:"attr,roleProvider"`
+	SchemaChangeType *string            `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
+	LGTMCheckSetting *LGTMCheckSetting  `jsonapi:"attr,lgtmCheckSetting"`
 }
 
 var (
@@ -146,10 +156,17 @@ var (
 	// TenantToken is the token for tenant.
 	TenantToken = "{{TENANT}}"
 
-	// boolean indicates whether it's an required or optional token.
+	// boolean indicates whether it's a required or optional token.
 	repositoryFilePathTemplateTokens = map[string]bool{
 		"{{VERSION}}":     true,
 		DBNameToken:       true,
+		"{{TYPE}}":        true,
+		EnvironmentToken:  false,
+		"{{DESCRIPTION}}": false,
+	}
+	tenantWildcardRepositoryFilePathTemplateTokens = map[string]bool{
+		"{{VERSION}}":     true,
+		DBNameToken:       false,
 		"{{TYPE}}":        true,
 		EnvironmentToken:  false,
 		"{{DESCRIPTION}}": false,
@@ -166,7 +183,7 @@ var (
 )
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
-func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
+func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode, dbNameTemplate string) error {
 	tokens, _ := common.ParseTemplateTokens(filePathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
@@ -178,15 +195,23 @@ func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode Proj
 		}
 	}
 
-	for token, required := range repositoryFilePathTemplateTokens {
-		if required {
-			if _, ok := tokenMap[token]; !ok {
-				return errors.Errorf("missing %s in file path template", token)
-			}
+	filePathTemplateTokens := repositoryFilePathTemplateTokens
+	// Skip checking {{DB_NAME}} if it's a tenant project with empty database name template (i.e .wildcard).
+	if tenantMode == TenantModeTenant && dbNameTemplate == "" {
+		filePathTemplateTokens = tenantWildcardRepositoryFilePathTemplateTokens
+	}
+	for token, required := range filePathTemplateTokens {
+		// Skip checking tokens that are not required
+		if !required {
+			continue
+		}
+
+		if _, ok := tokenMap[token]; !ok {
+			return errors.Errorf("missing %s in file path template", token)
 		}
 	}
 	for token := range tokenMap {
-		if _, ok := repositoryFilePathTemplateTokens[token]; !ok {
+		if _, ok := filePathTemplateTokens[token]; !ok {
 			return errors.Errorf("unknown token %s in file path template", token)
 		}
 	}
@@ -281,6 +306,7 @@ func formatTemplateRegexp(template string, tokens map[string]string) (string, er
 
 // GetBaseDatabaseName will return the base database name given the database name, dbNameTemplate, labelsJSON.
 func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (string, error) {
+	// There is no need to check database name if the template is empty or a wildcard.
 	if dbNameTemplate == "" {
 		return databaseName, nil
 	}

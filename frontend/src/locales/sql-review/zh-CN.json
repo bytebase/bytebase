@@ -11,11 +11,16 @@
     "table": "表",
     "column": "列",
     "schema": "Schema",
-    "database": "数据库"
+    "database": "数据库",
+    "index": "索引",
+    "insert": "插入",
+    "system": "系统"
   },
   "template": {
-    "bb-sql-review-prod": "针对生产环境的审核策略模板",
-    "bb-sql-review-dev": "针对开发环境的审核策略模板"
+    "bb-sql-review-prod": "进阶模板",
+    "bb-sql-review-prod-desc": "为您的数据库提供全面保护和最佳实践。",
+    "bb-sql-review-dev": "基础模板",
+    "bb-sql-review-dev-desc": "保证变更可正确地应用到数据库。"
   },
   "rule": {
     "engine-mysql-use-innodb": {
@@ -36,6 +41,22 @@
       "component": {
         "format": {
           "title": "命名规则（正则）"
+        }
+      }
+    },
+    "table-disallow-partition": {
+      "title": "禁止分区",
+      "description": ""
+    },
+    "table-comment": {
+      "title": "注释检查",
+      "description": "配置表是否需要注释和最大注释长度。",
+      "component": {
+        "required": {
+          "title": "必须注释"
+        },
+        "maxLength": {
+          "title": "长度限制"
         }
       }
     },
@@ -129,12 +150,33 @@
         }
       }
     },
+    "naming-column-auto-increment": {
+      "title": "自增列命名检查",
+      "description": "限制自增列命名风格和长度，默认为 id ，且不超过 63 个字符。",
+      "component": {
+        "format": {
+          "title": "自增列命名规则（正则）"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
     "column-required": {
       "title": "必须包含的字段",
       "description": "强制要求表中必须包含某些字段。",
       "component": {
-        "columnList": {
+        "list": {
           "title": "必须包含的字段名"
+        }
+      }
+    },
+    "column-type-disallow-list": {
+      "title": "类型约束",
+      "description": "为字段设置类型黑名单。",
+      "component": {
+        "list": {
+          "title": "禁止的类型"
         }
       }
     },
@@ -142,25 +184,185 @@
       "title": "禁止字段为 NULL",
       "description": "表中的字段不允许存在 NULL 值。"
     },
+    "column-disallow-set-charset": {
+      "title": "禁止设置字符集",
+      "description": "禁止为字段设置字符集。"
+    },
+    "column-disallow-change-type": {
+      "title": "禁止改变类型",
+      "description": "不允许改变字段的类型。"
+    },
+    "column-disallow-change": {
+      "title": "禁止改变字段",
+      "description": "不允许 \"CHANGE COLUMN\" 语句。"
+    },
+    "column-disallow-changing-order": {
+      "title": "禁止改变字段顺序",
+      "description": "不允许列的顺序变更。"
+    },
+    "column-set-default-for-not-null": {
+      "title": "为 NOT NULL 字段设置默认值",
+      "description": "不允许为 NULL 的字段必须设定默认值。"
+    },
+    "column-auto-increment-must-integer": {
+      "title": "自增字段必须为数字类型",
+      "description": ""
+    },
+    "column-auto-increment-must-unsigned": {
+      "title": "自增列需要设置无符号",
+      "description": ""
+    },
+    "column-comment": {
+      "title": "注释检查",
+      "description": "配置字段是否需要注释和最大注释长度。",
+      "component": {
+        "required": {
+          "title": "必须注释"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "column-maximum-character-length": {
+      "title": "CHAR 长度限制",
+      "description": "CHAR 长度大于指定值的时候需要改为 VARCHAR 类型。",
+      "component": {
+        "number": {
+          "title": "最大长度"
+        }
+      }
+    },
+    "column-auto-increment-initial-value": {
+      "title": "自增初始值",
+      "description": "配置自增字段的初始值。",
+      "component": {
+        "number": {
+          "title": "初始值"
+        }
+      }
+    },
+    "column-current-time-count-limit": {
+      "title": "限制 NOW() 列的数量",
+      "description": "限制列默认值或 ON UPDATE 值为 NOW(), CURRENT_TIME() 和 CURRENT_TIMESTAMP() 的数量。"
+    },
+    "column-require-default": {
+      "title": "强制设置列默认值",
+      "description": ""
+    },
     "statement-select-no-select-all": {
       "title": "禁止 \"SELECT *\"",
-      "description": "不允许使用 \"SELECT *\" 语句"
+      "description": "不允许使用 \"SELECT *\" 语句。"
     },
     "statement-where-require": {
       "title": "强制 \"WHERE\"",
-      "description": "必须使用 \"WHERE\" 语句"
+      "description": "必须使用 \"WHERE\" 语句。"
     },
     "statement-where-no-leading-wildcard-like": {
       "title": "禁止左模糊",
       "description": "WHERE 语句中禁止使用左模糊匹配，例如禁止 LIKE foo = '%x'。"
     },
+    "statement-disallow-commit": {
+      "title": "禁止使用提交",
+      "description": "禁止在工单中使用提交。"
+    },
+    "statement-disallow-limit": {
+      "title": "不允许使用 \"LIMIT\"",
+      "description": "在 INSERT, UPDATE, DELETE 语句中禁止使用 \"LIMIT\"。"
+    },
+    "statement-disallow-order-by": {
+      "title": "不允许使用 \"ORDER BY\"",
+      "description": "在 UPDATE, DELETE 语句中禁止使用 \"ORDER BY\"。"
+    },
+    "statement-merge-alter-table": {
+      "title": "合并 \"ALTER TABLE\" 语句",
+      "description": "禁止在工单中对同一张表使用多个 \"ALTER TABLE\" 语句。"
+    },
+    "statement-insert-must-specify-column": {
+      "title": "\"INSERT\" 语句必须指定字段",
+      "description": "必须指定插入的字段，也就是要写入哪些列，如 \"INSERT INTO t (id,name) VALUES(...)\"。"
+    },
+    "statement-insert-disallow-order-by-rand": {
+      "title": "不能有 \"ORDER BY rand()\" 语句",
+      "description": ""
+    },
+    "statement-insert-row-limit": {
+      "title": "插入行数限制",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "最大插入行数"
+        }
+      }
+    },
+    "statement-affected-row-limit": {
+      "title": "限制影响行数",
+      "description": "限制 \"DELETE\" and \"UPDATE\" 语句影响的行数。",
+      "component": {
+        "number": {
+          "title": "最大影响行数"
+        }
+      }
+    },
+    "statement-dml-dry-run": {
+      "title": "试运行 DML 语句",
+      "description": "使用 EXPLAIN 语句试运行 DML。"
+    },
     "schema-backward-compatibility": {
       "title": "向后兼容",
-      "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容"
+      "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容。"
     },
     "database-drop-empty-database": {
       "title": "数据库删除限制",
       "description": "只有当数据库内没有表时，才可以被删除。"
+    },
+    "index-no-duplicate-column": {
+      "title": "索引中的列不能重复",
+      "description": ""
+    },
+    "index-type-no-blob": {
+      "title": "BLOB 列不能建作为索引",
+      "description": ""
+    },
+    "index-pk-type-limit": {
+      "title": "主键类型限制",
+      "description": "限制主键类型必须是 INT 或 BIGINT。"
+    },
+    "index-key-number-limit": {
+      "title": "索引包含的字段数量限制",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "字段数量上限"
+        }
+      }
+    },
+    "index-total-number-limit": {
+      "title": "索引数量限制",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "索引数量上限"
+        }
+      }
+    },
+    "system-charset-allowlist": {
+      "title": "字符集限制",
+      "description": "",
+      "component": {
+        "list": {
+          "title": "允许的字符集"
+        }
+      }
+    },
+    "system-collation-allowlist": {
+      "title": "排序规则限制",
+      "description": "",
+      "component": {
+        "list": {
+          "title": "允许的规则限制"
+        }
+      }
     }
   },
   "level": {

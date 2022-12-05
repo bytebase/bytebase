@@ -6,9 +6,8 @@
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
-            &nbsp;
-            <span style="color: red">*</span>
-            <InstanceEngineIcon class="ml-1" :instance="state.instance" />
+            <span class="text-red-600 mr-2">*</span>
+            <InstanceEngineIcon :instance="state.instance" />
             <span class="ml-1">{{ state.instance.engineVersion }}</span>
           </label>
           <input
@@ -47,11 +46,11 @@
           <label for="host" class="textlabel block">
             <template v-if="state.instance.engine == 'SNOWFLAKE'">
               {{ $t("instance.account-name") }}
-              <span style="color: red">*</span>
+              <span class="text-red-600 mr-2">*</span>
             </template>
             <template v-else>
               {{ $t("instance.host-or-socket") }}
-              <span style="color: red">*</span>
+              <span class="text-red-600 mr-2">*</span>
             </template>
           </label>
           <input
@@ -149,8 +148,8 @@
       </p>
 
       <div
-        v-if="!hasReadonlyDataSource"
-        class="flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3 mt-0"
+        v-if="!hasReadOnlyDataSource"
+        class="mt-2 flex flex-row justify-start items-center bg-yellow-50 border-none rounded-lg p-2 px-3"
       >
         <heroicons-outline:exclamation
           class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
@@ -177,7 +176,20 @@
           @update:value="handleDataSourceTypeChange"
         >
           <NTab name="ADMIN">Admin</NTab>
-          <NTab name="RO" :disabled="!hasReadonlyDataSource">Read only</NTab>
+          <NTab name="RO" class="relative" :disabled="!hasReadOnlyDataSource">
+            <span>Read only</span>
+            <BBButtonConfirm
+              v-if="hasReadOnlyDataSource"
+              :style="'DELETE'"
+              class="absolute left-full ml-1"
+              :require-confirm="currentDataSource.id !== UNKNOWN_ID"
+              :ok-text="$t('common.delete')"
+              :confirm-title="
+                $t('data-source.delete-read-only-data-source') + '?'
+              "
+              @confirm="handleDeleteReadOnlyDataSource"
+            />
+          </NTab>
         </NTabs>
         <CreateDataSourceExample
           className="sm:col-span-3 border-none mt-2"
@@ -186,9 +198,10 @@
           :dataSourceType="state.currentDataSourceType"
         />
         <div class="mt-2 sm:col-span-1 sm:col-start-1">
-          <label for="username" class="textlabel block">{{
-            $t("common.username")
-          }}</label>
+          <label for="username" class="textlabel block">
+            {{ $t("common.username") }}
+            <span class="text-red-600">*</span>
+          </label>
           <!-- For mysql, username can be empty indicating anonymous user.
           But it's a very bad practice to use anonymous user for admin operation,
           thus we make it REQUIRED here.-->
@@ -210,6 +223,7 @@
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
               {{ $t("common.password") }}
+              <span class="text-red-600">*</span>
             </label>
             <BBCheckbox
               :title="$t('common.empty')"
@@ -238,10 +252,46 @@
           />
         </div>
 
+        <template v-if="state.currentDataSourceType === 'RO'">
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-row items-center space-x-2">
+              <label for="host" class="textlabel block">
+                {{ $t("data-source.read-replica-host") }}
+              </label>
+            </div>
+            <input
+              id="host"
+              name="host"
+              type="text"
+              class="textfield mt-1 w-full"
+              autocomplete="off"
+              :value="currentDataSource.hostOverride"
+              @input="handleCurrentDataSourceHostOverrideInput"
+            />
+          </div>
+
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-row items-center space-x-2">
+              <label for="port" class="textlabel block">
+                {{ $t("data-source.read-replica-port") }}
+              </label>
+            </div>
+            <input
+              id="port"
+              name="port"
+              type="text"
+              class="textfield mt-1 w-full"
+              autocomplete="off"
+              :value="currentDataSource.portOverride"
+              @input="handleCurrentDataSourcePortOverrideInput"
+            />
+          </div>
+        </template>
+
         <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
           <div class="flex flex-row items-center">
             <label for="password" class="textlabel block">
-              {{ $t("datasource.ssl-connection") }}
+              {{ $t("data-source.ssl-connection") }}
             </label>
           </div>
           <template v-if="currentDataSource.id === UNKNOWN_ID">
@@ -291,14 +341,6 @@
     <!-- Action Button Group -->
     <div class="pt-4 px-2">
       <div class="flex justify-between items-center">
-        <div>
-          <BBCheckbox
-            v-if="connectionInfoChanged"
-            :title="$t('instance.sync-schema-now')"
-            :value="state.syncSchema"
-            @toggle="state.syncSchema = !state.syncSchema"
-          />
-        </div>
         <div class="flex justify-end items-center">
           <div>
             <BBSpin v-if="state.isUpdating" :title="$t('common.updating')" />
@@ -318,16 +360,21 @@
       </div>
     </div>
   </div>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.read-replica-connection"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, isEqual, pick } from "lodash-es";
 import { computed, reactive, PropType } from "vue";
-import cloneDeep from "lodash-es/cloneDeep";
-import isEqual from "lodash-es/isEqual";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { SslCertificateForm } from "./InstanceForm";
-import { isDBAOrOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import {
   InstancePatch,
   DataSourceType,
@@ -337,10 +384,12 @@ import {
   DataSource,
   UNKNOWN_ID,
   DataSourceCreate,
+  DataSourcePatch,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
 import {
+  hasFeature,
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
@@ -348,6 +397,7 @@ import {
   useInstanceStore,
   useSQLStore,
 } from "@/store";
+import { isNullOrUndefined } from "@/plugins/demo/utils";
 
 interface EditDataSource extends DataSource {
   updatedPassword: string;
@@ -358,9 +408,9 @@ interface State {
   originalInstance: Instance;
   instance: Instance;
   isUpdating: boolean;
-  syncSchema: boolean;
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
+  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -390,14 +440,18 @@ const state = reactive<State>({
   // Make hard copy since we are going to make equal comparison to determine the update button enable state.
   instance: cloneDeep(props.instance),
   isUpdating: false,
-  syncSchema: true,
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
+  showFeatureModal: false,
 });
 
 const allowEdit = computed(() => {
   return (
-    state.instance.rowStatus == "NORMAL" && isDBAOrOwner(currentUser.value.role)
+    state.instance.rowStatus == "NORMAL" &&
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
   );
 });
 
@@ -440,7 +494,7 @@ const adminDataSource = computed(() => {
   return temp;
 });
 
-const hasReadonlyDataSource = computed(() => {
+const hasReadOnlyDataSource = computed(() => {
   for (const ds of state.dataSourceList) {
     if (ds.type === "RO") {
       return true;
@@ -515,6 +569,40 @@ const handleCurrentDataSourcePasswordInput = (event: Event) => {
   updateInstanceDataSource();
 };
 
+const handleCurrentDataSourceHostOverrideInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.hostOverride = str;
+  updateInstanceDataSource();
+};
+
+const handleCurrentDataSourcePortOverrideInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.portOverride = str;
+  updateInstanceDataSource();
+};
+
+const handleDeleteReadOnlyDataSource = async () => {
+  const dataSource = state.dataSourceList.find(
+    (item) => item.type === "RO"
+  ) as DataSource;
+  if (isNullOrUndefined(dataSource)) {
+    return;
+  }
+  if (dataSource.type !== "RO") {
+    return;
+  }
+
+  if (dataSource.id !== UNKNOWN_ID) {
+    await dataSourceStore.deleteDataSourceById({
+      databaseId: dataSource.databaseId,
+      dataSourceId: dataSource.id,
+    });
+  }
+
+  state.currentDataSourceType = "ADMIN";
+  await updateInstanceState();
+};
+
 const handleEditSsl = (edit: boolean) => {
   const curr = currentDataSource.value;
   if (!edit) {
@@ -542,10 +630,27 @@ const handleCurrentDataSourceSslChange = (
 const updateInstanceDataSource = () => {
   const curr = currentDataSource.value;
   const index = state.dataSourceList.findIndex((ds) => ds === curr);
-  const newValue = {
+  let newValue = {
     ...state.instance.dataSourceList[index],
     username: curr.username,
   };
+
+  if (curr.type === "RO") {
+    if (!hasFeature("bb.feature.read-replica-connection")) {
+      if (curr.hostOverride || curr.portOverride) {
+        state.dataSourceList[index].hostOverride = "";
+        state.dataSourceList[index].portOverride = "";
+        newValue.hostOverride = "";
+        newValue.portOverride = "";
+        state.showFeatureModal = true;
+      }
+    } else {
+      newValue = {
+        ...newValue,
+        ...pick(curr, ["hostOverride", "portOverride"]),
+      };
+    }
+  }
 
   if (curr.useEmptyPassword) {
     // When 'Password: Empty' is checked, we set the password to empty string.
@@ -568,25 +673,11 @@ const updateInstanceDataSource = () => {
     delete newValue.sslCert;
     delete newValue.sslKey;
   }
+
   state.instance.dataSourceList[index] = newValue;
 };
 
 const handleCreateDataSource = (type: DataSourceType) => {
-  // Don't allow creating RO in UI for SNOWFLAKE/POSTGRES till we figure out the grant.
-  if (
-    state.instance.engine === "SNOWFLAKE" ||
-    state.instance.engine === "POSTGRES"
-  ) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: t("instance.no-read-only-data-source-support", {
-        database: state.instance.engine,
-      }),
-    });
-    return;
-  }
-
   const tempDataSource = {
     id: UNKNOWN_ID,
     instanceId: state.instance.id,
@@ -596,12 +687,12 @@ const handleCreateDataSource = (type: DataSourceType) => {
     username: "",
     password: "",
   } as DataSource;
-  state.instance.dataSourceList.push(tempDataSource);
   state.dataSourceList.push({
     ...tempDataSource,
     updatedPassword: "",
     useEmptyPassword: false,
   });
+  state.instance.dataSourceList = state.dataSourceList;
   state.currentDataSourceType = type;
 };
 
@@ -618,11 +709,34 @@ const updateInstance = (field: string, value: string) => {
   (state.instance as any)[field] = str;
 };
 
+const updateInstanceState = async () => {
+  const instance = await instanceStore.fetchInstanceById(state.instance.id);
+  state.originalInstance = instance;
+  state.instance = cloneDeep(state.originalInstance);
+  state.dataSourceList = instance.dataSourceList.map((dataSource) => {
+    return {
+      ...cloneDeep(dataSource),
+      updatedPassword: "",
+      useEmptyPassword: false,
+    } as EditDataSource;
+  });
+  useDatabaseStore().fetchDatabaseListByInstanceId(instance.id);
+  useInstanceStore().fetchInstanceUserListById(instance.id);
+
+  const reloadDatabaseAndUser = connectionInfoChanged.value;
+  // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
+  if (reloadDatabaseAndUser) {
+    await useDatabaseStore().fetchDatabaseListByInstanceId(instance.id);
+    await useInstanceStore().fetchInstanceUserListById(instance.id);
+  }
+
+  return instance;
+};
+
 const doUpdate = () => {
-  const patchedInstance: InstancePatch = { syncSchema: state.syncSchema };
+  const patchedInstance: InstancePatch = {};
   let instanceInfoChanged = false;
   let dataSourceListChanged = false;
-  const reloadDatabaseAndUser = connectionInfoChanged.value;
 
   if (state.instance.name != state.originalInstance.name) {
     patchedInstance.name = state.instance.name;
@@ -667,7 +781,8 @@ const doUpdate = () => {
               type: dataSource.type,
               username: dataSource.username,
               password: dataSource.password,
-              syncSchema: state.syncSchema,
+              hostOverride: dataSource.hostOverride,
+              portOverride: dataSource.portOverride,
             };
             if (typeof dataSource.sslCa !== "undefined") {
               dataSourceCreate.sslCa = dataSource.sslCa;
@@ -683,11 +798,19 @@ const doUpdate = () => {
         } else if (
           !isEqual(dataSource, state.originalInstance.dataSourceList[i])
         ) {
+          const dataSourcePatch: DataSourcePatch = {
+            ...dataSource,
+          };
+          if (dataSource.type !== "RO") {
+            dataSourcePatch.hostOverride = undefined;
+            dataSourcePatch.portOverride = undefined;
+          }
+
           requests.push(
             dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
               dataSourceId: dataSource.id,
-              dataSource: { ...dataSource, syncSchema: state.syncSchema },
+              dataSourcePatch: dataSourcePatch,
             })
           );
         }
@@ -704,18 +827,8 @@ const doUpdate = () => {
     }
 
     Promise.all(requests).then(() => {
-      instanceStore
-        .fetchInstanceById(state.instance.id)
+      updateInstanceState()
         .then((instance) => {
-          state.originalInstance = instance;
-          state.instance = cloneDeep(state.originalInstance);
-          state.dataSourceList = instance.dataSourceList.map((dataSource) => {
-            return {
-              ...cloneDeep(dataSource),
-              updatedPassword: "",
-              useEmptyPassword: false,
-            } as EditDataSource;
-          });
           pushNotification({
             module: "bytebase",
             style: "SUCCESS",
@@ -723,16 +836,9 @@ const doUpdate = () => {
               instance.name,
             ]),
           });
-
-          // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
-          if (reloadDatabaseAndUser) {
-            useDatabaseStore().fetchDatabaseListByInstanceId(instance.id);
-            useInstanceStore().fetchInstanceUserListById(instance.id);
-          }
         })
         .finally(() => {
           state.isUpdating = false;
-          state.syncSchema = true;
         });
     });
   }
@@ -741,13 +847,22 @@ const doUpdate = () => {
 const testConnection = () => {
   const instance = state.instance;
   const dataSource = currentDataSource.value;
+  let connectionHost = instance.host;
+  let connectionPort = instance.port;
+  if (dataSource.type === "RO") {
+    if (dataSource.hostOverride && dataSource.portOverride) {
+      connectionHost = dataSource.hostOverride;
+      connectionPort = dataSource.portOverride;
+    }
+  }
+
   const connectionInfo: ConnectionInfo = {
     engine: instance.engine,
     username: dataSource.username,
     password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
     useEmptyPassword: dataSource.useEmptyPassword,
-    host: instance.host,
-    port: instance.port,
+    host: connectionHost,
+    port: connectionPort,
     instanceId: instance.id,
   };
 

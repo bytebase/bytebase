@@ -3,26 +3,29 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/github/gh-ost/go/logic"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewTaskCheckGhostSyncExecutor creates a task check gh-ost sync executor.
-func NewTaskCheckGhostSyncExecutor() TaskCheckExecutor {
-	return &TaskCheckGhostSyncExecutor{}
+func NewTaskCheckGhostSyncExecutor(store *store.Store) TaskCheckExecutor {
+	return &TaskCheckGhostSyncExecutor{
+		store: store,
+	}
 }
 
 // TaskCheckGhostSyncExecutor is the task check gh-ost sync executor.
 type TaskCheckGhostSyncExecutor struct {
+	store *store.Store
 }
 
 // Run will run the task check database connector executor once.
-func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *TaskCheckGhostSyncExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So
 	// capture the error and send it into the result list.
@@ -44,66 +47,47 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 			err = nil
 		}
 	}()
-	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
+		return nil, common.Wrap(err, common.Internal)
 	}
 	if task == nil {
-		return []api.TaskCheckResult{
-			{
-				Status:    api.TaskCheckStatusError,
-				Namespace: api.BBNamespace,
-				Code:      common.Internal.Int(),
-				Title:     fmt.Sprintf("Failed to find task %v", taskCheckRun.TaskID),
-				Content:   err.Error(),
-			},
-		}, nil
+		return nil, common.Errorf(common.Internal, "failed to find task %d", taskCheckRun.TaskID)
 	}
 
-	instance := task.Instance
-	if instance == nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "instance ID not found %v", task.InstanceID)
+	if task.Instance == nil {
+		return nil, common.Errorf(common.Internal, "failed to find instance %d", task.InstanceID)
 	}
 
-	database := task.Database
-	if database == nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "database ID not found %v", task.DatabaseID)
+	if task.Database == nil {
+		return nil, common.Errorf(common.Internal, "failed to find database %d", task.DatabaseID)
 	}
 
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
+	adminDataSource := api.DataSourceFromInstanceWithType(task.Instance, api.Admin)
 	if adminDataSource == nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.InstanceID)
+	}
+
+	instanceUserList, err := e.store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
+	if err != nil {
+		return nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
 	}
 
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return []api.TaskCheckResult{}, common.Wrapf(err, common.Internal, "invalid database schema update gh-ost sync payload")
+		return nil, common.Wrapf(err, common.Internal, "invalid database schema update gh-ost sync payload")
 	}
 
-	databaseName := database.Name
 	tableName, err := getTableNameFromStatement(payload.Statement)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
+		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
 	}
 
-	migrationContext, err := newMigrationContext(ghostConfig{
-		host:                 instance.Host,
-		port:                 instance.Port,
-		user:                 adminDataSource.Username,
-		password:             adminDataSource.Password,
-		database:             databaseName,
-		table:                tableName,
-		alterStatement:       payload.Statement,
-		socketFilename:       getSocketFilename(taskCheckRun.ID, task.Database.ID, databaseName, tableName),
-		postponeFlagFilename: "",
-		noop:                 true,
-		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
-		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
-		// Here we use serverID = offset + task.ID to avoid potential conflicts.
-		serverID: 20000000 + uint(taskCheckRun.ID),
-	})
+	config := getGhostConfig(task, adminDataSource, instanceUserList, tableName, payload.Statement, true, 20000000)
+
+	migrationContext, err := newMigrationContext(config)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Wrapf(err, common.Internal, "failed to create migration context")
+		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}
 
 	migrator := logic.NewMigrator(migrationContext, "bb")

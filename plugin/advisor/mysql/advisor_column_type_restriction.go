@@ -37,7 +37,7 @@ func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, statement string
 	if err != nil {
 		return nil, err
 	}
-	paylaod, err := advisor.UnmarshalTypeRestrictionRulePayload(ctx.Rule.Payload)
+	paylaod, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, statement string
 		title:           string(ctx.Rule.Type),
 		typeRestriction: make(map[string]bool),
 	}
-	for _, tp := range paylaod.TypeList {
+	for _, tp := range paylaod.List {
 		checker.typeRestriction[strings.ToUpper(tp)] = true
 	}
 

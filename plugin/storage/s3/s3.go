@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -53,11 +52,20 @@ func NewClient(ctx context.Context, region, bucket string, credentials aws.Crede
 }
 
 // ListObjects lists objects with prefix in their names.
-func (c *Client) ListObjects(ctx context.Context, prefix string) (*s3.ListObjectsV2Output, error) {
-	return c.c.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+func (c *Client) ListObjects(ctx context.Context, prefix string) ([]types.Object, error) {
+	var ret []types.Object
+	paginator := s3.NewListObjectsV2Paginator(c.c, &s3.ListObjectsV2Input{
 		Bucket: &c.bucket,
 		Prefix: &prefix,
 	})
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load the next page of S3 objects")
+		}
+		ret = append(ret, output.Contents...)
+	}
+	return ret, nil
 }
 
 // DownloadObject downloads the object with path.
@@ -104,9 +112,7 @@ func (c *Client) GetBucket() string {
 // In case of network errors which will get partially downloaded files, we first download to a temporary file.
 // After that, we then rename it to the target file path.
 func (c *Client) DownloadFileFromCloud(ctx context.Context, filePathLocal, filePathOnCloud string) error {
-	tempDir := os.TempDir()
-	baseName := filepath.Base(filePathLocal)
-	filePathTemp := filepath.Join(tempDir, baseName)
+	filePathTemp := filePathLocal + ".tmp"
 	fileTemp, err := os.Create(filePathTemp)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create the local temporary file %s", filePathTemp)

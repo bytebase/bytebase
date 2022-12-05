@@ -26,7 +26,8 @@ type TaskDAGCreate struct {
 
 // TaskDAGFind is the API message to find TaskDAG.
 type TaskDAGFind struct {
-	ToTaskID int
+	FromTaskID *int
+	ToTaskID   *int
 }
 
 // TaskIndexDAG describes task dependency relationship using array index to represent task.

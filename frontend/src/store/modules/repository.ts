@@ -3,10 +3,12 @@ import axios from "axios";
 import {
   Project,
   ProjectId,
+  RepositoryId,
   Repository,
   RepositoryCreate,
   RepositoryPatch,
   RepositoryState,
+  SQLReviewCISetup,
   ResourceIdentifier,
   ResourceObject,
   unknown,
@@ -97,6 +99,23 @@ export const useRepositoryStore = defineStore("repository", {
     removeRepositoryByProjectId(projectId: ProjectId) {
       this.repositoryByProjectId.delete(projectId);
     },
+    setRepositorySQLReviewCIEnabled({
+      projectId,
+      sqlReviewCIEnabled,
+    }: {
+      projectId: ProjectId;
+      sqlReviewCIEnabled: boolean;
+    }) {
+      const repository = this.repositoryByProjectId.get(projectId);
+      if (!repository) {
+        return;
+      }
+
+      this.repositoryByProjectId.set(projectId, {
+        ...repository,
+        enableSQLReviewCI: sqlReviewCIEnabled,
+      });
+    },
     async createRepository({
       projectId,
       repositoryCreate,
@@ -164,7 +183,7 @@ export const useRepositoryStore = defineStore("repository", {
     }: {
       projectId: ProjectId;
       repositoryPatch: RepositoryPatch;
-    }) {
+    }): Promise<Repository> {
       const data = (
         await axios.patch(`/api/project/${projectId}/repository`, {
           data: {
@@ -190,6 +209,25 @@ export const useRepositoryStore = defineStore("repository", {
 
       // Refetch the project as the project workflow type has been updated to "UI"
       useProjectStore().fetchProjectById(projectId);
+    },
+    async createSQLReviewCI({
+      projectId,
+      repositoryId,
+    }: {
+      projectId: ProjectId;
+      repositoryId: RepositoryId;
+    }): Promise<SQLReviewCISetup> {
+      const data = (
+        await axios.post(
+          `/api/project/${projectId}/repository/${repositoryId}/sql-review-ci`
+        )
+      ).data;
+
+      const sqlReviewCISetup: SQLReviewCISetup = {
+        ...(data.data.attributes as Omit<SQLReviewCISetup, "">),
+      };
+
+      return sqlReviewCISetup;
     },
   },
 });

@@ -107,6 +107,22 @@ func (s *Store) composeAnomaly(ctx context.Context, raw *anomalyRaw) (*api.Anoma
 	}
 	anomaly.Updater = updater
 
+	instance, err := s.GetInstanceByID(ctx, anomaly.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	anomaly.Instance = instance
+
+	if anomaly.DatabaseID != nil {
+		database, err := s.GetDatabase(ctx, &api.DatabaseFind{
+			ID: anomaly.DatabaseID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		anomaly.Database = database
+	}
+
 	return anomaly, nil
 }
 

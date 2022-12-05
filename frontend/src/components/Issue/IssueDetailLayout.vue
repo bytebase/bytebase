@@ -73,13 +73,13 @@
             </div>
             <div class="lg:hidden border-t border-block-border" />
             <div class="w-full lg:w-auto lg:flex-1 py-4 pr-4 overflow-x-hidden">
+              <div v-if="!create" class="mb-4">
+                <TaskCheckBar
+                  :task="(selectedTask as Task)"
+                  @run-checks="runTaskChecks"
+                />
+              </div>
               <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
-                <div v-if="!create" class="mb-4">
-                  <TaskCheckBar
-                    :task="(selectedTask as Task)"
-                    @run-checks="runTaskChecks"
-                  />
-                </div>
                 <IssueTaskStatementPanel :sql-hint="sqlHint()" />
               </section>
 
@@ -90,7 +90,7 @@
                 aria-labelledby="activity-title"
                 class="mt-4"
               >
-                <IssueActivityPanel />
+                <IssueActivityPanel @run-checks="runTaskChecks" />
               </section>
             </div>
           </div>
@@ -102,6 +102,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, PropType, ref, watch, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import {
   pipelineType,
@@ -129,7 +130,6 @@ import type {
   IssueCreate,
   Instance,
   Task,
-  TaskDatabaseSchemaUpdatePayload,
   TaskCreate,
   MigrationType,
 } from "@/types";
@@ -164,6 +164,8 @@ const props = defineProps({
 const emit = defineEmits<{
   (e: "status-changed", eager: boolean): void;
 }>();
+
+const { t } = useI18n();
 
 const route = useRoute();
 
@@ -226,14 +228,25 @@ const currentPipelineType = computed((): PipelineType => {
 });
 
 const selectedMigrateType = computed((): MigrationType => {
-  if (
-    !props.create &&
-    selectedTask.value.type == "bb.task.database.schema.update"
-  ) {
-    return (
-      (selectedTask.value as Task).payload as TaskDatabaseSchemaUpdatePayload
-    ).migrationType;
+  const taskType = selectedTask.value.type;
+  if (taskType === "bb.task.database.schema.baseline") {
+    // The new version of BASELINE tasks
+    return "BASELINE";
   }
+  if (!props.create && taskType === "bb.task.database.schema.update") {
+    // Legacy BASELINE task support
+    // Their `type`s are "bb.task.database.schema.update"
+    // And their `payload.migrationType`s are "BASELINE"
+    const { payload } = selectedTask.value as Task;
+    if ((payload as any).migrationType === "BASELINE") {
+      return "BASELINE";
+    }
+  }
+  if (taskType === "bb.task.database.data.update") {
+    // A "Change data" task
+    return "DATA";
+  }
+  // Fall back to MIGRATE otherwise
   return "MIGRATE";
 });
 
@@ -264,11 +277,14 @@ const instance = computed((): Instance => {
 });
 
 const sqlHint = (): string | undefined => {
-  if (!props.create && selectedMigrateType.value == "BASELINE") {
-    return `This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history`;
+  if (selectedMigrateType.value == "BASELINE") {
+    return t("issue.sql-hint.dont-apply-to-database-in-baseline-migration");
   }
   if (instance.value.engine === "SNOWFLAKE") {
-    return `Use <<schema>>.<<table>> to specify a Snowflake table`;
+    return t("issue.sql-hint.snowflake");
+  }
+  if (isTenantMode.value) {
+    return t("issue.sql-hint.change-will-apply-to-all-tasks-in-tenant-mode");
   }
   return undefined;
 };
@@ -301,7 +317,7 @@ watch(
 
 // When activeTask is changed, we automatically select it.
 // This enables users to know the pipeline status has changed and we may move forward.
-const autoSelectWhenStatusChanged = () => {
+const autoSelectWhenStatusChanged = (immediate: boolean) => {
   const activeTask = computed((): Task | undefined => {
     if (create.value) return undefined;
     const { pipeline } = issue.value as Issue;
@@ -320,13 +336,19 @@ const autoSelectWhenStatusChanged = () => {
       selectTask(task);
     },
     // Also triggered when the first time the page is loaded.
-    { immediate: true }
+    { immediate }
   );
 };
 
 const onStatusChanged = (eager: boolean) => emit("status-changed", eager);
 
-autoSelectWhenStatusChanged();
+if (route.query.stage || route.query.task) {
+  // If we have selected stage/task in URL, don't switch to activeTask immediately.
+  autoSelectWhenStatusChanged(false);
+} else {
+  // Otherwise, automatically switch to the active task immediately.
+  autoSelectWhenStatusChanged(true);
+}
 
 provideIssueLogic(
   {

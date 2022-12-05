@@ -64,7 +64,7 @@ type BinlogFile struct {
 }
 
 func newBinlogFile(name string, size int64) (BinlogFile, error) {
-	seq, err := GetBinlogNameSeq(name)
+	_, seq, err := ParseBinlogName(name)
 	if err != nil {
 		return BinlogFile{}, err
 	}
@@ -78,7 +78,7 @@ type binlogCoordinate struct {
 }
 
 func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
-	seq, err := GetBinlogNameSeq(binlogFileName)
+	_, seq, err := ParseBinlogName(binlogFileName)
 	if err != nil {
 		return binlogCoordinate{}, err
 	}
@@ -105,7 +105,7 @@ func readBinlogMetaFile(binlogDir, fileName string) (binlogFileMeta, error) {
 	}
 	binlogFileName := strings.TrimSuffix(fileName, binlogMetaSuffix)
 	meta.binlogName = binlogFileName
-	seq, err := GetBinlogNameSeq(binlogFileName)
+	_, seq, err := ParseBinlogName(binlogFileName)
 	if err != nil {
 		return binlogFileMeta{}, errors.Wrapf(err, "failed to get seq from binlog metadata file name %q", fileName)
 	}
@@ -174,8 +174,8 @@ func (driver *Driver) replayBinlogFromDir(ctx context.Context, originalDatabase,
 		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
 
-	mysqlbinlogCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), mysqlbinlogArgs...)
-	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
+	mysqlbinlogCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), mysqlbinlogArgs...)
+	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
 	log.Debug("Start replay binlog commands.",
 		zap.String("mysqlbinlog", mysqlbinlogCmd.String()),
 		zap.String("mysql", mysqlCmd.String()))
@@ -250,7 +250,7 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, suffixTs)
 	// If there's already a PITR database, it means there's a failed trial before this task execution.
 	// We need to clean up the dirty state and start clean for idempotent task execution.
-	stmt := fmt.Sprintf("DROP DATABASE IF EXISTS %s; CREATE DATABASE `%s`;", pitrDatabaseName, pitrDatabaseName)
+	stmt := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`; CREATE DATABASE `%s`;", pitrDatabaseName, pitrDatabaseName)
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return errors.Wrapf(err, "failed to get connection to restore backup")
@@ -266,11 +266,11 @@ func (driver *Driver) RestoreBackupToPITRDatabase(ctx context.Context, backup io
 
 // GetBinlogReplayList returns the path list of the binlog that need be replayed.
 func GetBinlogReplayList(startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
-	startBinlogSeq, err := GetBinlogNameSeq(startBinlogInfo.FileName)
+	_, startBinlogSeq, err := ParseBinlogName(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot parse the start binlog file name %q", startBinlogInfo.FileName)
 	}
-	targetBinlogSeq, err := GetBinlogNameSeq(targetBinlogInfo.FileName)
+	_, targetBinlogSeq, err := ParseBinlogName(targetBinlogInfo.FileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot parse the target binlog file name %q", targetBinlogInfo.FileName)
 	}
@@ -459,7 +459,7 @@ func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suff
 		return pitrDatabaseName, pitrOldDatabase, nil
 	}
 
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`; CREATE DATABASE `%s`;", pitrOldDatabase, pitrOldDatabase)); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
@@ -665,7 +665,7 @@ func (driver *Driver) getBinlogMetaFileListToDownload(ctx context.Context, clien
 		return nil, errors.Wrapf(err, "failed to list binlog dir %q in the cloud storage", driver.binlogDir)
 	}
 	var downloadList []string
-	for _, item := range listOutput.Contents {
+	for _, item := range listOutput {
 		binlogPathOnCloud := *item.Key
 		if !strings.HasSuffix(binlogPathOnCloud, binlogMetaSuffix) {
 			continue
@@ -688,33 +688,34 @@ func (driver *Driver) getBinlogMetaFileListToDownload(ctx context.Context, clien
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
 func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
-	tempDir := os.TempDir()
-	// for mysqlbinlog binary, --result-file must end with '/'
-	mysqlbinlogResultFileDir := strings.TrimRight(tempDir, "/") + "/"
+	tempBinlogPrefix := filepath.Join(driver.binlogDir, "tmp-")
 	// TODO(zp): support ssl?
 	args := []string{
 		binlogFileToDownload.Name,
 		"--read-from-remote-server",
 		// Verify checksum binlog events.
 		"--verify-binlog-checksum",
-		"--raw",
 		"--host", driver.connCfg.Host,
 		"--user", driver.connCfg.Username,
-		"--result-file", mysqlbinlogResultFileDir,
+		"--raw",
+		// With --raw this is a prefix for the file names.
+		"--result-file", tempBinlogPrefix,
 	}
 	if driver.connCfg.Port != "" {
 		args = append(args, "--port", driver.connCfg.Port)
 	}
-	if driver.connCfg.Password != "" {
-		args = append(args, fmt.Sprintf("--password=%s", driver.connCfg.Password))
-	}
 
-	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), args...)
+	// We cannot set password as a flag. Otherwise, there is warning message
+	// "mysqlbinlog: [Warning] Using a password on the command line interface can be insecure."
+	if driver.connCfg.Password != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("MYSQL_PWD=%s", driver.connCfg.Password))
+	}
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
-	binlogFilePathTemp := filepath.Join(tempDir, binlogFileToDownload.Name)
+	binlogFilePathTemp := tempBinlogPrefix + binlogFileToDownload.Name
 	defer os.Remove(binlogFilePathTemp)
 	if err := cmd.Run(); err != nil {
 		log.Error("Failed to execute mysqlbinlog binary", zap.Error(err))
@@ -722,26 +723,26 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 	}
 
 	log.Debug("Checking downloaded binlog file stat", zap.String("path", binlogFilePathTemp))
-	binlogFileInfo, err := os.Stat(binlogFilePathTemp)
+	binlogFileTempInfo, err := os.Stat(binlogFilePathTemp)
 	if err != nil {
 		log.Error("Failed to get stat of the binlog file.", zap.String("path", binlogFilePathTemp), zap.Error(err))
 		return errors.Wrapf(err, "failed to get stat of the binlog file %q", binlogFilePathTemp)
 	}
-	if !isLast && binlogFileInfo.Size() != binlogFileToDownload.Size {
+	if !isLast && binlogFileTempInfo.Size() != binlogFileToDownload.Size {
 		log.Error("Downloaded archived binlog file size is not equal to size queried on the MySQL server earlier.",
 			zap.String("binlog", binlogFileToDownload.Name),
 			zap.Int64("sizeInfo", binlogFileToDownload.Size),
-			zap.Int64("downloadedSize", binlogFileInfo.Size()),
+			zap.Int64("downloadedSize", binlogFileTempInfo.Size()),
 		)
-		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", binlogFilePathTemp, binlogFileInfo.Size(), binlogFileToDownload.Size)
+		return errors.Errorf("downloaded archived binlog file %q size %d is not equal to size %d queried on MySQL server earlier", binlogFilePathTemp, binlogFileTempInfo.Size(), binlogFileToDownload.Size)
 	}
 
-	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileInfo.Name())
+	binlogFilePath := filepath.Join(driver.binlogDir, binlogFileToDownload.Name)
 	if err := os.Rename(binlogFilePathTemp, binlogFilePath); err != nil {
 		return errors.Wrapf(err, "failed to rename %q to %q", binlogFilePathTemp, binlogFilePath)
 	}
 
-	if err := driver.writeBinlogMetadataFile(ctx, binlogFileInfo.Name()); err != nil {
+	if err := driver.writeBinlogMetadataFile(ctx, binlogFileToDownload.Name); err != nil {
 		return errors.Wrapf(err, "failed to write binlog metadata file for binlog file %q", binlogFilePathTemp)
 	}
 	return nil
@@ -855,7 +856,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 	for i, meta := range metaList {
 		if meta.FirstEventTs >= targetTs {
 			if i == 0 {
-				return nil, errors.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, meta.FirstEventTs, targetMeta.binlogName)
+				return nil, errors.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, meta.FirstEventTs, metaList[0].binlogName)
 			}
 			// The previous local binlog file contains targetTs.
 			targetMeta = &metaList[i-1]
@@ -947,7 +948,7 @@ func (driver *Driver) parseLocalBinlogFirstEventTs(ctx context.Context, fileName
 		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
 	}
-	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), args...)
 	cmd.Stderr = os.Stderr
 	pr, err := cmd.StdoutPipe()
 	if err != nil {
@@ -992,7 +993,7 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs.
 		"--start-datetime", formatDateTime(targetTs),
 	}
-	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), args...)
 	cmd.Stderr = os.Stderr
 	pr, err := cmd.StdoutPipe()
 	if err != nil {
@@ -1033,14 +1034,30 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 	return pos, nil
 }
 
-// GetBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
-// For example: ("binlog.000001") => 1, ("binlog000001") => err.
-func GetBinlogNameSeq(name string) (int64, error) {
+// ParseBinlogName parses the numeric extension and the binary log base name by using split the dot.
+// Examples:
+//   - ("binlog.000001") => ("binlog", 1)
+//   - ("binlog000001") => ("", err)
+func ParseBinlogName(name string) (string, int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
-		return 0, errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
+		return "", 0, errors.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
 	}
-	return strconv.ParseInt(s[1], 10, 0)
+	seq, err := strconv.ParseInt(s[1], 10, 0)
+	if err != nil {
+		return "", 0, errors.Wrapf(err, "failed to parse the sequence number %s", s[1])
+	}
+	return s[0], seq, nil
+}
+
+// GenBinlogFileNames generates the binlog file names between the start end end sequence numbers.
+// The generation algorithm refers to the implementation of mysql-server: https://sourcegraph.com/github.com/mysql/mysql-server@a246bad76b9271cb4333634e954040a970222e0a/-/blob/sql/binlog.cc?L3693.
+func GenBinlogFileNames(base string, seqStart, seqEnd int64) []string {
+	var ret []string
+	for i := seqStart; i <= seqEnd; i++ {
+		ret = append(ret, fmt.Sprintf("%s.%06d", base, i))
+	}
+	return ret
 }
 
 // checks the MySQL version is >=8.0.

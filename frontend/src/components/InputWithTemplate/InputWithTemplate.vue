@@ -15,7 +15,11 @@
     </div>
     <div class="p-2 border-t border-gray-300">
       <div ref="containerRef" class="flex flex-wrap items-center gap-1">
-        <div v-for="(data, i) in state.templateInputs" :key="i">
+        <div
+          v-for="(data, i) in state.templateInputs"
+          :key="i"
+          :ref="(el: any) => (itemRefs[i] = el)"
+        >
           <BBBadge
             v-if="data.type == 'template'"
             :text="data.value"
@@ -26,6 +30,8 @@
             :value="data.value"
             :max-width="state.inputMaxWidth"
             @keyup="(e) => onKeyup(i, e)"
+            @keydown="onKeydown(i, itemRefs[i].querySelector('input'))"
+            @mouseup="onKeydown(i, itemRefs[i].querySelector('input'))"
             @change="(val) => onTemplateChange(i, val)"
           />
         </div>
@@ -36,6 +42,9 @@
           type="text"
           @keydown.delete="onInputDataDeleteEnter"
           @keyup.delete="onInputDataDeleteLeave"
+          @keydown="onKeydown(state.templateInputs.length, inputRef)"
+          @mouseup="onKeydown(state.templateInputs.length, inputRef)"
+          @keyup.left="(e) => onKeyup(state.templateInputs.length, e)"
         />
       </div>
     </div>
@@ -53,12 +62,13 @@ import {
   onMounted,
 } from "vue";
 import { Template, TemplateInput, InputType } from "./types";
-import { getTemplateInputs, templateInputsToString } from "./utils";
+import { getTemplateInputs, templateInputsToString, KEY_EVENT } from "./utils";
 
 interface LocalState {
   inputData: string;
   inputMaxWidth: number;
   templateInputs: TemplateInput[];
+  inputCursorPosition: Map<number, number>;
 }
 
 const props = defineProps({
@@ -89,6 +99,7 @@ const state = reactive<LocalState>({
   inputData,
   inputMaxWidth: 0,
   templateInputs,
+  inputCursorPosition: new Map<number, number>(),
 });
 
 watch(
@@ -106,6 +117,7 @@ watch(
   }
 );
 
+const itemRefs = ref<HTMLElement[]>([]);
 const containerRef = ref<HTMLDivElement>();
 const inputRef = ref<HTMLInputElement>();
 
@@ -139,17 +151,87 @@ const onInputDataDeleteLeave = (e: KeyboardEvent) => {
   }
 };
 
+// Store the cursor position in key down event.
+const onKeydown = (i: number, input: HTMLInputElement | null | undefined) => {
+  const selectionEnd = input?.selectionEnd;
+  if (!Number.isNaN(selectionEnd)) {
+    state.inputCursorPosition.set(i, selectionEnd!);
+  }
+};
+
 const onKeyup = (i: number, e: KeyboardEvent) => {
-  const data = state.templateInputs[i];
-  if (!data) {
-    return;
+  switch (e.key) {
+    case KEY_EVENT.BACKSPACE:
+    case KEY_EVENT.DELETE:
+      if (state.templateInputs[i].value === "") {
+        if (i === 0 || state.inputCursorPosition.get(i) === 0) {
+          // remove the empty data
+          onTemplateRemove(i);
+          if (
+            i - 1 >= 0 &&
+            state.templateInputs[i - 1].type === InputType.Template
+          ) {
+            // remove the previous data (should be the template type)
+            onTemplateRemove(i - 1);
+          }
+          // try to focus the input from i-1 index
+          focusPreInput(i - 1);
+        }
+      }
+      break;
+    case KEY_EVENT.LEFT: {
+      const left = state.inputCursorPosition.get(i);
+      // if the cursor is at the first position, we try to focus on the previous input.
+      if (left === 0) {
+        focusPreInput(i - 1);
+        state.inputCursorPosition.delete(i);
+      }
+      break;
+    }
+    case KEY_EVENT.RIGHT: {
+      const right = state.inputCursorPosition.get(i);
+      // if the cursor is at the last position, we try to focus on the next input.
+      if (right === state.templateInputs[i].value.length) {
+        focusNextInput(i + 1);
+        state.inputCursorPosition.delete(i);
+      }
+      break;
+    }
   }
+};
 
-  if (e.key !== "Delete" || data.value !== "") {
-    return;
+const focusNextInput = (i: number) => {
+  let j = i;
+  while (j <= state.templateInputs.length - 1) {
+    const input = state.templateInputs[j];
+    if (input && input.type === InputType.String) {
+      // make sure the next input will be focused on the first position.
+      itemRefs.value[j].querySelector("input")?.setSelectionRange(0, 0);
+      itemRefs.value[j].querySelector("input")?.focus();
+      break;
+    }
+    j++;
   }
+  if (j === state.templateInputs.length) {
+    inputRef.value?.setSelectionRange(0, 0);
+    inputRef.value?.focus();
+  }
+};
 
-  onTemplateRemove(i);
+const focusPreInput = (i: number) => {
+  let j = i;
+  while (j >= 0) {
+    const input = state.templateInputs[j];
+    if (input && input.type === InputType.String) {
+      // make sure the next input will be focused on the last position.
+      itemRefs.value[j]
+        .querySelector("input")
+        ?.setSelectionRange(input.value.length, input.value.length);
+      itemRefs.value[j].querySelector("input")?.focus();
+      break;
+    }
+    j--;
+  }
 };
 
 const onTemplateChange = (i: number, data: string) => {
@@ -169,6 +251,9 @@ const onTemplateChange = (i: number, data: string) => {
 };
 
 const onTemplateAdd = (template: Template) => {
+  // clear position cache.
+  state.inputCursorPosition = new Map<number, number>();
+
   if (state.inputData) {
     // If the last input contains user's input, we also need to add it
     state.templateInputs.push({
@@ -183,12 +268,17 @@ const onTemplateAdd = (template: Template) => {
   });
 
   state.inputData = "";
-  if (inputRef.value) {
-    inputRef.value.focus();
-  }
+  inputRef.value?.focus();
 };
 
 const onTemplateRemove = (i: number) => {
+  if (i < 0 || i >= state.templateInputs.length) {
+    return;
+  }
+
+  // clear position cache.
+  state.inputCursorPosition = new Map<number, number>();
+
   state.templateInputs = [
     ...state.templateInputs.slice(0, i),
     ...state.templateInputs.slice(i + 1),

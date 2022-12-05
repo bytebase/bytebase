@@ -141,22 +141,78 @@ export default defineComponent({
           title = checkResult.title;
           break;
         // SchemaSQLPolicyErrorCode
+        case SQLReviewPolicyErrorCode.STATEMENT_SYNTAX_ERROR:
         case SQLReviewPolicyErrorCode.STATEMENT_NO_WHERE:
         case SQLReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
         case SQLReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
+        case SQLReviewPolicyErrorCode.STATEMENT_CREATE_TABLE_AS:
+        case SQLReviewPolicyErrorCode.STATEMENT_DISALLOW_COMMIT:
+        case SQLReviewPolicyErrorCode.STATEMENT_REDUNDANT_ALTER_TABLE:
+        case SQLReviewPolicyErrorCode.STATEMENT_DML_DRY_RUN_FAILED:
+        case SQLReviewPolicyErrorCode.STATEMENT_AFFECTED_ROW_EXCEEDS_LIMIT:
         case SQLReviewPolicyErrorCode.TABLE_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.COLUMN_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.INDEX_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.UK_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.FK_NAMING_MISMATCH:
         case SQLReviewPolicyErrorCode.PK_NAMING_MISMATCH:
+        case SQLReviewPolicyErrorCode.NAMING_AUTO_INCREMENT_COLUMN_CONVENTION_MISMATCH:
         case SQLReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
         case SQLReviewPolicyErrorCode.COLUMN_CANBE_NULL:
+        case SQLReviewPolicyErrorCode.CHANGE_COLUMN_TYPE:
+        case SQLReviewPolicyErrorCode.NOT_NULL_COLUMN_WITH_NO_DEFAULT:
+        case SQLReviewPolicyErrorCode.COLUMN_NOT_EXISTS:
+        case SQLReviewPolicyErrorCode.USE_CHANGE_COLUMN_STATEMENT:
+        case SQLReviewPolicyErrorCode.CHANGE_COLUMN_ORDER:
+        case SQLReviewPolicyErrorCode.NO_COLUMN_COMMENT:
+        case SQLReviewPolicyErrorCode.COLUMN_COMMENT_TOO_LONG:
+        case SQLReviewPolicyErrorCode.AUTO_INCREMENT_COLUMN_NOT_INTEGER:
+        case SQLReviewPolicyErrorCode.DISABLED_COLUMN_TYPE:
+        case SQLReviewPolicyErrorCode.COLUMN_EXISTS:
+        case SQLReviewPolicyErrorCode.DROP_ALL_COLUMNS:
+        case SQLReviewPolicyErrorCode.SET_COLUMN_CHARSET:
+        case SQLReviewPolicyErrorCode.CHAR_LENGTH_EXCEEDS_LIMIT:
+        case SQLReviewPolicyErrorCode.AUTO_INCREMENT_COLUMN_INITIAL_VALUE_NOT_MATCH:
+        case SQLReviewPolicyErrorCode.AUTO_INCREMENT_COLUMN_SIGNED:
+        case SQLReviewPolicyErrorCode.DEFAULT_CURRENT_TIME_COLUMN_COUNT_EXCEEDS_LIMIT:
+        case SQLReviewPolicyErrorCode.ON_UPDATE_CURRENT_TIME_COLUMN_COUNT_EXCEEDS_LIMIT:
+        case SQLReviewPolicyErrorCode.NO_DEFAULT:
         case SQLReviewPolicyErrorCode.NOT_INNODB_ENGINE:
         case SQLReviewPolicyErrorCode.NO_PK_IN_TABLE:
         case SQLReviewPolicyErrorCode.FK_IN_TABLE:
         case SQLReviewPolicyErrorCode.TABLE_DROP_NAMING_CONVENTION:
+        case SQLReviewPolicyErrorCode.TABLE_NOT_EXISTS:
+        case SQLReviewPolicyErrorCode.NO_TABLE_COMMENT:
+        case SQLReviewPolicyErrorCode.TABLE_COMMENT_TOO_LONG:
+        case SQLReviewPolicyErrorCode.TABLE_EXISTS:
+        case SQLReviewPolicyErrorCode.CREATE_TABLE_PARTITION:
         case SQLReviewPolicyErrorCode.DATABASE_NOT_EMPTY:
+        case SQLReviewPolicyErrorCode.NOT_CURRENT_DATABASE:
+        case SQLReviewPolicyErrorCode.DATABASE_IS_DELETED:
+        case SQLReviewPolicyErrorCode.NOT_USE_INDEX:
+        case SQLReviewPolicyErrorCode.INDEX_KEY_NUMBER_EXCEEDS_LIMIT:
+        case SQLReviewPolicyErrorCode.INDEX_PK_TYPE:
+        case SQLReviewPolicyErrorCode.INDEX_TYPE_NO_BLOB:
+        case SQLReviewPolicyErrorCode.INDEX_EXISTS:
+        case SQLReviewPolicyErrorCode.PRIMARY_KEY_EXISTS:
+        case SQLReviewPolicyErrorCode.INDEX_EMPTY_KEYS:
+        case SQLReviewPolicyErrorCode.PRIMARY_KEY_NOT_EXISTS:
+        case SQLReviewPolicyErrorCode.INDEX_NOT_EXISTS:
+        case SQLReviewPolicyErrorCode.INCORRECT_INDEX_NAME:
+        case SQLReviewPolicyErrorCode.SPATIAL_INDEX_KEY_NULLABLE:
+        case SQLReviewPolicyErrorCode.DUPLICATE_COLUMN_IN_INDEX:
+        case SQLReviewPolicyErrorCode.INDEX_COUNT_EXCEEDS_LIMIT:
+        case SQLReviewPolicyErrorCode.DISABLED_CHARSET:
+        case SQLReviewPolicyErrorCode.INSERT_TOO_MANY_ROWS:
+        case SQLReviewPolicyErrorCode.UPDATE_USE_LIMIT:
+        case SQLReviewPolicyErrorCode.INSERT_USE_LIMIT:
+        case SQLReviewPolicyErrorCode.UPDATE_USE_ORDER_BY:
+        case SQLReviewPolicyErrorCode.DELETE_USE_ORDER_BY:
+        case SQLReviewPolicyErrorCode.DELETE_USE_LIMIT:
+        case SQLReviewPolicyErrorCode.INSERT_NOT_SPECIFY_COLUMN:
+        case SQLReviewPolicyErrorCode.INSERT_USE_ORDER_BY_RAND:
+        case SQLReviewPolicyErrorCode.DISABLED_COLLATION:
+        case SQLReviewPolicyErrorCode.COMMENT_TOO_LONG:
         case CompatibilityErrorCode.COMPATIBILITY_DROP_DATABASE:
         case CompatibilityErrorCode.COMPATIBILITY_RENAME_TABLE:
         case CompatibilityErrorCode.COMPATIBILITY_DROP_TABLE:

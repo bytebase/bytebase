@@ -8,12 +8,7 @@ import {
   TaskDatabaseSchemaUpdatePayload,
   UNKNOWN_ID,
 } from "@/types";
-import {
-  useActuatorStore,
-  useCurrentUser,
-  useIssueStore,
-  useInstanceStore,
-} from "@/store";
+import { useActuatorStore, useCurrentUser, useIssueStore } from "@/store";
 import { BuildNewIssueContext, VALIDATE_ONLY_SQL } from "../common";
 
 export class IssueCreateHelper {
@@ -21,7 +16,6 @@ export class IssueCreateHelper {
   issue: Issue | null;
   context: BuildNewIssueContext;
   issueStore: ReturnType<typeof useIssueStore>;
-  intanceStore: ReturnType<typeof useInstanceStore>;
   currentUser: Ref<Principal>;
 
   constructor(context: BuildNewIssueContext) {
@@ -29,7 +23,6 @@ export class IssueCreateHelper {
     this.issue = null;
     this.context = context;
     this.issueStore = useIssueStore();
-    this.intanceStore = useInstanceStore();
     this.currentUser = useCurrentUser();
   }
 
@@ -121,7 +114,6 @@ export class IssueCreateHelper {
             instanceId: task.instance.id,
             databaseId: task.database?.id,
             databaseName: task.database?.name,
-            migrationType: payload.migrationType,
             statement,
             earliestAllowedTs: task.earliestAllowedTs,
           };

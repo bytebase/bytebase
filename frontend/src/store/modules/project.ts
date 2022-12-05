@@ -52,6 +52,7 @@ function convert(
     dbNameTemplate: attrs.dbNameTemplate,
     roleProvider: attrs.roleProvider,
     schemaChangeType: attrs.schemaChangeType,
+    lgtmCheckSetting: attrs.lgtmCheckSetting,
   };
 
   const memberList: ProjectMember[] = [];
@@ -320,6 +321,7 @@ export const useProjectStore = defineStore("project", {
 
       return updatedProject;
     },
+
     setProjectById({
       projectId,
       project,
@@ -329,6 +331,7 @@ export const useProjectStore = defineStore("project", {
     }) {
       this.projectById.set(projectId, project);
     },
+
     upsertProjectList(projectList: Project[]) {
       for (const project of projectList) {
         this.projectById.set(project.id, project);

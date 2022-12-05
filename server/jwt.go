@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -32,6 +33,7 @@ const (
 	// Expiration section.
 	refreshThresholdDuration = 1 * time.Hour
 	accessTokenDuration      = 24 * time.Hour
+	apiTokenDuration         = 2 * time.Hour
 	refreshTokenDuration     = 7 * 24 * time.Hour
 	// Make cookie expire slightly earlier than the jwt expiration. Client would be logged out if the user
 	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
@@ -44,6 +46,11 @@ const (
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
 	principalIDContextKey = "principal-id"
+
+	// Various access key / token prefix.
+
+	// serviceAccountAccessKeyPrefix is the prefix for service account access key.
+	serviceAccountAccessKeyPrefix = "bbs_"
 )
 
 // Claims creates a struct that will be encoded to a JWT.
@@ -76,6 +83,11 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 	setTokenCookie(c, refreshTokenCookieName, refreshToken, cookieExp)
 
 	return nil
+}
+
+func generateAPIToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+	expirationTime := time.Now().Add(apiTokenDuration)
+	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 func generateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
@@ -162,33 +174,59 @@ func removeUserCookie(c echo.Context) {
 	c.SetCookie(cookie)
 }
 
+func findAccessToken(c echo.Context) (string, error) {
+	if common.HasPrefixes(c.Path(), openAPIPrefix) {
+		authHeader := c.Request().Header.Get("Authorization")
+		if authHeader == "" {
+			return "", nil
+		}
+
+		authHeaderParts := strings.Fields(authHeader)
+		if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
+			return "", common.Errorf(common.Invalid, "Authorization header format must be Bearer {token}")
+		}
+
+		return authHeaderParts[1], nil
+	}
+
+	cookie, err := c.Cookie(accessTokenCookieName)
+	if err != nil {
+		return "", err
+	}
+
+	return cookie.Value, nil
+}
+
 // JWTMiddleware validates the access token.
 // If the access token is about to expire or has expired and the request has a valid refresh token, it
 // will try to generate new access token and refresh token.
-func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string) echo.HandlerFunc {
+func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Skips auth, actuator, plan
-		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
+		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
+
+		// Skips auth, actuator
+		if common.HasPrefixes(path, "/auth", "/actuator") {
 			return next(c)
 		}
 
 		method := c.Request().Method
 		// Skip GET /subscription request
-		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
-			return next(c)
-		}
-		// Skip OpenAPI request
-		if common.HasPrefixes(c.Path(), openAPIPrefix) {
+		if common.HasPrefixes(path, "/subscription") && method == "GET" {
 			return next(c)
 		}
 
-		cookie, err := c.Cookie(accessTokenCookieName)
+		// Skips OpenAPI SQL endpoint
+		if common.HasPrefixes(c.Path(), fmt.Sprintf("%s/sql", openAPIPrefix)) {
+			return next(c)
+		}
+
+		token, err := findAccessToken(c)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Missing access token")
 		}
 
 		claims := &Claims{}
-		accessToken, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
+		accessToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
 			if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 				return nil, pkgerrors.Errorf("unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
 			}

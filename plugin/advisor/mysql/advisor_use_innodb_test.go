@@ -43,7 +43,7 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 		{
-			Statement: "ALTER TABLE book ENGINE = INNODB",
+			Statement: "ALTER TABLE tech_book ENGINE = INNODB",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -54,13 +54,13 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 		{
-			Statement: "ALTER TABLE book ENGINE = CSV",
+			Statement: "ALTER TABLE tech_book ENGINE = CSV",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NotInnoDBEngine,
 					Title:   "engine.mysql.use-innodb",
-					Content: "\"ALTER TABLE book ENGINE = CSV\" doesn't use InnoDB engine",
+					Content: "\"ALTER TABLE tech_book ENGINE = CSV\" doesn't use InnoDB engine",
 					Line:    1,
 				},
 			},

@@ -1,5 +1,8 @@
 <template>
-  <div class="flex items-start space-x-4">
+  <div
+    v-if="task.taskCheckRunList.length > 0"
+    class="flex items-start space-x-4"
+  >
     <TaskCheckBadgeBar
       :task-check-run-list="task.taskCheckRunList"
       @select-task-check-type="viewCheckRunDetail"
@@ -141,13 +144,10 @@ export default defineComponent({
     const showRunCheckButton = computed((): boolean => {
       if (!props.allowRunTask) return false;
       return (
-        (props.task.type == "bb.task.database.schema.update" ||
-          props.task.type == "bb.task.database.data.update" ||
-          props.task.type === "bb.task.database.schema.update.ghost.sync") &&
-        (props.task.status == "PENDING" ||
-          props.task.status == "PENDING_APPROVAL" ||
-          props.task.status == "RUNNING" ||
-          props.task.status == "FAILED")
+        props.task.status == "PENDING" ||
+        props.task.status == "PENDING_APPROVAL" ||
+        props.task.status == "RUNNING" ||
+        props.task.status == "FAILED"
       );
     });
 

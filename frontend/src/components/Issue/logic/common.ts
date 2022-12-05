@@ -20,15 +20,17 @@ import {
   TaskDatabaseCreatePayload,
   TaskDatabaseDataUpdatePayload,
   TaskDatabaseSchemaUpdatePayload,
+  TaskDatabaseSchemaUpdateSDLPayload,
   TaskGeneralPayload,
   TaskId,
   TaskPatch,
   TaskType,
-  UpdateSchemaDetail,
+  MigrationDetail,
+  MigrationType,
+  TaskDatabaseSchemaBaselinePayload,
 } from "@/types";
 import { useIssueLogic } from "./index";
-import { taskCheckRunSummary } from "./utils";
-import { isDev } from "@/utils";
+import { isDev, taskCheckRunSummary } from "@/utils";
 
 export const useCommonLogic = () => {
   const { create, issue, selectedTask, createIssue, onStatusChanged } =
@@ -180,18 +182,19 @@ export const useCommonLogic = () => {
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
     const taskList = flattenTaskList<TaskCreate>(issueCreate);
-    const detailList: UpdateSchemaDetail[] = taskList.map((task) => {
+    const detailList: MigrationDetail[] = taskList.map((task) => {
       const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
+        migrationType: getMigrationTypeFromTask(task),
         databaseId: task.databaseId!,
         databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement: maybeFormatStatementOnSave(task.statement, db),
         earliestAllowedTs: task.earliestAllowedTs,
       };
     });
+
     issueCreate.createContext = {
-      migrationType: taskList[0].migrationType!,
-      updateSchemaDetailList: detailList,
+      detailList: detailList,
     };
 
     createIssue(issueCreate);
@@ -209,10 +212,24 @@ export const useCommonLogic = () => {
   };
 };
 
+const getMigrationTypeFromTask = (task: Task | TaskCreate) => {
+  let migrationType: MigrationType;
+  if (task.type === "bb.task.database.schema.baseline") {
+    migrationType = "BASELINE";
+  } else if (task.type === "bb.task.database.data.update") {
+    migrationType = "DATA";
+  } else {
+    migrationType = "MIGRATE";
+  }
+  return migrationType;
+};
+
 export const TaskTypeWithStatement: TaskType[] = [
   "bb.task.general",
   "bb.task.database.create",
+  "bb.task.database.schema.baseline",
   "bb.task.database.schema.update",
+  "bb.task.database.schema.update-sdl",
   "bb.task.database.schema.update.ghost.sync",
   "bb.task.database.data.update",
 ];
@@ -273,10 +290,20 @@ const statementOfTask = (task: Task) => {
       return (
         ((task as Task).payload as TaskDatabaseCreatePayload).statement || ""
       );
+    case "bb.task.database.schema.baseline":
+      return (
+        ((task as Task).payload as TaskDatabaseSchemaBaselinePayload)
+          .statement || ""
+      );
     case "bb.task.database.schema.update":
       return (
         ((task as Task).payload as TaskDatabaseSchemaUpdatePayload).statement ||
         ""
+      );
+    case "bb.task.database.schema.update-sdl":
+      return (
+        ((task as Task).payload as TaskDatabaseSchemaUpdateSDLPayload)
+          .statement || ""
       );
     case "bb.task.database.data.update":
       return (

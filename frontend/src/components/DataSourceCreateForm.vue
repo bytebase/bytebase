@@ -159,7 +159,7 @@ export default defineComponent({
     const { t } = useI18n();
     const state = reactive<LocalState>({
       dataSource: {
-        name: t("datasource.new-data-source"),
+        name: t("data-source.new-data-source"),
         type: "RO",
         databaseId: props.database ? props.database.id : UNKNOWN_ID,
         instanceId: props.instanceId,

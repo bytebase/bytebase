@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -70,27 +69,40 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	}
 	args = append(args, "--inserts")
 	args = append(args, "--use-set-session-authorization")
+	// Avoid pg_dump v15 generate "ALTER SCHEMA public OWNER TO" statement.
+	args = append(args, "--no-owner")
+	// Avoid pg_dump v15 generate REVOKE/GRANT statement.
+	args = append(args, "--no-privileges")
 	args = append(args, database)
-	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
+
+	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 	if driver.config.Password != "" {
 		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
 	}
 	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
-	cmd.Stderr = os.Stderr
-	r, err := cmd.StdoutPipe()
+	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
+	defer outPipe.Close()
+	outScanner := bufio.NewScanner(outPipe)
+
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	defer errPipe.Close()
+	errScanner := bufio.NewScanner(errPipe)
+
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	s := bufio.NewScanner(r)
 	previousLineComment := false
 	previousLineEmpty := false
-	for s.Scan() {
-		line := s.Text()
+	for outScanner.Scan() {
+		line := outScanner.Text()
 		// Skip "SET SESSION AUTHORIZATION" till we can support it.
 		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 			continue
@@ -122,10 +134,33 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 			return err
 		}
 	}
-	if s.Err() != nil {
-		log.Warn(s.Err().Error())
+	if outScanner.Err() != nil {
+		return outScanner.Err()
 	}
-	return cmd.Wait()
+
+	var errBuilder strings.Builder
+	for errScanner.Scan() {
+		line := errScanner.Text()
+		// Log the error, but return the first 1024 characters in the error to users.
+		log.Warn(line)
+		if errBuilder.Len() < 1024 {
+			if _, err := errBuilder.WriteString(line); err != nil {
+				return err
+			}
+			if _, err := errBuilder.WriteString("\n"); err != nil {
+				return err
+			}
+		}
+	}
+	if errScanner.Err() != nil {
+		return errScanner.Err()
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		return errors.Wrapf(err, "error message: %s", errBuilder.String())
+	}
+	return nil
 }
 
 // Restore restores a database.
@@ -155,6 +190,9 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 		}
 		if isSuperuserStatement(stmt) {
 			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
+		}
+		if isIgnoredStatement(stmt) {
+			return nil
 		}
 		if _, err := txn.Exec(stmt); err != nil {
 			return err

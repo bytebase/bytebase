@@ -4,6 +4,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,29 +20,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
-
-	// Register clickhouse driver.
-	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
-	// Register mysql driver.
-	_ "github.com/bytebase/bytebase/plugin/db/mysql"
-	// Register postgres driver.
-	_ "github.com/bytebase/bytebase/plugin/db/pg"
-	// Register snowflake driver.
-	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
-	// Register sqlite driver.
-	_ "github.com/bytebase/bytebase/plugin/db/sqlite"
-
-	// Register pingcap parser driver.
-	_ "github.com/pingcap/tidb/types/parser_driver"
-	// Register fake advisor.
-	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
-	// Register mysql advisor.
-	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
-	// Register postgresql advisor.
-	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
-
-	// Register postgres parser driver.
-	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------.
@@ -190,6 +168,9 @@ func normalizeExternalURL(url string) (string, error) {
 }
 
 func checkDataDir() error {
+	// Clean data directory path.
+	flags.dataDir = filepath.Clean(flags.dataDir)
+
 	// Convert to absolute path if relative path is supplied.
 	if !filepath.IsAbs(flags.dataDir) {
 		absDir, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/" + flags.dataDir)
@@ -198,9 +179,6 @@ func checkDataDir() error {
 		}
 		flags.dataDir = absDir
 	}
-
-	// Trim trailing / in case user supplies
-	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
 		return errors.Wrapf(err, "unable to access --data directory %s", flags.dataDir)
@@ -226,6 +204,15 @@ func checkCloudBackupFlags() error {
 	return nil
 }
 
+// Check the port availability by trying to bind and immediately release it.
+func checkPort(port int) error {
+	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
+	if err != nil {
+		return err
+	}
+	return l.Close()
+}
+
 func start() {
 	if flags.debug {
 		log.SetLevel(zap.DebugLevel)
@@ -247,7 +234,28 @@ func start() {
 		log.Error("invalid flags for cloud backup", zap.Error(err))
 		return
 	}
+
 	profile := activeProfile(flags.dataDir)
+
+	// The ideal bootstrap order is:
+	// 1. Connect to the metadb
+	// 2. Start echo server
+	// 3. Start various background runners
+	//
+	// Strangely, when the port is unavailable, echo server would return OK response for /healthz
+	// and then complain unable to bind port. Thus we cannot rely on checking /healthz. As a
+	// workaround, we check whether the port is available here.
+	if err := checkPort(flags.port); err != nil {
+		log.Error(fmt.Sprintf("server port %d is not available", flags.port), zap.Error(err))
+		return
+	}
+
+	if profile.UseEmbedDB() {
+		if err := checkPort(profile.DatastorePort); err != nil {
+			log.Error(fmt.Sprintf("database port %d is not available", profile.DatastorePort), zap.Error(err))
+			return
+		}
+	}
 
 	var s *server.Server
 	// Setup signal handlers.

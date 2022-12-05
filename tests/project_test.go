@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
@@ -21,10 +19,12 @@ func TestArchiveProject(t *testing.T) {
 	a := require.New(t)
 	log.SetLevel(zapcore.DebugLevel)
 	ctx := context.Background()
-	serverPort := getTestPort(t.Name())
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, serverPort)
+	err := ctl.StartServerWithExternalPg(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -32,23 +32,21 @@ func TestArchiveProject(t *testing.T) {
 	err = ctl.setLicense()
 	a.NoError(err)
 
-	mysqlPort := serverPort + 1
-	_, stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort)
-	defer stopInstance()
+	instanceRootDir := t.TempDir()
+	instanceName := "testInstance1"
+	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
 	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "test",
-		Engine:        db.MySQL,
-		Host:          connCfg.Host,
-		Port:          connCfg.Port,
-		Username:      connCfg.Username,
+		Engine:        db.SQLite,
+		Host:          instanceDir,
 	})
 	a.NoError(err)
 
@@ -60,7 +58,7 @@ func TestArchiveProject(t *testing.T) {
 		})
 		a.NoError(err)
 
-		databaseName := "db"
+		databaseName := "db1"
 		err = ctl.createDatabase(project, instance, databaseName, "", nil)
 		a.NoError(err)
 

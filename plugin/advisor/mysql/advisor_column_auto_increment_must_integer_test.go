@@ -34,38 +34,44 @@ func TestColumnAutoIncrementMustInteger(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT`,
+			Statement: `
+				CREATE TABLE t(b int);
+				ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.AutoIncrementColumnNotInteger,
 					Title:   "column.auto-increment-must-integer",
 					Content: "Auto-increment column `t`.`a` requires integer type",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN a varchar(255) AUTO_INCREMENT`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t MODIFY COLUMN a varchar(255) AUTO_INCREMENT`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.AutoIncrementColumnNotInteger,
 					Title:   "column.auto-increment-must-integer",
 					Content: "Auto-increment column `t`.`a` requires integer type",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN b a varchar(255) AUTO_INCREMENT`,
+			Statement: `
+				CREATE TABLE t(b int);
+				ALTER TABLE t CHANGE COLUMN b a varchar(255) AUTO_INCREMENT`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.AutoIncrementColumnNotInteger,
 					Title:   "column.auto-increment-must-integer",
 					Content: "Auto-increment column `t`.`a` requires integer type",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},

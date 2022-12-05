@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/mysql"
-	"github.com/pingcap/tidb/parser/types"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
@@ -79,9 +77,9 @@ func (checker *columnDisallowChangingTypeChecker) Enter(in ast.Node) (ast.Node, 
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableChangeColumn:
-				changeType = checker.changeColumnType(node.Table.Name.O, spec.OldColumnName.Name.O, getTypeString(spec.NewColumns[0].Tp))
+				changeType = checker.changeColumnType(node.Table.Name.O, spec.OldColumnName.Name.O, spec.NewColumns[0].Tp.String())
 			case ast.AlterTableModifyColumn:
-				changeType = checker.changeColumnType(node.Table.Name.O, spec.NewColumns[0].Name.Name.O, getTypeString(spec.NewColumns[0].Tp))
+				changeType = checker.changeColumnType(node.Table.Name.O, spec.NewColumns[0].Name.Name.O, spec.NewColumns[0].Tp.String())
 			}
 			if changeType {
 				break
@@ -107,23 +105,35 @@ func (*columnDisallowChangingTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func getTypeString(tp *types.FieldType) string {
-	switch tp.GetType() {
-	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
-		// Referring this issue tidb#6688, the integer max display length is deprecated in MySQL 8.0.
-		// Since the length doesn't take any effect in TiDB storage or showing result, we remove it here.
-		s := tp.String()
-		if idx := strings.Index(s, "("); idx != -1 {
-			s = s[:idx]
-		}
-		return s
+func normalizeColumnType(tp string) string {
+	switch strings.ToLower(tp) {
+	case "tinyint":
+		return "tinyint(4)"
+	case "tinyint unsigned":
+		return "tinyint(4) unsigned"
+	case "smallint":
+		return "smallint(6)"
+	case "smallint unsigned":
+		return "smallint(6) unsigned"
+	case "mediumint":
+		return "mediumint(9)"
+	case "mediumint unsigned":
+		return "mediumint(9) unsigned"
+	case "int":
+		return "int(11)"
+	case "int unsigned":
+		return "int(11) unsigned"
+	case "bigint":
+		return "bigint(20)"
+	case "bigint unsigned":
+		return "bigint(20) unsigned"
 	default:
-		return tp.String()
+		return strings.ToLower(tp)
 	}
 }
 
 func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
-	column := checker.catalog.FindColumn(&catalog.ColumnFind{
+	column := checker.catalog.Origin.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
 		ColumnName: columName,
 	})
@@ -132,5 +142,5 @@ func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName str
 		return false
 	}
 
-	return !strings.EqualFold(column.Type, newType)
+	return normalizeColumnType(column.Type()) != normalizeColumnType(newType)
 }

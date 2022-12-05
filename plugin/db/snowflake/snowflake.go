@@ -216,8 +216,8 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 	return databases, nil
 }
 
-// Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string) error {
+// Execute executes a SQL statement and returns the affected rows.
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
 	count := 0
 	f := func(stmt string) error {
 		count++
@@ -225,37 +225,42 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 
 	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
-		return err
+		return 0, err
 	}
 
 	if count <= 0 {
-		return nil
+		return 0, nil
 	}
 
 	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return err
+		return 0, err
 	}
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 	mctx, err := snow.WithMultiStatement(ctx, count)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	if _, err := tx.ExecContext(mctx, statement); err != nil {
-		return err
+	result, err := tx.ExecContext(mctx, statement)
+	if err != nil {
+		return 0, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return 0, err
 	}
 
-	return err
+	rowsEffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return rowsEffected, nil
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, db.Snowflake, driver.db, statement, limit)
+func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	return util.Query(ctx, db.Snowflake, driver.db, statement, queryContext)
 }

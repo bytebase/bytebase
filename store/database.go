@@ -247,8 +247,8 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	db.DataSourceList = []*api.DataSource{}
 
 	rowStatus := api.Normal
-	labelList, err := s.FindDatabaseLabel(ctx, &api.DatabaseLabelFind{
-		DatabaseID: &db.ID,
+	labelList, err := s.findDatabaseLabel(ctx, &api.DatabaseLabelFind{
+		DatabaseID: db.ID,
 		RowStatus:  &rowStatus,
 	})
 	if err != nil {
@@ -309,7 +309,7 @@ func (s *Store) createDatabaseRawTx(ctx context.Context, tx *Tx, create *api.Dat
 	}
 
 	// Enable automatic backup setting based on backup plan policy.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
+	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset && databaseRaw.Name != api.AllDatabaseName {
 		backupSettingUpsert := &api.BackupSettingUpsert{
 			UpdaterID:         api.SystemBotID,
 			DatabaseID:        databaseRaw.ID,
@@ -439,7 +439,7 @@ func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.Databa
 			last_successful_sync_ts,
 			schema_version
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'OK', EXTRACT(epoch from NOW()), $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'OK', $8, $9)
 		RETURNING
 			id,
 			creator_id,
@@ -464,6 +464,7 @@ func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.Databa
 		create.Name,
 		create.CharacterSet,
 		create.Collation,
+		create.LastSuccessfulSyncTs,
 		create.SchemaVersion,
 	).Scan(
 		&databaseRaw.ID,

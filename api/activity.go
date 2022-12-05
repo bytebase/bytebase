@@ -89,6 +89,8 @@ type ActivityIssueCreatePayload struct {
 
 // ActivityIssueCommentCreatePayload is the API message payloads for creating issue comments.
 type ActivityIssueCommentCreatePayload struct {
+	ExternalApprovalEvent *ExternalApprovalEvent `json:"externalApprovalEvent,omitempty"`
+
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
@@ -195,12 +197,15 @@ type ActivityProjectDatabaseTransferPayload struct {
 // ActivitySQLEditorQueryPayload is the API message payloads for the executed query info.
 type ActivitySQLEditorQueryPayload struct {
 	// Used by activity table to display info without paying the join cost
-	Statement    string           `json:"statement"`
-	DurationNs   int64            `json:"durationNs"`
-	InstanceName string           `json:"instanceName"`
-	DatabaseName string           `json:"databaseName"`
-	Error        string           `json:"error"`
-	AdviceList   []advisor.Advice `json:"adviceList"`
+	Statement  string `json:"statement"`
+	DurationNs int64  `json:"durationNs"`
+	InstanceID int    `json:"instanceId"`
+	// DeprecatedInstanceName is deprecated and should be removed from future version.
+	DeprecatedInstanceName string           `json:"instanceName"`
+	DatabaseID             int              `json:"databaseId"`
+	DatabaseName           string           `json:"databaseName"`
+	Error                  string           `json:"error"`
+	AdviceList             []advisor.Advice `json:"adviceList"`
 }
 
 // Activity is the API message for an activity.
@@ -275,4 +280,7 @@ type ActivityPatch struct {
 
 	// Domain specific fields
 	Comment *string `jsonapi:"attr,comment"`
+
+	// TODO(d): remove the payload after the backfill.
+	Payload *string
 }

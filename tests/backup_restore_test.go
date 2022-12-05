@@ -8,6 +8,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,9 +37,8 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	port := getTestPort(t.Name())
 	ctl := &controller{}
-	project, mysqlDB, database, backup, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
+	project, mysqlDB, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	issue, err := createPITRIssue(ctl, project, api.PITRContext{
@@ -68,6 +69,35 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	validateTableUpdateRow(t, mysqlDB, database.Name)
 }
 
+func TestRetentionPolicy(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	_, _, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
+	defer cleanFn()
+
+	metaDB, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err)
+	a.NoError(metaDB.Ping())
+
+	// Check that the backup file exist
+	backupFilePath := filepath.Join(ctl.profile.DataDir, "backup", "db", fmt.Sprintf("%d", database.ID), fmt.Sprintf("%s.sql", backup.Name))
+	_, err = os.Stat(backupFilePath)
+	a.NoError(err)
+
+	// Change retention period to 1s, and the backup should be quickly removed.
+	// TODO(d): clean-up the hack.
+	_, err = metaDB.ExecContext(ctx, fmt.Sprintf("UPDATE backup_setting SET enabled=true, retention_period_ts=1 WHERE database_id=%d;", database.ID))
+	a.NoError(err)
+	err = ctl.waitBackupArchived(database.ID, backup.ID)
+	a.NoError(err)
+	// Wait for 1s to delete the file.
+	time.Sleep(1 * time.Second)
+	_, err = os.Stat(backupFilePath)
+	a.Equal(true, os.IsNotExist(err))
+}
+
 // TestPITRGeneral tests for the general PITR cases:
 // 1. buggy application.
 // 2. bad schema migration.
@@ -75,15 +105,14 @@ func TestPITRGeneral(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	port := getTestPort(t.Name())
 	ctl := &controller{}
-	project, mysqlDB, database, _, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
+	project, mysqlDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 	ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-	targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, port) + 1
+	targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, mysqlPort) + 1
 
 	dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
 	log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
@@ -119,9 +148,8 @@ func TestPITRDropDatabase(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	port := getTestPort(t.Name())
 	ctl := &controller{}
-	project, mysqlDB, database, _, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
+	project, mysqlDB, database, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
@@ -172,15 +200,14 @@ func TestPITRTwice(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	port := getTestPort(t.Name())
 	ctl := &controller{}
-	project, mysqlDB, database, _, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
+	project, mysqlDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	log.Debug("Creating issue for the first PITR.")
 	insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 	ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-	targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, port) + 1
+	targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, mysqlPort) + 1
 
 	issue, err := createPITRIssue(ctl, project, api.PITRContext{
 		DatabaseID:    database.ID,
@@ -219,7 +246,7 @@ func TestPITRTwice(t *testing.T) {
 
 	log.Debug("Creating issue for the second PITR.")
 	ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
-	targetTs = startUpdateRow(ctxUpdateRow, t, database.Name, port) + 1
+	targetTs = startUpdateRow(ctxUpdateRow, t, database.Name, mysqlPort) + 1
 	insertRangeData(t, mysqlDB, numRowsTime1, numRowsTime2)
 
 	issue2, err := createPITRIssue(ctl, project, api.PITRContext{
@@ -253,13 +280,12 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	port := getTestPort(t.Name())
 	ctl := &controller{}
-	project, sourceMySQLDB, database, _, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
+	project, sourceMySQLDB, database, _, mysqlPort, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
-	dstPort := port + 2
-	_, dstStopFn := resourcemysql.SetupTestInstance(t, dstPort)
+	dstPort := getTestPort()
+	dstStopFn := resourcemysql.SetupTestInstance(t, dstPort, mysqlBinDir)
 	defer dstStopFn()
 	dstConnCfg := getMySQLConnectionConfig(strconv.Itoa(dstPort), "")
 
@@ -283,7 +309,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
 	cancelUpdateRow()
 
-	targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, port) + 1
+	targetTs := startUpdateRow(ctxUpdateRow, t, database.Name, mysqlPort) + 1
 
 	dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
 	log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
@@ -340,10 +366,9 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	port := getTestPort(t.Name())
 	ctl := &controller{}
 	targetTs := time.Now().Unix()
-	project, _, database, _, cleanFn := setUpForPITRTest(ctx, t, ctl, port)
+	project, _, database, _, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
 	issue, err := createPITRIssue(ctl, project, api.PITRContext{
@@ -371,11 +396,14 @@ func createPITRIssue(ctl *controller, project *api.Project, pitrContext api.PITR
 	})
 }
 
-func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller, port int) (*api.Project, *sql.DB, *api.Database, *api.Backup, func()) {
+func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.Project, *sql.DB, *api.Database, *api.Backup, int, func()) {
 	a := require.New(t)
 
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, dataDir, fake.NewGitLab, port+1)
+	err := ctl.StartServerWithExternalPg(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
 	a.NoError(err)
 	err = ctl.Login()
 	a.NoError(err)
@@ -399,17 +427,19 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller, port i
 	a.NoError(err)
 	str := string(buf)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
-		EnvironmentID: prodEnvironment.ID,
-		Type:          api.PolicyTypeBackupPlan,
-		Payload:       &str,
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   prodEnvironment.ID,
+		Type:         api.PolicyTypeBackupPlan,
+		Payload:      &str,
 	})
 	a.NoError(err)
 
 	baseName := strings.ReplaceAll(t.Name(), "/", "_")
 	databaseName := baseName + "_Database"
 
-	_, stopInstance := resourcemysql.SetupTestInstance(t, port)
-	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+	mysqlPort := getTestPort()
+	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
+	connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), "")
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
 		Name:          baseName + "_Instance",
@@ -433,7 +463,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller, port i
 	err = ctl.disableAutomaticBackup(database.ID)
 	a.NoError(err)
 
-	mysqlDB := initPITRDB(t, databaseName, port)
+	mysqlDB := initPITRDB(t, databaseName, mysqlPort)
 
 	insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
@@ -448,7 +478,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller, port i
 	err = ctl.waitBackup(database.ID, backup.ID)
 	a.NoError(err)
 
-	return project, mysqlDB, database, backup, func() {
+	return project, mysqlDB, database, backup, mysqlPort, func() {
 		a.NoError(ctl.Close(ctx))
 		stopInstance()
 		a.NoError(mysqlDB.Close())

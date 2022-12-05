@@ -26,13 +26,14 @@
         {{ $t("common.home") }}
       </div>
     </router-link>
-    <router-link
-      to="/sql-editor"
+    <a
+      href="/sql-editor"
+      target="_blank"
       class="outline-item group flex items-center px-2 py-2"
     >
-      <heroicons-outline:terminal class="w-5 h-5 mr-2" />
+      <heroicons-solid:terminal class="w-5 h-5 mr-2" />
       {{ $t("sql-editor.self") }}
-    </router-link>
+    </a>
     <router-link
       to="/anomaly-center"
       class="outline-item group flex items-center px-2 py-2"
@@ -53,10 +54,10 @@
 </template>
 
 <script lang="ts" setup>
-import BookmarkListSidePanel from "../components/BookmarkListSidePanel.vue";
-import ProjectListSidePanel from "../components/ProjectListSidePanel.vue";
-import DatabaseListSidePanel from "../components/DatabaseListSidePanel.vue";
 import { useKBarHandler } from "@bytebase/vue-kbar";
+import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
+import ProjectListSidePanel from "@/components/ProjectListSidePanel.vue";
+import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";
 
 const isMac = navigator.platform.match(/mac/i);
 

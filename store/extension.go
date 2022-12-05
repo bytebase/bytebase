@@ -14,7 +14,7 @@ import (
 )
 
 // dbExtensionRaw is the store model for an DBExtension.
-// Fields have exactly the same meanings as DBExtension.
+// Fields have exactly the same meaning as DBExtension.
 type dbExtensionRaw struct {
 	ID int
 

@@ -17,16 +17,12 @@ import (
 )
 
 func TestProvider_FetchUserInfo(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/users/1", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/users/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
+			Body: io.NopCloser(strings.NewReader(`
 {
   "id": 1,
   "username": "john_smith",
@@ -49,11 +45,8 @@ func TestProvider_FetchUserInfo(t *testing.T) {
   "following": 1
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -148,17 +141,13 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 		assert.EqualError(t, got, want)
 	})
 
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						switch r.URL.Path {
-						case "/api/v4/projects/1/members/all":
-							return &http.Response{
-								StatusCode: http.StatusOK,
-								// Example response derived from https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project-including-inherited-and-invited-members
-								Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/members/all":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response derived from https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project-including-inherited-and-invited-members
+				Body: io.NopCloser(strings.NewReader(`
 [
   {
     "id": 1,
@@ -209,12 +198,12 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
   }
 ]
 `)),
-							}, nil
-						case "/api/v4/users/1":
-							return &http.Response{
-								StatusCode: http.StatusOK,
-								// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
-								Body: io.NopCloser(strings.NewReader(`
+			}, nil
+		case "/api/v4/users/1":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
+				Body: io.NopCloser(strings.NewReader(`
 {
   "id": 1,
   "username": "john_smith",
@@ -237,13 +226,10 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
   "following": 1
 }
 `)),
-							}, nil
-						}
-						return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
-					},
-				},
-			},
-		},
+			}, nil
+		}
+		return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
+	},
 	)
 
 	ctx := context.Background()
@@ -265,16 +251,12 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 }
 
 func TestProvider_FetchCommitByID(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/5/repository/commits/6104942438c14ec7bd21c6cd5bd995272b3faff6", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/commits.html#get-a-single-commit
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/5/repository/commits/6104942438c14ec7bd21c6cd5bd995272b3faff6", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/commits.html#get-a-single-commit
+			Body: io.NopCloser(strings.NewReader(`
 {
   "id": "6104942438c14ec7bd21c6cd5bd995272b3faff6",
   "short_id": "6104942438c",
@@ -305,11 +287,8 @@ func TestProvider_FetchCommitByID(t *testing.T) {
   "web_url": "https://gitlab.example.com/thedude/gitlab-foss/-/commit/6104942438c14ec7bd21c6cd5bd995272b3faff6"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -325,17 +304,13 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 }
 
 func TestProvider_ExchangeOAuthToken(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/oauth/token", r.URL.Path)
-						assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-flow
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/oauth/token", r.URL.Path)
+		assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-flow
+			Body: io.NopCloser(strings.NewReader(`
 {
  "access_token": "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
  "token_type": "bearer",
@@ -344,11 +319,8 @@ func TestProvider_ExchangeOAuthToken(t *testing.T) {
  "created_at": 1607635748
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -373,16 +345,12 @@ func TestProvider_ExchangeOAuthToken(t *testing.T) {
 }
 
 func TestProvider_FetchAllRepositoryList(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/projects.html#list-all-projects
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/projects.html#list-all-projects
+			Body: io.NopCloser(strings.NewReader(`
 [
   {
     "id": 4,
@@ -412,11 +380,8 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
   }
 ]
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -435,16 +400,12 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 }
 
 func TestProvider_FetchRepositoryFileList(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/tree", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/tree", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
+			Body: io.NopCloser(strings.NewReader(`
 [
   {
     "id": "a1e8f8d745cc87e3a9248358d9352bb7f9a0aeba",
@@ -462,11 +423,8 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
   }
 ]
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -484,31 +442,24 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 }
 
 func TestProvider_CreateFile(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
 
-						body, err := io.ReadAll(r.Body)
-						require.NoError(t, err)
-						wantBody := `{"branch":"master","content":"some content","commit_message":"create a new file"}`
-						assert.Equal(t, wantBody, string(body))
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#create-new-file-in-repository
-							Body: io.NopCloser(strings.NewReader(`
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		wantBody := `{"branch":"master","content":"some content","commit_message":"create a new file"}`
+		assert.Equal(t, wantBody, string(body))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#create-new-file-in-repository
+			Body: io.NopCloser(strings.NewReader(`
 {
   "file_path": "app/project.rb",
   "branch": "master"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -528,31 +479,24 @@ func TestProvider_CreateFile(t *testing.T) {
 }
 
 func TestProvider_OverwriteFile(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
 
-						body, err := io.ReadAll(r.Body)
-						require.NoError(t, err)
-						wantBody := `{"branch":"master","content":"some content","commit_message":"update file","last_commit_id":"7638417db6d59f3c431d3e1f261cc637155684cd"}`
-						assert.Equal(t, wantBody, string(body))
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#update-existing-file-in-repository
-							Body: io.NopCloser(strings.NewReader(`
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		wantBody := `{"branch":"master","content":"some content","commit_message":"update file","last_commit_id":"7638417db6d59f3c431d3e1f261cc637155684cd"}`
+		assert.Equal(t, wantBody, string(body))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#update-existing-file-in-repository
+			Body: io.NopCloser(strings.NewReader(`
 {
   "file_path": "app/project.rb",
   "branch": "master"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -573,84 +517,59 @@ func TestProvider_OverwriteFile(t *testing.T) {
 }
 
 func TestProvider_ReadFileMeta(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-							Body: io.NopCloser(strings.NewReader(`
-{
-  "file_name": "key.rb",
-  "file_path": "app/models/key.rb",
-  "size": 442,
-  "encoding": "base64",
-  "content": "IyBTYW1wbGUgR2l0TGFiIFByb2plY3QKClRoaXMgc2FtcGxlIHByb2plY3Qgc2hvd3MgaG93IGEgcHJvamVjdCBpbiBHaXRMYWIgbG9va3MgZm9yIGRlbW9uc3RyYXRpb24gcHVycG9zZXMuIEl0IGNvbnRhaW5zIGlzc3VlcywgbWVyZ2UgcmVxdWVzdHMgYW5kIE1hcmtkb3duIGZpbGVzIGluIG1hbnkgYnJhbmNoZXMsCm5hbWVkIGFuZCBmaWxsZWQgd2l0aCBsb3JlbSBpcHN1bS4KCllvdSBjYW4gbG9vayBhcm91bmQgdG8gZ2V0IGFuIGlkZWEgaG93IHRvIHN0cnVjdHVyZSB5b3VyIHByb2plY3QgYW5kLCB3aGVuIGRvbmUsIHlvdSBjYW4gc2FmZWx5IGRlbGV0ZSB0aGlzIHByb2plY3QuCgpbTGVhcm4gbW9yZSBhYm91dCBjcmVhdGluZyBHaXRMYWIgcHJvamVjdHMuXShodHRwczovL2RvY3MuZ2l0bGFiLmNvbS9lZS9naXRsYWItYmFzaWNzL2NyZWF0ZS1wcm9qZWN0Lmh0bWwpCg==",
-  "content_sha256": "71dd06da8f5915544335e547e4447de6377ef369d67b6a5214c8a780d336b2e2",
-  "ref": "master",
-  "blob_id": "79f7bbd25901e8334750839545a9bd021f0e4c83",
-  "commit_id": "27329d3afac51fbf2762428e12f2635d1137c549",
-  "last_commit_id": "27329d3afac51fbf2762428e12f2635d1137c549",
-  "execute_filemode": false
-}
-`)),
-						}, nil
-					},
-				},
-			},
-		},
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/files/app%2Fmodels%2Fkey.rb/raw", r.URL.RawPath)
+		header := http.Header{}
+		header.Set("x-gitlab-file-name", "key.rb")
+		header.Set("x-gitlab-file-path", "app/models/key.rb")
+		header.Set("x-gitlab-size", "3")
+		header.Set("x-gitlab-last-commit-id", "27329d3afac51fbf2762428e12f2635d1137c549")
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
+			Body:   io.NopCloser(strings.NewReader(`key`)),
+			Header: header,
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, "", "1", "lib/class.rb", "master")
+	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, "", "1", "app/models/key.rb", "master")
 	require.NoError(t, err)
 
 	want := &vcs.FileMeta{
-		Name:         "key.rb",
-		Path:         "app/models/key.rb",
-		Size:         442,
 		LastCommitID: "27329d3afac51fbf2762428e12f2635d1137c549",
 	}
 	assert.Equal(t, want, got)
 }
 
 func TestProvider_ReadFileContent(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-							Body: io.NopCloser(strings.NewReader(`
-{
-  "file_name": "key.rb",
-  "file_path": "app/models/key.rb",
-  "size": 442,
-  "encoding": "base64",
-  "content": "IyBTYW1wbGUgR2l0TGFiIFByb2plY3QKClRoaXMgc2FtcGxlIHByb2plY3Qgc2hvd3MgaG93IGEgcHJvamVjdCBpbiBHaXRMYWIgbG9va3MgZm9yIGRlbW9uc3RyYXRpb24gcHVycG9zZXMuIEl0IGNvbnRhaW5zIGlzc3VlcywgbWVyZ2UgcmVxdWVzdHMgYW5kIE1hcmtkb3duIGZpbGVzIGluIG1hbnkgYnJhbmNoZXMsCm5hbWVkIGFuZCBmaWxsZWQgd2l0aCBsb3JlbSBpcHN1bS4KCllvdSBjYW4gbG9vayBhcm91bmQgdG8gZ2V0IGFuIGlkZWEgaG93IHRvIHN0cnVjdHVyZSB5b3VyIHByb2plY3QgYW5kLCB3aGVuIGRvbmUsIHlvdSBjYW4gc2FmZWx5IGRlbGV0ZSB0aGlzIHByb2plY3QuCgpbTGVhcm4gbW9yZSBhYm91dCBjcmVhdGluZyBHaXRMYWIgcHJvamVjdHMuXShodHRwczovL2RvY3MuZ2l0bGFiLmNvbS9lZS9naXRsYWItYmFzaWNzL2NyZWF0ZS1wcm9qZWN0Lmh0bWwpCg==",
-  "content_sha256": "71dd06da8f5915544335e547e4447de6377ef369d67b6a5214c8a780d336b2e2",
-  "ref": "master",
-  "blob_id": "79f7bbd25901e8334750839545a9bd021f0e4c83",
-  "commit_id": "27329d3afac51fbf2762428e12f2635d1137c549",
-  "last_commit_id": "27329d3afac51fbf2762428e12f2635d1137c549",
-  "execute_filemode": false
-}
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/files/app%2Fmodels%2Fkey.rb/raw", r.URL.RawPath)
+		header := http.Header{}
+		header.Set("x-gitlab-file-name", "key.rb")
+		header.Set("x-gitlab-file-path", "app/models/key.rb")
+		header.Set("x-gitlab-size", "3")
+		header.Set("x-gitlab-last-commit-id", "27329d3afac51fbf2762428e12f2635d1137c549")
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
+			Body: io.NopCloser(strings.NewReader(`# Sample GitLab Project
+
+This sample project shows how a project in GitLab looks for demonstration purposes. It contains issues, merge requests and Markdown files in many branches,
+named and filled with lorem ipsum.
+
+You can look around to get an idea how to structure your project and, when done, you can safely delete this project.
+
+[Learn more about creating GitLab projects.](https://docs.gitlab.com/ee/gitlab-basics/create-project.html)
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+			Header: header,
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, "", "1", "lib/class.rb", "master")
+	got, err := p.ReadFileContent(ctx, common.OauthContext{}, "", "1", "app/models/key.rb", "master")
 	require.NoError(t, err)
 
 	want := `# Sample GitLab Project
@@ -666,16 +585,12 @@ You can look around to get an idea how to structure your project and, when done,
 }
 
 func TestProvider_CreateWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/hooks", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusCreated,
-							// Example response taken from https://docs.gitlab.com/ee/api/projects.html#get-project-hook
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/hooks", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusCreated,
+			// Example response taken from https://docs.gitlab.com/ee/api/projects.html#get-project-hook
+			Body: io.NopCloser(strings.NewReader(`
 {
   "id": 1,
   "url": "http://example.com/hook",
@@ -697,11 +612,8 @@ func TestProvider_CreateWebhook(t *testing.T) {
   "created_at": "2012-10-12T17:04:47Z"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -711,20 +623,13 @@ func TestProvider_CreateWebhook(t *testing.T) {
 }
 
 func TestProvider_PatchWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							Body:       io.NopCloser(strings.NewReader("")),
-						}, nil
-					},
-				},
-			},
-		},
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -733,20 +638,13 @@ func TestProvider_PatchWebhook(t *testing.T) {
 }
 
 func TestProvider_DeleteWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							Body:       io.NopCloser(strings.NewReader("")),
-						}, nil
-					},
-				},
-			},
-		},
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -793,7 +691,7 @@ func TestOAuth_RefreshToken(t *testing.T) {
 		return nil
 	}
 
-	_, _, err := oauth.Get(
+	_, _, _, err := oauth.Get(
 		ctx,
 		client,
 		"https://gitlab.example.com/api/v4/users/octocat",
@@ -807,4 +705,396 @@ func TestOAuth_RefreshToken(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54", token)
 	assert.True(t, calledRefresher)
+}
+
+func TestProvider_GetBranch(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "GET", r.Method)
+		assert.Equal(t, "/api/v4/projects/1/repository/branches/main", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "name": "main",
+  "merged": false,
+  "protected": true,
+  "default": true,
+  "developers_can_push": false,
+  "developers_can_merge": false,
+  "can_push": true,
+  "web_url": "https://gitlab.example.com/my-group/my-project/-/tree/main",
+  "commit": {
+    "author_email": "john@example.com",
+    "author_name": "John Smith",
+    "authored_date": "2012-06-27T05:51:39-07:00",
+    "committed_date": "2012-06-28T03:44:20-07:00",
+    "committer_email": "john@example.com",
+    "committer_name": "John Smith",
+    "id": "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
+    "short_id": "7b5c3cc",
+    "title": "add projects API",
+    "message": "add projects API",
+    "parent_ids": [
+      "4ad91d3c1144c406e50c7b33bae684bd6837faf8"
+    ]
+  }
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.GetBranch(ctx, common.OauthContext{}, "", "1", "main")
+	require.NoError(t, err)
+
+	want := &vcs.BranchInfo{
+		Name:         "main",
+		LastCommitID: "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_CreateBranch(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/api/v4/projects/1/repository/branches", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "commit": {
+    "author_email": "john@example.com",
+    "author_name": "John Smith",
+    "authored_date": "2012-06-27T05:51:39-07:00",
+    "committed_date": "2012-06-28T03:44:20-07:00",
+    "committer_email": "john@example.com",
+    "committer_name": "John Smith",
+    "id": "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
+    "short_id": "7b5c3cc",
+    "title": "add projects API",
+    "message": "add projects API",
+    "parent_ids": [
+      "4ad91d3c1144c406e50c7b33bae684bd6837faf8"
+    ]
+  },
+  "name": "newbranch",
+  "merged": false,
+  "protected": false,
+  "default": false,
+  "developers_can_push": false,
+  "developers_can_merge": false,
+  "can_push": true,
+  "web_url": "https://gitlab.example.com/my-group/my-project/-/tree/newbranch"
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	err := p.CreateBranch(ctx, common.OauthContext{}, "", "1", &vcs.BranchInfo{
+		Name:         "newbranch",
+		LastCommitID: "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
+	})
+	require.NoError(t, err)
+}
+
+func TestProvider_CreatePullRequest(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/merge_requests", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "id": 1,
+  "iid": 1,
+  "project_id": 3,
+  "title": "test1",
+  "description": "fixed login page css paddings",
+  "state": "merged",
+  "created_at": "2017-04-29T08:46:00Z",
+  "updated_at": "2017-04-29T08:46:00Z",
+  "target_branch": "master",
+  "source_branch": "test1",
+  "upvotes": 0,
+  "downvotes": 0,
+  "author": {
+    "id": 1,
+    "name": "Administrator",
+    "username": "admin",
+    "state": "active",
+    "avatar_url": null,
+    "web_url" : "https://gitlab.example.com/admin"
+  },
+  "assignee": {
+    "id": 1,
+    "name": "Administrator",
+    "username": "admin",
+    "state": "active",
+    "avatar_url": null,
+    "web_url" : "https://gitlab.example.com/admin"
+  },
+  "source_project_id": 2,
+  "target_project_id": 3,
+  "labels": [
+    "Community contribution",
+    "Manage"
+  ],
+  "draft": false,
+  "work_in_progress": false,
+  "merge_when_pipeline_succeeds": true,
+  "merge_status": "can_be_merged",
+  "merge_error": null,
+  "sha": "8888888888888888888888888888888888888888",
+  "merge_commit_sha": null,
+  "squash_commit_sha": null,
+  "user_notes_count": 1,
+  "discussion_locked": null,
+  "should_remove_source_branch": true,
+  "force_remove_source_branch": false,
+  "allow_collaboration": false,
+  "allow_maintainer_to_push": false,
+  "web_url": "http://gitlab.example.com/my-group/my-project/merge_requests/1",
+  "references": {
+    "short": "!1",
+    "relative": "!1",
+    "full": "my-group/my-project!1"
+  },
+  "time_stats": {
+    "time_estimate": 0,
+    "total_time_spent": 0,
+    "human_time_estimate": null,
+    "human_total_time_spent": null
+  },
+  "squash": false,
+  "subscribed": false,
+  "changes_count": "1",
+  "closed_by": null,
+  "closed_at": null,
+  "latest_build_started_at": "2018-09-07T07:27:38.472Z",
+  "latest_build_finished_at": "2018-09-07T08:07:06.012Z",
+  "first_deployed_to_production_at": null,
+  "pipeline": {
+    "id": 29626725,
+    "sha": "2be7ddb704c7b6b83732fdd5b9f09d5a397b5f8f",
+    "ref": "patch-28",
+    "status": "success",
+    "web_url": "https://gitlab.example.com/my-group/my-project/pipelines/29626725"
+  },
+  "diff_refs": {
+    "base_sha": "c380d3acebd181f13629a25d2e2acca46ffe1e00",
+    "head_sha": "2be7ddb704c7b6b83732fdd5b9f09d5a397b5f8f",
+    "start_sha": "c380d3acebd181f13629a25d2e2acca46ffe1e00"
+  },
+  "diverged_commits_count": 2
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	res, err := p.CreatePullRequest(ctx, common.OauthContext{}, "", "1", &vcs.PullRequestCreate{
+		Title:                 "test1",
+		Body:                  "fixed login page css paddings",
+		Head:                  "test1",
+		Base:                  "master",
+		RemoveHeadAfterMerged: true,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "http://gitlab.example.com/my-group/my-project/merge_requests/1", res.URL)
+}
+
+func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/api/v4/projects/1/variables/1":
+			if r.Method == "GET" {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
+					Body: io.NopCloser(strings.NewReader(`
+{
+    "variable_type": "env_var",
+    "key": "1",
+    "value": "new value",
+    "protected": false,
+    "masked": false,
+    "environment_scope": "*"
+}
+`)),
+				}, nil
+			} else if r.Method == "PUT" {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#update-a-variable
+					Body: io.NopCloser(strings.NewReader(`
+{
+    "variable_type": "env_var",
+    "key": "1",
+    "value": "new value",
+    "protected": false,
+    "masked": false,
+    "environment_scope": "*"
+}
+`)),
+				}, nil
+			}
+		case "/api/v4/projects/1/variables":
+			assert.Equal(t, "POST", r.Method)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response taken from https://docs.gitlab.com/ee/api/project_level_variables.html#create-a-variable
+				Body: io.NopCloser(strings.NewReader(`
+{
+    "variable_type": "env_var",
+    "key": "1",
+    "value": "new value",
+    "protected": false,
+    "masked": false,
+    "environment_scope": "*"
+}
+`)),
+			}, nil
+		}
+
+		return nil, errors.Errorf("Invalid request. %s: %s", r.Method, r.URL.Path)
+	},
+	)
+
+	ctx := context.Background()
+	err := p.UpsertEnvironmentVariable(ctx, common.OauthContext{}, "", "1", "1", "new value")
+	require.NoError(t, err)
+}
+
+func TestProvider_ListPullRequestFile(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/merge_requests/1/changes", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "id": 21,
+  "iid": 1,
+  "project_id": 4,
+  "title": "Blanditiis beatae suscipit hic assumenda et molestias nisi asperiores repellat et.",
+  "state": "reopened",
+  "created_at": "2015-02-02T19:49:39.159Z",
+  "updated_at": "2015-02-02T20:08:49.959Z",
+  "target_branch": "secret_token",
+  "source_branch": "version-1-9",
+  "source_project_id": 4,
+  "target_project_id": 4,
+  "labels": [ ],
+  "description": "Qui voluptatibus placeat ipsa alias quasi. Deleniti rem ut sint. Optio velit qui distinctio.",
+  "draft": false,
+  "work_in_progress": false,
+  "merge_when_pipeline_succeeds": true,
+  "merge_status": "can_be_merged",
+  "subscribed" : true,
+  "sha": "8888888888888888888888888888888888888888",
+  "merge_commit_sha": null,
+  "squash_commit_sha": null,
+  "changes": [
+    {
+    "old_path": "VERSION",
+    "new_path": "VERSION",
+    "a_mode": "100644",
+    "b_mode": "100644",
+    "new_file": false,
+    "renamed_file": false,
+    "deleted_file": false
+    }
+  ],
+  "overflow": false
+}
+`)),
+		}, nil
+	},
+	)
+	ctx := context.Background()
+	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, "", "1", "1")
+	require.NoError(t, err)
+
+	want := []*vcs.PullRequestFile{
+		{
+			Path:         "VERSION",
+			LastCommitID: "8888888888888888888888888888888888888888",
+			IsDeleted:    false,
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_GetDiffFileList(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v4/projects/1/repository/compare", r.URL.Path)
+		assert.Equal(t, "from=before_sha&to=after_sha", r.URL.RawQuery)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.gitlab.com/ee/api/repositories.html#compare-branches-tags-or-commits
+			Body: io.NopCloser(strings.NewReader(`
+{
+	"commit": {
+		"id": "12d65c8dd2b2676fa3ac47d955accc085a37a9c1",
+		"short_id": "12d65c8dd2b",
+		"title": "JS fix",
+		"author_name": "Example User",
+		"author_email": "user@example.com",
+		"created_at": "2014-02-27T10:27:00+02:00"
+	},
+	"commits": [{
+		"id": "12d65c8dd2b2676fa3ac47d955accc085a37a9c1",
+		"short_id": "12d65c8dd2b",
+		"title": "JS fix",
+		"author_name": "Example User",
+		"author_email": "user@example.com",
+		"created_at": "2014-02-27T10:27:00+02:00"
+	}],
+	"diffs": [{
+		"old_path": "files/js/application.js",
+		"new_path": "files/js/application.js",
+		"a_mode": null,
+		"b_mode": "100644",
+		"diff": "--- a/files/js/application.js\n+++ b/files/js/application.js\n@@ -24,8 +24,10 @@\n //= require g.raphael-min\n //= require g.bar-min\n //= require branch-graph\n-//= require highlightjs.min\n-//= require ace/ace\n //= require_tree .\n //= require d3\n //= require underscore\n+\n+function fix() { \n+  alert(\"Fixed\")\n+}",
+		"new_file": false,
+		"renamed_file": false,
+		"deleted_file": false
+	}],
+	"compare_timeout": false,
+	"compare_same_ref": false,
+	"web_url": "https://gitlab.example.com/janedoe/gitlab-foss/-/compare/ae73cb07c9eeaf35924a10f713b364d32b2dd34f...0b4bc9a49b562e85de7cc9e834518ea6828729b9"
+}
+`)),
+		}, nil
+	},
+	)
+	ctx := context.Background()
+	got, err := p.GetDiffFileList(ctx, common.OauthContext{}, "", "1", "before_sha", "after_sha")
+	require.NoError(t, err)
+
+	want := []vcs.FileDiff{
+		{
+			Path: "files/js/application.js",
+			Type: vcs.FileDiffTypeModified,
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func newMockProvider(mockRoundTrip func(r *http.Request) (*http.Response, error)) vcs.Provider {
+	return newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: mockRoundTrip,
+				},
+			},
+		},
+	)
 }

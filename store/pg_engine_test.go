@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
 	"testing"
 
@@ -83,24 +82,24 @@ func TestGetPatchVersions(t *testing.T) {
 		errPart        string
 	}{
 		{
-			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			names:          []string{"0000##hello.sql", "0001##world.sql"},
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.2.3"),
 			want:           nil,
 			errPart:        "",
 		},
 		{
-			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			names:          []string{"0000##hello.sql", "0001##world.sql"},
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.0.0"),
-			want:           []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
+			want:           []patchVersion{{semver.MustParse("1.1.0"), "0000##hello.sql"}, {semver.MustParse("1.1.1"), "0001##world.sql"}},
 			errPart:        "",
 		},
 		{
-			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			names:          []string{"0000##hello.sql", "0001##world.sql"},
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.1.0"),
-			want:           []patchVersion{{semver.MustParse("1.1.1"), "0001__world.sql"}},
+			want:           []patchVersion{{semver.MustParse("1.1.1"), "0001##world.sql"}},
 			errPart:        "",
 		},
 		{
@@ -115,10 +114,10 @@ func TestGetPatchVersions(t *testing.T) {
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.0.0"),
 			want:           nil,
-			errPart:        "should include '__'",
+			errPart:        "should include '##'",
 		},
 		{
-			names:          []string{"00a0__hello.sql"},
+			names:          []string{"00a0##hello.sql"},
 			minorVersion:   semver.MustParse("1.1.0"),
 			currentVersion: semver.MustParse("1.0.0"),
 			want:           nil,
@@ -146,11 +145,13 @@ var (
 func TestMigrationCompatibility(t *testing.T) {
 	log.SetLevel(zap.DebugLevel)
 	pgDir := t.TempDir()
-	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
+	pgBinDir, err := postgres.Install(path.Join(pgDir, "resource"))
+	pgDataDir := path.Join(pgDir, "data")
 	require.NoError(t, err)
-	err = postgres.Start(pgPort, pgInstance.BaseDir, pgInstance.DataDir, os.Stderr, os.Stderr)
+	err = postgres.InitDB(pgBinDir, pgDataDir, pgUser)
 	require.NoError(t, err)
-	pgInstance.Port = pgPort
+	err = postgres.Start(pgPort, pgBinDir, pgDataDir)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	connCfg := dbdriver.ConnectionConfig{
@@ -162,7 +163,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{PgInstanceDir: pgInstance.BaseDir},
+		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		connCfg,
 		dbdriver.ConnectionContext{},
 	)
@@ -212,12 +213,12 @@ func TestMigrationCompatibility(t *testing.T) {
 	// The extra one is for the initial schema setup.
 	require.Len(t, histories, len(devMigrations)+1)
 
-	err = postgres.Stop(pgInstance.BaseDir, pgInstance.DataDir, os.Stdout, os.Stderr)
+	err = postgres.Stop(pgBinDir, pgDataDir)
 	require.NoError(t, err)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("1.4.1"), releaseVersion)
+	require.Equal(t, semver.MustParse("1.9.3"), releaseVersion)
 }

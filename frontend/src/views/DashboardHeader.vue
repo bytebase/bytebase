@@ -13,7 +13,7 @@
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1 whitespace-nowrap">
           <router-link
-            v-if="showDBAItem"
+            v-if="shouldShowIssueEntry"
             to="/issue"
             class="bar-link px-2 py-2 rounded-md"
             :class="getRouteLinkClass('/issue')"
@@ -38,6 +38,7 @@
           >
 
           <router-link
+            v-if="shouldShowInstanceEntry"
             to="/instance"
             class="bar-link px-2 py-2 rounded-md"
             :class="getRouteLinkClass('/instance')"
@@ -65,52 +66,63 @@
           v-if="isDevFeatures"
           class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
         >
-          <span class="hidden lg:block font-normal text-accent">
-            {{ $t("subscription.plan.title") }}
-          </span>
           <div
-            class="bar-link"
-            :class="currentPlan == 0 ? 'underline' : ''"
+            class="cursor-pointer hover:bg-link-hover focus:outline-none"
+            :class="
+              currentPlan == PlanType.FREE
+                ? 'underline text-accent'
+                : 'text-main'
+            "
             @click.prevent="switchToFree"
           >
             {{ $t("subscription.plan.free.title") }}
           </div>
           <div
-            class="bar-link"
-            :class="currentPlan == 1 ? 'underline' : ''"
+            class="cursor-pointer hover:bg-link-hover focus:outline-none"
+            :class="
+              currentPlan == PlanType.TEAM
+                ? 'underline text-accent'
+                : 'text-main'
+            "
             @click.prevent="switchToTeam"
           >
             {{ $t("subscription.plan.team.title") }}
           </div>
+          <div
+            class="cursor-pointer hover:bg-link-hover focus:outline-none"
+            :class="
+              currentPlan == PlanType.ENTERPRISE
+                ? 'underline text-accent'
+                : 'text-main'
+            "
+            @click.prevent="switchToEnterprise"
+          >
+            {{ $t("subscription.plan.enterprise.title") }}
+          </div>
+          <div class="cursor-pointer" @click="toggleLocales">
+            <heroicons-outline:translate class="w-6 h-6" />
+          </div>
+          <div class="cursor-pointer" @click="toggleDebug">
+            <svg
+              class="w-6 h-6"
+              :class="isDebug ? `text-accent` : `text-gray-400`"
+              fill="currentColor"
+              viewBox="0 0 32 32"
+            >
+              <path
+                d="M29,15h-5.1c-0.1-1.2-0.5-2.4-1-3.5c1.9-1.5,3.1-3.7,3.1-6.1V5c0-0.6-0.4-1-1-1s-1,0.4-1,1v0.4c0,1.8-0.8,3.4-2.2,4.5  c-0.5-0.7-1.2-1.2-1.9-1.7c0-0.1,0-0.1,0-0.2c0-2.2-1.8-4-4-4s-4,1.8-4,4c0,0.1,0,0.1,0,0.2c-0.7,0.5-1.3,1-1.9,1.7  C8.8,8.8,8,7.2,8,5.4V5c0-0.6-0.4-1-1-1S6,4.4,6,5v0.4c0,2.4,1.1,4.7,3.1,6.1c-0.5,1-0.9,2.2-1,3.5H3c-0.6,0-1,0.4-1,1s0.4,1,1,1  h5.1c0.1,1.2,0.5,2.4,1,3.5C7.1,21.9,6,24.2,6,26.6V27c0,0.6,0.4,1,1,1s1-0.4,1-1v-0.4c0-1.8,0.8-3.4,2.2-4.5  c1.5,1.8,3.5,2.9,5.8,2.9s4.4-1.1,5.8-2.9c1.4,1.1,2.2,2.7,2.2,4.5V27c0,0.6,0.4,1,1,1s1-0.4,1-1v-0.4c0-2.4-1.1-4.7-3.1-6.1  c0.5-1,0.9-2.2,1-3.5H29c0.6,0,1-0.4,1-1S29.6,15,29,15z"
+                stroke-width="1"
+              />
+            </svg>
+          </div>
         </div>
         <div
-          v-if="!isRelease"
-          class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
+          v-if="currentPlan === PlanType.FREE"
+          class="flex justify-between items-center min-w-fit px-4 py-2 bg-indigo-600 text-sm font-medium text-white rounded-md cursor-pointer"
+          @click="handleWantHelp"
         >
-          <span class="hidden lg:block font-normal text-accent">
-            {{ $t("settings.profile.role") }}
-          </span>
-          <div
-            class="bar-link"
-            :class="currentUser.role == 'OWNER' ? 'underline' : ''"
-            @click.prevent="switchToOwner"
-          >
-            {{ $t("common.role.owner") }}
-          </div>
-          <div
-            class="bar-link"
-            :class="currentUser.role == 'DBA' ? 'underline' : ''"
-            @click.prevent="switchToDBA"
-          >
-            {{ $t("common.role.dba") }}
-          </div>
-          <div
-            class="bar-link"
-            :class="currentUser.role == 'DEVELOPER' ? 'underline' : ''"
-            @click.prevent="switchToDeveloper"
-          >
-            {{ $t("common.role.developer") }}
-          </div>
+          <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
+          <heroicons-outline:chat-bubble-left-right class="w-5 h-5" />
         </div>
         <router-link to="/inbox" exact-active-class>
           <span
@@ -119,22 +131,6 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <div v-if="isDevFeatures" class="cursor-pointer" @click="toggleLocales">
-          <heroicons-outline:translate class="w-6 h-6" />
-        </div>
-        <div v-if="isDevFeatures" class="cursor-pointer" @click="toggleDebug">
-          <svg
-            class="w-6 h-6"
-            :class="isDebug ? `text-accent` : `text-gray-400`"
-            fill="currentColor"
-            viewBox="0 0 32 32"
-          >
-            <path
-              d="M29,15h-5.1c-0.1-1.2-0.5-2.4-1-3.5c1.9-1.5,3.1-3.7,3.1-6.1V5c0-0.6-0.4-1-1-1s-1,0.4-1,1v0.4c0,1.8-0.8,3.4-2.2,4.5  c-0.5-0.7-1.2-1.2-1.9-1.7c0-0.1,0-0.1,0-0.2c0-2.2-1.8-4-4-4s-4,1.8-4,4c0,0.1,0,0.1,0,0.2c-0.7,0.5-1.3,1-1.9,1.7  C8.8,8.8,8,7.2,8,5.4V5c0-0.6-0.4-1-1-1S6,4.4,6,5v0.4c0,2.4,1.1,4.7,3.1,6.1c-0.5,1-0.9,2.2-1,3.5H3c-0.6,0-1,0.4-1,1s0.4,1,1,1  h5.1c0.1,1.2,0.5,2.4,1,3.5C7.1,21.9,6,24.2,6,26.6V27c0,0.6,0.4,1,1,1s1-0.4,1-1v-0.4c0-1.8,0.8-3.4,2.2-4.5  c1.5,1.8,3.5,2.9,5.8,2.9s4.4-1.1,5.8-2.9c1.4,1.1,2.2,2.7,2.2,4.5V27c0,0.6,0.4,1,1,1s1-0.4,1-1v-0.4c0-2.4-1.1-4.7-3.1-6.1  c0.5-1,0.9-2.2,1-3.5H29c0.6,0,1-0.4,1-1S29.6,15,29,15z"
-              stroke-width="1"
-            />
-          </svg>
-        </div>
         <div class="ml-2">
           <div
             class="flex justify-center items-center bg-gray-100 rounded-3xl"
@@ -174,7 +170,7 @@
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
     <router-link
-      v-if="showDBAItem"
+      v-if="shouldShowIssueEntry"
       to="/issue"
       class="bar-link rounded-md block px-3 py-2"
     >
@@ -205,6 +201,17 @@
       >{{ $t("common.settings") }}</router-link
     >
   </div>
+  <BBModal
+    v-if="state.showQRCodeModal"
+    :title="$t('common.want-help')"
+    @close="state.showQRCodeModal = false"
+  >
+    <img
+      class="w-48 h-48"
+      src="@/assets/bb-helper-wechat-qrcode.webp"
+      alt="bb_helper"
+    />
+  </BBModal>
 </template>
 
 <script lang="ts">
@@ -215,21 +222,21 @@ import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "../types";
-import { brandingLogoSettingName } from "../types/setting";
-import { isDBAOrOwner, isDev } from "../utils";
+import { hasWorkspacePermission, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
   useCurrentUser,
-  useAuthStore,
   useDebugStore,
   useSettingStore,
   useSubscriptionStore,
   useInboxStore,
 } from "@/store";
 import { storeToRefs } from "pinia";
+import { PlanType } from "@/types";
 
 interface LocalState {
   showMobileMenu: boolean;
+  showQRCodeModal: boolean;
 }
 
 export default defineComponent({
@@ -237,17 +244,17 @@ export default defineComponent({
   components: { ProfileDropdown },
   setup() {
     const { t, availableLocales } = useI18n();
-    const authStore = useAuthStore();
     const debugStore = useDebugStore();
     const inboxStore = useInboxStore();
     const settingStore = useSettingStore();
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const route = useRoute();
-    const { setLocale, toggleLocales } = useLanguage();
+    const { setLocale, toggleLocales, locale } = useLanguage();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
+      showQRCodeModal: false,
     });
 
     const currentUser = useCurrentUser();
@@ -264,8 +271,18 @@ export default defineComponent({
       return classes;
     };
 
-    const showDBAItem = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
+    const shouldShowIssueEntry = computed((): boolean => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-issue",
+        currentUser.value.role
+      );
+    });
+
+    const shouldShowInstanceEntry = computed(() => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
+      );
     });
 
     const isDevFeatures = computed((): boolean => {
@@ -277,9 +294,8 @@ export default defineComponent({
     };
 
     const logoUrl = computed((): string | undefined => {
-      const brandingLogoSetting = settingStore.getSettingByName(
-        brandingLogoSettingName
-      );
+      const brandingLogoSetting =
+        settingStore.getSettingByName("bb.branding.logo");
       return brandingLogoSetting?.value;
     });
 
@@ -297,54 +313,6 @@ export default defineComponent({
     const inboxSummary = computed(() => {
       return inboxStore.getInboxSummaryByUser(currentUser.value.id);
     });
-
-    const switchToOwner = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "demo@example.com",
-          password: "1024",
-        },
-      });
-    };
-
-    const switchToDBA = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "jerry@example.com",
-          password: "2048",
-        },
-      });
-    };
-
-    const switchToDeveloper = () => {
-      authStore.login({
-        authProvider: "BYTEBASE",
-        payload: {
-          email: "tom@example.com",
-          password: "4096",
-        },
-      });
-    };
-
-    const switchToFree = () => {
-      subscriptionStore.patchSubscription("");
-    };
-
-    const switchToTeam = () => {
-      subscriptionStore.patchSubscription(
-        import.meta.env.BB_DEV_LICENSE as string
-      );
-    };
-
-    const { isDebug } = storeToRefs(debugStore);
-
-    const toggleDebug = () => {
-      debugStore.patchDebug({
-        isDebug: !isDebug.value,
-      });
-    };
 
     const kbarActions = computed(() => [
       defineAction({
@@ -398,6 +366,30 @@ export default defineComponent({
     ]);
     useRegisterActions(kbarActions);
 
+    const switchToFree = () => {
+      subscriptionStore.patchSubscription("");
+    };
+
+    const switchToTeam = () => {
+      subscriptionStore.patchSubscription(
+        import.meta.env.BB_DEV_TEAM_LICENSE as string
+      );
+    };
+
+    const switchToEnterprise = () => {
+      subscriptionStore.patchSubscription(
+        import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
+      );
+    };
+
+    const { isDebug } = storeToRefs(debugStore);
+
+    const toggleDebug = () => {
+      debugStore.patchDebug({
+        isDebug: !isDebug.value,
+      });
+    };
+
     const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
     const i18nChangeAction = computed(() =>
       defineAction({
@@ -423,23 +415,35 @@ export default defineComponent({
     ]);
     useRegisterActions(i18nActions);
 
+    const handleWantHelp = () => {
+      if (locale.value === "zh-CN") {
+        state.showQRCodeModal = true;
+      } else {
+        window.open(
+          "https://www.bytebase.com/docs/faq#how-to-reach-us",
+          "_blank"
+        );
+      }
+    };
+
     return {
       state,
       getRouteLinkClass,
+      shouldShowInstanceEntry,
+      shouldShowIssueEntry,
       logoUrl,
       currentUser,
       currentPlan,
-      showDBAItem,
+      PlanType,
       isDevFeatures,
-      isDebug,
       inboxSummary,
-      switchToOwner,
-      switchToDBA,
-      switchToDeveloper,
       switchToFree,
       switchToTeam,
-      toggleLocales,
+      switchToEnterprise,
+      isDebug,
       toggleDebug,
+      toggleLocales,
+      handleWantHelp,
     };
   },
 });

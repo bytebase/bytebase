@@ -4,8 +4,8 @@
 
 <script lang="ts" setup>
 import { uniqBy } from "lodash-es";
-import { reactive, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { reactive, onMounted, computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   useCurrentUser,
   useDatabaseStore,
@@ -14,15 +14,23 @@ import {
   useSheetStore,
   useDebugStore,
   useInstanceStore,
+  pushNotification,
+  usePolicyStore,
 } from "@/store";
+import type { Instance, Database, Connection, ConnectionAtom } from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
 import {
-  Instance,
-  Database,
-  ConnectionAtom,
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_ID,
-} from "@/types";
-import { emptyConnection, mapConnectionAtom } from "@/utils";
+  emptyConnection,
+  idFromSlug,
+  mapConnectionAtom,
+  sheetSlug as makeSheetSlug,
+  connectionSlug as makeConnectionSlug,
+  isSheetReadable,
+  isSameConnection,
+  isTempTab,
+  isDatabaseAccessible,
+} from "@/utils";
+import { useI18n } from "vue-i18n";
 
 type LocalState = {
   instanceList: Instance[];
@@ -30,6 +38,8 @@ type LocalState = {
 };
 
 const route = useRoute();
+const router = useRouter();
+const { t } = useI18n();
 
 const state = reactive<LocalState>({
   instanceList: [],
@@ -39,6 +49,7 @@ const state = reactive<LocalState>({
 const currentUser = useCurrentUser();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
+const policyStore = usePolicyStore();
 const sqlEditorStore = useSQLEditorStore();
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
@@ -52,9 +63,11 @@ const prepareAccessibleConnectionByProject = async () => {
 
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
-  const databaseList = await databaseStore.fetchDatabaseList({
-    syncStatus: "OK",
-  });
+  const databaseList = (
+    await databaseStore.fetchDatabaseList({
+      syncStatus: "OK",
+    })
+  ).filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
   state.instanceList = uniqBy(
     databaseList.map((db) => db.instance),
     (instance) => instance.id
@@ -63,6 +76,12 @@ const prepareAccessibleConnectionByProject = async () => {
 };
 
 const prepareSQLEditorContext = async () => {
+  sqlEditorStore.accessControlPolicyList =
+    await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
+      "database",
+      "bb.policy.access-control"
+    );
+
   let connectionTree: ConnectionAtom[] = [];
 
   const { instanceList, databaseList } = state;
@@ -73,11 +92,25 @@ const prepareSQLEditorContext = async () => {
       (item: ConnectionAtom) => item.id === instance.id
     )!;
 
+    const databaseMapper = mapConnectionAtom("database", instance.id);
     instanceItem.children = databaseList
       .filter((db) => db.instance.id === instance.id)
-      .map(mapConnectionAtom("database", instance.id));
+      .map((db) => {
+        const node = databaseMapper(db);
+        node.disabled = !isDatabaseAccessible(
+          db,
+          sqlEditorStore.accessControlPolicyList,
+          currentUser.value
+        );
+        if (node.disabled) {
+          // If a database node is not accessible
+          // it's not expandable either.
+          node.isLeaf = true;
+        }
+        return node;
+      });
 
-    sqlEditorStore.setConnectionTree(connectionTree);
+    sqlEditorStore.connectionTree.data = connectionTree;
   }
 
   // Won't fetch tableList for every database here.
@@ -85,85 +118,114 @@ const prepareSQLEditorContext = async () => {
 };
 
 const prepareSheet = async () => {
-  // TODO(Jim): use standard slug format instead of "_" joint format.
-
-  let sheetId = parseInt(route.query.sheetId as string, 10);
-  if (Number.isNaN(sheetId)) {
-    const sheetSlug = (route.params.sheetSlug as string) || "";
-    sheetId = parseInt(sheetSlug.split("_").pop()!, 10);
-  }
+  const sheetSlug = (route.params.sheetSlug as string) || "";
+  const sheetId = idFromSlug(sheetSlug);
   if (Number.isNaN(sheetId)) {
     return false;
   }
+  const openingSheetTab = tabStore.tabList.find(
+    (tab) => tab.sheetId === sheetId
+  );
+
   sqlEditorStore.isFetchingSheet = true;
   const sheet = await sheetStore.getOrFetchSheetById(sheetId);
   sqlEditorStore.isFetchingSheet = false;
+
   if (sheet.id === UNKNOWN_ID) {
+    if (openingSheetTab) {
+      // If a sheet is open in a tab but it returns 404 NOT_FOUND
+      // that means the sheet has been deleted somewhere else.
+      // We need to turn the sheet to an unsaved tab.
+      openingSheetTab.sheetId = undefined;
+      openingSheetTab.isSaved = false;
+    }
     return false;
   }
-
-  const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheetId === sheet.id
-  );
+  if (!isSheetReadable(sheet, currentUser.value)) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.access-denied"),
+    });
+    return false;
+  }
   if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
     tabStore.setCurrentTabId(openingSheetTab.id);
   } else {
     // Open the sheet in a "temp" tab otherwise.
     tabStore.selectOrAddTempTab();
+    tabStore.updateCurrentTab({
+      sheetId: sheet.id,
+      name: sheet.name,
+      statement: sheet.statement,
+      isSaved: true,
+      connection: {
+        ...emptyConnection(),
+        instanceId: sheet.database?.instanceId || UNKNOWN_ID,
+        databaseId: sheet.databaseId || UNKNOWN_ID,
+      },
+    });
   }
-  tabStore.updateCurrentTab({
-    sheetId: sheet.id,
-    name: sheet.name,
-    statement: sheet.statement,
-    isSaved: true,
-    connection: {
-      ...emptyConnection(),
-      projectId: sheet.database?.projectId || DEFAULT_PROJECT_ID,
-      instanceId: sheet.database?.instanceId || UNKNOWN_ID,
-      databaseId: sheet.databaseId || UNKNOWN_ID,
-    },
-  });
-
-  // TODO(Jim): remove this after refactor `sharedSheet`
-  useSQLEditorStore().setSQLEditorState({
-    sharedSheet: sheet,
-  });
 
   return true;
 };
 
 const prepareConnectionSlug = async () => {
-  // TODO(Jim): use standard slug format instead of "_" joint format.
-
   const connectionSlug = (route.params.connectionSlug as string) || "";
-  // [instanceName, instanceId, databaseName, databaseId]
-  const parts = connectionSlug.split("_");
-  const instanceId = parseInt(parts[1], 10);
-  const databaseId = parseInt(parts[3], 10);
-  if (Number.isNaN(instanceId) || Number.isNaN(databaseId)) {
+  const [instanceSlug, databaseSlug = ""] = connectionSlug.split("_");
+  const instanceId = idFromSlug(instanceSlug);
+  const databaseId = idFromSlug(databaseSlug);
+
+  if (Number.isNaN(instanceId) && Number.isNaN(databaseId)) {
     return false;
   }
 
-  tabStore.selectOrAddTempTab();
-  const connection =
-    await sqlEditorStore.fetchConnectionByInstanceIdAndDatabaseId({
-      instanceId,
-      databaseId,
-    });
-  tabStore.updateCurrentTab({
-    connection,
-  });
+  const maybeOpenNewTab = (connection: Connection) => {
+    const tab = tabStore.currentTab;
+    if (tab.sheetId) {
+      // Don't touch a saved sheet.
+      tabStore.selectOrAddTempTab();
+      return;
+    }
+    if (isTempTab(tab)) {
+      // Override current tab if it's a temp tab.
+      return;
+    }
+    if (isSameConnection(tab.connection, connection)) {
+      // Stay on current tab if its connection and target connection are equal.
+      return;
+    }
+    // Select or add a temp tab otherwise.
+    tabStore.selectOrAddTempTab();
+  };
+
+  if (Number.isNaN(databaseId)) {
+    // connected to instance
+    const connection = await sqlEditorStore.fetchConnectionByInstanceId(
+      instanceId
+    );
+    maybeOpenNewTab(connection);
+    tabStore.updateCurrentTab({ connection });
+  } else {
+    // connected to db
+    const connection =
+      await sqlEditorStore.fetchConnectionByInstanceIdAndDatabaseId(
+        instanceId,
+        databaseId
+      );
+    maybeOpenNewTab(connection);
+    tabStore.updateCurrentTab({ connection });
+  }
   return true;
 };
 
 // Get sheetId from query.
 const setConnectionFromQuery = async () => {
   // Priority:
-  // 1. sheetId in query
-  // 2. idFromSlug in sheetSlug
-  // 3. instanceId and databaseId in connectionSlug
-  // 4. disconnected
+  // 1. idFromSlug in sheetSlug
+  // 2. instanceId and databaseId in connectionSlug
+  // 3. disconnected
 
   if (await prepareSheet()) {
     return;
@@ -173,18 +235,93 @@ const setConnectionFromQuery = async () => {
     return;
   }
 
-  tabStore.selectOrAddTempTab();
   // Keep disconnected otherwise
+  // We don't need to `selectOrAddTempTab` here since we already have the
+  // default tab.
+};
+
+// Keep the URL synced with connection
+// 1. /sql-editor/sheet/{sheet_slug}  - saved sheets
+// 2. /sql-editor/{connection_slug}   - unsaved tabs
+// 3. /sql-editor                     - clean tabs
+const syncURLWithConnection = () => {
+  const connection = computed(() => tabStore.currentTab.connection);
+  watch(
+    [
+      () => connection.value.instanceId,
+      () => connection.value.databaseId,
+      () => tabStore.currentTab.sheetId,
+    ],
+    ([instanceId, databaseId, sheetId]) => {
+      if (sheetId && sheetId !== UNKNOWN_ID) {
+        const sheet = sheetStore.sheetById.get(sheetId);
+        if (sheet) {
+          router.replace({
+            name: "sql-editor.share",
+            params: {
+              sheetSlug: makeSheetSlug(sheet),
+            },
+          });
+        } else {
+          // A sheet is not found, fallback to an unsaved tab.
+          tabStore.updateCurrentTab({
+            sheetId: undefined,
+            isSaved: false,
+          });
+        }
+        return;
+      }
+      if (instanceId !== UNKNOWN_ID) {
+        const instance = instanceStore.getInstanceById(instanceId);
+        const database = databaseStore.getDatabaseById(databaseId); // might be <<Unknown database>> here
+        // Sometimes the instance and/or the database might be <<Unknown>> since
+        // they might be deleted somewhere else during the life of the page.
+        // So we need to sync the connection values for cleaning up to prevent
+        // exceptions.
+        tabStore.updateCurrentTab({
+          connection: {
+            instanceId: instance.id,
+            databaseId: database.id,
+          },
+        });
+        router.replace({
+          name: "sql-editor.detail",
+          params: {
+            connectionSlug: makeConnectionSlug(instance, database),
+          },
+        });
+        return;
+      }
+      router.replace({
+        name: "sql-editor.home",
+      });
+    },
+    { immediate: true }
+  );
 };
 
 onMounted(async () => {
-  sqlEditorStore.setConnectionContext({ isLoadingTree: true });
-  await prepareAccessibleConnectionByProject();
-  await prepareSQLEditorContext();
-  sqlEditorStore.setConnectionContext({ isLoadingTree: false });
+  if (sqlEditorStore.connectionTree.state === ConnectionTreeState.UNSET) {
+    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADING;
+    await prepareAccessibleConnectionByProject();
+    await prepareSQLEditorContext();
+    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADED;
+  }
+
+  watch(currentUser, (user) => {
+    if (user.id === UNKNOWN_ID) {
+      // Cleanup when user signed out
+      sqlEditorStore.connectionTree.data = [];
+      sqlEditorStore.connectionTree.state = ConnectionTreeState.UNSET;
+
+      tabStore.reset();
+    }
+  });
 
   await setConnectionFromQuery();
   await sqlEditorStore.fetchQueryHistoryList();
   await useDebugStore().fetchDebug();
+
+  syncURLWithConnection();
 });
 </script>

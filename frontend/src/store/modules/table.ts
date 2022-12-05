@@ -81,6 +81,15 @@ export const useTableStore = defineStore("table", {
       return table || unknown("TABLE");
     },
 
+    async getOrFetchTableByDatabaseIdAndTableId(
+      databaseId: DatabaseId,
+      tableId: TableId
+    ) {
+      const tableList = await this.getOrFetchTableListByDatabaseId(databaseId);
+      const table = tableList.find((t) => t.id === tableId);
+      return table || unknown("TABLE");
+    },
+
     setTableByDatabaseIdAndTableName({
       databaseId,
       tableName,

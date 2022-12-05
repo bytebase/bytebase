@@ -66,9 +66,7 @@
               :ref="(el: any) => (itemRefs[index] = el)"
               role="option"
               class="text-main cursor-default select-none relative py-2 pl-3 pr-9"
-              :class="
-                index === state.activeIndex && 'text-main-text bg-main-hover'
-              "
+              :class="index === state.activeIndex && 'bg-gray-200'"
               @click="doSelect(item)"
               @mouseover="state.activeIndex = index"
             >

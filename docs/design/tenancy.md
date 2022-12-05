@@ -215,7 +215,7 @@ Tenant mode projects should show databases in tenant view (TBD). Schema altering
 #### VCS
 Since we will still take the database name that's plugged to deployment configuration, the [file path template](https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template) will not change.
 ```
-{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql
+{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql
 ```
 
 #### Other Workflows
@@ -307,7 +307,7 @@ CREATE UNIQUE INDEX idx_deployment_config_project_id_name ON deployment_config(p
 ```
 
 #### Tenant Mode
-This will be a new ENUM field on the existing [project table](https://github.com/bytebase/bytebase/blob/main/store/migration/10001__init_schema.sql#L202).
+This will be a new ENUM field on the existing [project table](https://github.com/bytebase/bytebase/blob/main/store/migration/10001##init_schema.sql#L202).
 
 ### Tenancy with different database names
 

@@ -44,7 +44,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	if setup {
 		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("database", driver.connectionCtx.InstanceName),
+			zap.String("instance", driver.connectionCtx.InstanceName),
 		)
 		// Do not wrap it in a single transaction here because:
 		// 1. For MySQL, each DDL is in its own transaction. See https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
@@ -53,13 +53,13 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
-				zap.String("database", driver.connectionCtx.InstanceName),
+				zap.String("instance", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
 		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("database", driver.connectionCtx.InstanceName),
+			zap.String("instance", driver.connectionCtx.InstanceName),
 		)
 	}
 
@@ -246,7 +246,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	var query = baseQuery +
 		db.FormatParamNameInQuestionMark(paramNames) +
-		`ORDER BY created_ts DESC`
+		`ORDER BY id DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}

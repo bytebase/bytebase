@@ -2,6 +2,11 @@
   <div class="max-w-3xl mx-auto space-y-4">
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
+      <ProjectAdvancedSettingPanel
+        :project="project"
+        :allow-edit="allowEdit"
+        class="pt-4"
+      />
       <div class="pt-4">
         <ProjectMemberPanel :project="project" />
       </div>
@@ -39,8 +44,9 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { isProjectOwner } from "../utils";
+import { hasProjectPermission, hasWorkspacePermission } from "../utils";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
+import { ProjectAdvancedSettingPanel } from "../components/Project/ProjectSetting";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
 import { ProjectPatch, Project } from "../types";
 import { useCurrentUser, useProjectStore } from "@/store";
@@ -49,6 +55,7 @@ export default defineComponent({
   name: "ProjectSettingPanel",
   components: {
     ProjectGeneralSettingPanel,
+    ProjectAdvancedSettingPanel,
     ProjectMemberPanel,
   },
   props: {
@@ -65,13 +72,24 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
-    // Only the project owner can archive/restore the project info.
-    // This means even the workspace owner won't be able to edit it.
-    // There seems to be no good reason that workspace owner needs to archive/restore the project.
     const allowArchiveOrRestore = computed(() => {
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          currentUser.value.role
+        )
+      ) {
+        return true;
+      }
+
       for (const member of props.project.memberList) {
         if (member.principal.id == currentUser.value.id) {
-          if (isProjectOwner(member.role)) {
+          if (
+            hasProjectPermission(
+              "bb.permission.project.manage-general",
+              member.role
+            )
+          ) {
             return true;
           }
         }

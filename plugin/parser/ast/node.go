@@ -8,14 +8,14 @@ var (
 type Node interface {
 	Text() string
 	SetText(text string)
-	Line() int
-	SetLine(line int)
+	LastLine() int
+	SetLastLine(line int)
 }
 
 // node is the base struct for all Node.
 type node struct {
-	text string
-	line int
+	text     string
+	lastline int
 }
 
 // Text implements the Node interface.
@@ -28,10 +28,10 @@ func (n *node) SetText(text string) {
 	n.text = text
 }
 
-func (n *node) Line() int {
-	return n.line
+func (n *node) LastLine() int {
+	return n.lastline
 }
 
-func (n *node) SetLine(line int) {
-	n.line = line
+func (n *node) SetLastLine(line int) {
+	n.lastline = line
 }

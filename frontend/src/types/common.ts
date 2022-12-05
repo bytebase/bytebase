@@ -2,6 +2,7 @@ import { Activity } from "./activity";
 import { Anomaly } from "./anomaly";
 import { BackupSetting } from "./backup";
 import { Bookmark } from "./bookmark";
+import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { Database } from "./database";
 import { DataSource } from "./dataSource";
 import { Environment } from "./environment";
@@ -16,6 +17,7 @@ import {
   Project,
   ProjectMember,
   EmptyProjectRoleProviderPayload,
+  getDefaultLGTMCheckSetting,
 } from "./project";
 import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
@@ -25,6 +27,7 @@ import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
 import { Table } from "./table";
+import { Column } from "./column";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -93,7 +96,8 @@ export type DatabaseQuickActionType =
   | "quickaction.bb.database.request" // Used by Developer
   | "quickaction.bb.database.schema.update"
   | "quickaction.bb.database.data.update"
-  | "quickaction.bb.database.troubleshoot";
+  | "quickaction.bb.database.troubleshoot"
+  | "quickaction.bb.database.schema.sync";
 
 export type QuickActionType =
   | EnvironmentQuickActionType
@@ -101,14 +105,6 @@ export type QuickActionType =
   | InstanceQuickActionType
   | UserQuickActionType
   | DatabaseQuickActionType;
-
-// unknown represents an anomaly.
-// Returns as function to avoid caller accidentally mutate it.
-// UNKNOWN_ID means an anomaly, it expects a resource which is missing (e.g. Keyed lookup missing).
-export const UNKNOWN_ID = -1;
-// EMPTY_ID means an expected behavior, it expects no resource (e.g. contains an empty value, using this technic enables
-// us to declare variable as required, which leads to cleaner code)
-export const EMPTY_ID = 0;
 
 export type ResourceType =
   | "PRINCIPAL"
@@ -136,7 +132,8 @@ export type ResourceType =
   | "DEPLOYMENT_CONFIG"
   | "SHEET"
   | "SQL_REVIEW"
-  | "TABLE";
+  | "TABLE"
+  | "COLUMN";
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
@@ -165,6 +162,7 @@ interface ResourceMaker {
   (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
   (type: "TABLE"): Table;
+  (type: "COLUMN"): Column;
 }
 
 const makeUnknown = (type: ResourceType) => {
@@ -202,6 +200,7 @@ const makeUnknown = (type: ResourceType) => {
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
+    tier: "UNPROTECTED",
   };
 
   const UNKNOWN_PROJECT: Project = {
@@ -219,6 +218,8 @@ const makeUnknown = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     roleProvider: "BYTEBASE",
+    schemaChangeType: "DDL",
+    lgtmCheckSetting: getDefaultLGTMCheckSetting(),
   };
 
   const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
@@ -326,8 +327,11 @@ const makeUnknown = (type: ResourceType) => {
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
     rowStatus: "NORMAL",
+    resourceType: "",
+    resourceId: UNKNOWN_ID,
     environment: UNKNOWN_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
+    inheritFromParent: false,
     payload: {
       value: DefaultApprovalPolicy,
       assigneeGroupList: [],
@@ -537,6 +541,23 @@ const makeUnknown = (type: ResourceType) => {
     columnList: [],
   };
 
+  const UNKNOWN_COLUMN: Column = {
+    id: UNKNOWN_ID,
+    databaseId: UNKNOWN_DATABASE.id,
+    tableId: UNKNOWN_TABLE.id,
+    creatorId: UNKNOWN_PRINCIPAL.id,
+    createdTs: 0,
+    updaterId: UNKNOWN_PRINCIPAL.id,
+    updatedTs: 0,
+    name: "<<Unknown table>>",
+    position: 0,
+    nullable: false,
+    type: "Unknown type",
+    characterSet: "",
+    collation: "",
+    comment: "",
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -590,6 +611,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_SQL_REVIEW_POLICY;
     case "TABLE":
       return UNKNOWN_TABLE;
+    case "COLUMN":
+      return UNKNOWN_COLUMN;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -627,6 +650,7 @@ const makeEmpty = (type: ResourceType) => {
     rowStatus: "NORMAL",
     name: "",
     order: 0,
+    tier: "UNPROTECTED",
   };
 
   const EMPTY_PROJECT: Project = {
@@ -644,6 +668,8 @@ const makeEmpty = (type: ResourceType) => {
     tenantMode: "DISABLED",
     dbNameTemplate: "",
     roleProvider: "BYTEBASE",
+    schemaChangeType: "DDL",
+    lgtmCheckSetting: getDefaultLGTMCheckSetting(),
   };
 
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {
@@ -751,8 +777,11 @@ const makeEmpty = (type: ResourceType) => {
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
     rowStatus: "NORMAL",
+    resourceType: "",
+    resourceId: EMPTY_ID,
     environment: EMPTY_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
+    inheritFromParent: false,
     payload: {
       value: DefaultApprovalPolicy,
       assigneeGroupList: [],

@@ -16,6 +16,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	tidbparser "github.com/pingcap/tidb/parser"
+	tidbast "github.com/pingcap/tidb/parser/ast"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -27,13 +30,25 @@ func FormatErrorWithQuery(err error, query string) error {
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.
+// This function only used for SQLite, snowflake and clickhouse.
+// For MySQL and PostgreSQL, use parser.SplitMultiSQLStream instead.
 func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
-	scanner := bufio.NewScanner(sc)
-	s := ""
+	// TODO(rebelice): use parser/tokenizer to split SQL statements.
+	reader := bufio.NewReader(sc)
+	var sb strings.Builder
 	delimiter := false
 	comment := false
-	for scanner.Scan() {
-		line := scanner.Text()
+	done := false
+	for !done {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				done = true
+			} else {
+				return err
+			}
+		}
+		line = strings.TrimRight(line, "\r\n")
 
 		execute := false
 		switch {
@@ -55,7 +70,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			}
 			comment = false
 			continue
-		case s == "" && line == "":
+		case sb.Len() == 0 && line == "":
 			continue
 		case strings.HasPrefix(line, "--"):
 			continue
@@ -66,25 +81,29 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 			delimiter = false
 			execute = true
 		case strings.HasSuffix(line, ";"):
-			s = s + line + "\n"
+			_, _ = sb.WriteString(line)
+			_, _ = sb.WriteString("\n")
 			if !delimiter {
 				execute = true
 			}
 		default:
-			s = s + line + "\n"
+			_, _ = sb.WriteString(line)
+			_, _ = sb.WriteString("\n")
 			continue
 		}
 		if execute {
+			s := sb.String()
 			s = strings.Trim(s, "\n\t ")
 			if s != "" {
 				if err := f(s); err != nil {
 					return errors.Wrapf(err, "execute query %q failed", s)
 				}
 			}
-			s = ""
+			sb.Reset()
 		}
 	}
 	// Apply the remaining content.
+	s := sb.String()
 	s = strings.Trim(s, "\n\t ")
 	if s != "" {
 		if err := f(s); err != nil {
@@ -92,7 +111,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 		}
 	}
 
-	return scanner.Err()
+	return nil
 }
 
 // NeedsSetupMigrationSchema will return whether it's needed to setup migration schema.
@@ -181,7 +200,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 				return -1, "", err
 			}
 		}
-		if err := executor.Execute(ctx, statement); err != nil {
+		if _, err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
 			return -1, "", FormatError(err)
 		}
 	}
@@ -305,12 +324,24 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
-	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
-	readOnly := true
+func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	readOnly := queryContext.ReadOnly
+	limit := queryContext.Limit
+	if !readOnly {
+		return queryAdmin(ctx, sqldb, statement, limit)
+	}
+	// Limit SQL query result size.
+	if dbType == db.MySQL {
+		// MySQL 5.7 doesn't support WITH clause.
+		statement = getMySQLStatementWithResultLimit(statement, limit)
+	} else {
+		statement = getStatementWithResultLimit(statement, limit)
+	}
+
 	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
 	// https://github.com/pingcap/tidb/issues/34626
-	if dbType == db.TiDB {
+	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
+	if dbType == db.TiDB || dbType == db.ClickHouse {
 		readOnly = false
 	}
 	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})
@@ -320,6 +351,100 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 	defer tx.Rollback()
 
 	rows, err := tx.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	fieldMap, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, columnNames, queryContext.SensitiveDataMap)
+	if err != nil {
+		return nil, err
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	colCount := len(columnTypes)
+
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		// DatabaseTypeName returns the database system name of the column type.
+		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+
+	data := []interface{}{}
+	for rows.Next() {
+		scanArgs := make([]interface{}, colCount)
+		for i, v := range columnTypeNames {
+			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
+			switch v {
+			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+				scanArgs[i] = new(sql.NullString)
+			case "BOOL":
+				scanArgs[i] = new(sql.NullBool)
+			case "INT", "INTEGER":
+				scanArgs[i] = new(sql.NullInt64)
+			case "FLOAT":
+				scanArgs[i] = new(sql.NullFloat64)
+			default:
+				scanArgs[i] = new(sql.NullString)
+			}
+		}
+
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, FormatError(err)
+		}
+
+		rowData := []interface{}{}
+		for i := range columnTypes {
+			if sensitive, ok := fieldMap[i]; ok && sensitive {
+				rowData = append(rowData, "******")
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
+				rowData = append(rowData, v.Bool)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
+				rowData = append(rowData, v.String)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
+				rowData = append(rowData, v.Int64)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
+				rowData = append(rowData, v.Int32)
+				continue
+			}
+			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
+				rowData = append(rowData, v.Float64)
+				continue
+			}
+			// If none of them match, set nil to its value.
+			rowData = append(rowData, nil)
+		}
+
+		data = append(data, rowData)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return []interface{}{columnNames, columnTypeNames, data}, nil
+}
+
+// query will execute a query.
+func queryAdmin(ctx context.Context, sqldb *sql.DB, statement string, _ int) ([]interface{}, error) {
+	rows, err := sqldb.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, FormatErrorWithQuery(err, statement)
 	}
@@ -344,7 +469,7 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	rowCount := 0
+	// TODO(d): share the common code.
 	data := []interface{}{}
 	for rows.Next() {
 		scanArgs := make([]interface{}, colCount)
@@ -395,16 +520,36 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		}
 
 		data = append(data, rowData)
-		rowCount++
-		if rowCount == limit {
-			break
-		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
 	return []interface{}{columnNames, columnTypeNames, data}, nil
+}
+
+func getStatementWithResultLimit(stmt string, limit int) string {
+	stmt = strings.TrimRight(stmt, " \n\t;")
+	if !strings.HasPrefix(stmt, "EXPLAIN") {
+		limitPart := ""
+		if limit > 0 {
+			limitPart = fmt.Sprintf(" LIMIT %d", limit)
+		}
+		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
+	}
+	return stmt
+}
+
+func getMySQLStatementWithResultLimit(stmt string, limit int) string {
+	stmt = strings.TrimRight(stmt, " \n\t;")
+	if !strings.HasPrefix(stmt, "EXPLAIN") {
+		limitPart := ""
+		if limit > 0 {
+			limitPart = fmt.Sprintf(" LIMIT %d", limit)
+		}
+		return fmt.Sprintf("SELECT * FROM (%s) result%s;", stmt, limitPart)
+	}
+	return stmt
 }
 
 // FindMigrationHistoryList will find the list of migration history.
@@ -540,4 +685,148 @@ func fromStoredVersion(storedVersion string) (bool, string, string, error) {
 		return false, "", "", errors.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
 	}
 	return true, fmt.Sprintf("%d.%d.%d", major, minor, patch), suffix, nil
+}
+
+type sensitiveFiledMap map[int]bool
+
+func extractSensitiveField(dbType db.Type, statement string, currentDatabase string, fieldName []string, sensitiveDataMap db.SensitiveDataMap) (sensitiveFiledMap, error) {
+	fieldMap := make(sensitiveFiledMap)
+	switch dbType {
+	case db.MySQL, db.TiDB:
+	default:
+		return fieldMap, nil
+	}
+
+	if sensitiveDataMap == nil {
+		return fieldMap, nil
+	}
+	p := tidbparser.New()
+
+	// To support MySQL8 window function syntax.
+	// See https://github.com/bytebase/bytebase/issues/175.
+	p.EnableWindowFunc(true)
+	nodeList, _, err := p.Parse(statement, "", "")
+	if err != nil {
+		return nil, err
+	}
+	if len(nodeList) != 1 {
+		return nil, errors.Errorf("expect one statement but found %d", len(nodeList))
+	}
+	node, ok := nodeList[0].(*tidbast.SelectStmt)
+	if !ok {
+		return fieldMap, nil
+	}
+
+	selectStmt, ok := extractMySQLOriginSelect(node)
+	if !ok {
+		return fieldMap, nil
+	}
+
+	databaseName, tableName, ok := extractMySQLSingleTable(selectStmt.From)
+	if !ok {
+		return fieldMap, nil
+	}
+	if databaseName == "" {
+		databaseName = currentDatabase
+	}
+	starLength := extractMySQLStarLength(fieldName, selectStmt)
+	fieldPosition := 0
+	for _, field := range selectStmt.Fields.Fields {
+		if field.WildCard != nil {
+			for i := 0; i < starLength; i++ {
+				position := fieldPosition + i
+				column := db.SensitiveData{
+					Database: databaseName,
+					Table:    tableName,
+					Column:   fieldName[position],
+				}
+				if _, ok := sensitiveDataMap[column]; ok {
+					fieldMap[position] = true
+				}
+			}
+			fieldPosition += starLength
+		} else {
+			if field.Expr != nil {
+				columnName, ok := field.Expr.(*tidbast.ColumnNameExpr)
+				if ok {
+					column := db.SensitiveData{
+						Database: databaseName,
+						Table:    tableName,
+						Column:   columnName.Name.Name.O,
+					}
+					if _, ok := sensitiveDataMap[column]; ok {
+						fieldMap[fieldPosition] = true
+					}
+				}
+			}
+			fieldPosition++
+		}
+	}
+	return fieldMap, nil
+}
+
+func extractMySQLOriginSelect(in *tidbast.SelectStmt) (*tidbast.SelectStmt, bool) {
+	// For read only MySQL query, we will run as SELECT * FROM (sql) result LIMIT,
+	// so we need to extract the origin SELECT statement.
+	// details see getMySQLStatementWithResultLimit()
+	if in == nil || in.From == nil || in.From.TableRefs == nil || in.From.TableRefs.Left == nil || in.From.TableRefs.Right != nil {
+		return nil, false
+	}
+	tableSource, ok := in.From.TableRefs.Left.(*tidbast.TableSource)
+	if !ok {
+		return nil, false
+	}
+	selectStmt, ok := tableSource.Source.(*tidbast.SelectStmt)
+	if !ok {
+		return nil, false
+	}
+	return selectStmt, true
+}
+
+// extractMySQLStarLength works for single table in FROM clause.
+func extractMySQLStarLength(fieldName []string, selectStmt *tidbast.SelectStmt) int {
+	starFieldCount := 0
+	for _, field := range selectStmt.Fields.Fields {
+		if field.WildCard != nil {
+			starFieldCount++
+		}
+	}
+	if starFieldCount == 0 {
+		return 0
+	}
+	nonStarFieldCount := len(selectStmt.Fields.Fields) - starFieldCount
+	return (len(fieldName) - nonStarFieldCount) / starFieldCount
+}
+
+func extractMySQLSingleTable(fromClause *tidbast.TableRefsClause) (string, string, bool) {
+	if fromClause == nil || fromClause.TableRefs == nil {
+		return "", "", false
+	}
+	if fromClause.TableRefs.Right != nil {
+		return "", "", false
+	}
+	if fromClause.TableRefs.Left == nil {
+		return "", "", false
+	}
+	tableSource, ok := fromClause.TableRefs.Left.(*tidbast.TableSource)
+	if !ok {
+		return "", "", false
+	}
+	tableName, ok := tableSource.Source.(*tidbast.TableName)
+	if !ok {
+		return "", "", false
+	}
+	return tableName.Schema.O, tableName.Name.O, true
+}
+
+// IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
+func IsAffectedRowsStatement(stmt string) bool {
+	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
+	upperStatement := strings.ToUpper(stmt)
+	for _, prefix := range affectedRowsStatementPrefix {
+		if strings.HasPrefix(upperStatement, prefix) {
+			return true
+		}
+	}
+	return false
 }

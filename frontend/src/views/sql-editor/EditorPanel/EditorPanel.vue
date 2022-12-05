@@ -1,102 +1,51 @@
 <template>
   <div class="flex h-full w-full flex-col justify-start items-start">
-    <EditorAction @save-sheet="handleSaveSheet" />
+    <EditorAction @execute="handleExecute" @save-sheet="trySaveSheet" />
 
-    <div
-      v-if="isProtectedEnvironment"
-      class="w-full py-1 px-4 bg-warning text-white"
-    >
-      {{ $t("sql-editor.sql-execute-in-protected-environment") }}
-    </div>
+    <ConnectionPathBar />
 
     <template v-if="!tabStore.isDisconnected">
-      <SQLEditor @save-sheet="handleSaveSheet" />
+      <SQLEditor @execute="handleExecute" @save-sheet="trySaveSheet" />
     </template>
     <template v-else>
       <ConnectionHolder />
     </template>
 
-    <BBModal
-      v-if="sqlEditorStore.isShowExecutingHint"
-      :title="$t('common.tips')"
-      @close="handleClose"
-    >
-      <ExecuteHint @close="handleClose" />
-    </BBModal>
-    <BBModal
-      v-if="isShowSaveSheetModal"
-      :title="$t('sql-editor.save-sheet')"
-      @close="handleCloseModal"
-    >
-      <SaveSheetModal @close="handleCloseModal" @save-sheet="handleSaveSheet" />
-    </BBModal>
+    <ExecutingHintModal />
+
+    <SaveSheetModal ref="saveSheetModal" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { ref } from "vue";
 
-import {
-  useTabStore,
-  useSQLEditorStore,
-  useSheetStore,
-  useInstanceStore,
-} from "@/store";
-import { defaultTabName } from "@/utils/tab";
-import EditorAction from "./EditorAction.vue";
+import type { ExecuteConfig, ExecuteOption } from "@/types";
+import { useTabStore } from "@/store";
 import SQLEditor from "./SQLEditor.vue";
-import ExecuteHint from "./ExecuteHint.vue";
-import ConnectionHolder from "./ConnectionHolder.vue";
-import SaveSheetModal from "./SaveSheetModal.vue";
+import {
+  EditorAction,
+  ConnectionPathBar,
+  ConnectionHolder,
+  ExecutingHintModal,
+  SaveSheetModal,
+} from "../EditorCommon";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 
 const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
-const sheetStore = useSheetStore();
-const instanceStore = useInstanceStore();
+const saveSheetModal = ref<InstanceType<typeof SaveSheetModal>>();
 
-const isShowSaveSheetModal = ref(false);
+const { execute } = useExecuteSQL();
 
-const isProtectedEnvironment = computed(() => {
-  const { instanceId } = tabStore.currentTab.connection;
-  const instance = instanceStore.getInstanceById(instanceId);
-  return instance.environment.tier === "PROTECTED";
-});
-
-const handleClose = () => {
-  sqlEditorStore.setSQLEditorState({
-    isShowExecutingHint: false,
-  });
+const handleExecute = (
+  query: string,
+  config: ExecuteConfig,
+  option?: ExecuteOption
+) => {
+  execute(query, config, option);
 };
 
-const handleSaveSheet = async (sheetName?: string) => {
-  if (tabStore.currentTab.name === defaultTabName.value && !sheetName) {
-    isShowSaveSheetModal.value = true;
-    return;
-  }
-  isShowSaveSheetModal.value = false;
-
-  const { name, statement, sheetId } = tabStore.currentTab;
-  sheetName = sheetName ? sheetName : name;
-
-  const conn = tabStore.currentTab.connection;
-  const sheetUpsert = {
-    id: sheetId,
-    projectId: conn.projectId,
-    databaseId: conn.databaseId,
-    name: sheetName,
-    statement: statement,
-  };
-
-  const sheet = await sheetStore.upsertSheet(sheetUpsert);
-
-  tabStore.updateCurrentTab({
-    sheetId: sheet.id,
-    isSaved: true,
-    name: sheetName,
-  });
-};
-
-const handleCloseModal = () => {
-  isShowSaveSheetModal.value = false;
+const trySaveSheet = (sheetName?: string) => {
+  saveSheetModal.value?.trySaveSheet(sheetName);
 };
 </script>

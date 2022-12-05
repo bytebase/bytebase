@@ -5,12 +5,12 @@ import {
   IssueId,
   PrincipalId,
   ProjectId,
+  TaskId,
 } from "./id";
 import { Pipeline, PipelineCreate } from "./pipeline";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { MigrationType } from "./instance";
-import { VCSPushEvent } from "./vcs";
 
 type IssueTypeGeneral = "bb.issue.general";
 
@@ -19,6 +19,7 @@ type IssueTypeDatabase =
   | "bb.issue.database.grant"
   | "bb.issue.database.schema.update"
   | "bb.issue.database.data.update"
+  | "bb.issue.database.rollback"
   | "bb.issue.database.schema.update.ghost"
   | "bb.issue.database.restore.pitr";
 
@@ -44,26 +45,25 @@ export type CreateDatabaseContext = {
   labels?: string; // JSON encoded
 };
 
-export type UpdateSchemaDetail = {
+export type MigrationDetail = {
+  migrationType: MigrationType;
   databaseId: DatabaseId;
   databaseName: string;
   statement: string;
   earliestAllowedTs: number;
 };
 
-export type UpdateSchemaGhostDetail = UpdateSchemaDetail & {
+export type UpdateSchemaGhostDetail = MigrationDetail & {
   // empty by now
   // more input parameters in the future
 };
 
-export type UpdateSchemaContext = {
-  migrationType: MigrationType;
-  updateSchemaDetailList: UpdateSchemaDetail[];
-  vcsPushEvent?: VCSPushEvent;
+export type MigrationContext = {
+  detailList: MigrationDetail[];
 };
 
 export type UpdateSchemaGhostContext = {
-  updateSchemaGhostDetailList: UpdateSchemaGhostDetail[];
+  detailList: UpdateSchemaGhostDetail[];
 };
 
 export type PITRContext = {
@@ -73,14 +73,22 @@ export type PITRContext = {
   createDatabaseContext?: CreateDatabaseContext;
 };
 
+export type RollbackContext = {
+  // IssueID is the id of the issue to rollback.
+  issueId: IssueId;
+  // TaskIDList is the list of task ids to rollback.
+  taskIdList: TaskId[];
+};
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type EmptyContext = {};
 
 export type IssueCreateContext =
   | CreateDatabaseContext
-  | UpdateSchemaContext
+  | MigrationContext
   | UpdateSchemaGhostContext
   | PITRContext
+  | RollbackContext
   | EmptyContext;
 
 export type IssuePayload = { [key: string]: any };

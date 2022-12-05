@@ -5,6 +5,7 @@
     :disabled="disabled"
     :placeholder="$t('instance.select')"
     :show-prefix-item="true"
+    :error="!validate()"
     @select-item="(instance) => $emit('select-instance-id', instance.id)"
   >
     <template #menuItem="{ item: instance }">
@@ -16,7 +17,7 @@
 <script lang="ts">
 import { useInstanceStore } from "@/store";
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
-import { Instance } from "../types";
+import { Instance, UNKNOWN_ID } from "../types";
 
 interface LocalState {
   selectedInstance?: Instance;
@@ -41,6 +42,10 @@ export default defineComponent({
     disabled: {
       default: false,
       type: Boolean,
+    },
+    required: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ["select-instance-id"],
@@ -78,6 +83,15 @@ export default defineComponent({
       return list.filter(props.filter);
     });
 
+    const validate = (): boolean => {
+      if (!props.required) {
+        return true;
+      }
+      return (
+        !!state.selectedInstance && state.selectedInstance.id !== UNKNOWN_ID
+      );
+    };
+
     // The instance list might change if environmentId changes, and the previous selected id
     // might not exist in the new list. In such case, we need to invalidate the selection
     // and emit the event.
@@ -107,6 +121,7 @@ export default defineComponent({
     return {
       state,
       instanceList,
+      validate,
     };
   },
 });

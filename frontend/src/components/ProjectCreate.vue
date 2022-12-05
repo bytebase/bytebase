@@ -1,8 +1,8 @@
 <template>
-  <form class="w-144 px-4 py-2 space-y-6 divide-y divide-block-border">
+  <form class="w-96 py-2 space-y-6 divide-y divide-block-border">
     <div class="grid gap-y-6 gap-x-4 grid-cols-1">
       <div class="col-span-1">
-        <label for="name" class="text-lg leading-6 font-medium text-control">
+        <label for="name" class="text-base leading-6 font-medium text-control">
           {{ $t("project.create-modal.project-name") }}
           <span class="text-red-600">*</span>
         </label>
@@ -17,7 +17,7 @@
         />
       </div>
       <div class="col-span-1">
-        <label for="name" class="text-lg leading-6 font-medium text-control">
+        <label for="name" class="text-base leading-6 font-medium text-control">
           {{ $t("project.create-modal.key") }}
           <span class="text-red-600">*</span>
           <span class="ml-1 text-sm font-normal">
@@ -32,7 +32,7 @@
         />
       </div>
       <div class="col-span-1">
-        <div for="name" class="text-lg leading-6 font-medium text-control">
+        <div for="name" class="text-base leading-6 font-medium text-control">
           {{ $t("common.mode") }}
           <span class="text-red-600">*</span>
         </div>
@@ -57,13 +57,17 @@
                 value="TENANT"
               />
               <label class="label">{{ $t("project.mode.tenant") }}</label>
+              <FeatureBadge
+                feature="bb.feature.multi-tenancy"
+                class="text-accent"
+              />
             </div>
           </div>
         </div>
       </div>
       <div v-if="state.project.tenantMode === 'TENANT'" class="col-span-1">
         <label
-          class="text-lg leading-6 font-medium text-control select-none flex items-center"
+          class="text-base leading-6 font-medium text-control select-none flex items-center"
         >
           {{ $t("project.db-name-template") }}
           <BBCheckbox
@@ -95,7 +99,7 @@
           class="mt-2 w-full placeholder-gray-300"
           :required="true"
           :value="state.project.dbNameTemplate"
-          placeholder="e.g. {{DB_NAME}}_{{TENANT}}"
+          :placeholder="`e.g. ${DEFAULT_DB_NAME_TEMPLATE}`"
           @input="
             state.project.dbNameTemplate = (
               $event.target as HTMLInputElement
@@ -143,15 +147,13 @@ import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
-import { generateDefaultSchedule, projectSlug, randomString } from "@/utils";
-import { ProjectCreate } from "@/types";
+import { projectSlug, randomString } from "@/utils";
+import { Project, ProjectCreate } from "@/types";
 import {
   hasFeature,
   pushNotification,
   useUIStateStore,
   useProjectStore,
-  useEnvironmentList,
-  useDeploymentStore,
 } from "@/store";
 
 interface LocalState {
@@ -160,6 +162,8 @@ interface LocalState {
   enableDbNameTemplate: boolean;
   isCreating: boolean;
 }
+
+const DEFAULT_DB_NAME_TEMPLATE = "{{DB_NAME}}__{{TENANT}}";
 
 export default defineComponent({
   name: "ProjectCreate",
@@ -174,9 +178,9 @@ export default defineComponent({
         name: "New Project",
         key: randomString(3).toUpperCase(),
         tenantMode: "DISABLED",
-        dbNameTemplate: "",
+        dbNameTemplate: "{{DB_NAME}}_{{TENANT}}",
         roleProvider: "BYTEBASE",
-      },
+      } as Project,
       showFeatureModal: false,
       enableDbNameTemplate: false,
       isCreating: false,
@@ -203,7 +207,9 @@ export default defineComponent({
     watch(
       () => state.enableDbNameTemplate,
       (on) => {
-        if (!on) {
+        if (on) {
+          state.project.dbNameTemplate = DEFAULT_DB_NAME_TEMPLATE;
+        } else {
           state.project.dbNameTemplate = "";
         }
       }
@@ -246,19 +252,6 @@ export default defineComponent({
           path: `/project/${projectSlug(createdProject)}`,
           hash: "",
         };
-        if (state.project.tenantMode === "TENANT") {
-          // Generate and save default deployment configuration if it's a tenant mode project
-          const environmentList = useEnvironmentList(["NORMAL"]);
-          const schedule = generateDefaultSchedule(environmentList.value);
-          await useDeploymentStore().patchDeploymentConfigByProjectId({
-            projectId: createdProject.id,
-            deploymentConfigPatch: {
-              payload: JSON.stringify(schedule),
-            },
-          });
-
-          url.hash = "deployment-config";
-        }
         router.push(url);
         emit("dismiss");
       } finally {
@@ -271,6 +264,7 @@ export default defineComponent({
     };
 
     return {
+      DEFAULT_DB_NAME_TEMPLATE,
       state,
       allowCreate,
       cancel,

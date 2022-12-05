@@ -16,9 +16,11 @@ jobs:
       matrix:
         include:
           - docker-image-tag: "dev-ci"
-            docker-build-args: "RELEASE=dev"
+            docker-build-args-release: "RELEASE=dev"
+            docker-build-args-version-suffix: "VERSION_SUFFIX=-dev-ci"
           - docker-image-tag: "release-ci"
-            docker-build-args: "RELEASE=release"
+            docker-build-args-release: "RELEASE=release"
+            docker-build-args-version-suffix: "VERSION_SUFFIX=-release-ci"
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -34,6 +36,9 @@ jobs:
           file: Dockerfile
           push: true
           tags: bytebase/bytebase:${{ matrix.docker-image-tag }}
-          build-args: ${{ matrix.docker-build-args }}
+          build-args: |
+            ${{ matrix.docker-build-args-release }}
+            ${{ matrix.docker-build-args-version-suffix }}
+            GIT_COMMIT=${{ env.GITHUB_SHA }}
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:${{ matrix.docker-image-tag }} " ${{ steps.docker_build.outputs.digest }}

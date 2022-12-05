@@ -73,13 +73,19 @@ axios.interceptors.response.use(
       // We could receive 401 when calling external service such as VCS provider,
       // in such case, we shouldn't logout.
       if (error.response.status == 401) {
-        const host = useActuatorStore().info?.host;
-        if (host && error.response.request.responseURL.startsWith(host))
+        const origin = location.origin;
+        if (error.response.request.responseURL.startsWith(origin)) {
+          // If the request URL starts with the browser's location origin
+          // e.g. http://localhost:3000/
+          // we know this is a request to Bytebase API endpoint (not an external service).
+          // Means that the auth session is error or expired.
+          // So we need to "kick out" here.
           try {
             await useAuthStore().logout();
           } finally {
             router.push({ name: "auth.signin" });
           }
+        }
       }
 
       if (error.response.data.message) {

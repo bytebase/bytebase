@@ -14,7 +14,7 @@ import (
 )
 
 // Type is the type of a VCS.
-//nolint
+// nolint
 type Type string
 
 const (
@@ -22,6 +22,9 @@ const (
 	GitLabSelfHost Type = "GITLAB_SELF_HOST"
 	// GitHubCom is the VCS type for GitHub.com.
 	GitHubCom Type = "GITHUB_COM"
+
+	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
+	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
 )
 
 // OAuthToken is the API message for OAuthToken.
@@ -41,9 +44,15 @@ type OAuthToken struct {
 
 // Commit records the commit data.
 type Commit struct {
-	ID         string
-	AuthorName string
-	CreatedTs  int64
+	ID           string
+	Title        string
+	Message      string
+	CreatedTs    int64
+	URL          string
+	AuthorName   string
+	AuthorEmail  string
+	AddedList    []string
+	ModifiedList []string
 }
 
 // FileCommit is the API message for a VCS file commit.
@@ -74,6 +83,27 @@ type FileMeta struct {
 	LastCommitID string
 }
 
+// FileDiffType is the type of file diff.
+type FileDiffType int
+
+const (
+	// FileDiffTypeUnknown means the file is an unknown diff type.
+	FileDiffTypeUnknown FileDiffType = iota
+	// FileDiffTypeAdded means the file is newly added.
+	FileDiffTypeAdded
+	// FileDiffTypeModified means the file is modified.
+	FileDiffTypeModified
+	// FileDiffTypeRemoved means the file is removed.
+	FileDiffTypeRemoved
+)
+
+// FileDiff contains file diffs between two commits.
+// It's obtained by comparing the base and head commits of a PR/MR so that we know the real changes.
+type FileDiff struct {
+	Path string
+	Type FileDiffType
+}
+
 // RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
 type RepositoryTreeNode struct {
 	Path string
@@ -82,14 +112,18 @@ type RepositoryTreeNode struct {
 
 // PushEvent is the API message for a VCS push event.
 type PushEvent struct {
-	VCSType            Type       `json:"vcsType"`
-	BaseDirectory      string     `json:"baseDir"`
-	Ref                string     `json:"ref"`
-	RepositoryID       string     `json:"repositoryId"`
-	RepositoryURL      string     `json:"repositoryUrl"`
-	RepositoryFullPath string     `json:"repositoryFullPath"`
-	AuthorName         string     `json:"authorName"`
-	FileCommit         FileCommit `json:"fileCommit"`
+	VCSType            Type     `json:"vcsType"`
+	BaseDirectory      string   `json:"baseDir"`
+	Ref                string   `json:"ref"`
+	Before             string   `json:"before"`
+	After              string   `json:"after"`
+	RepositoryID       string   `json:"repositoryId"`
+	RepositoryURL      string   `json:"repositoryUrl"`
+	RepositoryFullPath string   `json:"repositoryFullPath"`
+	AuthorName         string   `json:"authorName"`
+	CommitList         []Commit `json:"commits"`
+	// Legacy field, kept for parsing existing data
+	FileCommit FileCommit `json:"fileCommit"`
 }
 
 // State is the state of a VCS user account.
@@ -128,6 +162,35 @@ type Repository struct {
 	WebURL   string `json:"webUrl"`
 }
 
+// PullRequestFile is the API message for file in the pull request.
+type PullRequestFile struct {
+	Path         string
+	LastCommitID string
+	IsDeleted    bool
+}
+
+// BranchInfo is the API message for repository branch.
+type BranchInfo struct {
+	Name         string
+	LastCommitID string
+}
+
+// PullRequestCreate is the API message to create pull request in repository.
+type PullRequestCreate struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
+	Head  string `json:"head"`
+	Base  string `json:"base"`
+	// Flag indicating if a merge request should remove the source branch after merging.
+	// Only support GitLab.
+	RemoveHeadAfterMerged bool `json:"-"`
+}
+
+// PullRequest is the API message for pull request in repository.
+type PullRequest struct {
+	URL string `json:"url"`
+}
+
 // Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
@@ -151,6 +214,14 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// commitID: the commit ID
 	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*Commit, error)
+	// Get the diff files list between two commits
+	//
+	// oauthCtx: OAuth context to fetch commit
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// beforeCommit: the previous commit
+	// afterCommit: the current commit
+	GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]FileDiff, error)
 	// Fetch the user info of the given userID
 	//
 	// oauthCtx: OAuth context to write the file content
@@ -207,6 +278,37 @@ type Provider interface {
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
 	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
+	// GetBranch gets the given branch in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// branchName: the target branch name
+	GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*BranchInfo, error)
+	// CreateBranch creates the branch in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// branch: the new branch info
+	CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *BranchInfo) error
+	// CreatePullRequest creates the pull request in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// pullRequestID: the pull request id
+	ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
+	// pullRequestCreate: the new pull request info
+	CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) (*PullRequest, error)
+	// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+	//
+	// oauthCtx: OAuth context to create the webhook
+	// instanceURL: VCS instance URL
+	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
+	// key: the environment variable name
+	// value: the environment variable value
+	UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, key, value string) error
 	// Creates a webhook. Returns the created webhook ID on success.
 	//
 	// oauthCtx: OAuth context to create the webhook

@@ -1,7 +1,7 @@
 <template>
-  <div class="mx-4 space-y-6 divide-y divide-block-border">
-    <div class="grid gap-y-6 gap-x-4 grid-cols-4">
-      <div class="col-span-2 col-start-2 w-64">
+  <div class="space-y-6 divide-y divide-block-border">
+    <div class="w-72 mx-12 space-y-4">
+      <div class="w-full">
         <label for="project" class="textlabel">
           {{ $t("common.project") }} <span style="color: red">*</span>
         </label>
@@ -9,6 +9,7 @@
           id="project"
           class="mt-1"
           name="project"
+          required
           :disabled="!allowEditProject"
           :selected-id="state.projectId"
           @select-project-id="selectProject"
@@ -16,7 +17,7 @@
       </div>
 
       <!-- Providing a preview of generated database name in template mode -->
-      <div v-if="isDbNameTemplateMode" class="col-span-2 col-start-2 w-64">
+      <div v-if="isDbNameTemplateMode" class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.generated-database-name") }}
           <NTooltip trigger="hover" placement="top">
@@ -44,7 +45,7 @@
         />
       </div>
 
-      <div class="col-span-2 col-start-2 w-64">
+      <div class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.new-database-name") }}
           <span class="text-red-600">*</span>
@@ -66,10 +67,7 @@
         </span>
       </div>
 
-      <div
-        v-if="selectedInstance.engine == 'CLICKHOUSE'"
-        class="col-span-2 col-start-2 w-64"
-      >
+      <div v-if="selectedInstance.engine == 'CLICKHOUSE'" class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.cluster") }}
           <span class="text-red-600">*</span>
@@ -93,10 +91,11 @@
         filter="required"
       />
 
-      <div class="col-span-2 col-start-2 w-64">
+      <div class="w-full">
         <label for="environment" class="textlabel">
           {{ $t("common.environment") }} <span style="color: red">*</span>
         </label>
+        <!-- It's default selected to the first env, so we don't need to set `required` here -->
         <EnvironmentSelect
           id="environment"
           class="mt-1 w-full"
@@ -107,7 +106,7 @@
         />
       </div>
 
-      <div class="col-span-2 col-start-2 w-64">
+      <div class="w-full">
         <div class="flex flex-row items-center space-x-1">
           <InstanceEngineIcon
             v-if="state.instanceId"
@@ -123,6 +122,7 @@
             id="instance"
             class="mt-1"
             name="instance"
+            required
             :disabled="!allowEditInstance"
             :selectedId="state.instanceId"
             :environmentId="state.environmentId"
@@ -131,7 +131,7 @@
         </div>
       </div>
 
-      <div v-if="requireDatabaseOwnerName" class="col-span-2 col-start-2 w-64">
+      <div v-if="requireDatabaseOwnerName" class="w-full">
         <label for="name" class="textlabel">
           {{ $t("create-db.database-owner-name") }}
           <span class="text-red-600">*</span>
@@ -148,6 +148,7 @@
 
       <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
       <DatabaseLabelForm
+        class="w-full"
         :project="project"
         :label-list="state.labelList"
         filter="optional"
@@ -159,7 +160,7 @@
           selectedInstance.engine != 'SNOWFLAKE'
         "
       >
-        <div class="col-span-2 col-start-2 w-64">
+        <div class="w-full">
           <label for="charset" class="textlabel">
             {{
               selectedInstance.engine == "POSTGRES"
@@ -177,7 +178,7 @@
           />
         </div>
 
-        <div class="col-span-2 col-start-2 w-64">
+        <div class="w-full">
           <label for="collation" class="textlabel">
             {{ $t("db.collation") }}
           </label>
@@ -194,7 +195,7 @@
         </div>
       </template>
 
-      <div v-if="showAssigneeSelect" class="col-span-2 col-start-2 w-64">
+      <div v-if="showAssigneeSelect" class="w-full">
         <label for="user" class="textlabel">
           {{ $t("common.assignee") }} <span class="text-red-600">*</span>
         </label>
@@ -211,8 +212,9 @@
         />
       </div>
     </div>
+
     <!-- Create button group -->
-    <div class="pt-4 flex justify-end">
+    <div class="w-full pt-4 flex justify-end">
       <button
         type="button"
         class="btn-normal py-2 px-4"
@@ -281,7 +283,7 @@ import {
 } from "../types";
 import {
   buildDatabaseNameByTemplateAndLabelList,
-  isDBAOrOwner,
+  hasWorkspacePermission,
   issueSlug,
 } from "../utils";
 import { useEventListener } from "@vueuse/core";
@@ -361,7 +363,12 @@ export default defineComponent({
     watchEffect(prepareInstanceList);
 
     const showAssigneeSelect = computed(() => {
-      return !isDBAOrOwner(currentUser.value.role);
+      // If the role can't change assignee after creating the issue, then we will show the
+      // assignee select in the prep stage here to request a particular assignee.
+      return !hasWorkspacePermission(
+        "bb.permission.workspace.manage-issue",
+        currentUser.value.role
+      );
     });
 
     const state = reactive<LocalState>({

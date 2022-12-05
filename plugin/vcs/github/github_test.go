@@ -17,16 +17,12 @@ import (
 )
 
 func TestProvider_FetchUserInfo(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/users/octocat", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.github.com/en/rest/reference/users#get-a-user
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/users/octocat", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/reference/users#get-a-user
+			Body: io.NopCloser(strings.NewReader(`
 {
   "login": "octocat",
   "id": 1,
@@ -74,11 +70,8 @@ func TestProvider_FetchUserInfo(t *testing.T) {
   }
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -205,17 +198,13 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 		assert.EqualError(t, got, want)
 	})
 
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						switch r.URL.Path {
-						case "/repos/octocat/Hello-World/collaborators":
-							return &http.Response{
-								StatusCode: http.StatusOK,
-								// Example response taken from https://docs.github.com/en/rest/collaborators/collaborators#list-repository-collaborators
-								Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/repos/octocat/Hello-World/collaborators":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response taken from https://docs.github.com/en/rest/collaborators/collaborators#list-repository-collaborators
+				Body: io.NopCloser(strings.NewReader(`
 [
   {
     "login": "octocat",
@@ -247,12 +236,12 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
   }
 ]
 `)),
-							}, nil
-						case "/users/octocat":
-							return &http.Response{
-								StatusCode: http.StatusOK,
-								// Example response taken from https://docs.github.com/en/rest/reference/users#get-a-user
-								Body: io.NopCloser(strings.NewReader(`
+			}, nil
+		case "/users/octocat":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response taken from https://docs.github.com/en/rest/reference/users#get-a-user
+				Body: io.NopCloser(strings.NewReader(`
 {
   "login": "octocat",
   "id": 1,
@@ -300,13 +289,10 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
   }
 }
 `)),
-							}, nil
-						}
-						return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
-					},
-				},
-			},
-		},
+			}, nil
+		}
+		return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
+	},
 	)
 
 	ctx := context.Background()
@@ -327,16 +313,12 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 }
 
 func TestProvider_FetchCommitByID(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/octocat/Hello-World/git/commits/7638417db6d59f3c431d3e1f261cc637155684cd", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.github.com/en/rest/git/commits#get-a-commit
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/octocat/Hello-World/git/commits/7638417db6d59f3c431d3e1f261cc637155684cd", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/git/commits#get-a-commit
+			Body: io.NopCloser(strings.NewReader(`
 {
   "sha": "7638417db6d59f3c431d3e1f261cc637155684cd",
   "node_id": "MDY6Q29tbWl0NmRjYjA5YjViNTc4NzVmMzM0ZjYxYWViZWQ2OTVlMmU0MTkzZGI1ZQ==",
@@ -372,11 +354,8 @@ func TestProvider_FetchCommitByID(t *testing.T) {
   }
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -392,29 +371,22 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 }
 
 func TestProvider_ExchangeOAuthToken(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/login/oauth/access_token", r.URL.Path)
-						assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
-						assert.Equal(t, "application/json", r.Header.Get("Accept"))
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#response
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/login/oauth/access_token", r.URL.Path)
+		assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
+		assert.Equal(t, "application/json", r.Header.Get("Accept"))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#response
+			Body: io.NopCloser(strings.NewReader(`
 {
   "access_token":"gho_16C7e42F292c6912E7710c838347Ae178B4a",
   "scope":"repo,gist",
   "token_type":"bearer"
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -437,16 +409,12 @@ func TestProvider_ExchangeOAuthToken(t *testing.T) {
 }
 
 func TestProvider_FetchAllRepositoryList(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/user/repos", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response derived from https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/user/repos", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
+			Body: io.NopCloser(strings.NewReader(`
 [
   {
     "id": 1296269,
@@ -584,11 +552,8 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
   }
 ]
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -608,16 +573,12 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 }
 
 func TestProvider_FetchRepositoryFileList(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/octocat/Hello-World/git/trees/main", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.github.com/en/rest/git/trees#get-a-tree
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/octocat/Hello-World/git/trees/main", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/git/trees#get-a-tree
+			Body: io.NopCloser(strings.NewReader(`
 {
   "sha": "9fb037999f264ba9a7fc6274d15fa3ae2ab98312",
   "url": "https://api.github.com/repos/octocat/Hello-World/trees/9fb037999f264ba9a7fc6274d15fa3ae2ab98312",
@@ -657,11 +618,8 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
   "truncated": false
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	t.Run("no path prefix", func(t *testing.T) {
@@ -704,21 +662,17 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 }
 
 func TestProvider_CreateFile(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/octocat/Hello-World/contents/notes%2Fhello.txt", r.URL.RawPath)
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/octocat/Hello-World/contents/notes%2Fhello.txt", r.URL.RawPath)
 
-						body, err := io.ReadAll(r.Body)
-						require.NoError(t, err)
-						wantBody := `{"message":"my commit message","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","branch":"master"}`
-						assert.Equal(t, wantBody, string(body))
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
-							Body: io.NopCloser(strings.NewReader(`
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		wantBody := `{"message":"my commit message","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","branch":"master"}`
+		assert.Equal(t, wantBody, string(body))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+			Body: io.NopCloser(strings.NewReader(`
 {
   "content": {
     "name": "hello.txt",
@@ -772,11 +726,8 @@ func TestProvider_CreateFile(t *testing.T) {
   }
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -796,21 +747,17 @@ func TestProvider_CreateFile(t *testing.T) {
 }
 
 func TestProvider_OverwriteFile(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/octocat/Hello-World/contents/notes%2Fhello.txt", r.URL.RawPath)
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/octocat/Hello-World/contents/notes%2Fhello.txt", r.URL.RawPath)
 
-						body, err := io.ReadAll(r.Body)
-						require.NoError(t, err)
-						wantBody := `{"message":"update file","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","sha":"7638417db6d59f3c431d3e1f261cc637155684cd","branch":"master"}`
-						assert.Equal(t, wantBody, string(body))
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response taken from https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
-							Body: io.NopCloser(strings.NewReader(`
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		wantBody := `{"message":"update file","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","sha":"7638417db6d59f3c431d3e1f261cc637155684cd","branch":"master"}`
+		assert.Equal(t, wantBody, string(body))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+			Body: io.NopCloser(strings.NewReader(`
 {
   "content": {
     "name": "hello.txt",
@@ -864,11 +811,8 @@ func TestProvider_OverwriteFile(t *testing.T) {
   }
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -889,16 +833,12 @@ func TestProvider_OverwriteFile(t *testing.T) {
 }
 
 func TestProvider_ReadFileMeta(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
+			Body: io.NopCloser(strings.NewReader(`
 {
   "type": "file",
   "encoding": "base64",
@@ -918,11 +858,8 @@ func TestProvider_ReadFileMeta(t *testing.T) {
   }
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -939,16 +876,12 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 }
 
 func TestProvider_ReadFileContent(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
+			Body: io.NopCloser(strings.NewReader(`
 {
   "type": "file",
   "encoding": "base64",
@@ -968,11 +901,8 @@ func TestProvider_ReadFileContent(t *testing.T) {
   }
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -992,16 +922,12 @@ You can look around to get an idea how to structure your project and, when done,
 }
 
 func TestProvider_CreateWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/1/hooks", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusCreated,
-							// Example response taken from https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
-							Body: io.NopCloser(strings.NewReader(`
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/1/hooks", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusCreated,
+			// Example response taken from https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
+			Body: io.NopCloser(strings.NewReader(`
 {
   "type": "Repository",
   "id": 12345678,
@@ -1029,11 +955,8 @@ func TestProvider_CreateWebhook(t *testing.T) {
   }
 }
 `)),
-						}, nil
-					},
-				},
-			},
-		},
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -1043,20 +966,13 @@ func TestProvider_CreateWebhook(t *testing.T) {
 }
 
 func TestProvider_PatchWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/1/hooks/1", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							Body:       io.NopCloser(strings.NewReader("")),
-						}, nil
-					},
-				},
-			},
-		},
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/1/hooks/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -1065,20 +981,13 @@ func TestProvider_PatchWebhook(t *testing.T) {
 }
 
 func TestProvider_DeleteWebhook(t *testing.T) {
-	p := newProvider(
-		vcs.ProviderConfig{
-			Client: &http.Client{
-				Transport: &common.MockRoundTripper{
-					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/repos/1/hooks/1", r.URL.Path)
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							Body:       io.NopCloser(strings.NewReader("")),
-						}, nil
-					},
-				},
-			},
-		},
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/1/hooks/1", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	},
 	)
 
 	ctx := context.Background()
@@ -1126,7 +1035,7 @@ func TestOAuth_RefreshToken(t *testing.T) {
 		return nil
 	}
 
-	_, _, err := oauth.Get(
+	_, _, _, err := oauth.Get(
 		ctx,
 		client,
 		"https://api.github.com/users/octocat",
@@ -1140,4 +1049,313 @@ func TestOAuth_RefreshToken(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "ghu_16C7e42F292c6912E7710c838347Ae178B4a", token)
 	assert.True(t, calledRefresher)
+}
+
+func TestProvider_GetBranch(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "GET", r.Method)
+		assert.Equal(t, "/repos/octocat/Hello-World/git/ref/heads/featureA", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/git/refs#get-a-reference
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "ref": "refs/heads/featureA",
+  "node_id": "MDM6UmVmcmVmcy9oZWFkcy9mZWF0dXJlQQ==",
+  "url": "https://api.github.com/repos/octocat/Hello-World/git/refs/heads/featureA",
+  "object": {
+    "type": "commit",
+    "sha": "aa218f56b14c9653891f9e74264a383fa43fefbd",
+    "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/aa218f56b14c9653891f9e74264a383fa43fefbd"
+  }
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	got, err := p.GetBranch(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "featureA")
+	require.NoError(t, err)
+
+	want := &vcs.BranchInfo{
+		Name:         "featureA",
+		LastCommitID: "aa218f56b14c9653891f9e74264a383fa43fefbd",
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_CreateBranch(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/repos/octocat/Hello-World/git/refs", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/git/refs#create-a-reference
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "ref": "refs/heads/featureA",
+  "node_id": "MDM6UmVmcmVmcy9oZWFkcy9mZWF0dXJlQQ==",
+  "url": "https://api.github.com/repos/octocat/Hello-World/git/refs/heads/featureA",
+  "object": {
+    "type": "commit",
+    "sha": "aa218f56b14c9653891f9e74264a383fa43fefbd",
+    "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/aa218f56b14c9653891f9e74264a383fa43fefbd"
+  }
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	err := p.CreateBranch(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.BranchInfo{
+		Name:         "featureA",
+		LastCommitID: "aa218f56b14c9653891f9e74264a383fa43fefbd",
+	})
+	require.NoError(t, err)
+}
+
+func TestProvider_CreatePullRequest(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/repos/octocat/Hello-World/pulls", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
+			Body: io.NopCloser(strings.NewReader(`
+{
+  "url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347",
+  "id": 1,
+  "node_id": "MDExOlB1bGxSZXF1ZXN0MQ==",
+  "html_url": "https://github.com/octocat/Hello-World/pull/1347",
+  "diff_url": "https://github.com/octocat/Hello-World/pull/1347.diff",
+  "patch_url": "https://github.com/octocat/Hello-World/pull/1347.patch",
+  "issue_url": "https://api.github.com/repos/octocat/Hello-World/issues/1347",
+  "commits_url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347/commits",
+  "review_comments_url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347/comments",
+  "review_comment_url": "https://api.github.com/repos/octocat/Hello-World/pulls/comments{/number}",
+  "comments_url": "https://api.github.com/repos/octocat/Hello-World/issues/1347/comments",
+  "statuses_url": "https://api.github.com/repos/octocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e",
+  "number": 1347,
+  "state": "open",
+  "locked": true,
+  "title": "Amazing new feature",
+  "body": "Please pull these awesome changes in!",
+  "active_lock_reason": "too heated",
+  "created_at": "2011-01-26T19:01:12Z",
+  "updated_at": "2011-01-26T19:01:12Z",
+  "closed_at": "2011-01-26T19:01:12Z",
+  "merged_at": "2011-01-26T19:01:12Z",
+  "merge_commit_sha": "e5bd3914e2e596debea16f433f57875b5b90bcd6",
+  "head": {
+    "label": "octocat:new-topic",
+    "ref": "new-topic",
+    "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "user": {
+      "login": "octocat",
+      "id": 1,
+      "node_id": "MDQ6VXNlcjE=",
+      "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/octocat",
+      "html_url": "https://github.com/octocat",
+      "followers_url": "https://api.github.com/users/octocat/followers",
+      "following_url": "https://api.github.com/users/octocat/following{/other_user}",
+      "gists_url": "https://api.github.com/users/octocat/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/octocat/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/octocat/subscriptions",
+      "organizations_url": "https://api.github.com/users/octocat/orgs",
+      "repos_url": "https://api.github.com/users/octocat/repos",
+      "events_url": "https://api.github.com/users/octocat/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/octocat/received_events",
+      "type": "User",
+      "site_admin": false
+    }
+  },
+  "base": {
+    "label": "octocat:master",
+    "ref": "master",
+    "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "user": {
+      "login": "octocat",
+      "id": 1,
+      "node_id": "MDQ6VXNlcjE=",
+      "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/octocat",
+      "html_url": "https://github.com/octocat",
+      "followers_url": "https://api.github.com/users/octocat/followers",
+      "following_url": "https://api.github.com/users/octocat/following{/other_user}",
+      "gists_url": "https://api.github.com/users/octocat/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/octocat/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/octocat/subscriptions",
+      "organizations_url": "https://api.github.com/users/octocat/orgs",
+      "repos_url": "https://api.github.com/users/octocat/repos",
+      "events_url": "https://api.github.com/users/octocat/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/octocat/received_events",
+      "type": "User",
+      "site_admin": false
+    }
+  },
+  "author_association": "OWNER",
+  "auto_merge": null,
+  "draft": false,
+  "merged": false,
+  "mergeable": true,
+  "rebaseable": true,
+  "mergeable_state": "clean",
+  "comments": 10,
+  "review_comments": 0,
+  "maintainer_can_modify": true,
+  "commits": 3,
+  "additions": 100,
+  "deletions": 3,
+  "changed_files": 5
+}
+`)),
+		}, nil
+	},
+	)
+
+	ctx := context.Background()
+	res, err := p.CreatePullRequest(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.PullRequestCreate{
+		Title:                 "Amazing new feature",
+		Body:                  "Please pull these awesome changes in!",
+		Head:                  "new-topic",
+		Base:                  "master",
+		RemoveHeadAfterMerged: true,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "https://github.com/octocat/Hello-World/pull/1347", res.URL)
+}
+
+func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/repos/octocat/Hello-World/actions/secrets/public-key":
+			assert.Equal(t, "GET", r.Method)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response taken from https://docs.github.com/en/rest/actions/secrets#get-a-repository-public-key
+				Body: io.NopCloser(strings.NewReader(`
+{
+  "key_id": "568250167242549743",
+  "key": "YJf3Ojcv8TSEBCtR0wtTR/F2bD3nBl1lxiwkfV/TYQk="
+}
+`)),
+			}, nil
+		case "/repos/octocat/Hello-World/actions/secrets/1":
+			assert.Equal(t, "PUT", r.Method)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				// Example response taken from https://docs.github.com/en/rest/actions/secrets#create-or-update-a-repository-secret
+				Body: io.NopCloser(strings.NewReader("")),
+			}, nil
+		}
+
+		return nil, errors.Errorf("Invalid request. %s: %s", r.Method, r.URL.Path)
+	},
+	)
+
+	ctx := context.Background()
+	err := p.UpsertEnvironmentVariable(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "1", "new value")
+	require.NoError(t, err)
+}
+
+func TestProvider_ListPullRequestFile(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/repos/octocat/Hello-World/pulls/1/files", r.URL.Path)
+		if r.URL.Query().Get("page") == "2" {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`[]`)),
+			}, nil
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
+			Body: io.NopCloser(strings.NewReader(`
+[
+  {
+    "sha": "bbcd538c8e72b8c175046e27cc8f907076331401",
+    "filename": "file1.txt",
+    "status": "added",
+    "additions": 103,
+    "deletions": 21,
+    "changes": 124,
+    "blob_url": "https://github.com/octocat/Hello-World/blob/6dcb09b5b57875f334f61aebed695e2e4193db5e/file1.txt",
+    "raw_url": "https://github.com/octocat/Hello-World/raw/6dcb09b5b57875f334f61aebed695e2e4193db5e/file1.txt",
+    "contents_url": "https://api.github.com/repos/octocat/Hello-World/contents/file1.txt?ref=6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "patch": "@@ -132,7 +132,7 @@ module Test @@ -1000,7 +1000,7 @@ module Test"
+  }
+]
+`)),
+		}, nil
+	},
+	)
+	ctx := context.Background()
+	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "1")
+	require.NoError(t, err)
+
+	want := []*vcs.PullRequestFile{
+		{
+			Path:         "file1.txt",
+			LastCommitID: "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+			IsDeleted:    false,
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_GetDiffFileList(t *testing.T) {
+	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, "/api/v3/repos/1/compare/before_sha...after_sha", r.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			// Example response taken from https://docs.github.com/en/rest/commits/commits#compare-two-commits
+			Body: io.NopCloser(strings.NewReader(`
+{
+	"files": [
+    {
+      "sha": "bbcd538c8e72b8c175046e27cc8f907076331401",
+      "filename": "file1.txt",
+      "status": "added",
+      "additions": 103,
+      "deletions": 21,
+      "changes": 124,
+      "blob_url": "https://github.com/octocat/Hello-World/blob/6dcb09b5b57875f334f61aebed695e2e4193db5e/file1.txt",
+      "raw_url": "https://github.com/octocat/Hello-World/raw/6dcb09b5b57875f334f61aebed695e2e4193db5e/file1.txt",
+      "contents_url": "https://api.github.com/repos/octocat/Hello-World/contents/file1.txt?ref=6dcb09b5b57875f334f61aebed695e2e4193db5e",
+      "patch": "@@ -132,7 +132,7 @@ module Test @@ -1000,7 +1000,7 @@ module Test"
+    }
+  ]
+}
+`)),
+		}, nil
+	},
+	)
+	ctx := context.Background()
+	got, err := p.GetDiffFileList(ctx, common.OauthContext{}, "", "1", "before_sha", "after_sha")
+	require.NoError(t, err)
+
+	want := []vcs.FileDiff{
+		{
+			Path: "file1.txt",
+			Type: vcs.FileDiffTypeAdded,
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func newMockProvider(mockRoundTrip func(r *http.Request) (*http.Response, error)) vcs.Provider {
+	return newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: mockRoundTrip,
+				},
+			},
+		},
+	)
 }

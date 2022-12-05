@@ -53,6 +53,11 @@ export default defineConfig(() => {
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api/, ""),
         },
+        "/v1": {
+          target: "http://localhost:8080/v1",
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/v1/, ""),
+        },
       },
       hmr: {
         port: IS_RUNNING_GITPOD ? HTTPS_PORT : SERVER_PORT,
@@ -61,6 +66,7 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         "@/": `${resolve(__dirname, "src")}/`,
+        "@sql-lsp/": `${resolve(__dirname, "src/plugins/sql-lsp")}/`,
       },
     },
     test: {

@@ -3,6 +3,7 @@ import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
+import { PlanType } from "./plan";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
@@ -18,7 +19,9 @@ export type CategoryType =
   | "TABLE"
   | "COLUMN"
   | "SCHEMA"
-  | "DATABASE";
+  | "DATABASE"
+  | "INDEX"
+  | "SYSTEM";
 
 // The rule level
 export enum RuleLevel {
@@ -49,6 +52,14 @@ interface StringPayload {
   value?: string;
 }
 
+// BooleanPayload is the boolean type payload configuration options and default value.
+// Used by the frontend.
+interface BooleanPayload {
+  type: "BOOLEAN";
+  default: boolean;
+  value?: boolean;
+}
+
 // StringArrayPayload is the string array type payload configuration options and default value.
 // Used by the frontend.
 interface StringArrayPayload {
@@ -70,7 +81,12 @@ interface TemplatePayload {
 // Used by the frontend.
 export interface RuleConfigComponent {
   key: string;
-  payload: StringPayload | NumberPayload | TemplatePayload | StringArrayPayload;
+  payload:
+    | StringPayload
+    | NumberPayload
+    | TemplatePayload
+    | StringArrayPayload
+    | BooleanPayload;
 }
 
 // The identifier for rule template
@@ -79,19 +95,56 @@ export type RuleType =
   | "table.require-pk"
   | "table.no-foreign-key"
   | "table.drop-naming-convention"
+  | "table.disallow-partition"
+  | "table.comment"
   | "naming.table"
   | "naming.column"
   | "naming.index.uk"
   | "naming.index.pk"
   | "naming.index.fk"
   | "naming.index.idx"
+  | "naming.column.auto-increment"
   | "column.required"
   | "column.no-null"
+  | "column.comment"
+  | "column.type-disallow-list"
+  | "column.disallow-change-type"
+  | "column.set-default-for-not-null"
+  | "column.disallow-change"
+  | "column.disallow-changing-order"
+  | "column.auto-increment-must-integer"
+  | "column.disallow-set-charset"
+  | "column.auto-increment-must-unsigned"
+  | "column.maximum-character-length"
+  | "column.auto-increment-initial-value"
+  | "column.current-time-count-limit"
+  | "column.require-default"
   | "statement.select.no-select-all"
   | "statement.where.require"
   | "statement.where.no-leading-wildcard-like"
+  | "statement.disallow-commit"
+  | "statement.disallow-limit"
+  | "statement.disallow-order-by"
+  | "statement.merge-alter-table"
+  | "statement.insert.must-specify-column"
+  | "statement.insert.disallow-order-by-rand"
+  | "statement.insert.row-limit"
+  | "statement.affected-row-limit"
+  | "statement.dml-dry-run"
   | "schema.backward-compatibility"
-  | "database.drop-empty-database";
+  | "database.drop-empty-database"
+  | "system.charset.allowlist"
+  | "system.collation.allowlist"
+  | "index.no-duplicate-column"
+  | "index.type-no-blob"
+  | "index.key-number-limit"
+  | "index.total-number-limit"
+  | "index.pk-type-limit";
+
+export const availableRulesForFreePlan: RuleType[] = [
+  "statement.where.require",
+  "column.no-null",
+];
 
 // The naming format rule payload.
 // Used by the backend.
@@ -100,10 +153,23 @@ interface NamingFormatPayload {
   maxLength?: number;
 }
 
-// The naming format rule payload.
+// The string array rule payload.
 // Used by the backend.
-interface RequiredColumnPayload {
-  columnList: string[];
+interface StringArrayLimitPayload {
+  list: string[];
+}
+
+// The comment format rule payload.
+// Used by the backend.
+interface CommentFormatPayload {
+  required: boolean;
+  maxLength: number;
+}
+
+// The number limit rule payload.
+// Used by the backend.
+interface NumberLimitPayload {
+  number: number;
 }
 
 // The SchemaPolicyRule stores the rule configuration by users.
@@ -111,7 +177,11 @@ interface RequiredColumnPayload {
 export interface SchemaPolicyRule {
   type: RuleType;
   level: RuleLevel;
-  payload?: NamingFormatPayload | RequiredColumnPayload;
+  payload?:
+    | NamingFormatPayload
+    | StringArrayLimitPayload
+    | CommentFormatPayload
+    | NumberLimitPayload;
 }
 
 // The API for SQL review policy in backend.
@@ -265,6 +335,9 @@ export const convertPolicyRuleToRuleTemplate = (
   const numberComponent = ruleTemplate.componentList.find(
     (c) => c.payload.type === "NUMBER"
   );
+  const booleanComponent = ruleTemplate.componentList.find(
+    (c) => c.payload.type === "BOOLEAN"
+  );
   const templateComponent = ruleTemplate.componentList.find(
     (c) => c.payload.type === "TEMPLATE"
   );
@@ -288,6 +361,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     case "naming.column":
+    case "naming.column.auto-increment":
     case "naming.table":
       if (!stringComponent || !numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -357,9 +431,15 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     case "column.required": {
       const requiredColumnComponent = ruleTemplate.componentList[0];
+      // The columnList payload is deprecated.
+      // Just keep it to compatible with old data, we can remove this later.
+      let value: string[] = (policyRule.payload as any)["columnList"];
+      if (!value) {
+        value = (policyRule.payload as StringArrayLimitPayload).list;
+      }
       const requiredColumnPayload = {
         ...requiredColumnComponent.payload,
-        value: (policyRule.payload as RequiredColumnPayload).columnList,
+        value,
       } as StringArrayPayload;
       return {
         ...res,
@@ -371,6 +451,71 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     }
+    case "column.type-disallow-list":
+    case "system.charset.allowlist":
+    case "system.collation.allowlist": {
+      const stringArrayComponent = ruleTemplate.componentList[0];
+      const stringArrayPayload = {
+        ...stringArrayComponent.payload,
+        value: (policyRule.payload as StringArrayLimitPayload).list,
+      } as StringArrayPayload;
+      return {
+        ...res,
+        componentList: [
+          {
+            ...stringArrayComponent,
+            payload: stringArrayPayload,
+          },
+        ],
+      };
+    }
+    case "column.comment":
+    case "table.comment":
+      if (!booleanComponent || !numberComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
+      return {
+        ...res,
+        componentList: [
+          {
+            ...booleanComponent,
+            payload: {
+              ...booleanComponent.payload,
+              value: (policyRule.payload as CommentFormatPayload).required,
+            } as BooleanPayload,
+          },
+          {
+            ...numberComponent,
+            payload: {
+              ...numberComponent.payload,
+              value: (policyRule.payload as CommentFormatPayload).maxLength,
+            } as NumberPayload,
+          },
+        ],
+      };
+    case "statement.insert.row-limit":
+    case "statement.affected-row-limit":
+    case "column.maximum-character-length":
+    case "column.auto-increment-initial-value":
+    case "index.key-number-limit":
+    case "index.total-number-limit":
+      if (!numberComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
+      return {
+        ...res,
+        componentList: [
+          {
+            ...numberComponent,
+            payload: {
+              ...numberComponent.payload,
+              value: (policyRule.payload as NumberLimitPayload).number,
+            } as NumberPayload,
+          },
+        ],
+      };
   }
 
   throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -398,6 +543,9 @@ export const convertRuleTemplateToPolicyRule = (
   const templatePayload = rule.componentList.find(
     (c) => c.payload.type === "TEMPLATE"
   )?.payload as TemplatePayload | undefined;
+  const booleanPayload = rule.componentList.find(
+    (c) => c.payload.type === "BOOLEAN"
+  )?.payload as BooleanPayload | undefined;
 
   switch (rule.type) {
     case "table.drop-naming-convention":
@@ -412,6 +560,7 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "naming.column":
+    case "naming.column.auto-increment":
     case "naming.table":
       if (!stringPayload || !numberPayload) {
         throw new Error(`Invalid rule ${rule.type}`);
@@ -447,16 +596,46 @@ export const convertRuleTemplateToPolicyRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
-    case "column.required": {
+    case "column.required":
+    case "column.type-disallow-list":
+    case "system.charset.allowlist":
+    case "system.collation.allowlist": {
       const stringArrayPayload = rule.componentList[0]
         .payload as StringArrayPayload;
       return {
         ...base,
         payload: {
-          columnList: stringArrayPayload.value ?? stringArrayPayload.default,
+          list: stringArrayPayload.value ?? stringArrayPayload.default,
         },
       };
     }
+    case "column.comment":
+    case "table.comment":
+      if (!booleanPayload || !numberPayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+      return {
+        ...base,
+        payload: {
+          required: booleanPayload.value ?? booleanPayload.default,
+          maxLength: numberPayload.value ?? numberPayload.default,
+        },
+      };
+    case "statement.insert.row-limit":
+    case "statement.affected-row-limit":
+    case "column.maximum-character-length":
+    case "column.auto-increment-initial-value":
+    case "index.key-number-limit":
+    case "index.total-number-limit":
+      if (!numberPayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+      return {
+        ...base,
+        payload: {
+          number: numberPayload.value ?? numberPayload.default,
+        },
+      };
   }
 
   throw new Error(`Invalid rule ${rule.type}`);
@@ -479,4 +658,14 @@ export const getRuleLocalization = (
     title,
     description,
   };
+};
+
+export const ruleIsAvailableInSubscription = (
+  ruleType: RuleType,
+  subscriptionPlan: PlanType
+): boolean => {
+  if (subscriptionPlan === PlanType.FREE) {
+    return availableRulesForFreePlan.indexOf(ruleType) >= 0;
+  }
+  return true;
 };

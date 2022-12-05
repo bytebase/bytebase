@@ -13,10 +13,10 @@
       />
 
       <div class="text" @click.prevent="onClickStage(stage, i)">
-        <span class="text-sm min-w-32 lg:text-xs lg:min-w-fit">{{
-          stage.name
-        }}</span>
-        <span class="text-sm flex-1 ml-4 lg:ml-0 whitespace-pre-wrap break-all">
+        <span class="text-sm min-w-32 lg:min-w-fit">
+          {{ $t("common.stage") }} - {{ stage.name }}
+        </span>
+        <span class="text-xs flex-1 ml-4 lg:ml-0 whitespace-pre-wrap break-all">
           <slot name="task-name-of-stage" :stage="stage" :index="i" />
         </span>
       </div>

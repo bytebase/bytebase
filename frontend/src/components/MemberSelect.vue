@@ -111,7 +111,9 @@ export default defineComponent({
     const principalList = computed((): Principal[] => {
       const list = memberStore.memberList
         .filter((member: Member) => {
-          return member.status == "ACTIVE";
+          return (
+            member.status == "ACTIVE" && member.principal.type === "END_USER"
+          );
         })
         .map((member: Member) => {
           return member.principal;

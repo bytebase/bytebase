@@ -9,7 +9,7 @@ import (
 func TestWhereRequirement(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
-			Statement: "INSERT INTO t values (1)",
+			Statement: "INSERT INTO tech_book(id) values (1)",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -20,31 +20,31 @@ func TestWhereRequirement(t *testing.T) {
 			},
 		},
 		{
-			Statement: "DELETE FROM t1",
+			Statement: "DELETE FROM tech_book",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.StatementNoWhere,
 					Title:   "statement.where.require",
-					Content: "\"DELETE FROM t1\" requires WHERE clause",
+					Content: "\"DELETE FROM tech_book\" requires WHERE clause",
 					Line:    1,
 				},
 			},
 		},
 		{
-			Statement: "UPDATE t1 SET a = 1",
+			Statement: "UPDATE tech_book SET id = 1",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.StatementNoWhere,
 					Title:   "statement.where.require",
-					Content: "\"UPDATE t1 SET a = 1\" requires WHERE clause",
+					Content: "\"UPDATE tech_book SET id = 1\" requires WHERE clause",
 					Line:    1,
 				},
 			},
 		},
 		{
-			Statement: "DELETE FROM t1 WHERE a > 0",
+			Statement: "DELETE FROM tech_book WHERE id > 0",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -55,7 +55,7 @@ func TestWhereRequirement(t *testing.T) {
 			},
 		},
 		{
-			Statement: "UPDATE t1 SET a = 1 WHERE a > 10",
+			Statement: "UPDATE tech_book SET id = 1 WHERE id > 10",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -66,19 +66,19 @@ func TestWhereRequirement(t *testing.T) {
 			},
 		},
 		{
-			Statement: "SELECT a FROM t",
+			Statement: "SELECT id FROM tech_book",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.StatementNoWhere,
 					Title:   "statement.where.require",
-					Content: "\"SELECT a FROM t\" requires WHERE clause",
+					Content: "\"SELECT id FROM tech_book\" requires WHERE clause",
 					Line:    1,
 				},
 			},
 		},
 		{
-			Statement: "SELECT a FROM t WHERE a > 0",
+			Statement: "SELECT id FROM tech_book WHERE id > 0",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -89,13 +89,13 @@ func TestWhereRequirement(t *testing.T) {
 			},
 		},
 		{
-			Statement: "SELECT a FROM t WHERE a > (SELECT max(id) FROM user)",
+			Statement: "SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.StatementNoWhere,
 					Title:   "statement.where.require",
-					Content: "\"SELECT a FROM t WHERE a > (SELECT max(id) FROM user)\" requires WHERE clause",
+					Content: "\"SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)\" requires WHERE clause",
 					Line:    1,
 				},
 			},

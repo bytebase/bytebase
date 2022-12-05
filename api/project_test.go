@@ -42,51 +42,76 @@ func TestGetTemplateTokens(t *testing.T) {
 
 func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 	tests := []struct {
-		name       string
-		template   string
-		tenantMode ProjectTenantMode
-		errPart    string
+		name           string
+		template       string
+		tenantMode     ProjectTenantMode
+		dbNameTemplate string
+		errPart        string
 	}{
 		{
 			"OK",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}.sql",
 			TenantModeDisabled,
 			"",
+			"",
 		}, {
 			"OK with optional tokens",
 			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{DESCRIPTION}}.sql",
 			TenantModeDisabled,
 			"",
+			"",
 		}, {
 			"Missing {{VERSION}}",
 			"{{DB_NAME}}_{{TYPE}}.sql",
 			TenantModeDisabled,
+			"",
 			"missing {{VERSION}}",
 		}, {
 			"UnknownToken",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNOWN}}.sql",
 			TenantModeDisabled,
+			"",
 			"unknown token {{UNKNOWN}}",
 		}, {
 			"UnknownToken",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNOWN}}.sql",
 			TenantModeDisabled,
+			"",
 			"unknown token {{UNKNOWN}}",
-		}, {
+		},
+
+		{
 			"Tenant mode {{ENV_NAME}}",
 			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}.sql",
 			TenantModeTenant,
+			"",
 			"not allowed in the template",
+		}, {
+			"Tenant mode no database name template",
+			"{{VERSION}}_{{TYPE}}.sql",
+			TenantModeTenant,
+			"",
+			"",
+		}, {
+			"Tenant mode has database name template",
+			"{{VERSION}}_{{TYPE}}.sql",
+			TenantModeTenant,
+			"{{DB_NAME}}_{{TENANT}}",
+			"missing {{DB_NAME}}",
 		},
 	}
 
 	for _, test := range tests {
-		err := ValidateRepositoryFilePathTemplate(test.template, test.tenantMode)
-		if test.errPart == "" {
-			require.NoError(t, err)
-		} else {
-			require.Contains(t, err.Error(), test.errPart)
-		}
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateRepositoryFilePathTemplate(test.template, test.tenantMode, test.dbNameTemplate)
+			if test.errPart == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, test.errPart)
+			}
+		})
 	}
 }
 

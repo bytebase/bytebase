@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -57,7 +55,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				ClientSecret: vcs.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.ID),
+				Refresher:    refreshToken(ctx, s.store, repo.WebURL),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
@@ -372,6 +370,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 
 		projectMemberDelete := &api.ProjectMemberDelete{
 			ID:        id,
+			ProjectID: projectID,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := s.store.DeleteProjectMember(ctx, projectMemberDelete); err != nil {
@@ -405,21 +404,4 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-}
-
-// getAnyProjectOwner gets a default assignee from the project owners.
-func (s *Server) getAnyProjectOwner(ctx context.Context, projectID int) (*api.ProjectMember, error) {
-	role := api.Owner
-	find := &api.ProjectMemberFind{
-		ProjectID: &projectID,
-		Role:      &role,
-	}
-	projectMemberList, err := s.store.FindProjectMember(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
-	}
-	if len(projectMemberList) > 0 {
-		return projectMemberList[0], nil
-	}
-	return nil, errors.New("failed to get a project owner")
 }

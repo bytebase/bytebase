@@ -140,7 +140,7 @@ export const useActivityStore = defineStore("activity", {
       }
       this.fetchActivityListForIssue(issue);
     },
-    // We do not store the returned list because the caller will specify different limits
+    // We do not store the returned list because the caller will specify different limits.
     async fetchActivityListForProject({
       projectId,
       limit,
@@ -168,23 +168,35 @@ export const useActivityStore = defineStore("activity", {
     },
     async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
       const { currentUser } = useAuthStore();
-      const queryList = [
-        "typePrefix=bb.sql-editor.query",
-        `user=${currentUser.id}`,
-        `order=DESC`,
-        `limit=${limit}`,
-        // only fetch the successful query history
-        `level=INFO`,
-      ];
-      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
-        .data;
-      const activityList: Activity[] = data.data.map(
-        (activity: ResourceObject) => {
-          return convert(activity, data.included);
-        }
-      );
+      const fetchQueryList = async (level: string) => {
+        const queryList = [
+          "typePrefix=bb.sql-editor.query",
+          `user=${currentUser.id}`,
+          `order=DESC`,
+          `limit=${limit}`,
+          // only fetch the successful query history
+          `level=${level}`,
+        ];
+        const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
+          .data;
+        const activityList: Activity[] = data.data.map(
+          (activity: ResourceObject) => {
+            return convert(activity, data.included);
+          }
+        );
+        return activityList;
+      };
+      const [successful, withWarning] = await Promise.all([
+        fetchQueryList("INFO"),
+        fetchQueryList("WARN"),
+      ]);
+      const mixedList = [...successful, ...withWarning];
 
-      return activityList;
+      // ORDER BY `id` DESC
+      mixedList.sort((a, b) => b.id - a.id);
+
+      // return the first `limit` rows
+      return mixedList.slice(0, limit);
     },
     async fetchActivityListForDatabaseByProjectId({
       projectId,
@@ -252,16 +264,6 @@ export const useActivityStore = defineStore("activity", {
       this.fetchActivityListByIssueId(updatedActivity.containerId);
 
       return updatedActivity;
-    },
-    async deleteActivity(activity: Activity) {
-      await axios.delete(`/api/activity/${activity.id}`);
-
-      if (activity.type.startsWith("bb.issue.")) {
-        this.fetchActivityListByIssueId(activity.containerId);
-      }
-    },
-    async deleteActivityById(id: number) {
-      await axios.delete(`/api/activity/${id}`);
     },
   },
 });

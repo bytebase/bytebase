@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -68,6 +69,26 @@ func (s *Store) CreateActivity(ctx context.Context, create *api.ActivityCreate) 
 	return activity, nil
 }
 
+// BatchCreateActivity creates activities in batch.
+func (s *Store) BatchCreateActivity(ctx context.Context, creates []*api.ActivityCreate) ([]*api.Activity, error) {
+	if len(creates) == 0 {
+		return nil, nil
+	}
+	activityRawList, err := s.batchCreateActivityRaw(ctx, creates)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create TaskCheckRun with TaskCheckRunCreates[%+v]", creates)
+	}
+	var activityList []*api.Activity
+	for _, activityRaw := range activityRawList {
+		activity, err := s.composeActivity(ctx, activityRaw)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to compose activity with activityRaw %+v", activityRaw)
+		}
+		activityList = append(activityList, activity)
+	}
+	return activityList, nil
+}
+
 // GetActivityByID gets an instance of Activity.
 func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, error) {
 	activityRaw, err := s.getActivityRawByID(ctx, id)
@@ -118,15 +139,14 @@ func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*a
 // private function
 //
 
-// createActivityRaw creates a new activity.
-func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreate) (*activityRaw, error) {
+func (s *Store) batchCreateActivityRaw(ctx context.Context, creates []*api.ActivityCreate) ([]*activityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	activity, err := createActivityImpl(ctx, tx, create)
+	activityRawList, err := createActivityImpl(ctx, tx, creates...)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +155,31 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 		return nil, FormatError(err)
 	}
 
-	return activity, nil
+	return activityRawList, nil
+}
+
+// createActivityRaw creates a new activity.
+func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreate) (*activityRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	activityRawList, err := createActivityImpl(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(activityRawList) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d activities, expect 1", len(activityRawList))}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return activityRawList[0], nil
 }
 
 // findActivityRaw retrieves a list of activities based on the find condition.
@@ -216,14 +260,14 @@ func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Act
 	return activity, nil
 }
 
-// createActivityImpl creates a new activity.
-func createActivityImpl(ctx context.Context, tx *Tx, create *api.ActivityCreate) (*activityRaw, error) {
-	// Insert row into activity.
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
-	query := `
-		INSERT INTO activity (
+// createActivityImpl creates activities.
+func createActivityImpl(ctx context.Context, tx *Tx, creates ...*api.ActivityCreate) ([]*activityRaw, error) {
+	var query strings.Builder
+	var values []interface{}
+	var queryValues []string
+
+	if _, err := query.WriteString(
+		`INSERT INTO activity (
 			creator_id,
 			updater_id,
 			container_id,
@@ -231,37 +275,61 @@ func createActivityImpl(ctx context.Context, tx *Tx, create *api.ActivityCreate)
 			level,
 			comment,
 			payload
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
-	`
-	var activityRaw activityRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.ContainerID,
-		create.Type,
-		create.Level,
-		create.Comment,
-		create.Payload,
-	).Scan(
-		&activityRaw.ID,
-		&activityRaw.CreatorID,
-		&activityRaw.CreatedTs,
-		&activityRaw.UpdaterID,
-		&activityRaw.UpdatedTs,
-		&activityRaw.ContainerID,
-		&activityRaw.Type,
-		&activityRaw.Level,
-		&activityRaw.Comment,
-		&activityRaw.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		) VALUES
+    `); err != nil {
+		return nil, err
+	}
+	for i, create := range creates {
+		if create.Payload == "" {
+			create.Payload = "{}"
 		}
+		values = append(values,
+			create.CreatorID,
+			create.CreatorID,
+			create.ContainerID,
+			create.Type,
+			create.Level,
+			create.Comment,
+			create.Payload,
+		)
+		const count = 7
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7))
+	}
+	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
+		return nil, err
+	}
+	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload`); err != nil {
+		return nil, err
+	}
+
+	var activityRawList []*activityRaw
+	rows, err := tx.QueryContext(ctx, query.String(), values...)
+	if err != nil {
 		return nil, FormatError(err)
 	}
-	return &activityRaw, nil
+	defer rows.Close()
+	for rows.Next() {
+		var activityRaw activityRaw
+		if err := rows.Scan(
+			&activityRaw.ID,
+			&activityRaw.CreatorID,
+			&activityRaw.CreatedTs,
+			&activityRaw.UpdaterID,
+			&activityRaw.UpdatedTs,
+			&activityRaw.ContainerID,
+			&activityRaw.Type,
+			&activityRaw.Level,
+			&activityRaw.Comment,
+			&activityRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		activityRawList = append(activityRawList, &activityRaw)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return activityRawList, nil
 }
 
 func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*activityRaw, error) {
@@ -345,6 +413,9 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 	if v := patch.Comment; v != nil {
 		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, api.Role(*v))
 	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -375,4 +446,49 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 		return nil, FormatError(err)
 	}
 	return &activityRaw, nil
+}
+
+// BackfillSQLEditorActivity backfills SQL editor activities.
+// TODO(d): remove this after the backfill.
+func (s *Store) BackfillSQLEditorActivity(ctx context.Context) error {
+	typePrefix := string(api.ActivitySQLEditorQuery)
+	activityList, err := s.FindActivity(ctx, &api.ActivityFind{TypePrefix: &typePrefix})
+	if err != nil {
+		return err
+	}
+	for _, activity := range activityList {
+		queryPayload := &api.ActivitySQLEditorQueryPayload{}
+		if err := json.Unmarshal([]byte(activity.Payload), queryPayload); err != nil {
+			return err
+		}
+		if queryPayload.InstanceID > 0 {
+			continue
+		}
+		// Backfill instance ID.
+		queryPayload.InstanceID = activity.ContainerID
+		// Backfill database ID.
+		if queryPayload.DatabaseName != "" {
+			database, err := s.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &queryPayload.InstanceID, Name: &queryPayload.DatabaseName})
+			if err != nil {
+				return err
+			}
+			if database != nil {
+				queryPayload.DatabaseID = database.ID
+			}
+		}
+
+		activityPayloadBytes, err := json.Marshal(queryPayload)
+		if err != nil {
+			return err
+		}
+		activityPayload := string(activityPayloadBytes)
+		if _, err := s.patchActivityRaw(ctx, &api.ActivityPatch{
+			ID:        activity.ID,
+			UpdaterID: activity.UpdaterID,
+			Payload:   &activityPayload,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

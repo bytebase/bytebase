@@ -38,35 +38,65 @@
           </template>
           <template v-else>
             <PrincipalAvatar :principal="member.principal" />
-            <div class="flex flex-col">
-              <div class="flex flex-row items-center space-x-2">
-                <router-link
-                  :to="`/u/${member.principal.id}`"
-                  class="normal-link"
-                  >{{ member.principal.name }}</router-link
-                >
+            <div class="flex flex-row">
+              <div class="flex flex-col">
+                <div class="flex flex-row items-center space-x-2">
+                  <router-link
+                    :to="`/u/${member.principal.id}`"
+                    class="normal-link"
+                    >{{ member.principal.name }}</router-link
+                  >
+                  <span
+                    v-if="currentUser.id == member.principal.id"
+                    class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                    >{{ $t("settings.members.yourself") }}</span
+                  >
+                  <span
+                    v-if="member.principal.id === SYSTEM_BOT_ID"
+                    class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                  >
+                    {{ $t("settings.members.system-bot") }}
+                  </span>
+                  <span
+                    v-if="member.principal.type === 'SERVICE_ACCOUNT'"
+                    class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                  >
+                    {{ $t("settings.members.service-account") }}
+                  </span>
+                </div>
                 <span
-                  v-if="currentUser.id == member.principal.id"
-                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-                  >{{ $t("settings.members.yourself") }}</span
+                  v-if="member.principal.id !== SYSTEM_BOT_ID"
+                  class="textlabel"
+                  >{{ member.principal.email }}</span
                 >
-                <span
-                  v-if="member.principal.id === SYSTEM_BOT_ID"
-                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-                >
-                  {{ $t("settings.members.system-bot") }}
-                </span>
               </div>
-              <span
-                v-if="member.principal.id !== SYSTEM_BOT_ID"
-                class="textlabel"
-                >{{ member.principal.email }}</span
+              <template
+                v-if="member.principal.type === 'SERVICE_ACCOUNT' && allowEdit"
               >
+                <button
+                  v-if="member.principal.serviceKey"
+                  class="inline-flex gap-x-1 text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  @click.prevent="
+                    () => copyServiceKey(member.principal.serviceKey)
+                  "
+                >
+                  <heroicons-outline:clipboard class="w-4 h-4" />
+                  {{ $t("settings.members.copy-service-key") }}
+                </button>
+                <button
+                  v-else
+                  class="inline-flex gap-x-1 text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  @click.prevent="() => tryResetServiceKey(member)"
+                >
+                  <heroicons-outline:reply class="w-4 h-4" />
+                  {{ $t("settings.members.reset-service-key") }}
+                </button>
+              </template>
             </div>
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap tooltip-wrapper">
+      <BBTableCell class="whitespace-nowrap tooltip-wrapper w-36">
         <span v-if="changeRoleTooltip(member)" class="tooltip">{{
           changeRoleTooltip(member)
         }}</span>
@@ -120,11 +150,21 @@
       </BBTableCell>
     </template>
   </BBTable>
+  <BBAlert
+    v-if="state.showResetKeyAlert"
+    :style="'CRITICAL'"
+    :ok-text="$t('settings.members.reset-service-key')"
+    :title="$t('settings.members.reset-service-key')"
+    :description="$t('settings.members.reset-service-key-alert')"
+    @ok="resetServiceKey"
+    @cancel="state.showResetKeyAlert = false"
+  />
 </template>
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
@@ -134,10 +174,17 @@ import {
   Member,
   RowStatus,
   SYSTEM_BOT_ID,
+  Principal,
 } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { isOwner } from "../utils";
-import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
+import { hasWorkspacePermission } from "../utils";
+import {
+  featureToRef,
+  useCurrentUser,
+  useMemberStore,
+  usePrincipalStore,
+  pushNotification,
+} from "@/store";
 
 const columnList = computed(() => [
   {
@@ -154,8 +201,10 @@ const columnList = computed(() => [
   },
 ]);
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+interface LocalState {
+  showResetKeyAlert: boolean;
+  targetServiceAccount?: Member;
+}
 
 export default defineComponent({
   name: "MemberTable",
@@ -174,7 +223,9 @@ export default defineComponent({
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
-    const state = reactive<LocalState>({});
+    const state = reactive<LocalState>({
+      showResetKeyAlert: false,
+    });
 
     const dataSource = computed((): BBTableSectionDataSource<Member>[] => {
       const ownerList: Member[] = [];
@@ -221,7 +272,10 @@ export default defineComponent({
     );
 
     const allowEdit = computed(() => {
-      return isOwner(currentUser.value.role);
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-member",
+        currentUser.value.role
+      );
     });
 
     const allowChangeRole = (member: Member) => {
@@ -290,6 +344,49 @@ export default defineComponent({
       });
     };
 
+    const copyServiceKey = (serviceKey: string) => {
+      toClipboard(serviceKey).then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t("settings.members.service-key-copied"),
+        });
+      });
+    };
+
+    const tryResetServiceKey = (member: Member) => {
+      state.showResetKeyAlert = true;
+      state.targetServiceAccount = member;
+    };
+
+    const resetServiceKey = () => {
+      state.showResetKeyAlert = false;
+      if (!state.targetServiceAccount) {
+        return;
+      }
+
+      const memberId = state.targetServiceAccount.id;
+      usePrincipalStore()
+        .patchPrincipal({
+          principalId: state.targetServiceAccount.principal.id,
+          principalPatch: {
+            type: state.targetServiceAccount.principal.type,
+            refreshKey: true,
+          },
+        })
+        .then((principal: Principal) => {
+          memberStore.updatePrincipal(memberId, principal);
+          return toClipboard(principal.serviceKey);
+        })
+        .then(() => {
+          pushNotification({
+            module: "bytebase",
+            style: "INFO",
+            title: t("settings.members.service-key-copied"),
+          });
+        });
+    };
+
     return {
       SYSTEM_BOT_ID,
       columnList,
@@ -304,6 +401,9 @@ export default defineComponent({
       allowActivateMember,
       changeRole,
       changeRowStatus,
+      copyServiceKey,
+      resetServiceKey,
+      tryResetServiceKey,
     };
   },
 });

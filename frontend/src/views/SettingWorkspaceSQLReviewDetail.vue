@@ -30,30 +30,27 @@
             />
           </div>
         </div>
-        <button
-          v-if="reviewPolicy.rowStatus === 'NORMAL'"
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="state.showDisableModal = true"
-        >
-          {{ $t("common.disable") }}
-        </button>
-        <button
-          v-else
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="state.showEnableModal = true"
-        >
-          {{ $t("common.enable") }}
-        </button>
-        <button
-          v-if="hasPermission"
-          type="button"
-          class="btn-primary"
-          @click="onEdit"
-        >
-          {{ $t("common.edit") }}
-        </button>
+        <div v-if="hasPermission" class="flex space-x-2">
+          <button
+            v-if="reviewPolicy.rowStatus === 'NORMAL'"
+            type="button"
+            class="btn-normal py-2 px-4"
+            @click.prevent="state.showDisableModal = true"
+          >
+            {{ $t("common.disable") }}
+          </button>
+          <button
+            v-else
+            type="button"
+            class="btn-normal py-2 px-4"
+            @click.prevent="state.showEnableModal = true"
+          >
+            {{ $t("common.enable") }}
+          </button>
+          <button type="button" class="btn-primary" @click="onEdit">
+            {{ $t("common.edit") }}
+          </button>
+        </div>
       </div>
       <div
         v-if="reviewPolicy.environment"
@@ -149,7 +146,7 @@
         class="py-5"
       />
       <BBButtonConfirm
-        v-if="reviewPolicy.rowStatus === 'ARCHIVED'"
+        v-if="reviewPolicy.rowStatus === 'ARCHIVED' && hasPermission"
         :style="'DELETE'"
         :button-text="$t('sql-review.delete')"
         :ok-text="$t('common.delete')"
@@ -195,7 +192,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug, environmentName, isDBAOrOwner } from "@/utils";
+import { idFromSlug, environmentName, hasWorkspacePermission } from "@/utils";
 import {
   unknown,
   LEVEL_LIST,
@@ -204,7 +201,8 @@ import {
   SQLReviewPolicy,
   SchemaRuleEngineType,
   convertToCategoryList,
-  ruleTemplateMap,
+  RuleType,
+  TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
 } from "@/types";
 import {
@@ -253,7 +251,10 @@ const state = reactive<LocalState>({
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 const hasPermission = computed(() => {
-  return isDBAOrOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-sql-review-policy",
+    currentUser.value.role
+  );
 });
 
 const reviewPolicy = computed((): SQLReviewPolicy => {
@@ -270,6 +271,15 @@ const selectedRuleList = computed((): RuleTemplate[] => {
   }
 
   const ruleTemplateList: RuleTemplate[] = [];
+  const ruleTemplateMap: Map<RuleType, RuleTemplate> = TEMPLATE_LIST.reduce(
+    (map, template) => {
+      for (const rule of template.ruleList) {
+        map.set(rule.type, rule);
+      }
+      return map;
+    },
+    new Map<RuleType, RuleTemplate>()
+  );
 
   for (const policyRule of reviewPolicy.value.ruleList) {
     const rule = ruleTemplateMap.get(policyRule.type);
@@ -281,6 +291,14 @@ const selectedRuleList = computed((): RuleTemplate[] => {
     if (data) {
       ruleTemplateList.push(data);
     }
+    ruleTemplateMap.delete(policyRule.type);
+  }
+
+  for (const rule of ruleTemplateMap.values()) {
+    ruleTemplateList.push({
+      ...rule,
+      level: RuleLevel.DISABLED,
+    });
   }
 
   return ruleTemplateList;

@@ -11,6 +11,18 @@ import (
 func TestColumnDisallowChangingType(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
+			Statement: `ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.ChangeColumnType,
+					Title:   "column.disallow-change-type",
+					Content: "\"ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED\" changes column type",
+					Line:    1,
+				},
+			},
+		},
+		{
 			Statement: `ALTER TABLE tech_book MODIFY id int`,
 			Want: []advisor.Advice{
 				{

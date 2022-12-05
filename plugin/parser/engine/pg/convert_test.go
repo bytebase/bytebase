@@ -25,22 +25,22 @@ func runTests(t *testing.T, tests []testData) {
 		require.NoError(t, err)
 		for i := range test.want {
 			test.want[i].SetText(test.statementList[i].Text)
-			test.want[i].SetLine(test.statementList[i].Line)
+			test.want[i].SetLastLine(test.statementList[i].LastLine)
 
 			switch n := test.want[i].(type) {
 			case *ast.CreateTableStmt:
 				for j, col := range n.ColumnList {
-					col.SetLine(test.columnLine[i][j])
+					col.SetLastLine(test.columnLine[i][j])
 					for _, inlineCons := range col.ConstraintList {
-						inlineCons.SetLine(col.Line())
+						inlineCons.SetLastLine(col.LastLine())
 					}
 				}
 				for j, cons := range n.ConstraintList {
-					cons.SetLine(test.constraintLine[i][j])
+					cons.SetLastLine(test.constraintLine[i][j])
 				}
 			case *ast.AlterTableStmt:
 				for _, item := range n.AlterItemList {
-					item.SetLine(n.Line())
+					item.SetLastLine(n.LastLine())
 				}
 			}
 		}
@@ -48,8 +48,71 @@ func runTests(t *testing.T, tests []testData) {
 	}
 }
 
+func newUnconvertedDataType(name []string, text string) *ast.UnconvertedDataType {
+	tp := &ast.UnconvertedDataType{Name: name}
+	tp.SetText(text)
+	return tp
+}
+
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
+		{
+			stmt: `
+				CREATE TABLE tech_book(
+					a char(20),
+					b character(30),
+					c varchar(330),
+					d character varying(400),
+					e text
+				)
+			`,
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					IfNotExists: false,
+					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							Type:       &ast.Character{Size: 20},
+						},
+						{
+							ColumnName: "b",
+							Type:       &ast.Character{Size: 30},
+						},
+						{
+							ColumnName: "c",
+							Type:       &ast.CharacterVarying{Size: 330},
+						},
+						{
+							ColumnName: "d",
+							Type:       &ast.CharacterVarying{Size: 400},
+						},
+						{
+							ColumnName: "e",
+							Type:       &ast.Text{},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE TABLE tech_book(
+					a char(20),
+					b character(30),
+					c varchar(330),
+					d character varying(400),
+					e text
+				)`,
+					LastLine: 8,
+				},
+			},
+			columnLine: [][]int{
+				{3, 4, 5, 6, 7},
+			},
+		},
 		{
 			stmt: `CREATE TABLE tech_book(
 				a smallint,
@@ -111,30 +174,15 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "h",
-							Type:       &ast.Integer{Size: 2},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 2},
 						},
 						{
 							ColumnName: "i",
-							Type:       &ast.Integer{Size: 4},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 4},
 						},
 						{
 							ColumnName: "j",
-							Type:       &ast.Integer{Size: 8},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 8},
 						},
 						{
 							ColumnName: "k",
@@ -142,12 +190,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "l",
-							Type:       &ast.Integer{Size: 8},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 8},
 						},
 						{
 							ColumnName: "m",
@@ -171,21 +214,11 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "r",
-							Type:       &ast.Integer{Size: 2},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 2},
 						},
 						{
 							ColumnName: "s",
-							Type:       &ast.Integer{Size: 4},
-							ConstraintList: []*ast.ConstraintDef{
-								{
-									Type: ast.ConstraintTypeNotNull,
-								},
-							},
+							Type:       &ast.Serial{Size: 4},
 						},
 						{
 							ColumnName: "t",
@@ -193,7 +226,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 						{
 							ColumnName: "u",
-							Type:       &ast.UnconvertedDataType{Name: []string{"user defined data type"}},
+							Type:       newUnconvertedDataType([]string{"user defined data type"}, `"user defined data type"`),
 						},
 					},
 				},
@@ -222,7 +255,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				s serial4,
 				t decimal,
 				u "user defined data type")`,
-					Line: 1,
+					LastLine: 22,
 				},
 			},
 			columnLine: [][]int{
@@ -265,8 +298,8 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
-					Line: 1,
+					Text:     "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
+					LastLine: 1,
 				},
 			},
 			columnLine: [][]int{
@@ -274,7 +307,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			},
 		},
 		{
-			stmt: "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
+			stmt: "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int DEFAULT 1+2+3-4+5)",
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					IfNotExists: true,
@@ -290,14 +323,21 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						{
 							ColumnName: "b",
 							Type:       &ast.Integer{Size: 4},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type:       ast.ConstraintTypeDefault,
+									KeyList:    []string{"b"},
+									Expression: expressionWithText(&ast.UnconvertedExpressionDef{}, "(((1 + 2) + 3) - 4) + 5"),
+								},
+							},
 						},
 					},
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
-					Line: 1,
+					Text:     "CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int DEFAULT 1+2+3-4+5)",
+					LastLine: 1,
 				},
 			},
 			columnLine: [][]int{
@@ -329,8 +369,8 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "CREATE TABLE tech_book(a INT CONSTRAINT t_pk_a PRIMARY KEY)",
-					Line: 1,
+					Text:     "CREATE TABLE tech_book(a INT CONSTRAINT t_pk_a PRIMARY KEY)",
+					LastLine: 1,
 				},
 			},
 			columnLine: [][]int{
@@ -373,8 +413,8 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "CREATE TABLE tech_book(a INT, b int CONSTRAINT uk_b UNIQUE, CONSTRAINT t_pk_a PRIMARY KEY(a))",
-					Line: 1,
+					Text:     "CREATE TABLE tech_book(a INT, b int CONSTRAINT uk_b UNIQUE, CONSTRAINT t_pk_a PRIMARY KEY(a))",
+					LastLine: 1,
 				},
 			},
 			columnLine: [][]int{
@@ -407,6 +447,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 											Name: "people",
 										},
 										ColumnList: []string{"id"},
+										MatchType:  ast.ForeignMatchTypeSimple,
+										OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+										OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
 									},
 								},
 							},
@@ -423,6 +466,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 									Name: "people",
 								},
 								ColumnList: []string{"b"},
+								MatchType:  ast.ForeignMatchTypeSimple,
+								OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+								OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
 							},
 						},
 					},
@@ -430,8 +476,8 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "CREATE TABLE tech_book(a INT CONSTRAINT fk_a REFERENCES people(id), CONSTRAINT fk_a_people_b FOREIGN KEY (a) REFERENCES people(b))",
-					Line: 1,
+					Text:     "CREATE TABLE tech_book(a INT CONSTRAINT fk_a REFERENCES people(id), CONSTRAINT fk_a_people_b FOREIGN KEY (a) REFERENCES people(b))",
+					LastLine: 1,
 				},
 			},
 			columnLine: [][]int{
@@ -474,8 +520,8 @@ func TestPGAddColumnStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE techbook ADD COLUMN a int",
-					Line: 1,
+					Text:     "ALTER TABLE techbook ADD COLUMN a int",
+					LastLine: 1,
 				},
 			},
 		},
@@ -512,8 +558,8 @@ func TestPGAddColumnStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE techbook ADD COLUMN a int CONSTRAINT uk_techbook_a UNIQUE",
-					Line: 1,
+					Text:     "ALTER TABLE techbook ADD COLUMN a int CONSTRAINT uk_techbook_a UNIQUE",
+					LastLine: 1,
 				},
 			},
 		},
@@ -545,8 +591,8 @@ func TestPGRenameTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE techbook RENAME TO \"techBook\"",
-					Line: 1,
+					Text:     "ALTER TABLE techbook RENAME TO \"techBook\"",
+					LastLine: 1,
 				},
 			},
 		},
@@ -571,8 +617,8 @@ func TestPGRenameTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER VIEW techbook RENAME TO \"techBook\"",
-					Line: 1,
+					Text:     "ALTER VIEW techbook RENAME TO \"techBook\"",
+					LastLine: 1,
 				},
 			},
 		},
@@ -605,8 +651,8 @@ func TestPGRenameColumnStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE techbook RENAME abc TO \"ABC\"",
-					Line: 1,
+					Text:     "ALTER TABLE techbook RENAME abc TO \"ABC\"",
+					LastLine: 1,
 				},
 			},
 		},
@@ -632,8 +678,8 @@ func TestPGRenameColumnStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER VIEW techbook RENAME abc TO \"ABC\"",
-					Line: 1,
+					Text:     "ALTER VIEW techbook RENAME abc TO \"ABC\"",
+					LastLine: 1,
 				},
 			},
 		},
@@ -666,8 +712,8 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
+					LastLine: 1,
 				},
 			},
 		},
@@ -679,7 +725,40 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 func TestPGCreateIndexStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "CREATE INDEX idx_id ON tech_book (id)",
+			stmt: "CREATE INDEX IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
+			want: []ast.Node{
+				&ast.CreateIndexStmt{
+					IfNotExists: true,
+					Index: &ast.IndexDef{
+						Name:   "idx_id",
+						Table:  &ast.TableDef{Name: "tech_book"},
+						Unique: false,
+						KeyList: []*ast.IndexKeyDef{
+							{
+								Type:      ast.IndexKeyTypeExpression,
+								Key:       "id + 1",
+								SortOrder: ast.SortOrderTypeDescending,
+								NullOrder: ast.NullOrderTypeDefault,
+							},
+							{
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "name",
+								SortOrder: ast.NullOrderTypeDefault,
+								NullOrder: ast.NullOrderTypeDefault,
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE INDEX IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE INDEX idx_id ON tech_book (id ASC NULLS FIRST)",
 			want: []ast.Node{
 				&ast.CreateIndexStmt{
 					Index: &ast.IndexDef{
@@ -688,8 +767,10 @@ func TestPGCreateIndexStmt(t *testing.T) {
 						Unique: false,
 						KeyList: []*ast.IndexKeyDef{
 							{
-								Type: ast.IndexKeyTypeColumn,
-								Key:  "id",
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "id",
+								SortOrder: ast.SortOrderTypeAscending,
+								NullOrder: ast.NullOrderTypeFirst,
 							},
 						},
 					},
@@ -697,13 +778,13 @@ func TestPGCreateIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "CREATE INDEX idx_id ON tech_book (id)",
-					Line: 1,
+					Text:     "CREATE INDEX idx_id ON tech_book (id ASC NULLS FIRST)",
+					LastLine: 1,
 				},
 			},
 		},
 		{
-			stmt: "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
+			stmt: "CREATE UNIQUE INDEX idx_id ON tech_book (id NULLS LAST)",
 			want: []ast.Node{
 				&ast.CreateIndexStmt{
 					Index: &ast.IndexDef{
@@ -712,8 +793,10 @@ func TestPGCreateIndexStmt(t *testing.T) {
 						Unique: true,
 						KeyList: []*ast.IndexKeyDef{
 							{
-								Type: ast.IndexKeyTypeColumn,
-								Key:  "id",
+								Type:      ast.IndexKeyTypeColumn,
+								Key:       "id",
+								SortOrder: ast.NullOrderTypeDefault,
+								NullOrder: ast.NullOrderTypeLast,
 							},
 						},
 					},
@@ -721,8 +804,8 @@ func TestPGCreateIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
-					Line: 1,
+					Text:     "CREATE UNIQUE INDEX idx_id ON tech_book (id NULLS LAST)",
+					LastLine: 1,
 				},
 			},
 		},
@@ -737,6 +820,8 @@ func TestPGDropIndexStmt(t *testing.T) {
 			stmt: "DROP INDEX xschema.idx_id, idx_x",
 			want: []ast.Node{
 				&ast.DropIndexStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
 					IndexList: []*ast.IndexDef{
 						{
 							Table: &ast.TableDef{Schema: "xschema"},
@@ -748,8 +833,52 @@ func TestPGDropIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "DROP INDEX xschema.idx_id, idx_x",
-					Line: 1,
+					Text:     "DROP INDEX xschema.idx_id, idx_x",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP INDEX xschema.idx_id, idx_x restrict",
+			want: []ast.Node{
+				&ast.DropIndexStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
+					IndexList: []*ast.IndexDef{
+						{
+							Table: &ast.TableDef{Schema: "xschema"},
+							Name:  "idx_id",
+						},
+						{Name: "idx_x"},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP INDEX xschema.idx_id, idx_x restrict",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP INDEX IF EXISTS xschema.idx_id, idx_x cascade",
+			want: []ast.Node{
+				&ast.DropIndexStmt{
+					IfExists: true,
+					Behavior: ast.DropBehaviorCascade,
+					IndexList: []*ast.IndexDef{
+						{
+							Table: &ast.TableDef{Schema: "xschema"},
+							Name:  "idx_id",
+						},
+						{Name: "idx_x"},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP INDEX IF EXISTS xschema.idx_id, idx_x cascade",
+					LastLine: 1,
 				},
 			},
 		},
@@ -771,8 +900,8 @@ func TestPGAlterIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER INDEX xschema.idx_id RENAME TO \"IDX_ID\"",
-					Line: 1,
+					Text:     "ALTER INDEX xschema.idx_id RENAME TO \"IDX_ID\"",
+					LastLine: 1,
 				},
 			},
 		},
@@ -787,8 +916,8 @@ func TestPGAlterIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER INDEX idx_id RENAME TO \"IDX_ID\"",
-					Line: 1,
+					Text:     "ALTER INDEX idx_id RENAME TO \"IDX_ID\"",
+					LastLine: 1,
 				},
 			},
 		},
@@ -814,14 +943,42 @@ func TestPGDropConstraintStmt(t *testing.T) {
 								Name: "tech_book",
 							},
 							ConstraintName: "uk_tech_a",
+							IfExists:       false,
 						},
 					},
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book DROP CONSTRAINT IF EXISTS uk_tech_a",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.DropConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ConstraintName: "uk_tech_a",
+							IfExists:       true,
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book DROP CONSTRAINT IF EXISTS uk_tech_a",
+					LastLine: 1,
 				},
 			},
 		},
@@ -830,8 +987,133 @@ func TestPGDropConstraintStmt(t *testing.T) {
 	runTests(t, tests)
 }
 
+func expressionWithText(expression ast.ExpressionNode, text string) ast.ExpressionNode {
+	expression.SetText(text)
+	return expression
+}
+
 func TestPGAddConstraintStmt(t *testing.T) {
 	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypeForeign,
+								Name:    "fk_tech_book_id",
+								KeyList: []string{"id"},
+								Foreign: &ast.ForeignDef{
+									Table: &ast.TableDef{
+										Type: ast.TableTypeBaseTable,
+										Name: "people",
+									},
+									ColumnList: []string{"id"},
+									MatchType:  ast.ForeignMatchTypeSimple,
+									OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+									OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+								},
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH FULL ON UPDATE CASCADE ON DELETE SET DEFAULT",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypeForeign,
+								Name:    "fk_tech_book_id",
+								KeyList: []string{"id"},
+								Foreign: &ast.ForeignDef{
+									Table: &ast.TableDef{
+										Type: ast.TableTypeBaseTable,
+										Name: "people",
+									},
+									ColumnList: []string{"id"},
+									MatchType:  ast.ForeignMatchTypeFull,
+									OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeCascade},
+									OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetDefault},
+								},
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH FULL ON UPDATE CASCADE ON DELETE SET DEFAULT",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH SIMPLE ON UPDATE RESTRICT ON DELETE SET NULL",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypeForeign,
+								Name:    "fk_tech_book_id",
+								KeyList: []string{"id"},
+								Foreign: &ast.ForeignDef{
+									Table: &ast.TableDef{
+										Type: ast.TableTypeBaseTable,
+										Name: "people",
+									},
+									ColumnList: []string{"id"},
+									MatchType:  ast.ForeignMatchTypeSimple,
+									OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeRestrict},
+									OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeSetNull},
+								},
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id) MATCH SIMPLE ON UPDATE RESTRICT ON DELETE SET NULL",
+					LastLine: 1,
+				},
+			},
+		},
 		{
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
 			want: []ast.Node{
@@ -847,10 +1129,10 @@ func TestPGAddConstraintStmt(t *testing.T) {
 								Name: "tech_book",
 							},
 							Constraint: &ast.ConstraintDef{
-								Type:            ast.ConstraintTypeCheck,
-								Name:            "check_a_bigger_than_b",
-								SkipValidation:  true,
-								CheckExpression: &ast.UnconvertedExpressionDef{},
+								Type:           ast.ConstraintTypeCheck,
+								Name:           "check_a_bigger_than_b",
+								SkipValidation: true,
+								Expression:     expressionWithText(&ast.UnconvertedExpressionDef{}, "a > b"),
 							},
 						},
 					},
@@ -858,8 +1140,8 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT check_a_bigger_than_b CHECK (a > b) NOT VALID",
+					LastLine: 1,
 				},
 			},
 		},
@@ -888,8 +1170,42 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE ONLY s.person ADD CONSTRAINT person_email_email1_key UNIQUE (email) INCLUDE (email) USING INDEX TABLESPACE demo_table_space;",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type:   ast.TableTypeBaseTable,
+						Schema: "s",
+						Name:   "person",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type:   ast.TableTypeBaseTable,
+								Schema: "s",
+								Name:   "person",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:            ast.ConstraintTypeUnique,
+								Name:            "person_email_email1_key",
+								KeyList:         []string{"email"},
+								Including:       []string{"email"},
+								IndexTableSpace: "demo_table_space",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE ONLY s.person ADD CONSTRAINT person_email_email1_key UNIQUE (email) INCLUDE (email) USING INDEX TABLESPACE demo_table_space;",
+					LastLine: 1,
 				},
 			},
 		},
@@ -918,8 +1234,8 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
+					LastLine: 1,
 				},
 			},
 		},
@@ -947,6 +1263,9 @@ func TestPGAddConstraintStmt(t *testing.T) {
 										Name: "people",
 									},
 									ColumnList: []string{"id"},
+									MatchType:  ast.ForeignMatchTypeSimple,
+									OnUpdate:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
+									OnDelete:   &ast.ReferentialActionDef{Type: ast.ReferentialActionTypeNoAction},
 								},
 							},
 						},
@@ -955,8 +1274,8 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id)",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id)",
+					LastLine: 1,
 				},
 			},
 		},
@@ -985,8 +1304,8 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1015,8 +1334,40 @@ func TestPGAddConstraintStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE ONLY circles ADD CONSTRAINT circles_c_excl EXCLUDE USING gist (c WITH &&, d WITH &&) WHERE (a > 0);",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "circles",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "circles",
+							},
+							Constraint: &ast.ConstraintDef{
+								Type:         ast.ConstraintTypeExclusion,
+								Name:         "circles_c_excl",
+								Exclusions:   "c WITH &&, d WITH &&",
+								AccessMethod: ast.IndexMethodTypeGiST,
+								WhereClause:  "a > 0",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE ONLY circles ADD CONSTRAINT circles_c_excl EXCLUDE USING gist (c WITH &&, d WITH &&) WHERE (a > 0);",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1048,8 +1399,8 @@ func TestPGDropColumnStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book DROP COLUMN a",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book DROP COLUMN a",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1061,9 +1412,11 @@ func TestPGDropColumnStmt(t *testing.T) {
 func TestPGDropTableStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "DROP TABLE tech_book, xschema.user",
+			stmt: "DROP TABLE IF EXISTS tech_book, xschema.user CASCADE",
 			want: []ast.Node{
 				&ast.DropTableStmt{
+					IfExists: true,
+					Behavior: ast.DropBehaviorCascade,
 					TableList: []*ast.TableDef{
 						{
 							Type: ast.TableTypeBaseTable,
@@ -1079,15 +1432,16 @@ func TestPGDropTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "DROP TABLE tech_book, xschema.user",
-					Line: 1,
+					Text:     "DROP TABLE IF EXISTS tech_book, xschema.user CASCADE",
+					LastLine: 1,
 				},
 			},
 		},
 		{
-			stmt: "DROP VIEW tech_book, xschema.user",
+			stmt: "DROP VIEW tech_book, xschema.user RESTRICT",
 			want: []ast.Node{
 				&ast.DropTableStmt{
+					Behavior: ast.DropBehaviorRestrict,
 					TableList: []*ast.TableDef{
 						{
 							Type: ast.TableTypeView,
@@ -1103,8 +1457,8 @@ func TestPGDropTableStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "DROP VIEW tech_book, xschema.user",
-					Line: 1,
+					Text:     "DROP VIEW tech_book, xschema.user RESTRICT",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1136,8 +1490,8 @@ func TestPGNotNullStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1162,8 +1516,8 @@ func TestPGNotNullStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1213,8 +1567,8 @@ func TestPGSelectStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
-					Line: 1,
+					Text:     "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1244,8 +1598,8 @@ func TestPGSelectStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "SELECT public.t.a, t.*, * FROM t",
-					Line: 1,
+					Text:     "SELECT public.t.a, t.*, * FROM t",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1362,7 +1716,7 @@ func TestPGSelectStmt(t *testing.T) {
 						(SELECT * FROM t1 WHERE x LIKE b)
 				UNION
 				SELECT * FROM t`,
-					Line: 2,
+					LastLine: 13,
 				},
 			},
 		},
@@ -1382,8 +1736,8 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "DROP DATABASE test",
-					Line: 1,
+					Text:     "DROP DATABASE test",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1397,8 +1751,8 @@ func TestPGDropDatabaseStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "DROP DATABASE IF EXISTS test",
-					Line: 1,
+					Text:     "DROP DATABASE IF EXISTS test",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1435,8 +1789,8 @@ func TestUpdateStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
-					Line: 1,
+					Text:     "UPDATE tech_book SET a = 1 FROM (SELECT * FROM t) t WHERE a > 1",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1452,8 +1806,8 @@ func TestUpdateStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "UPDATE tech_book SET a = 1",
-					Line: 1,
+					Text:     "UPDATE tech_book SET a = 1",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1470,8 +1824,8 @@ func TestUpdateStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "UPDATE tech_book SET a = 1 WHERE a > 1",
-					Line: 1,
+					Text:     "UPDATE tech_book SET a = 1 WHERE a > 1",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1493,8 +1847,8 @@ func TestDeleteStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "DELETE FROM tech_book",
-					Line: 1,
+					Text:     "DELETE FROM tech_book",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1511,8 +1865,8 @@ func TestDeleteStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "DELETE FROM tech_book WHERE a > 1",
-					Line: 1,
+					Text:     "DELETE FROM tech_book WHERE a > 1",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1544,8 +1898,8 @@ func TestSetSchemaStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book SET SCHEMA new_schema",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book SET SCHEMA new_schema",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1570,8 +1924,8 @@ func TestSetSchemaStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER VIEW tech_book SET SCHEMA new_schema",
-					Line: 1,
+					Text:     "ALTER VIEW tech_book SET SCHEMA new_schema",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1599,8 +1953,8 @@ func TestExplainStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "EXPLAIN SELECT * FROM tech_book",
-					Line: 1,
+					Text:     "EXPLAIN SELECT * FROM tech_book",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1612,7 +1966,7 @@ func TestExplainStmt(t *testing.T) {
 func TestAlterColumnType(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "ALTER TABLE tech_book ALTER COLUMN a TYPE string",
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a TYPE int",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
@@ -1626,14 +1980,17 @@ func TestAlterColumnType(t *testing.T) {
 								Name: "tech_book",
 							},
 							ColumnName: "a",
+							Type: &ast.Integer{
+								Size: 4,
+							},
 						},
 					},
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "ALTER TABLE tech_book ALTER COLUMN a TYPE string",
-					Line: 1,
+					Text:     "ALTER TABLE tech_book ALTER COLUMN a TYPE int",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1644,6 +2001,37 @@ func TestAlterColumnType(t *testing.T) {
 
 func TestInsertStmt(t *testing.T) {
 	tests := []testData{
+		{
+			stmt: "INSERT INTO tech_book VALUES (1, 'a'), (2, 'b')",
+			want: []ast.Node{
+				&ast.InsertStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					ValueList: [][]ast.ExpressionNode{
+						{
+							&ast.UnconvertedExpressionDef{},
+							&ast.StringDef{
+								Value: "a",
+							},
+						},
+						{
+							&ast.UnconvertedExpressionDef{},
+							&ast.StringDef{
+								Value: "b",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "INSERT INTO tech_book VALUES (1, 'a'), (2, 'b')",
+					LastLine: 1,
+				},
+			},
+		},
 		{
 			stmt: "INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
 			want: []ast.Node{
@@ -1665,8 +2053,8 @@ func TestInsertStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
-					Line: 1,
+					Text:     "INSERT INTO tech_book SELECT * FROM book WHERE type='tech'",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1678,12 +2066,21 @@ func TestInsertStmt(t *testing.T) {
 						Type: ast.TableTypeBaseTable,
 						Name: "tech_book",
 					},
+					ValueList: [][]ast.ExpressionNode{
+						{
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+							&ast.UnconvertedExpressionDef{},
+						},
+					},
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "INSERT INTO tech_book VALUES(1, 2, 3, 4, 5)",
-					Line: 1,
+					Text:     "INSERT INTO tech_book VALUES(1, 2, 3, 4, 5)",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1707,8 +2104,8 @@ func TestCopyStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "COPY tech_book FROM '/file/path/in/file/system'",
-					Line: 1,
+					Text:     "COPY tech_book FROM '/file/path/in/file/system'",
+					LastLine: 1,
 				},
 			},
 		},
@@ -1724,8 +2121,506 @@ func TestUnconvertStmt(t *testing.T) {
 			want: []ast.Node{&ast.UnconvertedStmt{}},
 			statementList: []parser.SingleSQL{
 				{
-					Text: "SHOW TABLES",
-					Line: 1,
+					Text:     "SHOW TABLES",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestCommentStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "COMMENT ON TABLE tech_book IS 'This is a comment.'",
+			want: []ast.Node{&ast.CommentStmt{
+				Comment: "This is a comment.",
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "COMMENT ON TABLE tech_book IS 'This is a comment.'",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestCreateDatabase(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "CREATE DATABASE db1 ENCODING = 'UTF8'",
+			want: []ast.Node{&ast.CreateDatabaseStmt{
+				Name: "db1",
+				OptionList: []*ast.DatabaseOptionDef{
+					{
+						Type:  ast.DatabaseOptionEncoding,
+						Value: "UTF8",
+					},
+				},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE DATABASE db1 ENCODING = 'UTF8'",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestCreateSchema(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "CREATE SCHEMA myschema",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA myschema AUTHORIZATION joe;",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+				RoleSpec:    &ast.RoleSpec{Type: ast.RoleSpecTypeUser, Value: "joe"},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema AUTHORIZATION joe;",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA IF NOT EXISTS myschema AUTHORIZATION joe;",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: true,
+				RoleSpec:    &ast.RoleSpec{Type: ast.RoleSpecTypeUser, Value: "joe"},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA IF NOT EXISTS myschema AUTHORIZATION joe;",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "CREATE SCHEMA myschema CREATE TABLE tbl (id INT)",
+			want: []ast.Node{&ast.CreateSchemaStmt{
+				Name:        "myschema",
+				IfNotExists: false,
+				SchemaElementList: []ast.Node{
+					&ast.CreateTableStmt{
+						IfNotExists: false,
+						Name: &ast.TableDef{
+							Type: ast.TableTypeBaseTable,
+							Name: "tbl",
+						},
+						ColumnList: []*ast.ColumnDef{
+							{
+								ColumnName: "id",
+								Type:       &ast.Integer{Size: 4},
+							},
+						},
+					},
+				},
+			}},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "CREATE SCHEMA myschema CREATE TABLE tbl (id INT)",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestDropSchema(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DROP SCHEMA s1",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   false,
+					SchemaList: []string{"s1"},
+					Behavior:   ast.DropBehaviorRestrict,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA s1",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP SCHEMA s1, s2 CASCADE",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   false,
+					SchemaList: []string{"s1", "s2"},
+					Behavior:   ast.DropBehaviorCascade,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA s1, s2 CASCADE",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "DROP SCHEMA IF EXISTS s1, s2 RESTRICT",
+			want: []ast.Node{
+				&ast.DropSchemaStmt{
+					IfExists:   true,
+					SchemaList: []string{"s1", "s2"},
+					Behavior:   ast.DropBehaviorRestrict,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "DROP SCHEMA IF EXISTS s1, s2 RESTRICT",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestAlterColumnDefault(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a DROP DEFAULT",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.DropDefaultStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ColumnName: "a",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ALTER COLUMN a DROP DEFAULT",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN a SET DEFAULT 1+2+3",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.SetDefaultStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+							ColumnName: "a",
+							Expression: expressionWithText(&ast.UnconvertedExpressionDef{}, "(1 + 2) + 3"),
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     "ALTER TABLE tech_book ALTER COLUMN a SET DEFAULT 1+2+3",
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestCreateSequence(t *testing.T) {
+	var one int32 = 1
+	tests := []testData{
+		{
+			stmt: `CREATE SEQUENCE public.tbl_seq_id_seq
+				AS integer
+				INCREMENT BY 1
+				START WITH 1
+				MINVALUE 1
+				MAXVALUE 1
+				CACHE 1
+				CYCLE
+				OWNED BY public.tbl.id;`,
+			want: []ast.Node{
+				&ast.CreateSequenceStmt{
+					IfNotExists: false,
+					SequenceDef: ast.SequenceDef{
+						SequenceName: &ast.SequenceNameDef{
+							Schema: "public",
+							Name:   "tbl_seq_id_seq",
+						},
+						SequenceDataType: &ast.Integer{
+							Size: 4,
+						},
+						IncrementBy: &one,
+						StartWith:   &one,
+						MinValue:    &one,
+						MaxValue:    &one,
+						Cache:       &one,
+						Cycle:       true,
+						OwnedBy: &ast.ColumnNameDef{
+							Table: &ast.TableDef{
+								Type:   ast.TableTypeUnknown,
+								Name:   "tbl",
+								Schema: "public",
+							},
+							ColumnName: "id",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE SEQUENCE public.tbl_seq_id_seq
+				AS integer
+				INCREMENT BY 1
+				START WITH 1
+				MINVALUE 1
+				MAXVALUE 1
+				CACHE 1
+				CYCLE
+				OWNED BY public.tbl.id;`,
+					LastLine: 9,
+				},
+			},
+		},
+		{
+			stmt: `CREATE SEQUENCE public.tbl_seq_id_seq
+				AS bigint
+				INCREMENT BY 1
+				START WITH 1
+				NO MINVALUE
+				NO MAXVALUE
+				CACHE 1;`,
+			want: []ast.Node{
+				&ast.CreateSequenceStmt{
+					IfNotExists: false,
+					SequenceDef: ast.SequenceDef{
+						SequenceName: &ast.SequenceNameDef{
+							Schema: "public",
+							Name:   "tbl_seq_id_seq",
+						},
+						SequenceDataType: &ast.Integer{
+							Size: 8,
+						},
+						IncrementBy: &one,
+						StartWith:   &one,
+						Cache:       &one,
+						Cycle:       false,
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE SEQUENCE public.tbl_seq_id_seq
+				AS bigint
+				INCREMENT BY 1
+				START WITH 1
+				NO MINVALUE
+				NO MAXVALUE
+				CACHE 1;`,
+					LastLine: 7,
+				},
+			},
+		},
+		{
+			stmt: `CREATE SEQUENCE IF NOT EXISTS public.tbl_seq_id_seq;`,
+			want: []ast.Node{
+				&ast.CreateSequenceStmt{
+					IfNotExists: true,
+					SequenceDef: ast.SequenceDef{
+						SequenceName: &ast.SequenceNameDef{
+							Schema: "public",
+							Name:   "tbl_seq_id_seq",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `CREATE SEQUENCE IF NOT EXISTS public.tbl_seq_id_seq;`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestDropSequence(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `DROP SEQUENCE public.tbl_seq_id_seq;`,
+			want: []ast.Node{
+				&ast.DropSequenceStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
+					SequenceNameList: []*ast.SequenceNameDef{
+						{
+							Schema: "public",
+							Name:   "tbl_seq_id_seq",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `DROP SEQUENCE public.tbl_seq_id_seq;`,
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: `DROP SEQUENCE IF EXISTS tbl_seq1, public.tbl_seq2 CASCADE;`,
+			want: []ast.Node{
+				&ast.DropSequenceStmt{
+					IfExists: true,
+					Behavior: ast.DropBehaviorCascade,
+					SequenceNameList: []*ast.SequenceNameDef{
+						{
+							Name: "tbl_seq1",
+						},
+						{
+							Schema: "public",
+							Name:   "tbl_seq2",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `DROP SEQUENCE IF EXISTS tbl_seq1, public.tbl_seq2 CASCADE;`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestAlterSequence(t *testing.T) {
+	one := int32(1)
+	boolFalse := false
+	boolTrue := true
+	tests := []testData{
+		{
+			stmt: `
+        ALTER SEQUENCE IF EXISTS public.tbl_seq_id_seq
+          AS bigint
+          INCREMENT BY 1
+          NO MINVALUE
+          NO MAXVALUE
+          START WITH 1
+          RESTART WITH 1
+          CACHE 1
+          NO CYCLE
+          OWNED BY NONE;`,
+			want: []ast.Node{
+				&ast.AlterSequenceStmt{
+					IfExists: true,
+					Name: &ast.SequenceNameDef{
+						Schema: "public",
+						Name:   "tbl_seq_id_seq",
+					},
+					Type: &ast.Integer{
+						Size: 8,
+					},
+					IncrementBy: &one,
+					NoMinValue:  true,
+					NoMaxValue:  true,
+					StartWith:   &one,
+					RestartWith: &one,
+					Cache:       &one,
+					Cycle:       &boolFalse,
+					OwnedByNone: true,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `ALTER SEQUENCE IF EXISTS public.tbl_seq_id_seq
+          AS bigint
+          INCREMENT BY 1
+          NO MINVALUE
+          NO MAXVALUE
+          START WITH 1
+          RESTART WITH 1
+          CACHE 1
+          NO CYCLE
+          OWNED BY NONE;`,
+					LastLine: 11,
+				},
+			},
+		},
+		{
+			stmt: `
+        ALTER SEQUENCE IF EXISTS public.tbl_seq_id_seq
+          MINVALUE 1
+          MAXVALUE 1
+          CYCLE
+          OWNED BY public.tbl.id;`,
+			want: []ast.Node{
+				&ast.AlterSequenceStmt{
+					IfExists: true,
+					Name: &ast.SequenceNameDef{
+						Schema: "public",
+						Name:   "tbl_seq_id_seq",
+					},
+					MinValue: &one,
+					MaxValue: &one,
+					Cycle:    &boolTrue,
+					OwnedBy: &ast.ColumnNameDef{
+						Table: &ast.TableDef{
+							Type:   ast.TableTypeUnknown,
+							Name:   "tbl",
+							Schema: "public",
+						},
+						ColumnName: "id",
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `ALTER SEQUENCE IF EXISTS public.tbl_seq_id_seq
+          MINVALUE 1
+          MAXVALUE 1
+          CYCLE
+          OWNED BY public.tbl.id;`,
+					LastLine: 6,
 				},
 			},
 		},

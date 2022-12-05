@@ -17,16 +17,16 @@ func TestColumnNoNULL(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: `Column "id" in "public"."book" can not have NULL value`,
+					Content: `Column "id" in "public"."book" cannot have NULL value`,
 					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: `Column "name" in "public"."book" can not have NULL value`,
+					Content: `Column "name" in "public"."book" cannot have NULL value`,
 					Line:    4,
 				},
 			},
@@ -36,9 +36,9 @@ func TestColumnNoNULL(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: `Column "name" in "public"."book" can not have NULL value`,
+					Content: `Column "name" in "public"."book" cannot have NULL value`,
 					Line:    1,
 				},
 			},
@@ -48,9 +48,9 @@ func TestColumnNoNULL(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: `Column "name" in "public"."book" can not have NULL value`,
+					Content: `Column "name" in "public"."book" cannot have NULL value`,
 					Line:    1,
 				},
 			},
@@ -60,9 +60,9 @@ func TestColumnNoNULL(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: `Column "name" in "public"."book" can not have NULL value`,
+					Content: `Column "name" in "public"."book" cannot have NULL value`,
 					Line:    1,
 				},
 			},
@@ -83,9 +83,9 @@ func TestColumnNoNULL(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: `Column "id" in "public"."book" can not have NULL value`,
+					Content: `Column "id" in "public"."book" cannot have NULL value`,
 					Line:    1,
 				},
 			},
@@ -117,9 +117,9 @@ func TestColumnNoNULL(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    advisor.ColumnCanNotNull,
+					Code:    advisor.ColumnCannotNull,
 					Title:   "column.no-null",
-					Content: `Column "id" in "public"."book" can not have NULL value`,
+					Content: `Column "id" in "public"."book" cannot have NULL value`,
 					Line:    1,
 				},
 			},

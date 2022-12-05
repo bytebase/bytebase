@@ -3,12 +3,13 @@ import {
   IssueCreate,
   IssueType,
   MigrationType,
-  UpdateSchemaContext,
+  MigrationContext,
 } from "@/types";
 import {
   findProject,
   BuildNewIssueContext,
   VALIDATE_ONLY_SQL,
+  findDatabaseListByQuery,
 } from "../common";
 import { IssueCreateHelper } from "./helper";
 
@@ -47,24 +48,40 @@ const buildNewTenantSchemaUpdateIssue = async (
   if (templateType === "bb.issue.database.data.update") {
     migrationType = "DATA";
   }
-  helper.issueCreate!.createContext = {
-    migrationType,
-    updateSchemaDetailList: [
-      {
-        databaseName: route.query.databaseName,
-        statement: VALIDATE_ONLY_SQL,
-      },
-    ],
-  };
+
+  const databaseList = findDatabaseListByQuery(context);
+  if (databaseList.length !== 0) {
+    helper.issueCreate!.createContext = {
+      detailList: databaseList.map((db) => {
+        return {
+          migrationType: migrationType,
+          databaseId: db.id,
+          databaseName: "",
+          statement: VALIDATE_ONLY_SQL,
+        };
+      }),
+    };
+  } else {
+    helper.issueCreate!.createContext = {
+      detailList: [
+        {
+          migrationType: migrationType,
+          databaseName: route.query.databaseName,
+          statement: VALIDATE_ONLY_SQL,
+        },
+      ],
+    };
+  }
   await helper.validate();
 
   // we are setting SQL statement to "" because showing /* YOUR_SQL_HERE */
   // is not that friendly to users
   // setting it to empty can provide a placeholder to user, along with an
   // exclamation mark indicating "No SQL statement"
-  const createContext = helper.issueCreate!
-    .createContext as UpdateSchemaContext;
-  createContext.updateSchemaDetailList[0].statement = "";
+  const createContext = helper.issueCreate!.createContext as MigrationContext;
+  for (const detail of createContext.detailList) {
+    detail.statement = "";
+  }
 
   return helper.generate();
 };

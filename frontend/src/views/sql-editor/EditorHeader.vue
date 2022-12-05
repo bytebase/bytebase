@@ -36,15 +36,18 @@
           ></span>
           <heroicons-outline:bell class="w-6 h-6" />
         </router-link>
-        <div
-          v-if="showSwitchPlan"
-          class="cursor-pointer"
-          @click="toggleLocales"
-        >
-          <heroicons-outline:translate class="w-6 h-6" />
-        </div>
         <div class="ml-2">
-          <ProfileDropdown />
+          <div
+            class="flex justify-center items-center bg-gray-100 rounded-3xl"
+            :class="logoUrl ? 'p-2' : ''"
+          >
+            <img
+              v-if="logoUrl"
+              class="h-7 mr-4 ml-2 bg-no-repeat bg-contain bg-center"
+              :src="logoUrl"
+            />
+            <ProfileDropdown />
+          </div>
         </div>
         <div class="ml-2 -mr-2 flex sm:hidden">
           <!-- Mobile menu button -->
@@ -80,7 +83,7 @@
     </router-link>
 
     <router-link
-      v-if="showDBAItem"
+      v-if="showInstanceItem"
       to="/instance"
       class="bar-link rounded-md block px-3 py-2"
       >{{ $t("common.instances") }}</router-link
@@ -108,8 +111,8 @@ import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
-import { isDBAOrOwner, isDev } from "@/utils";
-import { hasFeature, useCurrentUser, useInboxStore } from "@/store";
+import { hasWorkspacePermission } from "@/utils";
+import { useCurrentUser, useInboxStore, useSettingStore } from "@/store";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -121,6 +124,7 @@ export default defineComponent({
   setup() {
     const { t, availableLocales, locale } = useI18n();
     const inboxStore = useInboxStore();
+    const settingStore = useSettingStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -129,15 +133,17 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
 
-    const showDBAItem = computed((): boolean => {
-      return (
-        !hasFeature("bb.feature.dba-workflow") ||
-        isDBAOrOwner(currentUser.value.role)
-      );
+    const logoUrl = computed((): string | undefined => {
+      const brandingLogoSetting =
+        settingStore.getSettingByName("bb.branding.logo");
+      return brandingLogoSetting?.value;
     });
 
-    const showSwitchPlan = computed((): boolean => {
-      return isDev();
+    const showInstanceItem = computed((): boolean => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-instance",
+        currentUser.value.role
+      );
     });
 
     const prepareInboxSummary = () => {
@@ -147,7 +153,12 @@ export default defineComponent({
       }
     };
 
+    const prepareBranding = () => {
+      settingStore.fetchSetting();
+    };
+
     watchEffect(prepareInboxSummary);
+    watchEffect(prepareBranding);
 
     const inboxSummary = computed(() => {
       return inboxStore.getInboxSummaryByUser(currentUser.value.id);
@@ -216,14 +227,6 @@ export default defineComponent({
       };
     };
 
-    const toggleLocales = () => {
-      // TODO change to some real logic
-      const locales = availableLocales;
-      const nextLocale =
-        locales[(locales.indexOf(locale.value) + 1) % locales.length];
-      setLocale(nextLocale);
-    };
-
     const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
     const i18nChangeAction = computed(() =>
       defineAction({
@@ -259,10 +262,9 @@ export default defineComponent({
 
     return {
       state,
-      showDBAItem,
-      showSwitchPlan,
+      showInstanceItem,
       inboxSummary,
-      toggleLocales,
+      logoUrl,
       goBack,
     };
   },

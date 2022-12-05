@@ -34,6 +34,7 @@
     <!-- show all OPEN issues with pageSize=10  -->
     <PagedIssueTable
       v-if="showOpen"
+      session-key="dashboard-open"
       :issue-find="{
         statusList: ['OPEN'],
         principalId: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
@@ -47,10 +48,9 @@
           :right-bordered="false"
           :top-bordered="true"
           :bottom-bordered="true"
-          :issue-section-list="[
-            { title: $t('issue.table.open'), list: issueList.filter(filter) },
-          ]"
           :show-placeholder="!loading"
+          :title="$t('issue.table.open')"
+          :issue-list="issueList.filter(filter)"
         />
       </template>
     </PagedIssueTable>
@@ -58,6 +58,7 @@
     <!-- show all DONE and CANCELED issues with pageSize=10 -->
     <PagedIssueTable
       v-if="showClosed"
+      session-key="dashboard-closed"
       :issue-find="{
         statusList: ['DONE', 'CANCELED'],
         principalId: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
@@ -72,10 +73,9 @@
           :right-bordered="false"
           :top-bordered="true"
           :bottom-bordered="true"
-          :issue-section-list="[
-            { title: $t('issue.table.closed'), list: issueList.filter(filter) },
-          ]"
           :show-placeholder="!loading"
+          :title="$t('issue.table.closed')"
+          :issue-list="issueList.filter(filter)"
         />
       </template>
     </PagedIssueTable>
@@ -89,7 +89,11 @@ import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
 import { EMPTY_ID, Environment, Issue, PrincipalId, ProjectId } from "../types";
 import { reactive, ref, computed, onMounted } from "vue";
-import { activeEnvironment, isDBAOrOwner, projectSlug } from "../utils";
+import {
+  activeEnvironment,
+  hasWorkspacePermission,
+  projectSlug,
+} from "../utils";
 import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
@@ -126,7 +130,10 @@ const selectedPrincipalId = computed((): PrincipalId => {
   if (id >= 0) {
     return id;
   }
-  return isDBAOrOwner(currentUser.value.role)
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-issue",
+    currentUser.value.role
+  )
     ? EMPTY_ID // default to 'All' if current user is owner or DBA
     : currentUser.value.id; // default to current user otherwise
 });

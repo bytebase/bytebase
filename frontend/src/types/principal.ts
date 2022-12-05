@@ -4,7 +4,7 @@ import { PrincipalId } from "./id";
 import { RoleType } from "./member";
 
 // we may support application/bot identity.
-export type PrincipalType = "END_USER" | "SYSTEM_BOT";
+export type PrincipalType = "END_USER" | "SYSTEM_BOT" | "SERVICE_ACCOUNT";
 
 export type Principal = {
   id: PrincipalId;
@@ -22,16 +22,21 @@ export type Principal = {
   name: string;
   email: string;
   role: RoleType;
+  serviceKey: string;
 };
 
 export type PrincipalCreate = {
   // Domain specific fields
   name: string;
   email: string;
+  type: PrincipalType;
 };
 
 export type PrincipalPatch = {
   // Domain specific fields
   name?: string;
   password?: string;
+  email?: string;
+  type: PrincipalType;
+  refreshKey?: boolean;
 };

@@ -16,6 +16,7 @@ export type BBButtonConfirmStyle =
 export type BBTableColumn = {
   title: string;
   center?: boolean;
+  nowrap?: boolean;
 };
 
 export type BBTableSectionDataSource<T> = {

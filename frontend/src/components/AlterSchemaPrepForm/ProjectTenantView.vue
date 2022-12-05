@@ -49,11 +49,7 @@
                 </template>
               </label>
             </div>
-            <YAxisRadioGroup
-              v-model:label="label"
-              :label-list="labelList"
-              class="text-sm"
-            />
+            <YAxisRadioGroup v-model:label="label" class="text-sm" />
           </div>
 
           <template v-if="databaseListGroupByName.length === 1">
@@ -61,7 +57,6 @@
               class="mt-4"
               :database-list="databaseListGroupByName[0].list"
               :label="label"
-              :label-list="labelList"
               :environment-list="environmentList"
               :deployment="deployment!"
             />
@@ -82,13 +77,14 @@
                 :name="name"
               >
                 <template #arrow>
-                  <input
-                    type="radio"
-                    class="radio"
-                    :checked="name === state.selectedDatabaseName"
-                  />
+                  <!-- don't show the arrow -->
                 </template>
                 <template #header>
+                  <input
+                    type="radio"
+                    class="radio mr-2"
+                    :checked="name === state.selectedDatabaseName"
+                  />
                   <span class="text-base">{{ name }}</span>
                 </template>
                 <template #header-extra>
@@ -100,7 +96,6 @@
                 <DeployDatabaseTable
                   :database-list="list"
                   :label="label"
-                  :label-list="labelList"
                   :environment-list="environmentList"
                   :deployment="deployment!"
                 />
@@ -135,11 +130,12 @@ import {
   getPipelineFromDeploymentSchedule,
   projectSlug,
 } from "@/utils";
-import { useDeploymentStore, useLabelList } from "@/store";
+import { useDeploymentStore } from "@/store";
 import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 
 export type State = {
   selectedDatabaseName: string | undefined;
+  selectedDatabaseIdListForTenantMode: Set<DatabaseId>;
   deployingTenantDatabaseList: DatabaseId[];
 };
 
@@ -167,7 +163,6 @@ const fetchData = () => {
 watchEffect(fetchData);
 
 const label = ref<LabelKeyType>("bb.environment");
-const labelList = useLabelList();
 
 const deployment = computed(() => {
   if (props.project) {
@@ -180,17 +175,17 @@ const deployment = computed(() => {
 const databaseListGroupByName = computed(
   (): { name: string; list: Database[] }[] => {
     if (!props.project) return [];
-    if (props.project.dbNameTemplate && labelList.value.length === 0) return [];
+    // All databases will be in the same group if dbNameTemplate is empty.
+    if (props.project.dbNameTemplate === "") {
+      return [{ name: "", list: props.databaseList }];
+    }
 
     const dict = groupBy(props.databaseList, (db) => {
       if (props.project!.dbNameTemplate) {
         return parseDatabaseNameByTemplate(
           db.name,
-          props.project!.dbNameTemplate,
-          labelList.value
+          props.project!.dbNameTemplate
         );
-      } else {
-        return db.name;
       }
     });
     return Object.keys(dict).map((name) => ({

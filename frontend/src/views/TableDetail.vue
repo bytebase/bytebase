@@ -79,7 +79,7 @@
                 {{ $t("sql-editor.self") }}
               </span>
               <button class="ml-1 btn-icon" @click.prevent="gotoSQLEditor">
-                <heroicons-outline:terminal class="w-4 h-4" />
+                <heroicons-solid:terminal class="w-5 h-5" />
               </button>
             </dd>
           </dl>
@@ -195,8 +195,11 @@
           {{ $t("database.columns") }}
         </div>
         <ColumnTable
+          :database="database"
+          :table="table"
           :column-list="table.columnList"
           :engine="database.instance.engine"
+          :sensitive-data-list="sensitiveDataList"
         />
       </div>
 
@@ -221,9 +224,8 @@ import {
   idFromSlug,
   isGhostTable,
 } from "../utils";
-import { useRouter } from "vue-router";
-import { useTableStore } from "@/store";
-import { Table } from "@/types";
+import { usePolicyByDatabaseAndType, useTableStore } from "@/store";
+import { SensitiveData, SensitiveDataPolicyPayload, Table } from "@/types";
 
 export default defineComponent({
   name: "TableDetail",
@@ -239,7 +241,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const router = useRouter();
     const tableStore = useTableStore();
 
     const table = computed(() => {
@@ -254,13 +255,28 @@ export default defineComponent({
     });
 
     const gotoSQLEditor = () => {
-      router.push({
-        name: "sql-editor.detail",
-        params: {
-          connectionSlug: connectionSlug(database.value),
-        },
-      });
+      const url = `/sql-editor/${connectionSlug(
+        database.value.instance,
+        database.value
+      )}`;
+      window.open(url);
     };
+
+    const sensitiveDataPolicy = usePolicyByDatabaseAndType(
+      computed(() => ({
+        databaseId: database.value.id,
+        type: "bb.policy.sensitive-data",
+      }))
+    );
+
+    const sensitiveDataList = computed((): SensitiveData[] => {
+      const policy = sensitiveDataPolicy.value;
+      if (!policy) {
+        return [];
+      }
+      const payload = policy.payload as SensitiveDataPolicyPayload;
+      return payload.sensitiveDataList;
+    });
 
     return {
       table,
@@ -268,6 +284,7 @@ export default defineComponent({
       gotoSQLEditor,
       bytesToString,
       isGhostTable,
+      sensitiveDataList,
     };
   },
 });

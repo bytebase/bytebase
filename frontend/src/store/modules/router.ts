@@ -181,16 +181,15 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /sql-editor/:connectionSlug/:sheetSlug
+        // /sql-editor/sheet/:sheetSlug
         // match this route first
         const sqlEditorComponents = currentRoute.path.match(
-          "/sql-editor/([0-9a-zA-Z_-]+)/([0-9a-zA-Z_-]+)"
-        ) || ["/", undefined, undefined];
+          "/sql-editor/sheet/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined];
 
-        if (sqlEditorComponents[1] && sqlEditorComponents[2]) {
+        if (sqlEditorComponents[1]) {
           return {
-            connectionSlug: sqlEditorComponents[1],
-            sheetSlug: sqlEditorComponents[2],
+            sheetSlug: sqlEditorComponents[1],
           };
         }
       }

@@ -70,10 +70,11 @@ type DatabaseCreate struct {
 	EnvironmentID int
 
 	// Domain specific fields
-	Name         string `jsonapi:"attr,name"`
-	CharacterSet string `jsonapi:"attr,characterSet"`
-	Collation    string `jsonapi:"attr,collation"`
-	IssueID      int    `jsonapi:"attr,issueId"`
+	Name                 string `jsonapi:"attr,name"`
+	CharacterSet         string `jsonapi:"attr,characterSet"`
+	Collation            string `jsonapi:"attr,collation"`
+	IssueID              int    `jsonapi:"attr,issueId"`
+	LastSuccessfulSyncTs int64
 	// Labels is a json-encoded string from a list of DatabaseLabel,
 	// e.g. "[{"key":"bb.location","value":"earth"},{"key":"bb.tenant","value":"bytebase"}]".
 	Labels        *string `jsonapi:"attr,labels"`
@@ -122,4 +123,79 @@ type DatabasePatch struct {
 	SchemaVersion        *string
 	SyncStatus           *SyncStatus
 	LastSuccessfulSyncTs *int64
+}
+
+// DatabaseEdit is the API message for updating a database in UI editor.
+type DatabaseEdit struct {
+	DatabaseID int `json:"databaseId"`
+
+	CreateTableList []*CreateTableContext `json:"createTableList"`
+	AlterTableList  []*AlterTableContext  `json:"alterTableList"`
+	RenameTableList []*RenameTableContext `json:"renameTableList"`
+	DropTableList   []*DropTableContext   `json:"dropTableList"`
+}
+
+// CreateTableContext is the edit database context to create a table.
+type CreateTableContext struct {
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	Engine       string `json:"engine"`
+	CharacterSet string `json:"characterSet"`
+	Collation    string `json:"collation"`
+	Comment      string `json:"comment"`
+
+	AddColumnList []*AddColumnContext `json:"addColumnList"`
+}
+
+// AlterTableContext is the edit database context to alter a table.
+type AlterTableContext struct {
+	TableID int    `json:"tableId"`
+	Name    string `json:"name"`
+
+	// ColumnNameList should be the final order of columns in UI editor and is used to confirm column positions.
+	ColumnNameList []string `json:"columnNameList"`
+
+	AddColumnList    []*AddColumnContext    `json:"addColumnList"`
+	ChangeColumnList []*ChangeColumnContext `json:"changeColumnList"`
+	DropColumnList   []*DropColumnContext   `json:"dropColumnList"`
+}
+
+// RenameTableContext is the edit database context to rename a table.
+type RenameTableContext struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
+}
+
+// DropTableContext is the edit database context to drop a table.
+type DropTableContext struct {
+	TableID int    `json:"tableId"`
+	Name    string `json:"name"`
+}
+
+// AddColumnContext is the create/alter table context to add a column.
+type AddColumnContext struct {
+	Name         string  `json:"name"`
+	Type         string  `json:"type"`
+	CharacterSet string  `json:"characterSet"`
+	Collation    string  `json:"collation"`
+	Comment      string  `json:"comment"`
+	Nullable     bool    `json:"nullable"`
+	Default      *string `json:"default"`
+}
+
+// ChangeColumnContext is the alter table context to change a column.
+type ChangeColumnContext struct {
+	OldName      string  `json:"oldName"`
+	NewName      string  `json:"newName"`
+	Type         string  `json:"type"`
+	CharacterSet string  `json:"characterSet"`
+	Collation    string  `json:"collation"`
+	Comment      string  `json:"comment"`
+	Nullable     bool    `json:"nullable"`
+	Default      *string `json:"default"`
+}
+
+// DropColumnContext is the alter table context to drop a column.
+type DropColumnContext struct {
+	Name string `json:"name"`
 }

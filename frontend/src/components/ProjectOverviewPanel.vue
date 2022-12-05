@@ -4,14 +4,24 @@
       <p class="text-lg font-medium leading-7 text-main">
         {{ $t("project.overview.recent-activity") }}
       </p>
-      <ActivityTable :activity-list="state.activityList" />
-      <router-link
-        :to="`#activity`"
-        class="mt-2 flex justify-end normal-link"
-        exact-active-class=""
-      >
-        {{ $t("project.overview.view-all") }}
-      </router-link>
+      <div class="relative">
+        <ActivityTable :activity-list="state.activityList" />
+        <div
+          v-if="state.isFetchingActivityList"
+          class="absolute inset-0 flex flex-col items-center justify-center bg-white/70"
+        >
+          <BBSpin />
+        </div>
+        <div class="w-full flex justify-end mt-2 px-4">
+          <router-link
+            :to="`#activity`"
+            class="normal-link"
+            exact-active-class=""
+          >
+            {{ $t("project.overview.view-all") }}
+          </router-link>
+        </div>
+      </div>
     </div>
 
     <div class="space-y-2">
@@ -43,7 +53,7 @@
       <YAxisRadioGroup
         v-if="isTenantProject && state.yAxisLabel"
         v-model:label="state.yAxisLabel"
-        :label-list="selectableLabelList"
+        :excluded-key-list="excludedKeyList"
         class="text-sm font-normal py-1"
       />
 
@@ -55,7 +65,6 @@
             :project="project"
             :x-axis-label="state.xAxisLabel"
             :y-axis-label="state.yAxisLabel"
-            :label-list="labelList"
           />
           <div v-else class="w-full h-40 flex justify-center items-center">
             <NSpin />
@@ -87,6 +96,7 @@
       <!-- show OPEN issues with pageSize=10 -->
       <div>
         <PagedIssueTable
+          session-key="project-open"
           :issue-find="{
             statusList: ['OPEN'],
             projectId: project.id,
@@ -96,9 +106,8 @@
           <template #table="{ issueList, loading }">
             <IssueTable
               :mode="'PROJECT'"
-              :issue-section-list="[
-                { title: $t('project.overview.in-progress'), list: issueList },
-              ]"
+              :title="$t('project.overview.in-progress')"
+              :issue-list="issueList"
               :show-placeholder="!loading"
             />
           </template>
@@ -107,6 +116,7 @@
         <!-- show the first 5 DONE or CANCELED issues -->
         <!-- But won't show "Load more", since we have a "View all closed" link below -->
         <PagedIssueTable
+          session-key="project-closed"
           :issue-find="{
             statusList: ['DONE', 'CANCELED'],
             projectId: project.id,
@@ -118,23 +128,21 @@
             <IssueTable
               class="-mt-px"
               :mode="'PROJECT'"
-              :issue-section-list="[
-                {
-                  title: $t('project.overview.recently-closed'),
-                  list: issueList,
-                },
-              ]"
+              :title="$t('project.overview.recently-closed')"
+              :issue-list="issueList"
               :show-placeholder="!loading"
             />
           </template>
         </PagedIssueTable>
 
-        <router-link
-          :to="`/issue?status=closed&project=${project.id}`"
-          class="mt-2 flex justify-end normal-link"
-        >
-          {{ $t("project.overview.view-all-closed") }}
-        </router-link>
+        <div class="w-full flex justify-end mt-2 px-4">
+          <router-link
+            :to="`/issue?status=closed&project=${project.id}`"
+            class="normal-link"
+          >
+            {{ $t("project.overview.view-all-closed") }}
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
@@ -147,7 +155,7 @@ import {
   PropType,
   computed,
   defineComponent,
-  onBeforeMount,
+  watch,
 } from "vue";
 import { NSpin } from "naive-ui";
 import ActivityTable from "../components/ActivityTable.vue";
@@ -156,7 +164,10 @@ import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
 import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
-import { useActivityStore, useLabelList } from "@/store";
+import {
+  useActivityStore,
+  usePolicyListByResourceTypeAndPolicyType,
+} from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
 // Show at most 5 activity
@@ -164,6 +175,7 @@ const ACTIVITY_LIMIT = 5;
 
 interface LocalState {
   activityList: Activity[];
+  isFetchingActivityList: boolean;
   progressIssueList: Issue[];
   closedIssueList: Issue[];
   databaseNameFilter: string;
@@ -195,6 +207,7 @@ export default defineComponent({
   setup(props) {
     const state = reactive<LocalState>({
       activityList: [],
+      isFetchingActivityList: false,
       progressIssueList: [],
       closedIssueList: [],
       databaseNameFilter: "",
@@ -202,8 +215,14 @@ export default defineComponent({
       yAxisLabel: undefined,
     });
     const activityStore = useActivityStore();
+    const accessControlPolicyList = usePolicyListByResourceTypeAndPolicyType({
+      resourceType: "database",
+      policyType: "bb.policy.access-control",
+    });
 
     const prepareActivityList = () => {
+      state.isFetchingActivityList = true;
+      state.activityList = [];
       const requests = [
         activityStore.fetchActivityListForDatabaseByProjectId({
           projectId: props.project.id,
@@ -219,6 +238,8 @@ export default defineComponent({
         const flattenList = lists.flatMap((list) => list);
         flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
         state.activityList = flattenList.slice(0, ACTIVITY_LIMIT);
+
+        state.isFetchingActivityList = false;
       });
     };
 
@@ -230,9 +251,7 @@ export default defineComponent({
       prepareActivityList();
     };
 
-    onBeforeMount(prepare);
-
-    const labelList = useLabelList();
+    watch(() => props.project.id, prepare, { immediate: true });
 
     const filteredDatabaseList = computed(() => {
       const filter = state.databaseNameFilter.toLocaleLowerCase();
@@ -243,16 +262,12 @@ export default defineComponent({
       );
     });
 
-    // make "bb.environment" non-selectable because it was already specified to the x-axis
-    const selectableLabelList = computed(() => {
-      const excludes = new Set([state.xAxisLabel]);
-      return labelList.value.filter((label) => !excludes.has(label.key));
-    });
+    const excludedKeyList = computed(() => [state.xAxisLabel]);
 
     watchEffect(() => {
       state.yAxisLabel = findDefaultGroupByLabel(
-        selectableLabelList.value,
-        filteredDatabaseList.value
+        filteredDatabaseList.value,
+        excludedKeyList.value
       );
     });
 
@@ -260,8 +275,8 @@ export default defineComponent({
       state,
       isTenantProject,
       filteredDatabaseList,
-      labelList,
-      selectableLabelList,
+      excludedKeyList,
+      accessControlPolicyList,
     };
   },
 });

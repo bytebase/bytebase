@@ -87,17 +87,8 @@
             </div>
           </div>
         </div>
-        <div
-          class="mt-5 flex"
-          :class="inProgress ? 'justify-between' : 'justify-end'"
-        >
-          <div
-            v-if="inProgress"
-            class="flex flex-row justify-start items-center"
-          >
-            <BBSpin />{{ progressText }}
-          </div>
-          <div>
+        <div class="mt-5 flex flex-col space-y-4">
+          <div class="flex justify-end">
             <button
               type="button"
               class="btn-normal mt-3 px-4 py-2 sm:mt-0 sm:w-auto"
@@ -117,6 +108,9 @@
             >
               {{ $t(okText) }}
             </button>
+          </div>
+          <div v-if="inProgress" class="flex flex-row justify-end items-center">
+            <BBSpin />{{ progressText }}
           </div>
         </div>
       </div>

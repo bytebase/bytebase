@@ -28,13 +28,15 @@ type dataSourceRaw struct {
 	DatabaseID int
 
 	// Domain specific fields
-	Name     string
-	Type     api.DataSourceType
-	Username string
-	Password string
-	SslCa    string
-	SslCert  string
-	SslKey   string
+	Name         string
+	Type         api.DataSourceType
+	Username     string
+	Password     string
+	SslCa        string
+	SslCert      string
+	SslKey       string
+	HostOverride string
+	PortOverride string
 }
 
 // toDataSource creates an instance of DataSource based on the dataSourceRaw.
@@ -54,13 +56,15 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 		DatabaseID: raw.DatabaseID,
 
 		// Domain specific fields
-		Name:     raw.Name,
-		Type:     raw.Type,
-		Username: raw.Username,
-		Password: raw.Password,
-		SslCa:    raw.SslCa,
-		SslCert:  raw.SslCert,
-		SslKey:   raw.SslKey,
+		Name:         raw.Name,
+		Type:         raw.Type,
+		Username:     raw.Username,
+		Password:     raw.Password,
+		SslCa:        raw.SslCa,
+		SslCert:      raw.SslCert,
+		SslKey:       raw.SslKey,
+		HostOverride: raw.HostOverride,
+		PortOverride: raw.PortOverride,
 	}
 }
 
@@ -93,12 +97,13 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 	return dataSource, nil
 }
 
-// FindDataSource finds a list of DataSource instances.
-func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
+// findDataSource finds a list of DataSource instances.
+func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
 	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find DataSource list with DataSourceFind[%+v]", find)
 	}
+
 	var dataSourceList []*api.DataSource
 	for _, raw := range dataSourceRawList {
 		dataSource, err := s.composeDataSource(ctx, raw)
@@ -123,6 +128,27 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 	return dataSource, nil
 }
 
+// DeleteDataSource deletes an existing dataSource by ID.
+func (s *Store) DeleteDataSource(ctx context.Context, deleteDataSource *api.DataSourceDelete) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if err := s.deleteDataSourceImpl(ctx, tx, deleteDataSource); err != nil {
+		return FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, deleteDataSource.InstanceID)
+	return nil
+}
+
 //
 // private functions
 //
@@ -130,10 +156,11 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 // createDataSourceRawTx creates an instance of DataSource.
 // This uses an existing transaction object.
 func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.DataSourceCreate) error {
-	_, err := s.createDataSourceImpl(ctx, tx, create)
-	if err != nil {
+	if _, err := s.createDataSourceImpl(ctx, tx, create); err != nil {
 		return errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, create.InstanceID)
 	return nil
 }
 
@@ -171,12 +198,26 @@ func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceC
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, dataSource.InstanceID)
 
 	return dataSource, nil
 }
 
 // findDataSourceRaw retrieves a list of data sources based on find.
 func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
+	findCopy := *find
+	findCopy.InstanceID = nil
+	isListDataSource := find.InstanceID != nil && findCopy == api.DataSourceFind{}
+	var cacheList []*dataSourceRaw
+	has, err := s.cache.FindCache(api.DataSourceCache, *find.InstanceID, &cacheList)
+	if err != nil {
+		return nil, err
+	}
+	if has && isListDataSource {
+		return cacheList, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -187,7 +228,11 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 	if err != nil {
 		return nil, err
 	}
-
+	if isListDataSource {
+		if err := s.cache.UpsertCache(api.DataSourceCache, *find.InstanceID, list); err != nil {
+			return nil, err
+		}
+	}
 	return list, nil
 }
 
@@ -230,6 +275,8 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(api.DataSourceCache, dataSource.InstanceID)
 
 	return dataSource, nil
 }
@@ -249,10 +296,12 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 			password,
 			ssl_key,
 			ssl_cert,
-			ssl_ca
+			ssl_ca,
+			host_override,
+			port_override
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override
 	`
 	var dataSourceRaw dataSourceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -267,6 +316,8 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		create.SslKey,
 		create.SslCert,
 		create.SslCa,
+		create.HostOverride,
+		create.PortOverride,
 	).Scan(
 		&dataSourceRaw.ID,
 		&dataSourceRaw.CreatorID,
@@ -282,6 +333,8 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		&dataSourceRaw.SslKey,
 		&dataSourceRaw.SslCert,
 		&dataSourceRaw.SslCa,
+		&dataSourceRaw.HostOverride,
+		&dataSourceRaw.PortOverride,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -322,7 +375,9 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 			password,
 			ssl_key,
 			ssl_cert,
-			ssl_ca
+			ssl_ca,
+			host_override,
+			port_override
 		FROM data_source
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -351,6 +406,8 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 			&dataSourceRaw.SslKey,
 			&dataSourceRaw.SslCert,
 			&dataSourceRaw.SslCa,
+			&dataSourceRaw.HostOverride,
+			&dataSourceRaw.PortOverride,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -383,16 +440,22 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 	if v := patch.SslCert; v != nil {
 		set, args = append(set, fmt.Sprintf("ssl_cert= $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.HostOverride; v != nil {
+		set, args = append(set, fmt.Sprintf("host_override= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.PortOverride; v != nil {
+		set, args = append(set, fmt.Sprintf("port_override= $%d", len(args)+1)), append(args, *v)
+	}
 	args = append(args, patch.ID)
 
 	var dataSourceRaw dataSourceRaw
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE data_source
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca
-	`, len(args)),
+			UPDATE data_source
+			SET `+strings.Join(set, ", ")+`
+			WHERE id = $%d
+			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override
+		`, len(args)),
 		args...,
 	).Scan(
 		&dataSourceRaw.ID,
@@ -409,6 +472,8 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 		&dataSourceRaw.SslKey,
 		&dataSourceRaw.SslCert,
 		&dataSourceRaw.SslCa,
+		&dataSourceRaw.HostOverride,
+		&dataSourceRaw.PortOverride,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("DataSource not found with ID %d", patch.ID)}
@@ -416,4 +481,12 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 		return nil, FormatError(err)
 	}
 	return &dataSourceRaw, nil
+}
+
+// deleteDataSourceImpl permanently deletes a dataSource by ID.
+func (*Store) deleteDataSourceImpl(ctx context.Context, tx *Tx, delete *api.DataSourceDelete) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM data_source WHERE id = $1`, delete.ID); err != nil {
+		return FormatError(err)
+	}
+	return nil
 }

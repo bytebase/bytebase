@@ -32,12 +32,13 @@ type issueRaw struct {
 	PipelineID int
 
 	// Domain specific fields
-	Name        string
-	Status      api.IssueStatus
-	Type        api.IssueType
-	Description string
-	AssigneeID  int
-	Payload     string
+	Name                  string
+	Status                api.IssueStatus
+	Type                  api.IssueType
+	Description           string
+	AssigneeID            int
+	AssigneeNeedAttention bool
+	Payload               string
 }
 
 // toIssue creates an instance of Issue based on the issueRaw.
@@ -57,12 +58,13 @@ func (raw *issueRaw) toIssue() *api.Issue {
 		PipelineID: raw.PipelineID,
 
 		// Domain specific fields
-		Name:        raw.Name,
-		Status:      raw.Status,
-		Type:        raw.Type,
-		Description: raw.Description,
-		AssigneeID:  raw.AssigneeID,
-		Payload:     raw.Payload,
+		Name:                  raw.Name,
+		Status:                raw.Status,
+		Type:                  raw.Type,
+		Description:           raw.Description,
+		AssigneeID:            raw.AssigneeID,
+		AssigneeNeedAttention: raw.AssigneeNeedAttention,
+		Payload:               raw.Payload,
 	}
 }
 
@@ -111,6 +113,24 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 		return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", issueRaw)
 	}
 	return issue, nil
+}
+
+// FindIssue finds a list of issues.
+func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
+	issueRawList, err := s.findIssueRaw(ctx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find Issue list with IssueFind[%+v]", find)
+	}
+	var issueList []*api.Issue
+	for _, raw := range issueRawList {
+		issue, err := s.composeIssue(ctx, raw)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", raw)
+		}
+		issueList = append(issueList, issue)
+	}
+
+	return issueList, nil
 }
 
 // FindIssueStripped finds a list of issues in stripped format.
@@ -187,11 +207,11 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 
 // CreateIssueValidateOnly creates an issue for validation purpose
 // Do NOT write to the database.
-func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipeline, create *api.IssueCreate, creatorID int) (*api.Issue, error) {
+func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipeline, create *api.IssueCreate) (*api.Issue, error) {
 	issue := &api.Issue{
-		CreatorID:   creatorID,
+		CreatorID:   create.CreatorID,
 		CreatedTs:   time.Now().Unix(),
-		UpdaterID:   creatorID,
+		UpdaterID:   create.CreatorID,
 		UpdatedTs:   time.Now().Unix(),
 		ProjectID:   create.ProjectID,
 		Name:        create.Name,
@@ -212,7 +232,7 @@ func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipel
 
 // CreatePipelineValidateOnly creates a pipeline for validation purpose
 // Do NOT write to the database.
-func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
 	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
 	// jsonapi resource relationships will collide different resources into the same bucket.
 	id := 0
@@ -221,9 +241,9 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 		ID:        id,
 		Name:      create.Name,
 		Status:    api.PipelineOpen,
-		CreatorID: creatorID,
+		CreatorID: create.CreatorID,
 		CreatedTs: ts,
-		UpdaterID: creatorID,
+		UpdaterID: create.CreatorID,
 		UpdatedTs: ts,
 	}
 	for _, sc := range create.StageList {
@@ -231,9 +251,9 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 		stage := &api.Stage{
 			ID:            id,
 			Name:          sc.Name,
-			CreatorID:     creatorID,
+			CreatorID:     create.CreatorID,
 			CreatedTs:     ts,
-			UpdaterID:     creatorID,
+			UpdaterID:     create.CreatorID,
 			UpdatedTs:     ts,
 			PipelineID:    sc.PipelineID,
 			EnvironmentID: sc.EnvironmentID,
@@ -257,9 +277,9 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
-				CreatorID:         creatorID,
+				CreatorID:         create.CreatorID,
 				CreatedTs:         ts,
-				UpdaterID:         creatorID,
+				UpdaterID:         create.CreatorID,
 				UpdatedTs:         ts,
 				Type:              tc.Type,
 				Payload:           tc.Payload,
@@ -572,10 +592,11 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 			type,
 			description,
 			assignee_id,
+			assignee_need_attention,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
+		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9, $10)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload
 	`
 	var issueRaw issueRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -587,6 +608,7 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 		create.Type,
 		create.Description,
 		create.AssigneeID,
+		create.AssigneeNeedAttention,
 		create.Payload,
 	).Scan(
 		&issueRaw.ID,
@@ -601,6 +623,7 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 		&issueRaw.Type,
 		&issueRaw.Description,
 		&issueRaw.AssigneeID,
+		&issueRaw.AssigneeNeedAttention,
 		&issueRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -638,6 +661,9 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 	if v := find.AssigneeID; v != nil {
 		where, args = append(where, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.AssigneeNeedAttention; v != nil {
+		where, args = append(where, fmt.Sprintf("assignee_need_attention = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d)", len(args)+1)), append(args, *v)
 	}
@@ -654,7 +680,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 		where = append(where, fmt.Sprintf("status IN (%s)", strings.Join(list, ",")))
 	}
 
-	var query = `
+	query := `
 		SELECT
 			id,
 			creator_id,
@@ -668,6 +694,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 			type,
 			description,
 			assignee_id,
+			assignee_need_attention,
 			payload
 		FROM issue
 		WHERE ` + strings.Join(where, " AND ")
@@ -699,6 +726,7 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 			&issueRaw.Type,
 			&issueRaw.Description,
 			&issueRaw.AssigneeID,
+			&issueRaw.AssigneeNeedAttention,
 			&issueRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
@@ -745,7 +773,7 @@ func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch)
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload
 	`, len(args)),
 		args...,
 	).Scan(
@@ -761,6 +789,7 @@ func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch)
 		&issueRaw.Type,
 		&issueRaw.Description,
 		&issueRaw.AssigneeID,
+		&issueRaw.AssigneeNeedAttention,
 		&issueRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {

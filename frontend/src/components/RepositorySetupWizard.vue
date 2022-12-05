@@ -46,6 +46,84 @@
         />
       </template>
     </BBStepTab>
+    <BBModal
+      v-if="state.showSetupSQLReviewCIModal"
+      class="relative overflow-hidden"
+      :title="$t('repository.sql-review-ci-setup')"
+      @close="closeSetupSQLReviewModal"
+    >
+      <div class="space-y-4 max-w-[32rem]">
+        <div class="whitespace-pre-wrap">
+          {{
+            $t("repository.sql-review-ci-setup-modal", {
+              pr: state.config.vcs.type.startsWith("GITLAB")
+                ? $t("repository.merge-request")
+                : $t("repository.pull-request"),
+            })
+          }}
+        </div>
+
+        <div class="flex justify-end pt-4 gap-x-2">
+          <a
+            class="btn-primary items-center space-x-2 mx-2 my-2"
+            :href="state.sqlReviewCIPullRequestURL"
+            target="_blank"
+          >
+            {{
+              $t("repository.sql-review-ci-setup-pr", {
+                pr: state.config.vcs.type.startsWith("GITLAB")
+                  ? $t("repository.merge-request")
+                  : $t("repository.pull-request"),
+              })
+            }}
+          </a>
+        </div>
+      </div>
+    </BBModal>
+    <BBAlert
+      v-if="state.showSetupSQLReviewCIFailureModal"
+      :style="'CRITICAL'"
+      :ok-text="$t('common.retry')"
+      :title="$t('repository.sql-review-ci-setup-failed')"
+      @ok="
+        () => {
+          state.showSetupSQLReviewCIFailureModal = false;
+          createSQLReviewCI();
+        }
+      "
+      @cancel="
+        () => {
+          state.showSetupSQLReviewCIFailureModal = false;
+          $emit('finish');
+        }
+      "
+    >
+    </BBAlert>
+    <BBModal
+      v-if="state.showLoadingSQLReviewPRModal"
+      class="relative overflow-hidden"
+      :show-close="false"
+      :esc-closable="false"
+      :title="$t('repository.sql-review-ci-setup')"
+    >
+      <div
+        class="whitespace-pre-wrap max-w-[32rem] flex justify-start items-start gap-x-2"
+      >
+        <BBSpin class="mt-1" />
+        {{
+          $t("repository.sql-review-ci-loading-modal", {
+            pr: state.config.vcs.type.startsWith("GITLAB")
+              ? $t("repository.merge-request")
+              : $t("repository.pull-request"),
+          })
+        }}
+      </div>
+    </BBModal>
+    <FeatureModal
+      v-if="state.showFeatureModal"
+      feature="bb.feature.vcs-sql-review"
+      @cancel="state.showFeatureModal = false"
+    />
   </div>
 </template>
 
@@ -69,21 +147,21 @@ import {
 } from "../types";
 import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useProjectStore, useRepositoryStore } from "@/store";
+import { useProjectStore, useRepositoryStore, hasFeature } from "@/store";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
-  "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
+  "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
 // Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
-const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql";
+const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql";
 // Default sheet path tempalte is to organize script files for SQL Editor.
 const DEFAULT_SHEET_PATH_TEMPLATE =
-  "script/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql";
+  "script/{{ENV_NAME}}##{{DB_NAME}}##{{NAME}}.sql";
 
 // For tenant mode projects, {{ENV_NAME}} is not supported.
 const DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE =
-  "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
-const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".{{DB_NAME}}__LATEST.sql";
+  "{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
+const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".{{DB_NAME}}##LATEST.sql";
 const DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE = "script/{{NAME}}.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
@@ -93,6 +171,11 @@ const CONFIGURE_DEPLOY_STEP = 2;
 interface LocalState {
   config: ProjectRepositoryConfig;
   currentStep: number;
+  showFeatureModal: boolean;
+  showSetupSQLReviewCIModal: boolean;
+  showSetupSQLReviewCIFailureModal: boolean;
+  showLoadingSQLReviewPRModal: boolean;
+  sqlReviewCIPullRequestURL: string;
 }
 
 export default defineComponent({
@@ -157,10 +240,16 @@ export default defineComponent({
           sheetPathTemplate: isTenantProject.value
             ? DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE
             : DEFAULT_SHEET_PATH_TEMPLATE,
+          enableSQLReviewCI: false,
         },
         schemaChangeType: props.project.schemaChangeType,
       },
       currentStep: CHOOSE_PROVIDER_STEP,
+      showFeatureModal: false,
+      showSetupSQLReviewCIModal: false,
+      showSetupSQLReviewCIFailureModal: false,
+      showLoadingSQLReviewPRModal: false,
+      sqlReviewCIPullRequestURL: "",
     });
 
     const allowNext = computed((): boolean => {
@@ -182,7 +271,40 @@ export default defineComponent({
       allowChangeCallback();
     };
 
+    const createSQLReviewCI = async () => {
+      const repository = repositoryStore.getRepositoryByProjectId(
+        props.project.id
+      );
+      state.showLoadingSQLReviewPRModal = true;
+
+      try {
+        const sqlReviewCISetup = await repositoryStore.createSQLReviewCI({
+          projectId: props.project.id,
+          repositoryId: repository.id,
+        });
+        state.sqlReviewCIPullRequestURL = sqlReviewCISetup.pullRequestURL;
+        state.showSetupSQLReviewCIModal = true;
+        window.open(sqlReviewCISetup.pullRequestURL, "_blank");
+        repositoryStore.setRepositorySQLReviewCIEnabled({
+          projectId: props.project.id,
+          sqlReviewCIEnabled: true,
+        });
+      } catch {
+        state.showSetupSQLReviewCIFailureModal = true;
+      } finally {
+        state.showLoadingSQLReviewPRModal = false;
+      }
+    };
+
     const tryFinishSetup = (allowFinishCallback: () => void) => {
+      if (
+        state.config.repositoryConfig.enableSQLReviewCI &&
+        !hasFeature("bb.feature.vcs-sql-review")
+      ) {
+        state.showFeatureModal = true;
+        return;
+      }
+
       const createFunc = async () => {
         let externalId = state.config.repositoryInfo.externalId;
         if (state.config.vcs.type == "GITHUB_COM") {
@@ -219,8 +341,14 @@ export default defineComponent({
           projectId: props.project.id,
           repositoryCreate,
         });
+
+        if (state.config.repositoryConfig.enableSQLReviewCI) {
+          createSQLReviewCI();
+        } else {
+          emit("finish");
+        }
+
         allowFinishCallback();
-        emit("finish");
       };
 
       if (props.create) {
@@ -235,6 +363,11 @@ export default defineComponent({
             createFunc();
           });
       }
+    };
+
+    const closeSetupSQLReviewModal = () => {
+      state.showSetupSQLReviewCIModal = false;
+      emit("finish");
     };
 
     const cancel = () => {
@@ -275,6 +408,8 @@ export default defineComponent({
       setVCS,
       setToken,
       setRepository,
+      createSQLReviewCI,
+      closeSetupSQLReviewModal,
     };
   },
 });

@@ -9,12 +9,13 @@
       <BBTableSearch
         ref="searchField"
         :placeholder="$t('issue.search-issue-name')"
-        @change-text="(text) => changeSearchText(text)"
+        @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
 
     <!-- show OPEN Assigned issues with pageSize=10 -->
     <PagedIssueTable
+      session-key="home-assigned"
       :issue-find="{
         statusList: ['OPEN'],
         assigneeId: currentUser.id,
@@ -26,18 +27,15 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.assigned'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.assigned')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
 
     <!-- show OPEN Created issues with pageSize=10 -->
     <PagedIssueTable
+      session-key="home-created"
       :issue-find="{
         statusList: ['OPEN'],
         creatorId: currentUser.id,
@@ -50,18 +48,15 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.created'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.created')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
 
     <!-- show OPEN Subscribed issues with pageSize=10 -->
     <PagedIssueTable
+      session-key="home-subscribed"
       :issue-find="{
         statusList: ['OPEN'],
         subscriberId: currentUser.id,
@@ -74,12 +69,8 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('common.subscribed'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('common.subscribed')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
@@ -87,6 +78,7 @@
     <!-- show the first 5 DONE or CANCELED issues -->
     <!-- But won't show "Load more", since we have a "View all closed" link below -->
     <PagedIssueTable
+      session-key="home-closed"
       :issue-find="{
         statusList: ['DONE', 'CANCELED'],
         principalId: currentUser.id,
@@ -100,22 +92,17 @@
           :left-bordered="false"
           :right-bordered="false"
           :show-placeholder="!loading"
-          :issue-section-list="[
-            {
-              title: $t('project.overview.recently-closed'),
-              list: issueList.filter(keywordAndEnvironmentFilter),
-            },
-          ]"
+          :title="$t('project.overview.recently-closed')"
+          :issue-list="issueList.filter(keywordAndEnvironmentFilter)"
         />
       </template>
     </PagedIssueTable>
   </div>
-  <router-link
-    to="/issue?status=closed"
-    class="mt-2 px-4 flex justify-end normal-link"
-  >
-    {{ $t("project.overview.view-all-closed") }}
-  </router-link>
+  <div class="w-full flex justify-end mt-2 px-4">
+    <router-link to="/issue?status=closed" class="normal-link">
+      {{ $t("project.overview.view-all-closed") }}
+    </router-link>
+  </div>
 </template>
 
 <script lang="ts" setup>

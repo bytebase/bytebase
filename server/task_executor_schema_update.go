@@ -29,7 +29,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	return runMigration(ctx, server, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, payload.MigrationInfo)
+	return runMigration(ctx, server.store, server.dbFactory, server.RollbackRunner, server.ActivityManager, server.profile, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.

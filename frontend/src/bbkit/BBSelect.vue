@@ -12,8 +12,17 @@
         v-bind="$attrs"
         @click="toggle"
       >
-        <div class="whitespace-nowrap hide-scrollbar overflow-x-auto">
-          <template v-if="typeof state.selectedItem !== 'undefined'">
+        <div
+          class="whitespace-nowrap hide-scrollbar overflow-x-auto"
+          :class="
+            error
+              ? 'text-error'
+              : isSelected
+              ? 'text-control'
+              : 'text-control-placeholder'
+          "
+        >
+          <template v-if="isSelected">
             <slot
               name="menuItem"
               :item="state.selectedItem"
@@ -63,7 +72,7 @@
               v-for="(item, index) in itemList"
               :key="index"
               role="option"
-              class="group text-main hover:text-main-text hover:bg-main-hover cursor-default select-none relative py-2 pl-3 pr-9"
+              class="group text-main cursor-default select-none relative py-2 pl-3 pr-9 hover:bg-gray-200"
               @click="
                 if (item !== state.selectedItem) {
                   $emit('select-item', item, () => {
@@ -84,6 +93,9 @@
                 <heroicons-solid:check class="h-5 w-5" />
               </span>
             </li>
+            <div @click="close()">
+              <slot name="suffixItem"></slot>
+            </div>
           </ul>
         </div>
       </transition>
@@ -146,6 +158,10 @@ export default defineComponent({
       type: String as PropType<FitWidthMode>,
       default: "fit",
     },
+    error: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ["select-item"],
   setup(props) {
@@ -154,8 +170,8 @@ export default defineComponent({
       selectedItem: props.selectedItem,
     });
 
-    const button = ref<HTMLButtonElement | null>(null);
-    const popup = ref<HTMLElement | null>(null);
+    const button = ref<HTMLButtonElement>();
+    const popup = ref<HTMLElement>();
 
     const { width } = useElementBounding(button);
 
@@ -166,6 +182,14 @@ export default defineComponent({
       style[key] = `${width.value}px`;
 
       return style;
+    });
+
+    const isSelected = computed(() => {
+      return (
+        state.selectedItem !== null &&
+        state.selectedItem !== undefined &&
+        state.selectedItem !== ""
+      );
     });
 
     watch(
@@ -187,6 +211,7 @@ export default defineComponent({
 
     return {
       state,
+      isSelected,
       toggle,
       close,
       button,

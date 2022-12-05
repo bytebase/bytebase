@@ -2,10 +2,12 @@ package mysql
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/pingcap/tidb/parser/ast"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 )
 
@@ -35,12 +37,53 @@ func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advi
 		return nil, err
 	}
 	checker := &columnNoNullChecker{
-		level: level,
-		title: string(ctx.Rule.Type),
+		level:     level,
+		title:     string(ctx.Rule.Type),
+		columnSet: make(map[string]columnName),
+		catalog:   ctx.Catalog,
 	}
 
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
+	}
+
+	return checker.generateAdvice(), nil
+}
+
+type columnNoNullChecker struct {
+	adviceList []advisor.Advice
+	level      advisor.Status
+	title      string
+	columnSet  map[string]columnName
+	catalog    *catalog.Finder
+}
+
+func (checker columnNoNullChecker) generateAdvice() []advisor.Advice {
+	var columnList []columnName
+	for _, column := range checker.columnSet {
+		columnList = append(columnList, column)
+	}
+	sort.Slice(columnList, func(i, j int) bool {
+		if columnList[i].line != columnList[j].line {
+			return columnList[i].line < columnList[j].line
+		}
+		return columnList[i].columnName < columnList[j].columnName
+	})
+
+	for _, column := range columnList {
+		col := checker.catalog.Final.FindColumn(&catalog.ColumnFind{
+			TableName:  column.tableName,
+			ColumnName: column.columnName,
+		})
+		if col != nil && col.Nullable() {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.ColumnCannotNull,
+				Title:   checker.title,
+				Content: fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
+				Line:    column.line,
+			})
+		}
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -51,13 +94,7 @@ func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advi
 			Content: "",
 		})
 	}
-	return checker.adviceList, nil
-}
-
-type columnNoNullChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
+	return checker.adviceList
 }
 
 type columnName struct {
@@ -66,19 +103,23 @@ type columnName struct {
 	line       int
 }
 
+func (c columnName) name() string {
+	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
+}
+
 // Enter implements the ast.Visitor interface.
-func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
-	var columns []columnName
+func (checker *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		for _, column := range node.Cols {
-			if canNull(column) {
-				columns = append(columns, columnName{
-					tableName:  node.Table.Name.String(),
-					columnName: column.Name.Name.String(),
-					line:       column.OriginTextPosition(),
-				})
+			col := columnName{
+				tableName:  node.Table.Name.O,
+				columnName: column.Name.Name.O,
+				line:       column.OriginTextPosition(),
+			}
+			if _, exists := checker.columnSet[col.name()]; !exists {
+				checker.columnSet[col.name()] = col
 			}
 		}
 	// ALTER TABLE
@@ -88,35 +129,27 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// ADD COLUMNS
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
-					if canNull(column) {
-						columns = append(columns, columnName{
-							tableName:  node.Table.Name.String(),
-							columnName: column.Name.Name.String(),
-							line:       node.OriginTextPosition(),
-						})
+					col := columnName{
+						tableName:  node.Table.Name.O,
+						columnName: column.Name.Name.O,
+						line:       node.OriginTextPosition(),
+					}
+					if _, exists := checker.columnSet[col.name()]; !exists {
+						checker.columnSet[col.name()] = col
 					}
 				}
 			// CHANGE COLUMN
 			case ast.AlterTableChangeColumn:
-				if canNull(spec.NewColumns[0]) {
-					columns = append(columns, columnName{
-						tableName:  node.Table.Name.String(),
-						columnName: spec.NewColumns[0].Name.Name.String(),
-						line:       node.OriginTextPosition(),
-					})
+				col := columnName{
+					tableName:  node.Table.Name.O,
+					columnName: spec.NewColumns[0].Name.Name.O,
+					line:       node.OriginTextPosition(),
+				}
+				if _, exists := checker.columnSet[col.name()]; !exists {
+					checker.columnSet[col.name()] = col
 				}
 			}
 		}
-	}
-
-	for _, column := range columns {
-		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  v.level,
-			Code:    advisor.ColumnCanNotNull,
-			Title:   v.title,
-			Content: fmt.Sprintf("`%s`.`%s` can not have NULL value", column.tableName, column.columnName),
-			Line:    column.line,
-		})
 	}
 
 	return in, false

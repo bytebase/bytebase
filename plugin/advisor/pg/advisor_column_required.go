@@ -37,7 +37,7 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string) ([
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalRequiredColumnRulePayload(ctx.Rule.Payload)
+	columnList, err := advisor.UnmarshalRequiredColumnList(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string) ([
 
 	for _, stmt := range stmts {
 		checker.requiredColumns = make(columnSet)
-		for _, column := range payload.ColumnList {
+		for _, column := range columnList {
 			checker.requiredColumns[column] = true
 		}
 		ast.Walk(checker, stmt)
@@ -111,7 +111,7 @@ func (checker *columnRequirementChecker) Visit(node ast.Node) ast.Visitor {
 			Code:    advisor.NoRequiredColumn,
 			Title:   checker.title,
 			Content: fmt.Sprintf("Table %q requires columns: %s", table.Name, strings.Join(missingColumns, ", ")),
-			Line:    node.Line(),
+			Line:    node.LastLine(),
 		})
 	}
 

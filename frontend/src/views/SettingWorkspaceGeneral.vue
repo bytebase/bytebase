@@ -29,6 +29,7 @@
               :class="[state.logoUrl ? 'opacity-0 hover:opacity-90' : '']"
               :max-file-size-in-mi-b="maxFileSizeInMiB"
               :support-file-extensions="supportImageExtensions"
+              :disabled="!allowSave"
               @on-select="onLogoSelect"
             >
               <svg
@@ -94,8 +95,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { isOwner } from "../utils";
-import { brandingLogoSettingName } from "../types/setting";
+import { hasWorkspacePermission } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -136,16 +136,18 @@ const state = reactive<LocalState>({
 });
 
 settingStore.fetchSetting().then(() => {
-  const brandingLogoSetting = settingStore.getSettingByName(
-    brandingLogoSettingName
-  )!;
+  const brandingLogoSetting =
+    settingStore.getSettingByName("bb.branding.logo")!;
   state.logoUrl = brandingLogoSetting.value;
 });
 
 const currentUser = useCurrentUser();
 
 const allowEdit = computed((): boolean => {
-  return isOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-general",
+    currentUser.value.role
+  );
 });
 
 const valid = computed((): boolean => {
@@ -177,7 +179,7 @@ const uploadLogo = async () => {
   try {
     const fileInBase64 = await convertFileToBase64(state.logoFile);
     const setting = await useSettingStore().updateSettingByName({
-      name: brandingLogoSettingName,
+      name: "bb.branding.logo",
       value: fileInBase64,
     });
 

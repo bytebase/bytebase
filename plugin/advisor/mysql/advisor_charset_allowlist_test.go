@@ -41,44 +41,34 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"CREATE TABLE t(a int) CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHARSET ascii`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t CHARSET ascii`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER TABLE t CHARSET ascii\" used disabled charset 'ascii'",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `CREATE DATABASE d CHARSET ascii`,
+			Statement: `ALTER DATABASE test CHARSET ascii`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
-					Content: "\"CREATE DATABASE d CHARSET ascii\" used disabled charset 'ascii'",
-					Line:    1,
-				},
-			},
-		},
-		{
-			Statement: `ALTER DATABASE d CHARSET ascii`,
-			Want: []advisor.Advice{
-				{
-					Status:  advisor.Warn,
-					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
-					Content: "\"ALTER DATABASE d CHARSET ascii\" used disabled charset 'ascii'",
+					Title:   "system.charset.allowlist",
+					Content: "\"ALTER DATABASE test CHARSET ascii\" used disabled charset 'ascii'",
 					Line:    1,
 				},
 			},
@@ -89,45 +79,51 @@ func TestCharsetAllowlist(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"CREATE TABLE t(a varchar(255) CHARSET ascii)\" used disabled charset 'ascii'",
 					Line:    1,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii`,
+			Statement: `
+				CREATE TABLE t(b int);
+				ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DisabledCharset,
-					Title:   "charset.allowlist",
+					Title:   "system.charset.allowlist",
 					Content: "\"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii\" used disabled charset 'ascii'",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
@@ -144,8 +140,8 @@ func TestCharsetAllowlist(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(advisor.CharsetAllowlistRulePayload{
-		CharsetAllowlist: []string{"utf8mb4"},
+	payload, err := json.Marshal(advisor.StringArrayTypeRulePayload{
+		List: []string{"utf8mb4"},
 	})
 	require.NoError(t, err)
 	advisor.RunSQLReviewRuleTests(t, tests, &CharsetAllowlistAdvisor{}, &advisor.SQLReviewRule{

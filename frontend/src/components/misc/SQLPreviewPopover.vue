@@ -31,7 +31,7 @@ export default defineComponent({
   props: {
     statement: {
       type: String,
-      required: true,
+      default: "",
     },
     maxLength: {
       type: Number,

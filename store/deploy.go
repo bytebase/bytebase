@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -53,19 +54,55 @@ func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 }
 
 // GetDeploymentConfigByProjectID gets an instance of DeploymentConfig.
-func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID int) (*api.DeploymentConfig, error) {
+func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID int) (api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, &api.DeploymentConfigFind{ProjectID: &projectID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get DeploymentConfig with projectID %d", projectID)
+		return api.DeploymentConfig{}, errors.Wrapf(err, "failed to get DeploymentConfig with projectID %d", projectID)
 	}
 	if deploymentConfigRaw == nil {
-		return nil, nil
+		config, err := s.getDefaultDeploymentConfig(ctx, projectID)
+		if err != nil {
+			return api.DeploymentConfig{}, err
+		}
+		deploymentConfigRaw = config
 	}
 	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose DeploymentConfig with deploymentConfigRaw[%+v]", deploymentConfigRaw)
+		return api.DeploymentConfig{}, errors.Wrapf(err, "failed to compose DeploymentConfig with deploymentConfigRaw[%+v]", deploymentConfigRaw)
 	}
-	return deploymentConfig, nil
+	return *deploymentConfig, nil
+}
+
+func (s *Store) getDefaultDeploymentConfig(ctx context.Context, projectID int) (*deploymentConfigRaw, error) {
+	normalRowStatus := api.Normal
+	environmentList, err := s.FindEnvironment(ctx, &api.EnvironmentFind{RowStatus: &normalRowStatus})
+	if err != nil {
+		return nil, err
+	}
+	scheduleList := api.DeploymentSchedule{}
+	for _, environment := range environmentList {
+		scheduleList.Deployments = append(scheduleList.Deployments, &api.Deployment{
+			Name: fmt.Sprintf("%s Stage", environment.Name),
+			Spec: &api.DeploymentSpec{
+				Selector: &api.LabelSelector{
+					MatchExpressions: []*api.LabelSelectorRequirement{
+						{Key: "bb.environment", Operator: api.InOperatorType, Values: []string{environment.Name}},
+					},
+				},
+			},
+		})
+	}
+	bytes, err := json.Marshal(scheduleList)
+	if err != nil {
+		return nil, err
+	}
+	return &deploymentConfigRaw{
+		ID:        0,
+		CreatorID: api.SystemBotID,
+		UpdaterID: api.SystemBotID,
+		ProjectID: projectID,
+		Payload:   string(bytes),
+	}, nil
 }
 
 // UpsertDeploymentConfig upserts an instance of DeploymentConfig.

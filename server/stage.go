@@ -9,7 +9,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerStageRoutes(g *echo.Group) {
@@ -24,6 +23,14 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
 		}
+		stageList, err := s.store.FindStage(ctx, &api.StageFind{ID: &stageID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find stage %v", stageID)).SetInternal(err)
+		}
+		if len(stageList) != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Find invalid number %v stages for stage %v", len(stageList), stageID)).SetInternal(err)
+		}
+		stage := stageList[0]
 
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		stageAllTaskStatusPatch := &api.StageAllTaskStatusPatch{
@@ -34,41 +41,51 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update stage tasks status request").SetInternal(err)
 		}
 
-		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID}, true /* returnOnErr */)
+		if stageAllTaskStatusPatch.Status != api.TaskPending {
+			return echo.NewHTTPError(http.StatusBadRequest, "Only support status transitioning from PENDING_APPROVAL to PENDING")
+		}
+
+		pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}
+		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID, StatusList: &pendingApprovalStatus}, true /* returnOnErr */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get tasks").SetInternal(err)
 		}
 		if len(tasks) == 0 {
-			// which is impossible, because we make sure at least there is one task in each stage.
-			return echo.NewHTTPError(http.StatusInternalServerError, "No task in the stage")
+			return echo.NewHTTPError(http.StatusInternalServerError, "No task to approve in the stage")
 		}
+
 		// pick any task in the stage to validate
 		// because all tasks in the same stage share the issue & environment.
-		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0])
+		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0], stageAllTaskStatusPatch.Status)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
-		var tasksPatched []*api.Task
+		var taskIDList []int
 		for _, task := range tasks {
-			taskPatched, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
-				ID:        task.ID,
-				UpdaterID: stageAllTaskStatusPatch.UpdaterID,
-				Status:    stageAllTaskStatusPatch.Status,
-			})
-			if err != nil {
-				if common.ErrorCode(err) == common.Invalid {
-					return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
-				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\" status", task.Name)).SetInternal(err)
-			}
-			tasksPatched = append(tasksPatched, taskPatched)
+			taskIDList = append(taskIDList, task.ID)
+		}
+		taskStatusPatch := &api.TaskStatusPatch{
+			IDList:    taskIDList,
+			UpdaterID: stageAllTaskStatusPatch.UpdaterID,
+			Status:    api.TaskPending,
+		}
+		patchedTaskList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task %q status", taskIDList)).SetInternal(err)
+		}
+		issue, err := s.store.GetIssueByPipelineID(ctx, tasks[0].PipelineID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch containing issue").SetInternal(err)
+		}
+		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, taskStatusPatch, issue, stage, tasks); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create task status update activity").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, tasksPatched); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, patchedTaskList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update tasks status response").SetInternal(err)
 		}
 		return nil

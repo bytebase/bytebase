@@ -111,7 +111,7 @@ func TestNamingUKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_tech_book_name (name))",
+			Statement: "CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_book_name (name))",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -122,7 +122,7 @@ func TestNamingUKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))",
+			Statement: "CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -133,7 +133,7 @@ func TestNamingUKConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX (name))",
+			Statement: "CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX (name))",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,

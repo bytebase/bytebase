@@ -35,15 +35,22 @@
         <button
           v-if="state.editing"
           type="button"
-          class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 relative"
+          class="cursor-pointer border border-control-border rounded text-control bg-control-bg hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
         >
-          {{ $t("issue.upload-sql") }}
-          <input
-            type="file"
-            accept=".sql,.txt,application/sql,text/plain"
-            class="absolute inset-0 z-1 opacity-0"
-            @change="handleUploadFile"
-          />
+          <label
+            for="sql-file-input"
+            class="px-3 py-1 w-full flex flex-row justify-center items-center cursor-pointer"
+          >
+            <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
+            {{ $t("issue.upload-sql") }}
+            <input
+              id="sql-file-input"
+              type="file"
+              accept=".sql,.txt,application/sql,text/plain"
+              class="hidden"
+              @change="handleUploadFile"
+            />
+          </label>
         </button>
       </template>
       <template v-else>
@@ -84,7 +91,7 @@
             v-if="state.editing"
             type="button"
             class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-            :disabled="state.editStatement == statement"
+            :disabled="!allowSaveSQL"
             @click.prevent="saveEdit"
           >
             {{ $t("common.save") }}
@@ -112,6 +119,8 @@
           </button>
         </template>
       </template>
+
+      <IssueRollbackButton />
     </div>
   </div>
   <label class="sr-only">{{ $t("common.sql-statement") }}</label>
@@ -170,6 +179,8 @@ import {
   Ref,
 } from "vue";
 import { useDialog } from "naive-ui";
+import { useI18n } from "vue-i18n";
+
 import {
   pushNotification,
   useRepositoryStore,
@@ -178,8 +189,9 @@ import {
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import { baseDirectoryWebUrl, Issue, Repository, SQLDialect } from "@/types";
-import { useI18n } from "vue-i18n";
+import type { Issue, Repository, SQLDialect, Task, TaskId } from "@/types";
+import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
+import IssueRollbackButton from "./IssueRollbackButton.vue";
 
 interface LocalState {
   editing: boolean;
@@ -198,6 +210,7 @@ export default defineComponent({
   name: "IssueTaskStatementPanel",
   components: {
     MonacoEditor,
+    IssueRollbackButton,
   },
   props: {
     sqlHint: {
@@ -226,6 +239,7 @@ export default defineComponent({
       editStatement: statement.value,
       showVCSGuideModal: false,
     });
+    useTempEditState(state);
 
     const editorRef = ref<InstanceType<typeof MonacoEditor>>();
     const overrideSQLDialog = useDialog();
@@ -312,6 +326,20 @@ export default defineComponent({
       state.editStatement = statement.value;
       state.editing = false;
     };
+
+    const allowSaveSQL = computed((): boolean => {
+      if (state.editStatement === "") {
+        // Not allowed if the statement is empty.
+        return false;
+      }
+      if (state.editStatement === statement.value) {
+        // Not allowed if the statement is not modified.
+        return false;
+      }
+
+      // Allowed to save otherwise
+      return true;
+    });
 
     const handleUploadFile = (e: Event) => {
       const target = e.target as HTMLInputElement;
@@ -415,6 +443,7 @@ export default defineComponent({
       beginEdit,
       saveEdit,
       cancelEdit,
+      allowSaveSQL,
       handleUploadFile,
       onStatementChange,
       goToVCS,
@@ -435,7 +464,7 @@ const useDatabaseAndTableList = () => {
   watch(
     databaseList,
     (list) => {
-      list.forEach((db) => tableStore.fetchTableListByDatabaseId(db.id));
+      list.forEach((db) => tableStore.getOrFetchTableListByDatabaseId(db.id));
     },
     { immediate: true }
   );
@@ -447,5 +476,82 @@ const useDatabaseAndTableList = () => {
   });
 
   return { databaseList, tableList };
+};
+
+type LocalEditState = Pick<LocalState, "editing" | "editStatement">;
+
+const useTempEditState = (state: LocalState) => {
+  const { create, selectedTask, selectedStatement } = useIssueLogic();
+
+  let stopWatching: (() => void) | null = null;
+
+  const startWatching = () => {
+    const tempEditStateMap = new Map<TaskId, LocalEditState>();
+
+    // The issue page is polling the issue entity, making the reference obj
+    // of `selectedTask` changes every time.
+    // So we need to watch the id instead of the object ref.
+    const selectedTaskId = computed(() => {
+      if (create.value) return UNKNOWN_ID;
+      return (selectedTask.value as Task).id;
+    });
+
+    const beforeTaskIdChange = (id: TaskId) => {
+      // Save the temp edit state before switching task.
+      tempEditStateMap.set(id, {
+        editing: state.editing,
+        editStatement: state.editStatement,
+      });
+    };
+    const afterTaskIdChange = (id: TaskId) => {
+      // Try to restore the saved temp edit state after switching task.
+      const storedState = tempEditStateMap.get(id);
+      if (storedState) {
+        // If found the stored temp edit state, restore it.
+        Object.assign(state, storedState);
+      } else {
+        // Restore to the task's default state otherwise.
+        state.editing = false;
+        state.editStatement = selectedStatement.value;
+      }
+    };
+
+    const stopWatchBeforeChange = watch(
+      selectedTaskId,
+      (_, id) => {
+        beforeTaskIdChange(id);
+      },
+      { flush: "pre" } // Listen to the event BEFORE selectedTaskId changes
+    );
+    const stopWatchAfterChange = watch(
+      selectedTaskId,
+      (id) => {
+        afterTaskIdChange(id);
+      },
+      { flush: "post" } // Listen to the event AFTER selectedTaskId changed
+    );
+
+    return () => {
+      tempEditStateMap.clear();
+      stopWatchBeforeChange();
+      stopWatchAfterChange();
+    };
+  };
+
+  watch(
+    create,
+    () => {
+      if (!create.value) {
+        // If we are opening an existed issue, we should listen and store the
+        // temp editing states.
+        stopWatching = startWatching();
+      } else {
+        // If we are creating an issue, we don't need the temp editing state
+        // feature since all tasks are still in editing mode.
+        stopWatching && stopWatching();
+      }
+    },
+    { immediate: true }
+  );
 };
 </script>

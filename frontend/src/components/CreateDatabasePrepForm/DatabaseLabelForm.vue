@@ -1,26 +1,26 @@
 <template>
   <div
     v-for="item in filteredFormItemList"
-    :key="item.label.key"
-    class="col-span-2 col-start-2 w-64"
+    :key="item.label"
+    class="w-full"
+    v-bind="$attrs"
   >
     <div class="flex flex-row items-center space-x-1">
       <label for="instance" class="textlabel capitalize">
-        {{ hidePrefix(item.label.key) }}
+        {{ hidePrefix(item.label) }}
         <span v-if="item.required" class="text-red-600">*</span>
       </label>
     </div>
     <div class="flex flex-col space-y-1">
-      <BBSelect
-        :selected-item="getLabelValue(item.label.key)"
-        :item-list="getLabelValueList(item.label)"
-        :placeholder="getLabelPlaceholder(item.label.key)"
-        @select-item="(value: string) => setLabelValue(item.label.key, value)"
-      >
-        <template #menuItem="{ item: value }">
-          {{ value === "" ? $t("label.empty-label-value") : value }}
-        </template>
-      </BBSelect>
+      <BBTextField
+        :required="item.required"
+        :value="getLabelValue(item.label)"
+        :placeholder="getLabelPlaceholder(item.label)"
+        class="textfield"
+        @input="
+          setLabelValue(item.label, ($event.target as HTMLInputElement).value)
+        "
+      />
     </div>
   </div>
 </template>
@@ -33,18 +33,17 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type {
   DatabaseLabel,
-  Label,
   LabelKeyType,
   LabelValueType,
   Project,
 } from "@/types";
 import {
-  isReservedLabel,
-  parseLabelListInTemplate,
   hidePrefix,
   validateLabelsWithTemplate,
+  parseLabelListInTemplate,
+  PRESET_LABEL_KEYS,
 } from "@/utils";
-import { useLabelList } from "@/store";
+import { BBTextField } from "@/bbkit";
 
 const props = defineProps<{
   project: Project;
@@ -52,16 +51,10 @@ const props = defineProps<{
   filter: "required" | "optional";
 }>();
 
-const allLabelList = useLabelList();
 const { t } = useI18n();
 
 const isDbNameTemplateMode = computed((): boolean => {
   return !!props.project.dbNameTemplate;
-});
-
-const availableLabelList = computed(() => {
-  // ignore reserved labels (e.g. bb.environment)
-  return allLabelList.value.filter((label) => !isReservedLabel(label));
 });
 
 const requiredLabelDict = computed((): Set<LabelKeyType> => {
@@ -71,26 +64,24 @@ const requiredLabelDict = computed((): Set<LabelKeyType> => {
   }
 
   // otherwise parse the placeholders from the template
-  const labels = parseLabelListInTemplate(
-    props.project.dbNameTemplate,
-    availableLabelList.value
-  );
-  const keys = labels.map((label) => label.key);
+  const keys = parseLabelListInTemplate(props.project.dbNameTemplate);
   return new Set(keys);
 });
 
-const formItemList = computed((): { label: Label; required: boolean }[] => {
-  return availableLabelList.value.map((label) => {
-    const required = requiredLabelDict.value.has(label.key);
-    return {
-      label,
-      required,
-    };
-  });
-});
+const formItemList = computed(
+  (): { label: LabelKeyType; required: boolean }[] => {
+    return PRESET_LABEL_KEYS.map((label) => {
+      const required = requiredLabelDict.value.has(label);
+      return {
+        label,
+        required,
+      };
+    });
+  }
+);
 
 const filteredFormItemList = computed(
-  (): { label: Label; required: boolean }[] => {
+  (): { label: LabelKeyType; required: boolean }[] => {
     return formItemList.value.filter((item) =>
       props.filter === "required" ? item.required : !item.required
     );
@@ -98,26 +89,16 @@ const filteredFormItemList = computed(
 );
 
 const getLabelPlaceholder = (key: LabelKeyType): string => {
-  // provide "Select Tenant" if Tenant is optional
-  // provide "Select {{TENANT}}" if Tenant is required in the template
+  // provide "Input Tenant" if Tenant is optional
+  // provide "Input {{TENANT}}" if Tenant is required in the template
   key = requiredLabelDict.value.has(key)
     ? `{{${hidePrefix(key).toUpperCase()}}}`
     : capitalize(hidePrefix(key));
-  return t("create-db.select-label-value", { key });
+  return t("create-db.input-label-value", { key });
 };
 
 const getLabelValue = (key: LabelKeyType): LabelValueType | undefined => {
   return props.labelList.find((label) => label.key === key)?.value || "";
-};
-
-const getLabelValueList = (label: Label): LabelValueType[] => {
-  const valueList = [...label.valueList];
-  if (!requiredLabelDict.value.has(label.key)) {
-    // for optional labels
-    // provide a "<empty value>" option ahead of other values
-    valueList.unshift("");
-  }
-  return valueList;
 };
 
 const setLabelValue = (key: LabelKeyType, value: LabelValueType) => {

@@ -31,46 +31,17 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		if err := s.instanceCountGuard(ctx); err != nil {
-			return err
-		}
 
-		instanceCreate := &api.InstanceCreate{}
+		instanceCreate := &api.InstanceCreate{
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create instance request").SetInternal(err)
 		}
-		instanceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
 
-		instance, err := s.store.CreateInstance(ctx, instanceCreate)
+		instance, err := s.createInstance(ctx, instanceCreate)
 		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Instance name already exists: %s", instanceCreate.Name))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
-		}
-
-		// Try creating the "bytebase" db in the added instance if needed.
-		// Since we allow user to add new instance upfront even providing the incorrect username/password,
-		// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-		if err == nil {
-			defer db.Close(ctx)
-			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
-				log.Warn("Failed to setup migration schema on instance creation",
-					zap.String("instance_name", instance.Name),
-					zap.String("engine", string(instance.Engine)),
-					zap.Error(err))
-			}
-			if instanceCreate.SyncSchema {
-				if err := s.syncEngineVersionAndSchema(ctx, instance); err != nil {
-					log.Warn("Failed to sync instance schema",
-						zap.Int("instance_id", instance.ID),
-						zap.Error(err))
-				}
-			}
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -136,80 +107,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch instance request").SetInternal(err)
 		}
 
-		instance, err := s.store.GetInstanceByID(ctx, id)
+		instancePatched, err := s.updateInstance(ctx, instancePatch)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", id)).SetInternal(err)
-		}
-		if instance == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-		}
-
-		host, port := instance.Host, instance.Port
-		if instancePatch.Host != nil {
-			host = *instancePatch.Host
-		}
-		if instancePatch.Port != nil {
-			port = *instancePatch.Port
-		}
-		if err := s.disallowBytebaseStore(instance.Engine, host, port); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-
-		var instancePatched *api.Instance
-		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
-			// Users can switch instance status from ARCHIVED to NORMAL.
-			// So we need to check the current instance count with NORMAL status for quota limitation.
-			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == string(api.Normal) {
-				if err := s.instanceCountGuard(ctx); err != nil {
-					return err
-				}
-			}
-			// Ensure all databases belong to this instance are under the default project before instance is archived.
-			if v := instancePatch.RowStatus; v != nil && *v == string(api.Archived) {
-				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &id})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError,
-						errors.Errorf("failed to find databases in the instance %d", id)).SetInternal(err)
-				}
-				var databaseNameList []string
-				for _, database := range databases {
-					if database.ProjectID != api.DefaultProjectID {
-						databaseNameList = append(databaseNameList, database.Name)
-					}
-				}
-				if len(databaseNameList) > 0 {
-					return echo.NewHTTPError(http.StatusBadRequest,
-						fmt.Sprintf("You should transfer these databases to the default project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
-				}
-			}
-			instancePatched, err = s.store.PatchInstance(ctx, instancePatch)
-			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-				}
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch instance ID: %v", id)).SetInternal(err)
-			}
-		}
-
-		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
-		if instancePatch.Host != nil || instancePatch.Port != nil {
-			db, err := s.getAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */)
-			if err == nil {
-				defer db.Close(ctx)
-				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
-					log.Warn("Failed to setup migration schema on instance update",
-						zap.String("instance_name", instancePatched.Name),
-						zap.String("engine", string(instancePatched.Engine)),
-						zap.Error(err))
-				}
-				if instancePatch.SyncSchema {
-					if err := s.syncEngineVersionAndSchema(ctx, instancePatched); err != nil {
-						log.Warn("Failed to sync instance schema",
-							zap.Int("instance_id", instancePatched.ID),
-							zap.Error(err))
-					}
-				}
-			}
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -284,7 +184,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{}
-		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -317,7 +217,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instanceMigration := &api.InstanceMigration{}
-		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
@@ -362,7 +262,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		find := &db.MigrationHistoryFind{ID: &historyID}
-		driver, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Name)).SetInternal(err)
 		}
@@ -437,7 +337,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Name)).SetInternal(err)
 		}
@@ -488,11 +388,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		// If the data dir does not exist, then we will start a PostgreSQL instance with a fixed port temporarily.
 		if _, err := os.Stat(dataDir); os.IsNotExist(err) {
-			if err := postgres.InitDB(s.pgInstance.BaseDir, dataDir, pgUser); err != nil {
+			if err := postgres.InitDB(s.pgBinDir, dataDir, pgUser); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to init embedded postgres database").SetInternal(err)
 			}
 
-			if err := postgres.Start(port, s.pgInstance.BaseDir, dataDir, os.Stderr, os.Stderr); err != nil {
+			if err := postgres.Start(port, s.pgBinDir, dataDir); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start embedded postgres instance").SetInternal(err)
 			}
 		}
@@ -516,11 +416,10 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 	}
-	subscription := s.loadSubscription()
+	subscription := s.licenseService.LoadSubscription(ctx)
 	if count >= subscription.InstanceCount {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}
-
 	return nil
 }
 
@@ -532,4 +431,125 @@ func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error 
 		return errors.Errorf("instance doesn't exist for host %q and port %q", host, port)
 	}
 	return nil
+}
+
+func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate) (*api.Instance, error) {
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := s.disallowBytebaseStore(create.Engine, create.Host, create.Port); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+
+	instance, err := s.store.CreateInstance(ctx, create)
+	if err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Instance name already exists: %s", create.Name))
+		}
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
+	}
+
+	// Try creating the "bytebase" db in the added instance if needed.
+	// Since we allow user to add new instance upfront even providing the incorrect username/password,
+	// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
+	db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	if err == nil {
+		defer db.Close(ctx)
+		if err := db.SetupMigrationIfNeeded(ctx); err != nil {
+			log.Warn("Failed to setup migration schema on instance creation",
+				zap.String("instance_name", instance.Name),
+				zap.String("engine", string(instance.Engine)),
+				zap.Error(err))
+		}
+		if _, err := s.SchemaSyncer.syncInstance(ctx, instance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.Int("instance_id", instance.ID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
+		instanceDatabaseSyncChan <- instance
+	}
+
+	return instance, nil
+}
+
+func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
+	instance, err := s.store.GetInstanceByID(ctx, patch.ID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", patch.ID)).SetInternal(err)
+	}
+	if instance == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", patch.ID))
+	}
+
+	host, port := instance.Host, instance.Port
+	if patch.Host != nil {
+		host = *patch.Host
+	}
+	if patch.Port != nil {
+		port = *patch.Port
+	}
+	if err := s.disallowBytebaseStore(instance.Engine, host, port); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+
+	var instancePatched *api.Instance
+	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil || patch.Database != nil {
+		// Users can switch instance status from ARCHIVED to NORMAL.
+		// So we need to check the current instance count with NORMAL status for quota limitation.
+		if patch.RowStatus != nil && *patch.RowStatus == string(api.Normal) {
+			if err := s.instanceCountGuard(ctx); err != nil {
+				return nil, err
+			}
+		}
+		// Ensure all databases belong to this instance are under the default project before instance is archived.
+		if v := patch.RowStatus; v != nil && *v == string(api.Archived) {
+			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &patch.ID})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError,
+					errors.Errorf("failed to find databases in the instance %d", patch.ID)).SetInternal(err)
+			}
+			var databaseNameList []string
+			for _, database := range databases {
+				if database.ProjectID != api.DefaultProjectID {
+					databaseNameList = append(databaseNameList, database.Name)
+				}
+			}
+			if len(databaseNameList) > 0 {
+				return nil, echo.NewHTTPError(http.StatusBadRequest,
+					fmt.Sprintf("You should transfer these databases to the default project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
+			}
+		}
+		instancePatched, err = s.store.PatchInstance(ctx, patch)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", patch.ID))
+			}
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch instance ID: %v", patch.ID)).SetInternal(err)
+		}
+	}
+
+	// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
+	if patch.Host != nil || patch.Port != nil || patch.Database != nil {
+		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */)
+		if err == nil {
+			defer db.Close(ctx)
+			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
+				log.Warn("Failed to setup migration schema on instance update",
+					zap.String("instance_name", instancePatched.Name),
+					zap.String("engine", string(instancePatched.Engine)),
+					zap.Error(err))
+			}
+			if _, err := s.SchemaSyncer.syncInstance(ctx, instancePatched); err != nil {
+				log.Warn("Failed to sync instance",
+					zap.Int("instance_id", instancePatched.ID),
+					zap.Error(err))
+			}
+			// Sync all databases in the instance asynchronously.
+			instanceDatabaseSyncChan <- instancePatched
+		}
+	}
+
+	return instancePatched, nil
 }

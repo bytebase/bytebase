@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -156,10 +157,12 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	PgInstanceDir string
-	// We use resource directory to splice the path of embedded binary, likes binaries in mysqlutil package.
-	ResourceDir string
-	BinlogDir   string
+	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL).
+	DbBinDir string
+
+	// NOTE, introducing db specific fields is the last resort.
+	// MySQL specific
+	BinlogDir string
 }
 
 type driverFunc func(DriverConfig) Driver
@@ -188,6 +191,9 @@ const (
 	// Migrate is the migration type for MIGRATE.
 	// Used for DDL change including CREATE DATABASE.
 	Migrate MigrationType = "MIGRATE"
+	// MigrateSDL is the migration type via state-based schema migration.
+	// Used for schema change including CREATE DATABASE.
+	MigrateSDL MigrationType = "MIGRATE_SDL"
 	// Branch is the migration type for BRANCH.
 	// Used when restoring from a backup (the restored database branched from the original backup).
 	Branch MigrationType = "BRANCH"
@@ -244,13 +250,14 @@ type MigrationInfo struct {
 }
 
 // placeholderRegexp is the regexp for placeholder.
-// Refer to https://stackoverflow.com/a/6222235/19075342, but we support '.' for now.
+// Refer to https://stackoverflow.com/a/6222235/19075342, but we support "." for now.
 const placeholderRegexp = `[^\\/?%*:|"<>]+`
 
 // ParseMigrationInfo matches filePath against filePathTemplate
 // If filePath matches, then it will derive MigrationInfo from the filePath.
 // Both filePath and filePathTemplate are the full file path (including the base directory) of the repository.
-func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, error) {
+// It returns (nil, nil) if it doesn't look like a migration file path.
+func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName bool) (*MigrationInfo, error) {
 	placeholderList := []string{
 		"ENV_NAME",
 		"VERSION",
@@ -273,7 +280,8 @@ func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, erro
 		return nil, errors.Errorf("invalid file path template: %q", filePathTemplate)
 	}
 	if !myRegex.MatchString(filePath) {
-		return nil, errors.Errorf("file path %q does not match file path template %q", filePath, filePathTemplate)
+		// File path does not match file path template.
+		return nil, nil
 	}
 
 	mi := &MigrationInfo{
@@ -314,7 +322,7 @@ func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, erro
 	if mi.Version == "" {
 		return nil, errors.Errorf("file path %q does not contain {{VERSION}}, configured file path template %q", filePath, filePathTemplate)
 	}
-	if mi.Namespace == "" {
+	if mi.Namespace == "" && !allowOmitDatabaseName {
 		return nil, errors.Errorf("file path %q does not contain {{DB_NAME}}, configured file path template %q", filePath, filePathTemplate)
 	}
 
@@ -335,6 +343,49 @@ func ParseMigrationInfo(filePath, filePathTemplate string) (*MigrationInfo, erro
 	}
 
 	return mi, nil
+}
+
+// ParseSchemaFileInfo attempts to parse the given schema file path to extract
+// the schema file info.
+// It returns (nil, nil) if it doesn't look like a schema file path.
+func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*MigrationInfo, error) {
+	if schemaPathTemplate == "" {
+		return nil, nil
+	}
+
+	// Escape "." characters to match literals instead of using it as a wildcard.
+	schemaFilePathRegex := strings.ReplaceAll(schemaPathTemplate, ".", `\.`)
+
+	placeholders := []string{
+		"ENV_NAME",
+		"DB_NAME",
+	}
+	for _, placeholder := range placeholders {
+		schemaFilePathRegex = strings.ReplaceAll(schemaFilePathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9+-=/_#?!$. ]+)", placeholder))
+	}
+
+	// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
+	re, err := regexp.Compile(path.Join(baseDirectory, schemaFilePathRegex))
+	if err != nil {
+		return nil, errors.Wrap(err, "compile schema file path regex")
+	}
+	match := re.FindStringSubmatch(file)
+	if len(match) == 0 {
+		return nil, nil
+	}
+
+	info := make(map[string]string)
+	// Skip the first item because it is always the empty string, see docstring of
+	// the SubexpNames() method.
+	for i, name := range re.SubexpNames()[1:] {
+		info[name] = match[i+1]
+	}
+	return &MigrationInfo{
+		Source:      VCS,
+		Type:        Migrate,
+		Environment: info["ENV_NAME"],
+		Database:    info["DB_NAME"],
+	}, nil
 }
 
 // MigrationHistory is the API message for migration history.
@@ -396,6 +447,17 @@ type ConnectionContext struct {
 	InstanceName    string
 }
 
+// QueryContext is the context to query.
+type QueryContext struct {
+	// Limit is the maximum row count returned. No limit enforced if limit <= 0
+	Limit            int
+	ReadOnly         bool
+	SensitiveDataMap SensitiveDataMap
+
+	// CurrentDatabase is for MySQL
+	CurrentDatabase string
+}
+
 // Driver is the interface for database driver.
 type Driver interface {
 	// General execution
@@ -408,10 +470,9 @@ type Driver interface {
 	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-	Execute(ctx context.Context, statement string) error
+	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
 	// Used for execute readonly SELECT statement
-	// limit is the maximum row count returned. No limit enforced if limit <= 0
-	Query(ctx context.Context, statement string, limit int) ([]interface{}, error)
+	Query(ctx context.Context, statement string, queryContext *QueryContext) ([]interface{}, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
@@ -455,7 +516,7 @@ func Register(dbType Type, f driverFunc) {
 	drivers[dbType] = f
 }
 
-// Open opens a database specified by its database driver type and connection config.
+// Open opens a database specified by its database driver type and connection config without verifying the connection.
 func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]
@@ -466,11 +527,6 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 
 	driver, err := f(driverConfig).Open(ctx, dbType, connectionConfig, connCtx)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := driver.Ping(ctx); err != nil {
-		_ = driver.Close(ctx)
 		return nil, err
 	}
 
@@ -504,3 +560,22 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	}
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
+
+// SensitiveData is the struct for sensitive column.
+type SensitiveData struct {
+	Database string
+	Table    string
+	Column   string
+}
+
+// SensitiveDataMap is the map for sensitive data.
+type SensitiveDataMap map[SensitiveData]SensitiveDataMaskType
+
+// SensitiveDataMaskType is the mask type for sensitive data.
+type SensitiveDataMaskType string
+
+const (
+	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
+	// The default method is subject to change.
+	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
+)

@@ -11,11 +11,15 @@
     "table": "Table",
     "column": "Column",
     "schema": "Schema",
-    "database": "Database"
+    "database": "Database",
+    "index": "Index",
+    "system": "System"
   },
   "template": {
-    "bb-sql-review-prod": "Template for Prod Environment",
-    "bb-sql-review-dev": "Template for Dev Environment"
+    "bb-sql-review-prod": "Advanced Template",
+    "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
+    "bb-sql-review-dev": "Basic Template",
+    "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage."
   },
   "rule": {
     "engine-mysql-use-innodb": {
@@ -36,6 +40,22 @@
       "component": {
         "format": {
           "title": "Table name format (regex)"
+        }
+      }
+    },
+    "table-disallow-partition": {
+      "title": "Disallow partition",
+      "description": ""
+    },
+    "table-comment": {
+      "title": "Comment convention",
+      "description": "Configure whether the table requires comments and the maximum comment length.",
+      "component": {
+        "required": {
+          "title": "Require comment"
+        },
+        "maxLength": {
+          "title": "Max length"
         }
       }
     },
@@ -129,18 +149,105 @@
         }
       }
     },
+    "naming-column-auto-increment": {
+      "title": "Auto-increment column naming check",
+      "description": "Enforce the auto-increment column name format and length limit. Default id within 63 characters.",
+      "component": {
+        "format": {
+          "title": "Auto-increment column name format (regex)"
+        },
+        "maxLength": {
+          "title": "Length limit"
+        }
+      }
+    },
     "column-required": {
       "title": "Required columns",
       "description": "Enforce the required columns in each table.",
       "component": {
-        "columnList": {
+        "list": {
           "title": "Required column names"
+        }
+      }
+    },
+    "column-type-disallow-list": {
+      "title": "Type disallow list",
+      "description": "Set the disallow list for column type.",
+      "component": {
+        "list": {
+          "title": "Disallow list"
         }
       }
     },
     "column-no-null": {
       "title": "Disallow NULL",
       "description": "Columns cannot have NULL value."
+    },
+    "column-disallow-set-charset": {
+      "title": "Disallow set charset",
+      "description": "Disallow set charset for column."
+    },
+    "column-disallow-change-type": {
+      "title": "Disallow changing type",
+      "description": "Disallow change column type."
+    },
+    "column-disallow-change": {
+      "title": "Disallow \"CHANGE COLUMN\" statement",
+      "description": ""
+    },
+    "column-disallow-changing-order": {
+      "title": "Disallow changing order",
+      "description": "Disallow changing column order."
+    },
+    "column-set-default-for-not-null": {
+      "title": "Set default value for NOT NULL column",
+      "description": "Require default value for not NULL column."
+    },
+    "column-auto-increment-must-integer": {
+      "title": "Use integer for auto-increment column",
+      "description": "Auto-increment column requires integer type."
+    },
+    "column-auto-increment-must-unsigned": {
+      "title": "Set unsigned attribute on auto-increment column",
+      "description": "Auto-increment column must be the UNSIGNED type."
+    },
+    "column-comment": {
+      "title": "Comment convention",
+      "description": "Configure whether the column requires comments and the maximum comment length.",
+      "component": {
+        "required": {
+          "title": "Require comment"
+        },
+        "maxLength": {
+          "title": "Max length"
+        }
+      }
+    },
+    "column-maximum-character-length": {
+      "title": "Maximum CHAR length",
+      "description": "Force to change CHAR to VARCHAR if maximum length is reached.",
+      "component": {
+        "number": {
+          "title": "Maximum length"
+        }
+      }
+    },
+    "column-auto-increment-initial-value": {
+      "title": "Auto-increment initial value",
+      "description": "Set initial value for auto-increment column.",
+      "component": {
+        "number": {
+          "title": "Initial value"
+        }
+      }
+    },
+    "column-current-time-count-limit": {
+      "title": "Limit the count of current time columns",
+      "description": "Limit the count of NOW(), CURRENT_TIME() and CURRENT_TIMESTAMP() columns."
+    },
+    "column-require-default": {
+      "title": "Require column default value",
+      "description": ""
     },
     "statement-select-no-select-all": {
       "title": "Disallow \"SELECT *\"",
@@ -154,6 +261,52 @@
       "title": "Disallow leading wildcard like",
       "description": "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed."
     },
+    "statement-disallow-commit": {
+      "title": "Disallow commit",
+      "description": "Disallow using commit in the issue."
+    },
+    "statement-disallow-limit": {
+      "title": "Disallow \"LIMIT\"",
+      "description": "Disallow \"LIMIT\" for \"INSERT\", \"UPDATE\", \"DELETE\" statement."
+    },
+    "statement-disallow-order-by": {
+      "title": "Disallow \"ORDER BY\"",
+      "description": "Disallow \"ORDER BY\" for \"UPDATE\", \"DELETE\" statement."
+    },
+    "statement-merge-alter-table": {
+      "title": "Merge \"ALTER TABLE\"",
+      "description": "Disallow using multiply \"ALTER TABLE\" statement for same table."
+    },
+    "statement-insert-must-specify-column": {
+      "title": "\"INSERT\" statement must specify column",
+      "description": "Must specify the column to insert. For example, \"INSERT INTO t (id,name) VALUES(...)\"."
+    },
+    "statement-insert-disallow-order-by-rand": {
+      "title": "Disallow \"ORDER BY rand()\" statement",
+      "description": ""
+    },
+    "statement-insert-row-limit": {
+      "title": "Insert row limit",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "Maximum insert amount"
+        }
+      }
+    },
+    "statement-affected-row-limit": {
+      "title": "Affected row limit",
+      "description": "Limit the \"DELETE\" and \"UPDATE\" affected row",
+      "component": {
+        "number": {
+          "title": "Maximum affected rows"
+        }
+      }
+    },
+    "statement-dml-dry-run": {
+      "title": "Dry run DML statements",
+      "description": "Dry run DML statements by EXPLAIN."
+    },
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
       "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
@@ -161,6 +314,54 @@
     "database-drop-empty-database": {
       "title": "Drop database restriction",
       "description": "Can only drop the database if there's no table in it."
+    },
+    "index-no-duplicate-column": {
+      "title": "Disallow duplicate column",
+      "description": ""
+    },
+    "index-type-no-blob": {
+      "title": "Disallow BLOB",
+      "description": "Disallow using BLOB type column in index."
+    },
+    "index-pk-type-limit": {
+      "title": "Primary key type limit",
+      "description": "Enforce the primary key type to be INT or BIGINT."
+    },
+    "index-key-number-limit": {
+      "title": "Column count limit in index",
+      "description": "Limit the related row count in a single index.",
+      "component": {
+        "number": {
+          "title": "Maximum column count"
+        }
+      }
+    },
+    "index-total-number-limit": {
+      "title": "Index count limit",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "Maximum index count"
+        }
+      }
+    },
+    "system-charset-allowlist": {
+      "title": "Charset allow list",
+      "description": "",
+      "component": {
+        "list": {
+          "title": "Allow list"
+        }
+      }
+    },
+    "system-collation-allowlist": {
+      "title": "Collation allow list",
+      "description": "",
+      "component": {
+        "list": {
+          "title": "Allow list"
+        }
+      }
     }
   },
   "level": {

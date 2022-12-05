@@ -84,7 +84,7 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 		for _, col := range n.ColumnList {
 			columnList = append(columnList, columnData{
 				name: col.ColumnName,
-				line: col.Line(),
+				line: col.LastLine(),
 			})
 		}
 	// ALTER TABLE ADD COLUMN
@@ -93,7 +93,7 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 		for _, col := range n.ColumnList {
 			columnList = append(columnList, columnData{
 				name: col.ColumnName,
-				line: n.Line(),
+				line: n.LastLine(),
 			})
 		}
 	// ALTER TABLE RENAME COLUMN
@@ -101,7 +101,7 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 		tableName = n.Table.Name
 		columnList = append(columnList, columnData{
 			name: n.NewName,
-			line: n.Line(),
+			line: n.LastLine(),
 		})
 	}
 

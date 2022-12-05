@@ -81,7 +81,7 @@ const (
 )
 
 var (
-	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
+	excludeAutoIncrement = regexp.MustCompile(` AUTO_INCREMENT=\d+`)
 )
 
 // Dump dumps the database.
@@ -106,7 +106,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			return "", err
 		}
 
-		binlog, err := GetBinlogInfo(ctx, conn)
+		binlog, err := GetBinlogInfo(ctx, driver.db)
 		if err != nil {
 			return "", err
 		}
@@ -357,11 +357,11 @@ func excludeSchemaAutoIncrementValue(s string) string {
 }
 
 // GetBinlogInfo queries current binlog info from MySQL server.
-func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
+func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 	query := "SHOW MASTER STATUS"
 	binlogInfo := api.BinlogInfo{}
 	var unused interface{}
-	if err := conn.QueryRowContext(ctx, query).Scan(
+	if err := db.QueryRowContext(ctx, query).Scan(
 		&binlogInfo.FileName,
 		&binlogInfo.Position,
 		&unused,
@@ -369,7 +369,8 @@ func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) 
 		&unused,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return api.BinlogInfo{}, common.FormatDBErrorEmptyRowWithQuery(query)
+			// SHOW MASTER STATUS returns empty row when binlog is off. We should not fail migration in this case for this expected case.
+			return api.BinlogInfo{}, nil
 		}
 		return api.BinlogInfo{}, err
 	}
@@ -416,11 +417,6 @@ type triggerSchema struct {
 	statement string
 }
 
-// getTablesTx gets all tables of a database using the provided transaction.
-func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
-	return getTablesImpl(txn, dbName)
-}
-
 // getTables gets all tables of a database.
 func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSchema, error) {
 	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -428,10 +424,11 @@ func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSche
 		return nil, err
 	}
 	defer txn.Rollback()
-	return getTablesImpl(txn, dbName)
+	return getTablesTx(txn, dbName)
 }
 
-func getTablesImpl(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+// getTablesTx gets all tables of a database using the provided transaction.
+func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
@@ -782,7 +779,7 @@ func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databas
 	if driver.connCfg.Password != "" {
 		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
-	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
+	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
 
 	var stderr bytes.Buffer
 	countingReader := common.NewCountingReader(backup)

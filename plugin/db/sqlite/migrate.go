@@ -56,14 +56,14 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	if setup {
 		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("database", driver.connectionCtx.InstanceName),
+			zap.String("instance", driver.connectionCtx.InstanceName),
 		)
 
 		if _, err := driver.GetDBConnection(ctx, bytebaseDatabase); err != nil {
 			log.Error("Failed to switch to database \"bytebase\".",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
-				zap.String("database", driver.connectionCtx.InstanceName),
+				zap.String("instance", driver.connectionCtx.InstanceName),
 			)
 			return errors.Wrap(err, "failed to switch to database \"bytebase\"")
 		}
@@ -72,13 +72,13 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
-				zap.String("database", driver.connectionCtx.InstanceName),
+				zap.String("instance", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
 		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("database", driver.connectionCtx.InstanceName),
+			zap.String("instance", driver.connectionCtx.InstanceName),
 		)
 	}
 
@@ -266,7 +266,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	var query = baseQuery +
 		db.FormatParamNameInQuestionMark(paramNames) +
-		`ORDER BY created_ts DESC`
+		`ORDER BY id DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}

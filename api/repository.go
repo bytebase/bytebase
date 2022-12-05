@@ -34,16 +34,27 @@ type Repository struct {
 	// If empty, then Bytebase won't auto generate it.
 	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
 	// The file path template for matching the sql files for sheet.
-	SheetPathTemplate  string `jsonapi:"attr,sheetPathTemplate"`
+	SheetPathTemplate string `jsonapi:"attr,sheetPathTemplate"`
+	// Setup CI to do SQL review for all PRs.
+	EnableSQLReviewCI  bool   `jsonapi:"attr,enableSQLReviewCI"`
 	ExternalID         string `jsonapi:"attr,externalId"`
 	ExternalWebhookID  string
 	WebhookURLHost     string
-	WebhookEndpointID  string
+	WebhookEndpointID  string `jsonapi:"attr,webhookEndpointID"`
 	WebhookSecretToken string
 	// These will be exclusively used on the server side and we don't return it to the client.
 	AccessToken  string
 	ExpiresTs    int64
 	RefreshToken string
+}
+
+// SQLReviewCISetup is the API message for set up repository SQL review CI.
+type SQLReviewCISetup struct {
+	// PullRequestURL is the pull request URL to setup the SQL review CI.
+	// This field is used by the frontend to redirect users to the pull request.
+	// We don't need to persist it in the storage,
+	// only return this value if we need to auto-create the pull request for users.
+	PullRequestURL string `jsonapi:"attr,pullRequestURL"`
 }
 
 // RepositoryCreate is the API message for creating a repository.
@@ -65,7 +76,8 @@ type RepositoryCreate struct {
 	FilePathTemplate   string `jsonapi:"attr,filePathTemplate"`
 	SchemaPathTemplate string `jsonapi:"attr,schemaPathTemplate"`
 	SheetPathTemplate  string `jsonapi:"attr,sheetPathTemplate"`
-	ExternalID         string `jsonapi:"attr,externalId"`
+	// EnableSQLReviewCI is only supported in the patch API.
+	ExternalID string `jsonapi:"attr,externalId"`
 	// Token belonged by the user linking the project to the VCS repository. We store this token together
 	// with the refresh token in the new repository record so we can use it to call VCS API on
 	// behalf of that user to perform tasks such as webhook CRUD later.
@@ -88,6 +100,7 @@ type RepositoryFind struct {
 
 	// Domain specific fields
 	WebhookEndpointID *string
+	WebURL            *string
 }
 
 func (find *RepositoryFind) String() string {
@@ -100,7 +113,9 @@ func (find *RepositoryFind) String() string {
 
 // RepositoryPatch is the API message for patching a repository.
 type RepositoryPatch struct {
-	ID int `jsonapi:"primary,repositoryPatch"`
+	// Predicate fields
+	ID     *int `jsonapi:"primary,repositoryPatch"`
+	WebURL *string
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
@@ -112,6 +127,7 @@ type RepositoryPatch struct {
 	FilePathTemplate   *string `jsonapi:"attr,filePathTemplate"`
 	SchemaPathTemplate *string `jsonapi:"attr,schemaPathTemplate"`
 	SheetPathTemplate  *string `jsonapi:"attr,sheetPathTemplate"`
+	EnableSQLReviewCI  *bool   `jsonapi:"attr,enableSQLReviewCI"`
 	AccessToken        *string
 	ExpiresTs          *int64
 	RefreshToken       *string

@@ -37,7 +37,7 @@ func (*CharsetAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([]
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCharsetAllowlistRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (*CharsetAllowlistAdvisor) Check(ctx advisor.Context, statement string) ([]
 		title:     string(ctx.Rule.Type),
 		allowlist: make(map[string]bool),
 	}
-	for _, charset := range payload.CharsetAllowlist {
+	for _, charset := range payload.List {
 		checker.allowlist[strings.ToLower(charset)] = true
 	}
 
@@ -80,6 +80,7 @@ type charsetAllowlistChecker struct {
 func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	var disabledCharset string
+	line := checker.line
 	switch node := in.(type) {
 	case *ast.CreateDatabaseStmt:
 		charset := getDatabaseCharset(node.Options)
@@ -92,12 +93,14 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 			code = advisor.DisabledCharset
 			disabledCharset = charset
+			break
 		}
 		for _, column := range node.Cols {
 			charset := getColumnCharset(column)
 			if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 				code = advisor.DisabledCharset
 				disabledCharset = charset
+				line = column.OriginTextPosition()
 				break
 			}
 		}
@@ -142,7 +145,7 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Code:    code,
 			Title:   checker.title,
 			Content: fmt.Sprintf("\"%s\" used disabled charset '%s'", checker.text, disabledCharset),
-			Line:    checker.line,
+			Line:    line,
 		})
 	}
 
@@ -178,5 +181,5 @@ func getTableCharset(optionList []*ast.TableOption) string {
 }
 
 func getColumnCharset(column *ast.ColumnDef) string {
-	return column.Tp.GetCharset()
+	return strings.ToLower(column.Tp.GetCharset())
 }

@@ -1,5 +1,5 @@
 <p align="center">
-<a href="https://bytebase.com?source=github"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/banner.webp" /></a>
+<a href="https://bytebase.com?source=github"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/banner.webp" /></a>
 </p>
 
 <p align="center" >
@@ -7,42 +7,32 @@
 </p>
 
 <p align="center">
+  <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
+    <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
+  </a>
+  <a href="https://artifacthub.io/packages/search?repo=bytebase">
+    <img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/bytebase" />
+  </a>
+</p>
+
+<p align="center">
   <a href="https://demo.bytebase.com?source=github" target="_blank">Live Demo</a> •
   <a href="#installation">Install</a> •
   <a href="#-docs">Help</a> •
   <a href="#-development">Development</a> •
-  <a href="https://github.com/bytebase/bytebase/tree/main/docs/design">Design Doc</a>
+  <a href="https://github.com/bytebase/bytebase/tree/main/docs/design">Design Doc</a> •
+  <a href="https://discord.gg/huyw7gRsyA">Discord</a>
 </p>
 
-<p align="center">
-<a href="https://discord.gg/huyw7gRsyA"><img alt="Discord" src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4" /></a>
-</p>
+<hr />
 
-<p align="center" >
-  <a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
-    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
-  </a>
-</p>
+## What is Bytebase?
 
-<p align="center">
-  <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
-    <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
-  </a>
-</p>
+Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included in the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase). The Bytebase family consists of these tools:
 
-[Bytebase](https://bytebase.com/?source=github) is a web-based, zero-config, dependency-free database schema change and version control management tool for the **DevOps** team.
-
-## For Developer and DevOps Engineer - Holistic view of database schema changes
-
-Regardless of working as an IC in a team or managing your own side project, developers using Bytebase will have a holistic view of all the related database info, the ongoing database schema change tasks and the past database migration history.
-
-## For DBA - 10x operational efficiency
-
-A collaborative web-console to allow DBAs to manage database tasks and handle developer tickets much more efficiently than traditonal tools.
-
-## For Tech Lead - Improve team velocity and reduce risk
-
-Teams using Bytebase will naturally adopt industry best practice for managing database schema changes. Tech leads will see an improved development velocity and reduced outages caused by database changes.
+- [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
+- [Bytebase CLI (bb)](https://www.bytebase.com/docs/cli/overview): The CLI to help developers integrate MySQL and PostgreSQL schema change into the existing CI/CD workflow.
+- [Bytebase GitHub App](https://github.com/marketplace/bytebase) and [SQL Review GitHub Action](https://github.com/marketplace/actions/sql-review): The GitHub App and GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
 
 ## Supported Database
 
@@ -50,9 +40,16 @@ Teams using Bytebase will naturally adopt industry best practice for managing da
 
 ## VCS Integration
 
-Database-as-Code, login with VCS account, project membership sync.
+GitOps workflow, database-as-Code, login with VCS account, project membership sync.
 
 ✅ GitLab CE/EE ✅ GitHub.com
+
+## Terraform Integration
+
+[Bytebase Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs)
+enables team to manage Bytebase resources via Terraform. A typical setup involves teams using
+Terraform to provision database instances from Cloud vendors, followed by using Bytebase TF provider
+to prepare those instances ready for application use.
 
 ## Features
 
@@ -61,9 +58,10 @@ Database-as-Code, login with VCS account, project membership sync.
   - [UI based change workflow](https://www.bytebase.com/docs/change-database/change-workflow)
   - [Version control based change workflow](https://www.bytebase.com/docs/vcs-integration/overview) (Database-as-Code)
   - [SQL Review Rules](https://www.bytebase.com/docs/sql-review/review-rules/overview)
-- [x] Built-in SQL Editor
+- [x] Built-in SQL Editor with read-only and admin mode
 - [x] Detailed migration history
 - [x] Multi-tenancy (rollout change to homogeneous databases belonged to different tenants)
+- [x] Online schema change based on gh-ost
 - [x] Backup and restore
 - [x] Point-in-time recovery (PITR)
 - [x] Anomaly center
@@ -72,6 +70,7 @@ Database-as-Code, login with VCS account, project membership sync.
   - Backup schedule enforcement
 - [x] Schema drift detection
 - [x] Backward compatibility schema change check
+- [x] Data Anonymization
 - [x] Role-based access control (RBAC)
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
 
@@ -87,17 +86,29 @@ Database-as-Code, login with VCS account, project membership sync.
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
 
-<figcaption align = "center">Fig.4 - Built-in SQL Editor</figcaption>
+<figcaption align = "center">Fig.4 - Built-in SQL Editor (read-only and admin mode)</figcaption>
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp)
 
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor-admin-mode.webp)
+
 ## 📕 Docs
 
-### [Installation](https://www.bytebase.com/docs/get-started/install/overview?source=github)
+### Installation
 
-### [User doc](https://bytebase.com/docs?source=github)
+https://bytebase.com/docs/get-started/install/overview
 
-In particular, get familar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
+### User doc
+
+https://bytebase.com/docs
+
+In particular, get familiar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
+
+### Testing doc
+
+How to run all or a subset of tests
+
+https://github.com/bytebase/bytebase/blob/main/docs/testing.md
 
 ### Design doc
 
@@ -112,6 +123,8 @@ https://github.com/bytebase/bytebase/tree/main/docs/version-management.md
 1. Checkout issues tagged with [good first issue](https://github.com/bytebase/bytebase/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/?source=github), you can add/improve content there.
+
+1. Before creating a Pull Request, please follow the [Development Guide](https://github.com/bytebase/bytebase/blob/main/docs/dev-guide.md) for branch and commit message conventions.
 
 **Note**: We are quite disciplined on <a href="#installation">tech stack</a>. If you consider bringing a new programming language, framework and any non-trivial external dependency, please open a discussion first.
 
@@ -132,31 +145,28 @@ working on the code:
 
 ### Learn the codebase
 
-* [Interactive code walkthrough](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
+- [Interactive code walkthrough](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
 
-* [Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)
+- [Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)
 
-* Tech Stack
+- Tech Stack
 
-   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
+  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
 
-* Data Model
+- Data Model
 
-   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
+  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/data-model-v2.webp)
 
 ### Prerequisites
 
 - [Go](https://golang.org/doc/install) (1.19 or later)
 - [pnpm](https://pnpm.io/installation)
-- [Air](https://github.com/cosmtrek/air#installation) (**must use 1.30.0**). This is for backend live reload.
+- [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
+  ```bash
+  go install github.com/bytebase/air@87187cc
+  ```
 
 ### Steps
-
-1. Install Air v1.30.0. Use 1.30.0 because the newer version changes the behavior and won't shutdown the previous service properly.
-
-   ```bash
-   go install github.com/cosmtrek/air@v1.30.0
-   ```
 
 1. Pull source.
 
@@ -190,13 +200,14 @@ working on the code:
 
    Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
 
-1. (*Optional*) Install [pre-commit](https://pre-commit.com/index.html#install).
+1. (_Optional_) Install [pre-commit](https://pre-commit.com/index.html#install).
 
    ```bash
    cd bytebase
    pre-commit install
    pre-commit install --hook-type commit-msg
    ```
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase&type=Date)](https://star-history.com/#bytebase/bytebase&Date)

@@ -75,7 +75,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				oauthExchange,
 			)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, oauthErrorMessage(oauthExchange.RedirectURL)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, oauthErrorMessage(s.profile.ExternalURL)).SetInternal(err)
 		}
 
 		resp := &api.OAuthToken{

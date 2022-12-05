@@ -95,7 +95,7 @@ func (checker *namingIndexConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:    advisor.NamingIndexConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Index in table %q mismatches the naming convention, expect %q but found %q", indexData.tableName, regex, indexData.indexName),
-				Line:    node.Line(),
+				Line:    node.LastLine(),
 			})
 		}
 		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
@@ -104,7 +104,7 @@ func (checker *namingIndexConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:    advisor.NamingIndexConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
-				Line:    node.Line(),
+				Line:    node.LastLine(),
 			})
 		}
 	}
@@ -132,14 +132,14 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 			})
 		}
 	case *ast.RenameIndexStmt:
-		tableName, index := checker.catalog.FindIndex(&catalog.IndexFind{
+		tableName, index := checker.catalog.Origin.FindIndex(&catalog.IndexFind{
 			SchemaName: normalizeSchemaName(node.Table.Schema),
 			TableName:  "",
 			IndexName:  node.IndexName,
 		})
-		if index != nil && !index.Unique {
+		if index != nil && !index.Unique() {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList, "_"),
+				advisor.ColumnListTemplateToken: strings.Join(index.ExpressionList(), "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			res = append(res, &indexMetaData{

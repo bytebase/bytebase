@@ -36,62 +36,72 @@ func TestIndexNoDuplicateColumn(t *testing.T) {
 			},
 		},
 		{
-			Statement: `CREATE INDEX idx_a on t(a, a)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				CREATE INDEX idx_a on t(a, a)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DuplicateColumnInIndex,
 					Title:   "index.no-duplicate-column",
 					Content: "INDEX `idx_a` has duplicate column `t`.`a`",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD INDEX idx_a (a, a)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD INDEX idx_a (a, a)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DuplicateColumnInIndex,
 					Title:   "index.no-duplicate-column",
 					Content: "INDEX `idx_a` has duplicate column `t`.`a`",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD PRIMARY KEY pk_a (a, a)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD PRIMARY KEY pk_a (a, a)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DuplicateColumnInIndex,
 					Title:   "index.no-duplicate-column",
 					Content: "PRIMARY KEY `pk_a` has duplicate column `t`.`a`",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD UNIQUE KEY uk_a (a, a)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD UNIQUE KEY uk_a (a, a)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DuplicateColumnInIndex,
 					Title:   "index.no-duplicate-column",
 					Content: "UNIQUE KEY `uk_a` has duplicate column `t`.`a`",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD FOREIGN KEY fk_a (a, a) REFERENCES t1(a, b)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD FOREIGN KEY fk_a (a, a) REFERENCES t1(a, b)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.DuplicateColumnInIndex,
 					Title:   "index.no-duplicate-column",
 					Content: "FOREIGN KEY `fk_a` has duplicate column `t`.`a`",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},

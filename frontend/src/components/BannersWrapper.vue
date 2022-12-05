@@ -29,7 +29,7 @@ import {
   useDebugStore,
   useSubscriptionStore,
 } from "@/store/modules";
-import { isDBAOrOwner } from "@/utils";
+import { hasWorkspacePermission, isDev } from "@/utils";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerDebug from "@/views/BannerDebug.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
@@ -59,7 +59,13 @@ const shouldShowDemoBanner = computed(() => {
 // So we only allow DBA and Owner to toggle it and thus show a banner
 // reminding them to turn off
 const shouldShowDebugBanner = computed(() => {
-  return isDebug.value && isDBAOrOwner(currentUser.value.role);
+  return (
+    isDebug.value &&
+    hasWorkspacePermission(
+      "bb.permission.workspace.debug",
+      currentUser.value.role
+    )
+  );
 });
 
 const shouldShowSubscriptionBanner = computed(() => {
@@ -71,6 +77,6 @@ const shouldShowReadonlyBanner = computed(() => {
 });
 
 const shouldShowExternalUrlBanner = computed(() => {
-  return needConfigureExternalUrl.value;
+  return !isDev && needConfigureExternalUrl.value;
 });
 </script>

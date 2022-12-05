@@ -9,6 +9,7 @@ import {
   StageId,
   Task,
   TaskCreate,
+  TaskStatus,
 } from "@/types";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -206,7 +207,13 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
-  const allowApplyTaskStatusTransition = () => {
+  const allowApplyTaskStatusTransition = (task: Task, to: TaskStatus) => {
+    if (to === "CANCELED") {
+      // All task types are not CANCELable by default.
+      // Might be overwritten by other issue logic providers.
+      return false;
+    }
+
     // no extra logic by default
     return true;
   };

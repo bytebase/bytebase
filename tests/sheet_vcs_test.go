@@ -13,6 +13,7 @@ import (
 )
 
 func TestSheetVCS(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name               string
 		vcsProviderCreator fake.VCSProviderCreator
@@ -36,13 +37,18 @@ func TestSheetVCS(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, t.TempDir(), test.vcsProviderCreator, getTestPort(t.Name()))
+			err := ctl.StartServerWithExternalPg(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
 			a.NoError(err)
 			defer func() {
 				_ = ctl.Close(ctx)
@@ -77,6 +83,11 @@ func TestSheetVCS(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              vcs.ID,
@@ -86,8 +97,8 @@ func TestSheetVCS(t *testing.T) {
 					WebURL:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
 					BranchFilter:       "feature/foo",
 					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql",
+					FilePathTemplate:   "{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_NAME}}/.{{DB_NAME}}##LATEST.sql",
 					SheetPathTemplate:  "sheet/{{NAME}}.sql",
 					ExternalID:         test.externalID,
 					AccessToken:        "accessToken1",
@@ -106,14 +117,17 @@ func TestSheetVCS(t *testing.T) {
 			err = ctl.vcsProvider.AddFiles(test.externalID, files)
 			a.NoError(err)
 
+			sheetsBefore, err := ctl.listMySheets()
+			a.NoError(err)
+
 			err = ctl.syncSheet(project.ID)
 			a.NoError(err)
 
-			sheets, err := ctl.listSheets(api.SheetFind{ProjectID: &project.ID})
+			sheetsAfter, err := ctl.listMySheets()
 			a.NoError(err)
-			a.Len(sheets, 1)
+			a.Len(sheetsAfter, len(sheetsBefore)+1)
 
-			sheetFromVCS := sheets[0]
+			sheetFromVCS := sheetsAfter[len(sheetsAfter)-1]
 			a.Equal("all_employee", sheetFromVCS.Name)
 			a.Equal(fileContent, sheetFromVCS.Statement)
 		})

@@ -77,11 +77,6 @@
       "developer": "Developer",
       "member": "Member"
     },
-    "role-switch": {
-      "dba": "Switch to DBA",
-      "owner": "Switch to Owner",
-      "developer": "Switch to Developer"
-    },
     "assignee": "Assignee",
     "revert": "Revert",
     "apply": "Apply",
@@ -102,6 +97,7 @@
     "status": "Status",
     "stage": "Stage",
     "task": "Task",
+    "tasks": "Tasks",
     "sql": "SQL",
     "unassigned": "Unassigned",
     "new": "New",
@@ -143,6 +139,7 @@
     "Default": "Default",
     "definition": "Definition",
     "empty": "Empty",
+    "connecting": "Connecting...",
     "creating": "Creating...",
     "updating": "Updating...",
     "Address": "Address",
@@ -208,7 +205,15 @@
     "sync-now": "Sync Now",
     "show-help": "Show help",
     "success": "Succeed",
-    "load-more": "Load more"
+    "load-more": "Load more",
+    "access-denied": "Access denied",
+    "no": "No",
+    "yes": "Yes",
+    "advanced": "Advanced",
+    "restart": "Restart",
+    "want-help": "Want help",
+    "operation": "Operation",
+    "rollback": "Rollback"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -246,7 +251,9 @@
       "sql-review": "SQL review",
       "earliest-allowed-time": "Earliest allowed time",
       "ghost-sync": "gh-ost sync",
-      "statement-type": "Statement type"
+      "statement-type": "Statement type",
+      "lgtm": "LGTM",
+      "pitr": "PITR"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",
@@ -264,7 +271,7 @@
       "warn": "Warning",
       "error": "Error"
     },
-    "earliest-allowed-time-no-modify": "You can not modify this field because you are not the issue assignee or it's not pending to run.",
+    "earliest-allowed-time-no-modify": "You cannot modify this field because you are not the issue assignee or it's not pending to run.",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sync data",
       "bb-task-database-schema-update-ghost-cutover": "Switch tables",
@@ -279,7 +286,10 @@
         "row": "rows"
       },
       "counting": "Counting"
-    }
+    },
+    "n-similar-tasks": "({count} similar tasks)",
+    "mark-as-done": "Mark as done",
+    "mark-as-done-modal-title": "Mark task [{name}] as done?"
   },
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
@@ -319,10 +329,13 @@
       "workspace": "Workspace",
       "general": "General",
       "members": "Members",
+      "im-integration": "IM Integration",
       "version-control": "Version Control",
       "subscription": "Subscription",
       "labels": "Labels",
-      "debug-log": "Debug Log"
+      "debug-log": "Debug Log",
+      "sensitive-data": "Sensitive Data",
+      "access-control": "Access Control"
     },
     "profile": {
       "email": "Email",
@@ -361,9 +374,9 @@
       "tooltip": {
         "upgrade": "Upgrade to enable role management",
         "not-allow-edit": "Only Owner can change the role",
-        "not-allow-remove": "Can not remove the last Owner",
+        "not-allow-remove": "Cannot remove the last Owner",
         "project-role-provider-gitlab": "Mapped from the {rawRole} role in the corresponding GitLab project.",
-        "cannot-change-role-of-systembot": "Can not change the role of system bot"
+        "cannot-change-role-of-systembot": "Cannot change the role of system bot"
       },
       "toggle-role-provider": {
         "title": "Are you sure?"
@@ -375,7 +388,18 @@
       "change-role-provider-to-bytebase": {
         "content": "You are about to restore the following members. All existing members synced from VCS will be removed."
       },
-      "system-bot": "System Bot"
+      "system-bot": "System Bot",
+      "service-account": "Service Account",
+      "copy-service-key": "Copy Service Key",
+      "reset-service-key": "Reset Service Key",
+      "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
+      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
+      "create-as-service-account": "Create as service account"
+    },
+    "im-integration": {
+      "enable": "Enable",
+      "description": "Allow users to approve issues from IM directly.",
+      "feishu-updated-tip": "Successfully updated the Feishu integration"
     },
     "general": {
       "workspace": {
@@ -388,6 +412,15 @@
         "logo-upload-tip": "{extension} up to {size} MiB",
         "logo-upload-succeed": "Successfully updated the logo"
       }
+    },
+    "sensitive-data": {
+      "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
+      "remove-sensitive-column-tips": "Expose this column?"
+    },
+    "access-control": {
+      "description": "Allow developers to execute queries for the following databases in the protected environments from SQL Editor.",
+      "add-rule": "Add rule",
+      "remove-policy-tips": "Remove this rule?"
     }
   },
   "activity": {
@@ -413,7 +446,8 @@
       "project-member-delete": "delete project member",
       "project-member-role-update": "change project member role",
       "pipeline-task-earliest-allowed-time-update": "update earliest allowed time",
-      "database-recovery-pitr-done": "restore database to point in time"
+      "database-recovery-pitr-done": "restore database to point in time",
+      "external-approval-rejected": "external approval rejected"
     },
     "sentence": {
       "created-issue": "created issue",
@@ -439,12 +473,14 @@
       "completed": "completed",
       "failed": "failed",
       "task-name": " task {name}",
-      "committed-to-at": "committed {file} to{branch}{'@'}{repo}",
-      "dismissed-stale-approval": "dismissed stale approvals of {task}"
+      "committed-to-at": "committed {file} to {branch}{'@'}{repo}",
+      "dismissed-stale-approval": "dismissed stale approvals of {task}",
+      "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\""
     },
     "subject-prefix": {
       "task": "Task"
-    }
+    },
+    "n-similar-activities": "({count} similar activity) | ({count} similar activities)"
   },
   "issue": {
     "waiting-approval": "Waiting Approval",
@@ -454,7 +490,9 @@
       "modal": {
         "resolve": "Resolve issue?",
         "cancel": "Cancel this entire issue?",
-        "reopen": "Reopen issue?"
+        "reopen": "Reopen issue?",
+        "title": "{action} {type} [{name}]?",
+        "action-to-stage": "{action} stage ({n} tasks)"
       },
       "dropdown": {
         "resolve": "Resolve issue",
@@ -513,14 +551,35 @@
     "edit-sql-statement": "Edit SQL statement",
     "upload-sql": "Upload SQL",
     "override-current-statement": "Override current SQL statement",
-    "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded."
+    "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
+    "waiting-earliest-allowed-time": "Will run after {time}",
+    "batch-transition": {
+      "not-allowed-tips": "Some of selected issues cannot be {operation}",
+      "resolve": "Resolve",
+      "resolved": "resolved",
+      "cancel": "Cancel",
+      "cancelled": "cancelled",
+      "reopen": "Reopen",
+      "reopened": "reopened",
+      "action-n-issues": "{action} {n} issue | {action} {n} issues",
+      "successfully-updated-n-issues": "Successfully updated {n} issue | Successfully updated {n} issues"
+    },
+    "sql-hint": {
+      "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
+      "dont-apply-to-database-in-baseline-migration": "This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history",
+      "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
+    },
+    "rollback-from": "This task rollbacks from {link}.",
+    "issue-link-with-task": "Issue {issue} - task {task}"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
     "vcs-info": "VCS enabled. Selecting this will navigate you to the corresponding Git repository to initiate the change process.",
     "alter-single-db": "Alter single database",
-    "alter-multiple-db": "Alter multiple databases",
-    "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments."
+    "alter-multiple-db": "Manual Selection",
+    "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments.",
+    "alter-db-group": "By Deployment Config",
+    "no-databases-in-project": "No databases in this project. Click New DB or Transfer in DB to add databases."
   },
   "quick-action": {
     "create-db": "Create database",
@@ -535,6 +594,7 @@
     "create-project": "@:common.create @:common.project",
     "edit-data": "Edit Data",
     "troubleshoot": "Troubleshoot",
+    "sync-schema": "Sync Schema",
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
     "from-unassigned-databases": "From unassigned databases",
@@ -551,7 +611,7 @@
     "reserved-db-error": "{databaseName} is a reserved name",
     "generated-database-name": "Generated database name",
     "db-name-generated-by-template": "Generated by template \"{template}\"",
-    "select-label-value": "Select {key}"
+    "input-label-value": "Input {key}"
   },
   "db": {
     "encoding": "Encoding",
@@ -574,7 +634,6 @@
     "select-database-user": "Select database user",
     "new-database": "New Database",
     "syncing": "Syncing ...",
-    "sync-schema-now": "Sync schema now",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
@@ -608,7 +667,7 @@
     "show-how-to-create": "Show how to create",
     "below-is-an-example-to-create-user-bytebase-with-password": "Below is an example to create user 'bytebase{'@'}%' with password",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn": "The instance has not configured read-only user, please consider adding one.",
+    "no-read-only-data-source-warn": "The instance has not configured read-only connection, please consider adding one.",
     "sentence": {
       "host": {
         "snowflake": "e.g. host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
@@ -620,7 +679,7 @@
         "snowflake": "The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)"
       },
       "create-admin-user": "This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.",
-      "create-readonly-user": "This is the connection user used by Bytebase to perform read-only operations such as SELECT query.",
+      "create-readonly-user": "This is the connection used by Bytebase to perform read-only operations such as SELECT query.",
       "create-user-example": {
         "snowflake": {
           "user": "bytebase{'@'}%",
@@ -646,8 +705,8 @@
     "password-write-only": "YOUR_DB_PWD - write only",
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
-    "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance",
-    "successfully-created-postgresql-instance": "Successfully created onboarding PostgreSQL instance and automatically filled into the form.",
+    "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance instead",
+    "successfully-created-postgresql-instance": "Successfully created a PostgreSQL sample instance and filled connection info.",
     "connection-info-seems-to-be-incorrect": "Connection info seems to be incorrect",
     "new-instance": "New Instance",
     "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {0}",
@@ -658,7 +717,6 @@
     "failed-to-connect-instance": "Failed to connect instance.",
     "failed-to-connect-instance-localhost": "Failed to connect instance.\nIf you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
     "search-instance-name": "Search instance name",
-    "no-read-only-data-source-support": "The {database} does not currently support creating read-only connections",
     "grants": "Grants"
   },
   "environment": {
@@ -668,7 +726,11 @@
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
-    "protected": "Protected"
+    "protected": "Protected",
+    "disable-auto-backup": {
+      "self": "Disable database automatic backup",
+      "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
+    }
   },
   "quick-start": {
     "bookmark-an-issue": "Bookmark an issue",
@@ -704,6 +766,7 @@
       "new-user": "New to Bytebase?",
       "demo-note": "Please use demo account to sign in",
       "gitlab": "Login with GitLab",
+      "github": "Login with GitHub",
       "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login"
     },
@@ -749,11 +812,13 @@
     },
     "environment-tier": {
       "name": "Environment tier",
+      "description": "The environment will appear differently from other environments.{newline}Developers cannot execute any query on this environment's databases \nusing SQL Editor by default. ",
       "mark-env-as-protected": "Mark as protected environment"
     }
   },
   "migration-history": {
     "self": "Migration History",
+    "select": "Select version",
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
@@ -778,10 +843,10 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
     "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
-    "contact-dba": "Please contact your DBA to config it",
-    "no-succeed-vcs-migration-record": "No succeed migration record from VCS"
+    "contact-dba": "Please contact your DBA to config it"
   },
   "database": {
+    "select": "Select database",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
@@ -846,6 +911,7 @@
     "row-count-estimate": "Row count estimate",
     "data-size": "Data size",
     "index-size": "Index size",
+    "column": "Column",
     "columns": "Columns",
     "indexes": "Indexes",
     "row-count-est": "Row count est.",
@@ -888,10 +954,27 @@
     "view-unassigned-databases": "View unassigned databases",
     "unassigned-databases": "Unassigned databases",
     "restore-database": "Restore database",
-    "selected-n-databases": "{n} database selected | {n} databases selected"
+    "selected-n-databases": "{n} database selected | {n} databases selected",
+    "sync-schema": {
+      "title": "Synchronize Schema",
+      "select-project": "Step 1. Select project",
+      "select-schema": "Step 2. Select schema",
+      "select-database": "Step 3. Apply to database",
+      "schema-diff": "The diff",
+      "synchronize-statements": "The DDL statements",
+      "synchronize-statements-description": "You can further edit the generated DDL statements.",
+      "select-schema-and-target-database-tip": "Please select the schema and database first.",
+      "no-difference-tip": "No diff found.",
+      "more-version": "more...",
+      "character-sets-diff-found": "There are differences between character sets.",
+      "preview-issue": "Preview issue"
+    },
+    "sensitive": "Sensitive",
+    "access-denied": "You don't have the permission to access this database."
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
+    "branch-specify-tip": "Tips: You can use empty branch to receive changes from all branches.",
     "base-directory": "Base directory",
     "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
     "file-path-template": "File path template",
@@ -905,6 +988,21 @@
     "schema-path-example": "Schema path example",
     "sheet-path-template": "Sheet path template",
     "sheet-path-template-description": "Bytebase only observes files with pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor for usage there.",
+    "sql-review-ci": "SQL Review CI",
+    "sql-review-ci-enable": "Enable SQL Review CI",
+    "sql-review-ci-enable-gitlab": "Enable SQL Review CI via GitLab CI",
+    "sql-review-ci-enable-github": "Enable SQL Review CI via GitHub Action",
+    "sql-review-ci-description": "Bytebase will create a {pr} to set up the SQL review CI in your repository. After the setup, in every {pr}, the SQL review policy will check against changed files matching the \"{pathTemplate}\".",
+    "sql-review-ci-setup": "Setup SQL Review CI",
+    "sql-review-ci-setup-failed": "Failed to setup SQL Review CI",
+    "sql-review-ci-setup-pr": "Review the {pr}",
+    "merge-request": "merge request",
+    "pull-request": "pull request",
+    "sql-review-ci-loading-modal": "We're preparing the {pr} to set up the SQL review CI. Once set up, you will be redirected to the {pr} page.",
+    "sql-review-ci-setup-modal": "We have created a {pr} for your repository to set up the SQL review CI. Please review and merge the {pr}.",
+    "sql-review-ci-remove": "Remove SQL Review CI",
+    "sql-review-ci-remove-modal": "SQL Review CI is disabled. You can remove the {vcs} file from {repository}.",
+    "sql-review-ci-restore-modal": "Once you restore to the UI workflow, the SQL review CI will be disabled for your repository. You can remove the {vcs} file from {repository}.",
     "git-provider": "Git provider",
     "version-control-status": "@.capitalize:common.version-control is {status}",
     "version-control-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
@@ -1074,7 +1172,13 @@
       "tenant": "Tenant"
     },
     "db-name-template": "@:common.database @:common.name @:common.template",
-    "select": "Select project"
+    "select": "Select project",
+    "lgtm-check": {
+      "self": "LGTM check",
+      "disabled": "Skip LGTM check",
+      "project-member": "Require LGTM from project members",
+      "project-owner": "Require LGTM from project owner"
+    }
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -1171,7 +1275,7 @@
     "preview-deployment-pipeline": "Preview Deployment Pipeline",
     "select-database-group": "Select database group"
   },
-  "datasource": {
+  "data-source": {
     "role-type": "Role Type",
     "successfully-deleted-data-source-name": "Successfully deleted data source '{0}'.",
     "create-data-source": "Create data source",
@@ -1197,8 +1301,8 @@
     "connection-name-string-copied-to-clipboard": "{0} string copied to clipboard.",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} ",
     "ssl-type": {
-      "ca": "@:{'datasource.ssl.ca-cert'}",
-      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "ca": "@:{'data-source.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
       "none": "None"
     },
     "ssl": {
@@ -1206,7 +1310,10 @@
       "client-key": "Client Key",
       "client-cert": "Client Certificate"
     },
-    "ssl-connection": "SSL Connection"
+    "ssl-connection": "SSL Connection",
+    "read-replica-host": "Read-replica Host",
+    "read-replica-port": "Read-replica Port",
+    "delete-read-only-data-source": "Delete read-only data source"
   },
   "setting": {
     "project": {
@@ -1231,15 +1338,13 @@
     "download-as-csv": "Download as CSV",
     "download-as-json": "Download as JSON",
     "only-select-allowed": "Only {select} statements are allowed to execute.",
-    "want-to-change-schema": "If you want to {changeschema}.",
-    "change-schema": "change schema",
-    "go-to-alter-schema": "You can click the {alterschema} button, and submit an issue.",
+    "want-to-action": "If you want to {want}, click the {action} button and submit an issue.",
     "table-schema-placeholder": "Select a table to see its schema",
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "notify-multiple-statements": "Multiple SQL statements detected. SQL Editor only executes the first statement. You can select another statement and execute it individually.",
     "goto-alter-schema-hint": "Please select a database connection from the top of the editor",
     "notify-invalid-sql-statement": "Invalid SQL statement.",
-    "can-not-execute-query": "Can not execute query when loading data.",
+    "can-not-execute-query": "Cannot execute query when loading data.",
     "rows": "row | rows",
     "no-history-found": "No history found",
     "no-sheet-found": "No sheet found",
@@ -1247,7 +1352,10 @@
     "search-sheets": "Search Sheets",
     "hint-tips": {
       "confirm-to-delete-this-history": "Confirm to delete this history?",
-      "confirm-to-close-unsaved-tab": "Confirm to close unsaved tab?"
+      "confirm-to-close-unsaved-sheet": {
+        "title": "Close the unsaved sheet?",
+        "content": "Close the sheet and lose any unsaved data?"
+      }
     },
     "please-input-the-tab-label": "Please input the tab label!",
     "copy-code": "Copy code",
@@ -1259,7 +1367,7 @@
     "view-all-tabs": "View all Tabs",
     "sheet": "Sheet",
     "sheets": "Sheets",
-    "connection-holder": "Set a connection context from left panel to get started",
+    "connection-holder": "Click nodes on the left panel to get started",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
@@ -1276,7 +1384,60 @@
     "alter-table": "Alter table",
     "open-connection": "Open connection",
     "visualize-explain": "Visualize Explain",
-    "sql-execute-in-protected-environment": "The SQL statement below will be executed in a protected environment."
+    "sql-execute-in-protected-environment": "The SQL statement below will be executed in a protected environment.",
+    "rows-upper-limit": "reached the limit of query results",
+    "tab-mode": {
+      "readonly": "Read-only",
+      "admin": "Admin"
+    },
+    "close-sheet": "Close sheet"
+  },
+  "ui-editor": {
+    "self": "UI Editor",
+    "use-tips": "Click a database/table to start.",
+    "preview-issue": "Preview issue",
+    "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
+    "list": "List",
+    "raw-sql": "Raw SQL",
+    "actions": {
+      "create-table": "New table",
+      "drop-table": "Drop table",
+      "drop": "Drop",
+      "restore": "Restore",
+      "add-column": "Add column",
+      "drop-column": "Drop column",
+      "sql-preview": "SQL Preview",
+      "discard-changes": "Discard Changes",
+      "save": "Save"
+    },
+    "database": {
+      "name": "Name",
+      "row-count": "Row count",
+      "data-size": "Data size",
+      "engine": "Engine",
+      "collation": "Collation",
+      "comment": "Comment"
+    },
+    "tables": "Tables",
+    "table": {
+      "name": "Table Name"
+    },
+    "columns": "Columns",
+    "column": {
+      "name": "Name",
+      "type": "Type",
+      "default": "Default",
+      "comment": "Comment",
+      "is-nullable": "Is Nullable"
+    },
+    "nothing-changed": "Nothing changed",
+    "message": {
+      "invalid-table-name": "Invalid table name",
+      "duplicated-table-name": "Duplicated table name",
+      "invalid-column-name": "Invalid column name",
+      "duplicated-column-name": "Duplicated column name",
+      "invalid-column-type": "Invalid column type"
+    }
   },
   "label": {
     "empty-label-value": "<Empty Value>",
@@ -1298,7 +1459,7 @@
     "setting": {
       "description": "A label is a key-value pair that helps you identify the tenant for a database. {link}."
     },
-    "db-name-template-tips": "Allow you to group databases with the same {placeholder} from different tenants. {link}.",
+    "db-name-template-tips": "All tenant databases should follow this naming template. The databases with the same {placeholder} will be in the same group. {link}.",
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
@@ -1309,6 +1470,15 @@
   "subscription": {
     "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "upload-license": "Upload license",
+    "upgrade-trial-button": "Upgrade trial",
+    "start-n-days-trial": "Start {days} days trial",
+    "successfully-start-trial": "Successfully start free trial for {days} days",
+    "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
+    "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
+    "required-plan-with-trial": "This feature requires {requiredPlan}, but {startTrial}.",
+    "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required",
+    "trial-for-days": "You can start a free trial for {days} days - no credit card required",
+    "upgrade-trial": "You can upgrade your free trial to this plan",
     "update": {
       "success": {
         "title": "Successfully updated license",
@@ -1347,13 +1517,33 @@
         "title": "Environment tier",
         "desc": "Mark environment as protected."
       },
+      "bb-feature-sensitive-data": {
+        "title": "Sensitive data",
+        "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
+      },
+      "bb-feature-access-control": {
+        "title": "Access control",
+        "desc": "Change query permission for databases in the protected environments."
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM check",
+        "desc": "Check if the issue has an \"LGTM\" comment."
+      },
+      "bb-feature-im-approval": {
+        "title": "IM Approval",
+        "desc": "Approval issue with IM integration."
+      },
       "bb-feature-sql-review": {
         "title": "SQL review policy",
-        "desc": "Customize the SQL review policy for different environments. @:{'subscription.trial'}."
+        "desc": "Customize the SQL review policy for different environments, can only use limited rules in the free plan."
+      },
+      "bb-feature-vcs-sql-review": {
+        "title": "SQL Review in GitOps workflow",
+        "desc": "Add the SQL Review CI to your VCS repository pipeline. SQL Review will be triggered in the pull request for changed SQL files."
       },
       "bb-feature-rbac": {
         "title": "Role management",
-        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.trial'}."
+        "desc": "Role management can assign a particular role (e.g. DBA) to a member."
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
@@ -1361,7 +1551,7 @@
       },
       "bb-feature-3rd-party-auth": {
         "title": "3rd party authentication & authorization",
-        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.trial'}.",
+        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration.",
         "login": "@:{'subscription.upgrade'} to unlock this feature"
       },
       "bb-feature-branding": {
@@ -1375,6 +1565,14 @@
       "bb-feature-disaster-recovery-pitr": {
         "title": "Point-in-Time-Recovery (PITR)",
         "desc": "Restore the database state to a point in time."
+      },
+      "bb-feature-sync-schema-all-versions": {
+        "title": "Synchronize schema all versions",
+        "desc": "Select any arbitrary migration version from the base database and synchronize it to the target database."
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "Read replica connection",
+        "desc": "Connect to a read replica for the read-only data source."
       }
     }
   },
@@ -1398,14 +1596,17 @@
   },
   "sql-review": {
     "title": "SQL Review",
+    "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "Disabled",
     "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
+    "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
     "search-rule-name": "Search rule name",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
     "policy-updated": "Successfully updated the review policy.",
+    "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
     "filter": "Filter",
     "no-permission": "Only DBA or Owner has permission to create or update review policy.",
@@ -1413,6 +1614,7 @@
     "enable": "Enable",
     "delete": "Delete SQL review policy",
     "input-then-press-enter": "Input the value then press enter to add",
+    "not-available-for-free": "Rule is not available for {plan}",
     "create": {
       "breadcrumb": "Create SQL review policy",
       "basic-info": {
@@ -1469,16 +1671,16 @@
       "go-to-project-list-page": "Go to project list page",
       "click-new-project": "Click \"New Project\" to create a project",
       "click-new-database": "Click \"New Database\" to create a database",
-      "click-approve": "Click \"Approve\" to perform the issue",
-      "wait-issue-finished": "waiting for the issue finished...",
+      "click-approve": "Click \"Approve\" to execute the change",
+      "wait-issue-finished": "Waiting for the change to be finished...",
       "back-to-home": "Back to Home",
       "finished-dialog": {
-        "you-have-done": "You have done:",
+        "you-have-done": "You have completed:",
         "add-an-instance": "Add an instance",
         "create-a-project": "Create a project",
         "create-an-issue": "Create an issue",
         "create-a-new-database": "Create a new database",
-        "keep-going-with-bytebase": "Keep going with Bytebase"
+        "keep-going-with-bytebase": "Keep going with Bytebase!"
       }
     }
   }

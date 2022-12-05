@@ -76,6 +76,12 @@
             <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
               {{ principal.name }}
             </h1>
+            <span
+              v-if="principal.type === 'SERVICE_ACCOUNT'"
+              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+            >
+              {{ $t("settings.members.service-account") }}
+            </span>
           </div>
         </div>
       </div>
@@ -112,7 +118,22 @@
             <dt class="text-sm font-medium text-control-light">
               {{ $t("settings.profile.email") }}
             </dt>
-            <dd class="mt-1 text-sm text-main">{{ principal.email }}</dd>
+            <dd class="mt-1 text-sm text-main">
+              <input
+                v-if="state.editing"
+                id="email"
+                required
+                autocomplete="off"
+                name="email"
+                type="text"
+                class="textfield"
+                :value="state.editingPrincipal?.email"
+                @input="(e: any)=>updatePrincipal('email', e.target.value)"
+              />
+              <template v-else>
+                {{ principal.email }}
+              </template>
+            </dd>
           </div>
 
           <template v-if="state.editing">
@@ -178,7 +199,7 @@ import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { PrincipalPatch } from "../types";
-import { isOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { featureToRef, useCurrentUser, usePrincipalStore } from "@/store";
 
 interface LocalState {
@@ -248,7 +269,10 @@ export default defineComponent({
     const allowEdit = computed(() => {
       return (
         currentUser.value.id == principal.value.id ||
-        isOwner(currentUser.value.role)
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-member",
+          currentUser.value.role
+        )
       );
     });
 
@@ -268,6 +292,8 @@ export default defineComponent({
       const clone = cloneDeep(principal.value);
       state.editingPrincipal = {
         name: clone.name,
+        email: clone.email,
+        type: clone.type,
       };
       state.editing = true;
 

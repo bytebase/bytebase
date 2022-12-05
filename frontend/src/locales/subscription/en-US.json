@@ -2,12 +2,11 @@
   "current": "Current plan",
   "instance-count": "Instance count",
   "expires-at": "Expires at",
-  "free-trial": "Your first 14 days are free - no credit card required",
-  "description-highlight": "Purchase a license",
+  "free-trial": "You can start a free trial for 14 days - no credit card required",
+  "purchase-license": "Purchase a license",
   "sensitive-placeholder": "Paste your license here - write only",
   "plan-compare": "Compare features between different plans",
   "disabled-feature": "This is a premium feature in subscription plan",
-  "trial": "You can start a free trial - no credit card required",
   "upgrade": "Upgrade subscription",
   "per-month": "/ month",
   "price-unit-for-enterprise": "/ month",
@@ -27,7 +26,7 @@
   "trialing": "trialing",
   "plan": {
     "title": "Plan",
-    "try": "Try Team",
+    "try": "Start free trial",
     "free": {
       "title": "Free Plan",
       "label": "",
@@ -35,12 +34,12 @@
     },
     "team": {
       "title": "Team Plan",
-      "label": "Beta",
+      "label": "",
       "desc": "Medium size team, has dedicated DBA or TL for engineering velocity"
     },
     "enterprise": {
       "title": "Enterprise Plan",
-      "label": "Early access",
+      "label": "",
       "desc": "Large organization, has dedicated DBA group to manage database fleet"
     }
   },
@@ -52,6 +51,12 @@
         "instance-upto-5": "Up to 5",
         "instance-customized": "Customized",
         "instance-minimum-5": "5 ~ unlimited",
+        "environment-count": "Environment count",
+        "environment-upto-2": "Up to 2",
+        "environment-unlimited": "Unlimited",
+        "task-count-in-issue": "Task count in an issue",
+        "task-upto-4": "Up to 4",
+        "task-unlimited": "Unlimited",
         "schema-change": "Schema and data change",
         "schema-change-basic": "Basic",
         "schema-change-basic-tooltip": "Normal migration",
@@ -77,7 +82,9 @@
         "anomaly-detection-advanced-tooltip": "Basic + Drift detection",
         "schedule-change": "Scheduled change at specific time",
         "review-and-backup-policy": "Review and backup policy",
-        "tenancy": "Multi-Region / Multi-Tenancy deployment"
+        "tenancy": "Multi-Region / Multi-Tenancy deployment",
+        "read-replica": "Separate connection for read-only operations",
+        "sync-schema": "Synchronize schema between databases"
       }
     },
     "collaboration": {
@@ -87,7 +94,14 @@
         "vsc-workflow": "VCS workflow #GitOps",
         "shareable-query-link": "Shareable query link",
         "im-integration": "IM integration",
-        "inbox-notification": "Inbox notification"
+        "im-integration-basic": "Basic",
+        "im-integration-basic-tooltip": "Webhook",
+        "im-integration-advanced": "Advanced",
+        "im-integration-advanced-tooltip": "Basic + Feishu Integration",
+        "inbox-notification": "Inbox notification",
+        "vsc-workflow-basic": "Basic",
+        "vsc-workflow-advanced": "Advanced",
+        "vsc-workflow-advanced-tooltip": "Basic + SQL Review CI"
       }
     },
     "admin-and-security": {
@@ -96,7 +110,12 @@
         "activity-log": "Activity log",
         "rbac": "RBAC (Owner, DBA, Developer role)",
         "3rd-party-auth": "Login with GitLab account",
-        "sync-members-from-vcs": "Sync project membership from the linked GitLab project"
+        "sync-members-from-vcs": "Sync project membership from the linked GitLab project",
+        "dba-workflow": "DBA workflow",
+        "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
+        "environment-tier": "Environment tier",
+        "sensitive-data": "Sensitive data masking",
+        "access-control": "Access control"
       }
     },
     "branding": {
@@ -109,6 +128,8 @@
   "main-features": {
     "community-support": "Community support",
     "review-workflow": "Schema and data change review workflow",
+    "gitops": "VCS integration #GitOps",
+    "pitr": "Point-in-Time-Recovery",
     "sql-editor": "SQL Editor",
     "database-backup-restore": "Database backup / restore",
     "im-integration": "IM integration (e.g. Slack, Discord and etc)",
@@ -116,11 +137,14 @@
     "everything-in-free-plan": "Everything in free plan",
     "rbac": "Owner, DBA and Developer roles",
     "gitlab-login": "GitLab login",
+    "online-schema-migration": "Large table online schema migration",
     "sql-check-anomaly-detection": "Advanced SQL check and anomaly detection",
     "review-and-backup-policy": "Review and backup policy",
     "sla": "SLA support",
     "everything-in-team-plan": "Everything in team plan",
     "multi-tenancy": "Multi-Region / Multi-Tenancy deployment",
+    "dba-workflow": "DBA workflow",
+    "environment-tier": "Environment tier",
     "more-to-come": "More to come..."
   }
 }

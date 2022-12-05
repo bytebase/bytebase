@@ -113,8 +113,19 @@ watch(
     if (value === "MANUAL_APPROVAL_NEVER") {
       // Empty the array since it's meaningless when MANUAL_APPROVAL_NEVER
       emit("update", []);
+    } else if (value === "MANUAL_APPROVAL_ALWAYS") {
+      // Sync the local state (DBA_OR_OWNER / PROJECT_OWNER) to the payload
+      // when switching from "skip manual approval" -> "require manual approval"
+      emit("update", getAssigneeGroupListByValue(state.assigneeGroup));
     }
   },
   { immediate: true }
+);
+
+watch(
+  () => props.policy,
+  () => {
+    state.assigneeGroup = getAssigneeGroup();
+  }
 );
 </script>

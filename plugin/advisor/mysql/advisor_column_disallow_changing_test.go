@@ -11,7 +11,9 @@ import (
 func TestColumnDisallowChanging(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
-			Statement: `ALTER TABLE t ADD COLUMN a int`,
+			Statement: `
+				CREATE TABLE t(b int);
+				ALTER TABLE t ADD COLUMN a int`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -22,14 +24,16 @@ func TestColumnDisallowChanging(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN b a int`,
+			Statement: `
+				CREATE TABLE t(b int);
+				ALTER TABLE t CHANGE COLUMN b a int`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.UseChangeColumnStatement,
 					Title:   "column.disallow-change",
 					Content: "\"ALTER TABLE t CHANGE COLUMN b a int\" contains CHANGE COLUMN statement",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},

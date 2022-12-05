@@ -1,7 +1,7 @@
 import { defineStore, storeToRefs } from "pinia";
 import axios from "axios";
 import { isEqual } from "lodash-es";
-import { Ref } from "vue";
+import { computed, Ref } from "vue";
 import {
   Principal,
   AuthState,
@@ -130,4 +130,9 @@ export const useAuthStore = defineStore("auth", {
 
 export const useCurrentUser = (): Ref<Principal> => {
   return storeToRefs(useAuthStore()).currentUser;
+};
+
+export const useIsLoggedIn = (): Ref<boolean> => {
+  const store = useAuthStore();
+  return computed(() => store.isLoggedIn());
 };

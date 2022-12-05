@@ -12,17 +12,35 @@ import {
   Project,
   unknown,
   UNKNOWN_ID,
-  SheetFind,
   SheetCreate,
   SheetOrganizerUpsert,
   ProjectId,
   SheetUpsert,
+  SheetPayload,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useAuthStore } from "./auth";
 import { useDatabaseStore } from "./database";
 import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
+import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
+
+function convertSheetPayload(
+  resourceObj: ResourceObject,
+  includedList: ResourceObject[]
+) {
+  const payload = {};
+  try {
+    const payloadJSON = resourceObj.attributes.payload;
+    if (typeof payloadJSON === "string") {
+      Object.assign(payload, JSON.parse(payloadJSON));
+    }
+  } catch {
+    // nothing
+  }
+
+  return payload;
+}
 
 function convertSheet(
   sheet: ResourceObject,
@@ -45,6 +63,8 @@ function convertSheet(
     }
   }
 
+  const payload = convertSheetPayload(sheet, includedList);
+
   return {
     ...(sheet.attributes as Omit<Sheet, "id" | "creator" | "updater">),
     id: parseInt(sheet.id),
@@ -58,6 +78,7 @@ function convertSheet(
     ) as Principal,
     project,
     database,
+    payload: payload as SheetPayload,
   };
 }
 
@@ -89,7 +110,7 @@ export const useSheetStore = defineStore("sheet", {
     },
     /**
      * Check the sheet whether is read-only.
-     * 1. If the sheet is not created yet, it can not be edited.
+     * 1. If the sheet is not created yet, it cannot be edited.
      * 2. If the sheet is created by the current user, it can be edited.
      * 3. If the sheet is created by other user, will be checked the visibility of the sheet.
      *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
@@ -104,37 +125,20 @@ export const useSheetStore = defineStore("sheet", {
         return true;
       }
 
-      // The sheet is not saved yet, it is editable.
+      // The tab is not saved yet, it is editable.
       if (currentSheet.id === UNKNOWN_ID) {
         return false;
       }
 
-      // Always editable if current user is the creator of the sheet.
-      if (currentSheet.creator.id === currentUser.id) {
-        return false;
-      }
-
-      // Check the role of the current user in the sheet's project.
-      if (currentSheet.visibility === "PROJECT") {
-        const isCurrentUserProjectOwner = () => {
-          const projectMemberList = currentSheet.project.memberList || [];
-          const memberInProject = projectMemberList.find((member) => {
-            return member.principal.id === currentUser.id;
-          });
-
-          return memberInProject && memberInProject.role === "OWNER";
-        };
-
-        return !isCurrentUserProjectOwner();
-      }
-
-      // visibility === "PRIVATE" | "PUBLIC"
-      // Readonly if the sheet is private or public.
-      return true;
+      return !isSheetWritable(currentSheet, currentUser);
     },
   },
 
   actions: {
+    getSheetById(sheetId: SheetId) {
+      const sheet = this.sheetById.get(sheetId);
+      return sheet ?? unknown("SHEET");
+    },
     setSheetList(payload: Sheet[]) {
       this.sheetList = payload;
     },
@@ -151,10 +155,12 @@ export const useSheetStore = defineStore("sheet", {
           id: sheetUpsert.id,
           name: sheetUpsert.name,
           statement: sheetUpsert.statement,
+          payload: sheetUpsert.payload,
         });
       }
 
       return this.createSheet({
+        payload: getDefaultSheetPayloadWithSource("BYTEBASE"),
         ...sheetUpsert,
         visibility: "PRIVATE",
       });
@@ -164,11 +170,16 @@ export const useSheetStore = defineStore("sheet", {
         sheetCreate.databaseId = undefined;
       }
 
+      const attributes: Record<string, any> = { ...sheetCreate };
+      if (typeof attributes.payload === "object") {
+        attributes.payload = JSON.stringify(attributes.payload);
+      }
+
       const resData = (
         await axios.post(`/api/sheet`, {
           data: {
             type: "createSheet",
-            attributes: sheetCreate,
+            attributes,
           },
         })
       ).data;
@@ -184,16 +195,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheet;
     },
-    async fetchMySheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (await axios.get(`/api/sheet/my?${queryList.join("&")}`))
-        .data;
+    async fetchMySheetList() {
+      const resData = (await axios.get(`/api/sheet/my`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
@@ -208,17 +211,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheetList;
     },
-    async fetchSharedSheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (
-        await axios.get(`/api/sheet/shared?${queryList.join("&")}`)
-      ).data;
+    async fetchSharedSheetList() {
+      const resData = (await axios.get(`/api/sheet/shared`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
@@ -233,17 +227,8 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheetList;
     },
-    async fetchStarredSheetList(sheetFind?: SheetFind) {
-      const queryList = [];
-      if (sheetFind?.projectId) {
-        queryList.push(`projectId=${sheetFind.projectId}`);
-      }
-      if (sheetFind?.databaseId) {
-        queryList.push(`databaseId=${sheetFind.databaseId}`);
-      }
-      const resData = (
-        await axios.get(`/api/sheet/starred?${queryList.join("&")}`)
-      ).data;
+    async fetchStarredSheetList() {
+      const resData = (await axios.get(`/api/sheet/starred`)).data;
       const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
@@ -259,14 +244,18 @@ export const useSheetStore = defineStore("sheet", {
       return sheetList;
     },
     async fetchSheetById(sheetId: SheetId) {
-      const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
-      const sheet = convertSheet(data.data, data.included);
-      this.setSheetById({
-        sheetId: sheet.id,
-        sheet: sheet,
-      });
+      try {
+        const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
+        const sheet = convertSheet(data.data, data.included);
+        this.setSheetById({
+          sheetId: sheet.id,
+          sheet: sheet,
+        });
 
-      return sheet;
+        return sheet;
+      } catch {
+        return unknown("SHEET");
+      }
     },
     async getOrFetchSheetById(sheetId: SheetId) {
       const storedSheet = this.sheetById.get(sheetId);
@@ -276,11 +265,16 @@ export const useSheetStore = defineStore("sheet", {
       return this.fetchSheetById(sheetId);
     },
     async patchSheetById(sheetPatch: SheetPatch): Promise<Sheet> {
+      const attributes: Record<string, any> = { ...sheetPatch };
+      if (typeof attributes.payload === "object") {
+        attributes.payload = JSON.stringify(attributes.payload);
+      }
+
       const resData = (
         await axios.patch(`/api/sheet/${sheetPatch.id}`, {
           data: {
             type: "sheetPatch",
-            attributes: sheetPatch,
+            attributes,
           },
         })
       ).data;
@@ -315,7 +309,7 @@ export const useSheetStore = defineStore("sheet", {
       }
     },
     async syncSheetFromVCS(projectId: ProjectId) {
-      await axios.post(`/api/sheet/project/${projectId}/sync`);
+      await axios.post(`/api/project/${projectId}/sync-sheet`);
     },
   },
 });

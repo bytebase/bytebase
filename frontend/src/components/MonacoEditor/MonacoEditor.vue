@@ -12,15 +12,16 @@ import {
   ref,
   toRef,
   nextTick,
-  onUnmounted,
   watch,
   shallowRef,
   PropType,
+  onBeforeUnmount,
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
 import { Database, SQLDialect, Table } from "@/types";
 import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
+import type { useLanguageClient } from "@sql-lsp/client";
 
 const props = defineProps({
   value: {
@@ -39,6 +40,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  options: {
+    type: Object as PropType<Editor.IStandaloneEditorConstructionOptions>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -55,6 +60,7 @@ const monacoInstanceRef = ref<MonacoHelper>();
 const editorContainerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorInstanceRef = shallowRef<Editor.IStandaloneCodeEditor>();
+const languageClientRef = ref<ReturnType<typeof useLanguageClient>>();
 
 const isEditorLoaded = ref(false);
 
@@ -65,6 +71,7 @@ const initEditorInstance = () => {
   const model = monaco.editor.createModel(sqlCode.value, "sql");
   const editorInstance = monaco.editor.create(editorContainerRef.value!, {
     model,
+    theme: "bb",
     tabSize: 2,
     insertSpaces: true,
     autoClosingQuotes: "always",
@@ -86,6 +93,10 @@ const initEditorInstance = () => {
     },
     renderLineHighlight: "none",
     codeLens: false,
+    scrollbar: {
+      alwaysConsumeMouseWheel: false,
+    },
+    ...props.options,
   });
 
   // add `Format SQL` action into context menu
@@ -141,7 +152,11 @@ const initEditorInstance = () => {
 };
 
 onMounted(async () => {
-  const monacoHelper = await useMonaco(dialect.value);
+  // Load monaco-editor and sql-lsp/client asynchronously.
+  const [monacoHelper, { useLanguageClient }] = await Promise.all([
+    useMonaco(),
+    import("@sql-lsp/client"),
+  ]);
 
   if (!editorContainerRef.value) {
     // Give up creating monaco editor if the component has been unmounted
@@ -152,11 +167,15 @@ onMounted(async () => {
     return;
   }
 
-  const { setDialect, setPositionAtEndOfLine } = monacoHelper;
+  const { setPositionAtEndOfLine } = monacoHelper;
   monacoInstanceRef.value = monacoHelper;
 
   const editorInstance = initEditorInstance();
   editorInstanceRef.value = editorInstance;
+
+  const languageClient = useLanguageClient();
+  languageClientRef.value = languageClient;
+  languageClient.start();
 
   // set the editor focus when the tab is selected
   if (!readOnly.value && props.autoFocus) {
@@ -168,14 +187,29 @@ onMounted(async () => {
 
   nextTick(() => {
     emit("ready");
-  });
 
-  watch(dialect, () => setDialect(dialect.value));
+    watch(dialect, () => languageClient.changeDialect(dialect.value), {
+      immediate: true,
+      // Delay the flush timing to ensure it performs after the language client started.
+      flush: "post",
+    });
+
+    watch(
+      () => props.options,
+      (opts) => {
+        if (opts) {
+          editorInstance.updateOptions(opts);
+        }
+      },
+      { deep: true }
+    );
+  });
 });
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   editorInstanceRef.value?.dispose();
   monacoInstanceRef.value?.dispose();
+  languageClientRef.value?.stop();
 });
 
 watch(
@@ -251,7 +285,20 @@ const setEditorAutoCompletionContext = (
   databases: Database[],
   tables: Table[]
 ) => {
-  monacoInstanceRef.value?.setAutoCompletionContext(databases, tables);
+  languageClientRef.value?.changeSchema({
+    databases: databases.map((db) => ({
+      name: db.name,
+      tables: tables
+        .filter((table) => table.database.id === db.id)
+        .map((table) => ({
+          database: db.name,
+          name: table.name,
+          columns: table.columnList.map((col) => ({
+            name: col.name,
+          })),
+        })),
+    })),
+  });
 };
 
 defineExpose({

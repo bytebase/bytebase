@@ -31,7 +31,7 @@ func TestPost(t *testing.T) {
 		},
 	}
 	token := "token"
-	_, _, err := Post(ctx, client, "", &token, strings.NewReader("POST body"), nil)
+	_, _, _, err := Post(ctx, client, "", &token, strings.NewReader("POST body"), nil)
 	require.NoError(t, err)
 }
 
@@ -48,7 +48,7 @@ func TestGet(t *testing.T) {
 		},
 	}
 	token := "token"
-	_, _, err := Get(ctx, client, "", &token, nil)
+	_, _, _, err := Get(ctx, client, "", &token, nil)
 	require.NoError(t, err)
 }
 
@@ -69,7 +69,7 @@ func TestPut(t *testing.T) {
 		},
 	}
 	token := "token"
-	_, _, err := Put(ctx, client, "", &token, strings.NewReader("PUT body"), nil)
+	_, _, _, err := Put(ctx, client, "", &token, strings.NewReader("PUT body"), nil)
 	require.NoError(t, err)
 }
 
@@ -90,7 +90,7 @@ func TestPatch(t *testing.T) {
 		},
 	}
 	token := "token"
-	_, _, err := Patch(ctx, client, "", &token, strings.NewReader("PATCH body"), nil)
+	_, _, _, err := Patch(ctx, client, "", &token, strings.NewReader("PATCH body"), nil)
 	require.NoError(t, err)
 }
 
@@ -107,7 +107,7 @@ func TestDelete(t *testing.T) {
 		},
 	}
 	token := "token"
-	_, _, err := Delete(ctx, client, "", &token, nil)
+	_, _, _, err := Delete(ctx, client, "", &token, nil)
 	require.NoError(t, err)
 }
 
@@ -115,7 +115,7 @@ func TestRetry_Exceeded(t *testing.T) {
 	ctx := context.Background()
 	token := "expired"
 
-	_, _, err := retry(ctx, nil, &token,
+	_, _, _, err := retry(ctx, nil, &token,
 		func(_ context.Context, _ *http.Client, _ *string) error {
 			return nil
 		},

@@ -25,11 +25,24 @@
             class="text-accent"
           />
         </label>
+        <p class="mt-2 text-sm text-gray-600">
+          <i18n-t tag="span" keypath="policy.environment-tier.description">
+            <template #newline><br /></template>
+          </i18n-t>
+          <a
+            class="inline-flex items-center text-blue-600 ml-1 hover:underline"
+            href="https://www.bytebase.com/docs/administration/environment-policy/tier"
+            target="_blank"
+            >{{ $t("common.learn-more")
+            }}<heroicons-outline:external-link class="w-4 h-4"
+          /></a>
+        </p>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <BBCheckbox
               :value="(state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier === 'PROTECTED'"
-              @toggle="on => {
+              :disabled="!allowEdit"
+              @toggle="(on: boolean) => {
                 (state.environmentTierPolicy.payload as EnvironmentTierPolicyPayload).environmentTier = on ? 'PROTECTED' : 'UNPROTECTED'
               }"
             />
@@ -185,7 +198,7 @@
             @click.prevent="onSQLReviewPolicyClick"
           >
             {{ sqlReviewPolicy.name }}
-            <span v-if="sqlReviewPolicy.rowStatus == 'ARCHIVED'">
+            <span v-if="sqlReviewPolicy.rowStatus === 'ARCHIVED'">
               ({{ $t("sql-review.disabled") }})
             </span>
           </button>
@@ -223,7 +236,9 @@
     </div>
     <!-- Update button group -->
     <div v-else class="flex justify-between items-center pt-5">
-      <template v-if="(state.environment as Environment).rowStatus == 'NORMAL'">
+      <template
+        v-if="(state.environment as Environment).rowStatus === 'NORMAL'"
+      >
         <BBButtonConfirm
           v-if="allowArchive"
           :style="'ARCHIVE'"
@@ -238,7 +253,7 @@
         />
       </template>
       <template
-        v-else-if="(state.environment as Environment).rowStatus == 'ARCHIVED'"
+        v-else-if="(state.environment as Environment).rowStatus === 'ARCHIVED'"
       >
         <BBButtonConfirm
           v-if="allowRestore"
@@ -290,7 +305,7 @@ import type {
   Policy,
   SQLReviewPolicy,
 } from "../types";
-import { isDBAOrOwner, sqlReviewPolicySlug } from "../utils";
+import { hasWorkspacePermission, sqlReviewPolicySlug } from "../utils";
 import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
 import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
 
@@ -417,7 +432,10 @@ const currentUser = useCurrentUser();
 const environmentList = useEnvironmentList();
 
 const hasPermission = computed(() => {
-  return isDBAOrOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-environment",
+    currentUser.value.role
+  );
 });
 
 const allowArchive = computed(() => {
@@ -431,7 +449,7 @@ const allowRestore = computed(() => {
 const allowEdit = computed(() => {
   return (
     props.create ||
-    ((state.environment as Environment).rowStatus == "NORMAL" &&
+    ((state.environment as Environment).rowStatus === "NORMAL" &&
       hasPermission.value)
   );
 });
@@ -469,6 +487,9 @@ const valueChanged = (
 
 const revertEnvironment = () => {
   state.environment = cloneDeep(props.environment!);
+  state.approvalPolicy = cloneDeep(props.approvalPolicy!);
+  state.backupPolicy = cloneDeep(props.backupPolicy!);
+  state.environmentTierPolicy = cloneDeep(props.environmentTierPolicy!);
 };
 
 const createEnvironment = () => {

@@ -49,7 +49,7 @@ export default defineComponent({
       const stageList = issueCreate.pipeline!.stageList;
       const createContext =
         issueCreate.createContext as UpdateSchemaGhostContext;
-      const detailList = createContext.updateSchemaGhostDetailList;
+      const detailList = createContext.detailList;
       stageList.forEach((stage, i) => {
         const detail = detailList[i];
         const syncTask = stage.taskList.find(
@@ -78,6 +78,13 @@ export default defineComponent({
           // RETRYing gh-ost cut-over task is not allowed (yet).
           return false;
         }
+      }
+      if (
+        task.type === "bb.task.database.schema.update.ghost.sync" &&
+        to === "CANCELED"
+      ) {
+        // CANCELing gh-ost sync task is allowed.
+        return true;
       }
       return baseAllowApplyTaskStatusTransition(task, to);
     };

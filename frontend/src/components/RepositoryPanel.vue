@@ -67,7 +67,7 @@
       :ok-text="$t('common.restore')"
       :confirm-title="$t('repository.restore-to-ui-workflow') + '?'"
       :confirm-description="$t('repository.restore-ui-workflow-description')"
-      @confirm="restoreToUIWorkflowType"
+      @confirm="() => restoreToUIWorkflowType(true)"
     />
     <div>
       <button
@@ -80,6 +80,153 @@
       </button>
     </div>
   </div>
+  <BBModal
+    v-if="state.showSetupSQLReviewCIModal"
+    class="relative overflow-hidden"
+    :title="$t('repository.sql-review-ci-setup')"
+    @close="state.showSetupSQLReviewCIModal = false"
+  >
+    <div class="space-y-4 max-w-[32rem]">
+      <div class="whitespace-pre-wrap">
+        {{
+          $t("repository.sql-review-ci-setup-modal", {
+            pr: repository.vcs.type.startsWith("GITLAB")
+              ? $t("repository.merge-request")
+              : $t("repository.pull-request"),
+          })
+        }}
+      </div>
+
+      <div class="flex justify-end pt-4 gap-x-2">
+        <a
+          class="btn-primary items-center space-x-2 mx-2 my-2"
+          :href="state.sqlReviewCIPullRequestURL"
+          target="_blank"
+        >
+          {{
+            $t("repository.sql-review-ci-setup-pr", {
+              pr: repository.vcs.type.startsWith("GITLAB")
+                ? $t("repository.merge-request")
+                : $t("repository.pull-request"),
+            })
+          }}
+        </a>
+      </div>
+    </div>
+  </BBModal>
+  <BBAlert
+    v-if="state.showSetupSQLReviewCIFailureModal"
+    :style="'CRITICAL'"
+    :ok-text="$t('common.retry')"
+    :title="$t('repository.sql-review-ci-setup-failed')"
+    @ok="
+      () => {
+        state.showSetupSQLReviewCIFailureModal = false;
+        createSQLReviewCI();
+      }
+    "
+    @cancel="
+      () => {
+        state.showSetupSQLReviewCIFailureModal = false;
+      }
+    "
+  >
+  </BBAlert>
+  <BBModal
+    v-if="state.showLoadingSQLReviewPRModal"
+    class="relative overflow-hidden"
+    :show-close="false"
+    :esc-closable="false"
+    :title="$t('repository.sql-review-ci-setup')"
+  >
+    <div
+      class="whitespace-pre-wrap max-w-[32rem] flex justify-start items-start gap-x-2"
+    >
+      <BBSpin class="mt-1" />
+      {{
+        $t("repository.sql-review-ci-loading-modal", {
+          pr: repository.vcs.type.startsWith("GITLAB")
+            ? $t("repository.merge-request")
+            : $t("repository.pull-request"),
+        })
+      }}
+    </div>
+  </BBModal>
+  <BBModal
+    v-if="state.showRestoreSQLReviewCIModal"
+    class="relative overflow-hidden"
+    :title="$t('repository.sql-review-ci-remove')"
+    @close="onSQLReviewCIModalClose"
+  >
+    <div class="space-y-4 max-w-[32rem]">
+      <div class="whitespace-pre-wrap">
+        <i18n-t keypath="repository.sql-review-ci-restore-modal">
+          <template #vcs>
+            {{
+              repository.vcs.type.startsWith("GITLAB")
+                ? "GitLab CI"
+                : "GitHub Action"
+            }}
+          </template>
+          <template #repository>
+            <a class="normal-link" :href="repository.webUrl" target="_blank">{{
+              repository.fullPath
+            }}</a>
+          </template>
+        </i18n-t>
+      </div>
+
+      <div class="flex justify-end pt-4 gap-x-2">
+        <button
+          type="button"
+          class="btn-normal"
+          @click.prevent="onSQLReviewCIModalClose"
+        >
+          {{ $t("common.close") }}
+        </button>
+      </div>
+    </div>
+  </BBModal>
+  <BBModal
+    v-if="state.showDisableSQLReviewCIModal"
+    class="relative overflow-hidden"
+    :title="$t('repository.sql-review-ci-remove')"
+    @close="state.showDisableSQLReviewCIModal = false"
+  >
+    <div class="space-y-4 max-w-[32rem]">
+      <div class="whitespace-pre-wrap">
+        <i18n-t keypath="repository.sql-review-ci-remove-modal">
+          <template #vcs>
+            {{
+              repository.vcs.type.startsWith("GITLAB")
+                ? "GitLab CI"
+                : "GitHub Action"
+            }}
+          </template>
+          <template #repository>
+            <a class="normal-link" :href="repository.webUrl" target="_blank">{{
+              repository.fullPath
+            }}</a>
+          </template>
+        </i18n-t>
+      </div>
+
+      <div class="flex justify-end pt-4 gap-x-2">
+        <button
+          type="button"
+          class="btn-normal"
+          @click.prevent="state.showDisableSQLReviewCIModal = false"
+        >
+          {{ $t("common.close") }}
+        </button>
+      </div>
+    </div>
+  </BBModal>
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.vcs-sql-review"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -96,12 +243,24 @@ import {
   SchemaChangeType,
 } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useProjectStore, useRepositoryStore } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useProjectStore,
+  useRepositoryStore,
+} from "@/store";
 import { isDev } from "@/utils";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
   schemaChangeType: SchemaChangeType;
+  showFeatureModal: boolean;
+  showSetupSQLReviewCIModal: boolean;
+  showSetupSQLReviewCIFailureModal: boolean;
+  showLoadingSQLReviewPRModal: boolean;
+  showDisableSQLReviewCIModal: boolean;
+  showRestoreSQLReviewCIModal: boolean;
+  sqlReviewCIPullRequestURL: string;
 }
 
 export default defineComponent({
@@ -132,8 +291,16 @@ export default defineComponent({
         filePathTemplate: props.repository.filePathTemplate,
         schemaPathTemplate: props.repository.schemaPathTemplate,
         sheetPathTemplate: props.repository.sheetPathTemplate,
+        enableSQLReviewCI: props.repository.enableSQLReviewCI,
       },
       schemaChangeType: props.project.schemaChangeType,
+      showFeatureModal: false,
+      showSetupSQLReviewCIModal: false,
+      showSetupSQLReviewCIFailureModal: false,
+      showLoadingSQLReviewPRModal: false,
+      showDisableSQLReviewCIModal: false,
+      showRestoreSQLReviewCIModal: false,
+      sqlReviewCIPullRequestURL: "",
     });
 
     watch(
@@ -145,6 +312,7 @@ export default defineComponent({
           filePathTemplate: cur.filePathTemplate,
           schemaPathTemplate: cur.schemaPathTemplate,
           sheetPathTemplate: cur.sheetPathTemplate,
+          enableSQLReviewCI: cur.enableSQLReviewCI,
         };
       }
     );
@@ -172,11 +340,29 @@ export default defineComponent({
             state.repositoryConfig.schemaPathTemplate ||
           props.repository.sheetPathTemplate !==
             state.repositoryConfig.sheetPathTemplate ||
+          props.repository.enableSQLReviewCI !==
+            state.repositoryConfig.enableSQLReviewCI ||
           props.project.schemaChangeType !== state.schemaChangeType)
       );
     });
 
-    const restoreToUIWorkflowType = () => {
+    const disableSQLReviewCI = computed(() => {
+      return (
+        props.repository.enableSQLReviewCI &&
+        !state.repositoryConfig.enableSQLReviewCI
+      );
+    });
+
+    const onSQLReviewCIModalClose = () => {
+      state.showRestoreSQLReviewCIModal = false;
+      restoreToUIWorkflowType(false);
+    };
+
+    const restoreToUIWorkflowType = (checkSQLReviewCI: boolean) => {
+      if (checkSQLReviewCI && props.repository.enableSQLReviewCI) {
+        state.showRestoreSQLReviewCIModal = true;
+        return;
+      }
       repositoryStore.deleteRepositoryByProjectId(props.project.id).then(() => {
         pushNotification({
           module: "bytebase",
@@ -186,7 +372,46 @@ export default defineComponent({
       });
     };
 
+    const createSQLReviewCI = async () => {
+      const repository = repositoryStore.getRepositoryByProjectId(
+        props.project.id
+      );
+
+      state.showLoadingSQLReviewPRModal = true;
+
+      try {
+        const sqlReviewCISetup = await repositoryStore.createSQLReviewCI({
+          projectId: props.project.id,
+          repositoryId: repository.id,
+        });
+        state.sqlReviewCIPullRequestURL = sqlReviewCISetup.pullRequestURL;
+        state.showSetupSQLReviewCIModal = true;
+        window.open(sqlReviewCISetup.pullRequestURL, "_blank");
+        repositoryStore.setRepositorySQLReviewCIEnabled({
+          projectId: props.project.id,
+          sqlReviewCIEnabled: true,
+        });
+      } catch {
+        state.showSetupSQLReviewCIFailureModal = true;
+      } finally {
+        state.showLoadingSQLReviewPRModal = false;
+      }
+    };
+
     const doUpdate = async () => {
+      if (
+        state.repositoryConfig.enableSQLReviewCI &&
+        !props.repository.enableSQLReviewCI &&
+        !hasFeature("bb.feature.vcs-sql-review")
+      ) {
+        state.showFeatureModal = true;
+        return;
+      }
+
+      const needSetupCI =
+        !props.repository.enableSQLReviewCI &&
+        state.repositoryConfig.enableSQLReviewCI;
+
       const repositoryPatch: RepositoryPatch = {};
       if (
         props.repository.branchFilter != state.repositoryConfig.branchFilter
@@ -219,6 +444,13 @@ export default defineComponent({
         repositoryPatch.sheetPathTemplate =
           state.repositoryConfig.sheetPathTemplate;
       }
+      if (
+        props.repository.enableSQLReviewCI !=
+        state.repositoryConfig.enableSQLReviewCI
+      ) {
+        repositoryPatch.enableSQLReviewCI =
+          state.repositoryConfig.enableSQLReviewCI;
+      }
 
       // Update project schemaChangeType field firstly.
       if (
@@ -234,10 +466,19 @@ export default defineComponent({
         });
       }
 
+      const disableSQLReview = disableSQLReviewCI.value;
+
       await repositoryStore.updateRepositoryByProjectId({
         projectId: props.project.id,
         repositoryPatch,
       });
+
+      if (needSetupCI) {
+        createSQLReviewCI();
+      } else if (disableSQLReview) {
+        state.showDisableSQLReviewCIModal = true;
+      }
+
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -250,7 +491,9 @@ export default defineComponent({
       repositoryInfo,
       allowUpdate,
       restoreToUIWorkflowType,
+      onSQLReviewCIModalClose,
       doUpdate,
+      createSQLReviewCI,
     };
   },
 });

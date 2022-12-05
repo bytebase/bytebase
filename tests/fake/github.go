@@ -13,12 +13,13 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 )
 
@@ -33,19 +34,33 @@ type GitHub struct {
 	repositories  map[string]*repositoryData
 }
 
+const publicKeyName = "public-key"
+
 type repositoryData struct {
 	webhooks []*github.WebhookCreateOrUpdate
 	// files is a map that the full file path is the key and the file content is the
 	// value.
 	files map[string]string
+	// refs is the map for repository branch.
+	// the map key is the branch ref, like "refs/heads/main".
+	refs map[string]*github.Branch
+	// secrets is the map for repository secret.
+	// the map key is the secret name, like "public-key".
+	secrets map[string]*github.RepositorySecret
+	// pullRequests is the map for repository pull request.
+	// the map key is the pull request id.
+	pullRequests map[int]struct {
+		Files []*github.PullRequestFile
+		*github.PullRequest
+	}
+	// commitsDiff is the map for commits compare.
+	// The map key has the format "from...to" which is SHA or branch name.
+	commitsDiff map[string]*github.CommitsDiff
 }
 
 // NewGitHub creates a new fake implementation of GitHub VCS provider.
 func NewGitHub(port int) VCSProvider {
-	e := echo.New()
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
+	e := newEchoServer()
 	gh := &GitHub{
 		port:          port,
 		echo:          e,
@@ -60,14 +75,23 @@ func NewGitHub(port int) VCSProvider {
 	g.GET("/repos/:owner/:repo/git/trees/:ref", gh.getRepositoryTree)
 	g.GET("/repos/:owner/:repo/contents/:filePath", gh.readRepositoryFile)
 	g.PUT("/repos/:owner/:repo/contents/:filePath", gh.createRepositoryFile)
+	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
+	g.POST("/repos/:owner/:repo/git/refs", gh.createRepositoryBranch)
+	g.POST("/repos/:owner/:repo/pulls", gh.createRepositoryPullRequest)
+	g.GET(
+		fmt.Sprintf("/repos/:owner/:repo/actions/secrets/%s", publicKeyName),
+		gh.getRepositoryPublicKey,
+	)
+	g.PUT("/repos/:owner/:repo/actions/secrets/:keyName", gh.updateRepositoryPublicKey)
+	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
+	g.GET("/repos/:owner/:repo/compare/:baseHead", gh.compareCommits)
 	return gh
 }
 
 func (gh *GitHub) createRepositoryWebhook(c echo.Context) error {
-	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
-	r, ok := gh.repositories[repositoryID]
-	if !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
 	}
 
 	body, err := io.ReadAll(c.Request().Body)
@@ -90,9 +114,8 @@ func (gh *GitHub) createRepositoryWebhook(c echo.Context) error {
 }
 
 func (gh *GitHub) getRepositoryCommit(c echo.Context) error {
-	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
-	if _, ok := gh.repositories[repositoryID]; !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
+	if _, err := gh.validRepository(c); err != nil {
+		return err
 	}
 
 	buf, err := json.Marshal(
@@ -111,10 +134,9 @@ func (gh *GitHub) getRepositoryCommit(c echo.Context) error {
 }
 
 func (gh *GitHub) getRepositoryTree(c echo.Context) error {
-	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
-	r, ok := gh.repositories[repositoryID]
-	if !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
 	}
 
 	var treeNodes []github.RepositoryTreeNode
@@ -138,10 +160,9 @@ func (gh *GitHub) getRepositoryTree(c echo.Context) error {
 }
 
 func (gh *GitHub) readRepositoryFile(c echo.Context) error {
-	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
-	r, ok := gh.repositories[repositoryID]
-	if !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
 	}
 
 	filePathEscaped := c.Param("filePath")
@@ -172,10 +193,9 @@ func (gh *GitHub) readRepositoryFile(c echo.Context) error {
 }
 
 func (gh *GitHub) createRepositoryFile(c echo.Context) error {
-	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
-	r, ok := gh.repositories[repositoryID]
-	if !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
 	}
 
 	filePathEscaped := c.Param("filePath")
@@ -202,6 +222,202 @@ func (gh *GitHub) createRepositoryFile(c echo.Context) error {
 	return nil
 }
 
+func (gh *GitHub) getRepositoryBranch(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	branchName := c.Param("branchName")
+	if _, ok := r.refs[fmt.Sprintf("refs/heads/%s", branchName)]; !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("branch not found: %v", branchName))
+	}
+
+	buf, err := json.Marshal(r.refs[fmt.Sprintf("refs/heads/%s", branchName)])
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository branch: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
+}
+
+func (gh *GitHub) createRepositoryBranch(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for creating repository branch: %v", err))
+	}
+
+	var branchCreate github.BranchCreate
+	if err = json.Unmarshal(body, &branchCreate); err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for creating repository branch: %v", err))
+	}
+
+	if _, ok := r.refs[branchCreate.Ref]; ok {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("the branch already exists: %v", branchCreate.Ref))
+	}
+
+	r.refs[branchCreate.Ref] = &github.Branch{
+		Ref: branchCreate.Ref,
+		Object: github.ReferenceObject{
+			SHA: branchCreate.SHA,
+		},
+	}
+
+	return c.String(http.StatusOK, "")
+}
+
+func (gh *GitHub) createRepositoryPullRequest(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for creating repository pull request: %v", err))
+	}
+
+	var pullRequestCreate vcs.PullRequestCreate
+	if err = json.Unmarshal(body, &pullRequestCreate); err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for creating repository pull request: %v", err))
+	}
+
+	if _, ok := r.refs[fmt.Sprintf("refs/heads/%s", pullRequestCreate.Head)]; !ok {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("the head branch not exists: %v", pullRequestCreate.Head))
+	}
+
+	prID := len(r.pullRequests) + 1
+	r.pullRequests[prID] = struct {
+		Files []*github.PullRequestFile
+		*github.PullRequest
+	}{
+		Files: []*github.PullRequestFile{},
+		PullRequest: &github.PullRequest{
+			HTMLURL: fmt.Sprintf("https://github.com/%s/%s/pull/%d", c.Param("owner"), c.Param("repo"), prID),
+		},
+	}
+
+	buf, err := json.Marshal(
+		r.pullRequests[prID],
+	)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for creating repository pull request: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
+}
+
+func (gh *GitHub) getRepositoryPublicKey(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	buf, err := json.Marshal(
+		r.secrets[publicKeyName],
+	)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository public key: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
+}
+
+func (gh *GitHub) updateRepositoryPublicKey(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for updating repository secret: %v", err))
+	}
+
+	var secretUpdate github.RepositorySecretUpdate
+	if err = json.Unmarshal(body, &secretUpdate); err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for updating repository secret: %v", err))
+	}
+
+	// The KeyID in RepositorySecretUpdate should be the repository public id.
+	if secretUpdate.KeyID != r.secrets[publicKeyName].KeyID {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("The key id not matched: %v", secretUpdate.KeyID))
+	}
+
+	keyName := c.Param("keyName")
+	r.secrets[keyName] = &github.RepositorySecret{
+		KeyID: fmt.Sprintf("%s_%d", keyName, time.Now().Unix()),
+		Key:   secretUpdate.EncryptedValue,
+	}
+
+	return c.String(http.StatusOK, "")
+}
+
+func (gh *GitHub) listPullRequestFile(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	prNumber, err := strconv.Atoi(c.Param("prID"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("The pull request id is invalid: %v", c.Param("prID")))
+	}
+
+	pullRequest, ok := r.pullRequests[prNumber]
+	if !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("Cannot found the pull request: %v", c.Param("prID")))
+	}
+
+	page, err := strconv.Atoi(c.QueryParam("page"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("Invalid page parameter %v", c.Param("page")))
+	}
+
+	prFiles := []*github.PullRequestFile{}
+	if page == 1 {
+		prFiles = pullRequest.Files
+	}
+
+	buf, err := json.Marshal(prFiles)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
+}
+
+func (gh *GitHub) compareCommits(c echo.Context) error {
+	r, err := gh.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	key := c.Param("baseHead")
+	diff, ok := r.commitsDiff[key]
+	if !ok {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find the diff key %s", key))
+	}
+
+	buf, err := json.Marshal(diff)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response body").SetInternal(err)
+	}
+
+	return c.String(http.StatusOK, string(buf))
+}
+
+func (gh *GitHub) validRepository(c echo.Context) (*repositoryData, error) {
+	repositoryID := fmt.Sprintf("%s/%s", c.Param("owner"), c.Param("repo"))
+	r, ok := gh.repositories[repositoryID]
+	if !ok {
+		return nil, c.String(http.StatusNotFound, fmt.Sprintf("GitHub repository %q does not exist", repositoryID))
+	}
+
+	return r, nil
+}
+
 // Run starts the GitHub VCS provider server.
 func (gh *GitHub) Run() error {
 	return gh.echo.Start(fmt.Sprintf(":%d", gh.port))
@@ -226,7 +442,69 @@ func (*GitHub) APIURL(instanceURL string) string {
 func (gh *GitHub) CreateRepository(id string) {
 	gh.repositories[id] = &repositoryData{
 		files: make(map[string]string),
+		secrets: map[string]*github.RepositorySecret{
+			publicKeyName: {
+				KeyID: fmt.Sprintf("publickeyid_%d", time.Now().Unix()),
+				// mock public key
+				Key: "YJf3Ojcv8TSEBCtR0wtTR/F2bD3nBl1lxiwkfV/TYQk=",
+			},
+		},
+		refs: map[string]*github.Branch{},
+		pullRequests: map[int]struct {
+			Files []*github.PullRequestFile
+			*github.PullRequest
+		}{},
+		commitsDiff: map[string]*github.CommitsDiff{},
 	}
+}
+
+// CreateBranch creates a new branch with the given name.
+func (gh *GitHub) CreateBranch(id, branchName string) error {
+	pd, ok := gh.repositories[id]
+	if !ok {
+		return errors.Errorf("github project %q doesn't exist", id)
+	}
+
+	if _, ok := pd.refs[fmt.Sprintf("refs/heads/%s", branchName)]; ok {
+		return errors.Errorf("branch %q already exists", branchName)
+	}
+
+	pd.refs[fmt.Sprintf("refs/heads/%s", branchName)] = &github.Branch{
+		Ref: fmt.Sprintf("refs/heads/%s", branchName),
+		Object: github.ReferenceObject{
+			SHA: "fake_github_commit_sha",
+		},
+	}
+
+	return nil
+}
+
+// AddCommitsDiff adds a commits diff.
+func (gh *GitHub) AddCommitsDiff(repositoryID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error {
+	r, ok := gh.repositories[repositoryID]
+	if !ok {
+		return errors.Errorf("GitHub repository %s doesn't exist", repositoryID)
+	}
+	key := fmt.Sprintf("%s...%s", fromCommit, toCommit)
+	commitsDiff := &github.CommitsDiff{
+		Files: []github.PullRequestFile{},
+	}
+	for _, fileDiff := range fileDiffList {
+		prFile := github.PullRequestFile{
+			FileName: fileDiff.Path,
+		}
+		switch fileDiff.Type {
+		case vcs.FileDiffTypeAdded:
+			prFile.Status = "added"
+		case vcs.FileDiffTypeModified:
+			prFile.Status = "modified"
+		case vcs.FileDiffTypeRemoved:
+			prFile.Status = "removed"
+		}
+		commitsDiff.Files = append(commitsDiff.Files, prFile)
+	}
+	r.commitsDiff[key] = commitsDiff
+	return nil
 }
 
 // SendWebhookPush sends out a webhook for a push event for the GitHub
@@ -298,4 +576,38 @@ func (gh *GitHub) GetFiles(repositoryID string, filePaths ...string) (map[string
 		}
 	}
 	return files, nil
+}
+
+// AddPullRequest creates a new pull request and add changed files to it.
+func (gh *GitHub) AddPullRequest(repositoryID string, prID int, files []*vcs.PullRequestFile) error {
+	r, ok := gh.repositories[repositoryID]
+	if !ok {
+		return errors.Errorf("github repository %q does not exist", repositoryID)
+	}
+
+	pullRequestFiles := []*github.PullRequestFile{}
+	for _, file := range files {
+		status := ""
+		if file.IsDeleted {
+			status = "removed"
+		}
+		pullRequestFiles = append(pullRequestFiles, &github.PullRequestFile{
+			FileName:    file.Path,
+			Status:      status,
+			SHA:         file.LastCommitID,
+			ContentsURL: fmt.Sprintf("https://github.com/%s/%s?ref=%s", repositoryID, url.QueryEscape(file.Path), file.LastCommitID),
+		})
+	}
+
+	r.pullRequests[prID] = struct {
+		Files []*github.PullRequestFile
+		*github.PullRequest
+	}{
+		Files: pullRequestFiles,
+		PullRequest: &github.PullRequest{
+			HTMLURL: fmt.Sprintf("https://github.com/%s/pull/%d", repositoryID, prID),
+		},
+	}
+
+	return nil
 }

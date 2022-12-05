@@ -5,15 +5,12 @@
     :disabled="disabled"
     :placeholder="$t('environment.select')"
     :show-prefix-item="true"
-    @select-item="(env) => $emit('select-environment-id', env.id)"
+    @select-item="(env: Environment) => $emit('select-environment-id', env.id)"
   >
     <template #menuItem="{ item: environment }">
       <div class="flex items-center">
         {{ environmentName(environment) }}
-        <ProtectedEnvironmentIcon
-          class="ml-1 group-hover:text-main-text"
-          :environment="environment"
-        />
+        <ProtectedEnvironmentIcon class="ml-1" :environment="environment" />
       </div>
     </template>
   </BBSelect>

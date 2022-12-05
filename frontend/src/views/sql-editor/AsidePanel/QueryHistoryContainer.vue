@@ -17,29 +17,23 @@
       <div
         v-for="history in data"
         :key="history.id"
-        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-100"
+        class="w-full px-1 pr-2 py-2 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
         @click="handleQueryHistoryClick(history)"
       >
         <div class="w-full flex flex-row justify-between items-center">
           <span class="text-xs text-gray-500">{{ history.createdAt }}</span>
-          <NDropdown
-            trigger="click"
-            :options="actionDropdownOptions"
-            @select="(key: string) => handleActionBtnClick(key, history)"
-            @clickoutside="handleActionBtnOutsideClick"
+          <span
+            class="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200"
           >
-            <NButton text @click.stop>
-              <template #icon>
-                <heroicons-outline:dots-horizontal
-                  class="h-4 w-4 text-gray-500"
-                />
-              </template>
-            </NButton>
-          </NDropdown>
+            <heroicons-outline:clipboard
+              class="w-4 h-4"
+              @click.stop="handleCopy(history)"
+            />
+          </span>
         </div>
         <p
           class="max-w-full mt-2 mb-1 text-sm break-words font-mono line-clamp-3"
-          v-html="history.formatedStatement"
+          v-html="history.formattedStatement"
         ></p>
       </div>
     </div>
@@ -66,9 +60,12 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useClipboard } from "@vueuse/core";
 
-import { useDialog } from "naive-ui";
-
-import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import {
+  pushNotification,
+  useTabStore,
+  useSQLEditorStore,
+  searchConnectionByName,
+} from "@/store";
 import { QueryHistory } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 
@@ -78,7 +75,6 @@ interface State {
 }
 
 const { t } = useI18n();
-const dialog = useDialog();
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 
@@ -87,8 +83,7 @@ const state = reactive<State>({
   currentActionHistory: null,
 });
 
-const { copy: copyTextToClipboard, isSupported: isCopySupported } =
-  useClipboard();
+const { copy: copyTextToClipboard } = useClipboard();
 
 const isLoading = computed(() => {
   return sqlEditorStore.isFetchingQueryHistory;
@@ -112,7 +107,7 @@ const data = computed(() => {
   return tempData.map((history) => {
     return {
       ...history,
-      formatedStatement: state.search
+      formattedStatement: state.search
         ? getHighlightHTMLByKeyWords(
             escape(history.statement),
             escape(state.search)
@@ -133,68 +128,31 @@ const notifyMessage = computed(() => {
   return "";
 });
 
-const actionDropdownOptions = computed(() => {
-  const options = [];
-
-  if (isCopySupported) {
-    options.push({
-      label: t("sql-editor.copy-code"),
-      key: "copy",
-    });
-  }
-
-  options.push({
-    label: t("common.delete"),
-    key: "delete",
-  });
-
-  return options;
-});
-
-const handleDeleteHistory = () => {
-  if (state.currentActionHistory) {
-    sqlEditorStore.deleteQueryHistory(state.currentActionHistory.id);
-  }
-};
-
-const handleActionBtnClick = (key: string, history: QueryHistory) => {
+const handleCopy = (history: QueryHistory) => {
   state.currentActionHistory = history;
-
-  if (key === "delete") {
-    const $dialog = dialog.create({
-      title: t("sql-editor.hint-tips.confirm-to-delete-this-history"),
-      type: "info",
-      onPositiveClick() {
-        handleDeleteHistory();
-        $dialog.destroy();
-      },
-      async onNegativeClick() {
-        state.currentActionHistory = null;
-        $dialog.destroy();
-      },
-      negativeText: t("common.cancel"),
-      positiveText: t("common.confirm"),
-      showIcon: false,
-    });
-  } else if (key === "copy") {
-    copyTextToClipboard(history.statement);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("sql-editor.notify.copy-code-succeed"),
-    });
-  }
-};
-
-const handleActionBtnOutsideClick = () => {
-  state.currentActionHistory = null;
+  copyTextToClipboard(history.statement);
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("sql-editor.notify.copy-code-succeed"),
+  });
 };
 
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  // Changing SQL statement is quite harmless, so we just update the current tab.
+  const { instanceId, databaseId, instanceName, databaseName, statement } =
+    queryHistory;
+  const connection = searchConnectionByName(
+    instanceId,
+    databaseId,
+    instanceName,
+    databaseName
+  );
+
+  // Open a new tab with the connection and statement.
+  tabStore.selectOrAddTempTab();
   tabStore.updateCurrentTab({
-    statement: queryHistory.statement,
-    selectedStatement: "",
+    connection,
+    statement,
   });
 };
 </script>

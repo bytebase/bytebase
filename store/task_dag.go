@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -59,7 +61,7 @@ func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*
 
 // GetTaskDAGByToTaskID gets a single TaskDAG by ToTaskID.
 func (s *Store) GetTaskDAGByToTaskID(ctx context.Context, id int) (*api.TaskDAG, error) {
-	taskDAGList, err := s.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: id})
+	taskDAGList, err := s.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -132,6 +134,13 @@ func createTaskDAGImpl(ctx context.Context, tx *Tx, create *api.TaskDAGCreate) (
 }
 
 func findTaskDAGRawListImpl(ctx context.Context, tx *Tx, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.FromTaskID; v != nil {
+		where, args = append(where, fmt.Sprintf("from_task_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ToTaskID; v != nil {
+		where, args = append(where, fmt.Sprintf("to_task_id = $%d", len(args)+1)), append(args, *v)
+	}
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -141,8 +150,9 @@ func findTaskDAGRawListImpl(ctx context.Context, tx *Tx, find *api.TaskDAGFind) 
 			to_task_id,
 			payload
 		FROM task_dag
-		WHERE to_task_id = $1
-	`, find.ToTaskID)
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
 	if err != nil {
 		return nil, FormatError(err)
 	}

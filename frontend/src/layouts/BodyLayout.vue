@@ -36,14 +36,21 @@
             class="flex-shrink-0 flex border-t border-block-border px-3 py-2"
           >
             <router-link
+              v-if="!isFreePlan"
               to="/setting/subscription"
               exact-active-class
-              class="text-sm text-accent flex"
-              :class="isFreePlan ? 'text-accent' : ''"
+              class="text-sm flex"
+            >
+              {{ $t(currentPlan) }}
+            </router-link>
+            <div
+              v-else
+              class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
+              @click="state.showTrialModal = true"
             >
               <heroicons-solid:sparkles class="w-5 h-5" />
               {{ $t(currentPlan) }}
-            </router-link>
+            </div>
             <div class="text-sm ml-auto text-control-light tooltip-wrapper">
               {{ version }}
               <span v-if="gitCommit" class="tooltip"
@@ -83,15 +90,24 @@
         </div>
         <div class="flex-shrink-0 flex border-t border-block-border px-3 py-2">
           <router-link
+            v-if="!isFreePlan"
             to="/setting/subscription"
             exact-active-class
-            class="text-sm flex"
-            :class="isFreePlan ? 'text-accent' : ''"
+            class="text-sm flex whitespace-nowrap mr-1"
           >
-            <heroicons-outline:sparkles class="w-5 h-5" />
             {{ $t(currentPlan) }}
           </router-link>
-          <div class="text-sm ml-auto text-control-light tooltip-wrapper">
+          <div
+            v-else
+            class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
+            @click="state.showTrialModal = true"
+          >
+            <heroicons-solid:sparkles class="w-5 h-5" />
+            {{ $t(currentPlan) }}
+          </div>
+          <div
+            class="text-sm ml-auto text-control-light tooltip-wrapper whitespace-nowrap truncate"
+          >
             {{ version }}
             <span v-if="gitCommit" class="tooltip"
               >Git hash {{ gitCommit }}</span
@@ -146,6 +162,10 @@
       </div>
     </div>
   </div>
+  <TrialModal
+    v-if="state.showTrialModal"
+    @cancel="state.showTrialModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -166,6 +186,7 @@ import {
 
 interface LocalState {
   showMobileOverlay: boolean;
+  showTrialModal: boolean;
 }
 
 export default defineComponent({
@@ -183,6 +204,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       showMobileOverlay: false,
+      showTrialModal: false,
     });
 
     const currentUser = useCurrentUser();

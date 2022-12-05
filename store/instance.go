@@ -36,6 +36,7 @@ type instanceRaw struct {
 	ExternalLink  string
 	Host          string
 	Port          string
+	Database      string
 }
 
 // toInstance creates an instance of Instance based on the instanceRaw.
@@ -61,6 +62,7 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 		ExternalLink:  raw.ExternalLink,
 		Host:          raw.Host,
 		Port:          raw.Port,
+		Database:      raw.Database,
 	}
 }
 
@@ -197,7 +199,8 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engin
 			instance.engine_version,
 			instance.external_link,
 			instance.host,
-			instance.port
+			instance.port,
+			instance.database
 		FROM instance
 		JOIN db ON db.instance_id = instance.id
 		JOIN backup_setting AS bs ON db.id = bs.database_id
@@ -227,6 +230,7 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engin
 			&instanceRaw.ExternalLink,
 			&instanceRaw.Host,
 			&instanceRaw.Port,
+			&instanceRaw.Database,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -252,7 +256,7 @@ func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
 	}
-	dataSourceRawList, err := s.FindDataSource(ctx, dataSourceFind)
+	dataSourceRawList, err := s.findDataSource(ctx, dataSourceFind)
 	if err != nil {
 		return "", err
 	}
@@ -269,7 +273,7 @@ func (s *Store) GetInstanceSslSuiteByID(ctx context.Context, instanceID int) (db
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
 	}
-	dataSourceRawList, err := s.FindDataSource(ctx, dataSourceFind)
+	dataSourceRawList, err := s.findDataSource(ctx, dataSourceFind)
 	if err != nil {
 		return db.TLSConfig{}, err
 	}
@@ -308,7 +312,7 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 	}
 	instance.Environment = env
 
-	dataSourceList, err := s.FindDataSource(ctx, &api.DataSourceFind{
+	dataSourceList, err := s.findDataSource(ctx, &api.DataSourceFind{
 		InstanceID: &instance.ID,
 	})
 	if err != nil {
@@ -474,10 +478,11 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *api.InstanceCreate)
 			engine,
 			external_link,
 			host,
-			port
+			port,
+			database
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`
 	var instanceRaw instanceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -489,6 +494,7 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *api.InstanceCreate)
 		create.ExternalLink,
 		create.Host,
 		create.Port,
+		create.Database,
 	).Scan(
 		&instanceRaw.ID,
 		&instanceRaw.RowStatus,
@@ -503,6 +509,7 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *api.InstanceCreate)
 		&instanceRaw.ExternalLink,
 		&instanceRaw.Host,
 		&instanceRaw.Port,
+		&instanceRaw.Database,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -529,7 +536,8 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 			engine_version,
 			external_link,
 			host,
-			port
+			port,
+			database
 		FROM instance
 		WHERE `+where,
 		args...,
@@ -557,6 +565,7 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 			&instanceRaw.ExternalLink,
 			&instanceRaw.Host,
 			&instanceRaw.Port,
+			&instanceRaw.Database,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -591,6 +600,9 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*
 	if v := patch.Port; v != nil {
 		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Database; v != nil {
+		set, args = append(set, fmt.Sprintf("database = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -600,7 +612,7 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`, len(args)),
 		args...,
 	).Scan(
@@ -617,6 +629,7 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*
 		&instanceRaw.ExternalLink,
 		&instanceRaw.Host,
 		&instanceRaw.Port,
+		&instanceRaw.Database,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("instance ID not found: %d", patch.ID)}

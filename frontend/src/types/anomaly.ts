@@ -1,10 +1,13 @@
 import {
   AnomalyId,
   BackupPlanPolicySchedule,
+  Database,
   DatabaseId,
   EnvironmentId,
+  Instance,
   InstanceId,
   Principal,
+  RowStatus,
 } from ".";
 
 export type AnomalyType =
@@ -53,7 +56,9 @@ export type Anomaly = {
 
   // Related fields
   instanceId: InstanceId;
+  instance: Instance;
   databaseId?: DatabaseId;
+  database?: Database;
 
   // Standard fields
   creator: Principal;
@@ -69,8 +74,6 @@ export type Anomaly = {
 export type AnomalyFind = {
   instanceId?: InstanceId;
   databaseId?: DatabaseId;
-
-  // Not supported by server-side yet.
-  // rowStatus?: RowStatus;
-  // type?: AnomalyType;
+  rowStatus?: RowStatus;
+  type?: AnomalyType;
 };

@@ -17,7 +17,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -41,7 +41,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    1,
 				},
@@ -53,14 +53,14 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    1,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    1,
 				},
@@ -90,19 +90,23 @@ func TestIndexPkType(t *testing.T) {
 		},
 		// ALTER TABLE ADD COLUMN OPTION PRIMARY KEY
 		{
-			Statement: `ALTER TABLE t ADD COLUMN id VARCHAR(5) PRIMARY KEY`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN id VARCHAR(5) PRIMARY KEY`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN id INT PRIMARY KEY`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN id INT PRIMARY KEY`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -114,38 +118,44 @@ func TestIndexPkType(t *testing.T) {
 		},
 		// ALTER TABLE ADD COLUMN ADD PRIAMRY KEY CONSTRAINT
 		{
-			Statement: `ALTER TABLE t ADD COLUMN id VARCHAR(5), ADD PRIMARY KEY (id)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN id VARCHAR(5), ADD PRIMARY KEY (id)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 VARCHAR(5), ADD COLUMN id3 VARCHAR(5), ADD PRIMARY KEY (id, id2, id3)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 VARCHAR(5), ADD COLUMN id3 VARCHAR(5), ADD PRIMARY KEY (id, id2, id3)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
-					Line:    1,
+					Line:    3,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 BIGINT, ADD PRIMARY KEY (id, id2)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 BIGINT, ADD PRIMARY KEY (id, id2)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -156,7 +166,9 @@ func TestIndexPkType(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN id BIGINT, ADD PRIMARY KEY (id)`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t ADD COLUMN id BIGINT, ADD PRIMARY KEY (id)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -175,7 +187,7 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
 					Line:    2,
 				},
@@ -189,14 +201,14 @@ func TestIndexPkType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
 					Line:    2,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)",
 					Line:    2,
 				},
@@ -230,19 +242,23 @@ func TestIndexPkType(t *testing.T) {
 		},
 		// ALTER TABLE MODIFY COLUMN
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN id VARCHAR(5) PRIMARY KEY;`,
+			Statement: `
+				CREATE TABLE t(id int);
+				ALTER TABLE t MODIFY COLUMN id VARCHAR(5) PRIMARY KEY;`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN id INT(5) PRIMARY KEY;`,
+			Statement: `
+				CREATE TABLE t(id int);
+				ALTER TABLE t MODIFY COLUMN id INT(5) PRIMARY KEY;`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -254,19 +270,23 @@ func TestIndexPkType(t *testing.T) {
 		},
 		// ALTER TABLE CHANGE COLUMN
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY`,
+			Statement: `
+				CREATE TABLE t(id int);
+				ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexPKType,
-					Title:   "index.pk-type",
+					Title:   "index.pk-type-limit",
 					Content: "Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY`,
+			Statement: `
+				CREATE TABLE t(id int);
+				ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -279,7 +299,7 @@ func TestIndexPkType(t *testing.T) {
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &IndexPkTypeAdvisor{}, &advisor.SQLReviewRule{
-		Type:    advisor.SchemaRuleIndexPKType,
+		Type:    advisor.SchemaRuleIndexPKTypeLimit,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, advisor.MockMySQLDatabase)

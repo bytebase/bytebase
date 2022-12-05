@@ -2,7 +2,10 @@ categoryList:
   - type: database-management
     featureList:
       - instance-count
+      - environment-count
+      - task-count-in-issue
       - schema-change
+      - sync-schema
       - migration-history
       - sql-editor
       - disaster-recovery
@@ -11,6 +14,7 @@ categoryList:
       - anomaly-detection
       - schedule-change
       - review-and-backup-policy
+      - read-replica
       - tenancy
   - type: collaboration
     featureList:
@@ -25,6 +29,10 @@ categoryList:
       - rbac
       - 3rd-party-auth
       - sync-members-from-vcs
+      - dba-workflow
+      - environment-tier
+      - sensitive-data
+      - access-control
   - type: branding
     featureList:
       - branding-logo
@@ -39,9 +47,14 @@ planList:
     featureList:
       - type: instance-count
         content: instance-upto-5
+      - type: environment-count
+        content: environment-upto-2
+      - type: task-count-in-issue
+        content: task-upto-4
       - type: schema-change
         content: schema-change-basic
         tooltip: schema-change-basic-tooltip
+      - type: sync-schema
       - type: migration-history
       - type: sql-editor
       - type: disaster-recovery
@@ -56,13 +69,17 @@ planList:
         tooltip: anomaly-detection-basic-tooltip
       - type: ui-based-sql-review
       - type: vsc-workflow
+        content: vsc-workflow-basic
       - type: shareable-query-link
       - type: im-integration
+        content: im-integration-basic
+        tooltip: im-integration-basic-tooltip
       - type: inbox-notification
       - type: activity-log
     mainFeatureList:
       - community-support
       - review-workflow
+      - gitops
       - sql-editor
       - database-backup-restore
       - im-integration
@@ -76,9 +93,14 @@ planList:
     featureList:
       - type: instance-count
         content: instance-minimum-5
+      - type: environment-count
+        content: environment-unlimited
+      - type: task-count-in-issue
+        content: task-unlimited
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
+      - type: sync-schema
       - type: migration-history
       - type: sql-editor
       - type: disaster-recovery
@@ -95,14 +117,16 @@ planList:
       - type: review-and-backup-policy
       - type: ui-based-sql-review
       - type: vsc-workflow
+        content: vsc-workflow-basic
       - type: shareable-query-link
       - type: im-integration
+        content: im-integration-basic
+        tooltip: im-integration-basic-tooltip
       - type: inbox-notification
       - type: activity-log
       - type: rbac
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
-      - type: branding-logo
     mainFeatureList:
       - email-support
       - everything-in-free-plan
@@ -110,6 +134,8 @@ planList:
       - gitlab-login
       - sql-check-anomaly-detection
       - review-and-backup-policy
+      - online-schema-migration
+      - pitr
   - type: 2
     title: enterprise
     trialDays: 0
@@ -120,9 +146,14 @@ planList:
     featureList:
       - type: instance-count
         content: instance-customized
+      - type: environment-count
+        content: environment-unlimited
+      - type: task-count-in-issue
+        content: task-unlimited
       - type: schema-change
         content: schema-change-advanced
         tooltip: schema-change-advanced-tooltip
+      - type: sync-schema
       - type: migration-history
       - type: sql-editor
       - type: disaster-recovery
@@ -137,19 +168,31 @@ planList:
         tooltip: anomaly-detection-advanced-tooltip
       - type: schedule-change
       - type: review-and-backup-policy
+      - type: read-replica
       - type: tenancy
       - type: ui-based-sql-review
       - type: vsc-workflow
+        content: vsc-workflow-advanced
+        tooltip: vsc-workflow-advanced-tooltip
       - type: shareable-query-link
       - type: im-integration
+        content: im-integration-advanced
+        tooltip: im-integration-advanced-tooltip
       - type: inbox-notification
       - type: activity-log
       - type: rbac
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
+      - type: dba-workflow
+        tooltip: dba-workflow-tooltip
+      - type: environment-tier
+      - type: sensitive-data
+      - type: access-control
       - type: branding-logo
     mainFeatureList:
       - sla
       - everything-in-team-plan
       - multi-tenancy
+      - dba-workflow
+      - environment-tier
       - more-to-come

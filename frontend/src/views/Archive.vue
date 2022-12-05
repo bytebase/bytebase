@@ -44,7 +44,7 @@ import EnvironmentTable from "../components/EnvironmentTable.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import ProjectTable from "../components/ProjectTable.vue";
 import { Environment, Instance, Project, UNKNOWN_ID } from "../types";
-import { isDBAOrOwner } from "../utils";
+import { hasWorkspacePermission } from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import {
@@ -88,7 +88,12 @@ export default defineComponent({
         });
       }
 
-      if (isDBAOrOwner(currentUser.value.role)) {
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-instance",
+          currentUser.value.role
+        )
+      ) {
         instanceStore.fetchInstanceList(["ARCHIVED"]);
 
         useEnvironmentStore().fetchEnvironmentList(["ARCHIVED"]);
@@ -110,13 +115,29 @@ export default defineComponent({
     const environmentList = useEnvironmentList(["ARCHIVED"]);
 
     const tabItemList = computed((): BBTabFilterItem[] => {
-      return isDBAOrOwner(currentUser.value.role)
-        ? [
-            { title: t("common.project"), alert: false },
-            { title: t("common.instance"), alert: false },
-            { title: t("common.environment"), alert: false },
-          ]
-        : [{ title: t("common.instance"), alert: false }];
+      const list: BBTabFilterItem[] = [
+        { title: t("common.project"), alert: false },
+      ];
+
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-instance",
+          currentUser.value.role
+        )
+      ) {
+        list.push({ title: t("common.instance"), alert: false });
+      }
+
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-environment",
+          currentUser.value.role
+        )
+      ) {
+        list.push({ title: t("common.environment"), alert: false });
+      }
+
+      return list;
     });
 
     const filteredProjectList = (list: Project[]) => {

@@ -1,5 +1,11 @@
 <template>
   <div class="">
+    <FeatureAttention
+      v-if="!hasRBACFeature"
+      custom-class="my-5"
+      feature="bb.feature.rbac"
+      :description="$t('subscription.features.bb-feature-rbac.desc')"
+    />
     <span class="text-lg font-medium leading-7 text-main">
       {{ $t("project.settings.manage-member") }}
     </span>
@@ -170,7 +176,7 @@ import {
   ProjectRoleType,
   UNKNOWN_ID,
 } from "../types";
-import { isOwner, isProjectOwner } from "../utils";
+import { hasProjectPermission, hasWorkspacePermission } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
@@ -229,8 +235,13 @@ export default defineComponent({
         return false;
       }
 
-      // Allow workspace owner here in case project owners are not available.
-      if (isOwner(currentUser.value.role)) {
+      // Allow workspace roles having manage project permission here in case project owners are not available.
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          currentUser.value.role
+        )
+      ) {
         return true;
       }
 
@@ -240,7 +251,12 @@ export default defineComponent({
           // only member with the same role provider as that of the project will be consider a valid member
           member.roleProvider === props.project.roleProvider
         ) {
-          if (isProjectOwner(member.role)) {
+          if (
+            hasProjectPermission(
+              "bb.permission.project.manage-member",
+              member.role
+            )
+          ) {
             return true;
           }
         }

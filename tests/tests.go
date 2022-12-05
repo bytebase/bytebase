@@ -4,6 +4,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -14,21 +15,27 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	// Import pg driver.
+	// init() in pgx/v5/stdlib will register it's pgx driver.
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/bin/server/cmd"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/server"
+	componentConfig "github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
@@ -41,18 +48,50 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);`
+	migrationStatement2 = `
+	CREATE TABLE book2 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);`
+	migrationStatement3 = `
+	CREATE TABLE book3 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);`
 	bookTableQuery      = "SELECT * FROM sqlite_schema WHERE type = 'table' AND tbl_name = 'book';"
 	bookSchemaSQLResult = `[["type","name","tbl_name","rootpage","sql"],["TEXT","TEXT","TEXT","INT","TEXT"],[["table","book","book",2,"CREATE TABLE book (\n\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\tname TEXT NULL\n\t)"]]]`
 	bookDataQuery       = `SELECT * FROM book;`
 	bookDataSQLResult   = `[["id","name"],["INTEGER","TEXT"],[[1,"byte"],[2,null]]]`
 
-	dataUpdateStatement = `
+	dataUpdateStatementWrong = "INSERT INTO book(name) xxx"
+	dataUpdateStatement      = `
 	INSERT INTO book(name) VALUES
 		("byte"),
 		(NULL);
 	`
-	dumpedSchema = "" +
-		`CREATE TABLE book (
+	dumpedSchema = `CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+`
+	dumpedSchema2 = `CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book2 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+`
+	dumpedSchema3 = `CREATE TABLE book (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book2 (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NULL
+	);
+CREATE TABLE book3 (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);
@@ -102,106 +141,201 @@ var (
 )
 
 type controller struct {
-	server      *server.Server
-	client      *http.Client
-	cookie      string
-	vcsProvider fake.VCSProvider
+	server         *server.Server
+	profile        componentConfig.Profile
+	client         *http.Client
+	cookie         string
+	vcsProvider    fake.VCSProvider
+	feishuProvider *fake.Feishu
 
-	rootURL string
-	apiURL  string
-	vcsURL  string
+	rootURL    string
+	apiURL     string
+	vcsURL     string
+	openAPIURL string
+	feishuURL  string
 }
 
-func getTestPort(testName string) int {
-	// We allocates 4 ports for each of the integration test, who probably would start
-	// the Bytebase server, Postgres, MySQL and GitLab.
-	tests := []string{
-		"TestServiceRestart",
-		"TestSchemaAndDataUpdate",
-		"TestVCS/GitLab",
-		"TestVCS/GitHub",
-		"TestVCS_SDL/GitLab",
-		"TestVCS_SDL/GitHub",
-		"TestWildcardInVCSFilePathTemplate/emptyBaseAndMixAsterisks",
-		"TestWildcardInVCSFilePathTemplate/singleAsterisk",
-		"TestWildcardInVCSFilePathTemplate/doubleAsterisks",
-		"TestWildcardInVCSFilePathTemplate/mixAsterisks",
-		"TestWildcardInVCSFilePathTemplate/placeholderAsFolder",
-		"TestTenant",
-		"TestTenantVCS/GitLab",
-		"TestTenantVCS/GitHub",
-		"TestTenantDatabaseNameTemplate",
-		"TestGhostSchemaUpdate",
-		"TestTenantVCSDatabaseNameTemplate/GitLab",
-		"TestTenantVCSDatabaseNameTemplate/GitHub",
-		"TestBootWithExternalPg",
-		"TestSheetVCS/GitLab",
-		"TestSheetVCS/GitHub",
-		"TestPrepare",
+type config struct {
+	dataDir                 string
+	vcsProviderCreator      fake.VCSProviderCreator
+	feishuProverdierCreator fake.FeishuProviderCreator
+}
 
-		// PITR related cases
-		"TestRestoreToNewDatabase",
-		"TestPITRGeneral",
-		"TestPITRDropDatabase",
-		"TestPITRInvalidTimePoint",
-		"TestPITRTwice",
-		"TestPITRToNewDatabaseInAnotherInstance",
+var (
+	mu       sync.Mutex
+	nextPort = 1234
 
-		"TestCheckEngineInnoDB",
-		"TestCheckServerVersionAndBinlogForPITR",
-		"TestFetchBinlogFiles",
+	// Shared external PG server variables.
+	externalPgUser     = "bbexternal"
+	externalPgPort     = 21113
+	externalPgBinDir   string
+	externalPgDataDir  string
+	nextDatabaseNumber = 20210113
 
-		"TestSQLReviewForMySQL",
-		"TestSQLReviewForPostgreSQL",
+	// resourceDirOverride is the shared resource directory.
+	resourceDirOverride string
+)
 
-		"TestArchiveProject",
-	}
-	port := 1234
-	for _, name := range tests {
-		if testName == name {
-			return port
-		}
-		port += 4
-	}
-	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
+// getTestPort reserves and returns a port.
+func getTestPort() int {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextPort
+	nextPort++
+	return p
+}
+
+// getTestPortForEmbeddedPg reserves two ports, one for server and one for postgres server.
+func getTestPortForEmbeddedPg() int {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextPort
+	nextPort += 2
+	return p
+}
+
+// getTestDatabaseString returns a unique database name in external pg database server.
+func getTestDatabaseString() string {
+	mu.Lock()
+	defer mu.Unlock()
+	p := nextDatabaseNumber
+	nextDatabaseNumber++
+	return fmt.Sprintf("bbtest%d", p)
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
-	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
+	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
+		return err
+	}
+
+	pgMainURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, "postgres", common.GetPostgresSocketDir())
+	db, err := sql.Open("pgx", pgMainURL)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	databaseName := getTestDatabaseString()
+	if _, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", databaseName)); err != nil {
+		return err
+	}
+
+	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
+	serverPort := getTestPort()
+	profile := getTestProfileWithExternalPg(config.dataDir, resourceDirOverride, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
 	}
 	ctl.server = server
+	ctl.profile = profile
 
-	return ctl.start(ctx, vcsProviderCreator, port)
+	return ctl.start(ctx, serverPort)
 }
 
 // StartServer starts the main server with embed Postgres.
-func (ctl *controller) StartServer(ctx context.Context, dataDir string, vcsProviderCreator fake.VCSProviderCreator, port int) error {
-	// start main server.
+func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	log.SetLevel(zap.DebugLevel)
-	profile := cmd.GetTestProfile(dataDir, port)
+	if err := ctl.startMockServers(config.vcsProviderCreator, config.feishuProverdierCreator); err != nil {
+		return err
+	}
+	serverPort := getTestPortForEmbeddedPg()
+	profile := getTestProfile(config.dataDir, resourceDirOverride, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
 	}
 	ctl.server = server
+	ctl.profile = profile
 
-	return ctl.start(ctx, vcsProviderCreator, port)
+	return ctl.start(ctx, serverPort)
+}
+
+// GetTestProfile will return a profile for testing.
+// We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
+func getTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL string) componentConfig.Profile {
+	// Using flags.port + 1 as our datastore port
+	datastorePort := port + 1
+	return componentConfig.Profile{
+		Mode:                 common.ReleaseModeDev,
+		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
+		DatastorePort:        datastorePort,
+		PgUser:               "bbtest",
+		DataDir:              dataDir,
+		ResourceDirOverride:  resourceDirOverride,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
+		BackupStorageBackend: api.BackupStorageBackendLocal,
+		FeishuAPIURL:         feishuAPIURL,
+	}
+}
+
+// GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
+// We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
+// pgURL for connect to Postgres.
+func getTestProfileWithExternalPg(dataDir, resourceDirOverride string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
+	return componentConfig.Profile{
+		Mode:                 common.ReleaseModeDev,
+		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
+		PgUser:               pgUser,
+		DataDir:              dataDir,
+		ResourceDirOverride:  resourceDirOverride,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
+		BackupStorageBackend: api.BackupStorageBackendLocal,
+		FeishuAPIURL:         feishuAPIURL,
+		PgURL:                pgURL,
+	}
+}
+
+func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreator, feishuProviderCreator fake.FeishuProviderCreator) error {
+	// Set up VCS provider.
+	vcsPort := getTestPort()
+	ctl.vcsProvider = vcsProviderCreator(vcsPort)
+	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
+
+	// Set up fake feishu server.
+	if feishuProviderCreator != nil {
+		feishuPort := getTestPort()
+		ctl.feishuProvider = feishuProviderCreator(feishuPort)
+		ctl.feishuURL = fmt.Sprintf("http://localhost:%d", feishuPort)
+	}
+
+	errChan := make(chan error, 1)
+
+	go func() {
+		if err := ctl.vcsProvider.Run(); err != nil {
+			errChan <- errors.Wrap(err, "failed to run vcsProvider server")
+		}
+	}()
+
+	if feishuProviderCreator != nil {
+		go func() {
+			if err := ctl.feishuProvider.Run(); err != nil {
+				errChan <- errors.Wrap(err, "failed to run feishuProvider server")
+			}
+		}()
+	}
+
+	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
+		return errors.Wrap(err, "failed to wait for vcsProvider to start")
+	}
+
+	if feishuProviderCreator != nil {
+		if err := waitForFeishuStart(ctl.feishuProvider, errChan); err != nil {
+			return errors.Wrap(err, "failed to wait for feishuProvider to start")
+		}
+	}
+
+	return nil
 }
 
 // start only called by StartServer() and StartServerWithExternalPg().
-func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSProviderCreator, port int) error {
+func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
-
-	// Set up VCS provider.
-	vcsPort := port + 2
-	ctl.vcsProvider = vcsProviderCreator(vcsPort)
-	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
+	ctl.openAPIURL = fmt.Sprintf("http://localhost:%d/v1", port)
 
 	errChan := make(chan error, 1)
 
@@ -211,17 +345,8 @@ func (ctl *controller) start(ctx context.Context, vcsProviderCreator fake.VCSPro
 		}
 	}()
 
-	go func() {
-		if err := ctl.vcsProvider.Run(); err != nil {
-			errChan <- errors.Wrap(err, "failed to run vcsProvider server")
-		}
-	}()
-
 	if err := waitForServerStart(ctl.server, errChan); err != nil {
 		return errors.Wrap(err, "failed to wait for server to start")
-	}
-	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
-		return errors.Wrap(err, "failed to wait for vcsProvider to start")
 	}
 
 	// initialize controller clients.
@@ -269,6 +394,26 @@ func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 		select {
 		case <-ticker.C:
 			addr := p.ListenerAddr()
+			if addr != nil && strings.Contains(addr.String(), ":") {
+				return nil // was started
+			}
+		case err := <-errChan:
+			if err == http.ErrServerClosed {
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+func waitForFeishuStart(f *fake.Feishu, errChan <-chan error) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			addr := f.ListenerAddr()
 			if addr != nil && strings.Contains(addr.String(), ":") {
 				return nil // was started
 			}
@@ -399,6 +544,28 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 	return resp.Body, nil
 }
 
+// postOpenAPI sends a openAPI POST request.
+func (ctl *controller) postOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", ctl.openAPIURL, shortURL)
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "fail to create a new POST request(%q)", url)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "fail to send a POST request(%q)", url)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read http response body")
+		}
+		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
+}
+
 // post sends a POST client request.
 func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
@@ -464,6 +631,42 @@ func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, e
 	return resp.Body, nil
 }
 
+func (ctl *controller) createPrincipal(principalCreate api.PrincipalCreate) (*api.Principal, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &principalCreate); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal principal create")
+	}
+
+	body, err := ctl.post("/principal", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	principal := new(api.Principal)
+	if err = jsonapi.UnmarshalPayload(body, principal); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal post principal response")
+	}
+	return principal, nil
+}
+
+func (ctl *controller) createMember(memberCreate api.MemberCreate) (*api.Member, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &memberCreate); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal member create")
+	}
+
+	body, err := ctl.post("/member", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	member := new(api.Member)
+	if err = jsonapi.UnmarshalPayload(body, member); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal post member response")
+	}
+	return member, nil
+}
+
 // getProjects gets the projects.
 func (ctl *controller) getProjects() ([]*api.Project, error) {
 	body, err := ctl.get("/project", nil)
@@ -519,7 +722,7 @@ func (ctl *controller) patchProject(projectPatch api.ProjectPatch) error {
 	return nil
 }
 
-func (ctl *controller) createEnvrionment(environmentCreate api.EnvironmentCreate) (*api.Environment, error) {
+func (ctl *controller) createEnvironment(environmentCreate api.EnvironmentCreate) (*api.Environment, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &environmentCreate); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal environment create")
@@ -577,6 +780,9 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	if databaseFind.ProjectID != nil {
 		params["project"] = fmt.Sprintf("%d", *databaseFind.ProjectID)
 	}
+	if databaseFind.Name != nil {
+		params["name"] = *databaseFind.Name
+	}
 	body, err := ctl.get("/database", params)
 	if err != nil {
 		return nil, err
@@ -612,6 +818,16 @@ func (ctl *controller) setLicense() error {
 	return nil
 }
 
+func (ctl *controller) removeLicense() error {
+	err := ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
+		License: "",
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to switch plan")
+	}
+	return nil
+}
+
 func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, patch); err != nil {
@@ -624,6 +840,19 @@ func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error 
 	}
 
 	return nil
+}
+
+func (ctl *controller) getInstanceByID(instanceID int) (*api.Instance, error) {
+	body, err := ctl.get(fmt.Sprintf("/instance/%d", instanceID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	instance := new(api.Instance)
+	if err = jsonapi.UnmarshalPayload(body, instance); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal get instance response")
+	}
+	return instance, nil
 }
 
 // addInstance adds an instance.
@@ -775,13 +1004,13 @@ func (ctl *controller) patchIssueStatus(issueStatusPatch api.IssueStatusPatch) (
 }
 
 // patchTaskStatus patches the status of a task in the pipeline stage.
-func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int) (*api.Task, error) {
+func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipelineID int, taskID int) (*api.Task, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &taskStatusPatch); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal patchTaskStatus")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d/status", pipelineID, taskStatusPatch.ID), buf)
+	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/task/%d/status", pipelineID, taskID), buf)
 	if err != nil {
 		return nil, err
 	}
@@ -827,10 +1056,9 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 			if task.Status == api.TaskPendingApproval {
 				if _, err := ctl.patchTaskStatus(
 					api.TaskStatusPatch{
-						ID:     task.ID,
 						Status: api.TaskPending,
 					},
-					issue.Pipeline.ID); err != nil {
+					issue.Pipeline.ID, task.ID); err != nil {
 					return errors.Wrapf(err, "failed to patch task status for task %d", task.ID)
 				}
 				return nil
@@ -903,10 +1131,18 @@ func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatu
 	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueTasksWithStageApproval, false)
 }
 
+// waitIssuePipelineWithNoApproval waits for pipeline to finish and do nothing when approvals are needed.
+func (ctl *controller) waitIssuePipelineWithNoApproval(id int) (api.TaskStatus, error) {
+	noop := func(*api.Issue) error {
+		return nil
+	}
+	return ctl.waitIssuePipelineTaskImpl(id, noop, false)
+}
+
 // waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
-	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
-	time.Sleep(2 * time.Second)
+	// Sleep for 1 second between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
+	time.Sleep(1 * time.Second)
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
@@ -982,6 +1218,40 @@ func (ctl *controller) query(instance *api.Instance, databaseName, query string)
 	return sqlResultSet.Data, nil
 }
 
+// adminExecuteSQL executes a SQL query on the database.
+func (ctl *controller) adminExecuteSQL(sqlExecute api.SQLExecute) (*api.SQLResultSet, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &sqlExecute); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal sqlExecute")
+	}
+
+	body, err := ctl.post("/sql/execute/admin", buf)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlResultSet := new(api.SQLResultSet)
+	if err = jsonapi.UnmarshalPayload(body, sqlResultSet); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal sqlResultSet response")
+	}
+	return sqlResultSet, nil
+}
+
+func (ctl *controller) adminQuery(instance *api.Instance, databaseName, query string) (string, error) {
+	sqlResultSet, err := ctl.adminExecuteSQL(api.SQLExecute{
+		InstanceID:   instance.ID,
+		DatabaseName: databaseName,
+		Statement:    query,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to execute SQL")
+	}
+	if sqlResultSet.Error != "" {
+		return "", errors.Errorf("expect SQL result has no error, got %q", sqlResultSet.Error)
+	}
+	return sqlResultSet.Data, nil
+}
+
 // createVCS creates a VCS.
 func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	buf := new(bytes.Buffer)
@@ -1001,7 +1271,7 @@ func (ctl *controller) createVCS(vcsCreate api.VCSCreate) (*api.VCS, error) {
 	return vcs, nil
 }
 
-// createRepository creates a repository.
+// createRepository links the repository with the project.
 func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (*api.Repository, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &repositoryCreate); err != nil {
@@ -1018,6 +1288,63 @@ func (ctl *controller) createRepository(repositoryCreate api.RepositoryCreate) (
 		return nil, errors.Wrap(err, "fail to unmarshal repository response")
 	}
 	return repository, nil
+}
+
+// unlinkRepository unlinks the repository from the project by projectID.
+func (ctl *controller) unlinkRepository(projectID int) error {
+	_, err := ctl.delete(fmt.Sprintf("/project/%d/repository", projectID), nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// listRepository gets the repository list.
+func (ctl *controller) listRepository(projectID int) ([]*api.Repository, error) {
+	body, err := ctl.get(fmt.Sprintf("/project/%d/repository", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var repositories []*api.Repository
+	ps, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Repository)))
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal get repository response")
+	}
+	for _, p := range ps {
+		repository, ok := p.(*api.Repository)
+		if !ok {
+			return nil, errors.Errorf("fail to convert repository")
+		}
+		repositories = append(repositories, repository)
+	}
+	return repositories, nil
+}
+
+// createSQLReviewCI set up the SQL review CI.
+func (ctl *controller) createSQLReviewCI(projectID, repositoryID int) (*api.SQLReviewCISetup, error) {
+	body, err := ctl.post(fmt.Sprintf("/project/%d/repository/%d/sql-review-ci", projectID, repositoryID), new(bytes.Buffer))
+	if err != nil {
+		return nil, err
+	}
+
+	sqlReviewCISetup := new(api.SQLReviewCISetup)
+	if err = jsonapi.UnmarshalPayload(body, sqlReviewCISetup); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal SQL reivew CI response")
+	}
+	return sqlReviewCISetup, nil
+}
+
+func (ctl *controller) getLatestSchemaOfDatabaseID(databaseID int) (string, error) {
+	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), nil)
+	if err != nil {
+		return "", err
+	}
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	return string(bs), nil
 }
 
 func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
@@ -1070,6 +1397,8 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 	if err != nil {
 		return errors.Wrapf(err, "failed to patch issue status %v to done", issue.ID)
 	}
+	// Add a second sleep to avoid schema version conflict.
+	time.Sleep(time.Second)
 	return nil
 }
 
@@ -1326,6 +1655,35 @@ func (ctl *controller) waitBackup(databaseID, backupID int) error {
 	return errors.Errorf("failed to wait for backup as this condition should never be reached")
 }
 
+// waitBackupArchived waits for a backup to be archived.
+func (ctl *controller) waitBackupArchived(databaseID, backupID int) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	log.Debug("Waiting for backup.", zap.Int("id", backupID))
+	for range ticker.C {
+		backups, err := ctl.listBackups(databaseID)
+		if err != nil {
+			return err
+		}
+		var backup *api.Backup
+		for _, b := range backups {
+			if b.ID == backupID {
+				backup = b
+				break
+			}
+		}
+		if backup == nil {
+			return errors.Errorf("backup %d for database %d not found", backupID, databaseID)
+		}
+		if backup.RowStatus == api.Archived {
+			return nil
+		}
+	}
+	// Ideally, this should never happen because the ticker will not stop till the backup is finished.
+	return errors.Errorf("failed to wait for backup as this condition should never be reached")
+}
+
 // createSheet creates a sheet.
 func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, error) {
 	buf := new(bytes.Buffer)
@@ -1345,16 +1703,9 @@ func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, err
 	return sheet, nil
 }
 
-// listSheets lists sheets for a database.
-func (ctl *controller) listSheets(sheetFind api.SheetFind) ([]*api.Sheet, error) {
+// listMySheets lists caller's sheets.
+func (ctl *controller) listMySheets() ([]*api.Sheet, error) {
 	params := map[string]string{}
-	if sheetFind.ProjectID != nil {
-		params["projectId"] = strconv.Itoa(*sheetFind.ProjectID)
-	}
-	if sheetFind.DatabaseID != nil {
-		params["databaseId"] = strconv.Itoa(*sheetFind.DatabaseID)
-	}
-
 	body, err := ctl.get("/sheet/my", params)
 	if err != nil {
 		return nil, err
@@ -1377,7 +1728,7 @@ func (ctl *controller) listSheets(sheetFind api.SheetFind) ([]*api.Sheet, error)
 
 // syncSheet syncs sheets with project.
 func (ctl *controller) syncSheet(projectID int) error {
-	_, err := ctl.post(fmt.Sprintf("/sheet/project/%d/sync", projectID), nil)
+	_, err := ctl.post(fmt.Sprintf("/project/%d/sync-sheet", projectID), nil)
 	return err
 }
 
@@ -1399,6 +1750,50 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 	return nil
 }
 
+func (ctl *controller) patchDataSource(databaseID int, dataSourcePatch api.DataSourcePatch) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &dataSourcePatch); err != nil {
+		return errors.Wrap(err, "failed to marshal dataSourcePatch")
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourcePatch.ID), buf)
+	if err != nil {
+		return err
+	}
+
+	dataSource := new(api.DataSource)
+	if err = jsonapi.UnmarshalPayload(body, dataSource); err != nil {
+		return errors.Wrap(err, "fail to unmarshal dataSource response")
+	}
+	return nil
+}
+
+func (ctl *controller) deleteDataSource(databaseID, dataSourceID int) error {
+	_, err := ctl.delete(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourceID), nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ctl *controller) patchSetting(settingPatch api.SettingPatch) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &settingPatch); err != nil {
+		return errors.Wrap(err, "failed to marshal settingPatch")
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/setting/%s", settingPatch.Name), buf)
+	if err != nil {
+		return err
+	}
+
+	setting := new(api.Setting)
+	if err = jsonapi.UnmarshalPayload(body, setting); err != nil {
+		return errors.Wrap(err, "fail to unmarshal setting response")
+	}
+	return nil
+}
+
 // upsertPolicy upserts the policy.
 func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 	buf := new(bytes.Buffer)
@@ -1406,7 +1801,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 		return errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.EnvironmentID, policyUpsert.Type), buf)
+	body, err := ctl.patch(fmt.Sprintf("/policy/%s/%d?type=%s", strings.ToLower(string(policyUpsert.ResourceType)), policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
 		return err
 	}
@@ -1420,7 +1815,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 
 // deletePolicy deletes the archived policy.
 func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
-	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
+	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.ResourceID, policyDelete.Type), new(bytes.Buffer))
 	if err != nil {
 		return err
 	}
@@ -1496,14 +1891,35 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 	var payload []byte
 	var err error
 	switch ruleTp {
-	case advisor.SchemaRuleMySQLEngine:
-	case advisor.SchemaRuleStatementNoSelectAll:
-	case advisor.SchemaRuleStatementRequireWhere:
-	case advisor.SchemaRuleStatementNoLeadingWildcardLike:
-	case advisor.SchemaRuleTableRequirePK:
-	case advisor.SchemaRuleTableNoFK:
-	case advisor.SchemaRuleColumnNotNull:
-	case advisor.SchemaRuleSchemaBackwardCompatibility:
+	case advisor.SchemaRuleMySQLEngine,
+		advisor.SchemaRuleStatementNoSelectAll,
+		advisor.SchemaRuleStatementRequireWhere,
+		advisor.SchemaRuleStatementNoLeadingWildcardLike,
+		advisor.SchemaRuleStatementDisallowCommit,
+		advisor.SchemaRuleStatementDisallowLimit,
+		advisor.SchemaRuleStatementDisallowOrderBy,
+		advisor.SchemaRuleStatementMergeAlterTable,
+		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+		advisor.SchemaRuleStatementDMLDryRun,
+		advisor.SchemaRuleTableRequirePK,
+		advisor.SchemaRuleTableNoFK,
+		advisor.SchemaRuleTableDisallowPartition,
+		advisor.SchemaRuleColumnNotNull,
+		advisor.SchemaRuleColumnDisallowChangeType,
+		advisor.SchemaRuleColumnSetDefaultForNotNull,
+		advisor.SchemaRuleColumnDisallowChange,
+		advisor.SchemaRuleColumnDisallowChangingOrder,
+		advisor.SchemaRuleColumnAutoIncrementMustInteger,
+		advisor.SchemaRuleColumnDisallowSetCharset,
+		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
+		advisor.SchemaRuleCurrentTimeColumnCountLimit,
+		advisor.SchemaRuleColumnRequireDefault,
+		advisor.SchemaRuleSchemaBackwardCompatibility,
+		advisor.SchemaRuleDropEmptyDatabase,
+		advisor.SchemaRuleIndexNoDuplicateColumn,
+		advisor.SchemaRuleIndexPKTypeLimit,
+		advisor.SchemaRuleIndexTypeNoBlob:
 	case advisor.SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "_delete$",
@@ -1512,33 +1928,76 @@ func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, e
 		fallthrough
 	case advisor.SchemaRuleColumnNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^[a-z]+(_[a-z]+)*$",
+			Format:    "^[a-z]+(_[a-z]+)*$",
+			MaxLength: 64,
 		})
 	case advisor.SchemaRuleIDXNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^idx_{{table}}_{{column_list}}$",
+			Format:    "^idx_{{table}}_{{column_list}}$",
+			MaxLength: 64,
 		})
 	case advisor.SchemaRulePKNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^pk_{{table}}_{{column_list}}$",
+			Format:    "^pk_{{table}}_{{column_list}}$",
+			MaxLength: 64,
 		})
 	case advisor.SchemaRuleUKNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^uk_{{table}}_{{column_list}}$",
+			Format:    "^uk_{{table}}_{{column_list}}$",
+			MaxLength: 64,
 		})
 	case advisor.SchemaRuleFKNaming:
 		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+			Format:    "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+			MaxLength: 64,
+		})
+	case advisor.SchemaRuleAutoIncrementColumnNaming:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
+			Format:    "^id$",
+			MaxLength: 64,
+		})
+	case advisor.SchemaRuleStatementInsertRowLimit, advisor.SchemaRuleStatementAffectedRowLimit:
+		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
+			Number: 5,
+		})
+	case advisor.SchemaRuleTableCommentConvention, advisor.SchemaRuleColumnCommentConvention:
+		payload, err = json.Marshal(advisor.CommentConventionRulePayload{
+			Required:  true,
+			MaxLength: 10,
 		})
 	case advisor.SchemaRuleRequiredColumn:
-		payload, err = json.Marshal(advisor.RequiredColumnRulePayload{
-			ColumnList: []string{
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{
 				"id",
 				"created_ts",
 				"updated_ts",
 				"creator_id",
 				"updater_id",
 			},
+		})
+	case advisor.SchemaRuleColumnTypeDisallowList:
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{"JSON"},
+		})
+	case advisor.SchemaRuleColumnMaximumCharacterLength:
+		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
+			Number: 20,
+		})
+	case advisor.SchemaRuleColumnAutoIncrementInitialValue:
+		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
+			Number: 20,
+		})
+	case advisor.SchemaRuleIndexKeyNumberLimit, advisor.SchemaRuleIndexTotalNumberLimit:
+		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
+			Number: 5,
+		})
+	case advisor.SchemaRuleCharsetAllowlist:
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{"utf8mb4"},
+		})
+	case advisor.SchemaRuleCollationAllowlist:
+		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
+			List: []string{"utf8mb4_0900_ai_ci"},
 		})
 	default:
 		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)
@@ -1555,10 +2014,12 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 	policy := advisor.SQLReviewPolicy{
 		Name: "Prod",
 		RuleList: []*advisor.SQLReviewRule{
+			// Engine
 			{
 				Type:  advisor.SchemaRuleMySQLEngine,
 				Level: advisor.SchemaRuleLevelError,
 			},
+			// Naming
 			{
 				Type:  advisor.SchemaRuleTableNaming,
 				Level: advisor.SchemaRuleLevelWarning,
@@ -1584,6 +2045,11 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
+				Type:  advisor.SchemaRuleAutoIncrementColumnNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// Statement
+			{
 				Type:  advisor.SchemaRuleStatementNoSelectAll,
 				Level: advisor.SchemaRuleLevelError,
 			},
@@ -1595,6 +2061,43 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 				Type:  advisor.SchemaRuleStatementNoLeadingWildcardLike,
 				Level: advisor.SchemaRuleLevelError,
 			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowCommit,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowOrderBy,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementMergeAlterTable,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertRowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementAffectedRowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDMLDryRun,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			// TABLE
 			{
 				Type:  advisor.SchemaRuleTableRequirePK,
 				Level: advisor.SchemaRuleLevelError,
@@ -1608,6 +2111,15 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
+				Type:  advisor.SchemaRuleTableCommentConvention,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleTableDisallowPartition,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// COLUMN
+			{
 				Type:  advisor.SchemaRuleRequiredColumn,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
@@ -1616,7 +2128,95 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
+				Type:  advisor.SchemaRuleColumnDisallowChangeType,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnSetDefaultForNotNull,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowChange,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowChangingOrder,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnCommentConvention,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementMustInteger,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnTypeDisallowList,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowSetCharset,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnMaximumCharacterLength,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementInitialValue,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleCurrentTimeColumnCountLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnRequireDefault,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// SCHEMA
+			{
 				Type:  advisor.SchemaRuleSchemaBackwardCompatibility,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// DATABASE
+			{
+				Type:  advisor.SchemaRuleDropEmptyDatabase,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			// INDEX
+			{
+				Type:  advisor.SchemaRuleIndexNoDuplicateColumn,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexKeyNumberLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexPKTypeLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexTypeNoBlob,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexTotalNumberLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// SYSTEM
+			{
+				Type:  advisor.SchemaRuleCharsetAllowlist,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleCollationAllowlist,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 		},
@@ -1635,4 +2235,33 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 		return "", err
 	}
 	return string(s), nil
+}
+
+type schemaDiffRequest struct {
+	EngineType   parser.EngineType `json:"engineType"`
+	SourceSchema string            `json:"sourceSchema"`
+	TargetSchema string            `json:"targetSchema"`
+}
+
+// getSchemaDiff gets the schema diff.
+func (ctl *controller) getSchemaDiff(schemaDiff schemaDiffRequest) (string, error) {
+	buf, err := json.Marshal(&schemaDiff)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal schemaDiffRequest")
+	}
+
+	body, err := ctl.postOpenAPI("/sql/schema/diff", strings.NewReader(string(buf)))
+	if err != nil {
+		return "", err
+	}
+
+	diff, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	diffString := ""
+	if err := json.Unmarshal(diff, &diffString); err != nil {
+		return "", err
+	}
+	return diffString, nil
 }

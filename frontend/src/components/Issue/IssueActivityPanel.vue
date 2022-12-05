@@ -9,15 +9,15 @@
       <div class="pt-6">
         <!-- Activity feed-->
         <ul>
-          <li v-for="(activity, index) in activityList" :key="activity.id">
-            <div :id="`#activity${activity.id}`" class="relative pb-4">
+          <li v-for="(item, index) in activityList" :key="item.activity.id">
+            <div :id="`#activity${item.activity.id}`" class="relative pb-4">
               <span
                 v-if="index != activityList.length - 1"
                 class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
                 aria-hidden="true"
               ></span>
               <div class="relative flex items-start">
-                <template v-if="actionIcon(activity) == 'system'">
+                <template v-if="actionIcon(item.activity) == 'system'">
                   <div class="relative">
                     <div class="relative pl-0.5">
                       <div
@@ -32,19 +32,19 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'avatar'">
+                <template v-else-if="actionIcon(item.activity) == 'avatar'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
                     >
                       <PrincipalAvatar
-                        :principal="activity.creator"
+                        :principal="item.activity.creator"
                         :size="'SMALL'"
                       />
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'create'">
+                <template v-else-if="actionIcon(item.activity) == 'create'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -53,7 +53,7 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'update'">
+                <template v-else-if="actionIcon(item.activity) == 'update'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -62,7 +62,7 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'run'">
+                <template v-else-if="actionIcon(item.activity) == 'run'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -71,7 +71,7 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'approve'">
+                <template v-else-if="actionIcon(item.activity) == 'approve'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -82,7 +82,7 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'cancel'">
+                <template v-else-if="actionIcon(item.activity) == 'cancel'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -91,7 +91,7 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'fail'">
+                <template v-else-if="actionIcon(item.activity) == 'fail'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
@@ -102,7 +102,7 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'complete'">
+                <template v-else-if="actionIcon(item.activity) == 'complete'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
@@ -113,7 +113,7 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="actionIcon(activity) == 'commit'">
+                <template v-else-if="actionIcon(item.activity) == 'commit'">
                   <div class="relative pl-0.5">
                     <div
                       class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
@@ -125,42 +125,59 @@
                 <div class="ml-3 min-w-0 flex-1">
                   <div class="min-w-0 flex-1 pt-1 flex justify-between">
                     <div class="text-sm text-control-light">
-                      {{ actionSubjectPrefix(activity) }}
+                      {{ actionSubjectPrefix(item.activity) }}
                       <router-link
-                        :to="actionSubject(activity).link"
+                        :to="actionSubject(item.activity).link"
                         class="font-medium text-main whitespace-nowrap hover:underline"
                         exact-active-class=""
-                        >{{ actionSubject(activity).name }}</router-link
+                        >{{ actionSubject(item.activity).name }}</router-link
                       >
                       <a
-                        :href="'#activity' + activity.id"
+                        :href="'#activity' + item.activity.id"
                         class="ml-1 anchor-link whitespace-normal"
                       >
                         <ActivityActionSentence
                           :issue="issue"
-                          :activity="activity"
+                          :activity="item.activity"
                         />
 
-                        {{ humanizeTs(activity.createdTs) }}
-                        <template
+                        <HumanizeTs
+                          :ts="item.activity.createdTs"
+                          class="ml-1"
+                        />
+                        <span
                           v-if="
-                            activity.createdTs != activity.updatedTs &&
-                            activity.type == 'bb.issue.comment.create'
+                            item.activity.createdTs !=
+                              item.activity.updatedTs &&
+                            item.activity.type == 'bb.issue.comment.create'
                           "
                         >
                           ({{ $t("common.edited") }}
-                          {{ humanizeTs(activity.updatedTs) }})
-                        </template>
+                          <HumanizeTs
+                            :ts="item.activity.updatedTs"
+                            class="ml-1"
+                          />)
+                        </span>
                       </a>
+                      <span
+                        v-if="item.similar.length > 0"
+                        class="text-sm font-normal text-gray-400 ml-1"
+                      >
+                        {{
+                          $t("activity.n-similar-activities", {
+                            count: item.similar.length + 1,
+                          })
+                        }}
+                      </span>
                     </div>
                     <div
-                      v-if="allowEditActivity(activity)"
+                      v-if="allowEditActivity(item.activity)"
                       class="space-x-2 flex items-center text-control-light"
                     >
                       <template
                         v-if="
                           state.editCommentMode &&
-                          state.activeActivity?.id === activity.id
+                          state.activeActivity?.id === item.activity.id
                         "
                       >
                         <button
@@ -184,7 +201,7 @@
                         <!-- Edit Comment Button-->
                         <button
                           class="btn-icon"
-                          @click.prevent="onUpdateComment(activity)"
+                          @click.prevent="onUpdateComment(item.activity)"
                         >
                           <heroicons-outline:pencil class="w-4 h-4" />
                         </button>
@@ -195,7 +212,7 @@
                     <template
                       v-if="
                         state.editCommentMode &&
-                        state.activeActivity?.id === activity.id
+                        state.activeActivity?.id === item.activity.id
                       "
                     >
                       <label for="comment" class="sr-only">
@@ -220,13 +237,15 @@
                       ></textarea>
                     </template>
                     <template v-else>
-                      {{ activity.comment }}
+                      <ActivityComment :activity="item.activity" />
                     </template>
                     <template
-                      v-if="activity.type == 'bb.pipeline.task.file.commit'"
+                      v-if="
+                        item.activity.type == 'bb.pipeline.task.file.commit'
+                      "
                     >
                       <a
-                        :href="fileCommitActivityUrl(activity)"
+                        :href="fileCommitActivityUrl(item.activity)"
                         target="__blank"
                         class="normal-link flex flex-row items-center"
                       >
@@ -302,22 +321,6 @@
       </div>
     </div>
   </div>
-  <BBAlert
-    v-if="state.showDeleteCommentModal"
-    :style="'INFO'"
-    :ok-text="'Delete'"
-    :title="'Are you sure to delete this comment?'"
-    :description="'You cannot undo this action.'"
-    @ok="
-      () => {
-        doDeleteComment(state.activeActivity!);
-        state.showDeleteCommentModal = false;
-        state.activeActivity = undefined;
-      }
-    "
-    @cancel="state.showDeleteCommentModal = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts" setup>
@@ -333,6 +336,7 @@ import {
 } from "vue";
 import { useRoute } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
+import HumanizeTs from "../misc/HumanizeTs.vue";
 import type {
   Issue,
   Activity,
@@ -341,6 +345,8 @@ import type {
   ActivityCreate,
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
+  Task,
+  ActivityIssueCommentCreatePayload,
 } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, SYSTEM_BOT_ID } from "@/types";
 import { findTaskById, issueSlug, sizeToFit, taskSlug } from "@/utils";
@@ -355,9 +361,10 @@ import {
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import ActivityActionSentence from "./activity/ActionSentence.vue";
+import ActivityComment from "./activity/Comment";
+import { isSimilarActivity } from "./activity/utils";
 
 interface LocalState {
-  showDeleteCommentModal: boolean;
   editCommentMode: boolean;
   activeActivity?: Activity;
 }
@@ -379,6 +386,15 @@ type ActionIconType =
   | "complete"
   | "commit";
 
+type DistinctActivity = {
+  activity: Activity;
+  similar: Activity[];
+};
+
+const emit = defineEmits<{
+  (event: "run-checks", task: Task): void;
+}>();
+
 const { t } = useI18n();
 const activityStore = useActivityStore();
 const route = useRoute();
@@ -393,7 +409,6 @@ const issue = logic.issue as Ref<Issue>;
 const { addSubscriberId } = useExtraIssueLogic();
 
 const state = reactive<LocalState>({
-  showDeleteCommentModal: false,
   editCommentMode: false,
 });
 
@@ -427,17 +442,36 @@ const prepareActivityList = () => {
 watchEffect(prepareActivityList);
 
 // Need to use computed to make list reactive to activity list changes.
-const activityList = computed((): Activity[] => {
-  const list = activityStore.getActivityListByIssue(issue.value.id);
-  return list.filter((activity: Activity) => {
-    if (activity.type == "bb.issue.field.update") {
-      const containUserVisibleChange =
-        (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !=
-        IssueBuiltinFieldId.SUBSCRIBER_LIST;
-      return containUserVisibleChange;
+const activityList = computed((): DistinctActivity[] => {
+  const list = activityStore
+    .getActivityListByIssue(issue.value.id)
+    .filter((activity: Activity) => {
+      if (activity.type === "bb.issue.field.update") {
+        const containUserVisibleChange =
+          (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !==
+          IssueBuiltinFieldId.SUBSCRIBER_LIST;
+        return containUserVisibleChange;
+      }
+      return true;
+    });
+
+  const distinctActivityList: DistinctActivity[] = [];
+  for (let i = 0; i < list.length; i++) {
+    const activity = list[i];
+    if (distinctActivityList.length === 0) {
+      distinctActivityList.push({ activity, similar: [] });
+      continue;
     }
-    return true;
-  });
+
+    const prev = distinctActivityList[distinctActivityList.length - 1];
+    if (isSimilarActivity(prev.activity, activity)) {
+      prev.similar.push(activity);
+    } else {
+      distinctActivityList.push({ activity, similar: [] });
+    }
+  }
+
+  return distinctActivityList;
 });
 
 const subscriberList = computed((): IssueSubscriber[] => {
@@ -479,6 +513,10 @@ const doCreateComment = (comment: string, clear = true) => {
     if (!isSubscribed) {
       addSubscriberId(currentUser.value.id);
     }
+
+    if (comment === "LGTM") {
+      emit("run-checks", logic.selectedTask.value as Task);
+    }
   });
 };
 
@@ -503,10 +541,17 @@ const lgtm = (e: Event) => {
 };
 
 const allowEditActivity = (activity: Activity) => {
-  return (
-    activity.type === "bb.issue.comment.create" &&
-    currentUser.value.id === activity.creator.id
-  );
+  if (activity.type !== "bb.issue.comment.create") {
+    return false;
+  }
+  if (currentUser.value.id !== activity.creator.id) {
+    return false;
+  }
+  const payload = activity.payload as ActivityIssueCommentCreatePayload;
+  if (payload && payload.externalApprovalEvent) {
+    return false;
+  }
+  return true;
 };
 
 const onUpdateComment = (activity: Activity) => {
@@ -533,10 +578,6 @@ const allowUpdateComment = computed(() => {
   return editComment.value != state.activeActivity!.comment;
 });
 
-const doDeleteComment = (activity: Activity) => {
-  activityStore.deleteActivity(activity);
-};
-
 const actionIcon = (activity: Activity): ActionIconType => {
   if (activity.type == "bb.issue.create") {
     return "create";
@@ -552,6 +593,9 @@ const actionIcon = (activity: Activity): ActionIconType => {
           return "approve";
         }
         break;
+      }
+      case "CANCELED": {
+        return "cancel";
       }
       case "RUNNING": {
         return "run";

@@ -24,7 +24,7 @@
               {{ $t("database.pitr.restore-to-in-place") }}
 
               <FeatureBadge
-                feature="bb.feature.disaster-recovery-pitr"
+                feature="bb.feature.pitr"
                 class="text-accent ml-1"
               />
             </span>

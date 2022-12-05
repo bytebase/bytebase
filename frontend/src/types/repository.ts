@@ -29,8 +29,14 @@ export type Repository = {
   filePathTemplate: string;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
+  enableSQLReviewCI: boolean;
+  sqlReviewCIPullRequestURL: string;
   // e.g. In GitLab, this is the corresponding project id.
   externalId: string;
+};
+
+export type SQLReviewCISetup = {
+  pullRequestURL: string;
 };
 
 export type RepositoryCreate = {
@@ -58,6 +64,7 @@ export type RepositoryPatch = {
   filePathTemplate?: string;
   schemaPathTemplate?: string;
   sheetPathTemplate?: string;
+  enableSQLReviewCI?: boolean;
 };
 
 export type RepositoryConfig = {
@@ -66,6 +73,7 @@ export type RepositoryConfig = {
   filePathTemplate: string;
   schemaPathTemplate: string;
   sheetPathTemplate: string;
+  enableSQLReviewCI: boolean;
 };
 
 export type ExternalRepositoryInfo = {
@@ -82,7 +90,7 @@ export type ExternalRepositoryInfo = {
 type WebUrlReplaceParams = {
   DB_NAME?: string;
   VERSION?: string;
-  TYPE?: "migrate" | "data";
+  TYPE?: "ddl" | "dml";
   ENV_NAME?: string;
 };
 
@@ -90,6 +98,10 @@ export function baseDirectoryWebUrl(
   repository: Repository,
   params: WebUrlReplaceParams = {}
 ): string {
+  // If branchFilter has wildcard, we can't locate to the exact branch name, thus we will just return the repository web url
+  if (repository.branchFilter.includes("*")) {
+    return repository.webUrl;
+  }
   let url = "";
   if (repository.vcs.type == "GITLAB_SELF_HOST") {
     url = `${repository.webUrl}/-/tree/${repository.branchFilter}`;
@@ -110,7 +122,7 @@ export function baseDirectoryWebUrl(
     // Once we meet a "dynamic" segment which has a pattern that cannot be replaced
     // we won't push it, either the segments behind it.
     // E.g., the filePathTemplate is
-    // configure/{{ENV_NAME}}/20220707-wechat/{{TYPE}}/**/**/**/{{DB_NAME}}__{{VERSION}}__{{DESCRIPTION}}.sql
+    // configure/{{ENV_NAME}}/20220707-wechat/{{TYPE}}/**/**/**/{{DB_NAME}}##{{VERSION}}##{{DESCRIPTION}}.sql
     /**
       The segments are
         - configure

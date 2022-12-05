@@ -158,7 +158,7 @@ func TestColumnRequirement(t *testing.T) {
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: updater_id",
-					Line:    1,
+					Line:    5,
 				},
 			},
 		},
@@ -188,21 +188,24 @@ func TestColumnRequirement(t *testing.T) {
 						CREATE TABLE student(
 							id int,
 							created_ts timestamp,
-							updated_ts timestamp);`,
+							updated_ts timestamp)
+			
+			
+			`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
-					Line:    1,
+					Line:    5,
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `student` requires columns: creator_id, updater_id",
-					Line:    6,
+					Line:    9,
 				},
 			},
 		},
@@ -224,8 +227,8 @@ func TestColumnRequirement(t *testing.T) {
 			},
 		},
 	}
-	payload, err := json.Marshal(advisor.RequiredColumnRulePayload{
-		ColumnList: []string{
+	payload, err := json.Marshal(advisor.StringArrayTypeRulePayload{
+		List: []string{
 			"id",
 			"created_ts",
 			"updated_ts",

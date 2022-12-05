@@ -5,6 +5,7 @@
     :disabled="disabled"
     :placeholder="$t('project.select')"
     :show-prefix-item="true"
+    :error="!validate()"
     @select-item="(project) => $emit('select-project-id', project.id)"
   >
     <template #menuItem="{ item: project }">
@@ -29,8 +30,8 @@ import {
   ProjectRoleType,
   unknown,
 } from "../types";
-import { isDBAOrOwner } from "../utils";
-import { featureToRef, useCurrentUser, useProjectStore } from "@/store";
+import { hasWorkspacePermission } from "../utils";
+import { useCurrentUser, useProjectStore } from "@/store";
 
 interface LocalState {
   selectedProject?: Project;
@@ -64,6 +65,10 @@ export default defineComponent({
       type: Number as PropType<Mode>,
       default: Mode.Standard | Mode.Tenant,
     },
+    required: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ["select-project-id"],
   setup(props) {
@@ -83,8 +88,6 @@ export default defineComponent({
 
     watchEffect(prepareProjectList);
 
-    const hasRBACFeature = featureToRef("bb.feature.rbac");
-
     const rawProjectList = computed((): Project[] => {
       let list = projectStore.getProjectListByUser(currentUser.value.id, [
         "NORMAL",
@@ -101,7 +104,12 @@ export default defineComponent({
         return false;
       });
 
-      if (!hasRBACFeature.value || isDBAOrOwner(currentUser.value.role)) {
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-project",
+          currentUser.value.role
+        )
+      ) {
         return list;
       }
 
@@ -173,6 +181,14 @@ export default defineComponent({
 
       return list;
     });
+
+    const validate = () => {
+      if (!props.required) {
+        return true;
+      }
+      return !!state.selectedProject && state.selectedProject.id !== UNKNOWN_ID;
+    };
+
     watch(
       [() => props.selectedId, projectList],
       ([selectedId, list]) => {
@@ -188,6 +204,7 @@ export default defineComponent({
       DEFAULT_PROJECT_ID,
       state,
       projectList,
+      validate,
       selectedIdNotInList,
     };
   },

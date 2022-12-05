@@ -3,6 +3,8 @@
 package advisor
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 
@@ -79,6 +81,9 @@ const (
 	// MySQLNamingColumnConvention is an advisor type for MySQL column naming convention.
 	MySQLNamingColumnConvention Type = "bb.plugin.advisor.mysql.naming.column"
 
+	// MySQLNamingAutoIncrementColumnConvention is an advisor type for MySQL auto-increment naming convention.
+	MySQLNamingAutoIncrementColumnConvention Type = "bb.plugin.advisor.mysql.naming.auto-increment-column"
+
 	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
 	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
 
@@ -94,9 +99,6 @@ const (
 	// MySQLColumnDisallowChanging is an advisor type for MySQL disallow CHANGE COLUMN statement.
 	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-change"
 
-	// MySQLColumnExists is an advisor type for MySQL column existence.
-	MySQLColumnExists Type = "bb.plugin.advisor.mysql.column.exists"
-
 	// MySQLColumnDisallowChangingOrder is an advisor type for MySQL disallow changing column order.
 	MySQLColumnDisallowChangingOrder Type = "bb.plugin.advisor.mysql.column.disallow-changing-order"
 
@@ -108,6 +110,24 @@ const (
 
 	// MySQLColumnTypeRestriction is an advisor type for MySQL column type restriction.
 	MySQLColumnTypeRestriction Type = "bb.plugin.advisor.mysql.column.type-restriction"
+
+	// MySQLDisallowSetColumnCharset is an advisor type for MySQL disallow set column charset.
+	MySQLDisallowSetColumnCharset Type = "bb.plugin.advisor.mysql.column.disallow-set-charset"
+
+	// MySQLColumnMaximumCharacterLength is an advisor type for MySQL maximum character length.
+	MySQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.mysql.column.maximum-character-length"
+
+	// MySQLAutoIncrementColumnInitialValue is an advisor type for MySQL auto-increment column initial value.
+	MySQLAutoIncrementColumnInitialValue Type = "bb.plugin.advisor.mysql.column.auto-increment-initial-value"
+
+	// MySQLAutoIncrementColumnMustUnsigned is an advisor type for MySQL unsigned auto-increment column.
+	MySQLAutoIncrementColumnMustUnsigned Type = "bb.plugin.advisor.mysql.column.auto-increment-must-unsigned"
+
+	// MySQLCurrentTimeColumnCountLimit is an advisor type for MySQL current time column count limit.
+	MySQLCurrentTimeColumnCountLimit Type = "bb.plugin.advisor.mysql.column.current-time-count-limit"
+
+	// MySQLRequireColumnDefault is an advisor type for MySQL column default requirement.
+	MySQLRequireColumnDefault Type = "bb.plugin.advisor.mysql.colum.require-default"
 
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
@@ -121,17 +141,11 @@ const (
 	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
 	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
 
-	// MySQLTableExists is an advisor type for MySQL table existence.
-	MySQLTableExists Type = "bb.plugin.advisor.mysql.table.exists"
-
 	// MySQLTableCommentConvention is an advisor for MySQL table comment convention.
 	MySQLTableCommentConvention Type = "bb.plugin.advisor.mysql.table.comment"
 
-	// MySQLTableDisallowCreateTableAs is an advisor type for MySQL disallow CREATE TABLE ... AS ... statement.
-	MySQLTableDisallowCreateTableAs Type = "bb.plugin.advisor.mysql.table.disallow-create-table-as"
-
-	// MySQLTableNotExists is an advisor for MySQL table name conflict check.
-	MySQLTableNotExists Type = "bb.plugin.advisor.mysql.table.not-exists"
+	// MySQLTableDisallowPartition is an advisor type for MySQL disallow table partition.
+	MySQLTableDisallowPartition Type = "bb.plugin.advisor.mysql.table.disallow-partition"
 
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
@@ -145,14 +159,44 @@ const (
 	// MySQLIndexKeyNumberLimit is an advisor type for MySQL index key number limit.
 	MySQLIndexKeyNumberLimit Type = "bb.plugin.advisor.mysql.index.key-number-limit"
 
-	// MySQLIndexNotExists is an advisor type for MySQL index name conflict check.
-	MySQLIndexNotExists Type = "bb.plugin.advisor.mysql.index.not-exists"
+	// MySQLIndexTotalNumberLimit is an advisor type for MySQL index total number limit.
+	MySQLIndexTotalNumberLimit Type = "bb.plugin.advisor.mysql.index.total-number-limit"
 
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 
+	// MySQLCollationAllowlist is an advisor type for MySQL collation allowlist.
+	MySQLCollationAllowlist Type = "bb.plugin.advisor.mysql.collation.allowlist"
+
 	// MySQLIndexTypeNoBlob is an advisor type for MySQL index type no blob.
 	MySQLIndexTypeNoBlob Type = "bb.plugin.advisor.mysql.index.type-no-blob"
+
+	// MySQLStatementDisallowCommit is an advisor type for MySQL to disallow commit.
+	MySQLStatementDisallowCommit Type = "bb.plugin.advisor.mysql.statement.disallow-commit"
+
+	// MySQLDisallowLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE/DELETE statement.
+	MySQLDisallowLimit Type = "bb.plugin.advisor.mysql.statement.disallow-limit"
+
+	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
+	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
+
+	// MySQLInsertMustSpecifyColumn is an advisor type for MySQL to enforce column specified.
+	MySQLInsertMustSpecifyColumn Type = "bb.plugin.advisor.mysql.insert.must-specify-column"
+
+	// MySQLInsertDisallowOrderByRand is an advisor type for MySQL to disallow order by rand in INSERT statements.
+	MySQLInsertDisallowOrderByRand Type = "bb.plugin.advisor.mysql.insert.disallow-order-by-rand"
+
+	// MySQLDisallowOrderBy is an advisor type for MySQL no ORDER BY clause in DELETE/UPDATE statement.
+	MySQLDisallowOrderBy Type = "bb.plugin.advisor.mysql.statement.disallow-order-by"
+
+	// MySQLMergeAlterTable is an advisor type for MySQL no redundant ALTER TABLE statements.
+	MySQLMergeAlterTable Type = "bb.plugin.advisor.mysql.statement.merge-alter-table"
+
+	// MySQLStatementAffectedRowLimit is an advisor type for MySQL UPDATE/DELETE affected row limit.
+	MySQLStatementAffectedRowLimit Type = "bb.plugin.advisor.mysql.statement.affected-row-limit"
+
+	// MySQLStatementDMLDryRun is an advisor type for MySQL DML dry run.
+	MySQLStatementDMLDryRun Type = "bb.plugin.advisor.mysql.statement.dml-dry-run"
 
 	// PostgreSQL Advisor.
 
@@ -183,6 +227,9 @@ const (
 	// PostgreSQLColumnRequirement is an advisor type for PostgreSQL column requirement.
 	PostgreSQLColumnRequirement Type = "bb.plugin.advisor.postgresql.column.require"
 
+	// PostgreSQLCommentConvention is an advisor type for PostgreSQL comment convention.
+	PostgreSQLCommentConvention Type = "bb.plugin.advisor.postgresql.comment"
+
 	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
 	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
 
@@ -200,6 +247,21 @@ const (
 
 	// PostgreSQLTableNoFK is an advisor type for PostgreSQL table disallow foreign key.
 	PostgreSQLTableNoFK Type = "bb.plugin.advisor.postgresql.table.no-foreign-key"
+
+	// PostgreSQLInsertRowLimit is an advisor type for PostgreSQL to limit INSERT rows.
+	PostgreSQLInsertRowLimit Type = "bb.plugin.advisor.postgresql.insert.row-limit"
+
+	// PostgreSQLIndexKeyNumberLimit is an advisor type for postgresql index key number limit.
+	PostgreSQLIndexKeyNumberLimit Type = "bb.plugin.advisor.postgresql.index.key-number-limit"
+
+	// PostgreSQLEncodingAllowlist is an advisor type for PostgreSQL encoding allowlist.
+	PostgreSQLEncodingAllowlist Type = "bb.plugin.advisor.postgresql.charset.allowlist"
+
+	// PostgreSQLIndexNoDuplicateColumn is an advisor type for Postgresql no duplicate columns in index.
+	PostgreSQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.postgresql.index.no-duplicate-column"
+
+	// PostgreSQLColumnTypeDisallowList is an advisor type for Postgresql column type disallow list.
+	PostgreSQLColumnTypeDisallowList Type = "bb.plugin.advisor.postgresql.column.type-disallow-list"
 )
 
 // Advice is the result of an advisor.
@@ -244,6 +306,8 @@ type Context struct {
 	// SQL review rule special fields.
 	Rule    *SQLReviewRule
 	Catalog *catalog.Finder
+	Driver  *sql.DB
+	Context context.Context
 }
 
 // Advisor is the interface for advisor.
@@ -279,7 +343,13 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advice, error) {
+func Check(dbType db.Type, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
+	defer func() {
+		if panicErr := recover(); panicErr != nil {
+			err = errors.Errorf("panic in advisor check: %v", panicErr)
+		}
+	}()
+
 	advisorMu.RLock()
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()

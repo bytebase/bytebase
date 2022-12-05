@@ -223,7 +223,7 @@ Users can set a workspace-level gh-ost configuration, which will be the default.
 
 In the UI workflow, the user can select to use gh-ost and supply statements.
 
-In the VCS workflow, user commit `{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.ghost.sql` to trigger gh-ost to execute migration. We use the suffix to tell if it is a gh-ost migration. The content is a vanilla SQL statement.
+In the VCS workflow, user commit `{{ENV_NAME}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.ghost.sql` to trigger gh-ost to execute migration. We use the suffix to tell if it is a gh-ost migration. The content is a vanilla SQL statement.
 
 Users can change the gh-ost configuration in the related issue tab.
 
@@ -378,7 +378,7 @@ type UpdateSchemaGhostDetail struct {
 }
 
 type UpdateSchemaGhostContext struct {
-    UpdateSchemaDetailList []*UpdateSchemaGhostDetail `json:"updateSchemaDetailList`
+    DetailList []*UpdateSchemaGhostDetail `json:"detailList`
     VCSPushEvent *vcs.PushEvent
 }
 

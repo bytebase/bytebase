@@ -52,20 +52,20 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	if setup {
 		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("database", driver.connectionCtx.InstanceName),
+			zap.String("instance", driver.connectionCtx.InstanceName),
 		)
 		// Should use role SYSADMIN.
-		if err := driver.Execute(ctx, migrationSchema); err != nil {
+		if _, err := driver.Execute(ctx, migrationSchema, true /* createDatabase */); err != nil {
 			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
-				zap.String("database", driver.connectionCtx.InstanceName),
+				zap.String("instance", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
 		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("database", driver.connectionCtx.InstanceName),
+			zap.String("instance", driver.connectionCtx.InstanceName),
 		)
 	}
 
@@ -274,7 +274,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	}
 	var query = baseQuery +
 		db.FormatParamNameInQuestionMark(paramNames) +
-		`ORDER BY created_ts DESC`
+		`ORDER BY id DESC`
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}

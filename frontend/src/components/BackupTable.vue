@@ -75,7 +75,10 @@
           <BBSpin v-if="state.loadingMigrationHistory" />
         </div>
       </BBTableCell>
-      <BBTableCell>
+      <BBTableCell class="tooltip-wrapper">
+        <span class="tooltip whitespace-nowrap">
+          {{ dayjs(backup.createdTs * 1000).format("YYYY-MM-DD HH:mm") }}
+        </span>
         {{ humanizeTs(backup.createdTs) }}
       </BBTableCell>
       <BBTableCell>
@@ -145,7 +148,7 @@
 
   <FeatureModal
     v-if="state.showFeatureModal"
-    feature="bb.feature.disaster-recovery-pitr"
+    feature="bb.feature.pitr"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -220,7 +223,7 @@ export default defineComponent({
       return props.database.instance.engine === "POSTGRES";
     });
 
-    const hasPITRFeature = featureToRef("bb.feature.disaster-recovery-pitr");
+    const hasPITRFeature = featureToRef("bb.feature.pitr");
 
     const EDIT_COLUMN_LIST: BBTableColumn[] = [
       {

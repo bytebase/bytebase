@@ -37,6 +37,8 @@ const (
 	IssueDataSourceRequest IssueType = "bb.issue.data-source.request"
 	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
 	IssueDatabaseRestorePITR IssueType = "bb.issue.database.restore.pitr"
+	// IssueDatabaseRollback is the issue type for a generated rollback issue.
+	IssueDatabaseRollback IssueType = "bb.issue.database.rollback"
 )
 
 // IssueFieldID is the field ID for an issue.
@@ -79,14 +81,15 @@ type Issue struct {
 	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
 
 	// Domain specific fields
-	Name           string       `jsonapi:"attr,name"`
-	Status         IssueStatus  `jsonapi:"attr,status"`
-	Type           IssueType    `jsonapi:"attr,type"`
-	Description    string       `jsonapi:"attr,description"`
-	AssigneeID     int          `jsonapi:"attr,assigneeId"`
-	Assignee       *Principal   `jsonapi:"relation,assignee"`
-	SubscriberList []*Principal `jsonapi:"relation,subscriberList"`
-	Payload        string       `jsonapi:"attr,payload"`
+	Name                  string       `jsonapi:"attr,name"`
+	Status                IssueStatus  `jsonapi:"attr,status"`
+	Type                  IssueType    `jsonapi:"attr,type"`
+	Description           string       `jsonapi:"attr,description"`
+	AssigneeID            int          `jsonapi:"attr,assigneeId"`
+	AssigneeNeedAttention bool         `jsonapi:"attr,assigneeNeedAttention"`
+	Assignee              *Principal   `jsonapi:"relation,assignee"`
+	SubscriberList        []*Principal `jsonapi:"relation,subscriberList"`
+	Payload               string       `jsonapi:"attr,payload"`
 }
 
 // IssueResponse is the API message for an issue response.
@@ -107,12 +110,13 @@ type IssueCreate struct {
 	Pipeline   PipelineCreate `jsonapi:"attr,pipeline"`
 
 	// Domain specific fields
-	Name             string    `jsonapi:"attr,name"`
-	Type             IssueType `jsonapi:"attr,type"`
-	Description      string    `jsonapi:"attr,description"`
-	AssigneeID       int       `jsonapi:"attr,assigneeId"`
-	SubscriberIDList []int     `jsonapi:"attr,subscriberIdList"`
-	Payload          string    `jsonapi:"attr,payload"`
+	Name                  string    `jsonapi:"attr,name"`
+	Type                  IssueType `jsonapi:"attr,type"`
+	Description           string    `jsonapi:"attr,description"`
+	AssigneeID            int       `jsonapi:"attr,assigneeId"`
+	AssigneeNeedAttention bool      `jsonapi:"attr,assigneeNeedAttention"`
+	SubscriberIDList      []int     `jsonapi:"attr,subscriberIdList"`
+	Payload               string    `jsonapi:"attr,payload"`
 	// CreateContext is used to create the issue pipeline and not persisted.
 	// The context format depends on the issue type. For example, create database issue corresponds to CreateDatabaseContext.
 	// This consolidates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
@@ -144,8 +148,11 @@ type CreateDatabaseContext struct {
 	Labels string `jsonapi:"attr,labels,omitempty"`
 }
 
-// UpdateSchemaDetail is the detail of updating database schema.
-type UpdateSchemaDetail struct {
+// MigrationDetail is the detail for database migration such as Migrate, Data.
+type MigrationDetail struct {
+	// MigrationType is the type of a migration.
+	// MigrationType can be empty for gh-ost type of migration.
+	MigrationType db.MigrationType `json:"migrationType"`
 	// DatabaseID is the ID of a database.
 	DatabaseID int `json:"databaseId"`
 	// DatabaseName is the name of databases, mutually exclusive to DatabaseID.
@@ -155,20 +162,30 @@ type UpdateSchemaDetail struct {
 	Statement string `json:"statement"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
+	// SchemaVersion is parsed from VCS file name.
+	// It is automatically generated in the UI workflow.
+	SchemaVersion string `json:"schemaVersion"`
 }
 
-// UpdateSchemaContext is the shared issue create context for updating database schema and data.
-type UpdateSchemaContext struct {
-	// MigrationType is the type of a migration.
-	MigrationType db.MigrationType `json:"migrationType"`
+// MigrationContext is the issue create context for database migration such as Migrate, Data.
+type MigrationContext struct {
 	// DetailList is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
-	DetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
+	DetailList []*MigrationDetail `json:"detailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent `json:"vcsPushEvent"`
-	// MigrationInfo is only available when VCSPushEvent != nil.
-	// It's parsed from VCSPushEvent.
-	MigrationInfo *db.MigrationInfo `json:"migrationInfo,omitempty"`
+}
+
+// MigrationFileYAMLDatabase contains the information of a database in a YAML
+// format migration file.
+type MigrationFileYAMLDatabase struct {
+	Name string `yaml:"name"` // The name of the database
+}
+
+// MigrationFileYAML contains the information in a YAML format migration file.
+type MigrationFileYAML struct {
+	Databases []MigrationFileYAMLDatabase `yaml:"databases"` // The list of databases and how to identify them
+	Statement string                      `yaml:"statement"` // The SQL statement to be executed to specified list of databases
 }
 
 // UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.
@@ -186,9 +203,9 @@ type UpdateSchemaGhostDetail struct {
 
 // UpdateSchemaGhostContext is the issue create context for updating database schema using gh-ost.
 type UpdateSchemaGhostContext struct {
-	// UpdateSchemaGhostDetail is the details of schema update.
+	// DetailList is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
-	DetailList []*UpdateSchemaGhostDetail `json:"updateSchemaGhostDetailList"`
+	DetailList []*UpdateSchemaGhostDetail `json:"detailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent
 }
@@ -211,6 +228,14 @@ type PITRContext struct {
 	PointInTimeTs *int64 `json:"pointInTimeTs"`
 }
 
+// RollbackContext is the issue create context for rollback a issue.
+type RollbackContext struct {
+	// IssueID is the id of the issue to rollback.
+	IssueID int `json:"issueId"`
+	// TaskIDList is the list of task ids to rollback.
+	TaskIDList []int `json:"taskIdList"`
+}
+
 // IssueFind is the API message for finding issues.
 type IssueFind struct {
 	ID *int
@@ -224,9 +249,10 @@ type IssueFind struct {
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
 	// Only principleID or one of the following three fields can be set.
-	CreatorID    *int
-	AssigneeID   *int
-	SubscriberID *int
+	CreatorID             *int
+	AssigneeID            *int
+	AssigneeNeedAttention *bool
+	SubscriberID          *int
 
 	StatusList []IssueStatus
 	// If specified, only find issues whose ID is smaller that SinceID.

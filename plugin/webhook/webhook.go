@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 var (
@@ -44,6 +46,14 @@ type Issue struct {
 	Description string `json:"description"`
 }
 
+// TaskResult is the latest result of a task.
+// The `detail` field is only present if the status is TaskFailed.
+type TaskResult struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	Detail string `json:"detail"`
+}
+
 // Project object of project.
 type Project struct {
 	ID   int    `json:"id"`
@@ -64,6 +74,7 @@ type Context struct {
 	CreatedTs    int64
 	Issue        *Issue
 	Project      *Project
+	TaskResult   *TaskResult
 }
 
 // Receiver is the webhook receiver.
@@ -83,9 +94,34 @@ func (c *Context) getMetaList() []meta {
 
 	if c.Issue != nil {
 		m = append(m, meta{
-			Name:  "Isuue",
+			Name:  "Issue",
 			Value: c.Issue.Name,
 		})
+		// For VCS workflow, the generated issue description is composed of file names in the push event.
+		// So the description could be long, which is hard to display if merged into the issue name.
+		// We also trim it to 200 bytes to limit the message size in the webhook body, so that users can
+		// view it easily in the corresponding webhook client.
+		m = append(m, meta{
+			Name:  "Issue Description",
+			Value: common.TruncateStringWithDescription(c.Issue.Description),
+		})
+	}
+
+	if c.TaskResult != nil {
+		m = append(m, meta{
+			Name:  "Task",
+			Value: c.TaskResult.Name,
+		})
+		m = append(m, meta{
+			Name:  "Status",
+			Value: c.TaskResult.Status,
+		})
+		if c.TaskResult.Detail != "" {
+			m = append(m, meta{
+				Name:  "Result Detail",
+				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
+			})
+		}
 	}
 
 	return m
@@ -114,6 +150,5 @@ func Post(webhookType string, context Context) error {
 	if !ok {
 		return errors.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
 	}
-
 	return r.post(context)
 }

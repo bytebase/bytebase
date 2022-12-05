@@ -80,6 +80,7 @@
                 v-if="
                   component.payload.type === 'STRING' ||
                   component.payload.type === 'NUMBER' ||
+                  component.payload.type === 'BOOLEAN' ||
                   component.payload.type === 'TEMPLATE'
                 "
                 class="bg-gray-100 rounded text-sm font-semibold p-2"

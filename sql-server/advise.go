@@ -1,6 +1,7 @@
 package sqlserver
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -22,18 +23,19 @@ var (
 )
 
 // catalogService is the catalog service for sql check api.
-type catalogService struct{}
+type catalogService struct {
+	finder *catalog.Finder
+}
 
-// GetDatabase is the API message in catalog.
-// We will not connect to the user's database in the early version of sql check api.
-func (*catalogService) GetDatabase() *catalog.Database {
-	return &catalog.Database{}
+func newCatalogService(dbType advisorDB.Type) *catalogService {
+	return &catalogService{
+		finder: catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false}, dbType),
+	}
 }
 
 // GetDatabase is the API message in catalog.
-// We will not connect to the user's database in the early version of sql check api.
-func (*catalogService) GetFinder() *catalog.Finder {
-	return catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false})
+func (c *catalogService) GetFinder() *catalog.Finder {
+	return c.finder
 }
 
 type sqlCheckRequestBody struct {
@@ -107,7 +109,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		"utf8mb4_general_ci",
 		request.Statement,
 		ruleList,
-		&catalogService{},
+		newCatalogService(advisorDBType),
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
@@ -116,7 +118,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	s.metricReporter.Report(&metric.Metric{
 		Name:  metricAPI.SQLAdviseAPIMetricName,
 		Value: 1,
-		Labels: map[string]string{
+		Labels: map[string]interface{}{
 			"database_type": string(advisorDBType),
 			"platform":      c.Request().Header.Get("X-Platform"),
 			"repository":    c.Request().Header.Get("X-Repository"),
@@ -144,6 +146,8 @@ func sqlCheck(
 		Collation: dbCollation,
 		DbType:    dbType,
 		Catalog:   catalog,
+		Driver:    nil,
+		Context:   context.Background(),
 	})
 	if err != nil {
 		return nil, err

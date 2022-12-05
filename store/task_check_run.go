@@ -75,6 +75,26 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.Task
 	return taskCheckRun, nil
 }
 
+// BatchCreateTaskCheckRun inserts many TaskCheckRun instances, which is too slow otherwise to insert one by one.
+func (s *Store) BatchCreateTaskCheckRun(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*api.TaskCheckRun, error) {
+	if len(creates) == 0 {
+		return nil, nil
+	}
+	taskCheckRunRawList, err := s.batchCreateTaskCheckRunRaw(ctx, creates)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create TaskCheckRun with TaskCheckRunCreates[%+v]", creates)
+	}
+	var taskCheckRunList []*api.TaskCheckRun
+	for _, taskCheckRunRaw := range taskCheckRunRawList {
+		taskCheckRun, err := s.composeTaskCheckRun(ctx, taskCheckRunRaw)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to compose TaskCheckRun with taskCheckRunRaw[%+v]", taskCheckRunRaw)
+		}
+		taskCheckRunList = append(taskCheckRunList, taskCheckRun)
+	}
+	return taskCheckRunList, nil
+}
+
 // FindTaskCheckRun finds a list of TaskCheckRun instances.
 func (s *Store) FindTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	taskCheckRunRawList, err := s.findTaskCheckRunRaw(ctx, find)
@@ -137,11 +157,6 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 	defer tx.Rollback()
 
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
-	if create.SkipIfAlreadyTerminated {
-		statusList = append(statusList, api.TaskCheckRunDone)
-		statusList = append(statusList, api.TaskCheckRunFailed)
-		statusList = append(statusList, api.TaskCheckRunCanceled)
-	}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID:     &create.TaskID,
 		Type:       &create.Type,
@@ -153,21 +168,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		return nil, err
 	}
 
-	runningCount := 0
-	if create.SkipIfAlreadyTerminated {
-		for _, taskCheckRun := range taskCheckRunList {
-			switch taskCheckRun.Status {
-			case api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunCanceled:
-				return taskCheckRun, nil
-			case api.TaskCheckRunRunning:
-				runningCount++
-			}
-		}
-	} else {
-		runningCount = len(taskCheckRunList)
-	}
-
-	if runningCount > 0 {
+	if runningCount := len(taskCheckRunList); runningCount > 0 {
 		if runningCount > 1 {
 			// Normally, this should not happen, if it occurs, emit a warning
 			log.Warn(fmt.Sprintf("Found %d task check run, expect at most 1", len(taskCheckRunList)),
@@ -178,7 +179,30 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		return taskCheckRunList[0], nil
 	}
 
-	taskCheckRun, err := s.createTaskCheckRunImpl(ctx, tx, create)
+	list, err := s.createTaskCheckRunImpl(ctx, tx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d task check runs, expect 1", len(list))}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return list[0], nil
+}
+
+func (s *Store) batchCreateTaskCheckRunRaw(ctx context.Context, creates []*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	taskCheckRunList, err := s.createTaskCheckRunImpl(ctx, tx, creates...)
 	if err != nil {
 		return nil, err
 	}
@@ -187,55 +211,77 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		return nil, FormatError(err)
 	}
 
-	return taskCheckRun, nil
+	return taskCheckRunList, nil
 }
 
-// createTaskCheckRunImpl creates a new taskCheckRun.
-func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
-	query := `
-		INSERT INTO task_check_run (
+func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*api.TaskCheckRunCreate) ([]*taskCheckRunRaw, error) {
+	var query strings.Builder
+	var values []interface{}
+	var queryValues []string
+	if _, err := query.WriteString(
+		`INSERT INTO task_check_run (
 			creator_id,
 			updater_id,
 			task_id,
 			status,
 			type,
 			comment,
-			payload
-		)
-		VALUES ($1, $2, $3, 'RUNNING', $4, $5, $6)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
-	`
-	var taskCheckRunRaw taskCheckRunRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.TaskID,
-		create.Type,
-		create.Comment,
-		create.Payload,
-	).Scan(
-		&taskCheckRunRaw.ID,
-		&taskCheckRunRaw.CreatorID,
-		&taskCheckRunRaw.CreatedTs,
-		&taskCheckRunRaw.UpdaterID,
-		&taskCheckRunRaw.UpdatedTs,
-		&taskCheckRunRaw.TaskID,
-		&taskCheckRunRaw.Status,
-		&taskCheckRunRaw.Type,
-		&taskCheckRunRaw.Code,
-		&taskCheckRunRaw.Comment,
-		&taskCheckRunRaw.Result,
-		&taskCheckRunRaw.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+			payload) VALUES
+      `); err != nil {
+		return nil, err
+	}
+	for i, create := range creates {
+		if create.Payload == "" {
+			create.Payload = "{}"
 		}
+		values = append(values,
+			create.CreatorID,
+			create.CreatorID,
+			create.TaskID,
+			create.Type,
+			create.Comment,
+			create.Payload,
+		)
+		const count = 6
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, 'RUNNING', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6))
+	}
+	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
+		return nil, err
+	}
+	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload`); err != nil {
+		return nil, err
+	}
+
+	var taskCheckRunRawList []*taskCheckRunRaw
+	rows, err := tx.QueryContext(ctx, query.String(), values...)
+	if err != nil {
 		return nil, FormatError(err)
 	}
-	return &taskCheckRunRaw, nil
+	defer rows.Close()
+	for rows.Next() {
+		var taskCheckRunRaw taskCheckRunRaw
+		if err := rows.Scan(
+			&taskCheckRunRaw.ID,
+			&taskCheckRunRaw.CreatorID,
+			&taskCheckRunRaw.CreatedTs,
+			&taskCheckRunRaw.UpdaterID,
+			&taskCheckRunRaw.UpdatedTs,
+			&taskCheckRunRaw.TaskID,
+			&taskCheckRunRaw.Status,
+			&taskCheckRunRaw.Type,
+			&taskCheckRunRaw.Code,
+			&taskCheckRunRaw.Comment,
+			&taskCheckRunRaw.Result,
+			&taskCheckRunRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		taskCheckRunRawList = append(taskCheckRunRawList, &taskCheckRunRaw)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return taskCheckRunRawList, nil
 }
 
 // findTaskCheckRunRaw retrieves a list of taskCheckRuns based on find.

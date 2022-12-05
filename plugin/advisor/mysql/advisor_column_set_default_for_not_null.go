@@ -82,7 +82,7 @@ func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, 
 		for _, column := range node.Cols {
 			_, ok := pkColumn[column.Name.Name.O]
 			notNull := ok || !canNull(column)
-			if notNull && !setDefault(column) {
+			if notNull && !setDefault(column) && needDefault(column) {
 				notNullColumnWithNoDefault = append(notNullColumnWithNoDefault, columnName{
 					tableName:  node.Table.Name.O,
 					columnName: column.Name.Name.O,
@@ -97,7 +97,7 @@ func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, 
 			// ADD COLUMNS
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
-					if !canNull(column) && !setDefault(column) {
+					if !canNull(column) && !setDefault(column) && needDefault(column) {
 						notNullColumnWithNoDefault = append(notNullColumnWithNoDefault, columnName{
 							tableName:  node.Table.Name.O,
 							columnName: column.Name.Name.O,
@@ -107,7 +107,7 @@ func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, 
 				}
 			// CHANGE COLUMN and MODIFY COLUMN
 			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				if !canNull(spec.NewColumns[0]) && !setDefault(spec.NewColumns[0]) {
+				if !canNull(spec.NewColumns[0]) && !setDefault(spec.NewColumns[0]) && needDefault(spec.NewColumns[0]) {
 					notNullColumnWithNoDefault = append(notNullColumnWithNoDefault, columnName{
 						tableName:  node.Table.Name.O,
 						columnName: spec.NewColumns[0].Name.Name.O,
@@ -121,9 +121,9 @@ func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, 
 	for _, column := range notNullColumnWithNoDefault {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
-			Code:    advisor.NotNullColumnWithNullDefault,
+			Code:    advisor.NotNullColumnWithNoDefault,
 			Title:   checker.title,
-			Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but has NULL default value", column.tableName, column.columnName),
+			Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", column.tableName, column.columnName),
 			Line:    column.line,
 		})
 	}

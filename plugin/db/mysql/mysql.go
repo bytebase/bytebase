@@ -2,19 +2,21 @@
 package mysql
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
+	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	bbparser "github.com/bytebase/bytebase/plugin/parser"
 )
 
 var (
@@ -34,9 +36,13 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	connCfg       db.ConnectionConfig
 	dbType        db.Type
-	resourceDir   string
+	dbBinDir      string
 	binlogDir     string
 	db            *sql.DB
+	// migrationConn is used to execute migrations.
+	// Use a single connection for executing migrations in the lifetime of the driver can keep the thread ID unchanged.
+	// So that it's easy to get the thread ID for rollback SQL.
+	migrationConn *sql.Conn
 
 	replayedBinlogBytes *common.CountingReader
 	restoredBackupBytes *common.CountingReader
@@ -44,13 +50,13 @@ type Driver struct {
 
 func newDriver(dc db.DriverConfig) db.Driver {
 	return &Driver{
-		resourceDir: dc.ResourceDir,
-		binlogDir:   dc.BinlogDir,
+		dbBinDir:  dc.DbBinDir,
+		binlogDir: dc.BinlogDir,
 	}
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -72,7 +78,6 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 
-	loggedDSN := fmt.Sprintf("%s:<<redacted password>>@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 	if connCfg.Password != "" {
 		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
@@ -86,17 +91,20 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 		defer mysql.DeregisterTLSConfig(tlsKey)
 		dsn += fmt.Sprintf("?tls=%s", tlsKey)
 	}
-	log.Debug("Opening MySQL driver",
-		zap.String("dsn", loggedDSN),
-		zap.String("environment", connCtx.EnvironmentName),
-		zap.String("database", connCtx.InstanceName),
-	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
 	}
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		var errList error
+		errList = multierr.Append(errList, err)
+		errList = multierr.Append(errList, db.Close())
+		return nil, errList
+	}
 	driver.dbType = dbType
 	driver.db = db
+	driver.migrationConn = conn
 	driver.connectionCtx = connCtx
 	driver.connCfg = connCfg
 
@@ -105,7 +113,10 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.Connect
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
-	return driver.db.Close()
+	var err error
+	err = multierr.Append(err, driver.db.Close())
+	err = multierr.Append(err, driver.migrationConn.Close())
+	return err
 }
 
 // Ping pings the database.
@@ -155,25 +166,89 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string) error {
-	tx, err := driver.db.BeginTx(ctx, nil)
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
+	var buf bytes.Buffer
+	if err := transformDelimiter(&buf, statement); err != nil {
+		return 0, err
+	}
+	transformedStatement := buf.String()
+	tx, err := driver.migrationConn.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, statement)
-
-	if err == nil {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
+	sqlResult, err := tx.ExecContext(ctx, transformedStatement)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	rowsEffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		return 0, err
 	}
 
-	return err
+	return rowsEffected, nil
+}
+
+// GetMigrationConnID gets the ID of the connection executing migrations.
+func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
+	var id string
+	if err := driver.migrationConn.QueryRowContext(ctx, "SELECT CONNECTION_ID();").Scan(&id); err != nil {
+		return "", errors.Wrap(err, "failed to get the connection ID")
+	}
+	return id, nil
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.dbType, driver.db, statement, limit)
+func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+	// https://dev.mysql.com/doc/c-api/8.0/en/mysql-affected-rows.html
+	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
+	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
+		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
+		if err != nil {
+			return nil, err
+		}
+		field := []string{"Affected Rows"}
+		types := []string{"INT"}
+		rows := [][]interface{}{{affectedRows}}
+		return []interface{}{field, types, rows}, nil
+	}
+	return util.Query(ctx, driver.dbType, driver.db, statement, queryContext)
+}
+
+// transformDelimiter transform the delimiter to the MySQL default delimiter.
+func transformDelimiter(out io.Writer, statement string) error {
+	statements, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	if err != nil {
+		return errors.Wrapf(err, "failed to split SQL statements")
+	}
+	delimiter := `;`
+	for _, singleSQL := range statements {
+		stmt := singleSQL.Text
+		if bbparser.IsDelimiter(stmt) {
+			delimiter, err = bbparser.ExtractDelimiter(stmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to extract delimiter")
+			}
+			continue
+		}
+		if delimiter != ";" {
+			// Trim delimiter
+			stmt = fmt.Sprintf("%s;", stmt[:len(stmt)-len(delimiter)])
+		}
+		if _, err = out.Write([]byte(stmt)); err != nil {
+			return errors.Wrapf(err, "failed to write SQL statement")
+		}
+	}
+	return nil
 }

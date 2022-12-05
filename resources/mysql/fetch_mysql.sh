@@ -11,7 +11,7 @@ ckmd5() {
 atomic_download() {
     if [[ ! -e $1 ]]; then
         echo "Downloading $1..."
-        curl -o $1.tmp https://cdn.mysql.com//Downloads/MySQL-8.0/$1
+        curl -o $1.tmp https://cdn.mysql.com/archives/mysql-8.0/$1
         if $(ckmd5 $1.tmp $2); then
             mv $1.tmp $1
         else

@@ -1,40 +1,38 @@
 <template>
   <div class="max-w-[60rem] mx-auto">
-    <template v-if="project.dbNameTemplate">
-      <div class="text-lg font-medium leading-7 text-main">
-        {{ $t("project.db-name-template") }}
-      </div>
-      <div class="textinfolabel">
-        <i18n-t keypath="label.db-name-template-tips">
-          <template #placeholder>
-            <!-- prettier-ignore -->
-            <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}</code>
-          </template>
-          <template #link>
-            <a
-              class="normal-link inline-flex items-center"
-              href="https://bytebase.com/docs/tenant-database-management#database-name-template?source=console"
-              target="__BLANK"
-            >
-              {{ $t("common.learn-more") }}
-              <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-            </a>
-          </template>
-        </i18n-t>
-      </div>
-      <div class="mt-3">
-        <input
-          disabled
-          type="text"
-          class="textfield w-full"
-          :value="project.dbNameTemplate"
-        />
-      </div>
+    <div class="text-lg font-medium leading-7 text-main">
+      {{ $t("project.db-name-template") }}
+    </div>
+    <div class="textinfolabel">
+      <i18n-t keypath="label.db-name-template-tips">
+        <template #placeholder>
+          <!-- prettier-ignore -->
+          <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}</code>
+        </template>
+        <template #link>
+          <a
+            class="normal-link inline-flex items-center"
+            href="https://bytebase.com/docs/tenant-database-management#database-name-template?source=console"
+            target="__BLANK"
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+          </a>
+        </template>
+      </i18n-t>
+    </div>
+    <div class="mt-3">
+      <input
+        disabled
+        type="text"
+        class="textfield w-full"
+        :value="project.dbNameTemplate"
+      />
+    </div>
 
-      <div class="text-lg font-medium leading-7 text-main mt-6 border-t pt-4">
-        {{ $t("common.deployment-config") }}
-      </div>
-    </template>
+    <div class="text-lg font-medium leading-7 text-main mt-6 border-t pt-4">
+      {{ $t("common.deployment-config") }}
+    </div>
 
     <BBAttention
       v-if="state.deployment?.id === EMPTY_ID"
@@ -48,7 +46,6 @@
       <DeploymentConfigTool
         :schedule="state.deployment.schedule"
         :allow-edit="allowEdit"
-        :label-list="availableLabelList"
         :database-list="databaseList"
       />
       <div class="pt-4 border-t flex justify-between items-center">
@@ -96,7 +93,6 @@
           :deployment="state.deployment"
           :database-list="databaseList"
           :environment-list="environmentList"
-          :label-list="labelList"
         />
       </div>
     </div>
@@ -122,23 +118,19 @@ import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import {
   Project,
-  AvailableLabel,
   DeploymentConfig,
-  UNKNOWN_ID,
   EMPTY_ID,
-  empty,
   DeploymentConfigPatch,
   LabelSelectorRequirement,
 } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
+import { validateDeploymentConfig } from "../utils";
 import {
   pushNotification,
   useDatabaseStore,
   useDeploymentStore,
   useEnvironmentList,
   useEnvironmentStore,
-  useLabelList,
 } from "@/store";
 
 type LocalState = {
@@ -189,19 +181,11 @@ export default defineComponent({
 
     const environmentList = useEnvironmentList();
 
-    const labelList = useLabelList();
-
     const databaseList = computed(() =>
       databaseStore.getDatabaseListByProjectId(props.project.id)
     );
 
     watchEffect(prepareList);
-
-    const availableLabelList = computed((): AvailableLabel[] => {
-      return labelList.value.map((label) => {
-        return { key: label.key, valueList: [...label.valueList] };
-      });
-    });
 
     const resetStates = async () => {
       await nextTick(); // Waiting for all watchers done
@@ -212,24 +196,10 @@ export default defineComponent({
       const dep = await deploymentStore.fetchDeploymentConfigByProjectId(
         props.project.id
       );
-
-      if (dep.id === UNKNOWN_ID) {
-        // if the project has no related deployment-config
-        // just generate a "staged-by-env" example to users
-        // this is not saved immediately, it's a draft
-        // users need to edit and save it before creating a deployment issue
-        if (environmentList.value.length > 0) {
-          state.deployment = empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
-          state.deployment.schedule = generateDefaultSchedule(
-            environmentList.value
-          );
-        }
-      } else {
-        // otherwise we clone the saved deployment-config
-        // <DeploymentConfigTool /> will mutate `state.deployment` directly
-        // when update button clicked, we save the draft to backend
-        state.deployment = cloneDeep(dep);
-      }
+      // We clone the saved deployment-config
+      // <DeploymentConfigTool /> will mutate `state.deployment` directly
+      // when update button clicked, we save the draft to backend.
+      state.deployment = cloneDeep(dep);
       // clone the object to the backup
       state.originalDeployment = cloneDeep(state.deployment);
       // clean up error and dirty status
@@ -323,9 +293,7 @@ export default defineComponent({
       dirty,
       allowUpdate,
       environmentList,
-      labelList,
       databaseList,
-      availableLabelList,
       addStage,
       revert,
       update,

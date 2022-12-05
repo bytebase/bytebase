@@ -64,8 +64,8 @@ func TestColumnRequirement(t *testing.T) {
 			},
 		},
 	}
-	payload, err := json.Marshal(advisor.RequiredColumnRulePayload{
-		ColumnList: []string{
+	payload, err := json.Marshal(advisor.StringArrayTypeRulePayload{
+		List: []string{
 			"id",
 			"created_ts",
 			"updated_ts",

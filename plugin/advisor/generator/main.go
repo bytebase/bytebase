@@ -36,7 +36,7 @@ var (
 			var fileNameTokenList, advisorNameTokenList []string
 			file, err := os.Open(typeFile)
 			if err != nil {
-				fmt.Printf("can not open %q: %s\n", typeFile, err.Error())
+				fmt.Printf("cannot open %q: %s\n", typeFile, err.Error())
 				return
 			}
 			defer file.Close()

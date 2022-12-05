@@ -93,7 +93,7 @@ func (checker *tableNoFKChecker) Visit(node ast.Node) ast.Visitor {
 				tableHasFK.Name,
 				checker.text,
 			),
-			Line: node.Line(),
+			Line: node.LastLine(),
 		})
 	}
 

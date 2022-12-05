@@ -16,6 +16,7 @@ export interface ConnectionAtom {
   label: string;
   type?: ConnectionAtomType;
   children?: ConnectionAtom[];
+  disabled?: boolean;
   isLeaf?: boolean;
 }
 
@@ -25,13 +26,6 @@ export enum SortText {
   COLUMN = "2",
   KEYWORD = "3",
 }
-
-// TODO(Jim): Move `isLoadingTree` to the root of sql editor state.
-// refactor <TableSchema> to get rid of this structure totally.
-export type ConnectionContext = {
-  isLoadingTree: boolean;
-  option: ConnectionAtom;
-};
 
 export interface QueryHistory {
   id: ActivityId;
@@ -46,8 +40,10 @@ export interface QueryHistory {
   durationNs: number;
   instanceName: string;
   databaseName: string;
+  instanceId: InstanceId;
+  databaseId: DatabaseId;
   error: string;
 
-  // Customerize fields
+  // Customized fields
   createdAt: string;
 }

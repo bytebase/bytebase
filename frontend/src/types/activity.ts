@@ -1,10 +1,19 @@
+import { ExternalApprovalEvent } from "./externalApproval";
 import { FieldId } from "../plugins";
-import { ActivityId, ContainerId, PrincipalId, TaskId } from "./id";
+import {
+  ActivityId,
+  ContainerId,
+  DatabaseId,
+  InstanceId,
+  PrincipalId,
+  TaskId,
+} from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
+import { Advice } from "./sql";
 import { t } from "../plugins/i18n";
 
 export type IssueActivityType =
@@ -32,11 +41,14 @@ export type ProjectActivityType =
 
 export type DatabaseActivityType = "bb.database.recovery.pitr.done";
 
+export type SQLEditorActivityType = "bb.sql-editor.query";
+
 export type ActivityType =
   | IssueActivityType
   | MemberActivityType
   | ProjectActivityType
-  | DatabaseActivityType;
+  | DatabaseActivityType
+  | SQLEditorActivityType;
 
 export function activityName(type: ActivityType): string {
   switch (type) {
@@ -77,6 +89,8 @@ export function activityName(type: ActivityType): string {
     case "bb.database.recovery.pitr.done":
       return t("activity.type.database-recovery-pitr-done");
   }
+  console.assert(false, `undefined text for activity type "${type}"`);
+  return "";
 }
 
 export type ActivityLevel = "INFO" | "WARN" | "ERROR";
@@ -86,6 +100,7 @@ export type ActivityIssueCreatePayload = {
 };
 
 export type ActivityIssueCommentCreatePayload = {
+  externalApprovalEvent: ExternalApprovalEvent;
   issueName: string;
 };
 
@@ -169,6 +184,17 @@ export type ActivityProjectDatabaseTransferPayload = {
   databaseName: string;
 };
 
+export type ActivitySQLEditorQueryPayload = {
+  statement: string;
+  durationNs: number;
+  instanceId: InstanceId;
+  instanceName: string;
+  databaseId: DatabaseId;
+  databaseName: string;
+  error: string;
+  adviceList: Advice[];
+};
+
 export type ActionPayloadType =
   | ActivityIssueCreatePayload
   | ActivityIssueCommentCreatePayload
@@ -182,7 +208,8 @@ export type ActionPayloadType =
   | ActivityMemberRoleUpdatePayload
   | ActivityMemberActivateDeactivatePayload
   | ActivityProjectRepositoryPushPayload
-  | ActivityProjectDatabaseTransferPayload;
+  | ActivityProjectDatabaseTransferPayload
+  | ActivitySQLEditorQueryPayload;
 
 export type Activity = {
   id: ActivityId;

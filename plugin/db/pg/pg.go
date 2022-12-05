@@ -8,11 +8,13 @@ import (
 	"strings"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
-	_ "github.com/jackc/pgx/v4/stdlib"
+	// init() in pgx/v5/stdlib will register it's pgx driver.
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
@@ -48,7 +50,7 @@ func init() {
 
 // Driver is the Postgres driver.
 type Driver struct {
-	pgInstanceDir string
+	dbBinDir      string
 	connectionCtx db.ConnectionContext
 	config        db.ConnectionConfig
 
@@ -62,12 +64,18 @@ type Driver struct {
 
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
-		pgInstanceDir: config.PgInstanceDir,
+		dbBinDir: config.DbBinDir,
 	}
 }
 
 // Open opens a Postgres driver.
 func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+	// Require username for Postgres, as the guessDSN 1st guesss is to use the username as the connecting database
+	// if database name is not explicitly specified.
+	if config.Username == "" {
+		return nil, errors.Errorf("user must be set")
+	}
+
 	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
 		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
@@ -114,6 +122,9 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		"user":     username,
 		"password": password,
 	}
+	if database != "" {
+		m["dbname"] = database
+	}
 
 	// We should use the default connection dsn without setting sslmode.
 	// Some provider might still perform default SSL check at the server side so we
@@ -135,23 +146,17 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 	}
 	dsn := strings.Join(tokens, " ")
 
-	var guesses []string
 	if database != "" {
-		guesses = append(guesses, database)
-	} else {
-		// Guess default database postgres, template1.
-		guesses = append(guesses, "")
-		guesses = append(guesses, "bytebase")
-		guesses = append(guesses, "postgres")
-		guesses = append(guesses, "template1")
+		return database, dsn, nil
 	}
 
+	// Some postgres server default behavior is to use username as the database name if not specified,
+	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
+	// Thus we explicitly guess username as the database name at first.
+	guesses := []string{username, "bytebase", "postgres", "template1"}
 	//  dsn+" dbname=bytebase"
-	for _, guess := range guesses {
-		guessDSN := dsn
-		if guess != "" {
-			guessDSN = fmt.Sprintf("%s dbname=%s", dsn, guess)
-		}
+	for _, guessDatabase := range guesses {
+		guessDSN := fmt.Sprintf("%s dbname=%s", dsn, guessDatabase)
 		if err := func() error {
 			db, err := sql.Open(driverName, guessDSN)
 			if err != nil {
@@ -160,15 +165,12 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 			defer db.Close()
 			return db.Ping()
 		}(); err != nil {
+			log.Debug("guessDSN attempt failed", zap.Error(err))
 			continue
 		}
-		return guess, guessDSN, nil
+		return guessDatabase, guessDSN, nil
 	}
-
-	if database != "" {
-		return "", "", errors.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
-	}
-	return "", "", errors.Errorf("cannot connecting instance, make sure the connection info is correct")
+	return "", "", errors.Errorf("cannot connect to the instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.
@@ -225,104 +227,137 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
 	owner, err := driver.GetCurrentDatabaseOwner()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
+	connected := false
 	var remainingStmts []string
+	totalRowsEffected := int64(0)
 	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
+		// We will execute the statement directly before "\\connect" statement.
 		// https://github.com/bytebase/bytebase/issues/202
-		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
-			databases, err := driver.getDatabases(ctx)
-			if err != nil {
-				return err
-			}
-			databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
-			if err != nil {
-				return err
-			}
-			exist := false
-			for _, database := range databases {
-				if database.name == databaseName {
-					exist = true
-					break
+		if createDatabase && !connected {
+			if strings.HasPrefix(stmt, "CREATE DATABASE ") {
+				databases, err := driver.getDatabases(ctx)
+				if err != nil {
+					return err
 				}
-			}
-
-			if !exist {
+				databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
+				if err != nil {
+					return err
+				}
+				exist := false
+				for _, database := range databases {
+					if database.name == databaseName {
+						exist = true
+						break
+					}
+				}
+				if !exist {
+					if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+						return err
+					}
+				}
+			} else if strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
 				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 					return err
 				}
+			} else if strings.HasPrefix(stmt, "\\connect ") {
+				// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
+				parts := strings.Split(stmt, `"`)
+				if len(parts) != 3 {
+					return errors.Errorf("invalid statement %q", stmt)
+				}
+				if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
+					return err
+				}
+				// Update current owner
+				if owner, err = driver.GetCurrentDatabaseOwner(); err != nil {
+					return err
+				}
+				connected = true
+			} else {
+				sqlResult, err := driver.db.ExecContext(ctx, stmt)
+				if err != nil {
+					return err
+				}
+				rowsEffected, err := sqlResult.RowsAffected()
+				if err != nil {
+					return err
+				}
+				totalRowsEffected += rowsEffected
 			}
-		} else if strings.HasPrefix(stmt, "GRANT") || strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
-			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-				return err
-			}
-		} else if strings.HasPrefix(stmt, "\\connect ") {
-			// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
-			parts := strings.Split(stmt, `"`)
-			if len(parts) != 3 {
-				return errors.Errorf("invalid statement %q", stmt)
-			}
-			if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
-				return err
-			}
-			// Update current owner
-			if owner, err = driver.GetCurrentDatabaseOwner(); err != nil {
-				return err
-			}
-		} else if isSuperuserStatement(stmt) {
-			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
-			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
-			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-			if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
-				stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-			}
-			// Use superuser privilege to run privileged statements.
-			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
-			remainingStmts = append(remainingStmts, stmt)
 		} else {
-			remainingStmts = append(remainingStmts, stmt)
+			if isSuperuserStatement(stmt) {
+				// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
+				// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
+				// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
+				// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
+				if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
+					stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
+				}
+				// Use superuser privilege to run privileged statements.
+				stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
+				remainingStmts = append(remainingStmts, stmt)
+			} else if !isIgnoredStatement(stmt) {
+				remainingStmts = append(remainingStmts, stmt)
+			}
 		}
 		return nil
 	}
 
 	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
-		return err
+		return 0, err
 	}
 
 	if len(remainingStmts) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
 	// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s", owner)); err != nil {
-		return err
+		return 0, err
 	}
 
-	if _, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err != nil {
-		return err
+	sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
+	if err != nil {
+		return 0, err
 	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	rowsEffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	totalRowsEffected += rowsEffected
 
-	return tx.Commit()
+	return totalRowsEffected, nil
 }
 
 func isSuperuserStatement(stmt string) bool {
 	upperCaseStmt := strings.ToUpper(stmt)
-	if strings.Contains(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.Contains(upperCaseStmt, "CREATE EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
+	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
 		return true
 	}
 	return false
+}
+
+func isIgnoredStatement(stmt string) bool {
+	// Extensions created in AWS Aurora PostgreSQL are owned by rdsadmin.
+	// We don't have privileges to comment on the extension and have to ignore it.
+	upperCaseStmt := strings.ToUpper(stmt)
+	return strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION")
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
@@ -371,8 +406,28 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 }
 
 // Query queries a SQL statement.
-func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, db.Postgres, driver.db, statement, limit)
+func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
+	// https://github.com/postgres/postgres/blob/master/src/bin/psql/common.c#L969
+	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
+		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
+		if err != nil {
+			return nil, err
+		}
+		field := []string{"Affected Rows"}
+		types := []string{"INT"}
+		rows := [][]interface{}{{affectedRows}}
+		return []interface{}{field, types, rows}, nil
+	}
+	return util.Query(ctx, db.Postgres, driver.db, statement, queryContext)
 }
 
 func (driver *Driver) switchDatabase(dbName string) error {

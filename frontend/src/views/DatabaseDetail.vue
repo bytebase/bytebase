@@ -3,9 +3,9 @@
     <main class="flex-1 relative overflow-y-auto">
       <!-- Highlight Panel -->
       <div
-        class="px-4 pb-4 space-y-2 md:space-y-0 md:flex md:items-center md:justify-between"
+        class="px-4 pb-4 space-y-2 lg:space-y-0 lg:flex lg:items-center lg:justify-between"
       >
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 shrink-0">
           <!-- Summary -->
           <div class="flex items-center">
             <div>
@@ -96,11 +96,16 @@
               </dd>
             </template>
             <dd
-              class="flex items-center text-sm md:mr-4 cursor-pointer textlabel hover:text-accent"
+              class="flex items-center text-sm md:mr-4"
+              :class="
+                allowQuery
+                  ? ['textlabel cursor-pointer hover:text-accent']
+                  : ['text-gray-400 cursor-not-allowed']
+              "
               @click.prevent="gotoSQLEditor"
             >
               <span class="mr-1">{{ $t("sql-editor.self") }}</span>
-              <heroicons-outline:terminal class="w-4 h-4" />
+              <heroicons-solid:terminal class="w-5 h-5" />
             </dd>
             <DatabaseLabelProps
               :label-list="database.labels"
@@ -110,14 +115,14 @@
             >
               <template #label="{ label }">
                 <span class="textlabel capitalize">
-                  {{ hidePrefix(label.key) }}&nbsp;-&nbsp;
+                  {{ hidePrefix(label) }}&nbsp;-&nbsp;
                 </span>
               </template>
             </DatabaseLabelProps>
           </dl>
         </div>
         <div
-          class="flex items-center gap-x-2"
+          class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
           <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
@@ -130,7 +135,7 @@
             {{ $t("common.sync-now") }}
           </button>
           <button
-            v-if="allowChangeProject"
+            v-if="allowTransferProject"
             type="button"
             class="btn-normal"
             @click.prevent="tryTransferProject"
@@ -141,7 +146,7 @@
             />
           </button>
           <button
-            v-if="allowEdit"
+            v-if="allowAlterSchemaOrChangeData"
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.data.update')"
@@ -153,7 +158,7 @@
             />
           </button>
           <button
-            v-if="allowEdit"
+            v-if="allowAlterSchemaOrChangeData"
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
@@ -289,6 +294,12 @@
   </div>
 
   <GhostDialog ref="ghostDialog" />
+
+  <SchemaEditorModal
+    v-if="state.showSchemaEditorModal"
+    :database-id-list="[database.id]"
+    @close="state.showSchemaEditorModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -303,11 +314,15 @@ import { DatabaseLabelProps } from "@/components/DatabaseLabels";
 import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
-  isDBAOrOwner,
   connectionSlug,
+  hasProjectPermission,
+  hasWorkspacePermission,
   hidePrefix,
   allowGhostMigration,
   isPITRDatabase,
+  isDatabaseAccessible,
+  allowUsingUIEditor,
+  isArchivedDatabase,
 } from "@/utils";
 import {
   ProjectId,
@@ -326,6 +341,7 @@ import {
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
+  usePolicyByDatabaseAndType,
   useRepositoryStore,
   useSQLStore,
 } from "@/store";
@@ -343,6 +359,7 @@ type DatabaseTabItem = {
 interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
+  showSchemaEditorModal: boolean;
   editingProjectId: ProjectId;
   selectedIndex: number;
   syncingSchema: boolean;
@@ -371,6 +388,7 @@ const databaseTabItemList: DatabaseTabItem[] = [
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
+  showSchemaEditorModal: false,
   editingProjectId: UNKNOWN_ID,
   selectedIndex: OVERVIEW_TAB,
   syncingSchema: false,
@@ -382,25 +400,48 @@ const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
 });
 
-const isCurrentUserDBAOrOwner = computed((): boolean => {
-  return isDBAOrOwner(currentUser.value.role);
+const accessControlPolicy = usePolicyByDatabaseAndType(
+  computed(() => ({
+    databaseId: database.value.id,
+    type: "bb.policy.access-control",
+  }))
+);
+const allowQuery = computed(() => {
+  const policy = accessControlPolicy.value;
+  const list = policy ? [policy] : [];
+  return isDatabaseAccessible(database.value, list, currentUser.value);
 });
 
 // Project can be transferred if meets either of the condition below:
 // - Database is in default project
-// - Workspace owner, dba
-// - db's project owner
-const allowChangeProject = computed(() => {
+// - Workspace role can manage instance
+// - Project role can transfer database
+const allowTransferProject = computed(() => {
+  if (isArchivedDatabase(database.value)) {
+    return false;
+  }
+
   if (database.value.project.id == DEFAULT_PROJECT_ID) {
     return true;
   }
 
-  if (isCurrentUserDBAOrOwner.value) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-project",
+      currentUser.value.role
+    )
+  ) {
     return true;
   }
 
   for (const member of database.value.project.memberList) {
-    if (member.role == "OWNER" && member.principal.id == currentUser.value.id) {
+    if (
+      member.principal.id == currentUser.value.id &&
+      hasProjectPermission(
+        "bb.permission.project.transfer-database",
+        member.role
+      )
+    ) {
       return true;
     }
   }
@@ -409,19 +450,31 @@ const allowChangeProject = computed(() => {
 });
 
 // Database can be admined if meets either of the condition below:
-// - Workspace owner, dba
-// - db's project owner
+// - Workspace role can manage instance
+// - Project role can admin database
 //
 // The admin operation includes
-// - Transfer project
+// - Edit database label
 // - Enable/disable backup
 const allowAdmin = computed(() => {
-  if (isCurrentUserDBAOrOwner.value) {
+  if (isArchivedDatabase(database.value)) {
+    return false;
+  }
+
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
+  ) {
     return true;
   }
 
   for (const member of database.value.project.memberList) {
-    if (member.role == "OWNER" && member.principal.id == currentUser.value.id) {
+    if (
+      member.principal.id == currentUser.value.id &&
+      hasProjectPermission("bb.permission.project.admin-database", member.role)
+    ) {
       return true;
     }
   }
@@ -429,22 +482,41 @@ const allowAdmin = computed(() => {
 });
 
 // Database can be edited if meets either of the condition below:
-// - Workspace owner, dba
-// - db's project member
+// - Workspace role can manage instance
+// - Project role can change database
 //
 // The edit operation includes
 // - Take manual backup
 const allowEdit = computed(() => {
-  if (isCurrentUserDBAOrOwner.value) {
+  if (isArchivedDatabase(database.value)) {
+    return false;
+  }
+
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-instance",
+      currentUser.value.role
+    )
+  ) {
     return true;
   }
 
   for (const member of database.value.project.memberList) {
-    if (member.principal.id == currentUser.value.id) {
+    if (
+      member.principal.id == currentUser.value.id &&
+      hasProjectPermission("bb.permission.project.change-database", member.role)
+    ) {
       return true;
     }
   }
   return false;
+});
+
+const allowAlterSchemaOrChangeData = computed(() => {
+  if (database.value.project.id === DEFAULT_PROJECT_ID) {
+    return false;
+  }
+  return allowEdit.value;
 });
 
 const allowEditDatabaseLabels = computed((): boolean => {
@@ -506,6 +578,11 @@ const createMigration = async (
   if (database.value.project.workflowType == "UI") {
     let mode: "online" | "normal" | false = "normal";
     if (type === "bb.issue.database.schema.update") {
+      if (allowUsingUIEditor([database.value])) {
+        state.showSchemaEditorModal = true;
+        return;
+      }
+
       // Check and show a normal/online selection modal dialog if needed.
       mode = await isUsingGhostMigration([database.value]);
     }
@@ -523,7 +600,9 @@ const createMigration = async (
           : `Change data`
       );
     }
-    issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
+    const datetime = dayjs().format("@MM-DD HH:mm");
+    const tz = "UTC" + dayjs().format("ZZ");
+    issueNameParts.push(`${datetime} ${tz}`);
 
     const query: Record<string, any> = {
       template: type,
@@ -550,8 +629,7 @@ const createMigration = async (
           baseDirectoryWebUrl(repository, {
             DB_NAME: database.value.name,
             ENV_NAME: database.value.instance.environment.name,
-            TYPE:
-              type === "bb.issue.database.schema.update" ? "migrate" : "data",
+            TYPE: type === "bb.issue.database.schema.update" ? "ddl" : "dml",
           }),
           "_blank"
         );
@@ -609,6 +687,10 @@ const selectDatabaseTabOnHash = () => {
 };
 
 const gotoSQLEditor = () => {
+  if (!allowQuery.value) {
+    return;
+  }
+
   // SQL editors can only query databases in the projects available to the user.
   if (
     database.value.projectId === UNKNOWN_ID ||
@@ -617,12 +699,11 @@ const gotoSQLEditor = () => {
     state.editingProjectId = database.value.project.id;
     state.showIncorrectProjectModal = true;
   } else {
-    router.push({
-      name: "sql-editor.detail",
-      params: {
-        connectionSlug: connectionSlug(database.value),
-      },
-    });
+    const url = `/sql-editor/${connectionSlug(
+      database.value.instance,
+      database.value
+    )}`;
+    window.open(url);
   }
 };
 

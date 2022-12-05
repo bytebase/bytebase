@@ -68,6 +68,12 @@ type columnAutoIncrementMustIntegerChecker struct {
 	line       int
 }
 
+type columnData struct {
+	table  string
+	column string
+	line   int
+}
+
 // Enter implements the ast.Visitor interface.
 func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columnList []columnData

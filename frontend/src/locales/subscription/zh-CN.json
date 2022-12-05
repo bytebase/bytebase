@@ -2,12 +2,11 @@
   "current": "当前版本",
   "instance-count": "实例数",
   "expires-at": "过期时间",
-  "free-trial": "无需信用卡即可免费试用",
-  "description-highlight": "购买证书",
+  "free-trial": "您可以免费试用 14 天 - 无需信用卡或预付费",
+  "purchase-license": "购买证书",
   "sensitive-placeholder": "粘贴您的证书 - 仅写入",
   "plan-compare": "比较不同版本的功能，寻找适合您的方案",
   "disabled-feature": "这是一个订阅版高级功能",
-  "trial": "您可以免费试用 14 天",
   "upgrade": "升级订阅",
   "per-month": "/ 月",
   "price-unit-for-enterprise": "/ 月起",
@@ -27,7 +26,7 @@
   "trialing": "试用期",
   "plan": {
     "title": "版本",
-    "try": "试用团队版",
+    "try": "免费试用",
     "free": {
       "title": "免费版",
       "label": "",
@@ -35,12 +34,12 @@
     },
     "team": {
       "title": "团队版",
-      "label": "Beta",
+      "label": "",
       "desc": "中型团队，有专职 DBA 或 TL 以提高工程速度"
     },
     "enterprise": {
       "title": "企业版",
-      "label": "预览版",
+      "label": "",
       "desc": "大型组织，有专属 DBA 团队来管理数据库"
     }
   },
@@ -52,6 +51,12 @@
         "instance-upto-5": "不多于 5 个",
         "instance-minimum-5": "5 ~ 无限制",
         "instance-customized": "自定义",
+        "environment-count": "环境数",
+        "environment-upto-2": "不多于 2 个",
+        "environment-unlimited": "无限制",
+        "task-count-in-issue": "单个工单的任务数",
+        "task-upto-4": "不多于 4 个",
+        "task-unlimited": "无限制",
         "schema-change": "Schema 和数据变更",
         "schema-change-basic": "基础",
         "schema-change-basic-tooltip": "普通变更",
@@ -77,7 +82,9 @@
         "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
         "schedule-change": "设定任务执行时间",
         "review-and-backup-policy": "审核和备份策略",
-        "tenancy": "多地域/多租户部署"
+        "tenancy": "多地域/多租户部署",
+        "read-replica": "为只读操作提供单独连接",
+        "sync-schema": "库表同步"
       }
     },
     "collaboration": {
@@ -87,7 +94,14 @@
         "vsc-workflow": "VCS 工作流 #GitOps",
         "shareable-query-link": "分享查询链接",
         "im-integration": "IM 集成",
-        "inbox-notification": "站内信通知"
+        "im-integration-basic": "基础",
+        "im-integration-basic-tooltip": "Webhook",
+        "im-integration-advanced": "高级",
+        "im-integration-advanced-tooltip": "基础版功能 + 飞书集成",
+        "inbox-notification": "站内信通知",
+        "vsc-workflow-basic": "基础",
+        "vsc-workflow-advanced": "高级",
+        "vsc-workflow-advanced-tooltip": "基础版功能 + SQL 审核 CI"
       }
     },
     "admin-and-security": {
@@ -96,7 +110,12 @@
         "activity-log": "活动日志",
         "rbac": "RBAC 权限管理",
         "3rd-party-auth": "通过 GitLab 登录",
-        "sync-members-from-vcs": "从 GitLab 同步成员信息"
+        "sync-members-from-vcs": "从 GitLab 同步成员信息",
+        "dba-workflow": "DBA 工作流",
+        "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
+        "environment-tier": "环境分级",
+        "sensitive-data": "数据脱敏",
+        "access-control": "访问控制"
       }
     },
     "branding": {
@@ -109,6 +128,8 @@
   "main-features": {
     "community-support": "社区支持",
     "review-workflow": "Schema 和数据改动审核流",
+    "gitops": "VCS 集成 #GitOps",
+    "pitr": "恢复到指定时间点 (PITR)",
     "sql-editor": "SQL 编辑器",
     "database-backup-restore": "数据库备份和恢复",
     "im-integration": "IM 集成 (Slack, Discord 等)",
@@ -116,11 +137,14 @@
     "everything-in-free-plan": "所有免费版的功能",
     "rbac": "RBAC 权限管理",
     "gitlab-login": "通过 GitLab 登录",
+    "online-schema-migration": "在线大表结构变更",
     "sql-check-anomaly-detection": "高阶 SQL 检查和异常检测",
     "review-and-backup-policy": "审核和备份策略",
     "sla": "SLA 支持",
     "everything-in-team-plan": "所有团队版的功能",
     "multi-tenancy": "多地域/多租户部署",
+    "dba-workflow": "DBA 工作流",
+    "environment-tier": "环境分级",
     "more-to-come": "更多功能敬请期待..."
   }
 }

@@ -304,8 +304,8 @@ import type {
 import {
   allTaskList,
   databaseSlug,
-  isDBAOrOwner,
   isReservedDatabaseLabel,
+  hasWorkspacePermission,
   hidePrefix,
   taskSlug,
   isOwnerOfProject,
@@ -316,7 +316,6 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentStore,
-  useLabelList,
   useProjectStore,
 } from "@/store";
 import {
@@ -418,15 +417,12 @@ const project = computed((): Project => {
   return (issue.value as Issue).project;
 });
 
-const labelList = useLabelList();
-
 const visibleLabelList = computed((): DatabaseLabel[] => {
   // transform non-reserved labels to db properties
   if (!props.database) return [];
-  if (labelList.value.length === 0) return [];
 
   return props.database.labels.filter(
-    (label) => !isReservedDatabaseLabel(label, labelList.value)
+    (label) => !isReservedDatabaseLabel(label)
   );
 });
 
@@ -445,7 +441,10 @@ const showTaskSelect = computed((): boolean => {
 });
 
 const showInstance = computed((): boolean => {
-  return isDBAOrOwner(currentUser.value.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-instance",
+    currentUser.value.role
+  );
 });
 
 const allowEditAssignee = computed(() => {
@@ -467,7 +466,12 @@ const allowEditAssignee = computed(() => {
   if (currentUser.value.id === issueEntity.assignee.id) {
     return true;
   }
-  if (isDBAOrOwner(currentUser.value.role)) {
+  if (
+    hasWorkspacePermission(
+      "bb.permission.workspace.manage-issue",
+      currentUser.value.role
+    )
+  ) {
     return true;
   }
   return false;
@@ -572,6 +576,9 @@ const filterPrincipal = (principal: Principal): boolean => {
   if (allowProjectOwnerToApprove.value) {
     return isOwnerOfProject(principal, project.value);
   }
-  return isDBAOrOwner(principal.role);
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-issue",
+    principal.role
+  );
 };
 </script>

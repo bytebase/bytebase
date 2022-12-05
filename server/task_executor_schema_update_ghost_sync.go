@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewSchemaUpdateGhostSyncTaskExecutor creates a schema update (gh-ost) sync task executor.
@@ -38,7 +39,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
-	return exec.runGhostMigration(ctx, server, task, payload.Statement)
+	return exec.runGhostMigration(ctx, server.store, server.TaskScheduler, task, payload.Statement)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
@@ -92,6 +93,9 @@ type ghostConfig struct {
 	socketFilename       string
 	postponeFlagFilename string
 	noop                 bool
+
+	// vendor related
+	isAWS bool
 }
 
 func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
@@ -130,6 +134,9 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.AlterStatement = statement
 	migrationContext.Noop = config.noop
 	migrationContext.ReplicaServerId = config.serverID
+	if config.isAWS {
+		migrationContext.AssumeRBR = true
+	}
 	// set defaults
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
@@ -175,11 +182,39 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, server *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.InstanceUser, tableName string, statement string, noop bool, serverIDOffset uint) ghostConfig {
+	var isAWS bool
+	for _, user := range userList {
+		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
+			isAWS = true
+			break
+		}
+	}
+	return ghostConfig{
+		host:                 task.Instance.Host,
+		port:                 task.Instance.Port,
+		user:                 dataSource.Username,
+		password:             dataSource.Password,
+		database:             task.Database.Name,
+		table:                tableName,
+		alterStatement:       statement,
+		socketFilename:       getSocketFilename(task.ID, task.Database.ID, task.Database.Name, tableName),
+		postponeFlagFilename: getPostponeFlagFilename(task.ID, task.Database.ID, task.Database.Name, tableName),
+		noop:                 noop,
+		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
+		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
+		// Here we use serverID = offset + task.ID to avoid potential conflicts.
+		serverID: serverIDOffset + uint(task.ID),
+		// https://github.com/github/gh-ost/blob/master/doc/rds.md
+		isAWS: isAWS,
+	}
+}
+
+func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, store *store.Store, taskScheduler *TaskScheduler, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
-	migrationError := make(chan error)
-	instance := task.Instance
-	databaseName := task.Database.Name
+	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
+	// see PR #2919.
+	migrationError := make(chan error, 1)
 
 	statement = strings.TrimSpace(statement)
 
@@ -188,36 +223,28 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 		return true, nil, err
 	}
 
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
+	adminDataSource := api.DataSourceFromInstanceWithType(task.Instance, api.Admin)
 	if adminDataSource == nil {
-		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.Instance.ID)
 	}
 
-	migrationContext, err := newMigrationContext(ghostConfig{
-		host:                 instance.Host,
-		port:                 instance.Port,
-		user:                 adminDataSource.Username,
-		password:             adminDataSource.Password,
-		database:             databaseName,
-		table:                tableName,
-		alterStatement:       statement,
-		socketFilename:       getSocketFilename(task.ID, task.Database.ID, databaseName, tableName),
-		postponeFlagFilename: getPostponeFlagFilename(task.ID, task.Database.ID, databaseName, tableName),
-		noop:                 false,
-		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
-		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
-		// Here we use serverID = offset + task.ID to avoid potential conflicts.
-		serverID: 10000000 + uint(task.ID),
-	})
+	instanceUserList, err := store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
+	if err != nil {
+		return true, nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
+	}
+
+	config := getGhostConfig(task, adminDataSource, instanceUserList, tableName, statement, false, 10000000)
+
+	migrationContext, err := newMigrationContext(config)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	migrator := logic.NewMigrator(migrationContext, "bb")
 
-	go func(ctx context.Context) {
+	childCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func(childCtx context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		createdTs := time.Now().Unix()
@@ -240,11 +267,11 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 					close(syncDone)
 					return
 				}
-			case <-ctx.Done():
+			case <-childCtx.Done():
 				return
 			}
 		}
-	}(ctx)
+	}(childCtx)
 
 	go func() {
 		if err := migrator.Migrate(); err != nil {
@@ -260,9 +287,12 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Conte
 
 	select {
 	case <-syncDone:
-		server.TaskScheduler.sharedTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
+		taskScheduler.sharedTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-migrationError:
 		return true, nil, err
+	case <-ctx.Done():
+		migrationContext.PanicAbort <- errors.New("task canceled")
+		return true, nil, errors.New("task canceled")
 	}
 }

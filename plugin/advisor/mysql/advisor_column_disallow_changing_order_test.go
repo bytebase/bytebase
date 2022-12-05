@@ -11,7 +11,9 @@ import (
 func TestColumnDisallowChangingOrder(t *testing.T) {
 	tests := []advisor.TestCase{
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN a int`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t MODIFY COLUMN a int`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -22,50 +24,58 @@ func TestColumnDisallowChangingOrder(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN a int FIRST`,
+			Statement: `
+				CREATE TABLE t(a int);
+				ALTER TABLE t MODIFY COLUMN a int FIRST`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ChangeColumnOrder,
 					Title:   "column.disallow-changing-order",
 					Content: "\"ALTER TABLE t MODIFY COLUMN a int FIRST\" changes column order",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN a1 a int FIRST`,
+			Statement: `
+				CREATE TABLE t(b int, a1 int);
+				ALTER TABLE t CHANGE COLUMN a1 a int FIRST`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ChangeColumnOrder,
 					Title:   "column.disallow-changing-order",
 					Content: "\"ALTER TABLE t CHANGE COLUMN a1 a int FIRST\" changes column order",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN a int AFTER b`,
+			Statement: `
+				CREATE TABLE t(a int, b int);
+				ALTER TABLE t MODIFY COLUMN a int AFTER b`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ChangeColumnOrder,
 					Title:   "column.disallow-changing-order",
 					Content: "\"ALTER TABLE t MODIFY COLUMN a int AFTER b\" changes column order",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN a1 a int AFTER b`,
+			Statement: `
+				CREATE TABLE t(a1 int, b int);
+				ALTER TABLE t CHANGE COLUMN a1 a int AFTER b`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ChangeColumnOrder,
 					Title:   "column.disallow-changing-order",
 					Content: "\"ALTER TABLE t CHANGE COLUMN a1 a int AFTER b\" changes column order",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},

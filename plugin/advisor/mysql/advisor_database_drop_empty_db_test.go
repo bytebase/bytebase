@@ -20,18 +20,6 @@ func TestMySQLDatabaseAllowDropIfEmpty(t *testing.T) {
 				},
 			},
 		},
-		{
-			Statement: "DROP DATABASE IF EXISTS foo",
-			Want: []advisor.Advice{
-				{
-					Status:  advisor.Error,
-					Code:    advisor.NotCurrentDatabase,
-					Title:   "database.drop-empty-database",
-					Content: "Database `foo` that is trying to be deleted is not the current database `test`",
-					Line:    1,
-				},
-			},
-		},
 	}
 
 	advisor.RunSQLReviewRuleTests(t, tests, &DatabaseAllowDropIfEmptyAdvisor{}, &advisor.SQLReviewRule{

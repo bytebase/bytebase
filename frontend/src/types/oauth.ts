@@ -45,15 +45,18 @@ export function openWindowForOAuth(
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
   if (vcsType == "GITHUB_COM") {
+    // GitHub OAuth App scopes: https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
+    // We need the workflow scope to update GitHub action files.
     return window.open(
       `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
         redirectUrl()
-      )}&state=${stateQueryParameter}&response_type=code&scope=api,repo`,
+      )}&state=${stateQueryParameter}&response_type=code&scope=api,repo,workflow`,
       "oauth",
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
     );
   }
   // GITLAB_SELF_HOST
+  // GitLab OAuth App scopes: https://docs.gitlab.com/ee/integration/oauth_provider.html#authorized-applications
   return window.open(
     `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
       redirectUrl()

@@ -19,6 +19,7 @@ type backupRaw struct {
 	ID int
 
 	// Standard fields
+	RowStatus api.RowStatus
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
@@ -47,6 +48,7 @@ func (raw *backupRaw) toBackup() *api.Backup {
 		ID: raw.ID,
 
 		// Standard fields
+		RowStatus: raw.RowStatus,
 		CreatorID: raw.CreatorID,
 		CreatedTs: raw.CreatedTs,
 		UpdaterID: raw.UpdaterID,
@@ -220,6 +222,38 @@ func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSetti
 	return backup, nil
 }
 
+// UpdateBackupSettingsInEnvironment upserts an instance of backup setting.
+func (s *Store) UpdateBackupSettingsInEnvironment(ctx context.Context, upsert *api.BackupSettingUpsert) error {
+	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	stmt := `
+		UPDATE backup_setting
+		SET enabled = $1
+		WHERE id IN (
+			SELECT backup_setting.id
+			FROM backup_setting
+			INNER JOIN db ON backup_setting.database_id = db.id
+			INNER JOIN instance ON db.instance_id = instance.id
+			INNER JOIN environment ON instance.environment_id = environment.id
+			WHERE environment.id = $2
+		);
+	`
+	if _, err := tx.ExecContext(ctx, stmt, upsert.Enabled, upsert.EnvironmentID); err != nil {
+		return FormatError(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
 // FindBackupSettingsMatch finds a list of backup setting instances with match conditions.
 func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
 	backupSettingRawList, err := s.findBackupSettingsMatchImpl(ctx, match)
@@ -278,6 +312,9 @@ func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw)
 	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
 	if err != nil {
 		return nil, err
+	}
+	if database == nil {
+		return nil, errors.Errorf("failed to get database with databaseID %v", backupSetting.DatabaseID)
 	}
 	backupSetting.Database = database
 
@@ -366,25 +403,8 @@ func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*ba
 
 // upsertBackupSettingRaw sets the backup settings for a database.
 func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
-	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
-	if err != nil {
+	if err := s.validateBackupSettingUpsert(ctx, upsert); err != nil {
 		return nil, err
-	}
-	// Backup plan policy check for backup setting mutation.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
-		if !upsert.Enabled {
-			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-		}
-		switch backupPlanPolicy.Schedule {
-		case api.BackupPlanPolicyScheduleDaily:
-			if upsert.DayOfWeek != -1 {
-				return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-			}
-		case api.BackupPlanPolicyScheduleWeekly:
-			if upsert.DayOfWeek == -1 {
-				return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-			}
-		}
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -405,6 +425,30 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 	return backupRaw, nil
 }
 
+func (s *Store) validateBackupSettingUpsert(ctx context.Context, upsert *api.BackupSettingUpsert) error {
+	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
+	if err != nil {
+		return err
+	}
+	// Backup plan policy check for backup setting mutation.
+	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
+		if !upsert.Enabled {
+			return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+		}
+		switch backupPlanPolicy.Schedule {
+		case api.BackupPlanPolicyScheduleDaily:
+			if upsert.DayOfWeek != -1 {
+				return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		case api.BackupPlanPolicyScheduleWeekly:
+			if upsert.DayOfWeek == -1 {
+				return &common.Error{Code: common.Invalid, Err: errors.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		}
+	}
+	return nil
+}
+
 // createBackupImpl creates a new backup.
 func (*Store) createBackupImpl(ctx context.Context, tx *Tx, create *api.BackupCreate) (*backupRaw, error) {
 	// Insert row into backup.
@@ -421,7 +465,7 @@ func (*Store) createBackupImpl(ctx context.Context, tx *Tx, create *api.BackupCr
 			path
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
 	`
 	var backupRaw backupRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -436,6 +480,7 @@ func (*Store) createBackupImpl(ctx context.Context, tx *Tx, create *api.BackupCr
 		create.Path,
 	).Scan(
 		&backupRaw.ID,
+		&backupRaw.RowStatus,
 		&backupRaw.CreatorID,
 		&backupRaw.CreatedTs,
 		&backupRaw.UpdaterID,
@@ -463,6 +508,9 @@ func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) 
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -476,6 +524,7 @@ func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
+			row_status,
 			creator_id,
 			created_ts,
 			updater_id,
@@ -505,6 +554,7 @@ func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) 
 		var payload []byte
 		if err := rows.Scan(
 			&backupRaw.ID,
+			&backupRaw.RowStatus,
 			&backupRaw.CreatorID,
 			&backupRaw.CreatedTs,
 			&backupRaw.UpdaterID,
@@ -562,11 +612,12 @@ func (*Store) patchBackupImpl(ctx context.Context, tx *Tx, patch *api.BackupPatc
 			UPDATE backup
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
+			RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
 		`, len(args)),
 		args...,
 	).Scan(
 		&backupRaw.ID,
+		&backupRaw.RowStatus,
 		&backupRaw.CreatorID,
 		&backupRaw.CreatedTs,
 		&backupRaw.UpdaterID,

@@ -75,8 +75,10 @@ const (
 	TaskCheckInstanceMigrationSchema TaskCheckType = "bb.task-check.instance.migration-schema"
 	// TaskCheckGhostSync is the task check type for the gh-ost sync task.
 	TaskCheckGhostSync TaskCheckType = "bb.task-check.database.ghost.sync"
-	// TaskCheckGeneralEarliestAllowedTime is the task check type for earliest allowed time.
-	TaskCheckGeneralEarliestAllowedTime TaskCheckType = "bb.task-check.general.earliest-allowed-time"
+	// TaskCheckIssueLGTM is the task check type for LGTM comments.
+	TaskCheckIssueLGTM TaskCheckType = "bb.task-check.issue.lgtm"
+	// TaskCheckPITRMySQL is the task check type for MySQL PITR.
+	TaskCheckPITRMySQL TaskCheckType = "bb.task-check.pitr.mysql"
 )
 
 // TaskCheckEarliestAllowedTimePayload is the task check payload for earliest allowed time.
@@ -167,12 +169,6 @@ type TaskCheckRunCreate struct {
 	Type    TaskCheckType `jsonapi:"attr,type"`
 	Comment string        `jsonapi:"attr,comment"`
 	Payload string        `jsonapi:"attr,payload"`
-
-	// If true, then we will skip creating the task check run if there has already been a DONE check run
-	// for this (TaskID, Type) pair. The check is done at the store layer so that we can wrap it in the
-	// same transaction.
-	// This is NOT persisted into the db
-	SkipIfAlreadyTerminated bool
 }
 
 // TaskCheckRunFind is the API message for finding task check runs.
@@ -211,7 +207,7 @@ type TaskCheckRunStatusPatch struct {
 }
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType db.Type, _ common.ReleaseMode) bool {
+func IsSyntaxCheckSupported(dbType db.Type) bool {
 	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {
@@ -225,7 +221,7 @@ func IsSyntaxCheckSupported(dbType db.Type, _ common.ReleaseMode) bool {
 }
 
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
-func IsSQLReviewSupported(dbType db.Type, _ common.ReleaseMode) bool {
+func IsSQLReviewSupported(dbType db.Type) bool {
 	if dbType == db.Postgres || dbType == db.MySQL || dbType == db.TiDB {
 		advisorDB, err := advisorDB.ConvertToAdvisorDBType(string(dbType))
 		if err != nil {

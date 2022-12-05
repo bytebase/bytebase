@@ -66,15 +66,15 @@ type allowDropEmptyDBChecker struct {
 // Enter implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
-		if v.catalog.DatabaseName() != node.Name {
+		if v.catalog.Origin.DatabaseName() != node.Name.O {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.NotCurrentDatabase,
 				Title:   v.title,
-				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.catalog.DatabaseName()),
+				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.catalog.Origin.DatabaseName()),
 				Line:    node.OriginTextPosition(),
 			})
-		} else if !v.catalog.HasNoTable() {
+		} else if !v.catalog.Origin.HasNoTable() {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.DatabaseNotEmpty,

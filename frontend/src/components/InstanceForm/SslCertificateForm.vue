@@ -15,7 +15,7 @@
   >
     <NTabPane
       name="CA"
-      :tab="$t('datasource.ssl.ca-cert')"
+      :tab="$t('data-source.ssl.ca-cert')"
       display-directive="show"
     >
       <textarea
@@ -27,7 +27,7 @@
     <NTabPane
       v-if="state.type === 'CA+KEY+CERT'"
       name="KEY"
-      :tab="$t('datasource.ssl.client-key')"
+      :tab="$t('data-source.ssl.client-key')"
       display-directive="show"
     >
       <textarea
@@ -39,7 +39,7 @@
     <NTabPane
       v-if="state.type === 'CA+KEY+CERT'"
       name="CERT"
-      :tab="$t('datasource.ssl.client-cert')"
+      :tab="$t('data-source.ssl.client-cert')"
       display-directive="show"
     >
       <textarea
@@ -135,12 +135,12 @@ watch(
 
 function getSslTypeLabel(type: SslType): string {
   if (type === "CA") {
-    return t("datasource.ssl-type.ca");
+    return t("data-source.ssl-type.ca");
   }
   if (type === "CA+KEY+CERT") {
-    return t("datasource.ssl-type.ca-and-key-and-cert");
+    return t("data-source.ssl-type.ca-and-key-and-cert");
   }
-  return t("datasource.ssl-type.none");
+  return t("data-source.ssl-type.none");
 }
 
 function guessSslType(value: WithSslOptions): SslType {

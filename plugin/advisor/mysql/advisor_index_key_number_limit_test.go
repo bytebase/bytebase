@@ -40,44 +40,50 @@ func TestIndexKeyNumberLimit(t *testing.T) {
 			},
 		},
 		{
-			Statement: `CREATE INDEX idx ON t(a, b, c, d, e, f, g)`,
+			Statement: `
+				CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
+				CREATE INDEX idx ON t(a, b, c, d, e, f, g)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexKeyNumberExceedsLimit,
 					Title:   "index.key-number-limit",
 					Content: "The number of index `idx` in table `t` should be not greater than 5",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD UNIQUE KEY uk (a, b, c, d, e, f, g)`,
+			Statement: `
+				CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
+				ALTER TABLE t ADD UNIQUE KEY uk (a, b, c, d, e, f, g)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexKeyNumberExceedsLimit,
 					Title:   "index.key-number-limit",
 					Content: "The number of index `uk` in table `t` should be not greater than 5",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD FOREIGN KEY uk (a, b, c, d, e, f, g) REFERENCES t1(a, b, c, d, e, f, g)`,
+			Statement: `
+				CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
+				ALTER TABLE t ADD FOREIGN KEY uk (a, b, c, d, e, f, g) REFERENCES t1(a, b, c, d, e, f, g)`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.IndexKeyNumberExceedsLimit,
 					Title:   "index.key-number-limit",
 					Content: "The number of index `uk` in table `t` should be not greater than 5",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 	}
 
-	payload, err := json.Marshal(advisor.NumberLimitRulePayload{
+	payload, err := json.Marshal(advisor.NumberTypeRulePayload{
 		Number: 5,
 	})
 	require.NoError(t, err)

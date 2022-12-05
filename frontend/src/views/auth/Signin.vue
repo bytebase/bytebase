@@ -31,7 +31,9 @@
           <span class="text-center font-semibold align-middle">
             {{
               authProviderList.length == 1
-                ? $t("auth.sign-in.gitlab")
+                ? authProvider.type.includes("GITHUB")
+                  ? $t("auth.sign-in.github")
+                  : $t("auth.sign-in.gitlab")
                 : authProvider.name
             }}
           </span>
@@ -190,7 +192,7 @@ import {
   OAuthWindowEventPayload,
   openWindowForOAuth,
 } from "../../types";
-import { isDev, isValidEmail } from "../../utils";
+import { isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
 import { featureToRef, useActuatorStore, useAuthStore } from "@/store";
 import { storeToRefs } from "pinia";
@@ -219,9 +221,9 @@ export default defineComponent({
     const { isDemo } = storeToRefs(actuatorStore);
 
     onMounted(() => {
-      state.email = isDev() || isDemo.value ? "demo@example.com" : "";
-      state.password = isDev() || isDemo.value ? "1024" : "";
-      state.showPassword = isDev() || isDemo.value ? true : false;
+      state.email = isDemo.value ? "demo@example.com" : "";
+      state.password = isDemo.value ? "1024" : "";
+      state.showPassword = isDemo.value ? true : false;
       // Navigate to signup if needs admin setup.
       // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
       // after router has already made the decision on first page load.

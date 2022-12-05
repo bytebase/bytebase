@@ -41,6 +41,11 @@
         >!</span
       >
     </template>
+    <template v-else-if="status === 'CANCELED'">
+      <heroicons-solid:minus-sm
+        class="w-6 h-6 rounded-full select-none bg-white border-2 border-gray-400 text-gray-400"
+      />
+    </template>
   </div>
 </template>
 

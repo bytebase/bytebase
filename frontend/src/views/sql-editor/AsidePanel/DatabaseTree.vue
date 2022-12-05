@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!sqlEditorStore.connectionContext.isLoadingTree"
+    v-if="sqlEditorStore.connectionTree.state === ConnectionTreeState.LOADED"
     class="databases-tree p-2 space-y-2 h-full"
   >
     <div class="databases-tree--input">
@@ -13,18 +13,19 @@
         </template>
       </n-input>
     </div>
-    <div class="databases-tree--tree overflow-y-scroll">
+    <div class="databases-tree--tree overflow-y-auto">
       <n-tree
         block-line
-        expand-on-click
         :data="treeData"
         :pattern="searchPattern"
-        :default-expanded-keys="defaultExpandedKeys"
         :selected-keys="selectedKeys"
+        :expanded-keys="sqlEditorStore.expandedTreeNodeKeys"
         :render-label="renderLabel"
+        :render-prefix="renderPrefix"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
         :on-load="loadSubTree"
+        :on-update:expanded-keys="updateExpandedKeys"
       />
       <n-dropdown
         placement="bottom-start"
@@ -45,27 +46,35 @@
 
 <script lang="ts" setup>
 import { escape } from "lodash-es";
-import { DropdownOption } from "naive-ui";
-import { ref, computed, h, nextTick, onMounted, watch } from "vue";
+import type { DropdownOption } from "naive-ui";
+import { ref, computed, h, nextTick, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { stringify } from "qs";
+import ConnectedIcon from "~icons/heroicons-outline/lightning-bolt";
 
-import { ConnectionAtom, UNKNOWN_ID } from "@/types";
+import type { ConnectionAtom, DatabaseId, InstanceId } from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import {
   useDatabaseStore,
   useInstanceStore,
+  useIsLoggedIn,
   useSQLEditorStore,
   useTableStore,
   useTabStore,
 } from "@/store";
 import {
-  connectionSlug,
   emptyConnection,
   getHighlightHTMLByKeyWords,
+  isDescendantOf,
+  isSameConnection,
   mapConnectionAtom,
 } from "@/utils";
-import OpenConnectionIcon from "@/components/SQLEditor/OpenConnectionIcon.vue";
-import { generateInstanceNode, generateTableItem } from "./utils";
+import { generateTableItem } from "./utils";
+import { scrollIntoViewIfNeeded } from "@/bbkit/BBUtil";
+import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
+import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database";
+import HeroiconsOutlineTable from "~icons/heroicons-outline/table";
+import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
 
 type Position = {
   x: number;
@@ -78,34 +87,20 @@ type DropdownOptionWithConnectionAtom = DropdownOption & {
 
 const { t } = useI18n();
 
-const router = useRouter();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const sqlEditorStore = useSQLEditorStore();
+const tableStore = useTableStore();
 const tabStore = useTabStore();
+const isLoggedIn = useIsLoggedIn();
 
-const defaultExpandedKeys = ref<string[]>([]);
 const searchPattern = ref();
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
   x: 0,
   y: 0,
 });
-const selectedKeys = ref<string[] | number[]>([]);
 const dropdownContext = ref<ConnectionAtom>();
-
-onMounted(() => {
-  const { instanceId, databaseId } = tabStore.currentTab.connection;
-  const keys: string[] = [];
-  if (instanceId !== UNKNOWN_ID) {
-    keys.push(`instance-${instanceId}`);
-  }
-  if (databaseId !== UNKNOWN_ID) {
-    keys.push(`database-${databaseId}`);
-  }
-  defaultExpandedKeys.value = keys;
-});
-
 const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
   if (!dropdownContext.value) {
     return [];
@@ -128,25 +123,37 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
   }
 });
 
-const generateTreeData = () => {
-  return sqlEditorStore.connectionTree.map((item) =>
-    generateInstanceNode(item, instanceStore)
-  );
-};
+// Highlight the current tab's connection node.
+const selectedKeys = computed(() => {
+  const { instanceId, databaseId } = tabStore.currentTab.connection;
+  if (databaseId !== UNKNOWN_ID) {
+    return [`database-${databaseId}`];
+  }
+  if (instanceId !== UNKNOWN_ID) {
+    return [`instance-${instanceId}`];
+  }
+  return [];
+});
 
-const treeData = ref<ConnectionAtom[]>([]);
-
-watch(
-  () => sqlEditorStore.connectionTree,
-  () => {
-    treeData.value = generateTreeData();
-  },
-  { immediate: true }
-);
+const treeData = computed(() => sqlEditorStore.connectionTree.data);
 
 const setConnection = (option: ConnectionAtom) => {
   if (option) {
     const conn = emptyConnection();
+    const connect = () => {
+      if (isSameConnection(tabStore.currentTab.connection, conn)) {
+        // Don't go further if the connection doesn't change.
+        return;
+      }
+      if (tabStore.currentTab.sheetId) {
+        // We won't mutate a saved sheet's connection.
+        // So we'll set connection in a temp or new tab.
+        tabStore.selectOrAddTempTab();
+      }
+      tabStore.updateCurrentTab({
+        connection: conn,
+      });
+    };
 
     // If selected item is instance node
     if (option.type === "instance") {
@@ -161,77 +168,114 @@ const setConnection = (option: ConnectionAtom) => {
       const databaseId = option.parentId;
       const databaseInfo = databaseStore.getDatabaseById(databaseId);
       const instanceId = databaseInfo.instance.id;
+      const tableId = option.id;
       conn.instanceId = instanceId;
       conn.databaseId = databaseId;
-      conn.tableId = option.id;
+      tableStore
+        .getOrFetchTableByDatabaseIdAndTableId(databaseId, tableId)
+        .then((table) => {
+          sqlEditorStore.selectedTable = table;
+        });
     }
 
-    if (tabStore.currentTab.sheetId) {
-      // We won't mutate a saved sheet's connection.
-      // So we'll set connection in a temp or new tab.
-      tabStore.selectOrAddTempTab();
-    }
-    tabStore.updateCurrentTab({
-      connection: conn,
-    });
-
-    // TODO(Jim): move the URL sync logic to <ProvideSQLEditorContext>
-    if (conn.instanceId !== UNKNOWN_ID && conn.databaseId !== UNKNOWN_ID) {
-      const database = useDatabaseStore().getDatabaseById(
-        conn.databaseId,
-        conn.instanceId
-      );
-      router.replace({
-        name: "sql-editor.detail",
-        params: {
-          connectionSlug: connectionSlug(database),
-        },
-      });
-    }
-
-    // TODO(Jim): This part is for <TableSchema> only
-    // and should be removed after upcoming refactor.
-    sqlEditorStore.setConnectionContext({
-      option,
-    });
+    connect();
   }
 };
 
 // dynamic render the highlight keywords
+// and render the selected table node in bold font
 const renderLabel = ({ option }: { option: ConnectionAtom }) => {
-  const renderLabelHTML = searchPattern.value
-    ? h("span", {
-        innerHTML: getHighlightHTMLByKeyWords(
-          escape(option.label),
-          escape(searchPattern.value)
-        ),
-        class: "truncate",
-      })
-    : escape(option.label);
+  const classes = ["truncate"];
+  const emphasize = () => {
+    classes.push("font-bold");
+  };
 
-  return renderLabelHTML;
-};
+  if (option.type === "table") {
+    if (option.id === sqlEditorStore.selectedTable.id) {
+      emphasize();
+    }
+  }
 
-// render the suffix icon
-const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
-  const renderSuffixHTML = h(OpenConnectionIcon, {
-    id: "tree-node-suffix",
-    class: "n-tree-node-content__suffix-icon",
-    onClick: function () {
-      setConnection(option);
-    },
+  return h("span", {
+    // render an unique id for every node
+    // for auto scroll to the node when tab switches
+    id: `tree-node-label-${option.type}-${option.id}`,
+    innerHTML: getHighlightHTMLByKeyWords(
+      escape(option.label),
+      escape(searchPattern.value)
+    ),
+    class: classes,
   });
-
-  return renderSuffixHTML;
 };
 
-const loadSubTree = async (item: ConnectionAtom) => {
-  const mapper = mapConnectionAtom("table", item.id);
+// Render icons before nodes.
+const renderPrefix = ({ option }: { option: ConnectionAtom }) => {
+  if (option.type === "instance") {
+    const instanceId = option.id;
+    const instance = instanceStore.getInstanceById(instanceId);
+    const children = [
+      h(InstanceEngineIcon, {
+        instance,
+      }),
+      h(ProtectedEnvironmentIcon, {
+        environment: instance.environment,
+        class: "w-4 h-4",
+      }),
+      h(
+        "span",
+        {
+          class: "text-gray-500 text-sm",
+        },
+        `(${instance.environment.name})`
+      ),
+    ];
+
+    return h("span", { class: "flex items-center gap-x-1" }, children);
+  } else if (option.type === "database") {
+    return h(HeroiconsOutlineDatabase, {
+      class: "w-4 h-4",
+    });
+  } else if (option.type === "table") {
+    return h(HeroiconsOutlineTable, {
+      class: "w-4 h-4",
+    });
+  }
+  return null;
+};
+
+// Render a 'connected' icon in the right of the node
+// if it matches the current tab's connection
+const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
+  const renderConnectedIcon = () => {
+    return h(ConnectedIcon, {
+      class: "w-4 h-4",
+    });
+  };
+  const { instanceId, databaseId } = tabStore.currentTab.connection;
+  if (option.type === "database") {
+    if (option.id === databaseId) {
+      return renderConnectedIcon();
+    }
+  }
+  if (option.type === "instance") {
+    if (databaseId === UNKNOWN_ID && option.id === instanceId) {
+      return renderConnectedIcon();
+    }
+  }
+};
+
+const loadSubTree = async (item: ConnectionAtom): Promise<void> => {
   if (item.type === "database") {
     const tableList = await useTableStore().fetchTableListByDatabaseId(item.id);
 
+    const mapper = mapConnectionAtom("table", item.id);
     item.children = tableList.map((table) => generateTableItem(mapper(table)));
-    return;
+    if (item.children.length === 0) {
+      // No tables in the db
+      item.isLeaf = true;
+      // TODO: this might be a little bit confusing
+      // Better add a dummy "no tables" node in the future
+    }
   }
 };
 
@@ -242,19 +286,15 @@ const gotoAlterSchema = (option: ConnectionAtom) => {
     return;
   }
 
-  router.push({
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query: {
-      template: "bb.issue.database.schema.update",
-      name: `[${database.name}] Alter schema`,
-      project: database.project.id,
-      databaseList: databaseId,
-      sql: `ALTER TABLE ${option.label}`,
-    },
-  });
+  const query = {
+    template: "bb.issue.database.schema.update",
+    name: `[${database.name}] Alter schema`,
+    project: database.project.id,
+    databaseList: databaseId,
+    sql: `ALTER TABLE ${option.label}`,
+  };
+  const url = `/issue/new?${stringify(query)}`;
+  window.open(url, "_blank");
 };
 
 const handleSelect = (key: string) => {
@@ -276,18 +316,13 @@ const handleClickoutside = () => {
   showDropdown.value = false;
 };
 
-const nodeProps = (info: { option: ConnectionAtom }) => {
-  const { option } = info;
-
+const nodeProps = ({ option }: { option: ConnectionAtom }) => {
   return {
     onClick(e: MouseEvent) {
-      // TODO(Jim): This part is for <TableSchema> only
-      // and should be removed after upcoming refactor.
-      const targetEl = e.target as HTMLElement;
-      if (option && targetEl.className === "n-tree-node-content__text") {
-        sqlEditorStore.setConnectionContext({
-          option,
-        });
+      if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
+        // Check if clicked on the content part.
+        // And ignore the fold/unfold arrow.
+        setConnection(option);
       }
     },
     onContextmenu(e: MouseEvent) {
@@ -295,7 +330,6 @@ const nodeProps = (info: { option: ConnectionAtom }) => {
       showDropdown.value = false;
       if (option && option.key) {
         dropdownContext.value = option;
-        selectedKeys.value = [option.key as string];
       }
 
       nextTick().then(() => {
@@ -306,21 +340,87 @@ const nodeProps = (info: { option: ConnectionAtom }) => {
     },
   };
 };
+
+const updateExpandedKeys = (keys: string[]) => {
+  sqlEditorStore.expandedTreeNodeKeys = keys;
+};
+
+// When switching tabs, scroll the matched node into view if needed.
+const scrollToConnectedNode = (
+  instanceId: InstanceId,
+  databaseId: DatabaseId
+) => {
+  if (instanceId === UNKNOWN_ID && databaseId === UNKNOWN_ID) {
+    return;
+  }
+  let id: string;
+  if (databaseId === UNKNOWN_ID) {
+    id = `tree-node-label-instance-${instanceId}`;
+  } else {
+    id = `tree-node-label-database-${databaseId}`;
+  }
+  nextTick(() => {
+    const elem = document.getElementById(id);
+    if (elem) {
+      scrollIntoViewIfNeeded(elem);
+    }
+  });
+};
+
+// Open corresponding tree node when the connection changed.
+watch(
+  [
+    isLoggedIn,
+    () => tabStore.currentTab.connection.instanceId,
+    () => tabStore.currentTab.connection.databaseId,
+  ],
+  ([isLoggedIn, instanceId, databaseId]) => {
+    if (!isLoggedIn) {
+      // Don't go further and cleanup the state if we signed out.
+      sqlEditorStore.expandedTreeNodeKeys = [];
+      return;
+    }
+
+    const maybeExpandKey = (key: string) => {
+      const keys = sqlEditorStore.expandedTreeNodeKeys;
+      if (!keys.includes(key)) {
+        keys.push(key);
+      }
+    };
+
+    if (instanceId !== UNKNOWN_ID) {
+      maybeExpandKey(`instance-${instanceId}`);
+    }
+    if (databaseId !== UNKNOWN_ID) {
+      maybeExpandKey(`database-${databaseId}`);
+    }
+
+    scrollToConnectedNode(instanceId, databaseId);
+  },
+  { immediate: true, flush: "pre" }
+);
 </script>
 
 <style>
-.n-tree-node-content__prefix {
-  @apply shrink-0;
+.databases-tree .n-tree-node-content__prefix {
+  @apply shrink-0 !mr-1;
 }
-.n-tree-node-content__text {
+.databases-tree .n-tree-node-content__text {
   @apply truncate mr-1;
 }
-.n-tree-node-content__suffix {
-  display: none !important;
+.databases-tree .n-tree-node--pending {
+  background-color: transparent !important;
 }
-
-.n-tree-node:hover .n-tree-node-content__suffix {
-  display: block !important;
+.databases-tree .n-tree-node--pending:hover {
+  background-color: var(--n-node-color-hover) !important;
+}
+.databases-tree .n-tree-node--selected,
+.databases-tree .n-tree-node--selected:hover {
+  background-color: var(--n-node-color-active) !important;
+}
+.databases-tree .n-tree-node--disabled > * {
+  pointer-events: none;
+  cursor: not-allowed !important;
 }
 </style>
 

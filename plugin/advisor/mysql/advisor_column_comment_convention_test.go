@@ -47,50 +47,58 @@ func TestColumnCommentConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: `ALTER TABLE t ADD COLUMN b int`,
+			Statement: `
+				CREATE TABLE t(a int COMMENT 'comment');
+				ALTER TABLE t ADD COLUMN b int`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NoColumnComment,
 					Title:   "column.comment",
 					Content: "Column `t`.`b` requires comments",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t CHANGE COLUMN a b int`,
+			Statement: `
+				CREATE TABLE t(a int COMMENT 'this is comment');
+				ALTER TABLE t CHANGE COLUMN a b int`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NoColumnComment,
 					Title:   "column.comment",
 					Content: "Column `t`.`b` requires comments",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN b int`,
+			Statement: `
+				CREATE TABLE t(b int COMMENT 'It is comment');
+				ALTER TABLE t MODIFY COLUMN b int`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NoColumnComment,
 					Title:   "column.comment",
 					Content: "Column `t`.`b` requires comments",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},
 		{
-			Statement: `ALTER TABLE t MODIFY COLUMN b int COMMENT 'abcdefghiakljhakljdsfalugelkhnabsdguelkadf'`,
+			Statement: `
+				CREATE TABLE t(b int COMMENT 'It is COMMENT');
+				ALTER TABLE t MODIFY COLUMN b int COMMENT 'abcdefghiakljhakljdsfalugelkhnabsdguelkadf'`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.ColumnCommentTooLong,
 					Title:   "column.comment",
 					Content: "The length of column `t`.`b` comment should be within 20 characters",
-					Line:    1,
+					Line:    3,
 				},
 			},
 		},

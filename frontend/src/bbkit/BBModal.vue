@@ -213,7 +213,7 @@ export const useOverrideSubtitle = (
 }
 
 .modal-container {
-  @apply px-0.5 pt-4 max-h-screen overflow-auto w-full;
+  @apply px-px pt-4 max-h-screen overflow-auto w-full;
 
   margin-top: 0.5rem !important;
 }

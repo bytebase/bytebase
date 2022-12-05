@@ -23,13 +23,13 @@
 
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.key") }}
+          {{ $t("common.key") }} <span class="text-red-600">*</span>
         </dt>
         <dd class="mt-1 text-sm text-main">
           <input
             id="projectKey"
-            :value="project.key"
-            disabled
+            v-model="state.key"
+            :disabled="!allowEdit"
             required
             autocomplete="off"
             type="text"
@@ -47,6 +47,7 @@
         </div>
         <BBSelect
           id="schemamigrationtype"
+          :disabled="!allowEdit"
           :selected-item="state.schemaChangeType"
           :item-list="['DDL', 'SDL']"
           class="mt-1"
@@ -94,6 +95,7 @@ import { pushNotification, useProjectStore } from "@/store";
 
 interface LocalState {
   name: string;
+  key: string;
   schemaChangeType: SchemaChangeType;
 }
 
@@ -115,6 +117,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       name: props.project.name,
+      key: props.project.key,
       schemaChangeType: props.project.schemaChangeType,
     });
 
@@ -123,6 +126,7 @@ export default defineComponent({
         props.project.id != DEFAULT_PROJECT_ID &&
         !isEmpty(state.name) &&
         (state.name !== props.project.name ||
+          state.key !== props.project.key ||
           state.schemaChangeType != props.project.schemaChangeType)
       );
     });
@@ -132,6 +136,9 @@ export default defineComponent({
 
       if (state.name !== props.project.name) {
         projectPatch.name = state.name;
+      }
+      if (state.key !== props.project.key) {
+        projectPatch.key = state.key;
       }
       if (state.schemaChangeType !== props.project.schemaChangeType) {
         projectPatch.schemaChangeType = state.schemaChangeType;
@@ -149,6 +156,7 @@ export default defineComponent({
             title: t("project.settings.success-updated"),
           });
           state.name = updatedProject.name;
+          state.key = updatedProject.key;
           state.schemaChangeType = updatedProject.schemaChangeType;
         });
     };

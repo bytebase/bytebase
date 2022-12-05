@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -34,8 +33,12 @@ const (
 	TaskGeneral TaskType = "bb.task.general"
 	// TaskDatabaseCreate is the task type for creating databases.
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
+	// TaskDatabaseSchemaBaseline is the task type for database schema baseline.
+	TaskDatabaseSchemaBaseline TaskType = "bb.task.database.schema.baseline"
 	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
+	// TaskDatabaseSchemaUpdateSDL is the task type for updating database schemas via state-based migration.
+	TaskDatabaseSchemaUpdateSDL TaskType = "bb.task.database.schema.update-sdl"
 	// TaskDatabaseSchemaUpdateGhostSync is the task type for gh-ost syncing ghost table.
 	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
 	// TaskDatabaseSchemaUpdateGhostCutover is the task type for gh-ost switching the original table and the ghost table.
@@ -84,24 +87,34 @@ type TaskDatabasePITRCutoverPayload struct{}
 // TaskDatabaseCreatePayload is the task payload for creating databases.
 type TaskDatabaseCreatePayload struct {
 	// The project owning the database.
-	ProjectID     int    `json:"projectId,omitempty"`
-	DatabaseName  string `json:"databaseName,omitempty"`
+	ProjectID    int    `json:"projectId,omitempty"`
+	DatabaseName string `json:"databaseName,omitempty"`
+	Statement    string `json:"statement,omitempty"`
+	CharacterSet string `json:"character,omitempty"`
+	Collation    string `json:"collation,omitempty"`
+	Labels       string `json:"labels,omitempty"`
+}
+
+// TaskDatabaseSchemaBaselinePayload is the task payload for database schema baseline.
+type TaskDatabaseSchemaBaselinePayload struct {
 	Statement     string `json:"statement,omitempty"`
-	CharacterSet  string `json:"character,omitempty"`
-	Collation     string `json:"collation,omitempty"`
-	Labels        string `json:"labels,omitempty"`
 	SchemaVersion string `json:"schemaVersion,omitempty"`
+	// TODO(d): remove this vcs pushevent since it should not be passed in from frontend.
+	VCSPushEvent *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
-	MigrationType db.MigrationType `json:"migrationType,omitempty"`
-	Statement     string           `json:"statement,omitempty"`
-	SchemaVersion string           `json:"schemaVersion,omitempty"`
-	VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
-	// MigrationInfo is only available when VCSPushEvent != nil.
-	// It's parsed from VCSPushEvent.
-	MigrationInfo *db.MigrationInfo `json:"migrationInfo,omitempty"`
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+}
+
+// TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
+type TaskDatabaseSchemaUpdateSDLPayload struct {
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
@@ -116,17 +129,35 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 }
 
 // TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
-type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
-}
+type TaskDatabaseSchemaUpdateGhostCutoverPayload struct{}
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
-	// MigrationInfo is only available when VCSPushEvent != nil.
-	// It's parsed from VCSPushEvent.
-	MigrationInfo *db.MigrationInfo `json:"migrationInfo,omitempty"`
+
+	// MySQL rollback SQL related.
+
+	// ThreadID is the ID of the connection executing the migration.
+	// We use it to filter the binlog events of the migration transaction.
+	ThreadID string `json:"threadID,omitempty"`
+	// MigrationID is the ID of the migration history record.
+	// We use it to get the schema when the transaction ran.
+	MigrationID int `json:"migrationID,omitempty"`
+	// BinlogXxx are obtained before and after executing the migration.
+	// We use them to locate the range of binlog for the migration transaction.
+	BinlogFileStart string `json:"binlogFileStart,omitempty"`
+	BinlogFileEnd   string `json:"binlogFileEnd,omitempty"`
+	BinlogPosStart  int64  `json:"binlogPosStart,omitempty"`
+	BinlogPosEnd    int64  `json:"binlogPosEnd,omitempty"`
+	RollbackError   string `json:"rollbackError,omitempty"`
+	// RollbackStatement is the generated rollback SQL statement for the DML task.
+	RollbackStatement string `json:"rollbackStatement,omitempty"`
+	// RollbackFromIssueID is the issue ID containing the original task from which the rollback SQL statement is generated for this task.
+	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
+	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
+	RollbackFromTaskID int `json:"rollbackFromTaskId,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
@@ -213,7 +244,6 @@ type TaskCreate struct {
 	Labels            string `jsonapi:"attr,labels"`
 	BackupID          *int   `jsonapi:"attr,backupId"`
 	VCSPushEvent      *vcs.PushEvent
-	MigrationType     db.MigrationType `jsonapi:"attr,migrationType"`
 }
 
 // TaskFind is the API message for finding tasks.
@@ -223,9 +253,14 @@ type TaskFind struct {
 	// Related fields
 	PipelineID *int
 	StageID    *int
+	DatabaseID *int
 
 	// Domain specific fields
 	StatusList *[]TaskStatus
+	TypeList   *[]TaskType
+	// Payload contains JSONB expressions
+	// Ref: https://www.postgresql.org/docs/current/functions-json.html
+	Payload string
 }
 
 func (find *TaskFind) String() string {
@@ -253,7 +288,7 @@ type TaskPatch struct {
 
 // TaskStatusPatch is the API message for patching a task status.
 type TaskStatusPatch struct {
-	ID int
+	IDList []int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -16,68 +17,11 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
+	"github.com/bytebase/bytebase/plugin/parser/edit"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
-	g.POST("/database", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		databaseCreate := &api.DatabaseCreate{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, databaseCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create database request").SetInternal(err)
-		}
-
-		databaseCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		instance, err := s.store.GetInstanceByID(ctx, databaseCreate.InstanceID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
-		}
-		if instance == nil {
-			err := errors.Errorf("instance ID not found %v", databaseCreate.InstanceID)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-		databaseCreate.EnvironmentID = instance.EnvironmentID
-		project, err := s.store.GetProjectByID(ctx, databaseCreate.ProjectID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", databaseCreate.ProjectID)).SetInternal(err)
-		}
-		if project == nil {
-			err := errors.Errorf("project ID not found %v", databaseCreate.ProjectID)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-		if project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
-			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-		// Pre-validate database labels.
-		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, "Failed to validate database labels").SetInternal(err)
-			}
-		}
-
-		db, err := s.store.CreateDatabase(ctx, databaseCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Database name already exists: %s", databaseCreate.Name))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create database").SetInternal(err)
-		}
-
-		// Set database labels, except bb.environment is immutable and must match instance environment.
-		// This needs to be after we compose database relationship.
-		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, db, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
-			}
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, db); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create database response").SetInternal(err)
-		}
-		return nil
-	})
-
 	g.GET("/database", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		databaseFind := new(api.DatabaseFind)
@@ -138,11 +82,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id", func(c echo.Context) error {
+	g.GET("/database/:databaseID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
@@ -165,12 +109,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/database/:id", func(c echo.Context) error {
+	g.PATCH("/database/:databaseID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		dbPatch := &api.DatabasePatch{
@@ -191,13 +135,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		targetProject := database.Project
 		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != database.ProjectID {
-			// Before updating the database projectID, we first need to check if there are still bound sheets.
+			// Before updating database's projectID, we need to check if there are still bound sheets.
 			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.ID}, currentPrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.ID)).SetInternal(err)
 			}
 			if len(sheetList) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, unbind them first", len(sheetList)))
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, please go to SQL editor to unbind them first", len(sheetList)))
 			}
 
 			toProject, err := s.store.GetProjectByID(ctx, *dbPatch.ProjectID)
@@ -208,44 +152,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
 			}
 			targetProject = toProject
-
-			if toProject.TenantMode == api.TenantModeTenant {
-				if !s.feature(api.FeatureMultiTenancy) {
-					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-				}
-
-				labels := database.Labels
-				if dbPatch.Labels != nil {
-					labels = *dbPatch.Labels
-				}
-				// For database being transferred to a tenant mode project, its schema version and schema has to match a peer tenant database.
-				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get base database name for database %q with template %q and label %q", database.Name, toProject.DBNameTemplate, labels)).SetInternal(err)
-				}
-				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *dbPatch.ProjectID, baseDatabaseName)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get schema from peer tenant database").SetInternal(err)
-				}
-
-				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
-				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
-					if err != nil {
-						return err
-					}
-					defer driver.Close(ctx)
-
-					var schemaBuf bytes.Buffer
-					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database schema for database %q", database.Name)).SetInternal(err)
-					}
-					if peerSchema != schemaBuf.String() {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name))
-					}
-				}
-			}
 		}
 
 		// Patch database labels
@@ -336,11 +242,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/table", func(c echo.Context) error {
+	g.GET("/database/:databaseID/table", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		tableFind := &api.TableFind{
@@ -380,11 +286,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/table/:tableName", func(c echo.Context) error {
+	g.GET("/database/:databaseID/table/:tableName", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
@@ -436,11 +342,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/view", func(c echo.Context) error {
+	g.GET("/database/:databaseID/view", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		viewFind := &api.ViewFind{
@@ -458,11 +364,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/extension", func(c echo.Context) error {
+	g.GET("/database/:databaseID/extension", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		dbExtensionFind := &api.DBExtensionFind{
@@ -480,11 +386,43 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/database/:id/backup", func(c echo.Context) error {
+	g.GET("/database/:databaseID/schema", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+		}
+
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
+		}
+		defer driver.Close(ctx)
+		var schemaBuf bytes.Buffer
+		if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /*schemaOnly*/); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to dump database schema").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+		if _, err := c.Response().Write(schemaBuf.Bytes()); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
+	g.POST("/database/:databaseID/backup", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		id, err := strconv.Atoi(c.Param("databaseID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		backupCreate := &api.BackupCreate{
@@ -502,7 +440,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
+		storeBackupList, err := s.store.FindBackup(ctx, &api.BackupFind{
+			DatabaseID: &id,
+			Name:       &backupCreate.Name,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch backup with name %q", backupCreate.Name)).SetInternal(err)
+		}
+		if len(storeBackupList) > 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Backup %q already exists", backupCreate.Name))
+		}
+
+		backup, err := s.BackupRunner.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			if common.ErrorCode(err) == common.DbConnectionFailure {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)
@@ -517,11 +466,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/backup", func(c echo.Context) error {
+	g.GET("/database/:databaseID/backup", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
@@ -547,11 +496,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/database/:id/backup-setting", func(c echo.Context) error {
+	g.PATCH("/database/:databaseID/backup-setting", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		backupSettingUpsert := &api.BackupSettingUpsert{}
@@ -584,11 +533,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/backup-setting", func(c echo.Context) error {
+	g.GET("/database/:databaseID/backup-setting", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
@@ -617,11 +566,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:id/data-source/:dataSourceID", func(c echo.Context) error {
+	g.GET("/database/:databaseID/data-source/:dataSourceID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		databaseID, err := strconv.Atoi(c.Param("id"))
+		databaseID, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
@@ -629,7 +578,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID})
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
@@ -658,14 +607,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/database/:id/data-source", func(c echo.Context) error {
+	g.POST("/database/:databaseID/data-source", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		databaseID, err := strconv.Atoi(c.Param("id"))
+		databaseID, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID})
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
@@ -677,6 +626,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
+			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
+				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
+			}
+		}
+
+		if dataSourceCreate.Type == api.Admin && (dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "") {
+			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
+		}
 
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
@@ -686,18 +644,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
-		if dataSourceCreate.SyncSchema {
-			// Refetch the instance to get the updated data source.
-			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
-			}
-			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
-				log.Warn("Failed to sync instance schema",
-					zap.Int("instance_id", updatedInstance.ID),
-					zap.Error(err))
-			}
+		// Refetch the instance to get the updated data source.
+		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
+		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.Int("instance_id", updatedInstance.ID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
+		instanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -706,11 +664,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.PATCH("/database/:id/data-source/:dataSourceID", func(c echo.Context) error {
+	g.PATCH("/database/:databaseID/data-source/:dataSourceID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		databaseID, err := strconv.Atoi(c.Param("id"))
+		databaseID, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
 		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
@@ -736,13 +694,19 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
 		}
-		if dataSourceOld == nil || dataSourceOld.DatabaseID != databaseID {
+		if dataSourceOld == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
 		dataSourcePatch := &api.DataSourcePatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
+		}
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
+			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
+			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
+				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
+			}
 		}
 
 		dataSourcePatch.ID = dataSourceID
@@ -752,24 +716,27 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			password := ""
 			dataSourcePatch.Password = &password
 		}
+		if dataSourceOld.Type == api.Admin && (dataSourcePatch.HostOverride != nil || dataSourcePatch.PortOverride != nil) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
+		}
 
 		dataSourceNew, err := s.store.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
-		if dataSourcePatch.SyncSchema {
-			// Refetch the instance to get the updated data source.
-			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
-			}
-			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
-				log.Warn("Failed to sync instance schema",
-					zap.Int("instance_id", updatedInstance.ID),
-					zap.Error(err))
-			}
+		// Refetch the instance to get the updated data source.
+		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
+		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.Int("instance_id", updatedInstance.ID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
+		instanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
@@ -777,9 +744,102 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.DELETE("/database/:databaseID/data-source/:dataSourceID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		databaseID, err := strconv.Atoi(c.Param("databaseID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
+		}
+
+		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+
+		dataSourceFind := &api.DataSourceFind{
+			ID:         &dataSourceID,
+			DatabaseID: &databaseID,
+		}
+		dataSource, err := s.store.GetDataSource(ctx, dataSourceFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
+		}
+		if dataSource == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found by ID %d and database ID %d", dataSourceID, databaseID))
+		}
+		// Only allow to delete ReadOnly data source at present.
+		if dataSource.Type != api.RO {
+			return echo.NewHTTPError(http.StatusForbidden, "Data source type is not read only")
+		}
+
+		if err := s.store.DeleteDataSource(ctx, &api.DataSourceDelete{
+			ID:         dataSource.ID,
+			InstanceID: database.InstanceID,
+		}); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete data source").SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
+
+	g.POST("/database/:databaseID/edit", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		databaseID, err := strconv.Atoi(c.Param("databaseID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{
+			ID: &databaseID,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find database").SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+		}
+		databaseEdit := &api.DatabaseEdit{}
+		if err := json.Unmarshal(body, databaseEdit); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed post database edit request").SetInternal(err)
+		}
+
+		engineType := parser.EngineType(database.Instance.Engine)
+		if err := edit.ValidateDatabaseEdit(engineType, databaseEdit); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid request: %s", err.Error()))
+		}
+
+		statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
+		}
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+		if _, err := c.Response().Write([]byte(statement)); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write DDL statement response for database %v", databaseID)).SetInternal(err)
+		}
+		return nil
+	})
 }
 
 func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
+	if labelsJSON == "" {
+		return nil
+	}
 	// NOTE: this is a partially filled DatabaseLabel
 	var labels []*api.DatabaseLabel
 	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
@@ -802,7 +862,8 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 	}
 
-	// Validate labels can match database name template on the project.
+	// Validate labels can match database name template on the project if the
+	// template is not a wildcard.
 	if project.DBNameTemplate != "" {
 		tokens := make(map[string]string)
 		for _, label := range labels {
@@ -826,113 +887,6 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	return nil
 }
 
-// Try to get database driver using the instance's admin data source.
-// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
-	connCfg, err := getConnectionConfig(instance, databaseName)
-	if err != nil {
-		return nil, err
-	}
-
-	driver, err := getDatabaseDriver(
-		ctx,
-		instance.Engine,
-		db.DriverConfig{
-			PgInstanceDir: s.pgInstance.BaseDir,
-			ResourceDir:   common.GetResourceDir(s.profile.DataDir),
-			BinlogDir:     getBinlogAbsDir(s.profile.DataDir, instance.ID),
-		},
-		connCfg,
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return driver, nil
-}
-
-// getConnectionConfig returns the connection config of the `databaseName` on `instance`.
-func getConnectionConfig(instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
-	if adminDataSource == nil {
-		return db.ConnectionConfig{}, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
-	}
-
-	return db.ConnectionConfig{
-		Username: adminDataSource.Username,
-		Password: adminDataSource.Password,
-		TLSConfig: db.TLSConfig{
-			SslCA:   adminDataSource.SslCa,
-			SslCert: adminDataSource.SslCert,
-			SslKey:  adminDataSource.SslKey,
-		},
-		Host:     instance.Host,
-		Port:     instance.Port,
-		Database: databaseName,
-	}, nil
-}
-
-// We'd like to use read-only data source whenever possible, but fallback to admin data source if there's no read-only data source.
-// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
-	dataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
-	// If there are no read-only data source, fall back to admin data source.
-	if dataSource == nil {
-		dataSource = api.DataSourceFromInstanceWithType(instance, api.Admin)
-	}
-	if dataSource == nil {
-		return nil, common.Errorf(common.Internal, "data source not found for instance %d", instance.ID)
-	}
-
-	driver, err := getDatabaseDriver(
-		ctx,
-		instance.Engine,
-		// We don't need postgres installation for query.
-		db.DriverConfig{},
-		db.ConnectionConfig{
-			Username: dataSource.Username,
-			Password: dataSource.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-			Database: databaseName,
-			TLSConfig: db.TLSConfig{
-				SslCA:   dataSource.SslCa,
-				SslCert: dataSource.SslCert,
-				SslKey:  dataSource.SslKey,
-			},
-			ReadOnly: true,
-		},
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return driver, nil
-}
-
-// Retrieve db.Driver connection with standard parameters for all type data source.
-func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.DriverConfig, connectionConfig db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	driver, err := db.Open(
-		ctx,
-		engine,
-		driverConfig,
-		connectionConfig,
-		connCtx,
-	)
-	if err != nil {
-		return nil, common.Wrapf(err, common.DbConnectionFailure, "failed to connect database at %s:%s with user %q", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username)
-	}
-	return driver, nil
-}
-
 func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {
 	keyValueList := make(map[string]map[string]bool)
 	for _, labelKey := range labelKeyList {
@@ -950,13 +904,8 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*a
 			environmentValue = &label.Value
 			continue
 		}
-		labelKey, ok := keyValueList[label.Key]
-		if !ok {
+		if _, ok := keyValueList[label.Key]; !ok {
 			return common.Errorf(common.Invalid, "invalid database label key: %v", label.Key)
-		}
-		_, ok = labelKey[label.Value]
-		if !ok {
-			return common.Errorf(common.Invalid, "invalid database label value %v for key %v", label.Value, label.Key)
 		}
 	}
 

@@ -1,5 +1,4 @@
 import { BBButtonType } from "@/bbkit/types";
-import { uniq } from "lodash-es";
 import {
   Database,
   empty,
@@ -76,12 +75,13 @@ export function activeStage(pipeline: Pipeline): Stage {
   for (const stage of pipeline.stageList) {
     for (const task of stage.taskList) {
       if (
-        task.status == "PENDING" ||
-        task.status == "PENDING_APPROVAL" ||
-        task.status == "RUNNING" ||
+        task.status === "PENDING" ||
+        task.status === "PENDING_APPROVAL" ||
+        task.status === "RUNNING" ||
         // "FAILED" is also a transient task status, which requires user
         // to take further action (e.g. Skip, Retry)
-        task.status == "FAILED"
+        task.status === "FAILED" ||
+        task.status === "CANCELED"
       ) {
         return stage;
       }
@@ -98,12 +98,13 @@ export function activeTask(pipeline: Pipeline): Task {
   for (const stage of pipeline.stageList) {
     for (const task of stage.taskList) {
       if (
-        task.status == "PENDING" ||
-        task.status == "PENDING_APPROVAL" ||
-        task.status == "RUNNING" ||
+        task.status === "PENDING" ||
+        task.status === "PENDING_APPROVAL" ||
+        task.status === "RUNNING" ||
         // "FAILED" is also a transient task status, which requires user
         // to take further action (e.g. Skip, Retry)
-        task.status == "FAILED"
+        task.status === "FAILED" ||
+        task.status === "CANCELED"
       ) {
         return task;
       }
@@ -121,12 +122,13 @@ export function activeTask(pipeline: Pipeline): Task {
 export function activeTaskInStage(stage: Stage): Task {
   for (const task of stage.taskList) {
     if (
-      task.status == "PENDING" ||
-      task.status == "PENDING_APPROVAL" ||
-      task.status == "RUNNING" ||
+      task.status === "PENDING" ||
+      task.status === "PENDING_APPROVAL" ||
+      task.status === "RUNNING" ||
       // "FAILED" is also a transient task status, which requires user
       // to take further action (e.g. Skip, Retry)
-      task.status == "FAILED"
+      task.status === "FAILED" ||
+      task.status === "CANCELED"
     ) {
       return task;
     }
@@ -160,7 +162,8 @@ export type TaskStatusTransitionType =
   | "APPROVE"
   | "RETRY"
   | "CANCEL"
-  | "SKIP";
+  | "SKIP"
+  | "RESTART";
 
 export interface TaskStatusTransition {
   type: TaskStatusTransitionType;
@@ -169,7 +172,7 @@ export interface TaskStatusTransition {
   buttonType: BBButtonType;
 }
 
-const TASK_STATUS_TRANSITION_LIST: Map<
+export const TASK_STATUS_TRANSITION_LIST: Map<
   TaskStatusTransitionType,
   TaskStatusTransition
 > = new Map([
@@ -195,7 +198,7 @@ const TASK_STATUS_TRANSITION_LIST: Map<
     "RETRY",
     {
       type: "RETRY",
-      to: "RUNNING",
+      to: "PENDING_APPROVAL",
       buttonName: "common.retry",
       buttonType: "PRIMARY",
     },
@@ -204,23 +207,33 @@ const TASK_STATUS_TRANSITION_LIST: Map<
     "CANCEL",
     {
       type: "CANCEL",
-      to: "PENDING",
+      to: "CANCELED",
       buttonName: "common.cancel",
+      buttonType: "NORMAL",
+    },
+  ],
+  [
+    "RESTART",
+    {
+      type: "RESTART",
+      to: "PENDING_APPROVAL",
+      buttonName: "common.restart",
       buttonType: "NORMAL",
     },
   ],
 ]);
 
 // The transition button are displayed from left to right on the UI, and the right-most one is the primary button
-const APPLICABLE_TASK_TRANSITION_LIST: Map<
+export const APPLICABLE_TASK_TRANSITION_LIST: Map<
   TaskStatus,
   TaskStatusTransitionType[]
 > = new Map([
-  ["PENDING", []],
+  ["PENDING", ["CANCEL"]],
   ["PENDING_APPROVAL", ["APPROVE"]],
-  ["RUNNING", []],
+  ["RUNNING", ["CANCEL"]],
   ["DONE", []],
   ["FAILED", ["RETRY"]],
+  ["CANCELED", ["RESTART"]],
 ]);
 
 export function applicableTaskTransition(
@@ -244,24 +257,3 @@ export function applicableTaskTransition(
 // The status transition applying to a stage is applying to all tasks in the
 // stage simultaneously.
 export type StageStatusTransition = TaskStatusTransition;
-
-export function applicableStageTransition(
-  pipeline: Pipeline
-): StageStatusTransition[] {
-  const task = activeTask(pipeline);
-  if (task.id === EMPTY_ID || task.id === UNKNOWN_ID) {
-    return [];
-  }
-  const stage = task.stage;
-  const statusList = uniq(stage.taskList.map((t) => t.status));
-
-  // Only allowed to apply status patch to a stage when all it's tasks' status
-  // are the same.
-  if (statusList.length > 1) {
-    return [];
-  }
-
-  const transitionTypes = APPLICABLE_TASK_TRANSITION_LIST.get(statusList[0])!;
-
-  return transitionTypes.map((type) => TASK_STATUS_TRANSITION_LIST.get(type)!);
-}

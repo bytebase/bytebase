@@ -67,33 +67,17 @@ func (patch *LabelKeyPatch) Validate() error {
 
 // DatabaseLabel is the label associated with a database.
 type DatabaseLabel struct {
-	ID int `json:"-"`
-
-	// Standard fields
-	RowStatus RowStatus  `json:"-"`
-	CreatorID int        `json:"-"`
-	Creator   *Principal `json:"-"`
-	CreatedTs int64      `json:"-"`
-	UpdaterID int        `json:"-"`
-	Updater   *Principal `json:"-"`
-	UpdatedTs int64      `json:"-"`
-
-	// Related fields
-	DatabaseID int    `json:"-"`
-	Key        string `json:"key"`
-
-	// Domain specific fields
+	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
 // DatabaseLabelFind finds the labels associated with the database.
 type DatabaseLabelFind struct {
 	// Standard fields
-	ID        *int
 	RowStatus *RowStatus
 
 	// Related fields
-	DatabaseID *int
+	DatabaseID int
 }
 
 // DatabaseLabelUpsert upserts the label associated with the database.

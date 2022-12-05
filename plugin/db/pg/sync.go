@@ -311,14 +311,21 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get table constraints")
 	}
+	columns, err := getTableColumns(txn)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get table columns")
+	}
 
 	var tables []*tableSchema
-	query := "" +
-		"SELECT tbl.schemaname, tbl.tablename, tbl.tableowner, " +
-		"pg_table_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass), " +
-		"pg_indexes_size((quote_ident(tbl.schemaname) || '.' || quote_ident(tbl.tablename))::regclass) " +
-		"FROM pg_catalog.pg_tables tbl " +
-		"WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema');"
+	query := `
+	SELECT tbl.schemaname, tbl.tablename, tbl.tableowner,
+		pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+		pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+		GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
+		obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
+	FROM pg_catalog.pg_tables tbl
+	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass
+	WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema');`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -328,8 +335,9 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	for rows.Next() {
 		var tbl tableSchema
 		var schemaname, tablename, tableowner string
-		var tableSizeByte, indexSizeByte int64
-		if err := rows.Scan(&schemaname, &tablename, &tableowner, &tableSizeByte, &indexSizeByte); err != nil {
+		var tableSizeByte, indexSizeByte, rowCountEstimate int64
+		var comment sql.NullString
+		if err := rows.Scan(&schemaname, &tablename, &tableowner, &tableSizeByte, &indexSizeByte, &rowCountEstimate, &comment); err != nil {
 			return nil, err
 		}
 		tbl.schemaName = schemaname
@@ -337,6 +345,10 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 		tbl.tableowner = tableowner
 		tbl.tableSizeByte = tableSizeByte
 		tbl.indexSizeByte = indexSizeByte
+		tbl.rowCount = rowCountEstimate
+		if comment.Valid {
+			tbl.comment = comment.String
+		}
 
 		tables = append(tables, &tbl)
 	}
@@ -345,59 +357,19 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	}
 
 	for _, tbl := range tables {
-		if err := getTable(txn, tbl); err != nil {
-			return nil, errors.Wrapf(err, "failed to call getTable(%q, %q)", tbl.schemaName, tbl.name)
-		}
-		columns, err := getTableColumns(txn, tbl.schemaName, tbl.name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to call getTableColumns(%q, %q)", tbl.schemaName, tbl.name)
-		}
-		tbl.columns = columns
-
 		key := fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
 		tbl.constraints = constraints[key]
+		tbl.columns = columns[key]
 	}
 	return tables, nil
 }
 
-func getTable(txn *sql.Tx, tbl *tableSchema) error {
-	countQuery := fmt.Sprintf(`SELECT GREATEST(reltuples::bigint, 0::BIGINT) AS estimate FROM pg_class WHERE oid = (quote_ident('%s') || '.' || quote_ident('%s'))::regclass;`, tbl.schemaName, tbl.name)
-	rows, err := txn.Query(countQuery)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := rows.Scan(&tbl.rowCount); err != nil {
-			return err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
-	crows, err := txn.Query(commentQuery)
-	if err != nil {
-		return err
-	}
-	defer crows.Close()
-
-	for crows.Next() {
-		var comment sql.NullString
-		if err := crows.Scan(&comment); err != nil {
-			return err
-		}
-		tbl.comment = comment.String
-	}
-	return crows.Err()
-}
-
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema, error) {
+func getTableColumns(txn *sql.Tx) (map[string][]*columnSchema, error) {
 	query := `
 	SELECT
+		cols.table_schema,
+		cols.table_name,
 		cols.column_name,
 		cols.data_type,
 		cols.ordinal_position,
@@ -407,21 +379,21 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.collation_name,
 		cols.udt_schema,
 		cols.udt_name,
-		pg_catalog.col_description((quote_ident(table_schema) || '.' || quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
+		pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
 	FROM INFORMATION_SCHEMA.COLUMNS AS cols
-	WHERE table_schema=$1 AND table_name=$2;`
-	rows, err := txn.Query(query, schemaName, tableName)
+	WHERE cols.table_schema NOT IN ('pg_catalog', 'information_schema');`
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var columns []*columnSchema
+	columnsMap := make(map[string][]*columnSchema)
 	for rows.Next() {
-		var columnName, dataType, isNullable string
+		var tableSchema, tableName, columnName, dataType, isNullable string
 		var characterMaximumLength, columnDefault, collationName, udtSchema, udtName, comment sql.NullString
 		var ordinalPosition int
-		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &udtSchema, &udtName, &comment); err != nil {
+		if err := rows.Scan(&tableSchema, &tableName, &columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &udtSchema, &udtName, &comment); err != nil {
 			return nil, err
 		}
 		isNullBool, err := convertBoolFromYesNo(isNullable)
@@ -444,12 +416,13 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		case "ARRAY":
 			c.dataType = udtName.String
 		}
-		columns = append(columns, &c)
+		key := fmt.Sprintf("%s.%s", tableSchema, tableName)
+		columnsMap[key] = append(columnsMap[key], &c)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return columns, nil
+	return columnsMap, nil
 }
 
 // getTableConstraints gets all table constraints of a database.
@@ -485,9 +458,9 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) ([]*viewSchema, error) {
-	query := "" +
-		"SELECT schemaname, viewname, definition FROM pg_catalog.pg_views " +
-		"WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
+	query := `
+	SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views
+	WHERE schemaname NOT IN ('pg_catalog', 'information_schema');`
 	var views []*viewSchema
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -497,8 +470,8 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 	for rows.Next() {
 		var view viewSchema
-		var def sql.NullString
-		if err := rows.Scan(&view.schemaName, &view.name, &def); err != nil {
+		var def, comment sql.NullString
+		if err := rows.Scan(&view.schemaName, &view.name, &def, &comment); err != nil {
 			return nil, err
 		}
 		// Return error on NULL view definition.
@@ -507,39 +480,18 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
 		view.definition = def.String
+		if comment.Valid {
+			view.comment = comment.String
+		}
 		views = append(views, &view)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	for _, view := range views {
-		if err = getView(txn, view); err != nil {
-			return nil, errors.Wrapf(err, "failed to call getPgView(%q, %q)", view.schemaName, view.name)
-		}
-	}
 	return views, nil
 }
 
-// getView gets the schema of a view.
-func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, view.schemaName, view.name)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var comment sql.NullString
-		if err := rows.Scan(&comment); err != nil {
-			return err
-		}
-		view.comment = comment.String
-	}
-	return rows.Err()
-}
-
+// getExtensions gets all extensions of a database.
 func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 	query := "" +
 		"SELECT e.extname, e.extversion, n.nspname, c.description " +
@@ -571,9 +523,16 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 
 // getIndices gets all indices of a database.
 func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
-	query := "" +
-		"SELECT schemaname, tablename, indexname, indexdef " +
-		"FROM pg_indexes WHERE schemaname NOT IN ('pg_catalog', 'information_schema');"
+	query := `
+	SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
+		FROM information_schema.table_constraints
+		WHERE constraint_schema = idx.schemaname
+		AND constraint_name = idx.indexname
+		AND table_schema = idx.schemaname
+		AND table_name = idx.tablename
+		AND constraint_type = 'PRIMARY KEY') AS primary,
+		obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment
+	FROM pg_indexes AS idx WHERE idx.schemaname NOT IN ('pg_catalog', 'information_schema');`
 
 	var indices []*indexSchema
 	rows, err := txn.Query(query)
@@ -584,7 +543,9 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 	for rows.Next() {
 		var idx indexSchema
-		if err := rows.Scan(&idx.schemaName, &idx.tableName, &idx.name, &idx.statement); err != nil {
+		var primary sql.NullInt32
+		var comment sql.NullString
+		if err := rows.Scan(&idx.schemaName, &idx.tableName, &idx.name, &idx.statement, &primary, &comment); err != nil {
 			return nil, err
 		}
 		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
@@ -593,61 +554,19 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		if err != nil {
 			return nil, err
 		}
+		if primary.Valid && primary.Int32 == 1 {
+			idx.primary = true
+		}
+		if comment.Valid {
+			idx.comment = comment.String
+		}
 		indices = append(indices, &idx)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	for _, idx := range indices {
-		if err = getIndex(txn, idx); err != nil {
-			return nil, errors.Wrapf(err, "failed to call getIndex(%q, %q)", idx.schemaName, idx.name)
-		}
-
-		if err = getPrimary(txn, idx); err != nil {
-			return nil, errors.Wrapf(err, "failed to call getPrimary(%q, %q)", idx.schemaName, idx.name)
-		}
-	}
-
 	return indices, nil
-}
-
-func getPrimary(txn *sql.Tx, idx *indexSchema) error {
-	isPrimaryQuery := `
-		SELECT EXISTS (SELECT 1
-			FROM information_schema.table_constraints
-			WHERE constraint_schema = $1
-				AND constraint_name = $2
-				AND table_schema = $1
-				AND table_name = $3
-				AND constraint_type = 'PRIMARY KEY')
-	`
-
-	var isPrimary bool
-	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&isPrimary); err != nil {
-		return err
-	}
-
-	idx.primary = isPrimary
-	return nil
-}
-
-func getIndex(txn *sql.Tx, idx *indexSchema) error {
-	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
-	rows, err := txn.Query(commentQuery)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var comment sql.NullString
-		if err := rows.Scan(&comment); err != nil {
-			return err
-		}
-		idx.comment = comment.String
-	}
-	return rows.Err()
 }
 
 func convertBoolFromYesNo(s string) (bool, error) {
