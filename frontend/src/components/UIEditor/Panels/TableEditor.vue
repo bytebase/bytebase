@@ -258,7 +258,7 @@ const handleSaveChanges = async () => {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "Invalid table name",
+      title: t("ui-editor.message.invalid-table-name"),
     });
     return;
   }
@@ -272,7 +272,7 @@ const handleSaveChanges = async () => {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "Invalid table name: duplicate with others",
+      title: t("ui-editor.message.duplicated-table-name"),
     });
     return;
   }
@@ -282,7 +282,18 @@ const handleSaveChanges = async () => {
       notificationStore.pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: "Invalid column name",
+        title: t("ui-editor.message.invalid-column-name"),
+      });
+      return;
+    }
+    const foundColumnListByName = tableCache.columnList.filter(
+      (item) => item.name === column.name
+    );
+    if (foundColumnListByName.length > 1) {
+      notificationStore.pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("ui-editor.message.duplicated-column-name"),
       });
       return;
     }
@@ -290,7 +301,7 @@ const handleSaveChanges = async () => {
       notificationStore.pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: "Invalid column type",
+        title: t("ui-editor.message.invalid-column-type"),
       });
       return;
     }
