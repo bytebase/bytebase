@@ -225,7 +225,13 @@ func (extractor *sensitiveFieldExtractor) extractColumnFromExprNode(in tidbast.E
 		// Subquery in SELECT fields is special.
 		// It can only be the non-associated subquery.
 		// We can extract this subquery as the alone node.
-		fieldList, err := extractor.extractNode(node.Query)
+		// The reason for new extractor is that non-associated subquery cannot access the fromFieldList.
+		// Also, we still need the current fromFieldList, overriding it is not expected.
+		subqueryExtractor := &sensitiveFieldExtractor{
+			currentDatabase: extractor.currentDatabase,
+			schemaInfo:      extractor.schemaInfo,
+		}
+		fieldList, err := subqueryExtractor.extractNode(node.Query)
 		if err != nil {
 			return false, err
 		}
