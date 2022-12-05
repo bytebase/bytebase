@@ -1016,12 +1016,10 @@ func (s *TaskScheduler) changeIssueStatus(ctx context.Context, issue *api.Issue,
 		UpdaterID: updaterID,
 		Status:    &newStatus,
 	}
-	if newStatus != api.IssueOpen {
+	if newStatus != api.IssueOpen && issue.Project.WorkflowType == api.UIWorkflow {
 		// for UI workflow, set assigneeNeedAttention to false if we are closing the issue.
-		if issue.Project.WorkflowType == api.UIWorkflow {
-			needAttention := false
-			issuePatch.AssigneeNeedAttention = &needAttention
-		}
+		needAttention := false
+		issuePatch.AssigneeNeedAttention = &needAttention
 	}
 	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 	if err != nil {
