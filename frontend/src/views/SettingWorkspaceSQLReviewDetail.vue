@@ -30,30 +30,27 @@
             />
           </div>
         </div>
-        <button
-          v-if="reviewPolicy.rowStatus === 'NORMAL'"
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="state.showDisableModal = true"
-        >
-          {{ $t("common.disable") }}
-        </button>
-        <button
-          v-else
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="state.showEnableModal = true"
-        >
-          {{ $t("common.enable") }}
-        </button>
-        <button
-          v-if="hasPermission"
-          type="button"
-          class="btn-primary"
-          @click="onEdit"
-        >
-          {{ $t("common.edit") }}
-        </button>
+        <div class="flex space-x-2" v-if="hasPermission">
+          <button
+            v-if="reviewPolicy.rowStatus === 'NORMAL'"
+            type="button"
+            class="btn-normal py-2 px-4"
+            @click.prevent="state.showDisableModal = true"
+          >
+            {{ $t("common.disable") }}
+          </button>
+          <button
+            v-else
+            type="button"
+            class="btn-normal py-2 px-4"
+            @click.prevent="state.showEnableModal = true"
+          >
+            {{ $t("common.enable") }}
+          </button>
+          <button type="button" class="btn-primary" @click="onEdit">
+            {{ $t("common.edit") }}
+          </button>
+        </div>
       </div>
       <div
         v-if="reviewPolicy.environment"
@@ -149,7 +146,7 @@
         class="py-5"
       />
       <BBButtonConfirm
-        v-if="reviewPolicy.rowStatus === 'ARCHIVED'"
+        v-if="reviewPolicy.rowStatus === 'ARCHIVED' && hasPermission"
         :style="'DELETE'"
         :button-text="$t('sql-review.delete')"
         :ok-text="$t('common.delete')"

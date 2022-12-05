@@ -6,7 +6,7 @@
         $t("version-control.setting.description-highlight")
       }}</span>
     </div>
-    <div class="flex items-center justify-end">
+    <div v-if="vcsList.length > 0" class="flex items-center justify-end">
       <button
         type="button"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
@@ -41,7 +41,8 @@ import { reactive, computed, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "../components/VCSCard.vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
-import { featureToRef, useVCSStore } from "@/store";
+import { featureToRef, useCurrentUser, useVCSStore } from "@/store";
+import { hasWorkspacePermission } from "@/utils";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -56,6 +57,7 @@ export default defineComponent({
     const vcsStore = useVCSStore();
     const router = useRouter();
     const state = reactive<LocalState>({});
+    const currentUser = useCurrentUser();
 
     const prepareVCSList = () => {
       vcsStore.fetchVCSList();
@@ -73,6 +75,13 @@ export default defineComponent({
       });
     };
 
+    const canManageVCS = computed((): boolean => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-vcs-provider",
+        currentUser.value.role
+      );
+    });
+
     const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");
 
     return {
@@ -80,6 +89,7 @@ export default defineComponent({
       vcsList,
       addVCSProvider,
       has3rdPartyLoginFeature,
+      canManageVCS,
     };
   },
 });

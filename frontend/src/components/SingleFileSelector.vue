@@ -1,7 +1,10 @@
 <template>
   <div
-    class="cursor-pointer transition-all hover:bg-gray-100"
-    :class="[state.dropAreaActive ? 'bg-gray-300 opacity-100' : '']"
+    class="transition-all hover:bg-gray-100"
+    :class="[
+      state.dropAreaActive ? 'bg-gray-300 opacity-100' : '',
+      disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+    ]"
     @click="onUploaderClick"
     @drop="onFileDrop"
     @dragover.prevent
@@ -15,6 +18,7 @@
       :accept="supportFileExtensions.join(',')"
       class="sr-only hidden"
       @input="onFileChange"
+      :disabled="disabled"
     />
     <slot></slot>
   </div>
@@ -33,6 +37,11 @@ const props = defineProps({
   maxFileSizeInMiB: {
     required: true,
     type: Number,
+  },
+  disabled: {
+    required: false,
+    type: Boolean,
+    default: false,
   },
   supportFileExtensions: {
     required: true,
@@ -61,8 +70,12 @@ const onFileChange = () => {
 
 const onFileDrop = (e: any) => {
   e.preventDefault();
-
   state.dropAreaActive = false;
+
+  if (props.disabled) {
+    return;
+  }
+
   const files: File[] = e.dataTransfer.files;
   selectFile(files);
 };

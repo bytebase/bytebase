@@ -165,8 +165,8 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 
 		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
 
-		// Skips auth, actuator, plan
-		if common.HasPrefixes(path, "/auth", "/actuator", "/plan", "/oauth") {
+		// Skips auth, actuator
+		if common.HasPrefixes(path, "/auth", "/actuator", "/oauth") {
 			return next(c)
 		}
 

@@ -46,7 +46,7 @@
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
     </dl>
-    <div class="w-full mt-5 flex flex-col">
+    <div class="w-full mt-5 flex flex-col" v-if="canManageSubscription">
       <textarea
         id="license"
         v-model="state.license"
@@ -85,8 +85,13 @@ import { computed, defineComponent, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import PricingTable from "../components/PricingTable/";
 import { PlanType } from "../types";
-import { pushNotification, useSubscriptionStore } from "@/store";
+import {
+  pushNotification,
+  useCurrentUser,
+  useSubscriptionStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
+import { hasWorkspacePermission } from "@/utils";
 
 interface LocalState {
   loading: boolean;
@@ -102,6 +107,7 @@ export default defineComponent({
   setup() {
     const subscriptionStore = useSubscriptionStore();
     const { t } = useI18n();
+    const currentUser = useCurrentUser();
 
     const state = reactive<LocalState>({
       loading: false,
@@ -165,6 +171,13 @@ export default defineComponent({
       state.showTrialModal = true;
     };
 
+    const canManageSubscription = computed((): boolean => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-subscription",
+        currentUser.value.role
+      );
+    });
+
     return {
       state,
       disabled,
@@ -175,6 +188,7 @@ export default defineComponent({
       instanceCount,
       uploadLicense,
       openTrialModal,
+      canManageSubscription,
     };
   },
 });
