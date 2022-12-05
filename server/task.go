@@ -366,17 +366,15 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
 		}
 
-		if issue.AssigneeNeedAttention {
-			if issue.Project.WorkflowType == api.UIWorkflow {
-				needAttention := false
-				patch := &api.IssuePatch{
-					ID:                    issue.ID,
-					UpdaterID:             api.SystemBotID,
-					AssigneeNeedAttention: &needAttention,
-				}
-				if _, err := s.store.PatchIssue(ctx, patch); err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
-				}
+		if issue.AssigneeNeedAttention && issue.Project.WorkflowType == api.UIWorkflow {
+			needAttention := false
+			patch := &api.IssuePatch{
+				ID:                    issue.ID,
+				UpdaterID:             api.SystemBotID,
+				AssigneeNeedAttention: &needAttention,
+			}
+			if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
 			}
 		}
 
