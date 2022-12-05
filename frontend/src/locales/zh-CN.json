@@ -1430,7 +1430,14 @@
       "comment": "注释",
       "nullable": "是否可为空"
     },
-    "nothing-changed": "无任何改动"
+    "nothing-changed": "无任何改动",
+    "message": {
+      "invalid-table-name": "无效的表名",
+      "duplicated-table-name": "重复的表名",
+      "invalid-column-name": "无效的列名",
+      "duplicated-column-name": "重复的列名",
+      "invalid-column-type": "无效的列类型"
+    }
   },
   "label": {
     "empty-label-value": "<空值>",

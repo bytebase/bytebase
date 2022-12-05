@@ -193,8 +193,8 @@ import { getDataTypeSuggestionList } from "@/utils";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 
-const columnNameFieldRegexp = /\S+/;
-const columnTypeFieldRegexp = /\S+/;
+const tableOrColumnNameFieldRegexp = /^\S+$/;
+const columnTypeFieldRegexp = /^\S+$/;
 
 interface LocalState {
   isFetchingDDL: boolean;
@@ -254,11 +254,11 @@ const dataTypeOptions = computed(() => {
 });
 
 const handleSaveChanges = async () => {
-  if (tableCache.name === "") {
+  if (!tableOrColumnNameFieldRegexp.test(tableCache.name)) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "Table name cannot be empty",
+      title: t("ui-editor.message.invalid-table-name"),
     });
     return;
   }
@@ -272,17 +272,28 @@ const handleSaveChanges = async () => {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "Invalid table name: duplicate with others",
+      title: t("ui-editor.message.duplicated-table-name"),
     });
     return;
   }
 
   for (const column of tableCache.columnList) {
-    if (!columnNameFieldRegexp.test(column.name)) {
+    if (!tableOrColumnNameFieldRegexp.test(column.name)) {
       notificationStore.pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: "Invalid column name",
+        title: t("ui-editor.message.invalid-column-name"),
+      });
+      return;
+    }
+    const foundColumnListByName = tableCache.columnList.filter(
+      (item) => item.name === column.name
+    );
+    if (foundColumnListByName.length > 1) {
+      notificationStore.pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("ui-editor.message.duplicated-column-name"),
       });
       return;
     }
@@ -290,7 +301,7 @@ const handleSaveChanges = async () => {
       notificationStore.pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: "Invalid column type",
+        title: t("ui-editor.message.invalid-column-type"),
       });
       return;
     }
