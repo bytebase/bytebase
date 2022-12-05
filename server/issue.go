@@ -14,9 +14,11 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -189,6 +191,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
+			if *issuePatch.AssigneeID == issue.AssigneeID {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d because it's already the case", *issuePatch.AssigneeID))
+			}
 			stage := getActiveStage(issue.Pipeline.StageList)
 			if stage == nil {
 				// all stages have finished, use the last stage
@@ -201,11 +206,26 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if !ok {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
 			}
+
+			// cancel AssigneeNeedAttention on assignee change
+			if issue.Project.WorkflowType == api.UIWorkflow {
+				needAttention := false
+				issuePatch.AssigneeNeedAttention = &needAttention
+			}
 		}
 
 		updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue with ID %d", id)).SetInternal(err)
+		}
+
+		// cancel external approval on assignee change
+		if issuePatch.AssigneeID != nil {
+			go func() {
+				if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonReassigned); err != nil {
+					log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.ID), zap.Error(err))
+				}
+			}()
 		}
 
 		payloadList := [][]byte{}

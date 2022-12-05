@@ -697,6 +697,45 @@ func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, tas
 		}
 	}
 
+	// If every task in the stage completes, it means that we are moving into a new stage. We need
+	// 1. cancel external approval.
+	// 2. for UI workflow, set issue.AssigneeNeedAttention to false.
+	if taskPatched.Status == api.TaskDone && issue != nil {
+		foundStage := false
+		stageTaskAllDone := true
+		for _, stage := range issue.Pipeline.StageList {
+			if stage.ID == taskPatched.StageID {
+				foundStage = true
+				for _, task := range stage.TaskList {
+					if task.Status != api.TaskDone {
+						stageTaskAllDone = false
+						break
+					}
+				}
+				break
+			}
+		}
+		// every task in the stage completes
+		if foundStage && stageTaskAllDone {
+			// Cancel external approval, it's ok if we failed.
+			if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonNoTaskPendingApproval); err != nil {
+				log.Error("failed to cancel external approval on stage tasks completion", zap.Int("issue_id", issue.ID), zap.Error(err))
+			}
+
+			if issue.Project.WorkflowType == api.UIWorkflow {
+				needAttention := false
+				patch := &api.IssuePatch{
+					ID:                    issue.ID,
+					UpdaterID:             api.SystemBotID,
+					AssigneeNeedAttention: &needAttention,
+				}
+				if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+					return nil, errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after completing the whole stage, issuePatch: %+v", patch)
+				}
+			}
+		}
+	}
+
 	// If every task in the pipeline completes, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
@@ -976,6 +1015,13 @@ func (s *TaskScheduler) changeIssueStatus(ctx context.Context, issue *api.Issue,
 		ID:        issue.ID,
 		UpdaterID: updaterID,
 		Status:    &newStatus,
+	}
+	if newStatus != api.IssueOpen {
+		// for UI workflow, set assigneeNeedAttention to false if we are closing the issue.
+		if issue.Project.WorkflowType == api.UIWorkflow {
+			needAttention := false
+			issuePatch.AssigneeNeedAttention = &needAttention
+		}
 	}
 	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 	if err != nil {

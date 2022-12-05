@@ -1175,7 +1175,11 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		}
 		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
-			log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
+			log.Error("failed to get issue by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
+			return nil
+		}
+		if issue == nil {
+			log.Error("issue not found by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
 			return nil
 		}
 		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.
