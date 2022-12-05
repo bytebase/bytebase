@@ -970,7 +970,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 			DatabaseID: &database.ID,
 		})
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database schema for database `%s`", databaseName))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
 		}
 
 		databaseSchema := db.DatabaseSchema{
@@ -982,7 +982,15 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 				Name:       table.Name,
 				ColumnList: []db.ColumnInfo{},
 			}
-			for _, column := range table.ColumnList {
+			columnList, err := s.store.FindColumn(ctx, &api.ColumnFind{
+				DatabaseID: &database.ID,
+				TableID:    &table.ID,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find column list for table %q.%q", databaseName, table.Name))
+			}
+
+			for _, column := range columnList {
 				_, sensitive := columnMap[api.SensitiveData{
 					Table:  table.Name,
 					Column: column.Name,
