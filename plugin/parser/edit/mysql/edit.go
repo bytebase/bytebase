@@ -311,10 +311,10 @@ func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) 
 
 func transformColumnType(typeStr string) (*types.FieldType, error) {
 	// Mock a CreateTableStmt with type string to get the actually types.FieldType.
-	stmt := fmt.Sprintf("CREATE TABLE t(a %s);", typeStr)
+	stmt := fmt.Sprintf("CREATE TABLE column_type(column_type %s);", typeStr)
 	nodeList, _, err := tidbparser.New().Parse(stmt, "", "")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse create table stmt")
+		return nil, err
 	}
 	if len(nodeList) != 1 {
 		return nil, errors.Errorf("expect node list length to be 1, get %d", len(nodeList))
