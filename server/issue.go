@@ -14,9 +14,11 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -25,14 +27,12 @@ import (
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		issueCreate := &api.IssueCreate{}
+		issueCreate := &api.IssueCreate{
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 		}
-
-		issueCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		// TODO(p0ny): remove this line when manually sending external approval is ready. This is to temporarily keep our auto sending behaviour.
-		issueCreate.AssigneeNeedAttention = true
 
 		issue, err := s.createIssue(ctx, issueCreate)
 		if err != nil {
@@ -180,6 +180,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
 		}
 
+		if issuePatch.AssigneeNeedAttention != nil && !*issuePatch.AssigneeNeedAttention {
+			return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention to false")
+		}
+
 		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
@@ -189,6 +193,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
+			if *issuePatch.AssigneeID == issue.AssigneeID {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d because it's already the case", *issuePatch.AssigneeID))
+			}
 			stage := getActiveStage(issue.Pipeline.StageList)
 			if stage == nil {
 				// all stages have finished, use the last stage
@@ -201,11 +208,24 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if !ok {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
 			}
+
+			// set AssigneeNeedAttention to false on assignee change
+			if issue.Project.WorkflowType == api.UIWorkflow {
+				needAttention := false
+				issuePatch.AssigneeNeedAttention = &needAttention
+			}
 		}
 
 		updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue with ID %d", id)).SetInternal(err)
+		}
+
+		// cancel external approval on assignee change
+		if issuePatch.AssigneeID != nil {
+			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonReassigned); err != nil {
+				log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.ID), zap.Error(err))
+			}
 		}
 
 		payloadList := [][]byte{}
