@@ -16,6 +16,7 @@
       </div>
       <div class="flex gap-x-3">
         <button
+          v-if="enableDuplicate"
           type="button"
           class="btn-normal py-2 px-4"
           @click.prevent="emit('duplicate', reviewPolicy)"
@@ -88,6 +89,10 @@ defineProps({
   reviewPolicy: {
     required: true,
     type: Object as PropType<SQLReviewPolicy>,
+  },
+  enableDuplicate: {
+    required: true,
+    type: Boolean,
   },
 });
 const emit = defineEmits<{

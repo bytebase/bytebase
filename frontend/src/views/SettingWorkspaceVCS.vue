@@ -6,7 +6,7 @@
         $t("version-control.setting.description-highlight")
       }}</span>
     </div>
-    <div class="flex items-center justify-end">
+    <div v-if="vcsList.length > 0" class="flex items-center justify-end">
       <button
         type="button"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"

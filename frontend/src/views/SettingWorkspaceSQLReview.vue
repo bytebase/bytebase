@@ -30,6 +30,7 @@
       <template v-for="review in store.reviewPolicyList" :key="review.id">
         <SQLReviewCard
           :review-policy="review"
+          :enable-duplicate="hasPermission"
           @click="onClick"
           @duplicate="onDuplicate"
         />
