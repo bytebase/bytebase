@@ -160,13 +160,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		filter := func(repo *api.Repository) (bool, error) {
-			if repo.Project.RowStatus == api.Archived {
-				log.Debug("Skip repository as the associated project is archived",
-					zap.Int("repository_id", repo.ID),
-					zap.String("repository_external_id", repo.ExternalID),
-				)
-				return false, nil
-			}
 			if !repo.EnableSQLReviewCI {
 				log.Debug("Skip repository as the SQL review CI is not enabled.",
 					zap.Int("repository_id", repo.ID),
@@ -408,6 +401,13 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 
 	var filteredRepos []*api.Repository
 	for _, repo := range repos {
+		if repo.Project.RowStatus == api.Archived {
+			log.Debug("Skip repository as the associated project is archived",
+				zap.Int("repository_id", repo.ID),
+				zap.String("repository_external_id", repo.ExternalID),
+			)
+			continue
+		}
 		if repo.VCS == nil {
 			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 			continue
@@ -712,6 +712,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 	default:
 		var projectList []string
 		for _, repository := range fileRepositoryList {
+
 			projectList = append(projectList, repository.Project.Name)
 		}
 		return nil, unknownFileType, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
