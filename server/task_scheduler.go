@@ -464,12 +464,6 @@ func (s *TaskScheduler) passCheck(ctx context.Context, task *api.Task, checkType
 	}
 
 	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
-		log.Debug("Task is waiting for check to pass",
-			zap.Int("task_id", task.ID),
-			zap.String("task_name", task.Name),
-			zap.String("task_type", string(task.Type)),
-			zap.String("task_check_type", string(checkType)),
-		)
 		return false, nil
 	}
 
@@ -479,12 +473,6 @@ func (s *TaskScheduler) passCheck(ctx context.Context, task *api.Task, checkType
 	}
 	for _, result := range checkResult.ResultList {
 		if result.Status.LessThan(allowedStatus) {
-			log.Debug("Task is waiting for check to pass",
-				zap.Int("task_id", task.ID),
-				zap.String("task_name", task.Name),
-				zap.String("task_type", string(task.Type)),
-				zap.String("task_check_type", string(api.TaskCheckDatabaseConnect)),
-			)
 			return false, nil
 		}
 	}
