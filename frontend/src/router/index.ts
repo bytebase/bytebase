@@ -398,13 +398,6 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "billing",
-                name: "setting.workspace.billing",
-                meta: { title: () => t("common.billings") },
-                component: () => import("../views/SettingWorkspaceBilling.vue"),
-                props: true,
-              },
-              {
                 path: "integration/slack",
                 name: "setting.workspace.integration.slack",
                 meta: { title: () => t("common.slack") },
