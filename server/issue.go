@@ -221,11 +221,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		// cancel external approval on assignee change
 		if issuePatch.AssigneeID != nil {
-			go func() {
-				if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonReassigned); err != nil {
-					log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.ID), zap.Error(err))
-				}
-			}()
+			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonReassigned); err != nil {
+				log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.ID), zap.Error(err))
+			}
 		}
 
 		payloadList := [][]byte{}
