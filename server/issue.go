@@ -205,7 +205,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
 			}
 
-			// cancel AssigneeNeedAttention on assignee change
+			// set AssigneeNeedAttention to false on assignee change
 			if issue.Project.WorkflowType == api.UIWorkflow {
 				needAttention := false
 				issuePatch.AssigneeNeedAttention = &needAttention
