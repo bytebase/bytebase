@@ -757,6 +757,9 @@ func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch)
 	if v := patch.AssigneeID; v != nil {
 		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.AssigneeNeedAttention; v != nil {
+		set, args = append(set, fmt.Sprintf("assignee_need_attention = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Payload; v != nil {
 		payload, err := json.Marshal(*patch.Payload)
 		if err != nil {
