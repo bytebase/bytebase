@@ -49,6 +49,76 @@ Let's go over the issues one by one:
    >
    > ✅ `。`
 
+
+
+
+# Technical Writing Style Guide
+
+We mainly follow Google's style guide https://developers.google.com/style
+
+1. Bold for UI Label. Skip 'button','label' and etc if it's obvious.
+
+> ✅ Click **Settings**
+>
+> ❌ Click **Settings** button
+>
+> ❌ Click “Settings”
+>
+> ❌ Click `Settings`
+>
+> ❌ Click Settings button
+
+
+2. Bold and Initial capitalized for Concept, Roles, and etc. 
+
+> ✅ **Project** is the container to group logically related **Databases**, **Issues** and **Users** together.  
+>
+> ❌ `Project` is the container to group logically related `Databases`, `Issues` and `Users` together.  
+
+
+3. Quote for file name, file path, database name, instance name, and etc.
+
+> ✅ The `Employee` project is created. 
+>
+> ❌ The **Employee** project is created.
+>
+> ❌ The ”Employee” project is created.
+
+
+4. Spell the number when it’s less than or equal to ten.
+
+> ✅ one instance
+>
+> ✅ two databases
+>
+> ❌ 1 instance
+>
+> ❌ 2 databases
+
+5. Specify Roles and Plans at the top of each article if applicable. Use `<hint-block type="info">` component to wrap.
+
+> ✅ 
+> This feature is only available for 
+> - **Workspace Owner** role 
+> - **Team** or **Enterprise** plan
+
+6. For a task-based heading, start with a bare infinitive.
+> ✅ Create an instance
+>
+> ❌ Creating an instance
+
+7. For a conceptual or non-task-based heading, use a noun phrase that doesn't start with an -ing verb.
+> ✅ Migration to Google Cloud
+> 
+> ❌ Migrating to Google Cloud        
+
+8. Don't introduce a procedure with a partial sentence that's completed by the numbered steps.
+> ✅ To customize the buttons, follow these steps:
+> 
+> ✅ Customize the buttons:
+> 
+> ❌ To customize the buttons:        
+
 # Readings
 
 - [Docs for Developers](https://docsfordevelopers.com)
