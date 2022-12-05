@@ -166,27 +166,31 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
 	var buf bytes.Buffer
 	if err := transformDelimiter(&buf, statement); err != nil {
-		return err
+		return 0, err
 	}
 	transformedStatement := buf.String()
 	tx, err := driver.migrationConn.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, transformedStatement)
-
-	if err == nil {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
+	sqlResult, err := tx.ExecContext(ctx, transformedStatement)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	rowsEffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		return 0, err
 	}
 
-	return err
+	return rowsEffected, nil
 }
 
 // GetMigrationConnID gets the ID of the connection executing migrations.
@@ -200,6 +204,25 @@ func (driver *Driver) GetMigrationConnID(ctx context.Context) (string, error) {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	singleSQLs, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+	// https://dev.mysql.com/doc/c-api/8.0/en/mysql-affected-rows.html
+	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
+	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
+		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
+		if err != nil {
+			return nil, err
+		}
+		field := []string{"Affected Rows"}
+		types := []string{"INT"}
+		rows := [][]interface{}{{affectedRows}}
+		return []interface{}{field, types, rows}, nil
+	}
 	return util.Query(ctx, driver.dbType, driver.db, statement, queryContext)
 }
 

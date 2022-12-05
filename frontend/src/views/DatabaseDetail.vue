@@ -115,7 +115,7 @@
             >
               <template #label="{ label }">
                 <span class="textlabel capitalize">
-                  {{ hidePrefix(label.key) }}&nbsp;-&nbsp;
+                  {{ hidePrefix(label) }}&nbsp;-&nbsp;
                 </span>
               </template>
             </DatabaseLabelProps>
@@ -322,6 +322,7 @@ import {
   isPITRDatabase,
   isDatabaseAccessible,
   allowUsingUIEditor,
+  isArchivedDatabase,
 } from "@/utils";
 import {
   ProjectId,
@@ -416,6 +417,10 @@ const allowQuery = computed(() => {
 // - Workspace role can manage instance
 // - Project role can transfer database
 const allowTransferProject = computed(() => {
+  if (isArchivedDatabase(database.value)) {
+    return false;
+  }
+
   if (database.value.project.id == DEFAULT_PROJECT_ID) {
     return true;
   }
@@ -452,6 +457,10 @@ const allowTransferProject = computed(() => {
 // - Edit database label
 // - Enable/disable backup
 const allowAdmin = computed(() => {
+  if (isArchivedDatabase(database.value)) {
+    return false;
+  }
+
   if (
     hasWorkspacePermission(
       "bb.permission.workspace.manage-instance",
@@ -479,6 +488,10 @@ const allowAdmin = computed(() => {
 // The edit operation includes
 // - Take manual backup
 const allowEdit = computed(() => {
+  if (isArchivedDatabase(database.value)) {
+    return false;
+  }
+
   if (
     hasWorkspacePermission(
       "bb.permission.workspace.manage-instance",

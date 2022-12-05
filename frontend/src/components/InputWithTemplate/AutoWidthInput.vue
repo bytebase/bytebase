@@ -10,6 +10,8 @@
       class="px-0 m-0 py-1 cleared-input outline-none"
       type="text"
       @keyup="(e) => $emit('keyup', e)"
+      @keydown="(e) => $emit('keydown', e)"
+      @mouseup="(e) => $emit('mouseup', e)"
     />
   </div>
 </template>
@@ -28,7 +30,14 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["change", "keyup"]);
+const minimumWidth = 1;
+
+const emit = defineEmits<{
+  (event: "change", data: string): void;
+  (event: "keyup", e: KeyboardEvent): void;
+  (event: "keydown", e: KeyboardEvent): void;
+  (event: "mouseup", e: KeyboardEvent): void;
+}>();
 
 const state = reactive<{ data: string; width: number }>({
   data: props.value,
@@ -57,6 +66,7 @@ watch(
 const updateWidth = () => {
   const width = divRef.value?.offsetWidth ?? state.width;
   state.width = Math.min(props.maxWidth ?? width, width);
+  state.width = Math.max(state.width, minimumWidth);
 };
 
 watchEffect(updateWidth);

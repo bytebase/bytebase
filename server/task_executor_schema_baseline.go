@@ -29,7 +29,7 @@ func (exec *SchemaBaselineTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, errors.Wrap(err, "invalid database schema baseline payload")
 	}
 
-	return runMigration(ctx, server, task, db.Baseline, payload.Statement, payload.SchemaVersion, nil /* vcsPushEvent */)
+	return runMigration(ctx, server.store, server.dbFactory, server.RollbackRunner, server.ActivityManager, server.profile, task, db.Baseline, payload.Statement, payload.SchemaVersion, nil /* vcsPushEvent */)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.

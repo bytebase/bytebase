@@ -19,6 +19,8 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/transform"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -56,7 +58,7 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 	return exec.RunOnce(ctx, server, task)
 }
 
-func preMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
+func preMigration(ctx context.Context, store *store.Store, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -67,7 +69,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	databaseName := task.Database.Name
 
 	mi := &db.MigrationInfo{
-		ReleaseVersion: server.profile.Version,
+		ReleaseVersion: profile.Version,
 		Type:           migrationType,
 		// TODO(d): support semantic versioning.
 		Version:     schemaVersion,
@@ -76,7 +78,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
-		creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
+		creator, err := store.GetPrincipalByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.
@@ -103,7 +105,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	mi.Database = databaseName
 	mi.Namespace = databaseName
 
-	issue, err := findIssueByTask(ctx, server, task)
+	issue, err := findIssueByTask(ctx, store, task)
 	if err != nil {
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
@@ -126,11 +128,11 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, server *Server, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
+func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
-	driver, err := server.getAdminDatabaseDriver(ctx, task.Instance, databaseName)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, databaseName)
 	if err != nil {
 		return 0, "", err
 	}
@@ -153,7 +155,7 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, server.store)
+		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, store)
 		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
@@ -166,12 +168,12 @@ func executeMigration(ctx context.Context, server *Server, task *api.Task, state
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, server.store, migrationID)
+		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, store, migrationID)
 		if err != nil {
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 		// The runner will periodically scan the map to generate rollback SQL asynchronously.
-		server.RollbackRunner.generateMap.Store(updatedTask.ID, updatedTask)
+		rollbackRunner.generateMap.Store(updatedTask.ID, updatedTask)
 	}
 
 	return migrationID, schema, nil
@@ -263,18 +265,18 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, store *store.Store, activityManager *ActivityManager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
 	databaseName := task.Database.Name
-	issue, err := findIssueByTask(ctx, server, task)
+	issue, err := findIssueByTask(ctx, store, task)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
-	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
+	project, err := store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
 		return true, nil, err
 	}
-	repo, err := server.store.GetRepository(ctx, &api.RepositoryFind{
+	repo, err := store.GetRepository(ctx, &api.RepositoryFind{
 		ProjectID: &task.Database.ProjectID,
 	})
 	if err != nil {
@@ -335,7 +337,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", dbName)
 
-		vcs, err := server.store.GetVCSByID(ctx, repo.VCSID)
+		vcs, err := store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
 			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
@@ -346,10 +348,10 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 
 		bytebaseURL := ""
 		if issue != nil {
-			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", server.profile.ExternalURL, api.IssueSlug(issue), task.StageID)
+			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", profile.ExternalURL, api.IssueSlug(issue), task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, repo.BranchFilter, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, store, repo, vcsPushEvent, mi, repo.BranchFilter, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -385,7 +387,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 				Payload: string(payload),
 			}
 
-			_, err = server.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			_, err = activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
 				log.Error("Failed to create file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
@@ -398,7 +400,7 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	}
 
 	// Remove schema drift anomalies.
-	if err := server.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+	if err := store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		DatabaseID: task.DatabaseID,
 		Type:       api.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
@@ -421,20 +423,20 @@ func postMigration(ctx context.Context, server *Server, task *api.Task, vcsPushE
 	}, nil
 }
 
-func runMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	mi, err := preMigration(ctx, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
+func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *ActivityManager, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	mi, err := preMigration(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := executeMigration(ctx, server, task, statement, mi)
+	migrationID, schema, err := executeMigration(ctx, store, dbFactory, rollbackRunner, task, statement, mi)
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, store, activityManager, profile, task, vcsPushEvent, mi, migrationID, schema)
 }
 
-func findIssueByTask(ctx context.Context, server *Server, task *api.Task) (*api.Issue, error) {
-	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
+func findIssueByTask(ctx context.Context, store *store.Store, task *api.Task) (*api.Issue, error) {
+	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch containing issue for composing the migration info, task_id: %v", task.ID)
 	}
@@ -446,7 +448,7 @@ func findIssueByTask(ctx context.Context, server *Server, task *api.Task) (*api.
 
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
-func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
+func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
 	schemaFileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
@@ -454,7 +456,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    server.refreshToken(ctx, repository.WebURL),
+			Refresher:    refreshToken(ctx, store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -502,7 +504,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	// Retrieve the latest AccessToken and RefreshToken as the previous VCS call may have
 	// updated the stored token pair. VCS will fetch and store the new token pair if the
 	// existing token pair has expired.
-	repo2, err := server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
+	repo2, err := store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to fetch repository for schema write-back")
 	}
@@ -527,7 +529,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 				ClientSecret: repo2.VCS.Secret,
 				AccessToken:  repo2.AccessToken,
 				RefreshToken: repo2.RefreshToken,
-				Refresher:    server.refreshToken(ctx, repo2.WebURL),
+				Refresher:    refreshToken(ctx, store, repo2.WebURL),
 			},
 			repo2.VCS.InstanceURL,
 			repo2.ExternalID,
@@ -550,7 +552,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 				ClientSecret: repo2.VCS.Secret,
 				AccessToken:  repo2.AccessToken,
 				RefreshToken: repo2.RefreshToken,
-				Refresher:    server.refreshToken(ctx, repo2.WebURL),
+				Refresher:    refreshToken(ctx, store, repo2.WebURL),
 			},
 			repo2.VCS.InstanceURL,
 			repo2.ExternalID,
@@ -565,7 +567,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	// Retrieve the latest AccessToken and RefreshToken as the previous VCS call may have
 	// updated the stored token pair. VCS will fetch and store the new token pair if the
 	// existing token pair has expired.
-	repo2, err = server.store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
+	repo2, err = store.GetRepository(ctx, &api.RepositoryFind{ID: &repository.ID})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to fetch repository after schema write-back")
 	}
@@ -580,7 +582,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			ClientSecret: repo2.VCS.Secret,
 			AccessToken:  repo2.AccessToken,
 			RefreshToken: repo2.RefreshToken,
-			Refresher:    server.refreshToken(ctx, repo2.WebURL),
+			Refresher:    refreshToken(ctx, store, repo2.WebURL),
 		},
 		repo2.VCS.InstanceURL,
 		repo2.ExternalID,

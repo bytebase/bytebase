@@ -81,14 +81,15 @@ type Issue struct {
 	Pipeline   *Pipeline `jsonapi:"relation,pipeline"`
 
 	// Domain specific fields
-	Name           string       `jsonapi:"attr,name"`
-	Status         IssueStatus  `jsonapi:"attr,status"`
-	Type           IssueType    `jsonapi:"attr,type"`
-	Description    string       `jsonapi:"attr,description"`
-	AssigneeID     int          `jsonapi:"attr,assigneeId"`
-	Assignee       *Principal   `jsonapi:"relation,assignee"`
-	SubscriberList []*Principal `jsonapi:"relation,subscriberList"`
-	Payload        string       `jsonapi:"attr,payload"`
+	Name                  string       `jsonapi:"attr,name"`
+	Status                IssueStatus  `jsonapi:"attr,status"`
+	Type                  IssueType    `jsonapi:"attr,type"`
+	Description           string       `jsonapi:"attr,description"`
+	AssigneeID            int          `jsonapi:"attr,assigneeId"`
+	AssigneeNeedAttention bool         `jsonapi:"attr,assigneeNeedAttention"`
+	Assignee              *Principal   `jsonapi:"relation,assignee"`
+	SubscriberList        []*Principal `jsonapi:"relation,subscriberList"`
+	Payload               string       `jsonapi:"attr,payload"`
 }
 
 // IssueResponse is the API message for an issue response.
@@ -109,12 +110,13 @@ type IssueCreate struct {
 	Pipeline   PipelineCreate `jsonapi:"attr,pipeline"`
 
 	// Domain specific fields
-	Name             string    `jsonapi:"attr,name"`
-	Type             IssueType `jsonapi:"attr,type"`
-	Description      string    `jsonapi:"attr,description"`
-	AssigneeID       int       `jsonapi:"attr,assigneeId"`
-	SubscriberIDList []int     `jsonapi:"attr,subscriberIdList"`
-	Payload          string    `jsonapi:"attr,payload"`
+	Name                  string    `jsonapi:"attr,name"`
+	Type                  IssueType `jsonapi:"attr,type"`
+	Description           string    `jsonapi:"attr,description"`
+	AssigneeID            int       `jsonapi:"attr,assigneeId"`
+	AssigneeNeedAttention bool      `jsonapi:"attr,assigneeNeedAttention"`
+	SubscriberIDList      []int     `jsonapi:"attr,subscriberIdList"`
+	Payload               string    `jsonapi:"attr,payload"`
 	// CreateContext is used to create the issue pipeline and not persisted.
 	// The context format depends on the issue type. For example, create database issue corresponds to CreateDatabaseContext.
 	// This consolidates the pipeline generation to backend because both frontend and VCS pipeline could create issues and
@@ -247,9 +249,10 @@ type IssueFind struct {
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
 	// Only principleID or one of the following three fields can be set.
-	CreatorID    *int
-	AssigneeID   *int
-	SubscriberID *int
+	CreatorID             *int
+	AssigneeID            *int
+	AssigneeNeedAttention *bool
+	SubscriberID          *int
 
 	StatusList []IssueStatus
 	// If specified, only find issues whose ID is smaller that SinceID.
@@ -269,10 +272,11 @@ type IssuePatch struct {
 	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`
 	// Status is only set manually via IssueStatusPatch
-	Status      *IssueStatus
-	Description *string `jsonapi:"attr,description"`
-	AssigneeID  *int    `jsonapi:"attr,assigneeId"`
-	Payload     *string `jsonapi:"attr,payload"`
+	Status                *IssueStatus
+	Description           *string `jsonapi:"attr,description"`
+	AssigneeID            *int    `jsonapi:"attr,assigneeId"`
+	AssigneeNeedAttention *bool   `jsonapi:"attr,assigneeNeedAttention"`
+	Payload               *string `jsonapi:"attr,payload"`
 }
 
 // IssueStatusPatch is the API message for patching status of an issue.

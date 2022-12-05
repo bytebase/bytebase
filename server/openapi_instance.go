@@ -71,6 +71,7 @@ func (s *Server) createInstanceByOpenAPI(c echo.Context) error {
 		ExternalLink:  instanceCreate.ExternalLink,
 		Host:          instanceCreate.Host,
 		Port:          instanceCreate.Port,
+		Database:      instanceCreate.Database,
 		Username:      instanceCreate.Username,
 		Password:      instanceCreate.Password,
 		SslCa:         instanceCreate.SslCa,
@@ -108,6 +109,7 @@ func (s *Server) updateInstanceByOpenAPI(c echo.Context) error {
 		ExternalLink: instancePatch.ExternalLink,
 		Host:         instancePatch.Host,
 		Port:         instancePatch.Port,
+		Database:     instancePatch.Database,
 	})
 	if err != nil {
 		return err
@@ -163,6 +165,7 @@ func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
 		ExternalLink:  instance.ExternalLink,
 		Host:          instance.Host,
 		Port:          instance.Port,
+		Database:      instance.Database,
 		Username:      instance.Username,
 	}
 }

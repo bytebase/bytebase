@@ -1,15 +1,14 @@
 <template>
-  <template v-for="label in availableLabelList" :key="label.key">
+  <template v-for="label in PRESET_LABEL_KEYS" :key="label.key">
     <dd class="flex items-center text-sm md:mr-4">
       <slot name="label" :label="label"></slot>
       <DatabaseLabelPropItem
-        :label="label"
-        :value="getLabelValue(label.key)"
-        :label-list="availableLabelList"
-        :required-label-list="requiredLabelList"
+        :label-key="label"
+        :value="getLabelValue(label)"
+        :required="isRequired(label)"
         :database="database"
         :allow-edit="allowEdit"
-        @update:value="(value) => onUpdateValue(label.key, value)"
+        @update:value="(value) => onUpdateValue(label, value)"
       />
     </dd>
   </template>
@@ -24,8 +23,7 @@ import type {
   LabelKeyType,
   LabelValueType,
 } from "@/types";
-import { isReservedLabel, parseLabelListInTemplate } from "@/utils";
-import { useLabelList } from "@/store";
+import { parseLabelListInTemplate, PRESET_LABEL_KEYS } from "@/utils";
 import DatabaseLabelPropItem from "./DatabaseLabelPropItem.vue";
 
 const props = withDefaults(
@@ -47,27 +45,22 @@ const state = reactive({
   labelList: cloneDeep(props.labelList),
 });
 
-const allLabelList = useLabelList();
-
 watch(
   () => props.labelList,
   (list) => (state.labelList = cloneDeep(list))
 );
 
-const availableLabelList = computed(() => {
-  return allLabelList.value.filter((label) => !isReservedLabel(label));
-});
-
-const requiredLabelList = computed(() => {
+const requiredLabelList = computed((): string[] => {
   const { project } = props.database;
   if (project.tenantMode !== "TENANT") return [];
   if (!project.dbNameTemplate) return [];
 
-  return parseLabelListInTemplate(
-    project.dbNameTemplate,
-    availableLabelList.value
-  );
+  return parseLabelListInTemplate(project.dbNameTemplate);
 });
+
+const isRequired = (key: LabelKeyType) => {
+  return requiredLabelList.value.includes(key);
+};
 
 const getLabelValue = (key: LabelKeyType): LabelValueType | undefined => {
   return state.labelList.find((label) => label.key === key)?.value || "";

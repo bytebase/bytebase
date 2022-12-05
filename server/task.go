@@ -75,7 +75,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
 
-		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+		if taskPatch.EarliestAllowedTs != nil && !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
@@ -132,7 +132,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
 
-		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+		if taskPatch.EarliestAllowedTs != nil && !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
@@ -154,11 +154,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		if taskPatch.Statement != nil {
 			// Tenant mode project don't allow updating SQL statement for a single task.
-			project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID: %d", issue.ProjectID)).SetInternal(err)
-			}
-			if project.TenantMode == api.TenantModeTenant && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL) {
+			if issue.Project.TenantMode == api.TenantModeTenant && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL) {
 				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
 			}
 		}
@@ -207,7 +203,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 
-		taskPatched, err := s.patchTaskStatus(ctx, task, taskStatusPatch)
+		taskPatched, err := s.TaskScheduler.patchTaskStatus(ctx, task, taskStatusPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
@@ -364,13 +360,25 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	}
 
 	// create an activity and trigger task check for statement update
-	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		if oldStatement != newStatement {
-			if issue == nil {
-				err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
-				return nil, echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
-			}
+	if oldStatement != newStatement {
+		// it's ok to fail.
+		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonSQLModified); err != nil {
+			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
+		}
 
+		if issue.AssigneeNeedAttention && issue.Project.WorkflowType == api.UIWorkflow {
+			needAttention := false
+			patch := &api.IssuePatch{
+				ID:                    issue.ID,
+				UpdaterID:             api.SystemBotID,
+				AssigneeNeedAttention: &needAttention,
+			}
+			if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
+			}
+		}
+
+		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 			// create a task statement update activity
 			payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
 				TaskID:       taskPatched.ID,
@@ -397,7 +405,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			// updated statement, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
 			if taskPatched.Status == api.TaskPending {
-				t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+				t, err := s.TaskScheduler.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 					IDList:    []int{taskPatch.ID},
 					UpdaterID: taskPatch.UpdaterID,
 					Status:    api.TaskPendingApproval,
@@ -424,7 +432,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				}
 			}
 
-			if api.IsSyntaxCheckSupported(task.Database.Instance.Engine, s.profile.Mode) {
+			if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
 				payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 					Statement: *taskPatch.Statement,
 					DbType:    task.Database.Instance.Engine,
@@ -450,7 +458,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				}
 			}
 
-			if api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
+			if api.IsSQLReviewSupported(task.Database.Instance.Engine) {
 				if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
 				}
@@ -488,10 +496,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	// - dismiss stale approval for Pending tasks.
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
-		if issue == nil {
-			err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
-			return nil, echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
-		}
 
 		payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
 			TaskID:               taskPatched.ID,
@@ -519,7 +523,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
 		if taskPatched.Status == api.TaskPending {
-			t, err := s.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+			t, err := s.TaskScheduler.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 				IDList:    []int{taskPatch.ID},
 				UpdaterID: taskPatch.UpdaterID,
 				Status:    api.TaskPendingApproval,
@@ -531,57 +535,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		}
 	}
 	return taskPatched, nil
-}
-
-// canPrincipalBeAssignee checks if a principal could be the assignee of an issue, judging by the principal role and the environment policy.
-func (s *Server) canPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
-	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
-	if err != nil {
-		return false, err
-	}
-	var groupValue *api.AssigneeGroupValue
-	for i, group := range policy.AssigneeGroupList {
-		if group.IssueType == issueType {
-			groupValue = &policy.AssigneeGroupList[i].Value
-			break
-		}
-	}
-	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
-		// no value is set, fallback to default.
-		// the assignee group is the workspace owner or DBA.
-		principal, err := s.store.GetPrincipalByID(ctx, principalID)
-		if err != nil {
-			return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
-		}
-		if principal == nil {
-			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
-		}
-		if !s.feature(api.FeatureRBAC) {
-			principal.Role = api.Owner
-		}
-		if principal.Role == api.Owner || principal.Role == api.DBA {
-			return true, nil
-		}
-	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
-		// the assignee group is the project owner.
-		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
-			ProjectID:   &projectID,
-			PrincipalID: &principalID,
-		})
-		if err != nil {
-			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", projectID, principalID)
-		}
-		if member == nil {
-			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
-		}
-		if !s.feature(api.FeatureRBAC) {
-			member.Role = string(api.Owner)
-		}
-		if member.Role == string(api.Owner) {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 // canPrincipalChangeTaskStatus validates if the principal has the privilege to update task status, judging from the principal role and the environment policy.
@@ -659,171 +612,6 @@ func (s *Server) getGroupValueForTask(ctx context.Context, issue *api.Issue, tas
 	return nil, nil
 }
 
-// patchTaskStatus patches a single task.
-func (s *Server) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
-	defer func() {
-		if err != nil {
-			log.Error("Failed to change task status.",
-				zap.Int("id", task.ID),
-				zap.String("name", task.Name),
-				zap.String("old_status", string(task.Status)),
-				zap.String("new_status", string(taskStatusPatch.Status)),
-				zap.Error(err))
-		}
-	}()
-
-	if !isTaskStatusTransitionAllowed(task.Status, taskStatusPatch.Status) {
-		return nil, &common.Error{
-			Code: common.Invalid,
-			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]),
-		}
-	}
-
-	if len(taskStatusPatch.IDList) != 1 {
-		return nil, errors.Errorf("expect to patch 1 task, get %d", len(taskStatusPatch.IDList))
-	}
-
-	if taskStatusPatch.Status == api.TaskCanceled {
-		if !taskCancellationImplemented[task.Type] {
-			return nil, common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
-		}
-		s.TaskScheduler.runningExecutorsMutex.Lock()
-		cancel, ok := s.TaskScheduler.runningExecutorsCancel[task.ID]
-		s.TaskScheduler.runningExecutorsMutex.Unlock()
-		if !ok {
-			return nil, errors.New("failed to cancel task")
-		}
-		cancel()
-		result, err := json.Marshal(api.TaskRunResultPayload{
-			Detail: "Task cancellation requested.",
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal TaskRunResultPayload")
-		}
-		resultStr := string(result)
-		taskStatusPatch.Result = &resultStr
-	}
-
-	taskPatchedList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
-	}
-	taskPatched := taskPatchedList[0]
-
-	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
-	// behaves differently depending on whether the task is wrapped in an issue.
-	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
-	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch containing issue after changing the task status: %v", task.Name)
-	}
-	// Not all pipelines belong to an issue, so it's OK if issue is not found.
-	if issue == nil {
-		log.Debug("Pipeline has no linking issue",
-			zap.Int("pipelineID", task.PipelineID),
-			zap.String("task", task.Name))
-	}
-
-	// Create an activity
-	if err := s.createTaskStatusUpdateActivity(ctx, task, taskStatusPatch, issue); err != nil {
-		return nil, err
-	}
-
-	// If create database, schema update and gh-ost cutover task completes, we sync the corresponding instance schema immediately.
-	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
-		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
-		}
-		if err := s.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
-			log.Error("failed to sync database schema",
-				zap.String("instanceName", instance.Name),
-				zap.String("databaseName", taskPatched.Database.Name),
-				zap.Error(err),
-			)
-		}
-	}
-
-	// Cancel every task depending on the canceled task.
-	if taskPatched.Status == api.TaskCanceled {
-		if err := s.cancelDependingTasks(ctx, taskPatched); err != nil {
-			return nil, errors.Wrapf(err, "failed to cancel depending tasks for task %d", taskPatched.ID)
-		}
-	}
-
-	// If every task in the pipeline completes, and the assignee is system bot:
-	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
-	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
-	if taskPatched.Status == api.TaskDone && (issue == nil || issue.AssigneeID == api.SystemBotID) {
-		pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
-		if err != nil {
-			return nil, errors.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
-		}
-		if pipeline == nil {
-			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
-		}
-		if areAllTasksDone(pipeline) {
-			if issue == nil {
-				// System-generated tasks such as backup tasks don't have corresponding issues.
-				status := api.PipelineDone
-				pipelinePatch := &api.PipelinePatch{
-					ID:        pipeline.ID,
-					UpdaterID: taskStatusPatch.UpdaterID,
-					Status:    &status,
-				}
-				if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-					return nil, errors.Wrapf(err, "failed to mark pipeline %v as DONE after completing task %v", pipeline.Name, taskPatched.Name)
-				}
-			} else {
-				issue.Pipeline = pipeline
-				_, err := s.changeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, "")
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to mark issue %v as DONE after completing task %v", issue.Name, taskPatched.Name)
-				}
-			}
-		}
-	}
-
-	return taskPatched, nil
-}
-
-func (s *Server) createTaskStatusUpdateActivity(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue) error {
-	var issueName string
-	if issue != nil {
-		issueName = issue.Name
-	}
-	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
-		TaskID:    task.ID,
-		OldStatus: task.Status,
-		NewStatus: taskStatusPatch.Status,
-		IssueName: issueName,
-		TaskName:  task.Name,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal activity after changing the task status: %v", task.Name)
-	}
-
-	level := api.ActivityInfo
-	if taskStatusPatch.Status == api.TaskFailed {
-		level = api.ActivityError
-	}
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   taskStatusPatch.UpdaterID,
-		ContainerID: task.PipelineID,
-		Type:        api.ActivityPipelineTaskStatusUpdate,
-		Level:       level,
-		Payload:     string(payload),
-	}
-	if taskStatusPatch.Comment != nil {
-		activityCreate.Comment = *taskStatusPatch.Comment
-	}
-
-	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue}); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
 	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 	if err != nil {
@@ -862,80 +650,5 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 		)
 	}
 
-	return nil
-}
-
-func (s *Server) getDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
-	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
-	if err != nil {
-		return api.UnknownID, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
-	}
-	if policy.Value == api.PipelineApprovalValueManualNever {
-		// use SystemBot for auto approval tasks.
-		return api.SystemBotID, nil
-	}
-
-	var groupValue *api.AssigneeGroupValue
-	for i, group := range policy.AssigneeGroupList {
-		if group.IssueType == issueType {
-			groupValue = &policy.AssigneeGroupList[i].Value
-			break
-		}
-	}
-	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
-		member, err := s.getAnyWorkspaceOwnerOrDBA(ctx)
-		if err != nil {
-			return api.UnknownID, errors.Wrap(err, "failed to get a workspace owner or DBA")
-		}
-		return member.PrincipalID, nil
-	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
-		projectMember, err := s.getAnyProjectOwner(ctx, projectID)
-		if err != nil {
-			return api.UnknownID, errors.Wrap(err, "failed to get a project owner")
-		}
-		return projectMember.PrincipalID, nil
-	}
-	// never reached
-	return api.UnknownID, errors.New("invalid assigneeGroupValue")
-}
-
-func areAllTasksDone(pipeline *api.Pipeline) bool {
-	for _, stage := range pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if task.Status != api.TaskDone {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-func (s *Server) cancelDependingTasks(ctx context.Context, task *api.Task) error {
-	queue := []int{task.ID}
-	seen := map[int]bool{task.ID: true}
-	var idList []int
-	for len(queue) != 0 {
-		fromTaskID := queue[0]
-		queue = queue[1:]
-		dagList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: &fromTaskID})
-		if err != nil {
-			return err
-		}
-		for _, dag := range dagList {
-			if seen[dag.ToTaskID] {
-				return errors.Errorf("found a cycle in task dag, visit task %v twice", dag.ToTaskID)
-			}
-			seen[dag.ToTaskID] = true
-			idList = append(idList, dag.ToTaskID)
-			queue = append(queue, dag.ToTaskID)
-		}
-	}
-	if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
-		IDList:    idList,
-		UpdaterID: api.SystemBotID,
-		Status:    api.TaskCanceled,
-	}); err != nil {
-		return err
-	}
 	return nil
 }

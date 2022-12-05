@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
 )
@@ -402,7 +401,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
@@ -452,7 +451,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Backup %q already exists", backupCreate.Name))
 		}
 
-		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
+		backup, err := s.BackupRunner.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			if common.ErrorCode(err) == common.DbConnectionFailure {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)
@@ -627,7 +626,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
-		if !s.feature(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
@@ -650,7 +649,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
@@ -703,7 +702,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
-		if !s.feature(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
 			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
@@ -731,7 +730,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
@@ -821,6 +820,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		engineType := parser.EngineType(database.Instance.Engine)
+		if err := edit.ValidateDatabaseEdit(engineType, databaseEdit); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid request: %s", err.Error()))
+		}
+
 		statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
@@ -882,125 +885,6 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		}
 	}
 	return nil
-}
-
-// Try to get database driver using the instance's admin data source.
-// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func (s *Server) getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
-	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
-	}
-
-	dbBinDir := ""
-	switch instance.Engine {
-	case db.MySQL, db.TiDB:
-		dbBinDir = s.mysqlBinDir
-	case db.Postgres:
-		dbBinDir = s.pgBinDir
-	}
-
-	driver, err := getDatabaseDriver(
-		ctx,
-		instance.Engine,
-		db.DriverConfig{
-			DbBinDir:  dbBinDir,
-			BinlogDir: getBinlogAbsDir(s.profile.DataDir, instance.ID),
-		},
-		db.ConnectionConfig{
-			Username: adminDataSource.Username,
-			Password: adminDataSource.Password,
-			TLSConfig: db.TLSConfig{
-				SslCA:   adminDataSource.SslCa,
-				SslCert: adminDataSource.SslCert,
-				SslKey:  adminDataSource.SslKey,
-			},
-			Host:     instance.Host,
-			Port:     instance.Port,
-			Database: databaseName,
-		},
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return driver, nil
-}
-
-// We'd like to use read-only data source whenever possible, but fallback to admin data source if there's no read-only data source.
-// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func (s *Server) tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
-	dataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
-	// If there are no read-only data source, fall back to admin data source.
-	if dataSource == nil {
-		dataSource = api.DataSourceFromInstanceWithType(instance, api.Admin)
-	}
-	if dataSource == nil {
-		return nil, common.Errorf(common.Internal, "data source not found for instance %d", instance.ID)
-	}
-
-	host, port := instance.Host, instance.Port
-	if dataSource.HostOverride != "" || dataSource.PortOverride != "" {
-		host, port = dataSource.HostOverride, dataSource.PortOverride
-	}
-
-	dbBinDir := ""
-	switch instance.Engine {
-	case db.MySQL, db.TiDB:
-		dbBinDir = s.mysqlBinDir
-	case db.Postgres:
-		dbBinDir = s.pgBinDir
-	}
-
-	driver, err := getDatabaseDriver(
-		ctx,
-		instance.Engine,
-		db.DriverConfig{
-			DbBinDir:  dbBinDir,
-			BinlogDir: getBinlogAbsDir(s.profile.DataDir, instance.ID),
-		},
-		db.ConnectionConfig{
-			Username: dataSource.Username,
-			Password: dataSource.Password,
-			Host:     host,
-			Port:     port,
-			Database: databaseName,
-			TLSConfig: db.TLSConfig{
-				SslCA:   dataSource.SslCa,
-				SslCert: dataSource.SslCert,
-				SslKey:  dataSource.SslKey,
-			},
-			ReadOnly: true,
-		},
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return driver, nil
-}
-
-// Retrieve db.Driver connection with standard parameters for all type data source.
-func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.DriverConfig, connectionConfig db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	driver, err := db.Open(
-		ctx,
-		engine,
-		driverConfig,
-		connectionConfig,
-		connCtx,
-	)
-	if err != nil {
-		return nil, common.Wrapf(err, common.DbConnectionFailure, "failed to connect database at %s:%s with user %q", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username)
-	}
-	return driver, nil
 }
 
 func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {

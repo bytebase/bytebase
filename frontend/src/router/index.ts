@@ -308,13 +308,6 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "label",
-                name: "setting.workspace.label",
-                meta: { title: () => t("settings.sidebar.labels") },
-                component: () => import("../views/SettingWorkspaceLabel.vue"),
-                props: true,
-              },
-              {
                 path: "agent",
                 name: "setting.workspace.agent",
                 meta: { title: () => t("common.agents") },
@@ -402,13 +395,6 @@ const routes: Array<RouteRecordRaw> = [
                 meta: { title: () => t("settings.sidebar.subscription") },
                 component: () =>
                   import("../views/SettingWorkspaceSubscription.vue"),
-                props: true,
-              },
-              {
-                path: "billing",
-                name: "setting.workspace.billing",
-                meta: { title: () => t("common.billings") },
-                component: () => import("../views/SettingWorkspaceBilling.vue"),
                 props: true,
               },
               {

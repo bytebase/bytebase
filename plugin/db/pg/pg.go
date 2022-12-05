@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
+	// init() in pgx/v5/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -227,14 +227,15 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) error {
+func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
 	owner, err := driver.GetCurrentDatabaseOwner()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	connected := false
 	var remainingStmts []string
+	totalRowsEffected := int64(0)
 	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
 		// We will execute the statement directly before "\\connect" statement.
@@ -280,9 +281,15 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				}
 				connected = true
 			} else {
-				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+				sqlResult, err := driver.db.ExecContext(ctx, stmt)
+				if err != nil {
 					return err
 				}
+				rowsEffected, err := sqlResult.RowsAffected()
+				if err != nil {
+					return err
+				}
+				totalRowsEffected += rowsEffected
 			}
 		} else {
 			if isSuperuserStatement(stmt) {
@@ -304,29 +311,38 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	}
 
 	if _, err := parser.SplitMultiSQLStream(parser.Postgres, strings.NewReader(statement), f); err != nil {
-		return err
+		return 0, err
 	}
 
 	if len(remainingStmts) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
 	// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s", owner)); err != nil {
-		return err
+		return 0, err
 	}
 
-	if _, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err != nil {
-		return err
+	sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
+	if err != nil {
+		return 0, err
 	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	rowsEffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	totalRowsEffected += rowsEffected
 
-	return tx.Commit()
+	return totalRowsEffected, nil
 }
 
 func isSuperuserStatement(stmt string) bool {
@@ -391,6 +407,26 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	singleSQLs, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
+
+	// If the statement is an INSERT, UPDATE, or DELETE statement, we will call execute instead of query and return the number of rows affected.
+	// https://github.com/postgres/postgres/blob/master/src/bin/psql/common.c#L969
+	if len(singleSQLs) == 1 && util.IsAffectedRowsStatement(singleSQLs[0].Text) {
+		affectedRows, err := driver.Execute(ctx, singleSQLs[0].Text, false)
+		if err != nil {
+			return nil, err
+		}
+		field := []string{"Affected Rows"}
+		types := []string{"INT"}
+		rows := [][]interface{}{{affectedRows}}
+		return []interface{}{field, types, rows}, nil
+	}
 	return util.Query(ctx, db.Postgres, driver.db, statement, queryContext)
 }
 

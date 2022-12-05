@@ -197,7 +197,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 				return -1, "", err
 			}
 		}
-		if err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
+		if _, err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
 			return -1, "", FormatError(err)
 		}
 	}

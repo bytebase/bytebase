@@ -24,11 +24,10 @@ import (
 	"go.uber.org/zap"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
+	// init() in pgx/v5/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/bin/server/cmd"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
@@ -36,6 +35,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/server"
+	componentConfig "github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
@@ -142,7 +142,7 @@ CREATE TABLE book3 (
 
 type controller struct {
 	server         *server.Server
-	profile        server.Profile
+	profile        componentConfig.Profile
 	client         *http.Client
 	cookie         string
 	vcsProvider    fake.VCSProvider
@@ -223,7 +223,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := cmd.GetTestProfileWithExternalPg(config.dataDir, resourceDirOverride, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := getTestProfileWithExternalPg(config.dataDir, resourceDirOverride, serverPort, externalPgUser, pgURL, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -241,7 +241,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 		return err
 	}
 	serverPort := getTestPortForEmbeddedPg()
-	profile := cmd.GetTestProfile(config.dataDir, resourceDirOverride, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := getTestProfile(config.dataDir, resourceDirOverride, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -250,6 +250,43 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	ctl.profile = profile
 
 	return ctl.start(ctx, serverPort)
+}
+
+// GetTestProfile will return a profile for testing.
+// We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
+func getTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL string) componentConfig.Profile {
+	// Using flags.port + 1 as our datastore port
+	datastorePort := port + 1
+	return componentConfig.Profile{
+		Mode:                 common.ReleaseModeDev,
+		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
+		DatastorePort:        datastorePort,
+		PgUser:               "bbtest",
+		DataDir:              dataDir,
+		ResourceDirOverride:  resourceDirOverride,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
+		BackupStorageBackend: api.BackupStorageBackendLocal,
+		FeishuAPIURL:         feishuAPIURL,
+	}
+}
+
+// GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
+// We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
+// pgURL for connect to Postgres.
+func getTestProfileWithExternalPg(dataDir, resourceDirOverride string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
+	return componentConfig.Profile{
+		Mode:                 common.ReleaseModeDev,
+		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
+		PgUser:               pgUser,
+		DataDir:              dataDir,
+		ResourceDirOverride:  resourceDirOverride,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
+		BackupStorageBackend: api.BackupStorageBackendLocal,
+		FeishuAPIURL:         feishuAPIURL,
+		PgURL:                pgURL,
+	}
 }
 
 func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreator, feishuProviderCreator fake.FeishuProviderCreator) error {
@@ -945,6 +982,24 @@ func (ctl *controller) getOnePageIssuesWithToken(issueFind api.IssueFind, token 
 		return nil, "", errors.Wrap(err, "fail to unmarshal get issue response")
 	}
 	return issueResp.Issues, issueResp.NextToken, nil
+}
+
+func (ctl *controller) patchIssue(issuePatch api.IssuePatch) (*api.Issue, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &issuePatch); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal issue patch")
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/issue/%d", issuePatch.ID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	issue := new(api.Issue)
+	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal patch issue patch response")
+	}
+	return issue, nil
 }
 
 // patchIssue patches the issue with given ID.

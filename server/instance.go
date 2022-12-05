@@ -184,7 +184,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{}
-		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -217,7 +217,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instanceMigration := &api.InstanceMigration{}
-		db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
@@ -262,7 +262,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		find := &db.MigrationHistoryFind{ID: &historyID}
-		driver, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Name)).SetInternal(err)
 		}
@@ -337,7 +337,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Name)).SetInternal(err)
 		}
@@ -416,11 +416,10 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 	}
-	subscription := s.loadSubscription(ctx)
+	subscription := s.licenseService.LoadSubscription(ctx)
 	if count >= subscription.InstanceCount {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}
-
 	return nil
 }
 
@@ -454,7 +453,7 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 	// Try creating the "bytebase" db in the added instance if needed.
 	// Since we allow user to add new instance upfront even providing the incorrect username/password,
 	// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-	db, err := s.getAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err == nil {
 		defer db.Close(ctx)
 		if err := db.SetupMigrationIfNeeded(ctx); err != nil {
@@ -463,7 +462,7 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 				zap.String("engine", string(instance.Engine)),
 				zap.Error(err))
 		}
-		if _, err := s.syncInstance(ctx, instance); err != nil {
+		if _, err := s.SchemaSyncer.syncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", instance.ID),
 				zap.Error(err))
@@ -496,7 +495,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 	}
 
 	var instancePatched *api.Instance
-	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil {
+	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil || patch.Database != nil {
 		// Users can switch instance status from ARCHIVED to NORMAL.
 		// So we need to check the current instance count with NORMAL status for quota limitation.
 		if patch.RowStatus != nil && *patch.RowStatus == string(api.Normal) {
@@ -532,8 +531,8 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 	}
 
 	// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
-	if patch.Host != nil || patch.Port != nil {
-		db, err := s.getAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */)
+	if patch.Host != nil || patch.Port != nil || patch.Database != nil {
+		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */)
 		if err == nil {
 			defer db.Close(ctx)
 			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
@@ -542,7 +541,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 					zap.String("engine", string(instancePatched.Engine)),
 					zap.Error(err))
 			}
-			if _, err := s.syncInstance(ctx, instancePatched); err != nil {
+			if _, err := s.SchemaSyncer.syncInstance(ctx, instancePatched); err != nil {
 				log.Warn("Failed to sync instance",
 					zap.Int("instance_id", instancePatched.ID),
 					zap.Error(err))

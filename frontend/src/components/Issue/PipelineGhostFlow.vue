@@ -29,10 +29,15 @@
               />
               <div class="name">{{ databaseOfTask(task).name }}</div>
             </div>
-            <div
-              class="flex items-center px-1 py-1 whitespace-pre-wrap break-all"
-            >
-              {{ taskNameOfTask(task) }}
+
+            <div class="flex items-center justify-between px-1 py-1">
+              <div
+                class="flex flex-1 items-center whitespace-pre-wrap break-all"
+              >
+                {{ taskNameOfTask(task) }}
+              </div>
+
+              <TaskMarkAsDoneButton :task="(task as Task)" />
             </div>
           </div>
 
@@ -74,6 +79,7 @@ import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useDatabaseStore } from "@/store";
 import PipelineStageList from "./PipelineStageList.vue";
 import TaskProgressPie from "./TaskProgressPie.vue";
+import TaskMarkAsDoneButton from "./TaskMarkAsDoneButton.vue";
 import { useIssueLogic } from "./logic";
 
 const { t } = useI18n();

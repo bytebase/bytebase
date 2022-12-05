@@ -160,13 +160,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		filter := func(repo *api.Repository) (bool, error) {
-			if repo.Project.RowStatus == api.Archived {
-				log.Debug("Skip repository as the associated project is archived",
-					zap.Int("repository_id", repo.ID),
-					zap.String("repository_external_id", repo.ExternalID),
-				)
-				return false, nil
-			}
 			if !repo.EnableSQLReviewCI {
 				log.Debug("Skip repository as the SQL review CI is not enabled.",
 					zap.Int("repository_id", repo.ID),
@@ -212,7 +205,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				ClientSecret: repo.VCS.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.WebURL),
+				Refresher:    refreshToken(ctx, s.store, repo.WebURL),
 			},
 			repo.VCS.InstanceURL,
 			request.RepositoryID,
@@ -324,7 +317,7 @@ func (s *Server) sqlAdviceForFile(
 			ClientSecret: fileInfo.repository.VCS.Secret,
 			AccessToken:  fileInfo.repository.AccessToken,
 			RefreshToken: fileInfo.repository.RefreshToken,
-			Refresher:    s.refreshToken(ctx, fileInfo.repository.WebURL),
+			Refresher:    refreshToken(ctx, s.store, fileInfo.repository.WebURL),
 		},
 		fileInfo.repository.VCS.InstanceURL,
 		fileInfo.repository.ExternalID,
@@ -359,7 +352,7 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
 		}
 
-		driver, err := s.tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -408,6 +401,13 @@ func (s *Server) filterRepository(ctx context.Context, webhookEndpointID string,
 
 	var filteredRepos []*api.Repository
 	for _, repo := range repos {
+		if repo.Project.RowStatus == api.Archived {
+			log.Debug("Skip repository as the associated project is archived",
+				zap.Int("repository_id", repo.ID),
+				zap.String("repository_external_id", repo.ExternalID),
+			)
+			continue
+		}
 		if repo.VCS == nil {
 			log.Debug("Skipping repo due to missing VCS", zap.Int("repoID", repo.ID))
 			continue
@@ -560,7 +560,7 @@ func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Reposit
 			ClientSecret: repo.VCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
-			Refresher:    s.refreshToken(ctx, repo.WebURL),
+			Refresher:    refreshToken(ctx, s.store, repo.WebURL),
 		},
 		repo.VCS.InstanceURL,
 		repo.ExternalID,
@@ -725,7 +725,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
 func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, fileInfoList []fileInfo) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
-	if repo.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+	if repo.Project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 		return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 	}
 
@@ -784,7 +784,7 @@ func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEv
 	// The files are grouped by database names before calling this function, so they have the same database name here.
 	databaseName := fileInfoList[0].migrationInfo.Database
 	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType)
-	issueDescription := fmt.Sprintf("By VCS files %s", strings.Join(fileNameList, ", "))
+	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
 	if err := s.createIssueFromMigrationDetailList(ctx, issueName, issueDescription, pushEvent, creatorID, repo.ProjectID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
 	}
@@ -823,13 +823,14 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		}
 	}
 	issueCreate := &api.IssueCreate{
-		CreatorID:     creatorID,
-		ProjectID:     projectID,
-		Name:          issueName,
-		Type:          issueType,
-		Description:   issueDescription,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
+		CreatorID:             creatorID,
+		ProjectID:             projectID,
+		Name:                  issueName,
+		Type:                  issueType,
+		Description:           issueDescription,
+		AssigneeID:            api.SystemBotID,
+		AssigneeNeedAttention: true,
+		CreateContext:         string(createContext),
 	}
 	issue, err := s.createIssue(ctx, issueCreate)
 	if err != nil {
@@ -982,7 +983,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 			ClientSecret: repo.VCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
-			Refresher:    s.refreshToken(ctx, repo.WebURL),
+			Refresher:    refreshToken(ctx, s.store, repo.WebURL),
 		},
 		repo.VCS.InstanceURL,
 		repo.ExternalID,
@@ -1174,7 +1175,11 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		}
 		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
-			log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
+			log.Error("failed to get issue by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
+			return nil
+		}
+		if issue == nil {
+			log.Error("issue not found by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
 			return nil
 		}
 		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.

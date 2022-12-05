@@ -105,7 +105,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		if err != nil {
 			return err
 		}
-		driver, err = s.tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err = s.dbFactory.GetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}

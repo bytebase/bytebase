@@ -29,6 +29,7 @@
               :class="[state.logoUrl ? 'opacity-0 hover:opacity-90' : '']"
               :max-file-size-in-mi-b="maxFileSizeInMiB"
               :support-file-extensions="supportImageExtensions"
+              :disabled="!allowSave"
               @on-select="onLogoSelect"
             >
               <svg

@@ -49,11 +49,7 @@
                 </template>
               </label>
             </div>
-            <YAxisRadioGroup
-              v-model:label="label"
-              :label-list="labelList"
-              class="text-sm"
-            />
+            <YAxisRadioGroup v-model:label="label" class="text-sm" />
           </div>
 
           <template v-if="databaseListGroupByName.length === 1">
@@ -61,7 +57,6 @@
               class="mt-4"
               :database-list="databaseListGroupByName[0].list"
               :label="label"
-              :label-list="labelList"
               :environment-list="environmentList"
               :deployment="deployment!"
             />
@@ -101,7 +96,6 @@
                 <DeployDatabaseTable
                   :database-list="list"
                   :label="label"
-                  :label-list="labelList"
                   :environment-list="environmentList"
                   :deployment="deployment!"
                 />
@@ -136,7 +130,7 @@ import {
   getPipelineFromDeploymentSchedule,
   projectSlug,
 } from "@/utils";
-import { useDeploymentStore, useLabelList } from "@/store";
+import { useDeploymentStore } from "@/store";
 import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 
 export type State = {
@@ -169,7 +163,6 @@ const fetchData = () => {
 watchEffect(fetchData);
 
 const label = ref<LabelKeyType>("bb.environment");
-const labelList = useLabelList();
 
 const deployment = computed(() => {
   if (props.project) {
@@ -186,14 +179,12 @@ const databaseListGroupByName = computed(
     if (props.project.dbNameTemplate === "") {
       return [{ name: "", list: props.databaseList }];
     }
-    if (props.project.dbNameTemplate && labelList.value.length === 0) return [];
 
     const dict = groupBy(props.databaseList, (db) => {
       if (props.project!.dbNameTemplate) {
         return parseDatabaseNameByTemplate(
           db.name,
-          props.project!.dbNameTemplate,
-          labelList.value
+          props.project!.dbNameTemplate
         );
       }
     });

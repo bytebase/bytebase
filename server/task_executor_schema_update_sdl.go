@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/differ"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
 )
 
 // NewSchemaUpdateSDLTaskExecutor creates a schema update (SDL) task executor.
@@ -32,11 +33,11 @@ func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	ddl, err := server.computeDatabaseSchemaDiff(ctx, task.Database, payload.Statement)
+	ddl, err := exec.computeDatabaseSchemaDiff(ctx, server.dbFactory, task.Database, payload.Statement)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
-	return runMigration(ctx, server, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, server.store, server.dbFactory, server.RollbackRunner, server.ActivityManager, server.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
@@ -52,8 +53,8 @@ func (*SchemaUpdateSDLTaskExecutor) GetProgress() api.Progress {
 // computeDatabaseSchemaDiff computes the diff between current database schema
 // and the given schema. It returns an empty string if there is no applicable
 // diff.
-func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Database, newSchemaStr string) (string, error) {
-	driver, err := s.getAdminDatabaseDriver(ctx, database.Instance, database.Name)
+func (*SchemaUpdateSDLTaskExecutor) computeDatabaseSchemaDiff(ctx context.Context, dbFactory *dbfactory.DBFactory, database *api.Database, newSchemaStr string) (string, error) {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return "", errors.Wrap(err, "get admin driver")
 	}

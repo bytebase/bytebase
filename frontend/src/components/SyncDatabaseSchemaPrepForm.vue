@@ -8,7 +8,7 @@
         </div>
         <div class="w-full flex flex-row justify-start items-center px-px">
           <ProjectSelect
-            class="!w-52 mr-2 shrink-0"
+            class="!w-48 mr-2 shrink-0"
             :disabled="!allowSelectProject"
             :selected-id="state.projectId"
             @select-project-id="(projectId: ProjectId)=>{
@@ -17,7 +17,7 @@
           />
         </div>
       </div>
-      <div class="w-176">
+      <div class="w-full">
         <div class="w-full mt-4 mb-2 flex flex-row justify-start items-center">
           <span>{{ $t("database.sync-schema.select-schema") }}</span>
         </div>
@@ -30,14 +30,14 @@
             :class="isValidId(state.projectId) ? 'hidden' : ''"
           ></div>
           <EnvironmentSelect
-            class="!w-52 mr-2 shrink-0"
+            class="!w-48 mr-2 shrink-0"
             name="environment"
             :selected-id="state.baseSchemaInfo.environmentId"
             :select-default="false"
             @select-environment-id="handleBaseEnvironmentSelect"
           />
           <DatabaseSelect
-            class="!w-64 mr-2 shrink-0"
+            class="!w-80 mr-2 shrink-0"
             :selected-id="(state.baseSchemaInfo.databaseId as DatabaseId)"
             :mode="'USER'"
             :environment-id="state.baseSchemaInfo.environmentId"
@@ -87,7 +87,7 @@
         </div>
       </div>
       <hr class="mt-4 w-full" />
-      <div class="w-176">
+      <div class="w-full">
         <div
           class="w-full mt-4 mb-2 leading-6 flex flex-row justify-start items-center"
         >
@@ -102,14 +102,14 @@
             :class="isValidId(state.projectId) ? 'hidden' : ''"
           ></div>
           <EnvironmentSelect
-            class="!w-52 mr-2 shrink-0"
+            class="!w-48 mr-2 shrink-0"
             name="environment"
             :selected-id="state.targetDatabaseInfo.environmentId"
             :select-default="false"
             @select-environment-id="handleTargetEnvironmentSelect"
           />
           <DatabaseSelect
-            class="!grow"
+            class="!w-96"
             :selected-id="(state.targetDatabaseInfo.databaseId as DatabaseId)"
             :mode="'USER'"
             :environment-id="state.targetDatabaseInfo.environmentId"
