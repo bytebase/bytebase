@@ -27,14 +27,12 @@ import (
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		issueCreate := &api.IssueCreate{}
+		issueCreate := &api.IssueCreate{
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 		}
-
-		issueCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		// TODO(p0ny): remove this line when manually sending external approval is ready. This is to temporarily keep our auto sending behaviour.
-		issueCreate.AssigneeNeedAttention = true
 
 		issue, err := s.createIssue(ctx, issueCreate)
 		if err != nil {
