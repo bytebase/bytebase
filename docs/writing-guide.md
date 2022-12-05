@@ -69,7 +69,7 @@ We mainly follow Google's style guide https://developers.google.com/style
 > ❌ Click Settings button
 
 
-2. Bold and Initial capitalized for Concept, Roles, and etc. 
+2. Bold and initial capitalized for concept, roles, and etc. 
 
 > ✅ **Project** is the container to group logically related **Databases**, **Issues** and **Users** together.  
 >
@@ -95,7 +95,7 @@ We mainly follow Google's style guide https://developers.google.com/style
 >
 > ❌ 2 databases
 
-5. Specify Roles and Plans at the top of each article if applicable. Use `<hint-block type="info">` component to wrap.
+5. Specify roles and plans at the top of each article if applicable. Use `<hint-block type="info">` component to wrap the sentence up.
 
 > ✅ 
 > This feature is only available for 
