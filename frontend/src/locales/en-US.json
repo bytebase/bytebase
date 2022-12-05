@@ -1430,7 +1430,14 @@
       "comment": "Comment",
       "is-nullable": "Is Nullable"
     },
-    "nothing-changed": "Nothing changed"
+    "nothing-changed": "Nothing changed",
+    "message": {
+      "invalid-table-name": "Invalid table name",
+      "duplicated-table-name": "Duplicated table name",
+      "invalid-column-name": "Invalid column name",
+      "duplicated-column-name": "Duplicated column name",
+      "invalid-column-type": "Invalid column type"
+    }
   },
   "label": {
     "empty-label-value": "<Empty Value>",
