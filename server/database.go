@@ -820,6 +820,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		engineType := parser.EngineType(database.Instance.Engine)
+		if err := edit.ValidateDatabaseEdit(engineType, databaseEdit); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid request: %s", err.Error()))
+		}
+
 		statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
