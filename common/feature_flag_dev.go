@@ -1,7 +1,7 @@
 //go:build !release
 // +build !release
 
-package store
+package common
 
 // FeatureFlag in dev build always returns true.
 // Because dev schema always has the latest change and is compatible with the new feature code.

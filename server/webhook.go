@@ -212,7 +212,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				ClientSecret: repo.VCS.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.WebURL),
+				Refresher:    refreshToken(ctx, s.store, repo.WebURL),
 			},
 			repo.VCS.InstanceURL,
 			request.RepositoryID,
@@ -324,7 +324,7 @@ func (s *Server) sqlAdviceForFile(
 			ClientSecret: fileInfo.repository.VCS.Secret,
 			AccessToken:  fileInfo.repository.AccessToken,
 			RefreshToken: fileInfo.repository.RefreshToken,
-			Refresher:    s.refreshToken(ctx, fileInfo.repository.WebURL),
+			Refresher:    refreshToken(ctx, s.store, fileInfo.repository.WebURL),
 		},
 		fileInfo.repository.VCS.InstanceURL,
 		fileInfo.repository.ExternalID,
@@ -560,7 +560,7 @@ func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Reposit
 			ClientSecret: repo.VCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
-			Refresher:    s.refreshToken(ctx, repo.WebURL),
+			Refresher:    refreshToken(ctx, s.store, repo.WebURL),
 		},
 		repo.VCS.InstanceURL,
 		repo.ExternalID,
@@ -725,7 +725,7 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
 func (s *Server) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repo *api.Repository, fileInfoList []fileInfo) (string, bool, []*api.ActivityCreate, *echo.HTTPError) {
-	if repo.Project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+	if repo.Project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 		return "", false, nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 	}
 
@@ -823,13 +823,14 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		}
 	}
 	issueCreate := &api.IssueCreate{
-		CreatorID:     creatorID,
-		ProjectID:     projectID,
-		Name:          issueName,
-		Type:          issueType,
-		Description:   issueDescription,
-		AssigneeID:    api.SystemBotID,
-		CreateContext: string(createContext),
+		CreatorID:             creatorID,
+		ProjectID:             projectID,
+		Name:                  issueName,
+		Type:                  issueType,
+		Description:           issueDescription,
+		AssigneeID:            api.SystemBotID,
+		AssigneeNeedAttention: true,
+		CreateContext:         string(createContext),
 	}
 	issue, err := s.createIssue(ctx, issueCreate)
 	if err != nil {
@@ -982,7 +983,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 			ClientSecret: repo.VCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
-			Refresher:    s.refreshToken(ctx, repo.WebURL),
+			Refresher:    refreshToken(ctx, s.store, repo.WebURL),
 		},
 		repo.VCS.InstanceURL,
 		repo.ExternalID,

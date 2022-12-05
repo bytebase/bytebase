@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -15,11 +14,9 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -34,6 +31,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		issueCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		// TODO(p0ny): remove this line when manually sending external approval is ready. This is to temporarily keep our auto sending behaviour.
+		issueCreate.AssigneeNeedAttention = true
+
 		issue, err := s.createIssue(ctx, issueCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
@@ -194,7 +194,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 			}
-			ok, err := s.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.ProjectID, issue.Type)
+			ok, err := s.TaskScheduler.canPrincipalBeAssignee(ctx, *issuePatch.AssigneeID, stage.EnvironmentID, issue.ProjectID, issue.Type)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be changed").SetInternal(err)
 			}
@@ -292,7 +292,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
-		updatedIssue, err := s.changeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
+		updatedIssue, err := s.TaskScheduler.changeIssueStatus(ctx, issue, issueStatusPatch.Status, issueStatusPatch.UpdaterID, issueStatusPatch.Comment)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
@@ -329,13 +329,13 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 	}
 	// Try to find a more appropriate assignee if the current assignee is the system bot, indicating that the caller might not be sure about who should be the assignee.
 	if issueCreate.AssigneeID == api.SystemBotID {
-		assigneeID, err := s.getDefaultAssigneeID(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+		assigneeID, err := s.TaskScheduler.getDefaultAssigneeID(ctx, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find a default assignee").SetInternal(err)
 		}
 		issueCreate.AssigneeID = assigneeID
 	}
-	ok, err := s.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
+	ok, err := s.TaskScheduler.canPrincipalBeAssignee(ctx, issueCreate.AssigneeID, firstEnvironmentID, issueCreate.ProjectID, issueCreate.Type)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check if the assignee can be set for the new issue").SetInternal(err)
 	}
@@ -377,7 +377,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Name)
 	}
 
-	if err := s.ScheduleActiveStage(ctx, issue.Pipeline); err != nil {
+	if err := s.TaskScheduler.ScheduleActiveStage(ctx, issue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}
 
@@ -675,7 +675,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if c.PointInTimeTs != nil && !s.feature(api.FeaturePITR) {
+	if c.PointInTimeTs != nil && !s.licenseService.IsFeatureEnabled(api.FeaturePITR) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
 	}
 
@@ -713,7 +713,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if !s.feature(api.FeatureTaskScheduleTime) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 		for _, detail := range c.DetailList {
 			if detail.EarliestAllowedTs != 0 {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -762,12 +762,12 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if databaseNameCount > 1 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with database name.")
 	}
-	if project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
+	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 	}
-	maximumTaskLimit := s.getPlanLimitValue(api.PlanLimitMaximumTask)
+	maximumTaskLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumTask)
 	if int64(databaseIDCount) > maximumTaskLimit {
-		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Effective plan %s can update up to %d databases, got %d.", s.getEffectivePlan(), maximumTaskLimit, databaseIDCount))
+		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can update up to %d databases, got %d.", maximumTaskLimit, databaseIDCount))
 	}
 
 	// aggregatedMatrix is the aggregated matrix by deployments.
@@ -857,14 +857,14 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 }
 
 func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
-	if !s.feature(api.FeatureOnlineMigration) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureOnlineMigration) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureOnlineMigration.AccessErrorMessage())
 	}
 	c := api.UpdateSchemaGhostContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
-	if !s.feature(api.FeatureTaskScheduleTime) {
+	if !s.licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) {
 		for _, detail := range c.DetailList {
 			if detail.EarliestAllowedTs != 0 {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -1013,7 +1013,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	if project.TenantMode == api.TenantModeTenant {
-		if !s.feature(api.FeatureMultiTenancy) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
 		if _, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels); err != nil {
@@ -1226,238 +1226,6 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		}
 	}
 	return nil
-}
-
-func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
-	var pipelineStatus api.PipelineStatus
-	switch newStatus {
-	case api.IssueOpen:
-		pipelineStatus = api.PipelineOpen
-	case api.IssueDone:
-		// Returns error if any of the tasks is not DONE.
-		for _, stage := range issue.Pipeline.StageList {
-			for _, task := range stage.TaskList {
-				if task.Status != api.TaskDone {
-					return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
-				}
-			}
-		}
-		pipelineStatus = api.PipelineDone
-	case api.IssueCanceled:
-		// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
-		// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
-		// keep those tasks in the same state before the issue was canceled.
-		for _, stage := range issue.Pipeline.StageList {
-			for _, task := range stage.TaskList {
-				if task.Status == api.TaskRunning {
-					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						IDList:    []int{task.ID},
-						UpdaterID: updaterID,
-						Status:    api.TaskCanceled,
-					}); err != nil {
-						return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Name, task.Name)
-					}
-				}
-			}
-		}
-		pipelineStatus = api.PipelineCanceled
-	}
-
-	pipelinePatch := &api.PipelinePatch{
-		ID:        issue.PipelineID,
-		UpdaterID: updaterID,
-		Status:    &pipelineStatus,
-	}
-	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Name, pipelinePatch)
-	}
-
-	issuePatch := &api.IssuePatch{
-		ID:        issue.ID,
-		UpdaterID: updaterID,
-		Status:    &newStatus,
-	}
-	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Name, issuePatch)
-	}
-
-	// Cancel external approval, it's ok if we failed.
-	if newStatus != api.IssueOpen {
-		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonIssueNotOpen); err != nil {
-			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
-		}
-	}
-
-	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-		OldStatus: issue.Status,
-		NewStatus: newStatus,
-		IssueName: updatedIssue.Name,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Name)
-	}
-
-	activityCreate := &api.ActivityCreate{
-		CreatorID:   updaterID,
-		ContainerID: issue.ID,
-		Type:        api.ActivityIssueStatusUpdate,
-		Level:       api.ActivityInfo,
-		Comment:     comment,
-		Payload:     string(payload),
-	}
-
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-		issue: updatedIssue,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
-	}
-
-	return updatedIssue, nil
-}
-
-func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, activityID int) error {
-	if issue.CreatorID != api.SystemBotID {
-		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.CreatorID,
-			ActivityID: activityID,
-		}
-		_, err := s.store.CreateInbox(ctx, inboxCreate)
-		if err != nil {
-			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.CreatorID)
-		}
-	}
-
-	if issue.AssigneeID != api.SystemBotID && issue.AssigneeID != issue.CreatorID {
-		inboxCreate := &api.InboxCreate{
-			ReceiverID: issue.AssigneeID,
-			ActivityID: activityID,
-		}
-		_, err := s.store.CreateInbox(ctx, inboxCreate)
-		if err != nil {
-			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.AssigneeID)
-		}
-	}
-
-	for _, subscriber := range issue.SubscriberList {
-		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.CreatorID && subscriber.ID != issue.AssigneeID {
-			inboxCreate := &api.InboxCreate{
-				ReceiverID: subscriber.ID,
-				ActivityID: activityID,
-			}
-			_, err := s.store.CreateInbox(ctx, inboxCreate)
-			if err != nil {
-				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
-			}
-		}
-	}
-
-	return nil
-}
-
-// getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
-// It's used for creating a database in a tenant mode project.
-// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-// Otherwise, we will create a blank database without schema.
-func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, project *api.Project, projectID int, baseDatabaseName string) (string, string, error) {
-	// Find all databases in the project.
-	dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-		ProjectID: &projectID,
-	})
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
-	}
-
-	deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, projectID)
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
-	}
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
-	}
-	matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
-	}
-	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
-
-	// When there is no existing tenant, we will look at all existing databases in the tenant mode project.
-	// If there are existing databases with the same name, we will disallow the database creation.
-	// Otherwise, we will create a blank new database.
-	if similarDB == nil {
-		// Ignore the database name conflict if the template is empty.
-		if project.DBNameTemplate == "" {
-			return "", "", nil
-		}
-
-		found := false
-		for _, db := range dbList {
-			var labelList []*api.DatabaseLabel
-			if err := json.Unmarshal([]byte(db.Labels), &labelList); err != nil {
-				return "", "", errors.Wrapf(err, "failed to unmarshal labels for database ID %v name %q", db.ID, db.Name)
-			}
-			labelMap := map[string]string{}
-			for _, label := range labelList {
-				labelMap[label.Key] = label.Value
-			}
-			dbName, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, labelMap)
-			if err != nil {
-				return "", "", errors.Wrapf(err, "failed to format database name formatDatabaseName(%q, %q, %+v)", baseDatabaseName, project.DBNameTemplate, labelMap)
-			}
-			if db.Name == dbName {
-				found = true
-				break
-			}
-		}
-		if found {
-			err := errors.Errorf("conflicting database name, project has existing base database named %q, but it's not from the selected peer tenants", baseDatabaseName)
-			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-		return "", "", nil
-	}
-
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name)
-	if err != nil {
-		return "", "", err
-	}
-	defer driver.Close(ctx)
-	schemaVersion, err := getLatestSchemaVersion(ctx, driver, similarDB.Name)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.Name)
-	}
-
-	var schemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-		return "", "", err
-	}
-	return schemaVersion, schemaBuf.String(), nil
-}
-
-func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) *api.Database {
-	var similarDB *api.Database
-	// We try to use an existing tenant with the same environment, if possible.
-	for _, databaseList := range databaseMatrix {
-		for _, db := range databaseList {
-			if db.Instance.EnvironmentID == environmentID {
-				similarDB = db
-				break
-			}
-		}
-		if similarDB != nil {
-			break
-		}
-	}
-	if similarDB == nil {
-		for _, stage := range databaseMatrix {
-			if len(stage) > 0 {
-				similarDB = stage[0]
-				break
-			}
-		}
-	}
-
-	return similarDB
 }
 
 func (s *Server) setTaskProgressForIssue(issue *api.Issue) {

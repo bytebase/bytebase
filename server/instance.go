@@ -416,11 +416,10 @@ func (s *Server) instanceCountGuard(ctx context.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 	}
-	subscription := s.loadSubscription(ctx)
+	subscription := s.licenseService.LoadSubscription(ctx)
 	if count >= subscription.InstanceCount {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}
-
 	return nil
 }
 
@@ -463,7 +462,7 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 				zap.String("engine", string(instance.Engine)),
 				zap.Error(err))
 		}
-		if _, err := s.syncInstance(ctx, instance); err != nil {
+		if _, err := s.SchemaSyncer.syncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", instance.ID),
 				zap.Error(err))
@@ -496,7 +495,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 	}
 
 	var instancePatched *api.Instance
-	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil {
+	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil || patch.Database != nil {
 		// Users can switch instance status from ARCHIVED to NORMAL.
 		// So we need to check the current instance count with NORMAL status for quota limitation.
 		if patch.RowStatus != nil && *patch.RowStatus == string(api.Normal) {
@@ -532,7 +531,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 	}
 
 	// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
-	if patch.Host != nil || patch.Port != nil {
+	if patch.Host != nil || patch.Port != nil || patch.Database != nil {
 		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instancePatched, "" /* databaseName */)
 		if err == nil {
 			defer db.Close(ctx)
@@ -542,7 +541,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 					zap.String("engine", string(instancePatched.Engine)),
 					zap.Error(err))
 			}
-			if _, err := s.syncInstance(ctx, instancePatched); err != nil {
+			if _, err := s.SchemaSyncer.syncInstance(ctx, instancePatched); err != nil {
 				log.Warn("Failed to sync instance",
 					zap.Int("instance_id", instancePatched.ID),
 					zap.Error(err))

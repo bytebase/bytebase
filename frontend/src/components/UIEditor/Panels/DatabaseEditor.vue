@@ -10,7 +10,7 @@
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('list')"
-        >List</span
+        >{{ $t("ui-editor.list") }}</span
       >
       <span
         class="hidden -mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
@@ -28,20 +28,22 @@
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('raw-sql')"
-        >Raw SQL</span
+        >{{ $t("ui-editor.raw-sql") }}</span
       >
     </div>
 
     <!-- List view -->
     <template v-if="state.selectedTab === 'list'">
       <div class="py-2 w-full flex justify-between items-center space-x-2">
-        <span class="ml-3 text-sm text-gray-500">Tables</span>
+        <span class="ml-3 text-sm text-gray-500">{{
+          $t("ui-editor.tables")
+        }}</span>
         <button
           class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:bg-gray-100"
           @click="handleCreateNewTable"
         >
           <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-          New Table
+          {{ $t("ui-editor.actions.create-table") }}
         </button>
       </div>
       <!-- table list -->
@@ -92,12 +94,12 @@
             <div class="w-full flex justify-start items-center">
               <n-tooltip trigger="hover">
                 <template #trigger>
-                  <heroicons-solid:x-mark
+                  <heroicons:trash
                     class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
                     @click="handleDropTable(table)"
                   />
                 </template>
-                <span>Drop Table</span>
+                <span>{{ $t("ui-editor.actions.drop-table") }}</span>
               </n-tooltip>
             </div>
           </div>
@@ -105,7 +107,7 @@
       </div>
     </template>
     <template v-else-if="state.selectedTab === 'er-diagram'">
-      <p class="px-3 py-2 italic">ER Diagram by zp</p>
+      <!-- TODO: ER diagram placeholder -->
     </template>
     <div
       v-else-if="state.selectedTab === 'raw-sql'"
@@ -124,7 +126,9 @@
           language="sql"
           :code="state.statement"
         ></HighlightCodeBlock>
-        <span v-else class="px-3 my-2 italic">Nothing changed</span>
+        <div v-else class="flex px-3 py-2 italic text-sm text-gray-600">
+          {{ $t("ui-editor.nothing-changed") }}
+        </div>
       </template>
     </div>
   </div>
@@ -142,6 +146,7 @@ import {
 import { DatabaseTabContext, Table, UIEditorTabType } from "@/types";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import { useI18n } from "vue-i18n";
 
 type TabType = "list" | "er-diagram" | "raw-sql";
 
@@ -151,6 +156,7 @@ interface LocalState {
   statement: string;
 }
 
+const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const databaseStore = useDatabaseStore();
 const tableStore = useTableStore();
@@ -166,27 +172,27 @@ const tableHeaderList = computed(() => {
   return [
     {
       key: "name",
-      label: "Name",
+      label: t("ui-editor.database.name"),
     },
     {
       key: "raw-count",
-      label: "Row Count",
+      label: t("ui-editor.database.row-count"),
     },
     {
       key: "data-size",
-      label: "Data Size",
+      label: t("ui-editor.database.data-size"),
     },
     {
       key: "engine",
-      label: "Engine",
+      label: t("ui-editor.database.engine"),
     },
     {
       key: "collation",
-      label: "Collation",
+      label: t("ui-editor.database.collation"),
     },
     {
       key: "comment",
-      label: "Comment",
+      label: t("ui-editor.database.comment"),
     },
   ];
 });

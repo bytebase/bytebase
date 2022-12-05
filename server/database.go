@@ -451,7 +451,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Backup %q already exists", backupCreate.Name))
 		}
 
-		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
+		backup, err := s.BackupRunner.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			if common.ErrorCode(err) == common.DbConnectionFailure {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)
@@ -626,7 +626,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
-		if !s.feature(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
@@ -649,7 +649,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
@@ -702,7 +702,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
-		if !s.feature(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
 			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
@@ -730,7 +730,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))

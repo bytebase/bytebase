@@ -487,6 +487,9 @@ const valueChanged = (
 
 const revertEnvironment = () => {
   state.environment = cloneDeep(props.environment!);
+  state.approvalPolicy = cloneDeep(props.approvalPolicy!);
+  state.backupPolicy = cloneDeep(props.backupPolicy!);
+  state.environmentTierPolicy = cloneDeep(props.environmentTierPolicy!);
 };
 
 const createEnvironment = () => {

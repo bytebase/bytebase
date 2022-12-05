@@ -9,19 +9,23 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewTaskCheckGhostSyncExecutor creates a task check gh-ost sync executor.
-func NewTaskCheckGhostSyncExecutor() TaskCheckExecutor {
-	return &TaskCheckGhostSyncExecutor{}
+func NewTaskCheckGhostSyncExecutor(store *store.Store) TaskCheckExecutor {
+	return &TaskCheckGhostSyncExecutor{
+		store: store,
+	}
 }
 
 // TaskCheckGhostSyncExecutor is the task check gh-ost sync executor.
 type TaskCheckGhostSyncExecutor struct {
+	store *store.Store
 }
 
 // Run will run the task check database connector executor once.
-func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *TaskCheckGhostSyncExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So
 	// capture the error and send it into the result list.
@@ -43,7 +47,7 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 			err = nil
 		}
 	}()
-	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)
 	}
@@ -64,7 +68,7 @@ func (*TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, task
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.InstanceID)
 	}
 
-	instanceUserList, err := server.store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
+	instanceUserList, err := e.store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
 	if err != nil {
 		return nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
 	}

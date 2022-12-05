@@ -52,7 +52,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 
-		if settingPatch.Name == api.SettingBrandingLogo && !s.feature(api.FeatureBranding) {
+		if settingPatch.Name == api.SettingBrandingLogo && !s.licenseService.IsFeatureEnabled(api.FeatureBranding) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureBranding.AccessErrorMessage())
 		}
 
@@ -68,7 +68,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if value.IMType != api.IMTypeFeishu {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unknown IM Type %s", value.IMType))
 			}
-			if value.ExternalApproval.Enabled && !s.feature(api.FeatureIMApproval) {
+			if value.ExternalApproval.Enabled && !s.licenseService.IsFeatureEnabled(api.FeatureIMApproval) {
 				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureIMApproval.AccessErrorMessage())
 			}
 			if value.ExternalApproval.Enabled {

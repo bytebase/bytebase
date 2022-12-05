@@ -27,12 +27,15 @@
           />
           <div class="name">{{ j + 1 }} - {{ databaseForTask(task).name }}</div>
         </div>
-        <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
-          <InstanceEngineIcon :instance="databaseForTask(task).instance" />
-          <span
-            class="flex-1 ml-2 overflow-x-hidden whitespace-nowrap overflow-ellipsis"
-            >{{ instanceName(databaseForTask(task).instance) }}</span
-          >
+        <div class="flex items-center justify-between px-1 py-1">
+          <div class="flex flex-1 items-center whitespace-pre-wrap">
+            <InstanceEngineIcon :instance="databaseForTask(task).instance" />
+            <span
+              class="flex-1 ml-2 overflow-x-hidden whitespace-nowrap overflow-ellipsis"
+              >{{ instanceName(databaseForTask(task).instance) }}</span
+            >
+          </div>
+          <TaskMarkAsDoneButton :task="(task as Task)" />
         </div>
       </div>
     </div>
@@ -41,7 +44,7 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import {
+import type {
   Pipeline,
   Stage,
   StageCreate,
@@ -51,6 +54,7 @@ import {
 } from "@/types";
 import { activeTask, activeTaskInStage, taskSlug } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
+import TaskMarkAsDoneButton from "./TaskMarkAsDoneButton.vue";
 import { useDatabaseStore } from "@/store";
 import { useIssueLogic } from "./logic";
 

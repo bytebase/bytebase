@@ -251,7 +251,7 @@ export default defineComponent({
             case "CANCEL":
               return "btn-danger";
             case "SKIP":
-              return "btn-danger";
+              return "btn-primary";
             case "RESTART":
               return "btn-normal";
           }

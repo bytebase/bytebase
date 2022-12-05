@@ -115,6 +115,24 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 	return issue, nil
 }
 
+// FindIssue finds a list of issues.
+func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
+	issueRawList, err := s.findIssueRaw(ctx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find Issue list with IssueFind[%+v]", find)
+	}
+	var issueList []*api.Issue
+	for _, raw := range issueRawList {
+		issue, err := s.composeIssue(ctx, raw)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", raw)
+		}
+		issueList = append(issueList, issue)
+	}
+
+	return issueList, nil
+}
+
 // FindIssueStripped finds a list of issues in stripped format.
 // We do not load the pipeline in order to reduce the size of the response payload and the complexity of composing the issue list.
 func (s *Store) FindIssueStripped(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
@@ -574,9 +592,10 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 			type,
 			description,
 			assignee_id,
+			assignee_need_attention,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9, $10)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload
 	`
 	var issueRaw issueRaw
@@ -589,6 +608,7 @@ func (*Store) createIssueImpl(ctx context.Context, tx *Tx, create *api.IssueCrea
 		create.Type,
 		create.Description,
 		create.AssigneeID,
+		create.AssigneeNeedAttention,
 		create.Payload,
 	).Scan(
 		&issueRaw.ID,
@@ -640,6 +660,9 @@ func (*Store) findIssueImpl(ctx context.Context, tx *Tx, find *api.IssueFind) ([
 	}
 	if v := find.AssigneeID; v != nil {
 		where, args = append(where, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.AssigneeNeedAttention; v != nil {
+		where, args = append(where, fmt.Sprintf("assignee_need_attention = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_id = issue.id AND subscriber_id = $%d)", len(args)+1)), append(args, *v)

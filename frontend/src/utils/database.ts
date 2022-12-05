@@ -91,3 +91,13 @@ export function isPITRDatabase(db: Database): boolean {
   // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
   return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
 }
+
+export function isArchivedDatabase(db: Database): boolean {
+  if (db.instance.rowStatus === "ARCHIVED") {
+    return true;
+  }
+  if (db.instance.environment.rowStatus === "ARCHIVED") {
+    return true;
+  }
+  return false;
+}
