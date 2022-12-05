@@ -180,6 +180,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
 		}
 
+		if issuePatch.AssigneeNeedAttention != nil && !*issuePatch.AssigneeNeedAttention {
+			return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention to false")
+		}
+
 		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
