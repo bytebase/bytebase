@@ -99,8 +99,6 @@ p, OWNER, /vcs/{vcsID}, PATCH
 p, OWNER, /vcs/{vcsID}, DELETE
 p, OWNER, /vcs/{vcsID}/repository, GET
 p, OWNER, /vcs/{vcsID}/external-repository, GET
-p, OWNER, /plan, GET
-p, OWNER, /plan, PATCH
 p, OWNER, /setting, GET
 p, OWNER, /setting/{name}, PATCH
 p, OWNER, /label, GET
