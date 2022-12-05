@@ -687,3 +687,15 @@ func fromStoredVersion(storedVersion string) (bool, string, string, error) {
 	}
 	return true, fmt.Sprintf("%d.%d.%d", major, minor, patch), suffix, nil
 }
+
+// IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
+func IsAffectedRowsStatement(stmt string) bool {
+	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
+	upperStatement := strings.ToUpper(stmt)
+	for _, prefix := range affectedRowsStatementPrefix {
+		if strings.HasPrefix(upperStatement, prefix) {
+			return true
+		}
+	}
+	return false
+}
