@@ -193,8 +193,8 @@ import { getDataTypeSuggestionList } from "@/utils";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 
-const columnNameFieldRegexp = /\S+/;
-const columnTypeFieldRegexp = /\S+/;
+const tableOrColumnNameFieldRegexp = /^\S+$/;
+const columnTypeFieldRegexp = /^\S+$/;
 
 interface LocalState {
   isFetchingDDL: boolean;
@@ -254,11 +254,11 @@ const dataTypeOptions = computed(() => {
 });
 
 const handleSaveChanges = async () => {
-  if (tableCache.name === "") {
+  if (!tableOrColumnNameFieldRegexp.test(tableCache.name)) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "Table name cannot be empty",
+      title: "Invalid table name",
     });
     return;
   }
@@ -278,7 +278,7 @@ const handleSaveChanges = async () => {
   }
 
   for (const column of tableCache.columnList) {
-    if (!columnNameFieldRegexp.test(column.name)) {
+    if (!tableOrColumnNameFieldRegexp.test(column.name)) {
       notificationStore.pushNotification({
         module: "bytebase",
         style: "CRITICAL",
