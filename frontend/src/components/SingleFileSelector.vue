@@ -17,8 +17,8 @@
       type="file"
       :accept="supportFileExtensions.join(',')"
       class="sr-only hidden"
-      @input="onFileChange"
       :disabled="disabled"
+      @input="onFileChange"
     />
     <slot></slot>
   </div>

@@ -30,7 +30,7 @@
             />
           </div>
         </div>
-        <div class="flex space-x-2" v-if="hasPermission">
+        <div v-if="hasPermission" class="flex space-x-2">
           <button
             v-if="reviewPolicy.rowStatus === 'NORMAL'"
             type="button"

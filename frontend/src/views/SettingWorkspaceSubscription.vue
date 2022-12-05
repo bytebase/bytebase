@@ -46,7 +46,7 @@
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
     </dl>
-    <div class="w-full mt-5 flex flex-col" v-if="canManageSubscription">
+    <div v-if="canManageSubscription" class="w-full mt-5 flex flex-col">
       <textarea
         id="license"
         v-model="state.license"
