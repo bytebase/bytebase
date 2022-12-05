@@ -75,13 +75,6 @@ export default defineComponent({
       });
     };
 
-    const canManageVCS = computed((): boolean => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-vcs-provider",
-        currentUser.value.role
-      );
-    });
-
     const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");
 
     return {
@@ -89,7 +82,6 @@ export default defineComponent({
       vcsList,
       addVCSProvider,
       has3rdPartyLoginFeature,
-      canManageVCS,
     };
   },
 });
