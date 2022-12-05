@@ -204,8 +204,8 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 	return func(c echo.Context) error {
 		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
 
-		// Skips auth, actuator, plan
-		if common.HasPrefixes(path, "/auth", "/actuator", "/plan") {
+		// Skips auth, actuator
+		if common.HasPrefixes(path, "/auth", "/actuator") {
 			return next(c)
 		}
 

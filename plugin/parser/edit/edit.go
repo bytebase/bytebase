@@ -13,6 +13,7 @@ import (
 // SchemaEditor is the interface for schema editor.
 type SchemaEditor interface {
 	DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string, error)
+	ValidateDatabaseEdit(databaseEdit *api.DatabaseEdit) error
 }
 
 var (
@@ -44,4 +45,15 @@ func DeparseDatabaseEdit(engineType parser.EngineType, databaseEdit *api.Databas
 		return "", errors.Errorf("engine: unknown engine type %v", engineType)
 	}
 	return se.DeparseDatabaseEdit(databaseEdit)
+}
+
+// ValidateDatabaseEdit validates the api message DatabaseEdit, including related column type.
+func ValidateDatabaseEdit(engineType parser.EngineType, databaseEdit *api.DatabaseEdit) error {
+	editorMu.RLock()
+	se, ok := editors[engineType]
+	editorMu.RUnlock()
+	if !ok {
+		return errors.Errorf("engine: unknown engine type %v", engineType)
+	}
+	return se.ValidateDatabaseEdit(databaseEdit)
 }
