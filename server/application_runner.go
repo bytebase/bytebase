@@ -21,13 +21,15 @@ const (
 	applicationRunnerInterval = time.Duration(60) * time.Second
 
 	// externalApprovalCancelReasonGeneral is the general reason, used as a default.
-	externalApprovalCancelReasonGeneral string = "Canceled because the assignee has been changed, or all tasks of the stage have been approved or the issue is no longer open."
+	externalApprovalCancelReasonGeneral string = "Canceled because the assignee has been changed, or the SQL has been modified, or all tasks of the stage have been approved or the issue is no longer open."
 	// externalApprovalCancelReasonIssueNotOpen is used if the issue is not open.
 	externalApprovalCancelReasonIssueNotOpen string = "Canceled because the containing issue is no longer open."
 	// externalApprovalCancelReasonReassigned is used if the assignee has been changed.
 	externalApprovalCancelReasonReassigned string = "Canceled because the assignee has changed."
+	// externalApprovalCancelReasonSQLModified is used if the task SQL statement has been modified.
+	externalApprovalCancelReasonSQLModified string = "Canceled because the SQL has been modified."
 	// externalApprovalCancelReasonNoTaskPendingApproval is used if there is no pending approval tasks.
-	externalApprovalCancelReasonNoTaskPendingApproval string = "Canceled because all tasks have benn approved."
+	externalApprovalCancelReasonNoTaskPendingApproval string = "Canceled because all tasks have been approved."
 )
 
 // NewApplicationRunner returns a ApplicationRunner.

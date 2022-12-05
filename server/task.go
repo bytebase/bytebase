@@ -154,11 +154,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		if taskPatch.Statement != nil {
 			// Tenant mode project don't allow updating SQL statement for a single task.
-			project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID: %d", issue.ProjectID)).SetInternal(err)
-			}
-			if project.TenantMode == api.TenantModeTenant && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL) {
+			if issue.Project.TenantMode == api.TenantModeTenant && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL) {
 				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
 			}
 		}
@@ -364,13 +360,25 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	}
 
 	// create an activity and trigger task check for statement update
-	if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		if oldStatement != newStatement {
-			if issue == nil {
-				err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
-				return nil, echo.NewHTTPError(http.StatusNotFound, err).SetInternal(err)
-			}
+	if oldStatement != newStatement {
+		// it's ok to fail.
+		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonSQLModified); err != nil {
+			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
+		}
 
+		if issue.AssigneeNeedAttention && issue.Project.WorkflowType == api.UIWorkflow {
+			needAttention := false
+			patch := &api.IssuePatch{
+				ID:                    issue.ID,
+				UpdaterID:             api.SystemBotID,
+				AssigneeNeedAttention: &needAttention,
+			}
+			if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
+			}
+		}
+
+		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 			// create a task statement update activity
 			payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
 				TaskID:       taskPatched.ID,
@@ -488,10 +496,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	// - dismiss stale approval for Pending tasks.
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
-		if issue == nil {
-			err := errors.Errorf("issue not found with pipeline ID %v", task.PipelineID)
-			return nil, echo.NewHTTPError(http.StatusNotFound, err.Error()).SetInternal(err)
-		}
 
 		payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
 			TaskID:               taskPatched.ID,
