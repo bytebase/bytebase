@@ -426,6 +426,21 @@ func TestExtractSensitiveField(t *testing.T) {
 			},
 		},
 		{
+			// Test for non-associated sub-query
+			statement:  "select t.a, (select max(a) from t) from t as t1 join t on t.a = t1.b",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "(select max(a) from t)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for sub-query
 			statement:  "select * from (select * from t) result LIMIT 100000;",
 			schemaInfo: defaultDatabaseSchema,
