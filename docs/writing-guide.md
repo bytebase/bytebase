@@ -106,9 +106,10 @@ We mainly follow [Google's style guide](https://developers.google.com/style)
 > ❌ Creating an instance
 
 7. For a conceptual or non-task-based heading, use a noun phrase that doesn't start with an -ing verb.
+
 > ✅ Migration to Google Cloud
 > 
-> ❌ Migrating to Google Cloud        
+> ❌ Migrating to Google Cloud
 
 8. Don't introduce a procedure with a partial sentence that's completed by the numbered steps.
 > ✅ To customize the buttons, follow these steps:
