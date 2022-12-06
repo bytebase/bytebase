@@ -72,6 +72,7 @@ type InstanceFind struct {
 	EnvironmentID *int
 
 	// Domain specific fields
+	Name *string
 	Host *string
 	Port *string
 }
