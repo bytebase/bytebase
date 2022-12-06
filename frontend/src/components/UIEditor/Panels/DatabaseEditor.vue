@@ -71,7 +71,7 @@
           >
             <div class="table-body-item-container">
               <NEllipsis
-                class="text-sm w-full cursor-pointer hover:text-accent"
+                class="w-full cursor-pointer hover:text-accent"
                 @click="handleTableItemClick(table)"
                 >{{ table.name }}</NEllipsis
               >
