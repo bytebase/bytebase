@@ -10,7 +10,7 @@ CREATE TABLE db_schema (
     raw_dump TEXT NOT NULL DEFAULT ''
 );
 
-CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON tbl(database_id);
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON db_schema(database_id);
 
 ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 
