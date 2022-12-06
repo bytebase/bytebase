@@ -72,7 +72,12 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		subscription := s.licenseService.LoadSubscription(ctx)
 		basePlan := subscription.Plan
 		if license.Plan.Priority() <= subscription.Plan.Priority() {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("You have already at the %s plan", subscription.Plan))
+			// Ignore the request if the priority for the trial plan is lower than the current plan.
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+			if err := jsonapi.MarshalPayload(c.Response().Writer, &subscription); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
+			}
+			return nil
 		}
 
 		if subscription.Trialing {
