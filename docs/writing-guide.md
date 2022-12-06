@@ -51,7 +51,7 @@ Let's go over the issues one by one:
 
 # Technical Writing Style Guide
 
-We mainly follow Google's style guide https://developers.google.com/style
+We mainly follow [Google's style guide](https://developers.google.com/style)
 
 1. Bold for UI Label. Skip 'button','label' and etc if it's obvious.
 
