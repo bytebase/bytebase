@@ -112,6 +112,7 @@ export type Issue = {
   type: IssueType;
   description: string;
   assignee: Principal;
+  assigneeNeedAttention: boolean;
   subscriberList: Principal[];
   payload: IssuePayload;
 };
@@ -150,6 +151,7 @@ export type IssuePatch = {
   name?: string;
   description?: string;
   assigneeId?: PrincipalId;
+  assigneeNeedAttention?: boolean;
   payload?: IssuePayload;
 };
 
