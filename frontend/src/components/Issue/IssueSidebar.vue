@@ -19,9 +19,25 @@
         </div>
       </template>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.assignee")
-        }}<span v-if="create" class="text-red-600">*</span>
+      <h2 class="textlabel flex items-center col-span-1 col-start-1 gap-x-1">
+        <span>{{ $t("common.assignee") }}</span>
+        <span v-if="create" class="text-red-600">*</span>
+        <button
+          v-if="showNotifyAssignee"
+          :disabled="isAssigneeAttentionOn"
+          class="p-0.5 rounded tooltip-wrapper"
+          :class="[
+            !isAssigneeAttentionOn &&
+              'cursor-pointer hover:bg-control-bg-hover',
+          ]"
+          @click="notifyAssignee"
+        >
+          <heroicons-outline:bell-alert
+            v-if="isAssigneeAttentionOn"
+            class="w-4 h-4"
+          />
+          <heroicons-outline:bell v-else class="w-4 h-4" />
+        </button>
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2" data-label="bb-assignee-select-container">
@@ -278,6 +294,8 @@ import { NDatePicker } from "naive-ui";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import { useI18n } from "vue-i18n";
+
 import StageSelect from "./StageSelect.vue";
 import TaskSelect from "./TaskSelect.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
@@ -313,9 +331,11 @@ import {
 } from "@/utils";
 import {
   hasFeature,
+  pushNotification,
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentStore,
+  useIssueStore,
   useProjectStore,
 } from "@/store";
 import {
@@ -343,6 +363,7 @@ const props = defineProps({
   },
 });
 
+const { t } = useI18n();
 const router = useRouter();
 const projectStore = useProjectStore();
 
@@ -476,6 +497,54 @@ const allowEditAssignee = computed(() => {
   }
   return false;
 });
+
+const showNotifyAssignee = computed(() => {
+  if (create.value) {
+    return false;
+  }
+  if (project.value.workflowType === "VCS") {
+    return false;
+  }
+
+  const issueEntity = issue.value as Issue;
+
+  if (issueEntity.status !== "OPEN") {
+    return false;
+  }
+  if (
+    issueEntity.assigneeNeedAttention &&
+    currentUser.value.id === issueEntity.assignee.id
+  ) {
+    // Also show the icon for assignee if need attention.
+    return true;
+  }
+
+  return currentUser.value.id === issueEntity.creator.id;
+});
+
+const isAssigneeAttentionOn = computed(() => {
+  return (issue.value as Issue).assigneeNeedAttention;
+});
+
+const notifyAssignee = () => {
+  if (!showNotifyAssignee.value) return;
+  if (isAssigneeAttentionOn.value) return;
+
+  useIssueStore()
+    .patchIssue({
+      issueId: (issue.value as Issue).id,
+      issuePatch: {
+        assigneeNeedAttention: true,
+      },
+    })
+    .then(() => {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    });
+};
 
 const allowEditEarliestAllowedTime = computed(() => {
   if (create.value) {
