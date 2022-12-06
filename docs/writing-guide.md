@@ -111,12 +111,13 @@ We mainly follow [Google's style guide](https://developers.google.com/style)
 > 
 > ❌ Migrating to Google Cloud
 
-8. Don't introduce a procedure with a partial sentence that's completed by the numbered steps.
+8. Don't introduce a procedure with a partial sentence completed by the numbered steps.
+
 > ✅ To customize the buttons, follow these steps:
 > 
 > ✅ Customize the buttons:
 > 
-> ❌ To customize the buttons:        
+> ❌ To customize the buttons:
 
 # Readings
 
