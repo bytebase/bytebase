@@ -279,6 +279,21 @@ func TestExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for associated sub-query.
+			statement:  `select a, (select max(b) > y.a from t as x) from t as y`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "(select max(b) > y.a from t as x)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for UNION.
 			statement:  `select * from t UNION ALL select * from t`,
 			schemaInfo: defaultDatabaseSchema,

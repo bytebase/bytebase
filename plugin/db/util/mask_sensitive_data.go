@@ -12,6 +12,7 @@ import (
 type sensitiveFieldExtractor struct {
 	currentDatabase string
 	schemaInfo      *db.SensitiveSchemaInfo
+	outerSchemaInfo []fieldInfo
 
 	// SELECT statement specific field.
 	fromFieldList []fieldInfo
@@ -185,6 +186,42 @@ func extractFieldName(in *tidbast.SelectField) string {
 	return ""
 }
 
+func (extractor *sensitiveFieldExtractor) checkFieldSensitive(databaseName string, tableName string, fieldName string) bool {
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
+		field := extractor.outerSchemaInfo[i]
+		sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
+		sameTable := (tableName == field.table || tableName == "")
+		sameField := (fieldName == field.name)
+		if sameDatabase && sameTable && sameField {
+			return field.sensitive
+		}
+	}
+
+	for _, field := range extractor.fromFieldList {
+		sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
+		sameTable := (tableName == field.table || tableName == "")
+		sameField := (fieldName == field.name)
+		if sameDatabase && sameTable && sameField {
+			return field.sensitive
+		}
+	}
+
+	return false
+}
+
 func (extractor *sensitiveFieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) (sensitive bool, err error) {
 	if in == nil {
 		return false, nil
@@ -192,15 +229,7 @@ func (extractor *sensitiveFieldExtractor) extractColumnFromExprNode(in tidbast.E
 
 	switch node := in.(type) {
 	case *tidbast.ColumnNameExpr:
-		for _, field := range extractor.fromFieldList {
-			sameDatabase := (node.Name.Schema.O == field.database || (node.Name.Schema.O == "" && field.database == extractor.currentDatabase))
-			sameTable := (node.Name.Table.O == field.table || node.Name.Table.O == "")
-			sameColumn := (node.Name.Name.O == field.name)
-			if sameDatabase && sameTable && sameColumn {
-				return field.sensitive, nil
-			}
-		}
-		return false, nil
+		return extractor.checkFieldSensitive(node.Name.Schema.O, node.Name.Table.O, node.Name.Name.O), nil
 	case *tidbast.BinaryOperationExpr:
 		return extractor.extractColumnFromExprNodeList([]tidbast.ExprNode{node.L, node.R})
 	case *tidbast.UnaryOperationExpr:
@@ -223,13 +252,14 @@ func (extractor *sensitiveFieldExtractor) extractColumnFromExprNode(in tidbast.E
 		return extractor.extractColumnFromExprNodeList([]tidbast.ExprNode{node.Expr, node.Pattern})
 	case *tidbast.SubqueryExpr:
 		// Subquery in SELECT fields is special.
-		// It can only be the non-associated subquery.
-		// We can extract this subquery as the alone node.
-		// The reason for new extractor is that non-associated subquery cannot access the fromFieldList.
-		// Also, we still need the current fromFieldList, overriding it is not expected.
+		// It can be the non-associated or associated subquery.
+		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
+		// So that the subquery can access the outer schema.
+		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &sensitiveFieldExtractor{
 			currentDatabase: extractor.currentDatabase,
 			schemaInfo:      extractor.schemaInfo,
+			outerSchemaInfo: append(extractor.outerSchemaInfo, extractor.fromFieldList...),
 		}
 		fieldList, err := subqueryExtractor.extractNode(node.Query)
 		if err != nil {
