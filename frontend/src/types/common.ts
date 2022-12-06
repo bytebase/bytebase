@@ -351,6 +351,7 @@ const makeUnknown = (type: ResourceType) => {
     type: "bb.issue.general",
     description: "",
     assignee: UNKNOWN_PRINCIPAL,
+    assigneeNeedAttention: false,
     subscriberList: [],
     payload: {},
   };
@@ -801,6 +802,7 @@ const makeEmpty = (type: ResourceType) => {
     type: "bb.issue.general",
     description: "",
     assignee: EMPTY_PRINCIPAL,
+    assigneeNeedAttention: false,
     subscriberList: [],
     payload: {},
   };
