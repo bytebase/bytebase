@@ -286,29 +286,17 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.ApplicationRunner = NewApplicationRunner(storeInstance, s.ActivityManager, feishu.NewProvider(profile.FeishuAPIURL), profile)
 
 		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
-
-		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseRestorePITRRestore, NewPITRRestoreTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor)
-
+		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseRestorePITRRestore, NewPITRRestoreTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor())
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler
