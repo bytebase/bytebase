@@ -187,7 +187,8 @@ func extractFieldName(in *tidbast.SelectField) string {
 }
 
 func (extractor *sensitiveFieldExtractor) checkFieldSensitive(databaseName string, tableName string, fieldName string) bool {
-	for _, field := range extractor.outerSchemaInfo {
+	for i := len(extractor.outerSchemaInfo) - 1; i >= 0; i-- {
+		field := extractor.outerSchemaInfo[i]
 		sameDatabase := (databaseName == field.database || (databaseName == "" && field.database == extractor.currentDatabase))
 		sameTable := (tableName == field.table || tableName == "")
 		sameField := (fieldName == field.name)
