@@ -100,6 +100,7 @@ We mainly follow [Google's style guide](https://developers.google.com/style)
 > - **Team** or **Enterprise** plan
 
 6. For a task-based heading, start with a bare infinitive.
+
 > ✅ Create an instance
 >
 > ❌ Creating an instance
