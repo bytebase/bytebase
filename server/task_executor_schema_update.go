@@ -36,8 +36,3 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 func (exec *SchemaUpdateTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
-
-// GetProgress returns the task progress.
-func (*SchemaUpdateTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
-}

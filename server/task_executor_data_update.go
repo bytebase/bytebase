@@ -35,8 +35,3 @@ func (*DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task
 func (exec *DataUpdateTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
-
-// GetProgress returns the task progress.
-func (*DataUpdateTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
-}

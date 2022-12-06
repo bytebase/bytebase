@@ -38,11 +38,6 @@ func (exec *DatabaseCreateTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
 
-// GetProgress returns the task progress.
-func (*DatabaseCreateTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
-}
-
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer atomic.StoreInt32(&exec.completed, 1)

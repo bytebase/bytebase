@@ -45,11 +45,6 @@ func (exec *SchemaUpdateSDLTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
 
-// GetProgress returns the task progress.
-func (*SchemaUpdateSDLTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
-}
-
 // computeDatabaseSchemaDiff computes the diff between current database schema
 // and the given schema. It returns an empty string if there is no applicable
 // diff.

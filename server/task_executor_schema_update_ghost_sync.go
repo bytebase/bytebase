@@ -29,7 +29,6 @@ func NewSchemaUpdateGhostSyncTaskExecutor() TaskExecutor {
 // SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncTaskExecutor struct {
 	completed int32
-	progress  atomic.Value // api.Progress
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
@@ -45,15 +44,6 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 // IsCompleted tells the scheduler if the task execution has completed.
 func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
-}
-
-// GetProgress returns the task progress.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
-	progress := exec.progress.Load()
-	if progress == nil {
-		return api.Progress{}
-	}
-	return progress.(api.Progress)
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
@@ -210,7 +200,7 @@ func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.
 	}
 }
 
-func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, store *store.Store, taskScheduler *TaskScheduler, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (*SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, store *store.Store, taskScheduler *TaskScheduler, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -245,7 +235,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 	childCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func(childCtx context.Context) {
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(1 * time.Millisecond)
 		defer ticker.Stop()
 		createdTs := time.Now().Unix()
 		for {
@@ -256,7 +246,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 					completedUnit = migrationContext.GetTotalRowsCopied()
 					updatedTs     = time.Now().Unix()
 				)
-				exec.progress.Store(api.Progress{
+				taskScheduler.taskProgress.Store(task.ID, api.Progress{
 					TotalUnit:     totalUnit,
 					CompletedUnit: completedUnit,
 					CreatedTs:     createdTs,

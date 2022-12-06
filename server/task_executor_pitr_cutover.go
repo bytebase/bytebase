@@ -84,11 +84,6 @@ func (exec *PITRCutoverTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
 
-// GetProgress returns the task progress.
-func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
-}
-
 // pitrCutover performs the PITR cutover algorithm:
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.

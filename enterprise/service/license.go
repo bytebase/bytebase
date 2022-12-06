@@ -164,14 +164,16 @@ func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.Licens
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load trial license from settings")
 	}
-	if len(settings) == 0 {
-		return nil, common.Wrapf(err, common.NotFound, "cannot find license")
+	if len(settings) != 0 {
+		var data enterpriseAPI.License
+		if err := json.Unmarshal([]byte(settings[0].Value), &data); err != nil {
+			return nil, errors.Wrapf(err, "failed to parse trial license")
+		}
+		return &data, nil
 	}
-	var data enterpriseAPI.License
-	if err := json.Unmarshal([]byte(settings[0].Value), &data); err != nil {
-		return nil, errors.Wrapf(err, "failed to parse trial license")
-	}
-	return &data, nil
+
+	// No license or trial license found.
+	return nil, nil
 }
 
 func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {

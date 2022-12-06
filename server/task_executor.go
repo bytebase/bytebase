@@ -36,8 +36,6 @@ type TaskExecutor interface {
 	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
 	// IsCompleted tells the scheduler if the task execution has completed.
 	IsCompleted() bool
-	// GetProgress returns the task progress.
-	GetProgress() api.Progress
 }
 
 // RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.

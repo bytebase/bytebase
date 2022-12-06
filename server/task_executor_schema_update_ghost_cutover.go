@@ -168,8 +168,3 @@ func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext
 func (exec *SchemaUpdateGhostCutoverTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
-
-// GetProgress returns the task progress.
-func (*SchemaUpdateGhostCutoverTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
-}
