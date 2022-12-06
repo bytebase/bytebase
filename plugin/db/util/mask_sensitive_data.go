@@ -10,9 +10,10 @@ import (
 )
 
 type sensitiveFieldExtractor struct {
-	currentDatabase string
-	schemaInfo      *db.SensitiveSchemaInfo
-	outerSchemaInfo []fieldInfo
+	currentDatabase    string
+	schemaInfo         *db.SensitiveSchemaInfo
+	outerSchemaInfo    []fieldInfo
+	cteOuterSchemaInfo []db.TableSchema
 
 	// SELECT statement specific field.
 	fromFieldList []fieldInfo
@@ -100,6 +101,23 @@ func (extractor *sensitiveFieldExtractor) extractNode(in tidbast.Node) ([]fieldI
 }
 
 func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt) ([]fieldInfo, error) {
+	if node.With != nil {
+		cteOuterLength := len(extractor.cteOuterSchemaInfo)
+		defer func() {
+			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
+		}()
+		if !node.With.IsRecursive {
+			// TODO(rebelice): support Recursive CTE
+			for _, cte := range node.With.CTEs {
+				cteTable, err := extractor.extractCTE(cte)
+				if err != nil {
+					return nil, err
+				}
+				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+			}
+		}
+	}
+
 	result := []fieldInfo{}
 	for i, selectStmt := range node.SelectList.Selects {
 		fieldList, err := extractor.extractNode(selectStmt)
@@ -123,7 +141,55 @@ func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt
 	return result, nil
 }
 
+func (extractor *sensitiveFieldExtractor) extractCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
+	if node.IsRecursive {
+		// TODO(rebelice): support Recursive CTE
+		return db.TableSchema{}, errors.Errorf("Unsupport recursive common table expression")
+	}
+	fieldList, err := extractor.extractNode(node.Query.Query)
+	if err != nil {
+		return db.TableSchema{}, err
+	}
+	if len(node.ColNameList) > 0 {
+		if len(node.ColNameList) != len(fieldList) {
+			// The error content comes from MySQL.
+			return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+		}
+		for i := 0; i < len(fieldList); i++ {
+			fieldList[i].name = node.ColNameList[i].O
+		}
+	}
+	result := db.TableSchema{
+		Name:       node.Name.O,
+		ColumnList: []db.ColumnInfo{},
+	}
+	for _, field := range fieldList {
+		result.ColumnList = append(result.ColumnList, db.ColumnInfo{
+			Name:      field.name,
+			Sensitive: field.sensitive,
+		})
+	}
+	return result, nil
+}
+
 func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt) ([]fieldInfo, error) {
+	if node.With != nil {
+		cteOuterLength := len(extractor.cteOuterSchemaInfo)
+		defer func() {
+			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
+		}()
+		if !node.With.IsRecursive {
+			// TODO(rebelice): support Recursive CTE
+			for _, cte := range node.With.CTEs {
+				cteTable, err := extractor.extractCTE(cte)
+				if err != nil {
+					return nil, err
+				}
+				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+			}
+		}
+	}
+
 	var fromFieldList []fieldInfo
 	var err error
 	if node.From != nil {
@@ -350,6 +416,22 @@ func (extractor *sensitiveFieldExtractor) extractTableSource(node *tidbast.Table
 }
 
 func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, tableName string) (db.TableSchema, bool) {
+	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
+	//
+	//  with tt2 as (
+	//    with tt2 as (select * from t)
+	//    select max(a) from tt2)
+	//  select * from tt2
+	//
+	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(extractor.cteOuterSchemaInfo) - 1; i >= 0; i-- {
+		table := extractor.cteOuterSchemaInfo[i]
+		if databaseName == "" && table.Name == tableName {
+			return table, true
+		}
+	}
+
 	for _, database := range extractor.schemaInfo.DatabaseList {
 		if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
 			for _, table := range database.TableList {
