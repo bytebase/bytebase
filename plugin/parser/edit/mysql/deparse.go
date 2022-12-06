@@ -324,7 +324,7 @@ func restoreASTNode(node tidbast.Node) (string, error) {
 
 	stmt := buf.String()
 	if stmt != "" {
-		stmt += ";"
+		stmt += ";\n"
 	}
 	return stmt, nil
 }
