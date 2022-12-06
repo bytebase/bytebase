@@ -70,17 +70,17 @@
             class="grid grid-cols-[repeat(6,_minmax(0,_1fr))_32px] text-sm even:bg-gray-50"
           >
             <div class="table-body-item-container">
-              <span
-                class="cursor-pointer hover:text-accent"
+              <NEllipsis
+                class="text-sm w-full cursor-pointer hover:text-accent"
                 @click="handleTableItemClick(table)"
-                >{{ table.name }}</span
+                >{{ table.name }}</NEllipsis
               >
             </div>
             <div class="table-body-item-container">
               {{ table.rowCount }}
             </div>
             <div class="table-body-item-container">
-              {{ table.dataSize }}
+              {{ bytesToString(table.dataSize) }}
             </div>
             <div class="table-body-item-container">
               {{ table.engine }}
@@ -137,6 +137,7 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { computed, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
   useDatabaseStore,
@@ -144,9 +145,9 @@ import {
   useUIEditorStore,
 } from "@/store";
 import { DatabaseTabContext, Table, UIEditorTabType } from "@/types";
+import { bytesToString } from "@/utils";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
-import { useI18n } from "vue-i18n";
 
 type TabType = "list" | "er-diagram" | "raw-sql";
 
@@ -286,6 +287,6 @@ const handleDropTable = (table: Table) => {
   @apply py-2 px-3;
 }
 .table-body-item-container {
-  @apply w-full h-10 box-border p-px pl-3 pr-4 relative leading-9;
+  @apply w-full h-10 box-border p-px pl-3 pr-4 relative truncate leading-10;
 }
 </style>
