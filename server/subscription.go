@@ -71,8 +71,11 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 
 		subscription := s.licenseService.LoadSubscription(ctx)
 		basePlan := subscription.Plan
-		upgradeTrial := subscription.Trialing && license.Plan.Priority() > subscription.Plan.Priority()
-		if upgradeTrial {
+		if license.Plan.Priority() <= subscription.Plan.Priority() {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("You have already at the %s plan", subscription.Plan))
+		}
+
+		if subscription.Trialing {
 			license.ExpiresTs = subscription.ExpiresTs
 			license.IssuedTs = subscription.StartedTs
 		}
@@ -103,7 +106,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 			}
 
-			if created && upgradeTrial {
+			if created && subscription.Trialing {
 				// For trial upgrade
 				// Case 1: Users just have the SettingEnterpriseTrial, don't upload their license in SettingEnterpriseLicense.
 				// Case 2: Users have the SettingEnterpriseLicense with team plan and trialing status.
