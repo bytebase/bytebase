@@ -26,9 +26,14 @@ func (s *Server) registerOpenAPIRoutesForEnvironment(g *echo.Group) {
 func (s *Server) listEnvironment(c echo.Context) error {
 	ctx := c.Request().Context()
 	rowStatus := api.Normal
-	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
+	find := &api.EnvironmentFind{
 		RowStatus: &rowStatus,
-	})
+	}
+	if name := c.QueryParam("name"); name != "" {
+		find.Name = &name
+	}
+
+	envList, err := s.store.FindEnvironment(ctx, find)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environment list").SetInternal(err)
 	}

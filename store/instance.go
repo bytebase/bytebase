@@ -657,6 +657,9 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 	if v := find.Port; v != nil {
 		where, args = append(where, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
 
 	return strings.Join(where, " AND "), args
 }
