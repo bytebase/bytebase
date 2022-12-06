@@ -719,6 +719,7 @@ func (s *Server) getDatabase(ctx context.Context, instanceID int, databaseName s
 
 func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type, instanceID int, databaseList []string, currentDatabase string) (*db.SensitiveSchemaInfo, error) {
 	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
+	isEmpty := true
 	result := &db.SensitiveSchemaInfo{
 		DatabaseList: []db.DatabaseSchema{},
 	}
@@ -789,9 +790,17 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 			}
 			databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
 		}
+		if len(databaseSchema.TableList) > 0 {
+			isEmpty = false
+		}
 		result.DatabaseList = append(result.DatabaseList, databaseSchema)
 	}
 
+	if isEmpty {
+		// If there is no tables, this query may access system databases, such as INFORMATION_SCHEMA.
+		// Skip to extract sensitive column for this query.
+		result = nil
+	}
 	return result, nil
 }
 
