@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"sync/atomic"
 
 	"github.com/pkg/errors"
 
@@ -18,7 +17,6 @@ func NewDataUpdateTaskExecutor() TaskExecutor {
 
 // DataUpdateTaskExecutor is the data update (DML) task executor.
 type DataUpdateTaskExecutor struct {
-	completed int32
 }
 
 // RunOnce will run the data update (DML) task executor once.
@@ -29,9 +27,4 @@ func (*DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task
 	}
 
 	return runMigration(ctx, server.store, server.dbFactory, server.RollbackRunner, server.ActivityManager, server.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *DataUpdateTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
 }

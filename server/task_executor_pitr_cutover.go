@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -29,14 +28,11 @@ func NewPITRCutoverTaskExecutor() TaskExecutor {
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
-	completed int32
 }
 
 // RunOnce will run the PITR cutover task executor once.
 func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
-	defer atomic.StoreInt32(&exec.completed, 1)
-
 	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
 	if err != nil {
 		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
@@ -77,11 +73,6 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}
 
 	return terminated, result, nil
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *PITRCutoverTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 // pitrCutover performs the PITR cutover algorithm:

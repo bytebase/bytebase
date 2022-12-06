@@ -82,10 +82,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				// Update task progress
-				s.runningExecutorsMutex.Lock()
-				s.runningExecutorsMutex.Unlock()
-
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
 				pipelineStatus := api.PipelineOpen
 				pipelineFind := &api.PipelineFind{

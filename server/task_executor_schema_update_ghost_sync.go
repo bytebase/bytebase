@@ -28,22 +28,15 @@ func NewSchemaUpdateGhostSyncTaskExecutor() TaskExecutor {
 
 // SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncTaskExecutor struct {
-	completed int32
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
 func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
 	return exec.runGhostMigration(ctx, server.store, server.TaskScheduler, task, payload.Statement)
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -30,17 +29,10 @@ func NewDatabaseCreateTaskExecutor() TaskExecutor {
 
 // DatabaseCreateTaskExecutor is the database create task executor.
 type DatabaseCreateTaskExecutor struct {
-	completed int32
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *DatabaseCreateTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -32,17 +31,10 @@ func NewDatabaseBackupTaskExecutor() TaskExecutor {
 
 // DatabaseBackupTaskExecutor is the task executor for database backup.
 type DatabaseBackupTaskExecutor struct {
-	completed int32
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *DatabaseBackupTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 // RunOnce will run database backup once.
 func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database backup payload")

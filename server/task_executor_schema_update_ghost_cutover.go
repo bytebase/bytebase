@@ -31,13 +31,10 @@ func NewSchemaUpdateGhostCutoverTaskExecutor() TaskExecutor {
 
 // SchemaUpdateGhostCutoverTaskExecutor is the schema update (gh-ost) cutover task executor.
 type SchemaUpdateGhostCutoverTaskExecutor struct {
-	completed int32
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
-func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer atomic.StoreInt32(&exec.completed, 1)
-
+func (*SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	taskDAG, err := server.store.GetTaskDAGByToTaskID(ctx, task.ID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
@@ -162,9 +159,4 @@ func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext
 			return true
 		}
 	}
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *SchemaUpdateGhostCutoverTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
 }

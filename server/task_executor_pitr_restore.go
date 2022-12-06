@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -34,14 +33,11 @@ func NewPITRRestoreTaskExecutor() TaskExecutor {
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
-	completed int32
 }
 
 // RunOnce will run the PITR restore task executor once.
 func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR restore task", zap.String("task", task.Name))
-	defer atomic.StoreInt32(&exec.completed, 1)
-
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
 		return true, nil, errors.Wrapf(err, "invalid PITR restore payload: %s", task.Payload)
@@ -67,11 +63,6 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	resultPayload, err := exec.doPITRRestore(ctx, server.store, server.dbFactory, server.s3Client, server.TaskScheduler, server.profile, task, payload)
 	return true, resultPayload, err
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *PITRRestoreTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, schemaSyncer *SchemaSyncer, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
