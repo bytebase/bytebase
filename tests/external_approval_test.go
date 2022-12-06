@@ -144,6 +144,14 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 
+	attention := true
+	issue, err = ctl.patchIssue(api.IssuePatch{
+		ID:                    issue.ID,
+		AssigneeNeedAttention: &attention,
+	})
+	a.NoError(err)
+	a.Equal(true, issue.AssigneeNeedAttention)
+
 	// Sleep for 65 seconds, giving time to ApplicationRunner to create external approvals.
 	time.Sleep(65 * time.Second)
 	issue, err = ctl.getIssue(issue.ID)
@@ -293,6 +301,14 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
+
+	attention := true
+	issue, err = ctl.patchIssue(api.IssuePatch{
+		ID:                    issue.ID,
+		AssigneeNeedAttention: &attention,
+	})
+	a.NoError(err)
+	a.Equal(true, issue.AssigneeNeedAttention)
 
 	// Sleep for 65 seconds, giving time to ApplicationRunner to create external approvals.
 	time.Sleep(65 * time.Second)
