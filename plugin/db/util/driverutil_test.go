@@ -279,6 +279,109 @@ func TestExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for Common Table Expression with UNION.
+			statement:  `with t1 as (select * from t), t2 as (select * from t1) select * from t1 union all select * from t2`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for Common Table Expression reference.
+			statement:  `with t1 as (select * from t), t2 as (select * from t1) select * from t2`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for multi-level Common Table Expression.
+			statement:  `with tt2 as (with tt2 as (select * from t) select max(a) from tt2) select * from tt2;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "max(a)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test that Common Table Expression rename field names.
+			statement:  `with t1(d, c, b, a) as (select * from t) select * from t1`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for Common Table Expression.
+			statement:  `with t1 as (select * from t) select * from t1`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for associated sub-query.
 			statement:  `select a, (select max(b) > y.a from t as x) from t as y`,
 			schemaInfo: defaultDatabaseSchema,
