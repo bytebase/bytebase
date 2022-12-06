@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full pr-2 relative overflow-y-hidden">
+  <div class="w-full h-full pl-1 pr-2 relative overflow-y-hidden">
     <div class="w-full sticky top-0 pt-2 h-12 bg-white z-10">
       <NInput
         v-model:value="searchPattern"
@@ -126,6 +126,7 @@ const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
 const treeDataRef = ref<TreeNode[]>([]);
+const databaseDataLoadedSet = ref<Set<DatabaseId>>(new Set());
 
 const databaseList = computed(() => editorStore.databaseList);
 const tableList = computed(() => editorStore.tableList);
@@ -162,9 +163,10 @@ const contextMenuOptions = computed(() => {
   return [];
 });
 
-onMounted(() => {
+onMounted(async () => {
   const treeNodeList: TreeNode[] = [];
   const instanceTreeNodeMap: Map<InstanceId, TreeNodeForInstance> = new Map();
+  const databaseTreeNodeList: TreeNodeForDatabase[] = [];
   for (const database of databaseList.value) {
     const instance = instanceStore.getInstanceById(database.instanceId);
     let instanceTreeNode: TreeNodeForInstance;
@@ -196,8 +198,16 @@ onMounted(() => {
       databaseId: database.id,
     };
     instanceTreeNode.children?.push(databaseTreeNode);
+    databaseTreeNodeList.push(databaseTreeNode);
   }
   treeDataRef.value = treeNodeList;
+
+  // When the user selects only one database, it is expanded by default.
+  if (databaseTreeNodeList.length === 1) {
+    const node = databaseTreeNodeList[0];
+    await loadSubTree(node);
+    expandedKeysRef.value.push(node.key);
+  }
 });
 
 watch(tableList.value, () => {
@@ -212,7 +222,9 @@ watch(tableList.value, () => {
 
   for (const database of databaseList.value) {
     const databaseTreeNode = databaseTreeNodeList.find(
-      (treeNode) => treeNode.databaseId === database.id
+      (treeNode) =>
+        treeNode.databaseId === database.id &&
+        databaseDataLoadedSet.value.has(treeNode.databaseId)
     );
     if (isUndefined(databaseTreeNode)) {
       continue;
@@ -279,6 +291,18 @@ watch(
     }
   }
 );
+
+watch(searchPattern, () => {
+  for (const treeNode of treeDataRef.value) {
+    if (treeNode.type === "instance" && treeNode.children) {
+      for (const databaseTreeNode of treeNode.children) {
+        if (databaseTreeNode.children === undefined) {
+          loadSubTree(databaseTreeNode);
+        }
+      }
+    }
+  }
+});
 
 // Render prefix icons before label text.
 const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
@@ -380,30 +404,20 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
 // Dynamic fetching table list when database tree node clicking.
 const loadSubTree = async (treeNode: TreeNode) => {
   if (treeNode.type === "database") {
-    const instanceId = treeNode.instanceId;
     const databaseId = treeNode.databaseId;
+    if (databaseDataLoadedSet.value.has(databaseId)) {
+      return;
+    }
+
+    databaseDataLoadedSet.value.add(databaseId);
     const tableList = await editorStore.getOrFetchTableListByDatabaseId(
       databaseId
     );
 
-    const knownTableList = tableList.filter((table) => table.id !== UNKNOWN_ID);
-    if (knownTableList.length === 0) {
+    if (tableList.length === 0) {
       treeNode.isLeaf = true;
     } else {
       treeNode.isLeaf = false;
-      treeNode.children = knownTableList.map((table) => {
-        return {
-          type: "table",
-          key: `t-${table.database.id}-${table.id}-${table.name}`,
-          label: table.name,
-          children: [],
-          isLeaf: true,
-          instanceId: instanceId,
-          databaseId: databaseId,
-          tableId: table.id,
-          table: table,
-        };
-      });
     }
   }
 };
@@ -411,7 +425,7 @@ const loadSubTree = async (treeNode: TreeNode) => {
 // Set event handler to tree nodes.
 const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
   return {
-    async onClick(e: MouseEvent) {
+    async onclick(e: MouseEvent) {
       // Check if clicked on the content part.
       // And ignore the fold/unfold arrow.
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
@@ -463,7 +477,19 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
         });
       }
     },
-    onContextmenu(e: MouseEvent) {
+    ondblclick(e: MouseEvent) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const index = expandedKeysRef.value.findIndex(
+        (key) => key === treeNode.key
+      );
+      if (index >= 0) {
+        expandedKeysRef.value.splice(index, 1);
+      } else {
+        expandedKeysRef.value.push(treeNode.key);
+      }
+    },
+    oncontextmenu(e: MouseEvent) {
       handleShowDropdown(e, treeNode);
     },
   };
@@ -473,7 +499,7 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   const treeNode = contextMenu.treeNode;
   if (treeNode?.type === "database") {
     if (key === "create-table") {
-      await editorStore.getOrFetchTableListByDatabaseId(treeNode.databaseId);
+      await loadSubTree(treeNode);
       const table = editorStore.createNewTable(treeNode.databaseId);
       editorStore.addTab({
         id: generateUniqueTabId(),
