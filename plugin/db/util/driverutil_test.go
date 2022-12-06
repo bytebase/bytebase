@@ -238,66 +238,265 @@ func generateOneMBInsert() string {
 }
 
 func TestExtractSensitiveField(t *testing.T) {
+	const (
+		defaultDatabase = "db"
+	)
+	var (
+		defaultDatabaseSchema = &db.SensitiveSchemaInfo{
+			DatabaseList: []db.DatabaseSchema{
+				{
+					Name: defaultDatabase,
+					TableList: []db.TableSchema{
+						{
+							Name: "t",
+							ColumnList: []db.ColumnInfo{
+								{
+									Name:      "a",
+									Sensitive: true,
+								},
+								{
+									Name:      "b",
+									Sensitive: false,
+								},
+								{
+									Name:      "c",
+									Sensitive: false,
+								},
+								{
+									Name:      "d",
+									Sensitive: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	)
 	tests := []struct {
-		statement        string
-		fieldName        []string
-		sensitiveDataMap db.SensitiveDataMap
-		fieldMap         sensitiveFiledMap
+		statement  string
+		schemaInfo *db.SensitiveSchemaInfo
+		fieldList  []db.SensitiveField
 	}{
 		{
-			statement: "select * from (select * from t) result LIMIT 100000;",
-			fieldName: []string{"a", "b", "c", "d"},
-			sensitiveDataMap: db.SensitiveDataMap{
-				db.SensitiveData{
-					Database: "db",
-					Table:    "t",
-					Column:   "a",
-				}: db.SensitiveDataMaskTypeDefault,
-				db.SensitiveData{
-					Database: "db",
-					Table:    "t",
-					Column:   "d",
-				}: db.SensitiveDataMaskTypeDefault,
-			},
-			fieldMap: sensitiveFiledMap{
-				0: true,
-				3: true,
-			},
-		},
-		{
-			statement: "select * from (select *, a, t.*, b from db.t) result LIMIT 100000;",
-			fieldName: []string{"a", "b", "c", "a", "a", "b", "c", "b"},
-			sensitiveDataMap: db.SensitiveDataMap{
-				db.SensitiveData{
-					Database: "db",
-					Table:    "t",
-					Column:   "a",
-				}: db.SensitiveDataMaskTypeDefault,
-				db.SensitiveData{
-					Database: "db",
-					Table:    "t",
-					Column:   "c",
-				}: db.SensitiveDataMaskTypeDefault,
-			},
-			fieldMap: sensitiveFiledMap{
-				0: true,
-				2: true,
-				3: true,
-				4: true,
-				6: true,
+			// Test for UNION.
+			statement:  `select * from t UNION ALL select * from t`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
 			},
 		},
 		{
-			statement:        "select 1;",
-			fieldName:        []string{"1"},
-			sensitiveDataMap: db.SensitiveDataMap{},
-			fieldMap:         sensitiveFiledMap{},
+			// Test for JOIN with ON clause.
+			statement:  `select * from t as t1 join t as t2 on t1.a = t2.a`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for natural JOIN.
+			statement:  `select * from t as t1 natural join t as t2`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for JOIN with USING clause.
+			statement:  `select * from t as t1 join t as t2 using(a)`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for functions.
+			statement:  `select max(a), a-b, a=b, a>b, b in (a, c, d) from (select * from t) result`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "max(a)",
+					Sensitive: true,
+				},
+				{
+					Name:      "a-b",
+					Sensitive: true,
+				},
+				{
+					Name:      "a=b",
+					Sensitive: true,
+				},
+				{
+					Name:      "a>b",
+					Sensitive: true,
+				},
+				{
+					Name:      "b in (a, c, d)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for non-associated sub-query
+			statement:  "select t.a, (select max(a) from t) from t as t1 join t on t.a = t1.b",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "(select max(a) from t)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for sub-query
+			statement:  "select * from (select * from t) result LIMIT 100000;",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for field name.
+			statement:  "select * from (select a, t.b, db.t.c, d as d1 from db.t) result LIMIT 100000;",
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d1",
+					Sensitive: true,
+				},
+			},
+		},
+		{
+			// Test for no FROM clause.
+			statement:  "select 1;",
+			schemaInfo: &db.SensitiveSchemaInfo{},
+			fieldList:  []db.SensitiveField{{Name: "1", Sensitive: false}},
 		},
 	}
 
 	for _, test := range tests {
-		res, err := extractSensitiveField(db.MySQL, test.statement, "db", test.fieldName, test.sensitiveDataMap)
+		res, err := extractSensitiveField(db.MySQL, test.statement, defaultDatabase, test.schemaInfo)
 		require.NoError(t, err)
-		require.Equal(t, test.fieldMap, res)
+		require.Equal(t, test.fieldList, res, test.statement)
 	}
 }
