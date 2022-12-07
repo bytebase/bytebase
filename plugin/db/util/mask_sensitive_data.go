@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/parser"
 
 	"github.com/pkg/errors"
 
@@ -79,7 +80,6 @@ type fieldInfo struct {
 	sensitive bool
 }
 
-// TODO(rebelice): support Common Table Expression later.
 func (extractor *sensitiveFieldExtractor) extractNode(in tidbast.Node) ([]fieldInfo, error) {
 	if in == nil {
 		return nil, nil
@@ -106,15 +106,12 @@ func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt
 		defer func() {
 			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
 		}()
-		if !node.With.IsRecursive {
-			// TODO(rebelice): support Recursive CTE
-			for _, cte := range node.With.CTEs {
-				cteTable, err := extractor.extractCTE(cte)
-				if err != nil {
-					return nil, err
-				}
-				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+		for _, cte := range node.With.CTEs {
+			cteTable, err := extractor.extractCTE(cte)
+			if err != nil {
+				return nil, err
 			}
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
 		}
 	}
 
@@ -141,11 +138,128 @@ func (extractor *sensitiveFieldExtractor) extractSetOpr(node *tidbast.SetOprStmt
 	return result, nil
 }
 
-func (extractor *sensitiveFieldExtractor) extractCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
-	if node.IsRecursive {
-		// TODO(rebelice): support Recursive CTE
-		return db.TableSchema{}, errors.Errorf("Unsupport recursive common table expression")
+func splitInitialAndRecursivePart(node *tidbast.SetOprStmt, selfName string) ([]tidbast.Node, []tidbast.Node) {
+	for i, selectStmt := range node.SelectList.Selects {
+		tableList := parser.ExtractMySQLTableList(selectStmt, false /* asName */)
+		for _, table := range tableList {
+			if table.Schema.O == "" && table.Name.O == selfName {
+				return node.SelectList.Selects[:i], node.SelectList.Selects[i:]
+			}
+		}
 	}
+	return node.SelectList.Selects, nil
+}
+
+func (extractor *sensitiveFieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
+	cteInfo := db.TableSchema{Name: node.Name.O}
+
+	switch x := node.Query.Query.(type) {
+	case *tidbast.SetOprStmt:
+		if x.With != nil {
+			cteLength := len(extractor.cteOuterSchemaInfo)
+			defer func() {
+				extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteLength]
+			}()
+			for _, cte := range x.With.CTEs {
+				cteTable, err := extractor.extractCTE(cte)
+				if err != nil {
+					return db.TableSchema{}, err
+				}
+				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+			}
+
+			for i := cteLength; i < len(extractor.cteOuterSchemaInfo); i++ {
+				cteTable := extractor.cteOuterSchemaInfo[i]
+				if cteTable.Name == node.Name.O {
+					// It means this recursive CTE will be hidden by the inner CTE with the same name.
+					// In other words, this recursive CTE will be not references by itself sub-query.
+					// So, we can build it as non-recursive CTE.
+					return extractor.extractNonRecursiveCTE(node)
+				}
+			}
+		}
+
+		initialPart, recursivePart := splitInitialAndRecursivePart(x, node.Name.O)
+		if len(initialPart) == 0 {
+			return db.TableSchema{}, errors.Errorf("Failed to find initial part for recursive common table expression")
+		}
+		if len(recursivePart) == 0 {
+			return extractor.extractNonRecursiveCTE(node)
+		}
+
+		initialField, err := extractor.extractNode(&tidbast.SetOprStmt{
+			SelectList: &tidbast.SetOprSelectList{
+				Selects: initialPart,
+			},
+		})
+		if err != nil {
+			return db.TableSchema{}, err
+		}
+
+		if len(node.ColNameList) > 0 {
+			if len(node.ColNameList) != len(initialField) {
+				// The error content comes from MySQL.
+				return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+			}
+			for i := 0; i < len(initialField); i++ {
+				initialField[i].name = node.ColNameList[i].O
+			}
+		}
+		for _, field := range initialField {
+			cteInfo.ColumnList = append(cteInfo.ColumnList, db.ColumnInfo{
+				Name:      field.name,
+				Sensitive: field.sensitive,
+			})
+		}
+
+		// Compute dependent closures.
+		// There are two ways to compute dependent closures:
+		//   1. find the all dependent edges, then use graph theory traversal to find the closure.
+		//   2. Iterate to simulate the CTE recursive process, each turn check whether the Sensitive state has changed, and stop if no change.
+		//
+		// Consider the option 2 can easy to implementation, because the simulate process has been written.
+		// On the other hand, the number of iterations of the entire algorithm will not exceed the length of fields.
+		// In actual use, the length of fields will not be more than 20 generally.
+		// So I think it's OK for now.
+		// If any performance issues in use, optimize here.
+		extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteInfo)
+		defer func() {
+			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:len(extractor.cteOuterSchemaInfo)-1]
+		}()
+		for {
+			fieldList, err := extractor.extractNode(&tidbast.SetOprStmt{
+				SelectList: &tidbast.SetOprSelectList{
+					Selects: recursivePart,
+				},
+			})
+			if err != nil {
+				return db.TableSchema{}, err
+			}
+			if len(fieldList) != len(cteInfo.ColumnList) {
+				// The error content comes from MySQL.
+				return db.TableSchema{}, errors.Errorf("The common table expression and column names list have different column counts")
+			}
+
+			changed := false
+			for i, field := range fieldList {
+				if field.sensitive && !cteInfo.ColumnList[i].Sensitive {
+					changed = true
+					cteInfo.ColumnList[i].Sensitive = true
+				}
+			}
+
+			if !changed {
+				break
+			}
+			extractor.cteOuterSchemaInfo[len(extractor.cteOuterSchemaInfo)-1] = cteInfo
+		}
+		return cteInfo, nil
+	default:
+		return extractor.extractNonRecursiveCTE(node)
+	}
+}
+
+func (extractor *sensitiveFieldExtractor) extractNonRecursiveCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
 	fieldList, err := extractor.extractNode(node.Query.Query)
 	if err != nil {
 		return db.TableSchema{}, err
@@ -172,21 +286,25 @@ func (extractor *sensitiveFieldExtractor) extractCTE(node *tidbast.CommonTableEx
 	return result, nil
 }
 
+func (extractor *sensitiveFieldExtractor) extractCTE(node *tidbast.CommonTableExpression) (db.TableSchema, error) {
+	if node.IsRecursive {
+		return extractor.extractRecursiveCTE(node)
+	}
+	return extractor.extractNonRecursiveCTE(node)
+}
+
 func (extractor *sensitiveFieldExtractor) extractSelect(node *tidbast.SelectStmt) ([]fieldInfo, error) {
 	if node.With != nil {
 		cteOuterLength := len(extractor.cteOuterSchemaInfo)
 		defer func() {
 			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
 		}()
-		if !node.With.IsRecursive {
-			// TODO(rebelice): support Recursive CTE
-			for _, cte := range node.With.CTEs {
-				cteTable, err := extractor.extractCTE(cte)
-				if err != nil {
-					return nil, err
-				}
-				extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+		for _, cte := range node.With.CTEs {
+			cteTable, err := extractor.extractCTE(cte)
+			if err != nil {
+				return nil, err
 			}
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
 		}
 	}
 
@@ -415,7 +533,7 @@ func (extractor *sensitiveFieldExtractor) extractTableSource(node *tidbast.Table
 	return res, nil
 }
 
-func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, tableName string) (db.TableSchema, bool) {
+func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, tableName string) (db.TableSchema, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -428,7 +546,7 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 	for i := len(extractor.cteOuterSchemaInfo) - 1; i >= 0; i-- {
 		table := extractor.cteOuterSchemaInfo[i]
 		if databaseName == "" && table.Name == tableName {
-			return table, true
+			return table, nil
 		}
 	}
 
@@ -436,18 +554,18 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 		if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
 			for _, table := range database.TableList {
 				if tableName == table.Name {
-					return table, true
+					return table, nil
 				}
 			}
 		}
 	}
-	return db.TableSchema{}, false
+	return db.TableSchema{}, errors.Errorf("Table %q.%q not found", databaseName, tableName)
 }
 
 func (extractor *sensitiveFieldExtractor) extractTableName(node *tidbast.TableName) ([]fieldInfo, error) {
-	tableSchema, exists := extractor.findTableSchema(node.Schema.O, node.Name.O)
-	if !exists {
-		return nil, errors.Errorf("Table %q.%q not found", node.Schema.O, node.Name.O)
+	tableSchema, err := extractor.findTableSchema(node.Schema.O, node.Name.O)
+	if err != nil {
+		return nil, err
 	}
 
 	var res []fieldInfo
