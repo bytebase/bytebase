@@ -291,7 +291,6 @@
         <div v-if="showDatabase" class="mt-2 sm:col-span-1 sm:col-start-1">
           <label for="database" class="textlabel block">
             {{ $t("common.database") }}
-            <span class="text-red-600">*</span>
           </label>
           <input
             id="database"
