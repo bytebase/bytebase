@@ -154,7 +154,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	}
 
 	if s.MetricReporter != nil {
-		s.MetricReporter.report(&metric.Metric{
+		s.MetricReporter.Report(&metric.Metric{
 			Name:  metricAPI.SQLAdviseAPIMetricName,
 			Value: 1,
 			Labels: map[string]interface{}{
