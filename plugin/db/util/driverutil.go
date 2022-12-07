@@ -197,7 +197,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 				return -1, "", err
 			}
 		}
-		if err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
+		if _, err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
 			return -1, "", FormatError(err)
 		}
 	}
@@ -321,7 +321,9 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, limit int, readOnly bool) ([]interface{}, error) {
+func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+	readOnly := queryContext.ReadOnly
+	limit := queryContext.Limit
 	if !readOnly {
 		return queryAdmin(ctx, sqldb, statement, limit)
 	}
@@ -354,6 +356,15 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, FormatError(err)
+	}
+
+	fieldList, err := extractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
+		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
@@ -395,6 +406,10 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 
 		rowData := []interface{}{}
 		for i := range columnTypes {
+			if len(fieldList) > 0 && fieldList[i].Sensitive {
+				rowData = append(rowData, "******")
+				continue
+			}
 			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
 				rowData = append(rowData, v.Bool)
 				continue
@@ -671,4 +686,16 @@ func fromStoredVersion(storedVersion string) (bool, string, string, error) {
 		return false, "", "", errors.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
 	}
 	return true, fmt.Sprintf("%d.%d.%d", major, minor, patch), suffix, nil
+}
+
+// IsAffectedRowsStatement returns true if the statement will return the number of affected rows.
+func IsAffectedRowsStatement(stmt string) bool {
+	affectedRowsStatementPrefix := []string{"INSERT ", "UPDATE ", "DELETE "}
+	upperStatement := strings.ToUpper(stmt)
+	for _, prefix := range affectedRowsStatementPrefix {
+		if strings.HasPrefix(upperStatement, prefix) {
+			return true
+		}
+	}
+	return false
 }

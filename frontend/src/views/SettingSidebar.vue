@@ -58,21 +58,19 @@
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.members") }}</router-link
           >
-          <!--
-            Label Management is visible to all
-            but only editable to Owners and DBAs
-          -->
-          <router-link
-            to="/setting/label"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.labels") }}</router-link
-          >
           <router-link
             v-if="showSensitiveDataItem"
             to="/setting/sensitive-data"
             class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
           >
             {{ $t("settings.sidebar.sensitive-data") }}
+          </router-link>
+          <router-link
+            v-if="showAccessControlItem"
+            to="/setting/access-control"
+            class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
+          >
+            {{ $t("settings.sidebar.access-control") }}
           </router-link>
           <router-link
             v-if="showIMIntegrationItem"
@@ -146,7 +144,14 @@ const showProjectItem = computed((): boolean => {
 
 const showSensitiveDataItem = computed((): boolean => {
   return hasWorkspacePermission(
-    "bb.permission.workspace.manage-database",
+    "bb.permission.workspace.manage-sensitive-data",
+    currentUser.value.role
+  );
+});
+
+const showAccessControlItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-access-control",
     currentUser.value.role
   );
 });

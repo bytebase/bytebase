@@ -91,6 +91,7 @@ export interface InboxState {
 
 export interface IssueState {
   issueById: Map<IssueId, Issue>;
+  isCreatingIssue: boolean;
 }
 
 export interface IssueSubscriberState {
@@ -200,6 +201,7 @@ export enum ConnectionTreeState {
 }
 
 export interface SQLEditorState {
+  accessControlPolicyList: Policy[];
   connectionTree: {
     data: ConnectionAtom[];
     state: ConnectionTreeState;

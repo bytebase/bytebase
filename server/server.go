@@ -32,10 +32,52 @@ import (
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
-	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
+	"github.com/bytebase/bytebase/plugin/app/feishu"
+	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/anomaly"
+	"github.com/bytebase/bytebase/server/runner/apprun"
+	"github.com/bytebase/bytebase/server/runner/backuprun"
+	"github.com/bytebase/bytebase/server/runner/metricreport"
+	"github.com/bytebase/bytebase/server/runner/rollbackrun"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
+	"github.com/bytebase/bytebase/server/runner/taskcheck"
 	"github.com/bytebase/bytebase/store"
+
+	// Register clickhouse driver.
+	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
+	// Register mysql driver.
+	_ "github.com/bytebase/bytebase/plugin/db/mysql"
+	// Register postgres driver.
+	_ "github.com/bytebase/bytebase/plugin/db/pg"
+	// Register snowflake driver.
+	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
+	// Register sqlite driver.
+	_ "github.com/bytebase/bytebase/plugin/db/sqlite"
+
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
+	// Register fake advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
+	// Register mysql advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
+	// Register postgresql advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
+
+	// Register mysql differ driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/differ/mysql"
+	// Register postgres differ driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/differ/pg"
+	// Register postgres parser driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
+	// Register mysql transform driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
+	// Register mysql edit driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/edit/mysql"
 )
 
 const (
@@ -51,31 +93,36 @@ const (
 type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
-	TaskCheckScheduler *TaskCheckScheduler
-	MetricReporter     *MetricReporter
-	SchemaSyncer       *SchemaSyncer
-	BackupRunner       *BackupRunner
-	AnomalyScanner     *AnomalyScanner
-	ApplicationRunner  *ApplicationRunner
-	RollbackRunner     *RollbackRunner
+	TaskCheckScheduler *taskcheck.Scheduler
+	MetricReporter     *metricreport.Reporter
+	SchemaSyncer       *schemasync.Syncer
+	BackupRunner       *backuprun.Runner
+	AnomalyScanner     *anomaly.Scanner
+	ApplicationRunner  *apprun.Runner
+	RollbackRunner     *rollbackrun.Runner
 	runnerWG           sync.WaitGroup
 
-	ActivityManager *ActivityManager
+	ActivityManager *activity.Manager
 
-	LicenseService enterpriseAPI.LicenseService
-	subscription   enterpriseAPI.Subscription
+	licenseService enterpriseAPI.LicenseService
 
-	profile         Profile
+	profile         config.Profile
 	e               *echo.Echo
-	pgInstance      *postgres.Instance
 	metaDB          *store.MetadataDB
 	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
 	secret          string
 	workspaceID     string
 	errorRecordRing api.ErrorRecordRing
 
-	s3Client *s3bb.Client
+	// MySQL utility binaries
+	mysqlBinDir string
+	// Postgres utility binaries
+	pgBinDir string
+
+	s3Client       *bbs3.Client
+	feishuProvider *feishu.Provider
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -113,26 +160,32 @@ var casbinDeveloperPolicy string
 // @schemes http
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, prof Profile) (*Server, error) {
+func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s := &Server{
-		profile:         prof,
+		profile:         profile,
 		startedTs:       time.Now().Unix(),
 		errorRecordRing: api.NewErrorRecordRing(),
 	}
 
+	resourceDir := common.GetResourceDir(profile.DataDir)
+	if profile.ResourceDirOverride != "" {
+		resourceDir = profile.ResourceDirOverride
+	}
+
 	// Display config
 	log.Info("-----Config BEGIN-----")
-	log.Info(fmt.Sprintf("mode=%s", prof.Mode))
-	log.Info(fmt.Sprintf("externalURL=%s", prof.ExternalURL))
-	log.Info(fmt.Sprintf("demoDataDir=%s", prof.DemoDataDir))
-	log.Info(fmt.Sprintf("readonly=%t", prof.Readonly))
-	log.Info(fmt.Sprintf("demo=%t", prof.Demo))
-	log.Info(fmt.Sprintf("debug=%t", prof.Debug))
-	log.Info(fmt.Sprintf("dataDir=%s", prof.DataDir))
-	log.Info(fmt.Sprintf("backupStorageBackend=%s", prof.BackupStorageBackend))
-	log.Info(fmt.Sprintf("backupBucket=%s", prof.BackupBucket))
-	log.Info(fmt.Sprintf("backupRegion=%s", prof.BackupRegion))
-	log.Info(fmt.Sprintf("backupCredentialFile=%s", prof.BackupCredentialFile))
+	log.Info(fmt.Sprintf("mode=%s", profile.Mode))
+	log.Info(fmt.Sprintf("externalURL=%s", profile.ExternalURL))
+	log.Info(fmt.Sprintf("demoDataDir=%s", profile.DemoDataDir))
+	log.Info(fmt.Sprintf("readonly=%t", profile.Readonly))
+	log.Info(fmt.Sprintf("demo=%t", profile.Demo))
+	log.Info(fmt.Sprintf("debug=%t", profile.Debug))
+	log.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
+	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
+	log.Info(fmt.Sprintf("backupStorageBackend=%s", profile.BackupStorageBackend))
+	log.Info(fmt.Sprintf("backupBucket=%s", profile.BackupBucket))
+	log.Info(fmt.Sprintf("backupRegion=%s", profile.BackupRegion))
+	log.Info(fmt.Sprintf("backupCredentialFile=%s", profile.BackupCredentialFile))
 	log.Info("-----Config END-------")
 
 	serverStarted := false
@@ -143,45 +196,40 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}()
 
 	var err error
-
-	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlutil
-	if err := mysqlutil.Install(resourceDir); err != nil {
-		return nil, errors.Wrap(err, "cannot install mysqlbinlog binary")
+	s.mysqlBinDir, err = mysqlutil.Install(resourceDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
-	// Install Postgres.
-	var pgDataDir string
-	if prof.UseEmbedDB() {
-		pgDataDir = common.GetPostgresDataDir(prof.DataDir)
-	}
-	log.Info("-----Embedded Postgres Config BEGIN-----")
-	log.Info(fmt.Sprintf("datastorePort=%d", prof.DatastorePort))
-	log.Info(fmt.Sprintf("resourceDir=%s", resourceDir))
-	log.Info(fmt.Sprintf("pgdataDir=%s", pgDataDir))
-	log.Info("-----Embedded Postgres Config END-----")
-	log.Info("Preparing embedded PostgreSQL instance...")
-	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
+	s.pgBinDir, err = postgres.Install(resourceDir)
 	if err != nil {
 		return nil, err
 	}
-	s.pgInstance = pgInstance
 
 	// New MetadataDB instance.
-	if prof.UseEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
+	if profile.UseEmbedDB() {
+		pgDataDir := common.GetPostgresDataDir(profile.DataDir)
+		log.Info("-----Embedded Postgres Config BEGIN-----")
+		log.Info(fmt.Sprintf("datastorePort=%d", profile.DatastorePort))
+		log.Info(fmt.Sprintf("pgDataDir=%s", pgDataDir))
+		log.Info("-----Embedded Postgres Config END-----")
+		if err := postgres.InitDB(s.pgBinDir, pgDataDir, profile.PgUser); err != nil {
+			return nil, err
+		}
+		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoDataDir, profile.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoDataDir, profile.Mode)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create MetadataDB instance")
 	}
 
 	// New store.DB instance that represents the db connection.
-	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
+	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot new db")
 	}
@@ -192,14 +240,19 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot open db")
 	}
 
-	cacheService := NewCacheService()
-	storeInstance := store.New(storeDB, cacheService)
+	storeInstance := store.New(storeDB)
 	s.store = storeInstance
-
-	// Backfill activity.
+	// TODO(d): backfill activity. Remove this whenever the backfill is completed over the time.
 	if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
 		return nil, errors.Wrap(err, "cannot backfill SQL editor activities")
 	}
+
+	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create license service")
+	}
+	// Cache the license.
+	s.licenseService.LoadSubscription(ctx)
 
 	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
@@ -208,10 +261,11 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
-	s.ActivityManager = NewActivityManager(s, storeInstance)
+	s.ActivityManager = activity.NewManager(storeInstance, profile)
+	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, profile.DataDir)
 
 	e := echo.New()
-	e.Debug = prof.Debug
+	e.Debug = profile.Debug
 	e.HideBanner = true
 	e.HidePort = true
 
@@ -223,89 +277,44 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	embedFrontend(e)
 	s.e = e
 
-	if prof.BackupBucket != "" {
-		credentials, err := s3bb.GetCredentialsFromFile(ctx, prof.BackupCredentialFile)
+	if profile.BackupBucket != "" {
+		credentials, err := bbs3.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get credentials from file")
 		}
-		s3Client, err := s3bb.NewClient(ctx, prof.BackupRegion, prof.BackupBucket, credentials)
+		s3Client, err := bbs3.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create AWS S3 client")
 		}
 		s.s3Client = s3Client
 	}
 
-	if !prof.Readonly {
-		// Task scheduler
-		taskScheduler := NewTaskScheduler(s)
+	if !profile.Readonly {
+		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory)
+		// TODO(p0ny): enable Feishu provider only when it is needed.
+		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
+		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
+		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
+		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory)
 
-		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseRestorePITRRestore, NewPITRRestoreTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor)
-
+		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
+		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor(storeInstance, s.dbFactory, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor(storeInstance, taskScheduler))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor(storeInstance, s.dbFactory, taskScheduler, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseRestorePITRRestore, NewPITRRestoreTaskExecutor(storeInstance, s.dbFactory, s.s3Client, taskScheduler, s.SchemaSyncer, profile))
+		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 		s.TaskScheduler = taskScheduler
 
-		// Task check scheduler
-		taskCheckScheduler := NewTaskCheckScheduler(s)
-
-		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor()
-		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
-		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
-
-		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor()
-		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-
-		statementTypeExecutor := NewTaskCheckStatementTypeExecutor()
-		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
-
-		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor()
-		taskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
-
-		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor()
-		taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
-
-		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor()
-		taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
-
-		checkLGTMExecutor := NewTaskCheckLGTMExecutor()
-		taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
-
-		pitrMySQLExecutor := NewTaskCheckPITRMySQLExecutor()
-		taskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
-
-		s.TaskCheckScheduler = taskCheckScheduler
-
-		// Schema syncer
-		s.SchemaSyncer = NewSchemaSyncer(s)
-
-		// Backup runner
-		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
-
-		s.ApplicationRunner = NewApplicationRunner(s.store, s.ActivityManager)
+		s.TaskCheckScheduler = taskcheck.NewTaskCheckScheduler(storeInstance, s.dbFactory, s.licenseService)
 
 		// Anomaly scanner
-		s.AnomalyScanner = NewAnomalyScanner(s)
-
-		// Rollback SQL generator
-		s.RollbackRunner = NewRollbackRunner(s.store, s.profile.DataDir)
+		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
@@ -335,7 +344,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	apiGroup := e.Group(internalAPIPrefix)
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(internalAPIPrefix, s.store, next, prof.Mode, config.secret)
+		return JWTMiddleware(internalAPIPrefix, s.store, next, profile.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -348,7 +357,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, internalAPIPrefix, ce, next, prof.Readonly)
+		return aclMiddleware(s, internalAPIPrefix, ce, next, profile.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
@@ -385,7 +394,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	})
 
 	// Register open API routes
-	s.registerOpenAPIRoutes(e, ce, prof)
+	s.registerOpenAPIRoutes(e, ce, profile)
 
 	// Register pprof endpoints.
 	pprof.Register(e)
@@ -393,18 +402,11 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create license service")
-	}
-
-	s.initSubscription(ctx)
-
 	serverStarted = true
 	return s, nil
 }
 
-func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof Profile) {
+func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof config.Profile) {
 	openAPIGroup := e.Group(openAPIPrefix)
 
 	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -429,16 +431,11 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof P
 	})
 }
 
-// initSubscription will initial the subscription cache in memory.
-func (s *Server) initSubscription(ctx context.Context) {
-	s.subscription = s.loadSubscription(ctx)
-}
-
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter(workspaceID string) {
 	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo && !s.profile.DisableMetric
 	if enabled {
-		metricReporter := NewMetricReporter(s, workspaceID)
+		metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, workspaceID)
 		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
 		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
 		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
@@ -451,7 +448,18 @@ func (s *Server) initMetricReporter(workspaceID string) {
 	}
 }
 
-func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
+// retrieved via the SettingService upon startup.
+type workspaceConfig struct {
+	// secret used to sign the JWT auth token
+	secret string
+	// workspaceID used to initial the identify for a new workspace.
+	workspaceID string
+}
+
+func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, error) {
+	// secretLength is the length for the secret used to sign the JWT auto token.
+	const secretLength = 32
+
 	// initial branding
 	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
@@ -462,7 +470,7 @@ func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 		return nil, err
 	}
 
-	conf := &config{}
+	conf := &workspaceConfig{}
 
 	// initial JWT token
 	value, err := common.RandomString(secretLength)
@@ -536,8 +544,10 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.ApplicationRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.RollbackRunner.Run(ctx, &s.runnerWG)
+		if s.profile.Mode == common.ReleaseModeDev {
+			s.runnerWG.Add(1)
+			go s.RollbackRunner.Run(ctx, &s.runnerWG)
+		}
 
 		if s.MetricReporter != nil {
 			s.runnerWG.Add(1)
@@ -550,8 +560,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 // Shutdown will shut down the server.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Info("Trying to stop Bytebase...")
-	log.Info("Trying to gracefully shutdown server...")
+	log.Info("Stopping Bytebase...")
+	log.Info("Stopping web server...")
 
 	// Close the metric reporter
 	if s.MetricReporter != nil {

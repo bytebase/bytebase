@@ -18,6 +18,8 @@ export interface TableTabContext {
   type: UIEditorTabType.TabForTable;
   databaseId: DatabaseId;
   tableId: TableId;
+  // Save the reference for those new tables.
+  table: Table;
   // Save the editing table cache in tab.
   tableCache: Table;
 }
@@ -29,10 +31,11 @@ type TabId = string;
 export interface UIEditorState {
   tabState: {
     tabMap: Map<TabId, TabContext>;
-    currentTabId: TabId;
+    currentTabId?: TabId;
   };
   databaseList: Database[];
   tableList: Table[];
+  droppedTableList: Table[];
 }
 
 /**
@@ -41,7 +44,10 @@ export interface UIEditorState {
 export interface DatabaseEdit {
   databaseId: DatabaseId;
 
-  CreateTableList: CreateTableContext[];
+  createTableList: CreateTableContext[];
+  alterTableList: AlterTableContext[];
+  renameTableList: RenameTableContext[];
+  dropTableList: DropTableContext[];
 }
 
 export interface CreateTableContext {
@@ -55,6 +61,23 @@ export interface CreateTableContext {
   addColumnList: AddColumnContext[];
 }
 
+export interface AlterTableContext {
+  name: string;
+
+  addColumnList: AddColumnContext[];
+  changeColumnList: ChangeColumnContext[];
+  dropColumnList: DropColumnContext[];
+}
+
+export interface RenameTableContext {
+  oldName: string;
+  newName: string;
+}
+
+export interface DropTableContext {
+  name: string;
+}
+
 export interface AddColumnContext {
   name: string;
   type: string;
@@ -63,4 +86,19 @@ export interface AddColumnContext {
   comment: string;
   nullable: boolean;
   default?: string;
+}
+
+export interface ChangeColumnContext {
+  oldName: string;
+  newName: string;
+  type: string;
+  characterSet: string;
+  collation: string;
+  comment: string;
+  nullable: boolean;
+  default?: string;
+}
+
+export interface DropColumnContext {
+  name: string;
 }

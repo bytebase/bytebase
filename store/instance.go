@@ -36,6 +36,7 @@ type instanceRaw struct {
 	ExternalLink  string
 	Host          string
 	Port          string
+	Database      string
 }
 
 // toInstance creates an instance of Instance based on the instanceRaw.
@@ -61,6 +62,7 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 		ExternalLink:  raw.ExternalLink,
 		Host:          raw.Host,
 		Port:          raw.Port,
+		Database:      raw.Database,
 	}
 }
 
@@ -197,7 +199,8 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engin
 			instance.engine_version,
 			instance.external_link,
 			instance.host,
-			instance.port
+			instance.port,
+			instance.database
 		FROM instance
 		JOIN db ON db.instance_id = instance.id
 		JOIN backup_setting AS bs ON db.id = bs.database_id
@@ -227,6 +230,7 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engin
 			&instanceRaw.ExternalLink,
 			&instanceRaw.Host,
 			&instanceRaw.Port,
+			&instanceRaw.Database,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -376,7 +380,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
 		return nil, err
 	}
 
@@ -404,7 +408,7 @@ func (s *Store) findInstanceRaw(ctx context.Context, find *api.InstanceFind) ([]
 func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*instanceRaw, error) {
 	if find.ID != nil {
 		instanceRaw := &instanceRaw{}
-		has, err := s.cache.FindCache(api.InstanceCache, *find.ID, instanceRaw)
+		has, err := s.cache.FindCache(instanceCacheNamespace, *find.ID, instanceRaw)
 		if err != nil {
 			return nil, err
 		}
@@ -431,7 +435,7 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 	}
 
 	instance := list[0]
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
 		return nil, err
 	}
 	return instance, nil
@@ -455,7 +459,7 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) 
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
 		return nil, err
 	}
 
@@ -474,10 +478,11 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *api.InstanceCreate)
 			engine,
 			external_link,
 			host,
-			port
+			port,
+			database
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`
 	var instanceRaw instanceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -489,6 +494,7 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *api.InstanceCreate)
 		create.ExternalLink,
 		create.Host,
 		create.Port,
+		create.Database,
 	).Scan(
 		&instanceRaw.ID,
 		&instanceRaw.RowStatus,
@@ -503,6 +509,7 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *api.InstanceCreate)
 		&instanceRaw.ExternalLink,
 		&instanceRaw.Host,
 		&instanceRaw.Port,
+		&instanceRaw.Database,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -529,7 +536,8 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 			engine_version,
 			external_link,
 			host,
-			port
+			port,
+			database
 		FROM instance
 		WHERE `+where,
 		args...,
@@ -557,6 +565,7 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 			&instanceRaw.ExternalLink,
 			&instanceRaw.Host,
 			&instanceRaw.Port,
+			&instanceRaw.Database,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -591,6 +600,9 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*
 	if v := patch.Port; v != nil {
 		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Database; v != nil {
+		set, args = append(set, fmt.Sprintf("database = $%d", len(args)+1)), append(args, *v)
+	}
 
 	args = append(args, patch.ID)
 
@@ -600,7 +612,7 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`, len(args)),
 		args...,
 	).Scan(
@@ -617,6 +629,7 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*
 		&instanceRaw.ExternalLink,
 		&instanceRaw.Host,
 		&instanceRaw.Port,
+		&instanceRaw.Database,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("instance ID not found: %d", patch.ID)}
@@ -643,6 +656,9 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 	}
 	if v := find.Port; v != nil {
 		where, args = append(where, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 
 	return strings.Join(where, " AND "), args

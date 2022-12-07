@@ -70,6 +70,7 @@
     "next": "下一步",
     "edit": "编辑",
     "update": "更新",
+    "updated": "已更新",
     "visit": "访问",
     "role": {
       "dba": "DBA",
@@ -97,6 +98,7 @@
     "status": "状态",
     "stage": "阶段",
     "task": "任务",
+    "tasks": "任务",
     "sql": "SQL",
     "unassigned": "未指派",
     "new": "创建",
@@ -138,6 +140,7 @@
     "Default": "默认",
     "definition": "定义",
     "empty": "空",
+    "connecting": "连接中...",
     "creating": "创建中...",
     "updating": "更新中...",
     "Address": "地址",
@@ -210,7 +213,8 @@
     "advanced": "高级",
     "restart": "重启",
     "want-help": "加入用户群",
-    "operation": "操作"
+    "operation": "操作",
+    "rollback": "回滚"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -283,7 +287,10 @@
         "row": "行数"
       },
       "counting": "统计中"
-    }
+    },
+    "n-similar-tasks": "({count} 个相似的任务)",
+    "mark-as-done": "标记为已完成",
+    "mark-as-done-modal-title": "将任务[{name}]标记为已完成？"
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
@@ -328,7 +335,8 @@
       "subscription": "订阅",
       "labels": "标签",
       "debug-log": "Debug 日志",
-      "sensitive-data": "敏感数据"
+      "sensitive-data": "敏感数据",
+      "access-control": "访问控制"
     },
     "profile": {
       "email": "邮箱",
@@ -381,7 +389,13 @@
       "change-role-provider-to-bytebase": {
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
       },
-      "system-bot": "机器人助手"
+      "system-bot": "机器人助手",
+      "service-account": "服务账号",
+      "copy-service-key": "复制 Service Key",
+      "reset-service-key": "重置 Service Key",
+      "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
+      "service-key-copied": "Service Key 已复制，请勿泄漏",
+      "create-as-service-account": "创建为服务账号"
     },
     "im-integration": {
       "enable": "启用",
@@ -403,6 +417,11 @@
     "sensitive-data": {
       "description": "以下列的查询结果将会被显示为 \"******\"。在表详情页，你可以将多个列标记为敏感数据。",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？"
+    },
+    "access-control": {
+      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。",
+      "add-rule": "添加规则",
+      "remove-policy-tips": "删除这条规则？"
     }
   },
   "activity": {
@@ -428,7 +447,8 @@
       "project-member-delete": "删除项目成员",
       "project-member-role-update": "变更项目成员角色",
       "pipeline-task-earliest-allowed-time-update": "更新最早允许执行时间",
-      "database-recovery-pitr-done": "将数据库恢复到指定时间点"
+      "database-recovery-pitr-done": "将数据库恢复到指定时间点",
+      "external-approval-rejected": "拒绝外部审批"
     },
     "sentence": {
       "created-issue": "创建工单",
@@ -455,7 +475,8 @@
       "failed": "失败",
       "task-name": "任务 {name}",
       "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
-      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销"
+      "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销",
+      "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批"
     },
     "subject-prefix": {
       "task": "任务"
@@ -470,7 +491,9 @@
       "modal": {
         "resolve": "解决工单?",
         "cancel": "取消整个工单?",
-        "reopen": "重开工单?"
+        "reopen": "重开工单？",
+        "title": "{action}{type} [{name}]？",
+        "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
         "resolve": "解决",
@@ -546,7 +569,9 @@
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
       "dont-apply-to-database-in-baseline-migration": "对于建立基线的迁移，Bytebase 不会应用到数据库，只会记录一个基线历史",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
-    }
+    },
+    "rollback-from": "当前任务回滚自 {link}。",
+    "issue-link-with-task": "工单 {issue} - 任务 {task}"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -587,7 +612,7 @@
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
-    "select-label-value": "选择 {key}"
+    "input-label-value": "输入 {key}"
   },
   "db": {
     "encoding": "字符编码",
@@ -742,6 +767,7 @@
       "new-user": "第一次使用 Bytebase?",
       "demo-note": "请使用 demo 账号登录",
       "gitlab": "通过 GitLab 登录",
+      "github": "通过 GitHub 登录",
       "3rd-party-auth-demo": "演示模式不支持第三方账号登录",
       "gitlab-oauth": "您可联系管理员开启 GitLab 登录"
     },
@@ -787,7 +813,7 @@
     },
     "environment-tier": {
       "name": "环境级别",
-      "description": "使该环境在显示上不同于其他环境。",
+      "description": "使该环境在显示上不同于其他环境。{newline}默认情况下，开发者无法通过 SQL 编辑器在这个环境的数据库上执行任何查询。",
       "mark-env-as-protected": "标记为受保护的环境"
     }
   },
@@ -944,7 +970,8 @@
       "character-sets-diff-found": "Schema 之间的字符集不同",
       "preview-issue": "预览工单"
     },
-    "sensitive": "敏感"
+    "sensitive": "敏感",
+    "access-denied": "你没有访问该数据库的权限"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1367,6 +1394,52 @@
     },
     "close-sheet": "关闭工作表"
   },
+  "ui-editor": {
+    "self": "UI 编辑器",
+    "use-tips": "选择需要编辑的数据库或者表",
+    "preview-issue": "预览工单",
+    "sync-sql-from-ui-editor": "从 UI 编辑器中同步 SQL",
+    "raw-sql": "SQL 语句",
+    "actions": {
+      "create-table": "新建表",
+      "drop-table": "删除表",
+      "drop": "删除",
+      "restore": "恢复",
+      "add-column": "添加列",
+      "drop-column": "删除列",
+      "sql-preview": "预览 SQL",
+      "reset": "重置",
+      "save": "保存"
+    },
+    "database": {
+      "name": "名称",
+      "row-count": "数据行数",
+      "data-size": "数据大小",
+      "engine": "引擎",
+      "collation": "字符排序规则",
+      "comment": "注释"
+    },
+    "table-list": "表",
+    "table": {
+      "name": "表名"
+    },
+    "column-list": "列",
+    "column": {
+      "name": "名称",
+      "type": "类型",
+      "default": "默认值",
+      "comment": "注释",
+      "nullable": "是否可为空"
+    },
+    "nothing-changed": "无任何改动",
+    "message": {
+      "invalid-table-name": "无效的表名",
+      "duplicated-table-name": "重复的表名",
+      "invalid-column-name": "无效的列名",
+      "duplicated-column-name": "重复的列名",
+      "invalid-column-type": "无效的列类型"
+    }
+  },
   "label": {
     "empty-label-value": "<空值>",
     "no-label": "没有标签",
@@ -1445,6 +1518,14 @@
         "title": "环境级别",
         "desc": "「环境级别」可以将环境标记为受保护的"
       },
+      "bb-feature-sensitive-data": {
+        "title": "敏感数据",
+        "desc": "将数据表的列标记为敏感数据，它们在查询结果中将会被显示成 \"******\"。"
+      },
+      "bb-feature-access-control": {
+        "title": "访问控制",
+        "desc": "可以修改受保护的环境中的数据库的查询权限。"
+      },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",
         "desc": "检查工单是否有 \"LGTM\" 评论。"
@@ -1520,11 +1601,13 @@
     "disabled": "已禁用",
     "no-policy-set": "没有 SQL 审核策略",
     "create-policy": "创建审核策略",
+    "duplicate-policy": "复制审核策略",
     "configure-policy": "配置审核策略",
     "search-rule-name": "搜索规则名称",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
     "policy-updated": "审核策略已更新",
+    "policy-duplicated": "审核策略已复制",
     "rules": "规则",
     "filter": "筛选",
     "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",

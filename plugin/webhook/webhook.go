@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 var (
@@ -99,15 +101,9 @@ func (c *Context) getMetaList() []meta {
 		// So the description could be long, which is hard to display if merged into the issue name.
 		// We also trim it to 200 bytes to limit the message size in the webhook body, so that users can
 		// view it easily in the corresponding webhook client.
-		// The issue description may contain unicode characters, so we use rune here.
-		descriptionRune := []rune(c.Issue.Description)
-		if len(descriptionRune) > 200 {
-			descriptionRune = descriptionRune[:200]
-			descriptionRune = append(descriptionRune, []rune("... (view details in Bytebase)")...)
-		}
 		m = append(m, meta{
 			Name:  "Issue Description",
-			Value: string(descriptionRune),
+			Value: common.TruncateStringWithDescription(c.Issue.Description),
 		})
 	}
 
@@ -121,14 +117,9 @@ func (c *Context) getMetaList() []meta {
 			Value: c.TaskResult.Status,
 		})
 		if c.TaskResult.Detail != "" {
-			resultDetailRune := []rune(c.TaskResult.Detail)
-			if len(resultDetailRune) > 200 {
-				resultDetailRune = resultDetailRune[:200]
-				resultDetailRune = append(resultDetailRune, []rune("... (view details in Bytebase)")...)
-			}
 			m = append(m, meta{
 				Name:  "Result Detail",
-				Value: string(resultDetailRune),
+				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
 			})
 		}
 	}
@@ -159,6 +150,5 @@ func Post(webhookType string, context Context) error {
 	if !ok {
 		return errors.Errorf("webhook: no applicable receiver for webhook type: %v", webhookType)
 	}
-
 	return r.post(context)
 }

@@ -62,6 +62,20 @@
   --color-control-border: #d1d5db;
 }
 
+/*
+  Colors for dark theme
+  Only used by Web Terminal now
+*/
+:root {
+  /* same as vs-dark theme's bg, not pure black. */
+  --color-dark-bg: #1e1e1e;
+
+  /* The Matrix green */
+  --color-matrix-green: #00cc00;
+  /* The matrix green lighter */
+  --color-matrix-green-hover: #88ff88;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -209,6 +223,12 @@
 .tooltip-wrapper:hover .tooltip,
 .tooltip-wrapper:hover .tooltip-left {
   @apply visible z-50;
+}
+
+@layer base {
+  .bg-dark-bg {
+    background-color: var(--color-dark-bg);
+  }
 }
 
 @layer utilities {

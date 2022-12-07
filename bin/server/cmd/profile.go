@@ -2,14 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/server"
+	"github.com/bytebase/bytebase/plugin/app/feishu"
+	"github.com/bytebase/bytebase/server/component/config"
 )
 
-func getBaseProfile() server.Profile {
+func getBaseProfile() config.Profile {
 	var demoDataDir string
 	if flags.demo {
 		demoName := string(common.ReleaseModeDev)
@@ -25,7 +25,7 @@ func getBaseProfile() server.Profile {
 	// Using flags.port + 1 as our datastore port
 	datastorePort := flags.port + 1
 
-	return server.Profile{
+	return config.Profile{
 		ExternalURL:          flags.externalURL,
 		DatastorePort:        datastorePort,
 		Readonly:             flags.readonly,
@@ -40,38 +40,6 @@ func getBaseProfile() server.Profile {
 		BackupRegion:         flags.backupRegion,
 		BackupBucket:         flags.backupBucket,
 		BackupCredentialFile: flags.backupCredential,
-	}
-}
-
-// GetTestProfile will return a profile for testing.
-// We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func GetTestProfile(dataDir string, port int) server.Profile {
-	// Using flags.port + 1 as our datastore port
-	datastorePort := port + 1
-	return server.Profile{
-		Mode:                 common.ReleaseModeDev,
-		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
-		DatastorePort:        datastorePort,
-		PgUser:               "bbtest",
-		DataDir:              dataDir,
-		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
-		BackupRunnerInterval: 10 * time.Second,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
-	}
-}
-
-// GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
-// We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
-// pgURL for connect to Postgres.
-func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL string) server.Profile {
-	return server.Profile{
-		Mode:                 common.ReleaseModeDev,
-		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
-		PgUser:               pgUser,
-		DataDir:              dataDir,
-		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
-		BackupRunnerInterval: 10 * time.Second,
-		BackupStorageBackend: api.BackupStorageBackendLocal,
-		PgURL:                pgURL,
+		FeishuAPIURL:         feishu.APIPath,
 	}
 }

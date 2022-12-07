@@ -127,7 +127,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.DatabaseLabelCache, databaseID, ret); err != nil {
+	if err := s.cache.UpsertCache(databaseLabelCacheNamespace, databaseID, ret); err != nil {
 		return nil, err
 	}
 
@@ -167,7 +167,7 @@ func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*a
 // findDatabaseLabel finds a list of DatabaseLabel instances.
 func (s *Store) findDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	var l []*api.DatabaseLabel
-	has, err := s.cache.FindCache(api.DatabaseLabelCache, find.DatabaseID, &l)
+	has, err := s.cache.FindCache(databaseLabelCacheNamespace, find.DatabaseID, &l)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (s *Store) findDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFi
 	for _, raw := range labelKeyRawList {
 		l = append(l, &api.DatabaseLabel{Key: raw.Key, Value: raw.Value})
 	}
-	if err := s.cache.UpsertCache(api.DatabaseLabelCache, find.DatabaseID, l); err != nil {
+	if err := s.cache.UpsertCache(databaseLabelCacheNamespace, find.DatabaseID, l); err != nil {
 		return nil, err
 	}
 	return l, nil

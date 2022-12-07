@@ -40,6 +40,8 @@ const (
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
 	// PolicyTypeSensitiveData is the sensitive data policy type.
 	PolicyTypeSensitiveData PolicyType = "bb.policy.sensitive-data"
+	// PolicyTypeAccessControl is the access control policy type.
+	PolicyTypeAccessControl PolicyType = "bb.policy.access-control"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -78,13 +80,14 @@ const (
 )
 
 var (
-	// policyTypes is a set of all policy types.
-	policyTypes = map[PolicyType]bool{
-		PolicyTypePipelineApproval: true,
-		PolicyTypeBackupPlan:       true,
-		PolicyTypeSQLReview:        true,
-		PolicyTypeEnvironmentTier:  true,
-		PolicyTypeSensitiveData:    true,
+	// allowedResourceTypes includes allowed resource types for each policy type.
+	allowedResourceTypes = map[PolicyType][]PolicyResourceType{
+		PolicyTypePipelineApproval: {PolicyResourceTypeEnvironment},
+		PolicyTypeBackupPlan:       {PolicyResourceTypeEnvironment},
+		PolicyTypeSQLReview:        {PolicyResourceTypeEnvironment},
+		PolicyTypeEnvironmentTier:  {PolicyResourceTypeEnvironment},
+		PolicyTypeSensitiveData:    {PolicyResourceTypeDatabase},
+		PolicyTypeAccessControl:    {PolicyResourceTypeEnvironment, PolicyResourceTypeDatabase},
 	}
 )
 
@@ -107,8 +110,9 @@ type Policy struct {
 	Environment  *Environment `jsonapi:"relation,environment"`
 
 	// Domain specific fields
-	Type    PolicyType `jsonapi:"attr,type"`
-	Payload string     `jsonapi:"attr,payload"`
+	InheritFromParent bool       `jsonapi:"attr,inheritFromParent"`
+	Type              PolicyType `jsonapi:"attr,type"`
+	Payload           string     `jsonapi:"attr,payload"`
 }
 
 // PolicyFind is the message to get a policy.
@@ -137,8 +141,9 @@ type PolicyUpsert struct {
 	ResourceID   int
 
 	// Domain specific fields
-	Type    PolicyType
-	Payload *string `jsonapi:"attr,payload"`
+	InheritFromParent *bool
+	Type              PolicyType
+	Payload           *string `jsonapi:"attr,payload"`
 }
 
 // PolicyDelete is the message to delete a policy.
@@ -282,6 +287,38 @@ func (p *SensitiveDataPolicy) String() (string, error) {
 	return string(s), nil
 }
 
+// AccessControlPolicy is the policy configuration for database access control.
+// It is only applicable to database and environment resource type.
+// For environment resource type, DisallowRuleList defines the access control rule.
+// For database resource type, the AccessControlPolicy struct itself means allow to access.
+type AccessControlPolicy struct {
+	// Environment resource type specific fields.
+	DisallowRuleList []AccessControlRule `json:"disallowRuleList"`
+}
+
+// AccessControlRule is the disallow rule for access control policy.
+type AccessControlRule struct {
+	// FullDatabase will apply to the full database.
+	FullDatabase bool `json:"fullDatabase"`
+}
+
+// UnmarshalAccessControlPolicy will unmarshal payload to access control policy.
+func UnmarshalAccessControlPolicy(payload string) (*AccessControlPolicy, error) {
+	var p AccessControlPolicy
+	if err := json.Unmarshal([]byte(payload), &p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal access control policy %q", payload)
+	}
+	return &p, nil
+}
+
+func (p *AccessControlPolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
 // UnmarshalEnvironmentTierPolicy will unmarshal payload to environment tier policy.
 func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, error) {
 	var p EnvironmentTierPolicy
@@ -293,7 +330,7 @@ func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, err
 
 // ValidatePolicyType will validate the policy type.
 func ValidatePolicyType(pType PolicyType) error {
-	if !policyTypes[pType] {
+	if _, ok := allowedResourceTypes[pType]; !ok {
 		return errors.Errorf("invalid policy type: %s", pType)
 	}
 	return nil
@@ -301,79 +338,90 @@ func ValidatePolicyType(pType PolicyType) error {
 
 // ValidatePolicy will validate the policy resource type, type and payload values.
 func ValidatePolicy(resourceType PolicyResourceType, pType PolicyType, payload *string) error {
+	hasResourceType := false
+	for _, rt := range allowedResourceTypes[pType] {
+		if rt == resourceType {
+			hasResourceType = true
+		}
+	}
+	if !hasResourceType {
+		return errors.Errorf("invalid resource type %s and policy type %s pair", resourceType, pType)
+	}
+	// If payload is not changed, we will not check its content.
 	if payload == nil {
-		return errors.Errorf("empty payload")
+		return nil
 	}
-	switch resourceType {
-	case PolicyResourceTypeEnvironment:
-		switch pType {
-		case PolicyTypePipelineApproval:
-			pa, err := UnmarshalPipelineApprovalPolicy(*payload)
-			if err != nil {
-				return err
-			}
-			if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
-				return errors.Errorf("invalid approval policy value: %q", *payload)
-			}
-			issueTypeSeen := make(map[IssueType]bool)
-			for _, group := range pa.AssigneeGroupList {
-				if group.IssueType != IssueDatabaseSchemaUpdate &&
-					group.IssueType != IssueDatabaseSchemaUpdateGhost &&
-					group.IssueType != IssueDatabaseDataUpdate {
-					return errors.Errorf("invalid assignee group issue type %q", group.IssueType)
-				}
-				if issueTypeSeen[group.IssueType] {
-					return errors.Errorf("duplicate assignee group issue type %q", group.IssueType)
-				}
-				issueTypeSeen[group.IssueType] = true
-			}
-			return nil
-		case PolicyTypeBackupPlan:
-			bp, err := UnmarshalBackupPlanPolicy(*payload)
-			if err != nil {
-				return err
-			}
-			if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
-				return errors.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
-			}
-			return nil
-		case PolicyTypeSQLReview:
-			sr, err := UnmarshalSQLReviewPolicy(*payload)
-			if err != nil {
-				return err
-			}
-			if err := sr.Validate(); err != nil {
-				return errors.Wrap(err, "invalid SQL review policy")
-			}
-			return nil
-		case PolicyTypeEnvironmentTier:
-			p, err := UnmarshalEnvironmentTierPolicy(*payload)
-			if err != nil {
-				return err
-			}
-			if p.EnvironmentTier != EnvironmentTierValueProtected && p.EnvironmentTier != EnvironmentTierValueUnprotected {
-				return errors.Errorf("invalid environment tier value %q", p.EnvironmentTier)
-			}
-			return nil
+
+	switch pType {
+	case PolicyTypePipelineApproval:
+		pa, err := UnmarshalPipelineApprovalPolicy(*payload)
+		if err != nil {
+			return err
 		}
-	case PolicyResourceTypeDatabase:
-		if pType == PolicyTypeSensitiveData {
-			p, err := UnmarshalSensitiveDataPolicy(*payload)
-			if err != nil {
-				return err
-			}
-			for _, v := range p.SensitiveDataList {
-				if v.Table == "" || v.Column == "" {
-					return errors.Errorf("sensitive data policy rule cannot have empty table or column name")
-				}
-				if v.Type != SensitiveDataMaskTypeDefault {
-					return errors.Errorf("sensitive data policy rule must have mask type %q", SensitiveDataMaskTypeDefault)
-				}
-			}
-			return nil
+		if pa.Value != PipelineApprovalValueManualNever && pa.Value != PipelineApprovalValueManualAlways {
+			return errors.Errorf("invalid approval policy value: %q", *payload)
 		}
+		issueTypeSeen := make(map[IssueType]bool)
+		for _, group := range pa.AssigneeGroupList {
+			if group.IssueType != IssueDatabaseSchemaUpdate &&
+				group.IssueType != IssueDatabaseSchemaUpdateGhost &&
+				group.IssueType != IssueDatabaseDataUpdate {
+				return errors.Errorf("invalid assignee group issue type %q", group.IssueType)
+			}
+			if issueTypeSeen[group.IssueType] {
+				return errors.Errorf("duplicate assignee group issue type %q", group.IssueType)
+			}
+			issueTypeSeen[group.IssueType] = true
+		}
+		return nil
+	case PolicyTypeBackupPlan:
+		bp, err := UnmarshalBackupPlanPolicy(*payload)
+		if err != nil {
+			return err
+		}
+		if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
+			return errors.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
+		}
+		return nil
+	case PolicyTypeSQLReview:
+		sr, err := UnmarshalSQLReviewPolicy(*payload)
+		if err != nil {
+			return err
+		}
+		if err := sr.Validate(); err != nil {
+			return errors.Wrap(err, "invalid SQL review policy")
+		}
+		return nil
+	case PolicyTypeEnvironmentTier:
+		p, err := UnmarshalEnvironmentTierPolicy(*payload)
+		if err != nil {
+			return err
+		}
+		if p.EnvironmentTier != EnvironmentTierValueProtected && p.EnvironmentTier != EnvironmentTierValueUnprotected {
+			return errors.Errorf("invalid environment tier value %q", p.EnvironmentTier)
+		}
+		return nil
+	case PolicyTypeSensitiveData:
+		p, err := UnmarshalSensitiveDataPolicy(*payload)
+		if err != nil {
+			return err
+		}
+		for _, v := range p.SensitiveDataList {
+			if v.Table == "" || v.Column == "" {
+				return errors.Errorf("sensitive data policy rule cannot have empty table or column name")
+			}
+			if v.Type != SensitiveDataMaskTypeDefault {
+				return errors.Errorf("sensitive data policy rule must have mask type %q", SensitiveDataMaskTypeDefault)
+			}
+		}
+		return nil
+	case PolicyTypeAccessControl:
+		if _, err := UnmarshalAccessControlPolicy(*payload); err != nil {
+			return err
+		}
+		return nil
 	}
-	return errors.Errorf("invalid resource type %s and policy type %s pair", resourceType, pType)
+	return nil
 }
 
 // GetDefaultPolicy will return the default value for the given policy type.

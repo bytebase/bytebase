@@ -25,7 +25,8 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
-	"github.com/bytebase/bytebase/store"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/component/state"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -127,11 +128,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if instance == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", *sync.InstanceID))
 			}
-			if _, err := s.syncInstance(ctx, instance); err != nil {
+			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 				resultSet.Error = err.Error()
 			}
 			// Sync all databases in the instance asynchronously.
-			instanceDatabaseSyncChan <- instance
+			state.InstanceDatabaseSyncChan <- instance
 		}
 		if sync.DatabaseID != nil {
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
@@ -141,7 +142,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if database == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
 			}
-			if err := s.syncDatabaseSchema(ctx, database.Instance, database.Name); err != nil {
+			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database.Instance, database.Name); err != nil {
 				resultSet.Error = err.Error()
 			}
 		}
@@ -180,29 +181,75 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
 		var database *api.Database
 		if exec.DatabaseName != "" {
-			databaseFind := &api.DatabaseFind{
-				InstanceID: &instance.ID,
-				Name:       &exec.DatabaseName,
-			}
-			dbList, err := s.store.FindDatabase(ctx, databaseFind)
+			database, err = s.getDatabase(ctx, instance.ID, exec.DatabaseName)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
+				return err
 			}
-			if len(dbList) == 0 {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
+			// Database Access Control
+			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, database)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", exec.DatabaseName)).SetInternal(err)
 			}
-			if len(dbList) > 1 {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
+			if !hasAccessRights {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", exec.DatabaseName))
 			}
-			database = dbList[0]
+		}
+
+		// Database Access Control for MySQL dialect.
+		// MySQL dialect can query cross the database.
+		// We need special check.
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to extract database list: %q", exec.Statement)).SetInternal(err)
+			}
+
+			if exec.DatabaseName != "" {
+				// Disallow cross-database query if specify database.
+				for _, databaseName := range databaseList {
+					upperDatabaseName := strings.ToUpper(databaseName)
+					// We allow querying information schema.
+					if upperDatabaseName == "" || upperDatabaseName == "INFORMATION_SCHEMA" {
+						continue
+					}
+					if databaseName != exec.DatabaseName {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, specify database %q but access database %q", exec.DatabaseName, databaseName))
+					}
+				}
+			} else {
+				// Check database access rights.
+				for _, databaseName := range databaseList {
+					if databaseName == "" {
+						// We have already checked the current database access rights.
+						continue
+					}
+					accessDatabase, err := s.getDatabase(ctx, instance.ID, databaseName)
+					if err != nil {
+						if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+							// If database not found, skip.
+							continue
+						}
+						return err
+					}
+
+					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, accessDatabase)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.Name)).SetInternal(err)
+					}
+					if !hasAccessRights {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.Name))
+					}
+				}
+			}
 		}
 
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) && exec.DatabaseName != "" {
+		if api.IsSQLReviewSupported(instance.Engine) && exec.DatabaseName != "" {
 			dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
@@ -213,7 +260,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
 
-			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
@@ -263,16 +310,36 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
+		var sensitiveSchemaInfo *db.SensitiveSchemaInfo
+		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
+			}
+
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance.Engine, instance.ID, databaseList, exec.DatabaseName)
+			if err != nil {
+				return err
+			}
+		}
+
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, true /* readOnly */)
+			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+				Limit:           exec.Limit,
+				ReadOnly:        true,
+				CurrentDatabase: exec.DatabaseName,
+				// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
+				SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
+				SensitiveSchemaInfo:   sensitiveSchemaInfo,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -410,13 +477,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := getAdminDatabaseDriver(ctx, instance, exec.DatabaseName, s.pgInstance.BaseDir, s.profile.DataDir)
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
 			defer driver.Close(ctx)
 
-			rowSet, err := driver.Query(ctx, exec.Statement, exec.Limit, false /* readOnly */)
+			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
+				Limit:               exec.Limit,
+				ReadOnly:            false,
+				CurrentDatabase:     exec.DatabaseName,
+				SensitiveSchemaInfo: nil,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -477,270 +549,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
-	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
-	if err != nil {
-		return nil, err
-	}
-	defer driver.Close(ctx)
-
-	return s.syncInstanceSchema(ctx, instance, driver)
-}
-
-// syncInstanceSchema syncs the instance and all database metadata first without diving into the deep structure of each database.
-func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance, driver db.Driver) ([]string, error) {
-	// Sync instance metadata.
-	instanceMeta, err := driver.SyncInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
-	// to avoid changing the updated_ts.
-	if instanceMeta.Version != instance.EngineVersion {
-		_, err := s.store.PatchInstance(ctx, &api.InstancePatch{
-			ID:            instance.ID,
-			UpdaterID:     api.SystemBotID,
-			EngineVersion: &instanceMeta.Version,
-		})
-		if err != nil {
-			return nil, err
-		}
-		instance.EngineVersion = instanceMeta.Version
-	}
-
-	instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
-	}
-
-	// Upsert user found in the instance
-	for _, user := range instanceMeta.UserList {
-		userUpsert := &api.InstanceUserUpsert{
-			CreatorID:  api.SystemBotID,
-			InstanceID: instance.ID,
-			Name:       user.Name,
-			Grant:      user.Grant,
-		}
-		_, err := s.store.UpsertInstanceUser(ctx, userUpsert)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to upsert user", instance.Name)
-		}
-	}
-
-	// Delete user no longer found in the instance
-	for _, user := range instanceUserList {
-		found := false
-		for _, dbUser := range instanceMeta.UserList {
-			if user.Name == dbUser.Name {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			userDelete := &api.InstanceUserDelete{
-				ID: user.ID,
-			}
-			err := s.store.DeleteInstanceUser(ctx, userDelete)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to delete user: %s", instance.Name, user.Name)
-			}
-		}
-	}
-
-	// Compare the stored db info with the just synced db schema.
-	// Case 1: If item appears in both stored db info and the synced db metadata, then it's a no-op. We rely on syncDatabaseSchema() later to sync its details.
-	// Case 2: If item only appears in the synced schema and not in the stored db, then we CREATE the database record in the stored db.
-	// Case 3: Conversely, if item only appears in the stored db, but not in the synced schema, then we MARK the record as NOT_FOUND.
-	//   	   We don't delete the entry because:
-	//   	   1. This entry has already been associated with other entities, we can't simply delete it.
-	//   	   2. The deletion in the schema might be a mistake, so it's better to surface as NOT_FOUND to let user review it.
-	databaseFind := &api.DatabaseFind{
-		InstanceID: &instance.ID,
-	}
-	dbList, err := s.store.FindDatabase(ctx, databaseFind)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
-	}
-	for _, databaseMetadata := range instanceMeta.DatabaseList {
-		databaseName := databaseMetadata.Name
-
-		var matchedDb *api.Database
-		for _, db := range dbList {
-			if db.Name == databaseName {
-				matchedDb = db
-				break
-			}
-		}
-		if matchedDb != nil {
-			// Case 1, appear in both the Bytebase metadata and the synced database metadata.
-			// We rely on syncDatabaseSchema() to sync the database details.
-			continue
-		}
-		// Case 2, only appear in the synced db schema.
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:            api.SystemBotID,
-			ProjectID:            api.DefaultProjectID,
-			InstanceID:           instance.ID,
-			EnvironmentID:        instance.EnvironmentID,
-			Name:                 databaseName,
-			CharacterSet:         databaseMetadata.CharacterSet,
-			Collation:            databaseMetadata.Collation,
-			LastSuccessfulSyncTs: 0,
-		}
-		if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return nil, errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-			}
-			return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
-		}
-	}
-
-	// Case 3, only appear in the Bytebase metadata
-	for _, db := range dbList {
-		found := false
-		for _, databaseMetadata := range instanceMeta.DatabaseList {
-			if db.Name == databaseMetadata.Name {
-				found = true
-				break
-			}
-		}
-		if !found {
-			syncStatus := api.NotFound
-			ts := time.Now().Unix()
-			databasePatch := &api.DatabasePatch{
-				ID:                   db.ID,
-				UpdaterID:            api.SystemBotID,
-				SyncStatus:           &syncStatus,
-				LastSuccessfulSyncTs: &ts,
-				// SchemaVersion will not be over-written.
-			}
-			database, err := s.store.PatchDatabase(ctx, databasePatch)
-			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					return nil, errors.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
-				}
-				return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, database.Name)
-			}
-		}
-	}
-
-	var databaseList []string
-	for _, database := range instanceMeta.DatabaseList {
-		databaseList = append(databaseList, database.Name)
-	}
-
-	return databaseList, nil
-}
-
-func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
-	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
-	if err != nil {
-		return err
-	}
-	defer driver.Close(ctx)
-
-	databaseFind := &api.DatabaseFind{
-		InstanceID: &instance.ID,
-		Name:       &databaseName,
-	}
-	matchedDb, err := s.store.GetDatabase(ctx, databaseFind)
-	if err != nil {
-		return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
-	}
-
-	// Sync database schema
-	schema, err := driver.SyncDBSchema(ctx, databaseName)
-	if err != nil {
-		return err
-	}
-
-	// When there are too many databases, this might have performance issue and will
-	// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
-	schemaVersion, err := getLatestSchemaVersion(ctx, driver, schema.Name)
-	if err != nil {
-		return err
-	}
-
-	var database *api.Database
-	if matchedDb != nil {
-		syncStatus := api.OK
-		ts := time.Now().Unix()
-		databasePatch := &api.DatabasePatch{
-			ID:                   matchedDb.ID,
-			UpdaterID:            api.SystemBotID,
-			SyncStatus:           &syncStatus,
-			LastSuccessfulSyncTs: &ts,
-			SchemaVersion:        &schemaVersion,
-		}
-		dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return errors.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
-			}
-			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, matchedDb.Name)
-		}
-		database = dbPatched
-	} else {
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:            api.SystemBotID,
-			ProjectID:            api.DefaultProjectID,
-			InstanceID:           instance.ID,
-			EnvironmentID:        instance.EnvironmentID,
-			Name:                 schema.Name,
-			CharacterSet:         schema.CharacterSet,
-			Collation:            schema.Collation,
-			SchemaVersion:        schemaVersion,
-			LastSuccessfulSyncTs: time.Now().Unix(),
-		}
-		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-			}
-			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
-		}
-		database = createdDatabase
-	}
-	if err := syncTableSchema(ctx, s.store, database, schema); err != nil {
-		return err
-	}
-	if err := syncViewSchema(ctx, s.store, database, schema); err != nil {
-		return err
-	}
-	return syncDBExtensionSchema(ctx, s.store, database, schema)
-}
-
-func syncTableSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	return store.SetTableList(ctx, schema, database.ID)
-}
-
-func syncViewSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	return store.SetViewList(ctx, schema, database.ID)
-}
-
-func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	return store.SetDBExtensionList(ctx, schema, database.ID)
-}
-
-func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {
-	// TODO(d): support semantic versioning.
-	limit := 1
-	history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-		Database: &databaseName,
-		Limit:    &limit,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
-	}
-	var schemaVersion string
-	if len(history) == 1 {
-		schemaVersion = history[0].Version
-	}
-	return schemaVersion, nil
-}
-
 func validateSQLSelectStatement(sqlStatement string) bool {
 	// Check if the query has only one statement.
 	count := 0
@@ -787,7 +595,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 		Payload: string(activityBytes),
 	}
 
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		log.Warn("Failed to create activity after executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
 			zap.Int("instance_id", payload.InstanceID),
@@ -813,15 +621,7 @@ func (s *Server) sqlCheck(
 	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			adviceList = []advisor.Advice{
-				{
-					Status:  advisor.Warn,
-					Code:    advisor.NotFound,
-					Title:   "SQL review policy is not configured or disabled",
-					Content: "",
-				},
-			}
-			return advisor.Warn, adviceList, nil
+			return advisor.Success, nil, nil
 		}
 		return advisor.Error, nil, err
 	}
@@ -882,4 +682,177 @@ func checkPostgreSQLIndexHit(statement string, plan string) []advisor.Advice {
 		}
 	}
 	return nil
+}
+
+func (s *Server) getDatabase(ctx context.Context, instanceID int, databaseName string) (*api.Database, error) {
+	databaseFind := &api.DatabaseFind{
+		InstanceID: &instanceID,
+		Name:       &databaseName,
+	}
+	dbList, err := s.store.FindDatabase(ctx, databaseFind)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", databaseName, instanceID)).SetInternal(err)
+	}
+	if len(dbList) == 0 {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", databaseName, instanceID))
+	}
+	if len(dbList) > 1 {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", databaseName, instanceID))
+	}
+	return dbList[0], nil
+}
+
+func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type, instanceID int, databaseList []string, currentDatabase string) (*db.SensitiveSchemaInfo, error) {
+	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
+	isEmpty := true
+	result := &db.SensitiveSchemaInfo{
+		DatabaseList: []db.DatabaseSchema{},
+	}
+	for _, name := range databaseList {
+		databaseName := name
+		if name == "" {
+			if currentDatabase == "" {
+				continue
+			}
+			databaseName = currentDatabase
+		}
+
+		if isExcludeDatabase(engineType, databaseName) {
+			continue
+		}
+
+		database, err := s.getDatabase(ctx, instanceID, databaseName)
+		if err != nil {
+			return nil, err
+		}
+
+		columnMap := make(sensitiveDataMap)
+
+		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.ID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instanceID))
+		}
+		for _, data := range policy.SensitiveDataList {
+			columnMap[api.SensitiveData{
+				Table:  data.Table,
+				Column: data.Column,
+			}] = data.Type
+		}
+
+		tableList, err := s.store.FindTable(ctx, &api.TableFind{
+			DatabaseID: &database.ID,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
+		}
+
+		databaseSchema := db.DatabaseSchema{
+			Name:      databaseName,
+			TableList: []db.TableSchema{},
+		}
+		for _, table := range tableList {
+			tableSchema := db.TableSchema{
+				Name:       table.Name,
+				ColumnList: []db.ColumnInfo{},
+			}
+			columnList, err := s.store.FindColumn(ctx, &api.ColumnFind{
+				DatabaseID: &database.ID,
+				TableID:    &table.ID,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find column list for table %q.%q", databaseName, table.Name))
+			}
+
+			for _, column := range columnList {
+				_, sensitive := columnMap[api.SensitiveData{
+					Table:  table.Name,
+					Column: column.Name,
+				}]
+				tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
+					Name:      column.Name,
+					Sensitive: sensitive,
+				})
+			}
+			databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+		}
+		if len(databaseSchema.TableList) > 0 {
+			isEmpty = false
+		}
+		result.DatabaseList = append(result.DatabaseList, databaseSchema)
+	}
+
+	if isEmpty {
+		// If there is no tables, this query may access system databases, such as INFORMATION_SCHEMA.
+		// Skip to extract sensitive column for this query.
+		result = nil
+	}
+	return result, nil
+}
+
+func isExcludeDatabase(dbType db.Type, database string) bool {
+	switch dbType {
+	case db.MySQL:
+		return isMySQLExcludeDatabase(database)
+	case db.TiDB:
+		if isMySQLExcludeDatabase(database) {
+			return true
+		}
+		return database == "metrics_schema"
+	default:
+		return false
+	}
+}
+
+func isMySQLExcludeDatabase(database string) bool {
+	if strings.ToLower(database) == "information_schema" {
+		return true
+	}
+
+	switch database {
+	case "mysql":
+	case "sys":
+	case "performance_schema":
+	default:
+		return false
+	}
+	return true
+}
+
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, database *api.Database) (bool, error) {
+	// Only project member can access database.
+	if !api.HasActiveProjectMembership(principalID, database.Project) {
+		return false, nil
+	}
+
+	// calculate the effective policy.
+	databasePolicy, inheritFromEnvironment, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.ID)
+	if err != nil {
+		return false, err
+	}
+
+	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, database.Instance.EnvironmentID)
+	if err != nil {
+		return false, err
+	}
+
+	if !inheritFromEnvironment {
+		// Use database policy.
+		return databasePolicy != nil && len(databasePolicy.DisallowRuleList) == 0, nil
+	}
+	// Use both database policy and environment policy.
+	hasAccessRights := true
+	if environmentPolicy != nil {
+		// Disallow by environment access policy.
+		for _, rule := range environmentPolicy.DisallowRuleList {
+			if rule.FullDatabase {
+				hasAccessRights = false
+				break
+			}
+		}
+	}
+	if databasePolicy != nil {
+		// Allow by database access policy.
+		hasAccessRights = true
+	}
+	return hasAccessRights, nil
 }

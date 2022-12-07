@@ -32,7 +32,7 @@ func TestTenant(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -289,7 +289,7 @@ func TestTenantVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -328,6 +328,11 @@ func TestTenantVCS(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -524,7 +529,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartServer(ctx, &config{
+	err := ctl.StartServerWithExternalPg(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
 	})
@@ -754,7 +759,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -794,6 +799,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -1093,7 +1103,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1132,6 +1142,11 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,
@@ -1374,7 +1389,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -1413,6 +1428,11 @@ func TestTenantVCS_YAML(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			require.NoError(t, err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              apiVCS.ID,

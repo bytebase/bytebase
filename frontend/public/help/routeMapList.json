@@ -92,10 +92,6 @@
     "helpName": ""
   },
   {
-    "routeName": "setting.workspace.billing",
-    "helpName": ""
-  },
-  {
     "routeName": "setting.workspace.integration.slack",
     "helpName": ""
   },

@@ -144,6 +144,20 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 }
 
 func (s *Server) createEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
+	normalRowStatus := api.Normal
+	envFind := &api.EnvironmentFind{
+		RowStatus: &normalRowStatus,
+	}
+	envList, err := s.store.FindEnvironment(ctx, envFind)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment list").SetInternal(err)
+	}
+
+	maximumEnvironmentLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumEnvironment)
+	if int64(len(envList)) >= maximumEnvironmentLimit {
+		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can create up to %d environments.", maximumEnvironmentLimit))
+	}
+
 	if err := api.IsValidEnvironmentName(create.Name); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 	}

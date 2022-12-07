@@ -110,7 +110,7 @@ type ProjectMemberDelete struct {
 
 // ProjectMemberBatchUpdate is the API message for batch updating project member.
 type ProjectMemberBatchUpdate struct {
-	ID int
+	ProjectID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

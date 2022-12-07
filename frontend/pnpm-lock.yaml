@@ -3,7 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@bytebase/vue-kbar': 0.1.8
   '@codingame/monaco-vscode-api': 1.69.12
-  '@iconify/json': 2.1.133
+  '@iconify/json': 2.1.146
   '@intlify/vite-plugin-vue-i18n': 6.0.3
   '@joe-re/sql-parser': ^1.2.1
   '@markdoc/markdoc': 0.2.1
@@ -12,7 +12,7 @@ specifiers:
   '@soerenmartius/vue3-clipboard': 0.1.2
   '@tailwindcss/forms': 0.5.3
   '@tailwindcss/line-clamp': 0.4.2
-  '@tailwindcss/typography': 0.5.7
+  '@tailwindcss/typography': 0.5.8
   '@tanstack/table-core': 8.5.22
   '@tanstack/vue-table': 8.5.22
   '@types/canvas-confetti': 1.4.3
@@ -41,7 +41,6 @@ specifiers:
   bootstrap: 5.2.2
   canvas-confetti: 1.6.0
   dayjs: 1.11.6
-  deep-object-diff: ^1.1.9
   dompurify: 2.4.0
   downloadjs: 1.4.7
   escape-string-regexp: 5.0.0
@@ -106,7 +105,6 @@ dependencies:
   bootstrap: 5.2.2_@popperjs+core@2.11.6
   canvas-confetti: 1.6.0
   dayjs: 1.11.6
-  deep-object-diff: 1.1.9
   dompurify: 2.4.0
   downloadjs: 1.4.7
   escape-string-regexp: 5.0.0
@@ -142,13 +140,13 @@ dependencies:
   vueuc: 0.4.49_vue@3.2.41
 
 devDependencies:
-  '@iconify/json': 2.1.133
+  '@iconify/json': 2.1.146
   '@intlify/vite-plugin-vue-i18n': 6.0.3_vite@3.2.2+vue-i18n@9.2.2
   '@popperjs/core': 2.11.6
   '@rollup/plugin-yaml': 4.0.1_rollup@3.2.5
   '@tailwindcss/forms': 0.5.3_tailwindcss@3.2.1
   '@tailwindcss/line-clamp': 0.4.2_tailwindcss@3.2.1
-  '@tailwindcss/typography': 0.5.7_tailwindcss@3.2.1
+  '@tailwindcss/typography': 0.5.8_tailwindcss@3.2.1
   '@types/canvas-confetti': 1.4.3
   '@types/dompurify': 2.3.4
   '@types/downloadjs': 1.4.3
@@ -382,8 +380,8 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json/2.1.133:
-    resolution: {integrity: sha512-m/BRPD74mGJNrQXByCK40VymdGocBko3SmPCIp3IV2mRY9EWa3tmCnn+HpqsMg0IZJAWMi9dQfI8bIShs+ZSrg==}
+  /@iconify/json/2.1.146:
+    resolution: {integrity: sha512-wIGCtWvxNjWbHPOuJK1e7VaRn0EVrcpzTyC1TaSDRJFsBoGki9Z2NEPEPOS4VaEukh8MLHzLor1IMGgiLhfohg==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 0.3.9
@@ -418,8 +416,8 @@ packages:
       vue-i18n:
         optional: true
     dependencies:
-      '@intlify/message-compiler': 9.3.0-beta.7
-      '@intlify/shared': 9.3.0-beta.7
+      '@intlify/message-compiler': 9.3.0-beta.10
+      '@intlify/shared': 9.3.0-beta.10
       jsonc-eslint-parser: 1.4.1
       source-map: 0.6.1
       vue-i18n: 9.2.2_vue@3.2.41
@@ -448,11 +446,11 @@ packages:
       '@intlify/shared': 9.2.2
       source-map: 0.6.1
 
-  /@intlify/message-compiler/9.3.0-beta.7:
-    resolution: {integrity: sha512-70r2UNp6DyKtIM4FgYCwdSuBK7xqCx2rVSXLMFiDRQi8pwooBklmOuzA0j7Q8ffbwKlFUJEEr2xPHZz2TJ6NAw==}
+  /@intlify/message-compiler/9.3.0-beta.10:
+    resolution: {integrity: sha512-RoOC6yceOykLRhN0NlbkNOBUx1el6iphx3W8NfOx3jHVNtfT1FYokx14/5sU3F1F0uxeG4sp6q+ppKvaF8o+ww==}
     engines: {node: '>= 14'}
     dependencies:
-      '@intlify/shared': 9.3.0-beta.7
+      '@intlify/shared': 9.3.0-beta.10
       source-map: 0.6.1
     dev: true
 
@@ -460,8 +458,8 @@ packages:
     resolution: {integrity: sha512-wRwTpsslgZS5HNyM7uDQYZtxnbI12aGiBZURX3BTR9RFIKKRWpllTsgzHWvj3HKm3Y2Sh5LPC1r0PDCKEhVn9Q==}
     engines: {node: '>= 14'}
 
-  /@intlify/shared/9.3.0-beta.7:
-    resolution: {integrity: sha512-weWqKXyv94rdPXbSFYvA4yIwLYDhzgIWfgrVQ6UYARobPFE3BN+woWmjlGmASTyXMzZtTsq21b0LCN9SHN8pxQ==}
+  /@intlify/shared/9.3.0-beta.10:
+    resolution: {integrity: sha512-h93uAanbAt/XgjDHclrVB7xix6r7Uz11wx0iGNOCdHP7aA2LCJjUT3uNbekJjjbo+Fl5jzTSJZdm2SexzoqhRA==}
     engines: {node: '>= 14'}
     dev: true
 
@@ -481,7 +479,7 @@ packages:
         optional: true
     dependencies:
       '@intlify/bundle-utils': 3.2.1_vue-i18n@9.2.2
-      '@intlify/shared': 9.3.0-beta.7
+      '@intlify/shared': 9.3.0-beta.10
       '@rollup/pluginutils': 4.2.1
       debug: 4.3.4
       fast-glob: 3.2.12
@@ -608,8 +606,8 @@ packages:
       tailwindcss: 3.2.1_postcss@8.4.18
     dev: true
 
-  /@tailwindcss/typography/0.5.7_tailwindcss@3.2.1:
-    resolution: {integrity: sha512-JTTSTrgZfp6Ki4svhPA4mkd9nmQ/j9EfE7SbHJ1cLtthKkpW2OxsFXzSmxbhYbEkfNIyAyhle5p4SYyKRbz/jg==}
+  /@tailwindcss/typography/0.5.8_tailwindcss@3.2.1:
+    resolution: {integrity: sha512-xGQEp8KXN8Sd8m6R4xYmwxghmswrd0cPnNI2Lc6fmrC3OojysTBJJGSIVwPV56q4t6THFUK3HJ0EaWwpglSxWw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
     dependencies:
@@ -1910,10 +1908,6 @@ packages:
   /deep-is/0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
     dev: true
-
-  /deep-object-diff/1.1.9:
-    resolution: {integrity: sha512-Rn+RuwkmkDwCi2/oXOFS9Gsr5lJZu/yTGpK7wAaAIE75CC+LCGEZHpY6VQJa/RoJcrmaA/docWJZvYohlNkWPA==}
-    dev: false
 
   /defined/1.0.1:
     resolution: {integrity: sha512-hsBd2qSVCRE+5PmNdHt1uzyrFu5d3RwmFDKzyNZMFq/EwDNJF7Ee5+D5oEKF0hU6LhtoUF1macFvOe4AskQC1Q==}

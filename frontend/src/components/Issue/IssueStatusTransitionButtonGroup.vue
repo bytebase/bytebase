@@ -22,6 +22,7 @@
         <BBContextMenuButton
           preference-key="task-status-transition"
           data-label="bb-issue-status-transition-button"
+          :disabled="!allowApplyTaskTransition(transition)"
           :action-list="getButtonActionList(transition)"
           @click="(action) => onClickTaskStatusTransitionActionButton(action as TaskStatusTransitionButtonAction)"
         />
@@ -108,7 +109,11 @@
 import { computed, reactive, Ref, ref } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import type { StageStatusTransition, TaskStatusTransition } from "@/utils";
+import {
+  StageStatusTransition,
+  taskCheckRunSummary,
+  TaskStatusTransition,
+} from "@/utils";
 import type {
   Issue,
   IssueCreate,
@@ -166,6 +171,7 @@ const {
   issue,
   template: issueTemplate,
   activeTaskOfPipeline,
+  allowApplyTaskStatusTransition,
   doCreate,
 } = useIssueLogic();
 const { changeIssueStatus, changeStageAllTaskStatus, changeTaskStatus } =
@@ -204,9 +210,9 @@ const tryStartStageOrTaskStatusTransition = (
   mode: "STAGE" | "TASK"
 ) => {
   updateStatusModalState.mode = mode;
-  updateStatusModalState.okText = t(transition.buttonName);
   const task = currentTask.value;
   const payload = mode === "TASK" ? task : task.stage;
+  const type = mode === "TASK" ? t("common.task") : t("common.stage");
   const name = payload.name;
   let actionText = "";
   switch (transition.type) {
@@ -231,7 +237,29 @@ const tryStartStageOrTaskStatusTransition = (
     default:
       console.assert(false, "should never reach this line");
   }
-  updateStatusModalState.title = `${actionText} '${name}'?`;
+  updateStatusModalState.title = t("issue.status-transition.modal.title", {
+    action: actionText,
+    type: type.toLowerCase(),
+    name,
+  });
+  const button = t(transition.buttonName);
+  if (mode === "TASK") {
+    updateStatusModalState.okText = button;
+  } else {
+    const pendingApprovalTaskList = task.stage.taskList.filter((task) => {
+      return (
+        task.status === "PENDING_APPROVAL" &&
+        allowApplyTaskStatusTransition(task, "PENDING")
+      );
+    });
+    updateStatusModalState.okText = t(
+      "issue.status-transition.modal.action-to-stage",
+      {
+        action: button,
+        n: pendingApprovalTaskList.length,
+      }
+    );
+  }
   updateStatusModalState.style = "INFO";
   updateStatusModalState.transition = transition;
   updateStatusModalState.payload = payload;
@@ -257,6 +285,17 @@ const doStageStatusTransition = (
 const currentTask = computed(() => {
   return activeTaskOfPipeline((issue.value as Issue).pipeline);
 });
+
+const allowApplyTaskTransition = (transition: TaskStatusTransition) => {
+  if (transition.to === "PENDING") {
+    // "Approve" is disabled when the task checks are not ready.
+    const summary = taskCheckRunSummary(currentTask.value);
+    if (summary.runningCount > 0 || summary.errorCount > 0) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const getButtonActionList = (transition: TaskStatusTransition) => {
   const actionList: TaskStatusTransitionButtonAction[] = [];

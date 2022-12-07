@@ -80,8 +80,6 @@ p, DEVELOPER, /sql/execute, POST
 p, DEVELOPER, /vcs, GET
 p, DEVELOPER, /vcs/{vcsID}, GET
 p, DEVELOPER, /vcs/{vcsID}/external-repository, GET
-p, DEVELOPER, /plan, GET
-p, DEVELOPER, /plan, PATCH
 p, DEVELOPER, /setting, GET
 p, DEVELOPER, /label, GET
 p, DEVELOPER, /subscription, GET

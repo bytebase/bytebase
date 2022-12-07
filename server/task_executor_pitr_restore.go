@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -22,25 +21,38 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/pg"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/backuprun"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor() TaskExecutor {
-	return &PITRRestoreTaskExecutor{}
+func NewPITRRestoreTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, taskScheduler *TaskScheduler, schemaSyncer *schemasync.Syncer, profile config.Profile) TaskExecutor {
+	return &PITRRestoreTaskExecutor{
+		store:         store,
+		dbFactory:     dbFactory,
+		s3Client:      s3Client,
+		taskScheduler: taskScheduler,
+		schemaSyncer:  schemaSyncer,
+		profile:       profile,
+	}
 }
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
-	completed int32
-	progress  atomic.Value // api.Progress
+	store         *store.Store
+	dbFactory     *dbfactory.DBFactory
+	s3Client      *bbs3.Client
+	taskScheduler *TaskScheduler
+	schemaSyncer  *schemasync.Syncer
+	profile       config.Profile
 }
 
 // RunOnce will run the PITR restore task executor once.
-func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR restore task", zap.String("task", task.Name))
-	defer atomic.StoreInt32(&exec.completed, 1)
-
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
 		return true, nil, errors.Wrapf(err, "invalid PITR restore payload: %s", task.Payload)
@@ -60,30 +72,16 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	if payload.BackupID != nil {
 		// Restore Backup
-		resultPayload, err := exec.doBackupRestore(ctx, server, task, payload)
+		resultPayload, err := exec.doBackupRestore(ctx, exec.store, exec.dbFactory, exec.s3Client, exec.schemaSyncer, exec.profile, task, payload)
 		return true, resultPayload, err
 	}
 
-	resultPayload, err := exec.doPITRRestore(ctx, server, task, payload)
+	resultPayload, err := exec.doPITRRestore(ctx, exec.store, exec.dbFactory, exec.s3Client, exec.taskScheduler, exec.profile, task, payload)
 	return true, resultPayload, err
 }
 
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *PITRRestoreTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
-}
-
-// GetProgress returns the task progress.
-func (exec *PITRRestoreTaskExecutor) GetProgress() api.Progress {
-	progress := exec.progress.Load()
-	if progress == nil {
-		return api.Progress{}
-	}
-	return progress.(api.Progress)
-}
-
-func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
+func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+	backup, err := store.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
@@ -92,7 +90,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	}
 
 	// TODO(dragonly): We should let users restore the backup even if the source database is gone.
-	sourceDatabase, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
+	sourceDatabase, err := store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find database for the backup")
 	}
@@ -103,11 +101,11 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	if payload.TargetInstanceID == nil {
 		// Backup restore in place
 		if task.Instance.Engine == db.Postgres {
-			issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
+			issue, err := getIssueByPipelineID(ctx, store, task.PipelineID)
 			if err != nil {
 				return nil, err
 			}
-			return exec.doRestoreInPlacePostgres(ctx, server, issue, task, payload)
+			return exec.doRestoreInPlacePostgres(ctx, store, dbFactory, profile, issue, task, payload)
 		}
 		return nil, errors.Errorf("we only support backup restore replace for PostgreSQL now")
 	}
@@ -117,7 +115,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 		InstanceID: &targetInstanceID,
 		Name:       payload.DatabaseName,
 	}
-	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
+	targetDatabase, err := store.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, task.Instance.Name)
 	}
@@ -133,12 +131,12 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, server, targetDatabase.Instance, targetDatabase.Name, backup); err != nil {
+	if err := exec.restoreDatabase(ctx, dbFactory, s3Client, profile, targetDatabase.Instance, targetDatabase.Name, backup); err != nil {
 		return nil, err
 	}
 	// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
 	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	migrationID, version, err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task)
+	migrationID, version, err := createBranchMigrationHistory(ctx, store, dbFactory, profile, sourceDatabase, targetDatabase, backup, task)
 	if err != nil {
 		return nil, err
 	}
@@ -152,12 +150,12 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 		UpdaterID:      api.SystemBotID,
 		SourceBackupID: &backup.ID,
 	}
-	if _, err = server.store.PatchDatabase(ctx, databasePatch); err != nil {
+	if _, err = store.PatchDatabase(ctx, databasePatch); err != nil {
 		return nil, errors.Wrapf(err, "failed to patch database source with ID %d and backup ID %d after restore", targetDatabase.ID, backup.ID)
 	}
 
 	// Sync database schema after restore is completed.
-	if err := server.syncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
+	if err := schemaSyncer.SyncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", targetDatabase.Instance.Name),
 			zap.String("databaseName", targetDatabase.Name),
@@ -172,8 +170,8 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, server
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *Server, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	sourceDriver, err := getAdminDatabaseDriver(ctx, task.Instance, "", server.pgInstance.BaseDir, server.profile.DataDir)
+func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, taskScheduler *TaskScheduler, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+	sourceDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "")
 	if err != nil {
 		return nil, err
 	}
@@ -181,24 +179,24 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 
 	targetDriver := sourceDriver
 	if payload.TargetInstanceID != nil {
-		targetInstance, err := server.store.GetInstanceByID(ctx, *payload.TargetInstanceID)
+		targetInstance, err := store.GetInstanceByID(ctx, *payload.TargetInstanceID)
 		if err != nil {
 			return nil, err
 		}
-		if targetDriver, err = getAdminDatabaseDriver(ctx, targetInstance, "", server.pgInstance.BaseDir, server.profile.DataDir); err != nil {
+		if targetDriver, err = dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, ""); err != nil {
 			return nil, err
 		}
 	}
 	// DB.Close is idempotent, so we can feel free to assign sourceDriver to targetDriver first.
 	defer targetDriver.Close(ctx)
 
-	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
+	issue, err := getIssueByPipelineID(ctx, store, task.PipelineID)
 	if err != nil {
 		return nil, err
 	}
 
 	backupStatus := api.BackupStatusDone
-	backupList, err := server.store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
+	backupList, err := store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
 	if err != nil {
 		return nil, err
 	}
@@ -212,13 +210,13 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 	}
 
 	log.Debug("Downloading all binlog files")
-	if err := mysqlSourceDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */, server.s3Client); err != nil {
+	if err := mysqlSourceDriver.FetchAllBinlogFiles(ctx, true /* downloadLatestBinlogFile */, s3Client); err != nil {
 		return nil, err
 	}
 
 	targetTs := *payload.PointInTimeTs
 	log.Debug("Getting latest backup before or equal to targetTs", zap.Int64("targetTs", targetTs))
-	backup, targetBinlogInfo, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, server.s3Client)
+	backup, targetBinlogInfo, err := mysqlSourceDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, s3Client)
 	if err != nil {
 		targetTsHuman := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
@@ -228,16 +226,16 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 		return nil, errors.Wrapf(err, "failed to get latest backup before or equal to %s", targetTsHuman)
 	}
 	startBinlogInfo := backup.Payload.BinlogInfo
-	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
+	binlogDir := common.GetBinlogAbsDir(profile.DataDir, task.Instance.ID)
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 
-	backupAbsPathLocal := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
+	backupAbsPathLocal := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
 	if backup.StorageBackend == api.BackupStorageBackendS3 {
-		if err := downloadBackupFileFromCloud(ctx, server, backup.Path, backupAbsPathLocal); err != nil {
+		if err := downloadBackupFileFromCloud(ctx, s3Client, backup.Path, backupAbsPathLocal); err != nil {
 			return nil, errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
 		}
 		defer os.Remove(backupAbsPathLocal)
-		replayBinlogPathList, err := downloadBinlogFilesFromCloud(ctx, server.s3Client, startBinlogInfo, *targetBinlogInfo, binlogDir)
+		replayBinlogPathList, err := downloadBinlogFilesFromCloud(ctx, s3Client, startBinlogInfo, *targetBinlogInfo, binlogDir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to download binlog files from %s to %s from S3", startBinlogInfo.FileName, targetBinlogInfo.FileName)
 		}
@@ -262,7 +260,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, server *
 		zap.String("database", task.Database.Name),
 	)
 
-	if err := exec.updateProgress(ctx, mysqlTargetDriver, backupFile, startBinlogInfo, *targetBinlogInfo, binlogDir); err != nil {
+	if err := exec.updateProgress(ctx, mysqlTargetDriver, taskScheduler, task.ID, backupFile, startBinlogInfo, *targetBinlogInfo, binlogDir); err != nil {
 		return nil, errors.Wrap(err, "failed to setup progress update process")
 	}
 
@@ -325,26 +323,26 @@ func downloadBinlogFilesFromCloud(ctx context.Context, client *bbs3.Client, star
 	return replayBinlogPathList, nil
 }
 
-func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, server *Server, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	if payload.BackupID == nil {
 		return nil, errors.Errorf("PITR for Postgres is not implemented")
 	}
 
-	backup, err := server.store.GetBackupByID(ctx, *payload.BackupID)
+	backup, err := store.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
 	if backup == nil {
 		return nil, errors.Errorf("backup with ID %d not found", *payload.BackupID)
 	}
-	backupFileName := getBackupAbsFilePath(server.profile.DataDir, backup.DatabaseID, backup.Name)
+	backupFileName := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
 	backupFile, err := os.Open(backupFileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to open backup file %q", backupFileName)
 	}
 	defer backupFile.Close()
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, server.pgInstance.BaseDir, server.profile.DataDir)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -386,7 +384,7 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, se
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, backupFile *os.File, startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) error {
+func (*PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, taskScheduler *TaskScheduler, taskID int, backupFile *os.File, startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) error {
 	backupFileInfo, err := backupFile.Stat()
 	if err != nil {
 		return errors.Wrapf(err, "failed to get stat of backup file %q", backupFile.Name())
@@ -405,8 +403,9 @@ func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver 
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		createdTs := time.Now().Unix()
-		exec.progress.Store(api.Progress{
-			TotalUnit:     backupFileBytes + totalBinlogBytes,
+		totalUnit := backupFileBytes + totalBinlogBytes
+		taskScheduler.taskProgress.Store(taskID, api.Progress{
+			TotalUnit:     totalUnit,
 			CompletedUnit: 0,
 			CreatedTs:     createdTs,
 			UpdatedTs:     createdTs,
@@ -414,11 +413,10 @@ func (exec *PITRRestoreTaskExecutor) updateProgress(ctx context.Context, driver 
 		for {
 			select {
 			case <-ticker.C:
-				progressPrev := exec.progress.Load().(api.Progress)
-				exec.progress.Store(api.Progress{
-					TotalUnit:     progressPrev.TotalUnit,
+				taskScheduler.taskProgress.Store(taskID, api.Progress{
+					TotalUnit:     totalUnit,
 					CompletedUnit: driver.GetRestoredBackupBytes() + driver.GetReplayedBinlogBytes(),
-					CreatedTs:     progressPrev.CreatedTs,
+					CreatedTs:     createdTs,
 					UpdatedTs:     time.Now().Unix(),
 				})
 			case <-ctx.Done():
@@ -444,17 +442,17 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*ap
 }
 
 // restoreDatabase will restore the database to the instance from the backup.
-func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) error {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, server.pgInstance.BaseDir, server.profile.DataDir)
+func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *api.Instance, databaseName string, backup *api.Backup) error {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return err
 	}
 	defer driver.Close(ctx)
 
-	backupAbsPathLocal := filepath.Join(server.profile.DataDir, backup.Path)
+	backupAbsPathLocal := filepath.Join(profile.DataDir, backup.Path)
 
 	if backup.StorageBackend == api.BackupStorageBackendS3 {
-		if err := downloadBackupFileFromCloud(ctx, server, backup.Path, backupAbsPathLocal); err != nil {
+		if err := downloadBackupFileFromCloud(ctx, s3Client, backup.Path, backupAbsPathLocal); err != nil {
 			return errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
 		}
 		defer os.Remove(backupAbsPathLocal)
@@ -473,14 +471,14 @@ func (*PITRRestoreTaskExecutor) restoreDatabase(ctx context.Context, server *Ser
 	return nil
 }
 
-func downloadBackupFileFromCloud(ctx context.Context, server *Server, backupPath, backupAbsPathLocal string) error {
+func downloadBackupFileFromCloud(ctx context.Context, s3Client *bbs3.Client, backupPath, backupAbsPathLocal string) error {
 	log.Debug("Downloading backup file from s3 bucket.", zap.String("path", backupPath))
 	backupFileDownload, err := os.Create(backupAbsPathLocal)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create local backup file %q for downloading from s3 bucket", backupAbsPathLocal)
 	}
 	defer backupFileDownload.Close()
-	if _, err := server.s3Client.DownloadObject(ctx, backupPath, backupFileDownload); err != nil {
+	if _, err := s3Client.DownloadObject(ctx, backupPath, backupFileDownload); err != nil {
 		return errors.Wrapf(err, "failed to download backup file %q from s3 bucket", backupPath)
 	}
 	log.Debug("Successfully downloaded backup file from s3 bucket.")
@@ -491,14 +489,14 @@ func downloadBackupFileFromCloud(ctx context.Context, server *Server, backupPath
 // all migration history from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
-func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
-	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, server.pgInstance.BaseDir, server.profile.DataDir)
+func createBranchMigrationHistory(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
+	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name)
 	if err != nil {
 		return -1, "", err
 	}
 	defer targetDriver.Close(ctx)
 
-	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return -1, "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}
@@ -514,7 +512,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
-		ReleaseVersion: server.profile.Version,
+		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,

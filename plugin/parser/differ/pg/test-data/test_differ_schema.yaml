@@ -1,7 +1,7 @@
 - oldSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
   newSchema: CREATE SCHEMA s1;
   diff: |
-    DROP SCHEMA IF EXISTS "s2" CASCADE;
+    DROP SCHEMA "s2";
 - oldSchema: CREATE SCHEMA s1;
   newSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
   diff: |
@@ -9,5 +9,5 @@
 - oldSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
   newSchema: CREATE SCHEMA s2; CREATE SCHEMA s3;
   diff: |
-    DROP SCHEMA IF EXISTS "s1" CASCADE;
+    DROP SCHEMA "s1";
     CREATE SCHEMA "s3";

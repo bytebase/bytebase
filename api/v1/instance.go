@@ -18,6 +18,7 @@ type Instance struct {
 	ExternalLink  string  `json:"externalLink"`
 	Host          string  `json:"host"`
 	Port          string  `json:"port"`
+	Database      string  `json:"database"`
 	Username      string  `json:"username"`
 }
 
@@ -32,6 +33,7 @@ type InstanceCreate struct {
 	ExternalLink string  `json:"externalLink"`
 	Host         string  `json:"host"`
 	Port         string  `json:"port"`
+	Database     string  `json:"database"`
 	Username     string  `json:"username"`
 	Password     string  `json:"password"`
 	SslCa        string  `json:"sslCa"`
@@ -46,4 +48,5 @@ type InstancePatch struct {
 	ExternalLink *string `json:"externalLink"`
 	Host         *string `json:"host"`
 	Port         *string `json:"port"`
+	Database     *string `json:"database"`
 }

@@ -131,6 +131,7 @@ type DatabaseEdit struct {
 
 	CreateTableList []*CreateTableContext `json:"createTableList"`
 	AlterTableList  []*AlterTableContext  `json:"alterTableList"`
+	RenameTableList []*RenameTableContext `json:"renameTableList"`
 	DropTableList   []*DropTableContext   `json:"dropTableList"`
 }
 
@@ -155,8 +156,14 @@ type AlterTableContext struct {
 	ColumnNameList []string `json:"columnNameList"`
 
 	AddColumnList    []*AddColumnContext    `json:"addColumnList"`
-	ModifyColumnList []*ModifyColumnContext `json:"modifyColumnList"`
+	ChangeColumnList []*ChangeColumnContext `json:"changeColumnList"`
 	DropColumnList   []*DropColumnContext   `json:"dropColumnList"`
+}
+
+// RenameTableContext is the edit database context to rename a table.
+type RenameTableContext struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
 }
 
 // DropTableContext is the edit database context to drop a table.
@@ -176,9 +183,10 @@ type AddColumnContext struct {
 	Default      *string `json:"default"`
 }
 
-// ModifyColumnContext is the alter table context to modify a column.
-type ModifyColumnContext struct {
-	Name         string  `json:"name"`
+// ChangeColumnContext is the alter table context to change a column.
+type ChangeColumnContext struct {
+	OldName      string  `json:"oldName"`
+	NewName      string  `json:"newName"`
 	Type         string  `json:"type"`
 	CharacterSet string  `json:"characterSet"`
 	Collation    string  `json:"collation"`

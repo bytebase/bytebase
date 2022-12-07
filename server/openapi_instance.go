@@ -24,14 +24,19 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 func (s *Server) listInstance(c echo.Context) error {
 	ctx := c.Request().Context()
 	rowStatus := api.Normal
-	instanceList, err := s.store.FindInstance(ctx, &api.InstanceFind{
+	find := &api.InstanceFind{
 		RowStatus: &rowStatus,
-	})
+	}
+	if name := c.QueryParam("name"); name != "" {
+		find.Name = &name
+	}
+
+	instanceList, err := s.store.FindInstance(ctx, find)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
 	}
 
-	var response []*openAPIV1.Instance
+	response := []*openAPIV1.Instance{}
 	for _, instance := range instanceList {
 		response = append(response, convertToOpenAPIInstance(instance))
 	}
@@ -71,6 +76,7 @@ func (s *Server) createInstanceByOpenAPI(c echo.Context) error {
 		ExternalLink:  instanceCreate.ExternalLink,
 		Host:          instanceCreate.Host,
 		Port:          instanceCreate.Port,
+		Database:      instanceCreate.Database,
 		Username:      instanceCreate.Username,
 		Password:      instanceCreate.Password,
 		SslCa:         instanceCreate.SslCa,
@@ -108,6 +114,7 @@ func (s *Server) updateInstanceByOpenAPI(c echo.Context) error {
 		ExternalLink: instancePatch.ExternalLink,
 		Host:         instancePatch.Host,
 		Port:         instancePatch.Port,
+		Database:     instancePatch.Database,
 	})
 	if err != nil {
 		return err
@@ -163,6 +170,7 @@ func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
 		ExternalLink:  instance.ExternalLink,
 		Host:          instance.Host,
 		Port:          instance.Port,
+		Database:      instance.Database,
 		Username:      instance.Username,
 	}
 }

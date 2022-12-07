@@ -18,7 +18,7 @@ CREATE TABLE principal (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT')),
+    type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL
@@ -128,6 +128,8 @@ EXECUTE FUNCTION trigger_update_updated_ts();
 -- Policy
 -- policy stores the policies for each environment.
 -- Policies are associated with environments. Since we may have policies not associated with environment later, we name the table policy.
+CREATE TYPE resource_type AS ENUM ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTANCE', 'DATABASE');
+
 CREATE TABLE policy (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
@@ -135,14 +137,14 @@ CREATE TABLE policy (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    environment_id INTEGER NOT NULL REFERENCES environment (id),
     type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
-    payload JSONB NOT NULL DEFAULT '{}'
+    payload JSONB NOT NULL DEFAULT '{}',
+    resource_type resource_type NOT NULL,
+    resource_id INTEGER NOT NULL,
+    inherit_from_parent BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-CREATE INDEX idx_policy_environment_id ON policy(environment_id);
-
-CREATE UNIQUE INDEX idx_policy_unique_environment_id_type ON policy(environment_id, type);
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON policy(resource_type, resource_id, type);
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 101;
 
@@ -275,7 +277,8 @@ CREATE TABLE instance (
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
-    external_link TEXT NOT NULL DEFAULT ''
+    external_link TEXT NOT NULL DEFAULT '',
+    database TEXT NOT NULL DEFAULT ''
 );
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
@@ -772,6 +775,7 @@ CREATE TABLE issue (
     description TEXT NOT NULL DEFAULT '',
     -- While changing assignee_id, one should only change it to a non-robot DBA/owner.
     assignee_id INTEGER NOT NULL REFERENCES principal (id),
+    assignee_need_attention BOOLEAN NOT NULL DEFAULT FALSE, 
     payload JSONB NOT NULL DEFAULT '{}'
 );
 

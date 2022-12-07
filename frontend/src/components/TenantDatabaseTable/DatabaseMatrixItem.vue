@@ -81,7 +81,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { Database, Label } from "../../types";
+import { Database } from "../../types";
 import { databaseSlug, isReservedDatabaseLabel, hidePrefix } from "../../utils";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 import { NPopover } from "naive-ui";
@@ -97,16 +97,12 @@ export default defineComponent({
       type: Object as PropType<Database>,
       required: true,
     },
-    labelList: {
-      type: Array as PropType<Label[]>,
-      default: () => [],
-    },
   },
   setup(props) {
     const displayLabelList = computed(() => {
-      return props.database.labels.filter((dbLabel) => {
-        if (!dbLabel.value) return false;
-        if (isReservedDatabaseLabel(dbLabel, props.labelList)) return false;
+      return props.database.labels.filter((label) => {
+        if (!label.value) return false;
+        if (isReservedDatabaseLabel(label)) return false;
         return true;
       });
     });

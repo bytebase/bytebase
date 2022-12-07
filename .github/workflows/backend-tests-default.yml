@@ -1,0 +1,29 @@
+# https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+name: Backend Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "release/*.*.*"
+    paths:
+      - "docs/**"
+      - "frontend/**"
+      - "scripts/**"
+      - "quickstart/**"
+
+jobs:
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "Not required"'
+
+  go-tests:
+    strategy:
+      matrix:
+        release-tags:
+          - "release,mysql"
+          - "mysql"
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "Not required"'

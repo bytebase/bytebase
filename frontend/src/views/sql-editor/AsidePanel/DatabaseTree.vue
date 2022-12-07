@@ -13,7 +13,7 @@
         </template>
       </n-input>
     </div>
-    <div class="databases-tree--tree overflow-y-scroll">
+    <div class="databases-tree--tree overflow-y-auto">
       <n-tree
         block-line
         :data="treeData"
@@ -417,6 +417,10 @@ watch(
 .databases-tree .n-tree-node--selected,
 .databases-tree .n-tree-node--selected:hover {
   background-color: var(--n-node-color-active) !important;
+}
+.databases-tree .n-tree-node--disabled > * {
+  pointer-events: none;
+  cursor: not-allowed !important;
 }
 </style>
 

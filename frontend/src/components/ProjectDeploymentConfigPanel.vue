@@ -70,7 +70,6 @@
       <DeploymentConfigTool
         :schedule="state.deployment.schedule"
         :allow-edit="allowEdit"
-        :label-list="availableLabelList"
         :database-list="databaseList"
       />
       <div class="pt-4 border-t flex justify-between items-center">
@@ -120,7 +119,6 @@
           :deployment="state.deployment"
           :database-list="databaseList"
           :environment-list="environmentList"
-          :label-list="labelList"
         />
       </div>
     </div>
@@ -146,7 +144,6 @@ import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import {
   Project,
-  AvailableLabel,
   DeploymentConfig,
   EMPTY_ID,
   DeploymentConfigPatch,
@@ -160,7 +157,6 @@ import {
   useDeploymentStore,
   useEnvironmentList,
   useEnvironmentStore,
-  useLabelList,
   useProjectStore,
 } from "@/store";
 
@@ -216,19 +212,11 @@ export default defineComponent({
 
     const environmentList = useEnvironmentList();
 
-    const labelList = useLabelList();
-
     const databaseList = computed(() =>
       databaseStore.getDatabaseListByProjectId(props.project.id)
     );
 
     watchEffect(prepareList);
-
-    const availableLabelList = computed((): AvailableLabel[] => {
-      return labelList.value.map((label) => {
-        return { key: label.key, valueList: [...label.valueList] };
-      });
-    });
 
     const resetStates = async () => {
       await nextTick(); // Waiting for all watchers done
@@ -378,9 +366,7 @@ export default defineComponent({
       isDeploymentConfigDirty,
       allowUpdateDeploymentConfig,
       environmentList,
-      labelList,
       databaseList,
-      availableLabelList,
       addStage,
       revertDeploymentConfig,
       updateDeploymentConfig,

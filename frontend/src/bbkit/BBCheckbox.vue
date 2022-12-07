@@ -1,9 +1,9 @@
 <template>
   <div class="relative flex items-start">
-    <div class="flex items-center h-5">
+    <div class="flex items-center h-5 cursor-pointer">
       <input
         type="checkbox"
-        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+        class="h-4 w-4 text-accent rounded cursor-pointer disabled:cursor-not-allowed border-control-border focus:ring-accent"
         :disabled="disabled"
         :checked="value"
         @input="

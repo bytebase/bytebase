@@ -141,8 +141,11 @@
                           :activity="item.activity"
                         />
 
-                        {{ humanizeTs(item.activity.createdTs) }}
-                        <template
+                        <HumanizeTs
+                          :ts="item.activity.createdTs"
+                          class="ml-1"
+                        />
+                        <span
                           v-if="
                             item.activity.createdTs !=
                               item.activity.updatedTs &&
@@ -150,8 +153,11 @@
                           "
                         >
                           ({{ $t("common.edited") }}
-                          {{ humanizeTs(item.activity.updatedTs) }})
-                        </template>
+                          <HumanizeTs
+                            :ts="item.activity.updatedTs"
+                            class="ml-1"
+                          />)
+                        </span>
                       </a>
                       <span
                         v-if="item.similar.length > 0"
@@ -231,7 +237,7 @@
                       ></textarea>
                     </template>
                     <template v-else>
-                      {{ item.activity.comment }}
+                      <ActivityComment :activity="item.activity" />
                     </template>
                     <template
                       v-if="
@@ -330,6 +336,7 @@ import {
 } from "vue";
 import { useRoute } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
+import HumanizeTs from "../misc/HumanizeTs.vue";
 import type {
   Issue,
   Activity,
@@ -339,6 +346,7 @@ import type {
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
   Task,
+  ActivityIssueCommentCreatePayload,
 } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, SYSTEM_BOT_ID } from "@/types";
 import { findTaskById, issueSlug, sizeToFit, taskSlug } from "@/utils";
@@ -353,6 +361,7 @@ import {
 import { useEventListener } from "@vueuse/core";
 import { useExtraIssueLogic, useIssueLogic } from "./logic";
 import ActivityActionSentence from "./activity/ActionSentence.vue";
+import ActivityComment from "./activity/Comment";
 import { isSimilarActivity } from "./activity/utils";
 
 interface LocalState {
@@ -532,10 +541,17 @@ const lgtm = (e: Event) => {
 };
 
 const allowEditActivity = (activity: Activity) => {
-  return (
-    activity.type === "bb.issue.comment.create" &&
-    currentUser.value.id === activity.creator.id
-  );
+  if (activity.type !== "bb.issue.comment.create") {
+    return false;
+  }
+  if (currentUser.value.id !== activity.creator.id) {
+    return false;
+  }
+  const payload = activity.payload as ActivityIssueCommentCreatePayload;
+  if (payload && payload.externalApprovalEvent) {
+    return false;
+  }
+  return true;
 };
 
 const onUpdateComment = (activity: Activity) => {

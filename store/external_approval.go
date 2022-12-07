@@ -270,13 +270,19 @@ func (*Store) findExternalApprovalImpl(ctx context.Context, tx *Tx, find *api.Ex
 
 func (*Store) patchExternalApprovalImpl(ctx context.Context, tx *Tx, patch *api.ExternalApprovalPatch) (*externalApprovalRaw, error) {
 	var raw externalApprovalRaw
-	query := `
+	set, args := []string{"row_status = $1"}, []interface{}{patch.RowStatus}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, patch.ID)
+
+	query := fmt.Sprintf(`
     UPDATE external_approval
-    SET row_status = $1
-    WHERE id = $2
+    SET `+strings.Join(set, ", ")+` 
+    WHERE id = $%d
     RETURNING id, row_status, created_ts, updated_ts, issue_id, requester_id, approver_id, type, payload
-  `
-	if err := tx.QueryRowContext(ctx, query, patch.RowStatus, patch.ID).Scan(
+  `, len(args))
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&raw.ID,
 		&raw.RowStatus,
 		&raw.CreatedTs,

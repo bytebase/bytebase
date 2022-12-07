@@ -165,8 +165,13 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 
 		path := strings.TrimPrefix(c.Request().URL.Path, pathPrefix)
 
-		// Skips auth, actuator, plan
-		if common.HasPrefixes(path, "/auth", "/actuator", "/plan", "/oauth") {
+		// Skips auth, actuator
+		if common.HasPrefixes(path, "/auth", "/actuator", "/oauth") {
+			return next(c)
+		}
+
+		// Skips OpenAPI SQL endpoint
+		if common.HasPrefixes(c.Path(), fmt.Sprintf("%s/sql", openAPIPrefix)) {
 			return next(c)
 		}
 
@@ -196,7 +201,7 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 
 		role := member.Role
 		// If admin feature is not enabled, then we treat all user as OWNER.
-		if !s.feature(api.FeatureRBAC) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
 			role = api.Owner
 		}
 
@@ -253,9 +258,9 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 			}
 
 			if strings.HasPrefix(path, "/project") {
-				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.getEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
+				aclErr = enforceWorkspaceDeveloperProjectRouteACL(s.licenseService.GetEffectivePlan(), path, method, c.QueryParams(), principalID, roleFinder)
 			} else if strings.HasPrefix(path, "/sheet") {
-				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.getEffectivePlan(), path, method, principalID, roleFinder, sheetFinder)
+				aclErr = enforceWorkspaceDeveloperSheetRouteACL(s.licenseService.GetEffectivePlan(), path, method, principalID, roleFinder, sheetFinder)
 			}
 
 			if aclErr != nil {

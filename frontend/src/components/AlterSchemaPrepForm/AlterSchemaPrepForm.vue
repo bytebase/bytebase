@@ -146,6 +146,13 @@
   />
 
   <GhostDialog ref="ghostDialog" />
+
+  <SchemaEditorModal
+    v-if="state.showSchemaEditorModal"
+    :database-id-list="schemaEditorContext.databaseIdList"
+    :tenant-mode="schemaEditorContext.tenantMode"
+    @close="state.showSchemaEditorModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -154,7 +161,7 @@ import { computed, reactive, PropType, ref } from "vue";
 import { useRouter } from "vue-router";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, groupBy } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
 import {
   baseDirectoryWebUrl,
@@ -165,15 +172,12 @@ import {
   Repository,
   UNKNOWN_ID,
 } from "@/types";
-import { allowGhostMigration, sortDatabaseList } from "@/utils";
-import ProjectStandardView, {
-  State as ProjectStandardState,
-} from "./ProjectStandardView.vue";
-import ProjectTenantView, {
-  State as ProjectTenantState,
-} from "./ProjectTenantView.vue";
-import { State as CommonTenantState } from "./CommonTenantView.vue";
-import GhostDialog from "./GhostDialog.vue";
+import {
+  allowGhostMigration,
+  allowUsingUIEditor,
+  parseDatabaseNameByTemplate,
+  sortDatabaseList,
+} from "@/utils";
 import {
   hasFeature,
   useCurrentUser,
@@ -182,14 +186,23 @@ import {
   useProjectStore,
   useRepositoryStore,
 } from "@/store";
+import ProjectStandardView, {
+  State as ProjectStandardState,
+} from "./ProjectStandardView.vue";
+import ProjectTenantView, {
+  State as ProjectTenantState,
+} from "./ProjectTenantView.vue";
+import { State as CommonTenantState } from "./CommonTenantView.vue";
+import GhostDialog from "./GhostDialog.vue";
+import SchemaEditorModal from "./SchemaEditorModal.vue";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState &
   CommonTenantState & {
     project?: Project;
-    showFeatureModal: boolean;
     searchText: string;
-    selectedDatabaseIdList: Set<number>;
+    showSchemaEditorModal: boolean;
+    showFeatureModal: boolean;
   };
 
 const props = defineProps({
@@ -214,6 +227,13 @@ const projectStore = useProjectStore();
 const repositoryStore = useRepositoryStore();
 
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
+const schemaEditorContext = ref<{
+  databaseIdList: DatabaseId[];
+  tenantMode: boolean;
+}>({
+  databaseIdList: [],
+  tenantMode: false,
+});
 
 useEventListener(window, "keydown", (e) => {
   if (e.code === "Escape") {
@@ -229,23 +249,12 @@ const state = reactive<LocalState>({
   selectedDatabaseIdListForEnvironment: new Map(),
   tenantProjectId: undefined,
   selectedDatabaseName: undefined,
+  selectedDatabaseIdListForTenantMode: new Set<number>(),
   deployingTenantDatabaseList: [],
-  showFeatureModal: false,
   searchText: "",
-  selectedDatabaseIdList: new Set<number>(),
+  showSchemaEditorModal: false,
+  showFeatureModal: false,
 });
-
-const isDatabaseSelected = (database: Database): boolean => {
-  return state.selectedDatabaseIdList.has(database.id);
-};
-
-const toggleDatabaseSelection = (database: Database, on: boolean) => {
-  if (on) {
-    state.selectedDatabaseIdList.add(database.id);
-  } else {
-    state.selectedDatabaseIdList.delete(database.id);
-  }
-};
 
 // Returns true if alter schema, false if change data.
 const isAlterSchema = computed((): boolean => {
@@ -329,10 +338,17 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 // Also works when single db selected.
 const generateMultiDb = async () => {
   const selectedDatabaseIdList = [...flattenSelectedDatabaseIdList.value];
-
   const selectedDatabaseList = selectedDatabaseIdList.map(
     (id) => databaseList.value.find((db) => db.id === id)!
   );
+
+  if (isAlterSchema.value && allowUsingUIEditor(selectedDatabaseList)) {
+    schemaEditorContext.value.databaseIdList = cloneDeep(
+      flattenSelectedDatabaseIdList.value
+    );
+    state.showSchemaEditorModal = true;
+    return;
+  }
 
   const mode = await isUsingGhostMigration(selectedDatabaseList);
   if (mode === false) {
@@ -372,7 +388,7 @@ const showGenerateTenant = computed(() => {
 
 const allowGenerateTenant = computed(() => {
   if (isTenantProject.value && state.alterType === "MULTI_DB") {
-    if (state.selectedDatabaseIdList.size === 0) {
+    if (state.selectedDatabaseIdListForTenantMode.size === 0) {
       return false;
     }
   }
@@ -389,13 +405,23 @@ const allowGenerateTenant = computed(() => {
   return true;
 });
 
+const isDatabaseSelected = (database: Database): boolean => {
+  return state.selectedDatabaseIdListForTenantMode.has(database.id);
+};
+
+const toggleDatabaseSelection = (database: Database, on: boolean) => {
+  if (on) {
+    state.selectedDatabaseIdListForTenantMode.add(database.id);
+  } else {
+    state.selectedDatabaseIdListForTenantMode.delete(database.id);
+  }
+};
+
 const generateTenant = async () => {
   if (!hasFeature("bb.feature.multi-tenancy")) {
     state.showFeatureModal = true;
     return;
   }
-
-  emit("dismiss");
 
   const projectId = props.projectId || state.tenantProjectId;
   if (!projectId) return;
@@ -411,20 +437,53 @@ const generateTenant = async () => {
       mode: "tenant",
     };
     if (state.alterType === "DB_GROUP") {
+      const databaseList = useDatabaseStore().getDatabaseListByProjectId(
+        project.id
+      );
+      const databaseListGroupByName = groupBy(databaseList, (db) => {
+        if (project.dbNameTemplate) {
+          return parseDatabaseNameByTemplate(db.name, project.dbNameTemplate);
+        } else {
+          return "";
+        }
+      });
+      const selectedDatabaseList =
+        databaseListGroupByName[state.selectedDatabaseName!];
+      if (isAlterSchema.value && allowUsingUIEditor(selectedDatabaseList)) {
+        schemaEditorContext.value.databaseIdList = selectedDatabaseList.map(
+          (database) => database.id
+        );
+        schemaEditorContext.value.tenantMode = true;
+        state.showSchemaEditorModal = true;
+        return;
+      }
       query.name = generateIssueName([state.selectedDatabaseName!], false);
       query.databaseName = state.selectedDatabaseName;
     } else {
       const databaseList: Database[] = [];
       const databaseStore = useDatabaseStore();
-      for (const databaseId of state.selectedDatabaseIdList) {
+      for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
         databaseList.push(databaseStore.getDatabaseById(databaseId));
       }
+      if (isAlterSchema.value && allowUsingUIEditor(databaseList)) {
+        schemaEditorContext.value.databaseIdList = Array.from(
+          state.selectedDatabaseIdListForTenantMode.values()
+        );
+        schemaEditorContext.value.tenantMode = true;
+        state.showSchemaEditorModal = true;
+        return;
+      }
+
       query.name = generateIssueName(
         databaseList.map((database) => database.name),
         false
       );
-      query.databaseList = Array.from(state.selectedDatabaseIdList).join(",");
+      query.databaseList = Array.from(
+        state.selectedDatabaseIdListForTenantMode
+      ).join(",");
     }
+
+    emit("dismiss");
 
     router.push({
       name: "workspace.issue.detail",
@@ -446,11 +505,18 @@ const generateTenant = async () => {
           "_blank"
         );
       });
+    emit("dismiss");
   }
 };
 
 const selectDatabase = async (database: Database) => {
   if (database.project.workflowType == "UI") {
+    if (isAlterSchema.value && allowUsingUIEditor([database])) {
+      schemaEditorContext.value.databaseIdList = [database.id];
+      state.showSchemaEditorModal = true;
+      return;
+    }
+
     const mode = await isUsingGhostMigration([database]);
     if (mode === false) {
       return;

@@ -4,6 +4,7 @@ package feishu
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // Response code definition in feishu response body.
@@ -22,10 +25,15 @@ const (
 	invalidTokenRespCode = 99991663
 )
 
-const timeout = 30 * time.Second
+const (
+	timeout = 30 * time.Second
+	// APIPath is the path of the Feishu API server.
+	APIPath = "https://open.feishu.cn/open-apis"
+)
 
 // Provider is the provider for IM Feishu.
 type Provider struct {
+	APIPath string
 	// cache token in memory.
 	// use atomic.Value since it can be accessed concurrently.
 	// we have initialized token so it is either an empty string or a valid but maybe expired token.
@@ -36,8 +44,9 @@ type Provider struct {
 type tokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
 
 // NewProvider returns a Provider.
-func NewProvider() *Provider {
+func NewProvider(apiPath string) *Provider {
 	p := Provider{
+		APIPath: apiPath,
 		client: &http.Client{
 			Timeout: timeout,
 		},
@@ -63,15 +72,15 @@ type ApprovalStatus string
 
 const (
 	// ApprovalStatusPending is the approval status for pending approvals.
-	ApprovalStatusPending = ApprovalStatus("PENDING")
+	ApprovalStatusPending ApprovalStatus = "PENDING"
 	// ApprovalStatusApproved is the approval status for approved approvals.
-	ApprovalStatusApproved = ApprovalStatus("APPROVED")
+	ApprovalStatusApproved ApprovalStatus = "APPROVED"
 	// ApprovalStatusRejected is the approval status for rejected approvals.
-	ApprovalStatusRejected = ApprovalStatus("REJECTED")
+	ApprovalStatusRejected ApprovalStatus = "REJECTED"
 	// ApprovalStatusCanceled is the approval status for canceled approvals.
-	ApprovalStatusCanceled = ApprovalStatus("CANCELED")
+	ApprovalStatusCanceled ApprovalStatus = "CANCELED"
 	// ApprovalStatusDeleted is the approval status for deleted approvals.
-	ApprovalStatusDeleted = ApprovalStatus("DELETED")
+	ApprovalStatusDeleted ApprovalStatus = "DELETED"
 )
 
 // tenantAccessTokenResponse is the response of GetTenantAccessToken.
@@ -82,18 +91,17 @@ type tenantAccessTokenResponse struct {
 	Expire int    `json:"expire"`
 }
 
-// approvalDefinitionResponse is the response of CreateApprovalDefinition.
-type approvalDefinitionResponse struct {
+// ApprovalDefinitionResponse is the response of CreateApprovalDefinition.
+type ApprovalDefinitionResponse struct {
 	Code int `json:"code"`
 	Data struct {
 		ApprovalCode string `json:"approval_code"`
-		ApprovalID   string `json:"approval_id"`
 	} `json:"data"`
 	Msg string `json:"msg"`
 }
 
-// externalApprovalResponse is the response of CreateExternalApproval.
-type externalApprovalResponse struct {
+// ExternalApprovalResponse is the response of CreateExternalApproval.
+type ExternalApprovalResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
@@ -101,8 +109,8 @@ type externalApprovalResponse struct {
 	} `json:"data"`
 }
 
-// emailsFindResponse is the response of GetIDByEmail.
-type emailsFindResponse struct {
+// EmailsFindResponse is the response of GetIDByEmail.
+type EmailsFindResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
@@ -113,8 +121,8 @@ type emailsFindResponse struct {
 	} `json:"data"`
 }
 
-// getExternalApprovalResponse is the response of GetExternalApproval.
-type getExternalApprovalResponse struct {
+// GetExternalApprovalResponse is the response of GetExternalApproval.
+type GetExternalApprovalResponse struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
@@ -122,14 +130,29 @@ type getExternalApprovalResponse struct {
 	} `json:"data"`
 }
 
-// cancelExternalApprovalResponse is the response of CancelExternalApproval.
-type cancelExternalApprovalResponse struct {
-	Code int      `json:"code"`
-	Msg  string   `json:"msg"`
-	Data struct{} `json:"data"`
+// CreateExternalApprovalCommentResponse is the response of CreateExternalApprovalComment.
+type CreateExternalApprovalCommentResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
 }
 
-type createApprovalInstanceReq struct {
+// CancelExternalApprovalResponse is the response of CancelExternalApproval.
+type CancelExternalApprovalResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+}
+
+// GetBotIDResponse is the response of GetBotID.
+type GetBotIDResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Bot  struct {
+		OpenID string `json:"open_id"`
+	} `json:"bot"`
+}
+
+// CreateApprovalInstanceRequest is the request of CreateApprovalInstance.
+type CreateApprovalInstanceRequest struct {
 	ApprovalCode           string `json:"approval_code"`
 	Form                   string `json:"form"`
 	NodeApproverOpenIDList []struct {
@@ -139,19 +162,37 @@ type createApprovalInstanceReq struct {
 	OpenID string `json:"open_id"`
 }
 
+// CreateExternalApprovalCommentRequest is the request of CreateExternalApprovalComment.
+type CreateExternalApprovalCommentRequest struct {
+	Content string `json:"content"`
+}
+
+// CancelExternalApprovalRequest is the request of CancelExternalApproval.
+type CancelExternalApprovalRequest struct {
+	ApprovalCode string `json:"approval_code"`
+	InstanceCode string `json:"instance_code"`
+	UserID       string `json:"user_id"`
+}
+
+// GetIDByEmailRequest is the request of GetIDByEmail.
+type GetIDByEmailRequest struct {
+	Emails []string `json:"emails"`
+}
+
 // Content is the content of the approval.
 type Content struct {
-	Issue       string
-	Stage       string
-	Link        string
-	TaskList    []Task
-	Description string
+	Issue    string
+	Stage    string
+	Link     string
+	TaskList []Task
+	SQL      string
 }
 
 // Task is the content of a task.
 type Task struct {
-	Name   string
-	Status string
+	Name      string
+	Status    string
+	Statement string
 }
 
 const (
@@ -196,7 +237,7 @@ const (
 				},
 				{
 					"key": "@i18n@widget5",
-					"value": "描述"
+					"value": "SQL"
 				}
 			]
 		},
@@ -230,7 +271,7 @@ const (
 				},
 				{
 					"key": "@i18n@widget5",
-					"value": "Description"
+					"value": "SQL"
 				}
 			]
     }
@@ -258,16 +299,11 @@ const (
 		}
 	]
 }`
-	cancelExternalApprovalReq = `{
-  "approval_code": "%s",
-  "instance_code": "%s",
-  "user_id": "%s"
-}`
 )
 
 func (p *Provider) tokenRefresher(tokenCtx TokenCtx) tokenRefresher {
 	return func(ctx context.Context, client *http.Client, oldToken *string) error {
-		const url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+		url := fmt.Sprintf("%s/auth/v3/tenant_access_token/internal", p.APIPath)
 		body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, tokenCtx.AppID, tokenCtx.AppSecret))
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 		if err != nil {
@@ -373,7 +409,7 @@ func retry(ctx context.Context, client *http.Client, token *string, tokenRefresh
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/approval/create
 func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx TokenCtx, approvalCode string) (string, error) {
 	body := []byte(fmt.Sprintf(createApprovalDefinitionReq, approvalCode))
-	const url = "https://open.feishu.cn/open-apis/approval/v4/approvals"
+	url := fmt.Sprintf("%s/approval/v4/approvals", p.APIPath)
 	code, _, b, err := p.do(ctx, p.client, http.MethodPost, url, body, p.tokenRefresher(tokenCtx))
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
@@ -383,7 +419,7 @@ func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx TokenC
 		return "", errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response approvalDefinitionResponse
+	var response ApprovalDefinitionResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return "", err
 	}
@@ -401,12 +437,12 @@ func (p *Provider) CreateApprovalDefinition(ctx context.Context, tokenCtx TokenC
 // example requesterID & approverID: ou_3cda9c969f737aaa05e6915dce306cb9
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/create
 func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx, content Content, approvalCode string, requesterID string, approverID string) (string, error) {
-	const url = "https://open.feishu.cn/open-apis/approval/v4/instances"
+	url := fmt.Sprintf("%s/approval/v4/instances", p.APIPath)
 	formValue, err := formatForm(content)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to compose formValue")
+		return "", errors.Wrapf(err, "failed to compose formValue, content %+v", content)
 	}
-	payload := createApprovalInstanceReq{
+	payload := CreateApprovalInstanceRequest{
 		ApprovalCode: approvalCode,
 		Form:         formValue,
 		NodeApproverOpenIDList: []struct {
@@ -432,7 +468,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 		return "", errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response externalApprovalResponse
+	var response ExternalApprovalResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return "", err
 	}
@@ -448,7 +484,7 @@ func (p *Provider) CreateExternalApproval(ctx context.Context, tokenCtx TokenCtx
 // example instanceCode: 81D31358-93AF-92D6-7425-01A5D67C4E71
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/get
 func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx TokenCtx, instanceCode string) (ApprovalStatus, error) {
-	url := fmt.Sprintf("https://open.feishu.cn/open-apis/approval/v4/instances/%s", instanceCode)
+	url := fmt.Sprintf("%s/approval/v4/instances/%s", p.APIPath, instanceCode)
 	code, _, b, err := p.do(ctx, p.client, http.MethodGet, url, nil, p.tokenRefresher(tokenCtx))
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
@@ -457,7 +493,7 @@ func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx Token
 		return "", errors.Errorf("non-200 GET status code %d with body %q", code, b)
 	}
 
-	var response getExternalApprovalResponse
+	var response GetExternalApprovalResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal response to GetExternalApprovalResponse")
 	}
@@ -468,11 +504,57 @@ func (p *Provider) GetExternalApprovalStatus(ctx context.Context, tokenCtx Token
 	return response.Data.Status, nil
 }
 
+// CreateExternalApprovalComment comments an external approval.
+// https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance-comment/create
+func (p *Provider) CreateExternalApprovalComment(ctx context.Context, tokenCtx TokenCtx, instanceCode string, userID string, msg string) error {
+	url := fmt.Sprintf("%s/approval/v4/instances/%s/comments?user_id=%s", p.APIPath, instanceCode, userID)
+	content, err := json.Marshal(struct {
+		Text string `json:"text"`
+	}{
+		Text: msg,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal content")
+	}
+	payload := CreateExternalApprovalCommentRequest{
+		Content: string(content),
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal payload %+v", payload)
+	}
+	code, _, b, err := p.do(ctx, p.client, http.MethodPost, url, body, p.tokenRefresher(tokenCtx))
+	if err != nil {
+		return err
+	}
+	if code != http.StatusOK {
+		return errors.Errorf("non-200 POST status code %d with body %q", code, b)
+	}
+
+	var response CreateExternalApprovalCommentResponse
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
+		return err
+	}
+	if response.Code != 0 {
+		return errors.Errorf("failed to create external approval comment, code %d, msg %s", response.Code, response.Msg)
+	}
+
+	return nil
+}
+
 // CancelExternalApproval cancels an external approval.
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/instance/cancel
 func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx, approvalCode, instanceCode, userID string) error {
-	const url = "https://open.feishu.cn/open-apis/approval/v4/instances/cancel"
-	body := []byte(fmt.Sprintf(cancelExternalApprovalReq, approvalCode, instanceCode, userID))
+	url := fmt.Sprintf("%s/approval/v4/instances/cancel", p.APIPath)
+	req := &CancelExternalApprovalRequest{
+		ApprovalCode: approvalCode,
+		InstanceCode: instanceCode,
+		UserID:       userID,
+	}
+	body, err := json.Marshal(req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal body %+v", req)
+	}
 	code, _, b, err := p.do(ctx, p.client, http.MethodPost, url, body, p.tokenRefresher(tokenCtx))
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", url)
@@ -481,13 +563,13 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx
 		return errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response cancelExternalApprovalResponse
+	var response CancelExternalApprovalResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return errors.Wrap(err, "failed to unmarshal response to CancelExternalApprovalResponse")
 	}
 
 	if response.Code != 0 {
-		return errors.Errorf("failed to create external approval, code %d, msg %s", response.Code, response.Msg)
+		return errors.Errorf("failed to cancel external approval, code %d, msg %s", response.Code, response.Msg)
 	}
 
 	return nil
@@ -497,11 +579,8 @@ func (p *Provider) CancelExternalApproval(ctx context.Context, tokenCtx TokenCtx
 // https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/contact-v3/user/batch_get_id
 // TODO(p0ny): cache email-id mapping.
 func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails []string) (map[string]string, error) {
-	const url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
-	body, err := json.Marshal(
-		struct {
-			Emails []string `json:"emails"`
-		}{Emails: emails})
+	url := fmt.Sprintf("%s/contact/v3/users/batch_get_id", p.APIPath)
+	body, err := json.Marshal(&GetIDByEmailRequest{Emails: emails})
 	if err != nil {
 		return nil, err
 	}
@@ -515,7 +594,7 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 		return nil, errors.Errorf("non-200 POST status code %d with body %q", code, b)
 	}
 
-	var response emailsFindResponse
+	var response EmailsFindResponse
 	if err := json.Unmarshal([]byte(b), &response); err != nil {
 		return nil, err
 	}
@@ -527,12 +606,35 @@ func (p *Provider) GetIDByEmail(ctx context.Context, tokenCtx TokenCtx, emails [
 	userID := make(map[string]string)
 	for _, user := range response.Data.UserList {
 		if user.UserID == "" {
-			return nil, errors.Errorf("id not found for email %s", user.Email)
+			continue
 		}
 		userID[user.Email] = user.UserID
 	}
 
 	return userID, nil
+}
+
+// GetBotID gets the id of the bot.
+// https://open.feishu.cn/document/ukTMukTMukTM/uAjMxEjLwITMx4CMyETM
+func (p *Provider) GetBotID(ctx context.Context, tokenCtx TokenCtx) (string, error) {
+	url := fmt.Sprintf("%s/bot/v3/info", p.APIPath)
+	code, _, b, err := p.do(ctx, p.client, http.MethodGet, url, nil, p.tokenRefresher(tokenCtx))
+	if err != nil {
+		return "", errors.Wrapf(err, "POST %s", url)
+	}
+	if code != http.StatusOK {
+		return "", errors.Errorf("non-200 POST status code %d with body %q", code, b)
+	}
+
+	var response GetBotIDResponse
+	if err := json.Unmarshal([]byte(b), &response); err != nil {
+		return "", err
+	}
+	if response.Code != 0 {
+		return "", errors.Errorf("failed to get bot id, code %d, msg %s", response.Code, response.Msg)
+	}
+
+	return response.Bot.OpenID, nil
 }
 
 func formatForm(content Content) (string, error) {
@@ -550,6 +652,12 @@ func formatForm(content Content) (string, error) {
 			return "", err
 		}
 	}
+
+	sql, err := formatFormSQL(content.TaskList)
+	if err != nil {
+		return "", err
+	}
+
 	forms := []form{
 		{
 			ID:    "1",
@@ -574,7 +682,7 @@ func formatForm(content Content) (string, error) {
 		{
 			ID:    "5",
 			Type:  "textarea",
-			Value: content.Description,
+			Value: sql,
 		},
 	}
 	b, err := json.Marshal(forms)
@@ -582,4 +690,70 @@ func formatForm(content Content) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func formatFormSQL(contentTaskList []Task) (string, error) {
+	const taskSQLDisplayLimit = 5
+	delimiter := strings.Repeat("=", 25)
+	var sql strings.Builder
+
+	sqlHashToTaskGroup := make(map[string]int)
+	var taskGroup [][]int
+
+	// divide tasks with the same SQLs to groups.
+	for i, task := range contentTaskList {
+		if task.Statement == "" {
+			continue
+		}
+		hash := fmt.Sprintf("%x", sha1.Sum([]byte(task.Statement)))
+		group, ok := sqlHashToTaskGroup[hash]
+		if ok {
+			taskGroup[group] = append(taskGroup[group], i)
+		} else {
+			taskGroup = append(taskGroup, []int{i})
+			sqlHashToTaskGroup[hash] = len(taskGroup) - 1
+		}
+	}
+
+	// Check if every task has the same SQL.
+	// For tenant mode, it's very likely for tasks to have identical SQLs.
+	// If there is one unique sql, and every task has the sql.
+	if len(taskGroup) == 1 && len(taskGroup[0]) == len(contentTaskList) {
+		if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of every task\n%s\n", delimiter, delimiter)); err != nil {
+			return "", err
+		}
+		truncated := common.TruncateStringWithDescription(contentTaskList[taskGroup[0][0]].Statement)
+		if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
+			return "", err
+		}
+		return sql.String(), nil
+	}
+
+	count := 0
+	for _, taskList := range taskGroup {
+		if count >= taskSQLDisplayLimit {
+			if _, err := sql.WriteString(fmt.Sprintf("%s\nDisplaying %d SQL statements, view more in Bytebase\n", delimiter, count)); err != nil {
+				return "", err
+			}
+			break
+		}
+
+		if len(taskList) == 0 {
+			continue
+		}
+		var tasks []string
+		for _, taskIndex := range taskList {
+			tasks = append(tasks, fmt.Sprintf("%d", taskIndex+1))
+		}
+
+		if _, err := sql.WriteString(fmt.Sprintf("%s\nThe SQL statement of task %s\n%s\n", delimiter, strings.Join(tasks, ","), delimiter)); err != nil {
+			return "", err
+		}
+		truncated := common.TruncateStringWithDescription(contentTaskList[taskList[0]].Statement)
+		if _, err := sql.WriteString(fmt.Sprintf("%s\n\n", truncated)); err != nil {
+			return "", err
+		}
+		count++
+	}
+	return sql.String(), nil
 }

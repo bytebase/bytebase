@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,13 +9,13 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
@@ -57,7 +56,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				ClientSecret: vcs.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    s.refreshToken(ctx, repo.WebURL),
+				Refresher:    refreshToken(ctx, s.store, repo.WebURL),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
@@ -131,7 +130,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		batchUpdateProjectMember := &api.ProjectMemberBatchUpdate{
-			ID:           projectID,
+			ProjectID:    projectID,
 			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
 			RoleProvider: roleProvider,
 			List:         createList,
@@ -170,7 +169,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Comment: fmt.Sprintf("Changed %s (%s) from %s (provided by %s) to %s (provided by %s).",
 						principal.Name, principal.Email, deletedMember.Role, deletedMember.RoleProvider, createdMember.Role, createdMember.RoleProvider),
 				}
-				if _, err = s.ActivityManager.CreateActivity(ctx, activityUpdateMember, &ActivityMeta{}); err != nil {
+				if _, err = s.ActivityManager.CreateActivity(ctx, activityUpdateMember, &activity.Metadata{}); err != nil {
 					log.Warn("Failed to create project activity after updating member role",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", principal.ID),
@@ -193,7 +192,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
 						principal.Name, principal.Email, createdMember.Role),
 				}
-				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &ActivityMeta{}); err != nil {
+				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &activity.Metadata{}); err != nil {
 					log.Warn("Failed to create project activity after creating member",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", principal.ID),
@@ -222,7 +221,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Comment: fmt.Sprintf("Revoked %s from %s (%s). Because this member does not belong to the VCS.",
 					principal.Name, principal.Email, deletedMember.Role),
 			}
-			if _, err = s.ActivityManager.CreateActivity(ctx, activityDeleteMember, &ActivityMeta{}); err != nil {
+			if _, err = s.ActivityManager.CreateActivity(ctx, activityDeleteMember, &activity.Metadata{}); err != nil {
 				log.Warn("Failed to create project activity after creating member",
 					zap.Int("project_id", projectID),
 					zap.Int("principal_id", principal.ID),
@@ -268,7 +267,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Comment: fmt.Sprintf("Granted %s to %s (%s).",
 					projectMember.Principal.Name, projectMember.Principal.Email, projectMember.Role),
 			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 			if err != nil {
 				log.Warn("Failed to create project activity after creating member",
 					zap.Int("project_id", projectID),
@@ -331,7 +330,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Comment: fmt.Sprintf("Changed %s (%s) from %s to %s.",
 					projectMember.Principal.Name, projectMember.Principal.Email, existingProjectMember.Role, projectMember.Role),
 			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 			if err != nil {
 				log.Warn("Failed to create project activity after updating member role",
 					zap.Int("project_id", projectID),
@@ -390,7 +389,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Comment: fmt.Sprintf("Revoked %s from %s (%s).",
 						projectMember.Role, projectMember.Principal.Name, projectMember.Principal.Email),
 				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 			}
 			if err != nil {
 				log.Warn("Failed to create project activity after deleting member",
@@ -406,21 +405,4 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-}
-
-// getAnyProjectOwner gets a default assignee from the project owners.
-func (s *Server) getAnyProjectOwner(ctx context.Context, projectID int) (*api.ProjectMember, error) {
-	role := api.Owner
-	find := &api.ProjectMemberFind{
-		ProjectID: &projectID,
-		Role:      &role,
-	}
-	projectMemberList, err := s.store.FindProjectMember(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
-	}
-	if len(projectMemberList) > 0 {
-		return projectMemberList[0], nil
-	}
-	return nil, errors.New("failed to get a project owner")
 }

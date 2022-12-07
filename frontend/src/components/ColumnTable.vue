@@ -24,7 +24,7 @@
           "
         />
       </BBTableCell>
-      <BBTableCell :left-padding="4" class="w-16">
+      <BBTableCell class="w-16">
         {{ column.name }}
       </BBTableCell>
       <BBTableCell class="w-8">
@@ -118,10 +118,19 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
     const allowAdmin = computed(() => {
-      return hasWorkspacePermission(
-        "bb.permission.workspace.manage-database",
-        currentUser.value.role
-      );
+      if (
+        hasWorkspacePermission(
+          "bb.permission.workspace.manage-sensitive-data",
+          currentUser.value.role
+        )
+      ) {
+        // True if the currentUser has workspace level sensitive data
+        // R+W privileges. AKA DBA or Workspace owner
+        return true;
+      }
+
+      // False otherwise
+      return false;
     });
 
     const NORMAL_COLUMN_LIST = computed(() => [

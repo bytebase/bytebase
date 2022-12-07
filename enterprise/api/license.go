@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -58,7 +59,13 @@ func (l *License) OrgID() string {
 // LicenseService is the service for enterprise license.
 type LicenseService interface {
 	// StoreLicense will store license into file.
-	StoreLicense(patch *SubscriptionPatch) error
-	// LoadLicense will load license from file and validate it.
-	LoadLicense() (*License, error)
+	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
+	// LoadSubscription will load subscription.
+	LoadSubscription(ctx context.Context) Subscription
+	// IsFeatureEnabled returns whether a feature is enabled.
+	IsFeatureEnabled(feature api.FeatureType) bool
+	// GetEffectivePlan gets the effective plan.
+	GetEffectivePlan() api.PlanType
+	// GetPlanLimitValue gets the limit value for the plan.
+	GetPlanLimitValue(name api.PlanLimit) int64
 }

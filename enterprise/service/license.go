@@ -3,12 +3,16 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/enterprise/config"
 	"github.com/bytebase/bytebase/store"
@@ -18,6 +22,8 @@ import (
 type LicenseService struct {
 	config *config.Config
 	store  *store.Store
+
+	cachedSubscription *enterpriseAPI.Subscription
 }
 
 // Claims creates a struct that will be encoded to a JWT.
@@ -44,26 +50,130 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 }
 
 // StoreLicense will store license into file.
-func (s *LicenseService) StoreLicense(patch *enterpriseAPI.SubscriptionPatch) error {
+func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.SubscriptionPatch) error {
 	if patch.License != "" {
 		if _, err := s.parseLicense(patch.License); err != nil {
 			return err
 		}
 	}
-	return s.writeLicense(patch)
+	if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
+		UpdaterID: patch.UpdaterID,
+		Name:      api.SettingEnterpriseLicense,
+		Value:     patch.License,
+	}); err != nil {
+		return err
+	}
+
+	// Invalidate and refresh the subscription cache.
+	s.cachedSubscription = nil
+	s.LoadSubscription(ctx)
+	return nil
 }
 
-// LoadLicense will load license from file and validate it.
-func (s *LicenseService) LoadLicense() (*enterpriseAPI.License, error) {
-	tokenString, err := s.readLicense()
-	if err != nil {
-		return nil, err
-	}
-	if tokenString == "" {
-		return nil, common.Errorf(common.NotFound, "cannot find license")
+// LoadSubscription will load subscription.
+func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Subscription {
+	if s.cachedSubscription != nil {
+		return *s.cachedSubscription
 	}
 
-	return s.parseLicense(tokenString)
+	license, err := s.loadLicense(ctx)
+	if err != nil {
+		log.Error("failed to load license", zap.Error(err))
+	}
+	if license == nil {
+		return enterpriseAPI.Subscription{
+			Plan: api.FREE,
+			// -1 means not expire, just for free plan
+			ExpiresTs:     -1,
+			InstanceCount: 5,
+		}
+	}
+
+	// Cache the subscription.
+	s.cachedSubscription = &enterpriseAPI.Subscription{
+		Plan:          license.Plan,
+		ExpiresTs:     license.ExpiresTs,
+		StartedTs:     license.IssuedTs,
+		InstanceCount: license.InstanceCount,
+		Trialing:      license.Trialing,
+		OrgID:         license.OrgID(),
+		OrgName:       license.OrgName,
+	}
+	return *s.cachedSubscription
+}
+
+// IsFeatureEnabled returns whether a feature is enabled.
+func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) bool {
+	return api.Feature(feature, s.GetEffectivePlan())
+}
+
+// GetEffectivePlan gets the effective plan.
+func (s *LicenseService) GetEffectivePlan() api.PlanType {
+	ctx := context.Background()
+	subscription := s.LoadSubscription(ctx)
+	if expireTime := time.Unix(subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
+		return api.FREE
+	}
+	return subscription.Plan
+}
+
+// GetPlanLimitValue gets the limit value for the plan.
+func (s *LicenseService) GetPlanLimitValue(name api.PlanLimit) int64 {
+	v, ok := api.PlanLimitValues[name]
+	if !ok {
+		return 0
+	}
+	return v[s.GetEffectivePlan()]
+}
+
+// loadLicense will load license and validate it.
+func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+	// Find enterprise license.
+	settingName := api.SettingEnterpriseLicense
+	settings, err := s.store.FindSetting(ctx, &api.SettingFind{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to load enterprise license from settings")
+	}
+	tokenString := ""
+	if len(settings) > 0 {
+		tokenString = settings[0].Value
+	}
+	if tokenString != "" {
+		license, err := s.parseLicense(tokenString)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse enterprise license")
+		}
+		if license != nil {
+			log.Debug(
+				"Load valid license",
+				zap.String("plan", license.Plan.String()),
+				zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
+				zap.Int("instanceCount", license.InstanceCount),
+			)
+			return license, nil
+		}
+	}
+
+	// Find free trial license.
+	settingName = api.SettingEnterpriseTrial
+	settings, err = s.store.FindSetting(ctx, &api.SettingFind{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to load trial license from settings")
+	}
+	if len(settings) != 0 {
+		var data enterpriseAPI.License
+		if err := json.Unmarshal([]byte(settings[0].Value), &data); err != nil {
+			return nil, errors.Wrapf(err, "failed to parse trial license")
+		}
+		return &data, nil
+	}
+
+	// No license or trial license found.
+	return nil, nil
 }
 
 func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
@@ -138,30 +248,6 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 	}
 
 	return license, nil
-}
-
-func (s *LicenseService) readLicense() (string, error) {
-	settingName := api.SettingEnterpriseLicense
-	ctx := context.Background()
-	settings, err := s.store.FindSetting(ctx, &api.SettingFind{
-		Name: &settingName,
-	})
-
-	if len(settings) == 0 {
-		return "", common.Wrapf(err, common.NotFound, "cannot find license")
-	}
-
-	return settings[0].Value, nil
-}
-
-func (s *LicenseService) writeLicense(patch *enterpriseAPI.SubscriptionPatch) error {
-	ctx := context.Background()
-	_, err := s.store.PatchSetting(ctx, &api.SettingPatch{
-		UpdaterID: patch.UpdaterID,
-		Name:      api.SettingEnterpriseLicense,
-		Value:     patch.License,
-	})
-	return err
 }
 
 func convertPlanType(candidate string) (api.PlanType, error) {

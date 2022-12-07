@@ -46,10 +46,10 @@
       </template>
 
       <div v-if="showTaskCheckBar" class="sm:col-span-4 mb-4 space-y-4">
-        <template v-if="runningCheckCount > 0">
+        <template v-if="checkSummary.runningCount > 0">
           <BBAttention
             :style="'INFO'"
-            :title="`${runningCheckCount} check(s) in progress...`"
+            :title="`${checkSummary.runningCount} check(s) in progress...`"
           />
         </template>
         <template v-else>
@@ -69,6 +69,30 @@
           />
         </template>
         <TaskCheckBar :task="task!" :allow-run-task="false" />
+      </div>
+
+      <div v-if="showTaskList" class="sm:col-span-4 mb-4">
+        <label for="about" class="textlabel">
+          {{ $t("common.tasks") }}
+        </label>
+        <ul class="mt-1 max-h-[6rem] overflow-y-auto">
+          <li
+            v-for="item in distinctTaskList"
+            :key="item.task.id"
+            class="text-sm textinfolabel"
+          >
+            <span class="textinfolabel">
+              {{ item.task.name }}
+            </span>
+            <span v-if="item.similar.length > 0" class="ml-2 text-gray-400">
+              {{
+                $t("task.n-similar-tasks", {
+                  count: item.similar.length + 1,
+                })
+              }}
+            </span>
+          </li>
+        </ul>
       </div>
 
       <div class="sm:col-span-4 w-112 min-w-full">
@@ -121,19 +145,19 @@
 
 <script lang="ts">
 import { computed, reactive, ref, PropType, defineComponent } from "vue";
-import { cloneDeep, groupBy, maxBy } from "lodash-es";
+import { cloneDeep, groupBy } from "lodash-es";
 import DatabaseSelect from "../DatabaseSelect.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
 import { Issue, IssueStatusTransition, Task } from "@/types";
 import { OutputField } from "@/plugins";
-import { activeEnvironment, TaskStatusTransition } from "@/utils";
+import {
+  activeEnvironment,
+  activeStage,
+  taskCheckRunSummary,
+  TaskStatusTransition,
+} from "@/utils";
 import { useI18n } from "vue-i18n";
-
-type CheckSummary = {
-  successCount: number;
-  warnCount: number;
-  errorCount: number;
-};
+import { useIssueLogic } from "./logic";
 
 interface LocalState {
   comment: string;
@@ -182,6 +206,10 @@ export default defineComponent({
       ),
     });
 
+    const { allowApplyTaskStatusTransition } = useIssueLogic();
+
+    const checkSummary = computed(() => taskCheckRunSummary(props.task));
+
     const cancelText = computed(() => t("common.cancel"));
     const displayingOkText = computed(() => {
       if (props.okText === cancelText.value) {
@@ -223,7 +251,7 @@ export default defineComponent({
             case "CANCEL":
               return "btn-danger";
             case "SKIP":
-              return "btn-danger";
+              return "btn-primary";
             case "RESTART":
               return "btn-normal";
           }
@@ -236,6 +264,28 @@ export default defineComponent({
       if (props.mode !== "TASK") return false;
       const taskCheckCount = props.task?.taskCheckRunList.length ?? 0;
       return taskCheckCount > 0;
+    });
+
+    const showTaskList = computed((): boolean => {
+      return props.mode === "STAGE";
+    });
+
+    const taskList = computed(() => {
+      const stage = activeStage(props.issue.pipeline);
+      const transition = props.transition as TaskStatusTransition;
+      return stage.taskList.filter((task) => {
+        return allowApplyTaskStatusTransition(task, transition.to);
+      });
+    });
+
+    const distinctTaskList = computed(() => {
+      type DistinctTaskList = { task: Task; similar: Task[] };
+      const groups = groupBy(taskList.value, (task) => task.name);
+
+      return Object.keys(groups).map<DistinctTaskList>((taskName) => {
+        const [task, ...similar] = groups[taskName];
+        return { task, similar };
+      });
     });
 
     // Code block below will raise an eslint ERROR.
@@ -252,8 +302,8 @@ export default defineComponent({
             case "RUNNING":
             case "PENDING": // fallthrough
               return (
-                runningCheckCount.value == 0 &&
-                checkSummary.value.errorCount == 0
+                checkSummary.value.runningCount === 0 &&
+                checkSummary.value.errorCount === 0
               );
             default:
               return true;
@@ -263,63 +313,18 @@ export default defineComponent({
       return false; // only to make eslint happy
     });
 
-    const runningCheckCount = computed((): number => {
-      let count = 0;
-      for (const run of props.task!.taskCheckRunList) {
-        if (run.status == "RUNNING") {
-          count++;
-        }
-      }
-      return count;
-    });
-
-    const checkSummary = computed((): CheckSummary => {
-      const summary: CheckSummary = {
-        successCount: 0,
-        warnCount: 0,
-        errorCount: 0,
-      };
-
-      const taskCheckRunList = props.task?.taskCheckRunList ?? [];
-
-      const listGroupByType = groupBy(taskCheckRunList, (run) => run.type);
-      const latestCheckRunOfEachType = Object.keys(listGroupByType).map(
-        (type) => {
-          const listOfType = listGroupByType[type];
-          const latest = maxBy(listOfType, (run) => run.updatedTs)!;
-          return latest;
-        }
-      );
-
-      for (const check of latestCheckRunOfEachType) {
-        if (check.status == "DONE") {
-          for (const result of check.result.resultList) {
-            if (result.status == "SUCCESS") {
-              summary.successCount++;
-            } else if (result.status == "WARN") {
-              summary.warnCount++;
-            } else if (result.status == "ERROR") {
-              summary.errorCount++;
-            }
-          }
-        } else if (check.status == "FAILED") {
-          summary.errorCount++;
-        }
-      }
-      return summary;
-    });
-
     return {
       state,
+      checkSummary,
       cancelText,
       displayingOkText,
       environmentId,
       showTaskCheckBar,
+      showTaskList,
+      distinctTaskList,
       commentTextArea,
       submitButtonStyle,
       allowSubmit,
-      runningCheckCount,
-      checkSummary,
     };
   },
 });

@@ -19,7 +19,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gosimple/slug v1.13.1
 	github.com/jackc/pgtype v1.12.0
-	github.com/jackc/pgx/v4 v4.17.2
+	github.com/jackc/pgx/v5 v5.1.1
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/mattn/go-sqlite3 v1.14.16
@@ -93,7 +93,6 @@ require (
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.13.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -166,8 +165,8 @@ replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.
 
 replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20220728080340-11d9c9027651
 
-replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-20221028035959-5d3b71eadf24
+replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-20221121071545-b41f6f3ae14f
 
-replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20221028035959-5d3b71eadf24
+replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20221121071545-b41f6f3ae14f
 
-replace github.com/pganalyze/pg_query_go/v2 => github.com/bytebase/pg_query_go/v2 v2.0.0-20221115090145-10eaaf3c22b6
+replace github.com/pganalyze/pg_query_go/v2 => github.com/bytebase/pg_query_go/v2 v2.0.0-20221123093650-17425d1d18b7

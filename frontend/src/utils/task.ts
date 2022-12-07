@@ -1,11 +1,15 @@
+import { groupBy, maxBy } from "lodash-es";
+
 import { useDatabaseStore } from "@/store";
 import {
+  Issue,
   Task,
   TaskCreate,
   TaskDatabaseCreatePayload,
   TaskDatabasePITRRestorePayload,
   unknown,
 } from "@/types";
+import { issueSlug, stageSlug, taskSlug } from "./slug";
 
 export const extractDatabaseNameFromTask = (
   task: Task | TaskCreate
@@ -53,3 +57,84 @@ export const extractDatabaseNameFromTask = (
   // Fallback to <<Unknown database>>. Won't be happy to see it.
   return unknown("DATABASE").name;
 };
+
+export const buildIssueLinkWithTask = (
+  issue: Issue,
+  task: Task,
+  simple = false
+) => {
+  const stage = task.stage;
+  const stageIndex = issue.pipeline.stageList.findIndex(
+    (s) => s.id === stage.id
+  );
+
+  const issuePart = simple ? String(issue.id) : issueSlug(issue.name, issue.id);
+  const stagePart = simple
+    ? String(stageIndex + 1)
+    : stageSlug(stage.name, stageIndex + 1);
+  const taskPart = simple ? String(task.id) : taskSlug(task.name, task.id);
+
+  const url = `/issue/${issuePart}?stage=${stagePart}&task=${taskPart}`;
+
+  return url;
+};
+
+export type TaskCheckRunSummary = {
+  runningCount: number;
+  successCount: number;
+  warnCount: number;
+  errorCount: number;
+};
+
+export function taskCheckRunSummary(task?: Task): TaskCheckRunSummary {
+  const summary: TaskCheckRunSummary = {
+    runningCount: 0,
+    successCount: 0,
+    warnCount: 0,
+    errorCount: 0,
+  };
+
+  if (!task) return summary;
+
+  const taskCheckRunList = task.taskCheckRunList;
+
+  const listGroupByType = groupBy(
+    taskCheckRunList,
+    (checkRun) => checkRun.type
+  );
+
+  const latestCheckRunOfEachType = Object.keys(listGroupByType).map((type) => {
+    const listOfType = listGroupByType[type];
+    const latest = maxBy(listOfType, (checkRun) => checkRun.updatedTs)!;
+    return latest;
+  });
+
+  for (const checkRun of latestCheckRunOfEachType) {
+    switch (checkRun.status) {
+      case "CANCELED":
+        // nothing todo
+        break;
+      case "FAILED":
+        summary.errorCount++;
+        break;
+      case "RUNNING":
+        summary.runningCount++;
+        break;
+      case "DONE":
+        for (const result of checkRun.result.resultList) {
+          switch (result.status) {
+            case "SUCCESS":
+              summary.successCount++;
+              break;
+            case "WARN":
+              summary.warnCount++;
+              break;
+            case "ERROR":
+              summary.errorCount++;
+          }
+        }
+    }
+  }
+
+  return summary;
+}

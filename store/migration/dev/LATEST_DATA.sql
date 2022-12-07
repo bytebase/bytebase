@@ -42,6 +42,7 @@ INSERT INTO
         updater_id,
         resource_type,
         resource_id,
+        inherit_from_parent,
         type,
         payload
     )
@@ -52,6 +53,7 @@ VALUES
         1,
         'ENVIRONMENT',
         101,
+        TRUE,
         'bb.policy.pipeline-approval',
         '{"value":"MANUAL_APPROVAL_NEVER"}'
     );
@@ -63,6 +65,7 @@ INSERT INTO
         updater_id,
         resource_type,
         resource_id,
+        inherit_from_parent,
         type,
         payload
     )
@@ -73,6 +76,7 @@ VALUES
         1,
         'ENVIRONMENT',
         102,
+        TRUE,
         'bb.policy.pipeline-approval',
         '{"value":"MANUAL_APPROVAL_ALWAYS"}'
     );
@@ -84,6 +88,7 @@ INSERT INTO
         updater_id,
         resource_type,
         resource_id,
+        inherit_from_parent,
         type,
         payload
     )
@@ -94,6 +99,7 @@ VALUES
         1,
         'ENVIRONMENT',
         102,
+        TRUE,
         'bb.policy.backup-plan',
         '{"schedule":"WEEKLY"}'
     );

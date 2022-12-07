@@ -76,7 +76,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 	if driver.connCfg.Port != "" {
 		args = append(args, "--port", driver.connCfg.Port)
 	}
-	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.resourceDir), args...)
+	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), args...)
 	log.Debug("mysqlbinlog", zap.String("command", cmd.String()))
 	if driver.connCfg.Password != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("MYSQL_PWD=%s", driver.connCfg.Password))
@@ -97,14 +97,9 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameLis
 		return "", errors.Wrap(err, "failed to run mysqlbinlog")
 	}
 
-	txnList, err := ParseBinlogStream(pr)
+	txnList, err := ParseBinlogStream(pr, threadID)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to parse binlog stream")
-	}
-
-	txnList, err = FilterBinlogTransactionsByThreadID(txnList, threadID)
-	if err != nil {
-		return "", errors.WithMessage(err, "failed to filter binlog transactions by thread ID")
 	}
 
 	var rollbackSQLList []string

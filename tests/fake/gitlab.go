@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -56,11 +55,7 @@ type projectData struct {
 
 // NewGitLab creates a new fake implementation of GitLab VCS provider.
 func NewGitLab(port int) VCSProvider {
-	e := echo.New()
-	// Middleware
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
+	e := newEchoServer()
 	gl := &GitLab{
 		port:          port,
 		echo:          e,

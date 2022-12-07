@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"sync/atomic"
 
 	"github.com/pkg/errors"
 
@@ -12,48 +11,49 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/differ"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewSchemaUpdateSDLTaskExecutor creates a schema update (SDL) task executor.
-func NewSchemaUpdateSDLTaskExecutor() TaskExecutor {
-	return &SchemaUpdateSDLTaskExecutor{}
+func NewSchemaUpdateSDLTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+	return &SchemaUpdateSDLTaskExecutor{
+		store:           store,
+		dbFactory:       dbFactory,
+		activityManager: activityManager,
+		profile:         profile,
+	}
 }
 
 // SchemaUpdateSDLTaskExecutor is the schema update (SDL) task executor.
 type SchemaUpdateSDLTaskExecutor struct {
-	completed int32
+	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
+	activityManager *activity.Manager
+	profile         config.Profile
 }
 
 // RunOnce will run the schema update (SDL) task executor once.
-func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer atomic.StoreInt32(&exec.completed, 1)
+func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	ddl, err := server.computeDatabaseSchemaDiff(ctx, task.Database, payload.Statement)
+	ddl, err := exec.computeDatabaseSchemaDiff(ctx, exec.dbFactory, task.Database, payload.Statement)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
-	return runMigration(ctx, server, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *SchemaUpdateSDLTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
-}
-
-// GetProgress returns the task progress.
-func (*SchemaUpdateSDLTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // computeDatabaseSchemaDiff computes the diff between current database schema
 // and the given schema. It returns an empty string if there is no applicable
 // diff.
-func (s *Server) computeDatabaseSchemaDiff(ctx context.Context, database *api.Database, newSchemaStr string) (string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BaseDir, s.profile.DataDir)
+func (*SchemaUpdateSDLTaskExecutor) computeDatabaseSchemaDiff(ctx context.Context, dbFactory *dbfactory.DBFactory, database *api.Database, newSchemaStr string) (string, error) {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return "", errors.Wrap(err, "get admin driver")
 	}

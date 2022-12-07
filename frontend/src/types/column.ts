@@ -17,7 +17,7 @@ export type Column = {
   // Domain specific fields
   name: string;
   position: number;
-  default: string;
+  default?: string;
   nullable: boolean;
   type: string;
   characterSet: string;

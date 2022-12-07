@@ -21,12 +21,7 @@ import {
   parseDatabaseNameByTemplate,
   projectSlug,
 } from "@/utils";
-import {
-  useEnvironmentList,
-  useCurrentUser,
-  useDatabaseStore,
-  useLabelList,
-} from "@/store";
+import { useEnvironmentList, useCurrentUser, useDatabaseStore } from "@/store";
 
 export default defineComponent({
   name: "DatabaseListSidePanel",
@@ -55,9 +50,6 @@ export default defineComponent({
     const databaseList = computed((): Database[] => {
       return databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
     });
-
-    // Use this to parse database name from name template
-    const labelList = useLabelList();
 
     const databaseListByEnvironment = computed(() => {
       const envToDbMap: Map<EnvironmentId, BBOutlineItem[]> = new Map();
@@ -97,12 +89,6 @@ export default defineComponent({
     });
 
     const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
-      if (labelList.value.length === 0) {
-        // wait for the labelList to be loaded
-        // to prevent UI jitter
-        return [];
-      }
-
       const list = databaseList.value.filter(
         (db) => db.project.tenantMode === "TENANT"
       );
@@ -130,8 +116,7 @@ export default defineComponent({
               // parse db name from template if possible
               return parseDatabaseNameByTemplate(
                 db.name,
-                project.dbNameTemplate,
-                labelList.value
+                project.dbNameTemplate
               );
             } else {
               // use raw db.name otherwise
@@ -149,13 +134,19 @@ export default defineComponent({
           return {
             id: `bb.project.${project.id}.databases`,
             name: project.name,
-            childList: databaseListGroupByNameAndCount.map(
+            childList: databaseListGroupByNameAndCount.map<BBOutlineItem>(
               ({ name, count }) => {
+                const label = [name];
+                if (count > 1) {
+                  // Add a number beside the name when there are more than 1
+                  // databases in single group.
+                  label.push(`(${count})`);
+                }
                 return {
                   id: `bb.project.${project.id}.database.${name}`,
-                  name: `${name} (${count})`,
+                  name: label.join(" "),
                   link: `/project/${projectSlug(project)}`,
-                } as BBOutlineItem;
+                };
               }
             ),
             childCollapse: true,

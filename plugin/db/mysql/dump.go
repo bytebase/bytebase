@@ -369,7 +369,8 @@ func GetBinlogInfo(ctx context.Context, db *sql.DB) (api.BinlogInfo, error) {
 		&unused,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return api.BinlogInfo{}, common.FormatDBErrorEmptyRowWithQuery(query)
+			// SHOW MASTER STATUS returns empty row when binlog is off. We should not fail migration in this case for this expected case.
+			return api.BinlogInfo{}, nil
 		}
 		return api.BinlogInfo{}, err
 	}
@@ -778,7 +779,7 @@ func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databas
 	if driver.connCfg.Password != "" {
 		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
-	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.resourceDir), mysqlArgs...)
+	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
 
 	var stderr bytes.Buffer
 	countingReader := common.NewCountingReader(backup)

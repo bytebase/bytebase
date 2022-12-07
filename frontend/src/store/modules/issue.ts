@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, watch, WatchCallback } from "vue";
+import { computed, ref, unref, watch, WatchCallback, watchEffect } from "vue";
 import axios from "axios";
 import {
   empty,
@@ -12,12 +12,14 @@ import {
   IssuePatch,
   IssueState,
   IssueStatusPatch,
+  MaybeRef,
   Pipeline,
   Principal,
   Project,
   ResourceIdentifier,
   ResourceObject,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useActivityStore } from "./activity";
@@ -115,6 +117,7 @@ function getIssueFromIncludedList(
 export const useIssueStore = defineStore("issue", {
   state: (): IssueState => ({
     issueById: new Map(),
+    isCreatingIssue: false,
   }),
   getters: {
     issueList: (state) => {
@@ -194,27 +197,32 @@ export const useIssueStore = defineStore("issue", {
       return issue;
     },
     async createIssue(newIssue: IssueCreate) {
-      const data = (
-        await axios.post(`/api/issue`, {
-          data: {
-            type: "IssueCreate",
-            attributes: {
-              ...newIssue,
-              // Server expects payload as string, so we stringify first.
-              createContext: JSON.stringify(newIssue.createContext),
-              payload: JSON.stringify(newIssue.payload),
+      try {
+        this.isCreatingIssue = true;
+        const data = (
+          await axios.post(`/api/issue`, {
+            data: {
+              type: "IssueCreate",
+              attributes: {
+                ...newIssue,
+                // Server expects payload as string, so we stringify first.
+                createContext: JSON.stringify(newIssue.createContext),
+                payload: JSON.stringify(newIssue.payload),
+              },
             },
-          },
-        })
-      ).data;
-      const createdIssue = convert(data.data, data.included);
+          })
+        ).data;
+        const createdIssue = convert(data.data, data.included);
 
-      this.setIssueById({
-        issueId: createdIssue.id,
-        issue: createdIssue,
-      });
+        this.setIssueById({
+          issueId: createdIssue.id,
+          issue: createdIssue,
+        });
 
-      return createdIssue;
+        return createdIssue;
+      } finally {
+        this.isCreatingIssue = false;
+      }
     },
     async validateIssue(newIssue: IssueCreate) {
       const data = (
@@ -339,4 +347,24 @@ export const refreshIssueList = () => {
 };
 export const useRefreshIssueList = (callback: WatchCallback) => {
   watch(REFRESH_ISSUE_LIST, callback);
+};
+
+export const useIssueById = (issueId: MaybeRef<IssueId>, lazy = false) => {
+  const store = useIssueStore();
+
+  watchEffect(() => {
+    const id = unref(issueId);
+    if (id !== UNKNOWN_ID) {
+      if (lazy && store.issueById.has(id)) {
+        // Don't fetch again if we have a local copy
+        // when lazy === true
+        return;
+      }
+      store.fetchIssueById(id);
+    }
+  });
+
+  return computed(() => {
+    return store.getIssueById(unref(issueId));
+  });
 };

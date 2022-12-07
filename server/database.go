@@ -17,9 +17,11 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/component/state"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -55,14 +57,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		var filteredList []*api.Database
 		role := c.Get(getRoleContextKey()).(api.Role)
-		// If caller is NOT requesting for a particular project and is NOT requesting for a particular
-		// instance or the caller is a Developer, then we will only return databases belonging to the
+		// If the caller is a developer, we will only return databases belonging to the
 		// project where the caller is a member of.
-		// Looking from the UI perspective:
-		// - The database list left sidebar will only return databases related to the caller regardless of the caller's role.
-		// - The database list on the instance page will return all databases if the caller is Owner or DBA, but will only return
-		//   related databases if the caller is Developer.
-		if projectIDStr == "" && (databaseFind.InstanceID == nil || role == api.Developer) {
+		if role == api.Developer {
 			principalID := c.Get(getPrincipalIDContextKey()).(int)
 			for _, database := range dbList {
 				for _, projectMember := range database.Project.ProjectMemberList {
@@ -159,7 +156,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
 		if dbPatch.Labels != nil {
-			if err := s.setDatabaseLabels(ctx, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
+			if err := setDatabaseLabels(ctx, s.store, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
@@ -202,7 +199,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						Comment:     fmt.Sprintf("Transferred out database %q to project %q.", dbPatched.Name, dbPatched.Project.Name),
 						Payload:     string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 				}
 
 				if err != nil {
@@ -223,7 +220,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						Comment:     fmt.Sprintf("Transferred in database %q from project %q.", dbExisting.Name, dbExisting.Project.Name),
 						Payload:     string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 					if err != nil {
 						log.Warn("Failed to create project activity after transferring database",
 							zap.Int("database_id", dbPatched.ID),
@@ -402,7 +399,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		driver, err := tryGetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
@@ -452,7 +449,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Backup %q already exists", backupCreate.Name))
 		}
 
-		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
+		backup, err := s.BackupRunner.ScheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			if common.ErrorCode(err) == common.DbConnectionFailure {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)
@@ -627,7 +624,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
-		if !s.feature(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
@@ -650,13 +647,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceDatabaseSyncChan <- updatedInstance
+		state.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -703,7 +700,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
-		if !s.feature(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
 			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
@@ -731,13 +728,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceDatabaseSyncChan <- updatedInstance
+		state.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
@@ -821,6 +818,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		engineType := parser.EngineType(database.Instance.Engine)
+		if err := edit.ValidateDatabaseEdit(engineType, databaseEdit); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid request: %s", err.Error()))
+		}
+
 		statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
@@ -833,7 +834,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
+func setDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
+	if labelsJSON == "" {
+		return nil
+	}
 	// NOTE: this is a partially filled DatabaseLabel
 	var labels []*api.DatabaseLabel
 	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
@@ -847,7 +851,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	}
 
 	rowStatus := api.Normal
-	labelKeyList, err := s.store.FindLabelKey(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
+	labelKeyList, err := store.FindLabelKey(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
 	}
@@ -874,122 +878,11 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	}
 
 	if !validateOnly {
-		if _, err = s.store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
+		if _, err = store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
 		}
 	}
 	return nil
-}
-
-// Try to get database driver using the instance's admin data source.
-// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir, dataDir string) (db.Driver, error) {
-	connCfg, err := getConnectionConfig(instance, databaseName)
-	if err != nil {
-		return nil, err
-	}
-
-	driver, err := getDatabaseDriver(
-		ctx,
-		instance.Engine,
-		db.DriverConfig{
-			PgInstanceDir: pgInstanceDir,
-			ResourceDir:   common.GetResourceDir(dataDir),
-			BinlogDir:     getBinlogAbsDir(dataDir, instance.ID),
-		},
-		connCfg,
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return driver, nil
-}
-
-// getConnectionConfig returns the connection config of the `databaseName` on `instance`.
-func getConnectionConfig(instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
-	if adminDataSource == nil {
-		return db.ConnectionConfig{}, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
-	}
-
-	return db.ConnectionConfig{
-		Username: adminDataSource.Username,
-		Password: adminDataSource.Password,
-		TLSConfig: db.TLSConfig{
-			SslCA:   adminDataSource.SslCa,
-			SslCert: adminDataSource.SslCert,
-			SslKey:  adminDataSource.SslKey,
-		},
-		Host:     instance.Host,
-		Port:     instance.Port,
-		Database: databaseName,
-	}, nil
-}
-
-// We'd like to use read-only data source whenever possible, but fallback to admin data source if there's no read-only data source.
-// Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
-	dataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
-	// If there are no read-only data source, fall back to admin data source.
-	if dataSource == nil {
-		dataSource = api.DataSourceFromInstanceWithType(instance, api.Admin)
-	}
-	if dataSource == nil {
-		return nil, common.Errorf(common.Internal, "data source not found for instance %d", instance.ID)
-	}
-
-	host, port := instance.Host, instance.Port
-	if dataSource.HostOverride != "" || dataSource.PortOverride != "" {
-		host, port = dataSource.HostOverride, dataSource.PortOverride
-	}
-	driver, err := getDatabaseDriver(
-		ctx,
-		instance.Engine,
-		// We don't need postgres installation for query.
-		db.DriverConfig{},
-		db.ConnectionConfig{
-			Username: dataSource.Username,
-			Password: dataSource.Password,
-			Host:     host,
-			Port:     port,
-			Database: databaseName,
-			TLSConfig: db.TLSConfig{
-				SslCA:   dataSource.SslCa,
-				SslCert: dataSource.SslCert,
-				SslKey:  dataSource.SslKey,
-			},
-			ReadOnly: true,
-		},
-		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return driver, nil
-}
-
-// Retrieve db.Driver connection with standard parameters for all type data source.
-func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.DriverConfig, connectionConfig db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	driver, err := db.Open(
-		ctx,
-		engine,
-		driverConfig,
-		connectionConfig,
-		connCtx,
-	)
-	if err != nil {
-		return nil, common.Wrapf(err, common.DbConnectionFailure, "failed to connect database at %s:%s with user %q", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username)
-	}
-	return driver, nil
 }
 
 func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {

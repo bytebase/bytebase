@@ -1,12 +1,17 @@
-# These owners will be the default owners for everything in the repository.
-*                            @d-bytebase
+# Backend and default.
+*                            @d-bytebase @ecmadao
 
 # Frontend.
 /frontend/                   @LiuJi-Jim @boojack
 
 # Dependency files.
-frontend/package.json        @d-bytebase @tianzhou
-go.mod                       @d-bytebase @tianzhou
+frontend/package.json        @d-bytebase @LiuJi-Jim
+go.mod                       @d-bytebase @ecmadao
 
 # Schema files.
 /store/migration             @d-bytebase @tianzhou
+
+# SQL kernel.
+/plugin/advisor              @d-bytebase @rebelice
+/plugin/db                   @d-bytebase @rebelice
+/plugin/parser               @d-bytebase @rebelice

@@ -25,10 +25,12 @@
             class="text-accent"
           />
         </label>
-        <p class="mt-2 text-sm flex items-center text-gray-600">
-          {{ $t("policy.environment-tier.description") }}
+        <p class="mt-2 text-sm text-gray-600">
+          <i18n-t tag="span" keypath="policy.environment-tier.description">
+            <template #newline><br /></template>
+          </i18n-t>
           <a
-            class="flex items-center text-blue-600 ml-1 hover:underline"
+            class="inline-flex items-center text-blue-600 ml-1 hover:underline"
             href="https://www.bytebase.com/docs/administration/environment-policy/tier"
             target="_blank"
             >{{ $t("common.learn-more")
@@ -485,6 +487,9 @@ const valueChanged = (
 
 const revertEnvironment = () => {
   state.environment = cloneDeep(props.environment!);
+  state.approvalPolicy = cloneDeep(props.approvalPolicy!);
+  state.backupPolicy = cloneDeep(props.backupPolicy!);
+  state.environmentTierPolicy = cloneDeep(props.environmentTierPolicy!);
 };
 
 const createEnvironment = () => {

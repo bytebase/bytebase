@@ -52,7 +52,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 
-		if settingPatch.Name == api.SettingBrandingLogo && !s.feature(api.FeatureBranding) {
+		if settingPatch.Name == api.SettingBrandingLogo && !s.licenseService.IsFeatureEnabled(api.FeatureBranding) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureBranding.AccessErrorMessage())
 		}
 
@@ -68,16 +68,26 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			if value.IMType != api.IMTypeFeishu {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unknown IM Type %s", value.IMType))
 			}
-			if value.ExternalApproval.Enabled && !s.feature(api.FeatureIMApproval) {
+			if value.ExternalApproval.Enabled && !s.licenseService.IsFeatureEnabled(api.FeatureIMApproval) {
 				return echo.NewHTTPError(http.StatusBadRequest, api.FeatureIMApproval.AccessErrorMessage())
 			}
 			if value.ExternalApproval.Enabled {
 				if value.AppID == "" || value.AppSecret == "" {
 					return echo.NewHTTPError(http.StatusBadRequest, "Application ID and secret cannot be empty")
 				}
-				p := s.ApplicationRunner.p
+				p := s.feishuProvider
 				// clear token cache so that we won't use the previous token.
 				p.ClearTokenCache()
+
+				// check bot info
+				if _, err := p.GetBotID(ctx, feishu.TokenCtx{
+					AppID:     value.AppID,
+					AppSecret: value.AppSecret,
+				}); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Failed to get bot id. Hint: check if bot is enabled.").SetInternal(err)
+				}
+
+				// create approval definition
 				approvalDefinitionID, err := p.CreateApprovalDefinition(ctx, feishu.TokenCtx{
 					AppID:     value.AppID,
 					AppSecret: value.AppSecret,
@@ -85,6 +95,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Failed to create approval definition").SetInternal(err)
 				}
+
 				value.ExternalApproval.ApprovalDefinitionID = approvalDefinitionID
 				b, err := json.Marshal(value)
 				if err != nil {

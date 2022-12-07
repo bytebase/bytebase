@@ -15,6 +15,7 @@ import {
   useDebugStore,
   useInstanceStore,
   pushNotification,
+  usePolicyStore,
 } from "@/store";
 import type { Instance, Database, Connection, ConnectionAtom } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
@@ -27,6 +28,7 @@ import {
   isSheetReadable,
   isSameConnection,
   isTempTab,
+  isDatabaseAccessible,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 
@@ -47,6 +49,7 @@ const state = reactive<LocalState>({
 const currentUser = useCurrentUser();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
+const policyStore = usePolicyStore();
 const sqlEditorStore = useSQLEditorStore();
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
@@ -73,6 +76,12 @@ const prepareAccessibleConnectionByProject = async () => {
 };
 
 const prepareSQLEditorContext = async () => {
+  sqlEditorStore.accessControlPolicyList =
+    await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
+      "database",
+      "bb.policy.access-control"
+    );
+
   let connectionTree: ConnectionAtom[] = [];
 
   const { instanceList, databaseList } = state;
@@ -83,9 +92,23 @@ const prepareSQLEditorContext = async () => {
       (item: ConnectionAtom) => item.id === instance.id
     )!;
 
+    const databaseMapper = mapConnectionAtom("database", instance.id);
     instanceItem.children = databaseList
       .filter((db) => db.instance.id === instance.id)
-      .map(mapConnectionAtom("database", instance.id));
+      .map((db) => {
+        const node = databaseMapper(db);
+        node.disabled = !isDatabaseAccessible(
+          db,
+          sqlEditorStore.accessControlPolicyList,
+          currentUser.value
+        );
+        if (node.disabled) {
+          // If a database node is not accessible
+          // it's not expandable either.
+          node.isLeaf = true;
+        }
+        return node;
+      });
 
     sqlEditorStore.connectionTree.data = connectionTree;
   }

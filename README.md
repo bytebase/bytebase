@@ -44,6 +44,13 @@ GitOps workflow, database-as-Code, login with VCS account, project membership sy
 
 ✅ GitLab CE/EE ✅ GitHub.com
 
+## Terraform Integration
+
+[Bytebase Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs)
+enables team to manage Bytebase resources via Terraform. A typical setup involves teams using
+Terraform to provision database instances from Cloud vendors, followed by using Bytebase TF provider
+to prepare those instances ready for application use.
+
 ## Features
 
 - [x] Web-based database change and management workspace for teams
@@ -51,7 +58,7 @@ GitOps workflow, database-as-Code, login with VCS account, project membership sy
   - [UI based change workflow](https://www.bytebase.com/docs/change-database/change-workflow)
   - [Version control based change workflow](https://www.bytebase.com/docs/vcs-integration/overview) (Database-as-Code)
   - [SQL Review Rules](https://www.bytebase.com/docs/sql-review/review-rules/overview)
-- [x] Built-in SQL Editor
+- [x] Built-in SQL Editor with read-only and admin mode
 - [x] Detailed migration history
 - [x] Multi-tenancy (rollout change to homogeneous databases belonged to different tenants)
 - [x] Online schema change based on gh-ost
@@ -63,6 +70,7 @@ GitOps workflow, database-as-Code, login with VCS account, project membership sy
   - Backup schedule enforcement
 - [x] Schema drift detection
 - [x] Backward compatibility schema change check
+- [x] Data Anonymization
 - [x] Role-based access control (RBAC)
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
 
@@ -78,9 +86,11 @@ GitOps workflow, database-as-Code, login with VCS account, project membership sy
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
 
-<figcaption align = "center">Fig.4 - Built-in SQL Editor</figcaption>
+<figcaption align = "center">Fig.4 - Built-in SQL Editor (read-only and admin mode)</figcaption>
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp)
+
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor-admin-mode.webp)
 
 ## 📕 Docs
 
@@ -93,6 +103,12 @@ https://bytebase.com/docs/get-started/install/overview
 https://bytebase.com/docs
 
 In particular, get familiar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
+
+### Testing doc
+
+How to run all or a subset of tests
+
+https://github.com/bytebase/bytebase/blob/main/docs/testing.md
 
 ### Design doc
 
@@ -139,21 +155,18 @@ working on the code:
 
 - Data Model
 
-  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
+  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/data-model-v2.webp)
 
 ### Prerequisites
 
 - [Go](https://golang.org/doc/install) (1.19 or later)
 - [pnpm](https://pnpm.io/installation)
-- [Air](https://github.com/cosmtrek/air#installation) (**must use forked repo 87187cc**). This is for backend live reload.
+- [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
+  ```bash
+  go install github.com/bytebase/air@87187cc
+  ```
 
 ### Steps
-
-1. Install forked Air 87187cc. Use 87187cc because it has the cherrypicked fix.
-
-   ```bash
-   go install github.com/bytebase/air@87187cc
-   ```
 
 1. Pull source.
 

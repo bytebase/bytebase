@@ -14,7 +14,8 @@ export type PolicyType =
   | "bb.policy.backup-plan"
   | "bb.policy.sql-review"
   | "bb.policy.environment-tier"
-  | "bb.policy.sensitive-data";
+  | "bb.policy.sensitive-data"
+  | "bb.policy.access-control";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
@@ -81,12 +82,21 @@ export type SensitiveDataPolicyPayload = {
   sensitiveDataList: SensitiveData[];
 };
 
+export type AccessControlRule = {
+  fullDatabase: boolean;
+};
+
+export type AccessControlPolicyPayload = {
+  disallowRuleList: AccessControlRule[];
+};
+
 export type PolicyPayload =
   | PipelineApprovalPolicyPayload
   | BackupPlanPolicyPayload
   | SQLReviewPolicyPayload
   | EnvironmentTierPolicyPayload
-  | SensitiveDataPolicyPayload;
+  | SensitiveDataPolicyPayload
+  | AccessControlPolicyPayload;
 
 export type PolicyResourceType =
   | ""
@@ -112,6 +122,7 @@ export type Policy = {
   environment: Environment;
 
   // Domain specific fields
+  inheritFromParent: boolean;
   type: PolicyType;
   payload: PolicyPayload;
 };
@@ -121,5 +132,6 @@ export type PolicyUpsert = {
   rowStatus?: RowStatus;
 
   // Domain specific fields
+  inheritFromParent?: boolean;
   payload?: PolicyPayload;
 };

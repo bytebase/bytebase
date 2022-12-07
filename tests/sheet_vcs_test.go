@@ -45,7 +45,7 @@ func TestSheetVCS(t *testing.T) {
 			a := require.New(t)
 			ctx := context.Background()
 			ctl := &controller{}
-			err := ctl.StartServer(ctx, &config{
+			err := ctl.StartServerWithExternalPg(ctx, &config{
 				dataDir:            t.TempDir(),
 				vcsProviderCreator: test.vcsProviderCreator,
 			})
@@ -83,6 +83,11 @@ func TestSheetVCS(t *testing.T) {
 
 			// Create a repository.
 			ctl.vcsProvider.CreateRepository(test.externalID)
+
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
 			_, err = ctl.createRepository(
 				api.RepositoryCreate{
 					VCSID:              vcs.ID,

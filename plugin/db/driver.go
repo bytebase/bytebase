@@ -157,10 +157,12 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	PgInstanceDir string
-	// We use resource directory to splice the path of embedded binary, likes binaries in mysqlutil package.
-	ResourceDir string
-	BinlogDir   string
+	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL).
+	DbBinDir string
+
+	// NOTE, introducing db specific fields is the last resort.
+	// MySQL specific
+	BinlogDir string
 }
 
 type driverFunc func(DriverConfig) Driver
@@ -445,6 +447,18 @@ type ConnectionContext struct {
 	InstanceName    string
 }
 
+// QueryContext is the context to query.
+type QueryContext struct {
+	// Limit is the maximum row count returned. No limit enforced if limit <= 0
+	Limit                 int
+	ReadOnly              bool
+	SensitiveDataMaskType SensitiveDataMaskType
+	SensitiveSchemaInfo   *SensitiveSchemaInfo
+
+	// CurrentDatabase is for MySQL
+	CurrentDatabase string
+}
+
 // Driver is the interface for database driver.
 type Driver interface {
 	// General execution
@@ -457,10 +471,9 @@ type Driver interface {
 	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-	Execute(ctx context.Context, statement string, createDatabase bool) error
+	Execute(ctx context.Context, statement string, createDatabase bool) (int64, error)
 	// Used for execute readonly SELECT statement
-	// limit is the maximum row count returned. No limit enforced if limit <= 0
-	Query(ctx context.Context, statement string, limit int, readOnly bool) ([]interface{}, error)
+	Query(ctx context.Context, statement string, queryContext *QueryContext) ([]interface{}, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
@@ -549,8 +562,40 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
-// SensitiveColumnList is the list for sensitive columns.
-type SensitiveColumnList []string
+// SensitiveDataMaskType is the mask type for sensitive data.
+type SensitiveDataMaskType string
 
-// SensitiveSchema is the set of the sensitive columns group by table names.
-type SensitiveSchema map[string]SensitiveColumnList
+const (
+	// SensitiveDataMaskTypeDefault is the sensitive data type to hide data with a default method.
+	// The default method is subject to change.
+	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
+)
+
+// SensitiveSchemaInfo is the schema info using to extract sensitive fields.
+type SensitiveSchemaInfo struct {
+	DatabaseList []DatabaseSchema
+}
+
+// DatabaseSchema is the database schema using to extract sensitive fields.
+type DatabaseSchema struct {
+	Name      string
+	TableList []TableSchema
+}
+
+// TableSchema is the table schema using to extract sensitive fields.
+type TableSchema struct {
+	Name       string
+	ColumnList []ColumnInfo
+}
+
+// ColumnInfo is the column info using to extract sensitive fields.
+type ColumnInfo struct {
+	Name      string
+	Sensitive bool
+}
+
+// SensitiveField is the struct about SELECT fields.
+type SensitiveField struct {
+	Name      string
+	Sensitive bool
+}

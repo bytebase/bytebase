@@ -70,6 +70,7 @@
     "next": "Next",
     "edit": "Edit",
     "update": "Update",
+    "updated": "Updated",
     "visit": "Visit",
     "role": {
       "dba": "DBA",
@@ -97,6 +98,7 @@
     "status": "Status",
     "stage": "Stage",
     "task": "Task",
+    "tasks": "Tasks",
     "sql": "SQL",
     "unassigned": "Unassigned",
     "new": "New",
@@ -138,6 +140,7 @@
     "Default": "Default",
     "definition": "Definition",
     "empty": "Empty",
+    "connecting": "Connecting...",
     "creating": "Creating...",
     "updating": "Updating...",
     "Address": "Address",
@@ -210,7 +213,8 @@
     "advanced": "Advanced",
     "restart": "Restart",
     "want-help": "Want help",
-    "operation": "Operation"
+    "operation": "Operation",
+    "rollback": "Rollback"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -283,7 +287,10 @@
         "row": "rows"
       },
       "counting": "Counting"
-    }
+    },
+    "n-similar-tasks": "({count} similar tasks)",
+    "mark-as-done": "Mark as done",
+    "mark-as-done-modal-title": "Mark task [{name}] as done?"
   },
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
@@ -328,7 +335,8 @@
       "subscription": "Subscription",
       "labels": "Labels",
       "debug-log": "Debug Log",
-      "sensitive-data": "Sensitive Data"
+      "sensitive-data": "Sensitive Data",
+      "access-control": "Access Control"
     },
     "profile": {
       "email": "Email",
@@ -381,7 +389,13 @@
       "change-role-provider-to-bytebase": {
         "content": "You are about to restore the following members. All existing members synced from VCS will be removed."
       },
-      "system-bot": "System Bot"
+      "system-bot": "System Bot",
+      "service-account": "Service Account",
+      "copy-service-key": "Copy Service Key",
+      "reset-service-key": "Reset Service Key",
+      "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
+      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
+      "create-as-service-account": "Create as service account"
     },
     "im-integration": {
       "enable": "Enable",
@@ -403,6 +417,11 @@
     "sensitive-data": {
       "description": "The query result of the following columns is displayed as \"******\". \nYou can mark more columns as sensitive data on the table details page.",
       "remove-sensitive-column-tips": "Expose this column?"
+    },
+    "access-control": {
+      "description": "Allow developers to execute queries for the following databases in the protected environments from SQL Editor.",
+      "add-rule": "Add rule",
+      "remove-policy-tips": "Remove this rule?"
     }
   },
   "activity": {
@@ -428,7 +447,8 @@
       "project-member-delete": "delete project member",
       "project-member-role-update": "change project member role",
       "pipeline-task-earliest-allowed-time-update": "update earliest allowed time",
-      "database-recovery-pitr-done": "restore database to point in time"
+      "database-recovery-pitr-done": "restore database to point in time",
+      "external-approval-rejected": "external approval rejected"
     },
     "sentence": {
       "created-issue": "created issue",
@@ -454,8 +474,9 @@
       "completed": "completed",
       "failed": "failed",
       "task-name": " task {name}",
-      "committed-to-at": "committed {file} to{branch}{'@'}{repo}",
-      "dismissed-stale-approval": "dismissed stale approvals of {task}"
+      "committed-to-at": "committed {file} to {branch}{'@'}{repo}",
+      "dismissed-stale-approval": "dismissed stale approvals of {task}",
+      "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\""
     },
     "subject-prefix": {
       "task": "Task"
@@ -470,7 +491,9 @@
       "modal": {
         "resolve": "Resolve issue?",
         "cancel": "Cancel this entire issue?",
-        "reopen": "Reopen issue?"
+        "reopen": "Reopen issue?",
+        "title": "{action} {type} [{name}]?",
+        "action-to-stage": "{action} stage ({n} tasks)"
       },
       "dropdown": {
         "resolve": "Resolve issue",
@@ -546,7 +569,9 @@
       "change-will-apply-to-all-tasks-in-tenant-mode": "The change will be applied to all tasks",
       "dont-apply-to-database-in-baseline-migration": "This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history",
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
-    }
+    },
+    "rollback-from": "This task rollbacks from {link}.",
+    "issue-link-with-task": "Issue {issue} - task {task}"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -587,7 +612,7 @@
     "reserved-db-error": "{databaseName} is a reserved name",
     "generated-database-name": "Generated database name",
     "db-name-generated-by-template": "Generated by template \"{template}\"",
-    "select-label-value": "Select {key}"
+    "input-label-value": "Input {key}"
   },
   "db": {
     "encoding": "Encoding",
@@ -742,6 +767,7 @@
       "new-user": "New to Bytebase?",
       "demo-note": "Please use demo account to sign in",
       "gitlab": "Login with GitLab",
+      "github": "Login with GitHub",
       "3rd-party-auth-demo": "Third-party authentication is disabled in Demo mode",
       "gitlab-oauth": "Reach to your Admin to enable GitLab login"
     },
@@ -787,7 +813,7 @@
     },
     "environment-tier": {
       "name": "Environment tier",
-      "description": "The environment will appear differently from other environments.",
+      "description": "The environment will appear differently from other environments.{newline}Developers cannot execute any query on this environment's databases \nusing SQL Editor by default. ",
       "mark-env-as-protected": "Mark as protected environment"
     }
   },
@@ -944,7 +970,8 @@
       "character-sets-diff-found": "There are differences between character sets.",
       "preview-issue": "Preview issue"
     },
-    "sensitive": "Sensitive"
+    "sensitive": "Sensitive",
+    "access-denied": "You don't have the permission to access this database."
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1367,6 +1394,52 @@
     },
     "close-sheet": "Close sheet"
   },
+  "ui-editor": {
+    "self": "UI Editor",
+    "use-tips": "Click a database/table to start.",
+    "preview-issue": "Preview issue",
+    "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
+    "raw-sql": "Raw SQL",
+    "actions": {
+      "create-table": "New table",
+      "rename": "Rename",
+      "drop-table": "Drop table",
+      "restore": "Restore",
+      "add-column": "Add column",
+      "drop-column": "Drop column",
+      "sql-preview": "SQL Preview",
+      "reset": "Reset",
+      "save": "Save"
+    },
+    "database": {
+      "name": "Name",
+      "row-count": "Row count",
+      "data-size": "Data size",
+      "engine": "Engine",
+      "collation": "Collation",
+      "comment": "Comment"
+    },
+    "table-list": "Table List",
+    "table": {
+      "name": "Table Name"
+    },
+    "column-list": "Column List",
+    "column": {
+      "name": "Name",
+      "type": "Type",
+      "default": "Default",
+      "comment": "Comment",
+      "is-nullable": "Is Nullable"
+    },
+    "nothing-changed": "Nothing changed",
+    "message": {
+      "invalid-table-name": "Invalid table name",
+      "duplicated-table-name": "Duplicated table name",
+      "invalid-column-name": "Invalid column name",
+      "duplicated-column-name": "Duplicated column name",
+      "invalid-column-type": "Invalid column type"
+    }
+  },
   "label": {
     "empty-label-value": "<Empty Value>",
     "no-label": "No labels",
@@ -1445,6 +1518,14 @@
         "title": "Environment tier",
         "desc": "Mark environment as protected."
       },
+      "bb-feature-sensitive-data": {
+        "title": "Sensitive data",
+        "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
+      },
+      "bb-feature-access-control": {
+        "title": "Access control",
+        "desc": "Change query permission for databases in the protected environments."
+      },
       "bb-feature-lgtm": {
         "title": "LGTM check",
         "desc": "Check if the issue has an \"LGTM\" comment."
@@ -1520,11 +1601,13 @@
     "disabled": "Disabled",
     "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
+    "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
     "search-rule-name": "Search rule name",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
     "policy-updated": "Successfully updated the review policy.",
+    "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
     "filter": "Filter",
     "no-permission": "Only DBA or Owner has permission to create or update review policy.",

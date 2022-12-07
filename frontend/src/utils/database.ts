@@ -1,8 +1,7 @@
 import { groupBy } from "lodash-es";
-import semverCompare from "semver/functions/compare";
 import { Database, DataSourceType, Environment, Principal } from "../types";
 import { hasWorkspacePermission } from "./role";
-import { isDev } from "./util";
+import { isDev, semverCompare } from "./util";
 
 export function allowDatabaseAccess(
   database: Database,
@@ -78,10 +77,7 @@ export function allowGhostMigration(databaseList: Database[]): boolean {
   return databaseList.every((db) => {
     return (
       db.instance.engine === "MYSQL" &&
-      semverCompare(
-        db.instance.engineVersion,
-        MIN_GHOST_SUPPORT_MYSQL_VERSION
-      ) >= 0
+      semverCompare(db.instance.engineVersion, MIN_GHOST_SUPPORT_MYSQL_VERSION)
     );
   });
 }
@@ -90,4 +86,14 @@ export function isPITRDatabase(db: Database): boolean {
   const { name } = db;
   // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
   return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
+}
+
+export function isArchivedDatabase(db: Database): boolean {
+  if (db.instance.rowStatus === "ARCHIVED") {
+    return true;
+  }
+  if (db.instance.environment.rowStatus === "ARCHIVED") {
+    return true;
+  }
+  return false;
 }

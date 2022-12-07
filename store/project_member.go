@@ -67,7 +67,7 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
 	}
 	// Invalidate the cache.
-	s.cache.DeleteCache(api.ProjectMemberCache, create.ProjectID)
+	s.cache.DeleteCache(projectMemberCacheNamespace, create.ProjectID)
 
 	return projectMember, nil
 }
@@ -78,7 +78,7 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 	findCopy.ProjectID = nil
 	isListProjectMember := find.ProjectID != nil && findCopy == api.ProjectMemberFind{}
 	var cacheList []*api.ProjectMember
-	has, err := s.cache.FindCache(api.ProjectMemberCache, *find.ProjectID, &cacheList)
+	has, err := s.cache.FindCache(projectMemberCacheNamespace, *find.ProjectID, &cacheList)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 		projectMemberList = append(projectMemberList, projectMember)
 	}
 	if isListProjectMember {
-		if err := s.cache.UpsertCache(api.ProjectMemberCache, *find.ProjectID, projectMemberList); err != nil {
+		if err := s.cache.UpsertCache(projectMemberCacheNamespace, *find.ProjectID, projectMemberList); err != nil {
 			return nil, err
 		}
 	}
@@ -143,7 +143,7 @@ func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMember
 		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
 	}
 	// Invalidate the cache.
-	s.cache.DeleteCache(api.ProjectMemberCache, projectMemberRaw.ProjectID)
+	s.cache.DeleteCache(projectMemberCacheNamespace, projectMemberRaw.ProjectID)
 	return projectMember, nil
 }
 
@@ -163,7 +163,7 @@ func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemb
 		return FormatError(err)
 	}
 	// Invalidate the cache.
-	s.cache.DeleteCache(api.ProjectMemberCache, delete.ProjectID)
+	s.cache.DeleteCache(projectMemberCacheNamespace, delete.ProjectID)
 
 	return nil
 }
@@ -189,6 +189,8 @@ func (s *Store) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.P
 		}
 		deletedMemberList = append(deletedMemberList, deletedMember)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(projectMemberCacheNamespace, batchUpdate.ProjectID)
 	return createdMemberList, deletedMemberList, nil
 }
 
@@ -348,7 +350,7 @@ func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *ap
 	defer txRead.Rollback()
 
 	findProjectMember := &api.ProjectMemberFind{
-		ProjectID:    &batchUpdate.ID,
+		ProjectID:    &batchUpdate.ProjectID,
 		RoleProvider: &batchUpdate.RoleProvider,
 	}
 	oldProjectMemberRawList, err := findProjectMemberImpl(ctx, txRead, findProjectMember)

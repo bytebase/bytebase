@@ -16,31 +16,25 @@
       class="space-y-4 flex flex-col justify-center items-center"
       v-bind="$attrs"
     >
-      <div v-for="label in availableLabelList" :key="label.id" class="w-64">
+      <div v-for="label in PRESET_LABEL_KEYS" :key="label" class="w-64">
         <label class="textlabel capitalize">
-          {{ hidePrefix(label.key) }}
-          <span v-if="isRequiredLabel(label.key)" style="color: red">*</span>
+          {{ hidePrefix(label) }}
+          <span v-if="isRequiredLabel(label)" style="color: red">*</span>
         </label>
 
         <div class="flex flex-col space-y-1 w-64 mt-1">
-          <select
-            class="btn-select w-full disabled:cursor-not-allowed"
-            :value="getLabelValue(label.key)"
-            :disabled="isParsedLabel(label.key)"
-            @change="(e: any) => setLabelValue(label.key, e.target.value)"
-          >
-            <option disabled>{{ getLabelPlaceholder(label.key) }}</option>
-            <option
-              v-for="value in getLabelValueList(label)"
-              :key="value"
-              :value="value"
-            >
-              {{ value === "" ? $t("label.empty-label-value") : value }}
-            </option>
-          </select>
+          <BBTextField
+            :disabled="isParsedLabel(label)"
+            :value="getLabelValue(label)"
+            :placeholder="getLabelPlaceholder(label)"
+            class="textfield"
+            @input="
+              setLabelValue(label, ($event.target as HTMLInputElement).value)
+            "
+          />
         </div>
 
-        <div v-if="isParsedLabel(label.key)" class="mt-2 textinfolabel">
+        <div v-if="isParsedLabel(label)" class="mt-2 textinfolabel">
           <i18n-t keypath="label.parsed-from-template">
             <template #name>{{ database.name }}</template>
             <template #template>
@@ -70,7 +64,6 @@ import { useI18n } from "vue-i18n";
 import type {
   Database,
   DatabaseLabel,
-  Label,
   LabelKeyType,
   LabelValueType,
   Project,
@@ -78,11 +71,12 @@ import type {
 } from "@/types";
 import {
   buildDatabaseNameRegExpByTemplate,
-  isReservedLabel,
-  parseLabelListInTemplate,
   hidePrefix,
+  parseLabelListInTemplate,
+  PRESET_LABEL_KEYS,
+  PRESET_LABEL_KEY_PLACEHOLDERS,
 } from "@/utils";
-import { useLabelList, useProjectStore } from "@/store";
+import { useProjectStore } from "@/store";
 
 const props = defineProps<{
   database: Database;
@@ -105,27 +99,18 @@ const targetProject = computed(() => {
   return projectStore.getProjectById(props.targetProjectId) as Project;
 });
 
-const labelList = useLabelList();
-
-const availableLabelList = computed(() => {
-  return labelList.value.filter((label) => !isReservedLabel(label));
-});
-
 const prepare = () => {
   projectStore.fetchProjectById(props.targetProjectId);
 };
 
 watchEffect(prepare);
 
-const requiredLabelList = computed((): Label[] => {
+const requiredLabelList = computed((): string[] => {
   const project = targetProject.value;
   if (!project.dbNameTemplate) return [];
 
   // for databases with dbNameTemplate, we need to parse required labels from its template
-  return parseLabelListInTemplate(
-    project.dbNameTemplate,
-    availableLabelList.value
-  );
+  return parseLabelListInTemplate(project.dbNameTemplate);
 });
 
 const dbNameMatchesTemplate = computed((): boolean => {
@@ -134,15 +119,12 @@ const dbNameMatchesTemplate = computed((): boolean => {
     // no restrictions, because no template
     return true;
   }
-  const regex = buildDatabaseNameRegExpByTemplate(
-    project.dbNameTemplate,
-    availableLabelList.value
-  );
+  const regex = buildDatabaseNameRegExpByTemplate(project.dbNameTemplate);
   return regex.test(props.database.name);
 });
 
 const isRequiredLabel = (key: LabelKeyType): boolean => {
-  return requiredLabelList.value.some((label) => label.key === key);
+  return requiredLabelList.value.includes(key);
 };
 
 const isParsedLabel = (key: LabelKeyType): boolean => {
@@ -153,21 +135,16 @@ const labelListParsedFromTemplate = computed((): DatabaseLabel[] => {
   if (!dbNameMatchesTemplate.value) return [];
 
   const regex = buildDatabaseNameRegExpByTemplate(
-    targetProject.value.dbNameTemplate,
-    availableLabelList.value
+    targetProject.value.dbNameTemplate
   );
   const match = props.database.name.match(regex);
   if (!match) return [];
 
   const parsedLabelList: DatabaseLabel[] = [];
-  availableLabelList.value.forEach((label) => {
-    const group = `label_${label.id}`;
-    if (match.groups?.[group]) {
-      const value = match.groups[group];
-      parsedLabelList.push({
-        key: label.key,
-        value,
-      });
+  PRESET_LABEL_KEY_PLACEHOLDERS.forEach(([placeholder, key]) => {
+    const value = match.groups?.[placeholder];
+    if (value) {
+      parsedLabelList.push({ key, value });
     }
   });
 
@@ -184,34 +161,24 @@ const allowNext = computed(() => {
   if (!dbNameMatchesTemplate.value) return false;
 
   // every required label must be filled
-  return requiredLabelList.value.every((label) => {
-    return !!getLabelValue(label.key);
+  return requiredLabelList.value.every((key) => {
+    return !!getLabelValue(key);
   });
 });
 
 const getLabelPlaceholder = (key: LabelKeyType): string => {
-  // provide "Select Tenant" if Tenant is optional
-  // provide "Select {{TENANT}}" if Tenant is required in the template
+  // provide "Input Tenant" if Tenant is optional
+  // provide "Input {{TENANT}}" if Tenant is required in the template
   key = isRequiredLabel(key)
     ? `{{${hidePrefix(key).toUpperCase()}}}`
     : capitalize(hidePrefix(key));
-  return t("create-db.select-label-value", { key });
+  return t("create-db.input-label-value", { key });
 };
 
 const getLabelValue = (key: LabelKeyType): LabelValueType | undefined => {
   return (
     state.databaseLabelList.find((label) => label.key === key)?.value || ""
   );
-};
-
-const getLabelValueList = (label: Label): LabelValueType[] => {
-  const valueList = [...label.valueList];
-  if (!isRequiredLabel(label.key)) {
-    // for optional labels
-    // provide a "<empty value>" option ahead of other values
-    valueList.unshift("");
-  }
-  return valueList;
 };
 
 const setLabelValue = (key: LabelKeyType, value: LabelValueType) => {

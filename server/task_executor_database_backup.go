@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -15,6 +14,11 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/backuprun"
+	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -23,34 +27,31 @@ const (
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
-func NewDatabaseBackupTaskExecutor() TaskExecutor {
-	return &DatabaseBackupTaskExecutor{}
+func NewDatabaseBackupTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile) TaskExecutor {
+	return &DatabaseBackupTaskExecutor{
+		store:     store,
+		dbFactory: dbFactory,
+		s3Client:  s3Client,
+		profile:   profile,
+	}
 }
 
 // DatabaseBackupTaskExecutor is the task executor for database backup.
 type DatabaseBackupTaskExecutor struct {
-	completed int32
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *DatabaseBackupTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
-}
-
-// GetProgress returns the task progress.
-func (*DatabaseBackupTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
+	s3Client  *bbs3.Client
+	profile   config.Profile
 }
 
 // RunOnce will run database backup once.
-func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer atomic.StoreInt32(&exec.completed, 1)
+func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database backup payload")
 	}
 
-	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
+	backup, err := exec.store.GetBackupByID(ctx, payload.BackupID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to find backup with ID %d", payload.BackupID)
 	}
@@ -59,7 +60,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	if backup.StorageBackend == api.BackupStorageBackendLocal {
-		backupFileDir := filepath.Dir(filepath.Join(server.profile.DataDir, backup.Path))
+		backupFileDir := filepath.Dir(filepath.Join(exec.profile.DataDir, backup.Path))
 		availableBytes, err := getAvailableFSSpace(backupFileDir)
 		if err != nil {
 			return true, nil, errors.Wrapf(err, "failed to get available file system space, backup file dir is %s", backupFileDir)
@@ -70,13 +71,13 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	log.Debug("Start database backup.", zap.String("instance", task.Instance.Name), zap.String("database", task.Database.Name), zap.String("backup", backup.Name))
-	backupPayload, backupErr := exec.backupDatabase(ctx, server, task.Instance, task.Database.Name, backup)
+	backupPayload, backupErr := exec.backupDatabase(ctx, exec.dbFactory, exec.s3Client, exec.profile, task.Instance, task.Database.Name, backup)
 	backupStatus := string(api.BackupStatusDone)
 	comment := ""
 	if backupErr != nil {
 		backupStatus = string(api.BackupStatusFailed)
 		comment = backupErr.Error()
-		if err := removeLocalBackupFile(server.profile.DataDir, backup); err != nil {
+		if err := removeLocalBackupFile(exec.profile.DataDir, backup); err != nil {
 			log.Warn(err.Error())
 		}
 	}
@@ -88,7 +89,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Payload:   &backupPayload,
 	}
 
-	if _, err := server.store.PatchBackup(ctx, &backupPatch); err != nil {
+	if _, err := exec.store.PatchBackup(ctx, &backupPatch); err != nil {
 		return true, nil, errors.Wrap(err, "failed to patch backup")
 	}
 
@@ -105,7 +106,7 @@ func removeLocalBackupFile(dataDir string, backup *api.Backup) error {
 	if backup.StorageBackend != api.BackupStorageBackendLocal {
 		return nil
 	}
-	backupFilePath := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
+	backupFilePath := backuprun.GetBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
 	if err := os.Remove(backupFilePath); err != nil {
 		return errors.Wrapf(err, "failed to delete the local backup file %s", backupFilePath)
 	}
@@ -141,14 +142,14 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupF
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *Server, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, server.pgInstance.BaseDir, server.profile.DataDir)
+func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
 	}
 	defer driver.Close(ctx)
 
-	backupFilePathLocal := filepath.Join(server.profile.DataDir, backup.Path)
+	backupFilePathLocal := filepath.Join(profile.DataDir, backup.Path)
 	payload, err := dumpBackupFile(ctx, driver, databaseName, backupFilePathLocal)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to dump backup file %q", backupFilePathLocal)
@@ -158,14 +159,14 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 	case api.BackupStorageBackendLocal:
 		return payload, nil
 	case api.BackupStorageBackendS3:
-		log.Debug("Uploading backup to s3 bucket.", zap.String("bucket", server.s3Client.GetBucket()), zap.String("path", backupFilePathLocal))
+		log.Debug("Uploading backup to s3 bucket.", zap.String("bucket", s3Client.GetBucket()), zap.String("path", backupFilePathLocal))
 		bucketFileToUpload, err := os.Open(backupFilePathLocal)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to open backup file %q for uploading to s3 bucket", backupFilePathLocal)
 		}
 		defer bucketFileToUpload.Close()
 
-		if _, err := server.s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
+		if _, err := s3Client.UploadObject(ctx, backup.Path, bucketFileToUpload); err != nil {
 			return "", errors.Wrapf(err, "failed to upload backup to AWS S3")
 		}
 		log.Debug("Successfully uploaded backup to s3 bucket.")
@@ -179,30 +180,4 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, server *S
 	default:
 		return "", errors.Errorf("backup to %s not implemented yet", backup.StorageBackend)
 	}
-}
-
-// Get backup dir relative to the data dir.
-func getBackupRelativeDir(databaseID int) string {
-	return filepath.Join("backup", "db", fmt.Sprintf("%d", databaseID))
-}
-
-func getBackupRelativeFilePath(databaseID int, name string) string {
-	dir := getBackupRelativeDir(databaseID)
-	return filepath.Join(dir, fmt.Sprintf("%s.sql", name))
-}
-
-func getBackupAbsFilePath(dataDir string, databaseID int, name string) string {
-	path := getBackupRelativeFilePath(databaseID, name)
-	return filepath.Join(dataDir, path)
-}
-
-// Create backup directory for database.
-func createBackupDirectory(dataDir string, databaseID int) error {
-	dir := getBackupRelativeDir(databaseID)
-	absDir := filepath.Join(dataDir, dir)
-	return os.MkdirAll(absDir, os.ModePerm)
-}
-
-func getBinlogAbsDir(dataDir string, instanceID int) string {
-	return filepath.Join(dataDir, "backup", "instance", fmt.Sprintf("%d", instanceID))
 }

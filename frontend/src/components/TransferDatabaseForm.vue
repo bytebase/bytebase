@@ -1,24 +1,6 @@
 <template>
-  <TransferSingleDatabaseForm
-    v-if="isTenantProject"
-    :project="project"
-    :transfer-source="state.transferSource"
-    :database-list="databaseList"
-    @dismiss="$emit('dismiss')"
-    @submit="(database, labels) => transferDatabase([database], labels)"
-  >
-    <template #transfer-source-selector>
-      <TransferSourceSelector
-        :project="project"
-        :transfer-source="state.transferSource"
-        @change="state.transferSource = $event"
-        @search-text-change="state.searchText = $event"
-      />
-    </template>
-  </TransferSingleDatabaseForm>
-
   <TransferMultipleDatabaseForm
-    v-else
+    :target-project="project"
     :transfer-source="state.transferSource"
     :database-list="databaseList"
     @dismiss="$emit('dismiss')"
@@ -46,7 +28,6 @@
 import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
 import { cloneDeep } from "lodash-es";
 import {
-  TransferSingleDatabaseForm,
   TransferMultipleDatabaseForm,
   TransferSource,
   TransferSourceSelector,
@@ -57,7 +38,11 @@ import {
   DEFAULT_PROJECT_ID,
   DatabaseLabel,
 } from "../types";
-import { sortDatabaseList } from "../utils";
+import {
+  buildDatabaseNameRegExpByTemplate,
+  PRESET_LABEL_KEY_PLACEHOLDERS,
+  sortDatabaseList,
+} from "../utils";
 import {
   pushNotification,
   useCurrentUser,
@@ -102,8 +87,6 @@ watch(
   { immediate: true }
 );
 
-const isTenantProject = computed(() => project.value.tenantMode === "TENANT");
-
 const prepareDatabaseListForDefaultProject = () => {
   databaseStore.fetchDatabaseListByProjectId(DEFAULT_PROJECT_ID);
 };
@@ -132,10 +115,7 @@ const databaseList = computed(() => {
   return sortDatabaseList(list, environmentList.value);
 });
 
-const transferDatabase = async (
-  databaseList: Database[],
-  labels?: DatabaseLabel[]
-) => {
+const transferDatabase = async (databaseList: Database[]) => {
   const transferOneDatabase = (
     database: Database,
     labels?: DatabaseLabel[]
@@ -149,7 +129,10 @@ const transferDatabase = async (
 
   try {
     state.loading = true;
-    const requests = databaseList.map((db) => transferOneDatabase(db, labels));
+    const requests = databaseList.map((db) => {
+      const labels = parseLabelsIfNeeded(db);
+      transferOneDatabase(db, labels);
+    });
     await Promise.all(requests);
     const displayDatabaseName =
       databaseList.length > 1
@@ -165,5 +148,30 @@ const transferDatabase = async (
   } finally {
     state.loading = false;
   }
+};
+
+const parseLabelsIfNeeded = (
+  database: Database
+): DatabaseLabel[] | undefined => {
+  const { dbNameTemplate } = project.value;
+  if (!dbNameTemplate) return undefined;
+
+  const regex = buildDatabaseNameRegExpByTemplate(dbNameTemplate);
+  const match = database.name.match(regex);
+  if (!match) return undefined;
+
+  const environmentLabel: DatabaseLabel = {
+    key: "bb.environment",
+    value: database.instance.environment.name,
+  };
+  const parsedLabelList: DatabaseLabel[] = [];
+  PRESET_LABEL_KEY_PLACEHOLDERS.forEach(([placeholder, key]) => {
+    const value = match.groups?.[placeholder];
+    if (value) {
+      parsedLabelList.push({ key, value });
+    }
+  });
+
+  return [environmentLabel, ...parsedLabelList];
 };
 </script>

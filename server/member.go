@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,10 +8,10 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 func (s *Server) registerMemberRoutes(g *echo.Group) {
@@ -60,7 +59,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				Level:       api.ActivityInfo,
 				Payload:     string(bytes),
 			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after creating member: %d", member.ID)).SetInternal(err)
 			}
@@ -156,7 +155,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					Level:       api.ActivityInfo,
 					Payload:     string(bytes),
 				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
@@ -181,7 +180,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					Level:       api.ActivityInfo,
 					Payload:     string(bytes),
 				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
@@ -194,20 +193,4 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-// getAnyFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
-func (s *Server) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Member, error) {
-	for _, role := range []api.Role{api.Owner, api.DBA} {
-		memberList, err := s.store.FindMember(ctx, &api.MemberFind{
-			Role: &role,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get role %v", role)
-		}
-		if len(memberList) > 0 {
-			return memberList[0], nil
-		}
-	}
-	return nil, errors.New("failed to get a workspace owner or DBA")
 }

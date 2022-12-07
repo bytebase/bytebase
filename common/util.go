@@ -2,6 +2,7 @@ package common
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"os"
 	"path"
@@ -114,4 +115,31 @@ func GetFileSizeSum(fileNameList []string) (int64, error) {
 func GetBinlogRelativeDir(binlogDir string) string {
 	instanceID := filepath.Base(binlogDir)
 	return filepath.Join("backup", "instance", instanceID)
+}
+
+// truncateString truncates the string to have a maximum length of `limit` characters.
+func truncateString(str string, limit int) (string, bool) {
+	chars := 0
+	// The string may contain unicode characters, so we iterate here.
+	for i := range str {
+		if chars >= limit {
+			return str[:i], true
+		}
+		chars++
+	}
+	return str, false
+}
+
+// TruncateStringWithDescription tries to truncate the string and append "... (view details in Bytebase)" if truncated.
+func TruncateStringWithDescription(str string) string {
+	const limit = 450
+	if truncatedStr, truncated := truncateString(str, limit); truncated {
+		return fmt.Sprintf("%s... (view details in Bytebase)", truncatedStr)
+	}
+	return str
+}
+
+// GetBinlogAbsDir gets the binary log directory for an instance.
+func GetBinlogAbsDir(dataDir string, instanceID int) string {
+	return filepath.Join(dataDir, "backup", "instance", fmt.Sprintf("%d", instanceID))
 }

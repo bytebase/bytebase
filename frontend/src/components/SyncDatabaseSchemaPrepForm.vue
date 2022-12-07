@@ -8,7 +8,7 @@
         </div>
         <div class="w-full flex flex-row justify-start items-center px-px">
           <ProjectSelect
-            class="!w-52 mr-2 shrink-0"
+            class="!w-48 mr-2 shrink-0"
             :disabled="!allowSelectProject"
             :selected-id="state.projectId"
             @select-project-id="(projectId: ProjectId)=>{
@@ -17,7 +17,7 @@
           />
         </div>
       </div>
-      <div class="w-176">
+      <div class="w-full">
         <div class="w-full mt-4 mb-2 flex flex-row justify-start items-center">
           <span>{{ $t("database.sync-schema.select-schema") }}</span>
         </div>
@@ -30,14 +30,14 @@
             :class="isValidId(state.projectId) ? 'hidden' : ''"
           ></div>
           <EnvironmentSelect
-            class="!w-52 mr-2 shrink-0"
+            class="!w-48 mr-2 shrink-0"
             name="environment"
             :selected-id="state.baseSchemaInfo.environmentId"
             :select-default="false"
             @select-environment-id="handleBaseEnvironmentSelect"
           />
           <DatabaseSelect
-            class="!w-64 mr-2 shrink-0"
+            class="!w-80 mr-2 shrink-0"
             :selected-id="(state.baseSchemaInfo.databaseId as DatabaseId)"
             :mode="'USER'"
             :environment-id="state.baseSchemaInfo.environmentId"
@@ -75,7 +75,7 @@
                 {{ migrationHistory.version }}
               </NEllipsis>
             </template>
-            <template v-if="!hasSyncSchemaFeature" #suffixItem>
+            <template v-if="shouldShowMoreVersionButton" #suffixItem>
               <div
                 class="w-full pl-3 leading-8 text-gray-600 cursor-pointer hover:text-accent"
                 @click="() => (state.showFeatureModal = true)"
@@ -87,7 +87,7 @@
         </div>
       </div>
       <hr class="mt-4 w-full" />
-      <div class="w-176">
+      <div class="w-full">
         <div
           class="w-full mt-4 mb-2 leading-6 flex flex-row justify-start items-center"
         >
@@ -102,14 +102,14 @@
             :class="isValidId(state.projectId) ? 'hidden' : ''"
           ></div>
           <EnvironmentSelect
-            class="!w-52 mr-2 shrink-0"
+            class="!w-48 mr-2 shrink-0"
             name="environment"
             :selected-id="state.targetDatabaseInfo.environmentId"
             :select-default="false"
             @select-environment-id="handleTargetEnvironmentSelect"
           />
           <DatabaseSelect
-            class="!grow"
+            class="!w-96"
             :selected-id="(state.targetDatabaseInfo.databaseId as DatabaseId)"
             :mode="'USER'"
             :environment-id="state.targetDatabaseInfo.environmentId"
@@ -131,7 +131,7 @@
       </div>
     </div>
 
-    <!-- Schema diff statement editor container -->
+    <!-- Schema diff container -->
     <div class="w-full flex flex-col justify-start items-start">
       <div class="w-full flex flex-row justify-start items-center mb-2">
         <span>{{ $t("database.sync-schema.schema-diff") }}</span>
@@ -155,14 +155,18 @@
         </div>
         <code-diff
           v-else
-          class="w-full"
+          class="code-diff-container w-full h-auto max-h-96 overflow-y-auto"
           :old-string="state.targetDatabaseInfo.currentSchema"
           :new-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
           output-format="side-by-side"
           data-label="bb-migration-history-code-diff-block"
         />
       </template>
-      <div class="w-full flex flex-col justify-start mt-4 mb-2 leading-8">
+    </div>
+
+    <!-- DDL statement editor container -->
+    <div class="w-full flex flex-col justify-start items-start">
+      <div class="w-full flex flex-col justify-start mb-2 leading-8">
         <div class="flex flex-row justify-start items-center">
           <span>{{ $t("database.sync-schema.synchronize-statements") }}</span>
           <button
@@ -193,7 +197,7 @@
         ></div>
         <MonacoEditor
           ref="editorRef"
-          class="w-full h-auto max-h-[300px]"
+          class="w-full h-auto max-h-96"
           data-label="bb-issue-sql-editor"
           :value="state.editStatement"
           :auto-focus="false"
@@ -248,6 +252,7 @@ import {
   EngineType,
   EnvironmentId,
   MigrationHistory,
+  MigrationType,
   ProjectId,
   SQLDialect,
   UNKNOWN_ID,
@@ -263,7 +268,6 @@ import EnvironmentSelect from "./EnvironmentSelect.vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import MonacoEditor from "./MonacoEditor/MonacoEditor.vue";
 import ProjectSelect from "./ProjectSelect.vue";
-import { isDev } from "@/utils";
 
 type LocalState = {
   projectId?: ProjectId;
@@ -321,9 +325,12 @@ const isValidId = (id: any) => {
   return true;
 };
 
-const allowedEngineTypeList: EngineType[] = isDev()
-  ? ["MYSQL", "POSTGRES"]
-  : ["MYSQL"];
+const allowedEngineTypeList: EngineType[] = ["MYSQL", "POSTGRES"];
+const allowedMigrationTypeList: MigrationType[] = [
+  "BASELINE",
+  "MIGRATE",
+  "BRANCH",
+];
 
 const hasSyncSchemaFeature = computed(() => {
   return hasFeature("bb.feature.sync-schema-all-versions");
@@ -339,6 +346,14 @@ const engineTypeList = computed((): EngineType[] => {
   } else {
     return [state.engineType];
   }
+});
+
+const shouldShowMoreVersionButton = computed(() => {
+  return (
+    !hasSyncSchemaFeature.value &&
+    databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
+      .length > 0
+  );
 });
 
 const shouldShowDiff = computed(() => {
@@ -378,13 +393,17 @@ const hasDiffBetweenCharactorSets = computed(() => {
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
   const database = databaseStore.getDatabaseById(databaseId);
-  const list = instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
-    database.instance.id,
-    database.name
-  );
+  const list = instanceStore
+    .getMigrationHistoryListByInstanceIdAndDatabaseName(
+      database.instance.id,
+      database.name
+    )
+    .filter((migrationHistory) =>
+      allowedMigrationTypeList.includes(migrationHistory.type)
+    );
 
   if (!hasSyncSchemaFeature.value) {
-    return [head(list)];
+    return list.length > 0 ? [head(list)] : [];
   }
   return list;
 };
@@ -409,12 +428,6 @@ const handleBaseDatabaseSelect = async (databaseId: DatabaseId) => {
     if (database) {
       state.baseSchemaInfo.environmentId = database.instance.environment.id;
       state.baseSchemaInfo.databaseId = databaseId;
-      const migrationHistoryList = await instanceStore.fetchMigrationHistory({
-        instanceId: database.instance.id,
-        databaseName: database.name,
-      });
-      // Default select the first migration history.
-      state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
     }
   }
 };
@@ -556,13 +569,16 @@ watch(
     }
 
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
-    state.baseSchemaInfo.migrationHistory = undefined;
     if (database) {
       state.engineType = database.instance.engine;
-      const migrationHistoryList = await instanceStore.fetchMigrationHistory({
-        instanceId: database.instance.id,
-        databaseName: database.name,
-      });
+      const migrationHistoryList = (
+        await instanceStore.fetchMigrationHistory({
+          instanceId: database.instance.id,
+          databaseName: database.name,
+        })
+      ).filter((migrationHistory) =>
+        allowedMigrationTypeList.includes(migrationHistory.type)
+      );
       // Default select the first migration history.
       state.baseSchemaInfo.migrationHistory = head(migrationHistoryList);
 
@@ -577,6 +593,8 @@ watch(
           state.targetDatabaseInfo.databaseId = undefined;
         }
       }
+    } else {
+      state.baseSchemaInfo.migrationHistory = undefined;
     }
   }
 );
@@ -620,3 +638,9 @@ watch(
   }
 );
 </script>
+
+<style>
+.code-diff-container .d2h-file-wrapper {
+  @apply mb-0;
+}
+</style>
