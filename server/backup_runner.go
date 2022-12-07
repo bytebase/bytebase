@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -374,7 +375,7 @@ func (r *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 	defer driver.Close(ctx)
 
-	migrationHistoryVersion, err := getLatestSchemaVersion(ctx, driver, database.Name)
+	migrationHistoryVersion, err := utils.GetLatestSchemaVersion(ctx, driver, database.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get migration history for database %q", database.Name)
 	}

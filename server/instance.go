@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server/component/state"
 )
 
 // pgConnectionInfo represents the embedded postgres instance connection info.
@@ -465,13 +466,13 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 				zap.String("engine", string(instance.Engine)),
 				zap.Error(err))
 		}
-		if _, err := s.SchemaSyncer.syncInstance(ctx, instance); err != nil {
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", instance.ID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceDatabaseSyncChan <- instance
+		state.InstanceDatabaseSyncChan <- instance
 	}
 
 	return instance, nil
@@ -550,13 +551,13 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 					zap.String("engine", string(instancePatched.Engine)),
 					zap.Error(err))
 			}
-			if _, err := s.SchemaSyncer.syncInstance(ctx, instancePatched); err != nil {
+			if _, err := s.SchemaSyncer.SyncInstance(ctx, instancePatched); err != nil {
 				log.Warn("Failed to sync instance",
 					zap.Int("instance_id", instancePatched.ID),
 					zap.Error(err))
 			}
 			// Sync all databases in the instance asynchronously.
-			instanceDatabaseSyncChan <- instancePatched
+			state.InstanceDatabaseSyncChan <- instancePatched
 		}
 	}
 
