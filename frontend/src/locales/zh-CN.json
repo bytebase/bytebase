@@ -1179,7 +1179,8 @@
       "disabled": "跳过 LGTM 检查",
       "project-member": "需要来自项目成员的 LGTM",
       "project-owner": "需要来自项目所有者的 LGTM"
-    }
+    },
+    "successfully-updated-db-name-template": "成功更新数据库名称模板。"
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",
