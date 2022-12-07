@@ -533,7 +533,7 @@ func (extractor *sensitiveFieldExtractor) extractTableSource(node *tidbast.Table
 	return res, nil
 }
 
-func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, tableName string) (db.TableSchema, error) {
+func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, tableName string) (string, db.TableSchema, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -546,7 +546,7 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 	for i := len(extractor.cteOuterSchemaInfo) - 1; i >= 0; i-- {
 		table := extractor.cteOuterSchemaInfo[i]
 		if databaseName == "" && table.Name == tableName {
-			return table, nil
+			return "", table, nil
 		}
 	}
 
@@ -554,16 +554,20 @@ func (extractor *sensitiveFieldExtractor) findTableSchema(databaseName string, t
 		if databaseName == database.Name || (databaseName == "" && extractor.currentDatabase == database.Name) {
 			for _, table := range database.TableList {
 				if tableName == table.Name {
-					return table, nil
+					explicitDatabase := databaseName
+					if explicitDatabase == "" {
+						explicitDatabase = extractor.currentDatabase
+					}
+					return explicitDatabase, table, nil
 				}
 			}
 		}
 	}
-	return db.TableSchema{}, errors.Errorf("Table %q.%q not found", databaseName, tableName)
+	return "", db.TableSchema{}, errors.Errorf("Table %q.%q not found", databaseName, tableName)
 }
 
 func (extractor *sensitiveFieldExtractor) extractTableName(node *tidbast.TableName) ([]fieldInfo, error) {
-	tableSchema, err := extractor.findTableSchema(node.Schema.O, node.Name.O)
+	databaseName, tableSchema, err := extractor.findTableSchema(node.Schema.O, node.Name.O)
 	if err != nil {
 		return nil, err
 	}
@@ -573,7 +577,7 @@ func (extractor *sensitiveFieldExtractor) extractTableName(node *tidbast.TableNa
 		res = append(res, fieldInfo{
 			name:      column.Name,
 			table:     tableSchema.Name,
-			database:  node.Schema.O,
+			database:  databaseName,
 			sensitive: column.Sensitive,
 		})
 	}
