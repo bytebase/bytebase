@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
-	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -23,47 +22,20 @@ const (
 	taskCheckSchedulerInterval = time.Duration(1) * time.Second
 )
 
-// NewTaskCheckScheduler creates a task check scheduler.
-func NewTaskCheckScheduler(store *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterpriseAPI.LicenseService) *Scheduler {
-	taskCheckScheduler := &Scheduler{
+// NewScheduler creates a task check scheduler.
+func NewScheduler(store *store.Store, licenseService enterpriseAPI.LicenseService) *Scheduler {
+	return &Scheduler{
 		store:          store,
 		licenseService: licenseService,
-		executors:      make(map[api.TaskCheckType]taskCheckExecutor),
+		executors:      make(map[api.TaskCheckType]Executor),
 	}
-
-	statementSimpleExecutor := newTaskCheckStatementAdvisorSimpleExecutor()
-	taskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
-	taskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
-
-	statementCompositeExecutor := newTaskCheckStatementAdvisorCompositeExecutor(store, dbFactory)
-	taskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-
-	statementTypeExecutor := newTaskCheckStatementTypeExecutor(store)
-	taskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
-
-	databaseConnectExecutor := newTaskCheckDatabaseConnectExecutor(store, dbFactory)
-	taskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
-
-	migrationSchemaExecutor := newTaskCheckMigrationSchemaExecutor(store, dbFactory)
-	taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
-
-	ghostSyncExecutor := newTaskCheckGhostSyncExecutor(store)
-	taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
-
-	checkLGTMExecutor := newTaskCheckLGTMExecutor(store)
-	taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
-
-	pitrMySQLExecutor := newTaskCheckPITRMySQLExecutor(store, dbFactory)
-	taskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
-
-	return taskCheckScheduler
 }
 
 // Scheduler is the task check scheduler.
 type Scheduler struct {
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
-	executors      map[api.TaskCheckType]taskCheckExecutor
+	executors      map[api.TaskCheckType]Executor
 }
 
 // Run will run the task check scheduler once.
@@ -204,7 +176,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register the task check executor.
-func (s *Scheduler) Register(taskType api.TaskCheckType, executor taskCheckExecutor) {
+func (s *Scheduler) Register(taskType api.TaskCheckType, executor Executor) {
 	if executor == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}

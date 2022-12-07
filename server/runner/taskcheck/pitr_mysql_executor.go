@@ -13,22 +13,22 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// newTaskCheckPITRMySQLExecutor creates a task check migration schema executor.
-func newTaskCheckPITRMySQLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) taskCheckExecutor {
-	return &taskCheckPITRMySQLExecutor{
+// NewPITRMySQLExecutor creates a task check migration schema executor.
+func NewPITRMySQLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
+	return &PITRMySQLExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
-// taskCheckPITRMySQLExecutor is the task check migration schema executor.
-type taskCheckPITRMySQLExecutor struct {
+// PITRMySQLExecutor is the task check migration schema executor.
+type PITRMySQLExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check migration schema executor once.
-func (e *taskCheckPITRMySQLExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *PITRMySQLExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get task by ID %d", taskCheckRun.TaskID)

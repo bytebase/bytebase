@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
@@ -56,7 +57,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				ClientSecret: vcs.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,

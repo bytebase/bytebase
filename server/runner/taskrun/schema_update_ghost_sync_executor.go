@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -15,31 +15,32 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewSchemaUpdateGhostSyncTaskExecutor creates a schema update (gh-ost) sync task executor.
-func NewSchemaUpdateGhostSyncTaskExecutor(store *store.Store, taskScheduler *TaskScheduler) TaskExecutor {
-	return &SchemaUpdateGhostSyncTaskExecutor{
-		store:         store,
-		taskScheduler: taskScheduler,
+// NewSchemaUpdateGhostSyncExecutor creates a schema update (gh-ost) sync task executor.
+func NewSchemaUpdateGhostSyncExecutor(store *store.Store, stateCfg *state.State) Executor {
+	return &SchemaUpdateGhostSyncExecutor{
+		store:    store,
+		stateCfg: stateCfg,
 	}
 }
 
-// SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
-type SchemaUpdateGhostSyncTaskExecutor struct {
-	store         *store.Store
-	taskScheduler *TaskScheduler
+// SchemaUpdateGhostSyncExecutor is the schema update (gh-ost) sync task executor.
+type SchemaUpdateGhostSyncExecutor struct {
+	store    *store.Store
+	stateCfg *state.State
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
-	return exec.runGhostMigration(ctx, exec.store, exec.taskScheduler, task, payload.Statement)
+	return exec.runGhostMigration(ctx, exec.store, task, payload.Statement)
 }
 
 type sharedGhostState struct {
@@ -47,7 +48,7 @@ type sharedGhostState struct {
 	errCh            <-chan error
 }
 
-func (*SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, store *store.Store, taskScheduler *TaskScheduler, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, store *store.Store, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -93,7 +94,7 @@ func (*SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context,
 					completedUnit = migrationContext.GetTotalRowsCopied()
 					updatedTs     = time.Now().Unix()
 				)
-				taskScheduler.taskProgress.Store(task.ID, api.Progress{
+				exec.stateCfg.TaskProgress.Store(task.ID, api.Progress{
 					TotalUnit:     totalUnit,
 					CompletedUnit: completedUnit,
 					CreatedTs:     createdTs,
@@ -124,7 +125,7 @@ func (*SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context,
 
 	select {
 	case <-syncDone:
-		taskScheduler.sharedTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
+		exec.stateCfg.GhostTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-migrationError:
 		return true, nil, err

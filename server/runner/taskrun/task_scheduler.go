@@ -1,4 +1,5 @@
-package server
+// Package taskrun implements a runner for executing tasks.
+package taskrun
 
 import (
 	"context"
@@ -20,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/server/runner/apprun"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/server/utils"
@@ -30,35 +32,47 @@ const (
 	taskSchedulerInterval = time.Duration(1) * time.Second
 )
 
+var (
+	taskCancellationImplemented = map[api.TaskType]bool{
+		api.TaskDatabaseSchemaUpdateGhostSync: true,
+	}
+	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
+		api.TaskPendingApproval: {api.TaskPending, api.TaskDone},
+		api.TaskPending:         {api.TaskCanceled, api.TaskRunning, api.TaskPendingApproval, api.TaskDone},
+		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
+		api.TaskDone:            {},
+		api.TaskFailed:          {api.TaskPendingApproval, api.TaskDone},
+		api.TaskCanceled:        {api.TaskPendingApproval, api.TaskDone},
+	}
+)
+
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
+func NewTaskScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
-		server:            server,
 		store:             store,
 		applicationRunner: applicationRunner,
 		schemaSyncer:      schemaSyncer,
 		activityManager:   activityManager,
 		licenseService:    licenseService,
 		profile:           profile,
-		executorMap:       make(map[api.TaskType]TaskExecutor),
+		stateCfg:          stateCfg,
+		executorMap:       make(map[api.TaskType]Executor),
 	}
 }
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	server            *Server
 	store             *store.Store
 	applicationRunner *apprun.Runner
 	schemaSyncer      *schemasync.Syncer
 	activityManager   *activity.Manager
 	licenseService    enterpriseAPI.LicenseService
+	stateCfg          *state.State
 	profile           config.Profile
-	executorMap       map[api.TaskType]TaskExecutor
+	executorMap       map[api.TaskType]Executor
 
 	runningTasks       sync.Map // map[taskID]bool
 	runningTasksCancel sync.Map // map[taskID]context.CancelFunc
-	taskProgress       sync.Map // map[taskID]api.Progress
-	sharedTaskState    sync.Map // map[taskID]interface{}
 }
 
 // Run will run the task scheduler.
@@ -160,17 +174,17 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					s.runningTasks.Store(task.ID, true)
-					go func(ctx context.Context, task *api.Task, executor TaskExecutor) {
+					go func(ctx context.Context, task *api.Task, executor Executor) {
 						defer func() {
 							s.runningTasks.Delete(task.ID)
 							s.runningTasksCancel.Delete(task.ID)
-							s.taskProgress.Delete(task.ID)
+							s.stateCfg.TaskProgress.Delete(task.ID)
 						}()
 
 						executorCtx, cancel := context.WithCancel(ctx)
 						s.runningTasksCancel.Store(task.ID, cancel)
 
-						done, result, err := RunTaskExecutorOnce(executorCtx, executor, task)
+						done, result, err := RunExecutorOnce(executorCtx, executor, task)
 
 						select {
 						case <-executorCtx.Done():
@@ -220,7 +234,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							if _, err := s.patchTaskStatus(ctx, task, taskStatusPatch); err != nil {
+							if _, err := s.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 								log.Error("Failed to mark task as FAILED",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
@@ -248,7 +262,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							taskPatched, err := s.patchTaskStatus(ctx, task, taskStatusPatch)
+							taskPatched, err := s.PatchTaskStatus(ctx, task, taskStatusPatch)
 							if err != nil {
 								log.Error("Failed to mark task as DONE",
 									zap.Int("id", task.ID),
@@ -268,14 +282,14 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							if issue != nil {
 								if stage := utils.GetActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != taskPatched.StageID {
 									environmentID := stage.EnvironmentID
-									ok, err := s.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
+									ok, err := s.CanPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
 									if err != nil {
 										log.Error("failed to check if the current assignee still fits in the new assignee group", zap.Error(err))
 										return
 									}
 									if !ok {
 										// reassign the issue to a new assignee if the current one doesn't fit.
-										assigneeID, err := s.getDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
+										assigneeID, err := s.GetDefaultAssigneeID(ctx, environmentID, issue.ProjectID, issue.Type)
 										if err != nil {
 											log.Error("failed to get a default assignee", zap.Error(err))
 											return
@@ -304,7 +318,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register a task executor factory.
-func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter TaskExecutor) {
+func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter Executor) {
 	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
@@ -468,7 +482,8 @@ func (s *TaskScheduler) canAutoApprove(ctx context.Context, task *api.Task) (boo
 	return s.passAllCheck(ctx, task, api.TaskCheckStatusSuccess)
 }
 
-func (s *TaskScheduler) canSchedule(ctx context.Context, task *api.Task) (bool, error) {
+// CanSchedule returns whether a task can be scheduled.
+func (s *TaskScheduler) CanSchedule(ctx context.Context, task *api.Task) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to check if task is blocked")
@@ -489,7 +504,7 @@ func (s *TaskScheduler) canSchedule(ctx context.Context, task *api.Task) (bool, 
 //  2. it has no blocking tasks.
 //  3. it has passed the earliest allowed time.
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	schedule, err := s.canSchedule(ctx, task)
+	schedule, err := s.CanSchedule(ctx, task)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +512,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		return task, nil
 	}
 
-	updatedTask, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+	updatedTask, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 		IDList:    []int{task.ID},
 		UpdaterID: api.SystemBotID,
 		Status:    api.TaskRunning,
@@ -546,7 +561,7 @@ func (s *TaskScheduler) ScheduleActiveStage(ctx context.Context, pipeline *api.P
 					return errors.Wrap(err, "failed to check if can auto-approve")
 				}
 				if ok {
-					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+					if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 						IDList:    []int{task.ID},
 						UpdaterID: api.SystemBotID,
 						Status:    api.TaskPending,
@@ -565,8 +580,8 @@ func (s *TaskScheduler) ScheduleActiveStage(ctx context.Context, pipeline *api.P
 	return nil
 }
 
-// patchTaskStatus patches a single task.
-func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+// PatchTaskStatus patches a single task.
+func (s *TaskScheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
 			log.Error("Failed to change task status.",
@@ -720,7 +735,7 @@ func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, tas
 				}
 			} else {
 				issue.Pipeline = pipeline
-				if _, err := s.changeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, ""); err != nil {
+				if _, err := s.ChangeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, ""); err != nil {
 					return nil, errors.Wrapf(err, "failed to mark issue %v as DONE after completing task %v", issue.Name, taskPatched.Name)
 				}
 			}
@@ -728,6 +743,15 @@ func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, tas
 	}
 
 	return taskPatched, nil
+}
+
+func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
+	for _, allowedStatus := range applicableTaskStatusTransition[fromStatus] {
+		if allowedStatus == toStatus {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *TaskScheduler) createTaskStatusUpdateActivity(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue) error {
@@ -808,7 +832,8 @@ func areAllTasksDone(pipeline *api.Pipeline) bool {
 	return true
 }
 
-func (s *TaskScheduler) getDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
+// GetDefaultAssigneeID gets the default assignee for an issue.
+func (s *TaskScheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
 		return api.UnknownID, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
@@ -875,8 +900,8 @@ func (s *TaskScheduler) getAnyProjectOwner(ctx context.Context, projectID int) (
 	return nil, errors.New("failed to get a project owner")
 }
 
-// canPrincipalBeAssignee checks if a principal could be the assignee of an issue, judging by the principal role and the environment policy.
-func (s *TaskScheduler) canPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
+// CanPrincipalBeAssignee checks if a principal could be the assignee of an issue, judging by the principal role and the environment policy.
+func (s *TaskScheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
 		return false, err
@@ -926,7 +951,8 @@ func (s *TaskScheduler) canPrincipalBeAssignee(ctx context.Context, principalID 
 	return false, nil
 }
 
-func (s *TaskScheduler) changeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
+// ChangeIssueStatus changes the status of an issue.
+func (s *TaskScheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
 	var pipelineStatus api.PipelineStatus
 	switch newStatus {
 	case api.IssueOpen:
@@ -948,7 +974,7 @@ func (s *TaskScheduler) changeIssueStatus(ctx context.Context, issue *api.Issue,
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
-					if _, err := s.patchTaskStatus(ctx, task, &api.TaskStatusPatch{
+					if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 						IDList:    []int{task.ID},
 						UpdaterID: updaterID,
 						Status:    api.TaskCanceled,

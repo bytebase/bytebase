@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -11,33 +11,36 @@ import (
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewSchemaUpdateTaskExecutor creates a schema update (DDL) task executor.
-func NewSchemaUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
-	return &SchemaUpdateTaskExecutor{
+// NewSchemaUpdateExecutor creates a schema update (DDL) task executor.
+func NewSchemaUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, profile config.Profile) Executor {
+	return &SchemaUpdateExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		stateCfg:        stateCfg,
 		profile:         profile,
 	}
 }
 
-// SchemaUpdateTaskExecutor is the schema update (DDL) task executor.
-type SchemaUpdateTaskExecutor struct {
+// SchemaUpdateExecutor is the schema update (DDL) task executor.
+type SchemaUpdateExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	stateCfg        *state.State
 	profile         config.Profile
 }
 
 // RunOnce will run the schema update (DDL) task executor once.
-func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
