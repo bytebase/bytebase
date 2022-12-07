@@ -19,8 +19,10 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/transform"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -33,15 +35,11 @@ type TaskExecutor interface {
 	// 1. It's possible that err could be non-nil while terminated is false, which
 	// usually indicates a transient error and will make scheduler retry later.
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
-	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
-	// IsCompleted tells the scheduler if the task execution has completed.
-	IsCompleted() bool
-	// GetProgress returns the task progress.
-	GetProgress() api.Progress
+	RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
 // RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -55,7 +53,7 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 		}
 	}()
 
-	return exec.RunOnce(ctx, server, task)
+	return exec.RunOnce(ctx, task)
 }
 
 func preMigration(ctx context.Context, store *store.Store, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
@@ -128,7 +126,7 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
+func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
@@ -173,7 +171,7 @@ func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfact
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 		// The runner will periodically scan the map to generate rollback SQL asynchronously.
-		rollbackRunner.generateMap.Store(updatedTask.ID, updatedTask)
+		state.RollbackGenerateMap.Store(updatedTask.ID, updatedTask)
 	}
 
 	return migrationID, schema, nil
@@ -265,7 +263,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, store *store.Store, activityManager *ActivityManager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, store *store.Store, activityManager *activity.Manager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
 	databaseName := task.Database.Name
 	issue, err := findIssueByTask(ctx, store, task)
 	if err != nil {
@@ -387,8 +385,7 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *Act
 				Payload: string(payload),
 			}
 
-			_, err = activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-			if err != nil {
+			if _, err := activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 				log.Error("Failed to create file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
 					zap.String("repository", repo.WebURL),
@@ -423,12 +420,12 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *Act
 	}, nil
 }
 
-func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *ActivityManager, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := preMigration(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := executeMigration(ctx, store, dbFactory, rollbackRunner, task, statement, mi)
+	migrationID, schema, err := executeMigration(ctx, store, dbFactory, task, statement, mi)
 	if err != nil {
 		return true, nil, err
 	}

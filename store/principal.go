@@ -155,7 +155,7 @@ func (s *Store) createPrincipalRaw(ctx context.Context, create *api.PrincipalCre
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+	if err := s.cache.UpsertCache(principalCacheNamespace, principal.ID, principal); err != nil {
 		return nil, err
 	}
 
@@ -176,7 +176,7 @@ func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, erro
 	}
 
 	for _, principal := range list {
-		if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+		if err := s.cache.UpsertCache(principalCacheNamespace, principal.ID, principal); err != nil {
 			return nil, err
 		}
 	}
@@ -189,7 +189,7 @@ func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, erro
 func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*principalRaw, error) {
 	if find.ID != nil {
 		principalRaw := &principalRaw{}
-		has, err := s.cache.FindCache(api.PrincipalCache, *find.ID, principalRaw)
+		has, err := s.cache.FindCache(principalCacheNamespace, *find.ID, principalRaw)
 		if err != nil {
 			return nil, err
 		}
@@ -214,7 +214,7 @@ func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d principals with PrincipalFind[%+v], expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.PrincipalCache, list[0].ID, list[0]); err != nil {
+	if err := s.cache.UpsertCache(principalCacheNamespace, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
 
@@ -239,7 +239,7 @@ func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+	if err := s.cache.UpsertCache(principalCacheNamespace, principal.ID, principal); err != nil {
 		return nil, err
 	}
 

@@ -61,6 +61,7 @@ export type Instance = {
   engine: EngineType;
   engineVersion: string;
   externalLink?: string;
+  database: string;
   host: string;
   port?: string;
 };
@@ -75,6 +76,7 @@ export type InstanceCreate = {
   externalLink?: string;
   host: string;
   port?: string;
+  database?: string;
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;
@@ -92,6 +94,7 @@ export type InstancePatch = {
   externalLink?: string;
   host?: string;
   port?: string;
+  database?: string;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";

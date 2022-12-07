@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 func (s *Server) registerMemberRoutes(g *echo.Group) {
@@ -58,7 +59,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 				Level:       api.ActivityInfo,
 				Payload:     string(bytes),
 			}
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after creating member: %d", member.ID)).SetInternal(err)
 			}
@@ -154,7 +155,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					Level:       api.ActivityInfo,
 					Payload:     string(bytes),
 				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}
@@ -179,7 +180,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 					Level:       api.ActivityInfo,
 					Payload:     string(bytes),
 				}
-				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after changing member role: %d", updatedMember.ID)).SetInternal(err)
 				}

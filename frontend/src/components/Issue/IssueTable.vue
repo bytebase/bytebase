@@ -59,7 +59,18 @@
       <BBTableCell class="table-cell">
         <div class="flex items-center">
           <div class="mr-2 text-control">#{{ issue.id }}</div>
-          <div class="truncate">{{ issue.name }}</div>
+          <div
+            class="truncate"
+            :class="{
+              'font-semibold': isAssigneeAttentionOn(issue),
+            }"
+          >
+            {{ issue.name }}
+          </div>
+          <heroicons-outline:bell-alert
+            v-if="isAssigneeAttentionOn(issue)"
+            class="w-4 h-4 ml-1"
+          />
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
@@ -130,6 +141,7 @@ import {
 } from "@/utils";
 import ProtectedEnvironmentIcon from "../Environment/ProtectedEnvironmentIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
+import { useCurrentUser } from "@/store";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -226,6 +238,7 @@ const state = reactive<LocalState>({
   dataSource: [],
   selectedIssueIdList: new Set(),
 });
+const currentUser = useCurrentUser();
 
 const tableRef = ref<HTMLTableElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
@@ -306,6 +319,21 @@ const setAllIssuesSelection = (selected: boolean): void => {
       set.delete(issue.id);
     });
   }
+};
+
+const isAssigneeAttentionOn = (issue: Issue) => {
+  if (issue.project.workflowType === "VCS") {
+    return false;
+  }
+  if (issue.status !== "OPEN") {
+    return false;
+  }
+  if (currentUser.value.id === issue.assignee.id) {
+    // True if current user is the assignee
+    return issue.assigneeNeedAttention;
+  }
+
+  return false;
 };
 
 const clickIssue = (_: number, row: number, e: MouseEvent) => {

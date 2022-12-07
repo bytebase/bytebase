@@ -1,4 +1,4 @@
-package server
+package taskcheck
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
-// NewTaskCheckStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
-func NewTaskCheckStatementAdvisorSimpleExecutor() TaskCheckExecutor {
-	return &TaskCheckStatementAdvisorSimpleExecutor{}
+// newTaskCheckStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
+func newTaskCheckStatementAdvisorSimpleExecutor() taskCheckExecutor {
+	return &taskCheckStatementAdvisorSimpleExecutor{}
 }
 
-// TaskCheckStatementAdvisorSimpleExecutor is the task check statement advisor simple executor.
-type TaskCheckStatementAdvisorSimpleExecutor struct {
+// taskCheckStatementAdvisorSimpleExecutor is the task check statement advisor simple executor.
+type taskCheckStatementAdvisorSimpleExecutor struct {
 }
 
 // Run will run the task check statement advisor executor once.
-func (*TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (*taskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")

@@ -184,7 +184,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: "",
 		},
 	}
-	a.Equal(len(histories), len(wantHistories))
+	a.Equal(len(wantHistories), len(histories))
 	for i, history := range histories {
 		got := api.MigrationHistory{
 			Database:   history.Database,
@@ -245,7 +245,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: "",
 		},
 	}
-	a.Equal(len(histories), len(wantCloneHistories))
+	a.Equal(len(wantCloneHistories), len(histories))
 	for i, history := range histories {
 		got := api.MigrationHistory{
 			Database:   history.Database,
@@ -1987,7 +1987,7 @@ CREATE TABLE public.book (
 			a.Equal(api.TaskDone, status)
 			latestSchema, err := ctl.getLatestSchemaOfDatabaseID(database.ID)
 			a.NoError(err)
-			a.Equal(latestSchema, test.want)
+			a.Equal(test.want, latestSchema)
 		})
 	}
 }

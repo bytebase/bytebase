@@ -1,4 +1,4 @@
-package server
+package taskcheck
 
 import (
 	"context"
@@ -17,20 +17,20 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewTaskCheckStatementTypeExecutor creates a task check DML executor.
-func NewTaskCheckStatementTypeExecutor(store *store.Store) TaskCheckExecutor {
-	return &TaskCheckStatementTypeExecutor{
+// newTaskCheckStatementTypeExecutor creates a task check DML executor.
+func newTaskCheckStatementTypeExecutor(store *store.Store) taskCheckExecutor {
+	return &taskCheckStatementTypeExecutor{
 		store: store,
 	}
 }
 
-// TaskCheckStatementTypeExecutor is the task check DML executor.
-type TaskCheckStatementTypeExecutor struct {
+// taskCheckStatementTypeExecutor is the task check DML executor.
+type taskCheckStatementTypeExecutor struct {
 	store *store.Store
 }
 
 // Run will run the task check database connector executor once.
-func (e *TaskCheckStatementTypeExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *taskCheckStatementTypeExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)

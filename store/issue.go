@@ -495,7 +495,7 @@ func (s *Store) createIssueRaw(ctx context.Context, create *api.IssueCreate) (*i
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
+	if err := s.cache.UpsertCache(issueCacheNamespace, issue.ID, issue); err != nil {
 		return nil, err
 	}
 
@@ -517,7 +517,7 @@ func (s *Store) findIssueRaw(ctx context.Context, find *api.IssueFind) ([]*issue
 
 	if err == nil {
 		for _, issue := range list {
-			if err := s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
+			if err := s.cache.UpsertCache(issueCacheNamespace, issue.ID, issue); err != nil {
 				return nil, err
 			}
 		}
@@ -545,7 +545,7 @@ func (s *Store) getIssueRaw(ctx context.Context, find *api.IssueFind) (*issueRaw
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d issues with filter %+v, expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.IssueCache, list[0].ID, list[0]); err != nil {
+	if err := s.cache.UpsertCache(issueCacheNamespace, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
 	return list[0], nil
@@ -569,7 +569,7 @@ func (s *Store) patchIssueRaw(ctx context.Context, patch *api.IssuePatch) (*issu
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
+	if err := s.cache.UpsertCache(issueCacheNamespace, issue.ID, issue); err != nil {
 		return nil, err
 	}
 
@@ -756,6 +756,9 @@ func (*Store) patchIssueImpl(ctx context.Context, tx *Tx, patch *api.IssuePatch)
 	}
 	if v := patch.AssigneeID; v != nil {
 		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.AssigneeNeedAttention; v != nil {
+		set, args = append(set, fmt.Sprintf("assignee_need_attention = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
 		payload, err := json.Marshal(*patch.Payload)

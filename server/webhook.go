@@ -30,6 +30,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 const (
@@ -529,7 +530,7 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 				createdMessageList = append(createdMessageList, createdMessage)
 			} else {
 				for _, activityCreate := range activityCreateList {
-					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 						log.Warn("Failed to create project activity for the ignored repository files", zap.Error(err))
 					}
 				}
@@ -861,7 +862,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
 		Payload:     string(activityPayload),
 	}
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 	}
 
@@ -1175,7 +1176,11 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 		}
 		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
-			log.Error(fmt.Sprintf("Failed to get issue by pipeline ID %d", task.PipelineID), zap.Error(err))
+			log.Error("failed to get issue by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
+			return nil
+		}
+		if issue == nil {
+			log.Error("issue not found by pipeline ID", zap.Int("pipeline ID", task.PipelineID), zap.Error(err))
 			return nil
 		}
 		// TODO(dragonly): Try to patch the failed migration history record to pending, and the statement to the current modified file content.

@@ -272,10 +272,11 @@ type IssuePatch struct {
 	// Domain specific fields
 	Name *string `jsonapi:"attr,name"`
 	// Status is only set manually via IssueStatusPatch
-	Status      *IssueStatus
-	Description *string `jsonapi:"attr,description"`
-	AssigneeID  *int    `jsonapi:"attr,assigneeId"`
-	Payload     *string `jsonapi:"attr,payload"`
+	Status                *IssueStatus
+	Description           *string `jsonapi:"attr,description"`
+	AssigneeID            *int    `jsonapi:"attr,assigneeId"`
+	AssigneeNeedAttention *bool   `jsonapi:"attr,assigneeNeedAttention"`
+	Payload               *string `jsonapi:"attr,payload"`
 }
 
 // IssueStatusPatch is the API message for patching status of an issue.

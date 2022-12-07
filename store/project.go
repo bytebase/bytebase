@@ -200,7 +200,7 @@ func (s *Store) createProjectRaw(ctx context.Context, create *api.ProjectCreate)
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.ProjectCache, projectRaw.ID, projectRaw); err != nil {
+	if err := s.cache.UpsertCache(projectCacheNamespace, projectRaw.ID, projectRaw); err != nil {
 		return nil, err
 	}
 
@@ -222,7 +222,7 @@ func (s *Store) findProjectRaw(ctx context.Context, find *api.ProjectFind) ([]*p
 
 	if err == nil {
 		for _, project := range list {
-			if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+			if err := s.cache.UpsertCache(projectCacheNamespace, project.ID, project); err != nil {
 				return nil, err
 			}
 		}
@@ -236,7 +236,7 @@ func (s *Store) findProjectRaw(ctx context.Context, find *api.ProjectFind) ([]*p
 func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*projectRaw, error) {
 	if find.ID != nil {
 		project := &projectRaw{}
-		has, err := s.cache.FindCache(api.ProjectCache, *find.ID, project)
+		has, err := s.cache.FindCache(projectCacheNamespace, *find.ID, project)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +261,7 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d projects with filter %+v, expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.ProjectCache, list[0].ID, list[0]); err != nil {
+	if err := s.cache.UpsertCache(projectCacheNamespace, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
 	return list[0], nil
@@ -285,7 +285,7 @@ func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch) (*
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+	if err := s.cache.UpsertCache(projectCacheNamespace, project.ID, project); err != nil {
 		return nil, err
 	}
 
@@ -300,7 +300,7 @@ func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.Projec
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+	if err := s.cache.UpsertCache(projectCacheNamespace, project.ID, project); err != nil {
 		return nil, err
 	}
 

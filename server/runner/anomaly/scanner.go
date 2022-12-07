@@ -1,4 +1,5 @@
-package server
+// Package anomaly is a runner that scans and checks anomaly.
+package anomaly
 
 import (
 	"bytes"
@@ -25,24 +26,24 @@ const (
 	anomalyScanInterval = time.Duration(10) * time.Minute
 )
 
-// NewAnomalyScanner creates a anomaly scanner.
-func NewAnomalyScanner(store *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterpriseAPI.LicenseService) *AnomalyScanner {
-	return &AnomalyScanner{
+// NewScanner creates a anomaly scanner.
+func NewScanner(store *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterpriseAPI.LicenseService) *Scanner {
+	return &Scanner{
 		store:          store,
 		dbFactory:      dbFactory,
 		licenseService: licenseService,
 	}
 }
 
-// AnomalyScanner is the anomaly scanner.
-type AnomalyScanner struct {
+// Scanner is the anomaly scanner.
+type Scanner struct {
 	store          *store.Store
 	dbFactory      *dbfactory.DBFactory
 	licenseService enterpriseAPI.LicenseService
 }
 
 // Run will run the anomaly scanner once.
-func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (s *Scanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(anomalyScanInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -155,7 +156,7 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
+func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instance) {
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 
 	// Check connection
@@ -233,7 +234,7 @@ func (s *AnomalyScanner) checkInstanceAnomaly(ctx context.Context, instance *api
 	}
 }
 
-func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
+func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.Name)
 
 	// Check connection
@@ -369,7 +370,7 @@ func (s *AnomalyScanner) checkDatabaseAnomaly(ctx context.Context, instance *api
 	}
 }
 
-func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *api.Database, policyMap map[int]*api.BackupPlanPolicy) {
+func (s *Scanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *api.Database, policyMap map[int]*api.BackupPlanPolicy) {
 	schedule := api.BackupPlanPolicyScheduleUnset
 	backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, database.ID)
 	if err != nil {

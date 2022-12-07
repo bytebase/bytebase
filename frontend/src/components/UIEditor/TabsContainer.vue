@@ -27,7 +27,7 @@
           </span>
           <NEllipsis
             class="text-sm w-24"
-            :class="checkTabSaved(tab) ? '' : 'text-yellow-700 italic'"
+            :class="getTabComputedClassList(tab)"
             >{{ getTabName(tab) }}</NEllipsis
           >
         </div>
@@ -44,14 +44,14 @@
 
 <script lang="ts" setup>
 import { isEqual } from "lodash-es";
-import { NEllipsis, useDialog } from "naive-ui";
+import { NEllipsis } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { useUIEditorStore } from "@/store";
-import { TabContext, UIEditorTabType } from "@/types";
+import { useTableStore, useUIEditorStore } from "@/store";
+import { TabContext, UIEditorTabType, UNKNOWN_ID } from "@/types";
 
 const editorStore = useUIEditorStore();
-const dialog = useDialog();
+const tableStore = useTableStore();
 const tabsContainerRef = ref();
 const tabList = computed(() => {
   return Array.from(editorStore.tabState.tabMap.values());
@@ -76,17 +76,25 @@ watch(
   }
 );
 
-const checkTabSaved = (tab: TabContext) => {
-  if (tab.type === UIEditorTabType.TabForDatabase) {
-    // Edit database metadata is not allowed.
-    return true;
-  } else if (tab.type === UIEditorTabType.TabForTable) {
-    if (!isEqual(tab.tableCache, tab.table)) {
-      return false;
+const getTabComputedClassList = (tab: TabContext) => {
+  if (tab.type === UIEditorTabType.TabForTable) {
+    if (editorStore.droppedTableList.includes(tab.table)) {
+      return ["text-red-700", "line-through"];
+    }
+    if (tab.table.id === UNKNOWN_ID) {
+      return ["text-green-700"];
+    }
+
+    const originTable = tableStore.getTableByDatabaseIdAndTableId(
+      tab.databaseId,
+      tab.tableId
+    );
+    if (!isEqual(tab.table, originTable)) {
+      return ["text-yellow-700"];
     }
   }
 
-  return true;
+  return [];
 };
 
 const getTabName = (tab: TabContext) => {
@@ -96,7 +104,7 @@ const getTabName = (tab: TabContext) => {
     );
     return `${database?.name || "unknown database"}`;
   } else if (tab.type === UIEditorTabType.TabForTable) {
-    return `${tab.tableCache.name}`;
+    return `${tab.table.name}`;
   } else {
     // Should never reach here.
     return "unknown structure";
@@ -108,24 +116,7 @@ const handleSelectTab = (tab: TabContext) => {
 };
 
 const handleCloseTab = (tab: TabContext) => {
-  if (tab.type === UIEditorTabType.TabForDatabase) {
-    editorStore.closeTab(tab.id);
-  } else if (tab.type === UIEditorTabType.TabForTable) {
-    if (isEqual(tab.tableCache, tab.table)) {
-      editorStore.closeTab(tab.id);
-    } else {
-      dialog.warning({
-        title: "Confirm to close",
-        content:
-          "There are unsaved changes. Are you sure you want to close the panel? Your changes will be lost.",
-        negativeText: "Cancel",
-        positiveText: "Confirm",
-        onPositiveClick: () => {
-          editorStore.closeTab(tab.id);
-        },
-      });
-    }
-  }
+  editorStore.closeTab(tab.id);
 };
 </script>
 

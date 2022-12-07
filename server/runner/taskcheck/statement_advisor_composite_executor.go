@@ -1,4 +1,4 @@
-package server
+package taskcheck
 
 import (
 	"context"
@@ -18,22 +18,22 @@ import (
 //   2. Each SQL review rule type maps an advisor.Type.
 //   3. Each [db.Type][AdvisorType] maps an advisor.
 
-// NewTaskCheckStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
-func NewTaskCheckStatementAdvisorCompositeExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) TaskCheckExecutor {
-	return &TaskCheckStatementAdvisorCompositeExecutor{
+// newTaskCheckStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
+func newTaskCheckStatementAdvisorCompositeExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) taskCheckExecutor {
+	return &taskCheckStatementAdvisorCompositeExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
-// TaskCheckStatementAdvisorCompositeExecutor is the task check statement advisor composite executor with has sub-advisor.
-type TaskCheckStatementAdvisorCompositeExecutor struct {
+// taskCheckStatementAdvisorCompositeExecutor is the task check statement advisor composite executor with has sub-advisor.
+type taskCheckStatementAdvisorCompositeExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
-func (e *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *taskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	if taskCheckRun.Type != api.TaskCheckDatabaseStatementAdvise {
 		return nil, common.Errorf(common.Invalid, "invalid check statement advisor composite type: %v", taskCheckRun.Type)
 	}

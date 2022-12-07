@@ -1,4 +1,4 @@
-package server
+package taskcheck
 
 import (
 	"context"
@@ -10,22 +10,22 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewTaskCheckDatabaseConnectExecutor creates a task check database connect executor.
-func NewTaskCheckDatabaseConnectExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) TaskCheckExecutor {
-	return &TaskCheckDatabaseConnectExecutor{
+// newTaskCheckDatabaseConnectExecutor creates a task check database connect executor.
+func newTaskCheckDatabaseConnectExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) taskCheckExecutor {
+	return &taskCheckDatabaseConnectExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
-// TaskCheckDatabaseConnectExecutor is the task check database connect executor.
-type TaskCheckDatabaseConnectExecutor struct {
+// taskCheckDatabaseConnectExecutor is the task check database connect executor.
+type taskCheckDatabaseConnectExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check database connector executor once.
-func (e *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *taskCheckDatabaseConnectExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)

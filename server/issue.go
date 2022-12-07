@@ -14,25 +14,27 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		issueCreate := &api.IssueCreate{}
+		issueCreate := &api.IssueCreate{
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 		}
-
-		issueCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		// TODO(p0ny): remove this line when manually sending external approval is ready. This is to temporarily keep our auto sending behaviour.
-		issueCreate.AssigneeNeedAttention = true
 
 		issue, err := s.createIssue(ctx, issueCreate)
 		if err != nil {
@@ -180,6 +182,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
 		}
 
+		if issuePatch.AssigneeNeedAttention != nil && !*issuePatch.AssigneeNeedAttention {
+			return echo.NewHTTPError(http.StatusBadRequest, "Cannot set assigneeNeedAttention to false")
+		}
+
 		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
@@ -189,7 +195,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 
 		if issuePatch.AssigneeID != nil {
-			stage := getActiveStage(issue.Pipeline.StageList)
+			if *issuePatch.AssigneeID == issue.AssigneeID {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d because it's already the case", *issuePatch.AssigneeID))
+			}
+			stage := utils.GetActiveStage(issue.Pipeline.StageList)
 			if stage == nil {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
@@ -201,11 +210,24 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if !ok {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", *issuePatch.AssigneeID)).SetInternal(err)
 			}
+
+			// set AssigneeNeedAttention to false on assignee change
+			if issue.Project.WorkflowType == api.UIWorkflow {
+				needAttention := false
+				issuePatch.AssigneeNeedAttention = &needAttention
+			}
 		}
 
 		updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue with ID %d", id)).SetInternal(err)
+		}
+
+		// cancel external approval on assignee change
+		if issuePatch.AssigneeID != nil {
+			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonReassigned); err != nil {
+				log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.ID), zap.Error(err))
+			}
 		}
 
 		payloadList := [][]byte{}
@@ -254,10 +276,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Level:       api.ActivityInfo,
 				Payload:     string(payload),
 			}
-			_, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-				issue: updatedIssue,
-			})
-			if err != nil {
+			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+				Issue: updatedIssue,
+			}); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Name)).SetInternal(err)
 			}
 		}
@@ -373,7 +394,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		}
 	}
 
-	if err := s.schedulePipelineTaskCheck(ctx, issue.Pipeline); err != nil {
+	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, issue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Name)
 	}
 
@@ -396,10 +417,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		Level:       api.ActivityInfo,
 		Payload:     string(bytes),
 	}
-	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-		issue: issue,
-	})
-	if err != nil {
+	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: issue,
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
 	}
 	return issue, nil
@@ -1006,7 +1026,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	}
 	// Validate the labels. Labels are set upon task completion.
 	if c.Labels != "" {
-		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
+		if err := setDatabaseLabels(ctx, s.store, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
 		}
 	}

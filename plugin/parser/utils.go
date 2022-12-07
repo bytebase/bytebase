@@ -203,7 +203,7 @@ func extractMySQLDatabaseList(statement string) ([]string, error) {
 
 // extractDatabaseListFromNode extracts all the database from node.
 func extractDatabaseListFromNode(in tidbast.Node) []string {
-	tableNameList := extractMySQLTableList(in, false /* asName */)
+	tableNameList := ExtractMySQLTableList(in, false /* asName */)
 
 	databaseMap := make(map[string]bool)
 	for _, tableName := range tableNameList {
@@ -219,7 +219,9 @@ func extractDatabaseListFromNode(in tidbast.Node) []string {
 	return databaseList
 }
 
-func extractMySQLTableList(in tidbast.Node, asName bool) []*tidbast.TableName {
+// ExtractMySQLTableList extracts all the TableNames from node.
+// If asName is true, extract AsName prior to OrigName.
+func ExtractMySQLTableList(in tidbast.Node, asName bool) []*tidbast.TableName {
 	input := []*tidbast.TableName{}
 	return extractTableList(in, input, asName)
 }

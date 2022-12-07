@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 func (s *Server) registerActivityRoutes(g *echo.Group) {
@@ -42,7 +43,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		}
 		activityCreate.Payload = string(bytes)
 
-		activity, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue})
+		activity, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
 		}

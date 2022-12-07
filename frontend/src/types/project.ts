@@ -88,6 +88,7 @@ export type ProjectPatch = {
   roleProvider?: ProjectRoleProvider;
   schemaChangeType?: SchemaChangeType;
   lgtmCheckSetting?: LGTMCheckSetting;
+  dbNameTemplate?: string;
 };
 
 // Project Member

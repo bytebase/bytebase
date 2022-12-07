@@ -25,6 +25,8 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/component/state"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -126,11 +128,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if instance == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", *sync.InstanceID))
 			}
-			if _, err := s.SchemaSyncer.syncInstance(ctx, instance); err != nil {
+			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 				resultSet.Error = err.Error()
 			}
 			// Sync all databases in the instance asynchronously.
-			instanceDatabaseSyncChan <- instance
+			state.InstanceDatabaseSyncChan <- instance
 		}
 		if sync.DatabaseID != nil {
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
@@ -140,7 +142,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if database == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
 			}
-			if err := s.SchemaSyncer.syncDatabaseSchema(ctx, database.Instance, database.Name); err != nil {
+			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database.Instance, database.Name); err != nil {
 				resultSet.Error = err.Error()
 			}
 		}
@@ -308,14 +310,14 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
-		var sensitiveDataMap db.SensitiveDataMap
+		var sensitiveSchemaInfo *db.SensitiveSchemaInfo
 		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
 			}
 
-			sensitiveDataMap, err = s.getSensitiveData(ctx, instance.Engine, instance.ID, databaseList, exec.DatabaseName)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance.Engine, instance.ID, databaseList, exec.DatabaseName)
 			if err != nil {
 				return err
 			}
@@ -331,10 +333,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			defer driver.Close(ctx)
 
 			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
-				Limit:            exec.Limit,
-				ReadOnly:         true,
-				CurrentDatabase:  exec.DatabaseName,
-				SensitiveDataMap: sensitiveDataMap,
+				Limit:           exec.Limit,
+				ReadOnly:        true,
+				CurrentDatabase: exec.DatabaseName,
+				// TODO(rebelice): we cannot deal with multi-SensitiveDataMaskType now. Fix it.
+				SensitiveDataMaskType: db.SensitiveDataMaskTypeDefault,
+				SensitiveSchemaInfo:   sensitiveSchemaInfo,
 			})
 			if err != nil {
 				return nil, err
@@ -480,10 +484,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			defer driver.Close(ctx)
 
 			rowSet, err := driver.Query(ctx, exec.Statement, &db.QueryContext{
-				Limit:            exec.Limit,
-				ReadOnly:         false,
-				CurrentDatabase:  exec.DatabaseName,
-				SensitiveDataMap: nil,
+				Limit:               exec.Limit,
+				ReadOnly:            false,
+				CurrentDatabase:     exec.DatabaseName,
+				SensitiveSchemaInfo: nil,
 			})
 			if err != nil {
 				return nil, err
@@ -545,23 +549,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 }
 
-func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {
-	// TODO(d): support semantic versioning.
-	limit := 1
-	history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-		Database: &databaseName,
-		Limit:    &limit,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
-	}
-	var schemaVersion string
-	if len(history) == 1 {
-		schemaVersion = history[0].Version
-	}
-	return schemaVersion, nil
-}
-
 func validateSQLSelectStatement(sqlStatement string) bool {
 	// Check if the query has only one statement.
 	count := 0
@@ -608,7 +595,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 		Payload: string(activityBytes),
 	}
 
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		log.Warn("Failed to create activity after executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
 			zap.Int("instance_id", payload.InstanceID),
@@ -715,8 +702,12 @@ func (s *Server) getDatabase(ctx context.Context, instanceID int, databaseName s
 	return dbList[0], nil
 }
 
-func (s *Server) getSensitiveData(ctx context.Context, engineType db.Type, instanceID int, databaseList []string, currentDatabase string) (db.SensitiveDataMap, error) {
-	res := make(db.SensitiveDataMap)
+func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type, instanceID int, databaseList []string, currentDatabase string) (*db.SensitiveSchemaInfo, error) {
+	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
+	isEmpty := true
+	result := &db.SensitiveSchemaInfo{
+		DatabaseList: []db.DatabaseSchema{},
+	}
 	for _, name := range databaseList {
 		databaseName := name
 		if name == "" {
@@ -735,20 +726,67 @@ func (s *Server) getSensitiveData(ctx context.Context, engineType db.Type, insta
 			return nil, err
 		}
 
+		columnMap := make(sensitiveDataMap)
+
 		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.ID)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instanceID))
 		}
 		for _, data := range policy.SensitiveDataList {
-			res[db.SensitiveData{
-				Database: databaseName,
-				Table:    data.Table,
-				Column:   data.Column,
-			}] = db.SensitiveDataMaskType(data.Type)
+			columnMap[api.SensitiveData{
+				Table:  data.Table,
+				Column: data.Column,
+			}] = data.Type
 		}
+
+		tableList, err := s.store.FindTable(ctx, &api.TableFind{
+			DatabaseID: &database.ID,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
+		}
+
+		databaseSchema := db.DatabaseSchema{
+			Name:      databaseName,
+			TableList: []db.TableSchema{},
+		}
+		for _, table := range tableList {
+			tableSchema := db.TableSchema{
+				Name:       table.Name,
+				ColumnList: []db.ColumnInfo{},
+			}
+			columnList, err := s.store.FindColumn(ctx, &api.ColumnFind{
+				DatabaseID: &database.ID,
+				TableID:    &table.ID,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find column list for table %q.%q", databaseName, table.Name))
+			}
+
+			for _, column := range columnList {
+				_, sensitive := columnMap[api.SensitiveData{
+					Table:  table.Name,
+					Column: column.Name,
+				}]
+				tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
+					Name:      column.Name,
+					Sensitive: sensitive,
+				})
+			}
+			databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
+		}
+		if len(databaseSchema.TableList) > 0 {
+			isEmpty = false
+		}
+		result.DatabaseList = append(result.DatabaseList, databaseSchema)
 	}
 
-	return res, nil
+	if isEmpty {
+		// If there is no tables, this query may access system databases, such as INFORMATION_SCHEMA.
+		// Skip to extract sensitive column for this query.
+		result = nil
+	}
+	return result, nil
 }
 
 func isExcludeDatabase(dbType db.Type, database string) bool {

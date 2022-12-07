@@ -380,7 +380,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
 		return nil, err
 	}
 
@@ -408,7 +408,7 @@ func (s *Store) findInstanceRaw(ctx context.Context, find *api.InstanceFind) ([]
 func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*instanceRaw, error) {
 	if find.ID != nil {
 		instanceRaw := &instanceRaw{}
-		has, err := s.cache.FindCache(api.InstanceCache, *find.ID, instanceRaw)
+		has, err := s.cache.FindCache(instanceCacheNamespace, *find.ID, instanceRaw)
 		if err != nil {
 			return nil, err
 		}
@@ -435,7 +435,7 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 	}
 
 	instance := list[0]
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
 		return nil, err
 	}
 	return instance, nil
@@ -459,7 +459,7 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) 
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
 		return nil, err
 	}
 

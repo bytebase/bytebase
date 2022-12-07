@@ -450,9 +450,10 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit            int
-	ReadOnly         bool
-	SensitiveDataMap SensitiveDataMap
+	Limit                 int
+	ReadOnly              bool
+	SensitiveDataMaskType SensitiveDataMaskType
+	SensitiveSchemaInfo   *SensitiveSchemaInfo
 
 	// CurrentDatabase is for MySQL
 	CurrentDatabase string
@@ -561,16 +562,6 @@ func FormatParamNameInNumberedPosition(paramNames []string) string {
 	return fmt.Sprintf("WHERE %s ", strings.Join(parts, " AND "))
 }
 
-// SensitiveData is the struct for sensitive column.
-type SensitiveData struct {
-	Database string
-	Table    string
-	Column   string
-}
-
-// SensitiveDataMap is the map for sensitive data.
-type SensitiveDataMap map[SensitiveData]SensitiveDataMaskType
-
 // SensitiveDataMaskType is the mask type for sensitive data.
 type SensitiveDataMaskType string
 
@@ -579,3 +570,32 @@ const (
 	// The default method is subject to change.
 	SensitiveDataMaskTypeDefault SensitiveDataMaskType = "DEFAULT"
 )
+
+// SensitiveSchemaInfo is the schema info using to extract sensitive fields.
+type SensitiveSchemaInfo struct {
+	DatabaseList []DatabaseSchema
+}
+
+// DatabaseSchema is the database schema using to extract sensitive fields.
+type DatabaseSchema struct {
+	Name      string
+	TableList []TableSchema
+}
+
+// TableSchema is the table schema using to extract sensitive fields.
+type TableSchema struct {
+	Name       string
+	ColumnList []ColumnInfo
+}
+
+// ColumnInfo is the column info using to extract sensitive fields.
+type ColumnInfo struct {
+	Name      string
+	Sensitive bool
+}
+
+// SensitiveField is the struct about SELECT fields.
+type SensitiveField struct {
+	Name      string
+	Sensitive bool
+}

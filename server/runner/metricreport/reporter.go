@@ -1,4 +1,5 @@
-package server
+// Package metricreport is a runner reporting metrics.
+package metricreport
 
 import (
 	"context"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric"
@@ -28,12 +30,10 @@ const (
 	identifyTraitForOrgName = "org_name"
 	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
-	// principalIDForFirstUser is the principal id for the first user in workspace.
-	principalIDForFirstUser = 101
 )
 
-// MetricReporter is the metric reporter.
-type MetricReporter struct {
+// Reporter is the metric reporter.
+type Reporter struct {
 	licenseService enterpriseAPI.LicenseService
 	// Version is the bytebase's version
 	version     string
@@ -43,11 +43,11 @@ type MetricReporter struct {
 	store       *store.Store
 }
 
-// NewMetricReporter creates a new metric scheduler.
-func NewMetricReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string) *MetricReporter {
+// NewReporter creates a new metric scheduler.
+func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile config.Profile, workspaceID string) *Reporter {
 	r := segment.NewReporter(profile.MetricConnectionKey, workspaceID)
 
-	return &MetricReporter{
+	return &Reporter{
 		licenseService: licenseService,
 		version:        profile.Version,
 		workspaceID:    workspaceID,
@@ -58,7 +58,7 @@ func NewMetricReporter(store *store.Store, licenseService enterpriseAPI.LicenseS
 }
 
 // Run will run the metric reporter.
-func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -81,7 +81,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 				// identify will be triggered in every schedule loop so that we can update the latest workspace profile such as subscription plan.
-				m.identify(ctx)
+				m.Identify(ctx)
 				for name, collector := range m.collectors {
 					log.Debug("Run metric collector", zap.String("collector", name))
 
@@ -96,7 +96,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					for _, metric := range metricList {
-						m.report(metric)
+						m.Report(metric)
 					}
 				}
 			}()
@@ -107,25 +107,25 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Close will close the metric reporter.
-func (m *MetricReporter) Close() {
+func (m *Reporter) Close() {
 	m.reporter.Close()
 }
 
 // Register will register a metric collector.
-func (m *MetricReporter) Register(metricName metric.Name, collector metric.Collector) {
+func (m *Reporter) Register(metricName metric.Name, collector metric.Collector) {
 	m.collectors[string(metricName)] = collector
 }
 
 // Identify will identify the workspace and update the subscription plan.
-func (m *MetricReporter) identify(ctx context.Context) {
+func (m *Reporter) Identify(ctx context.Context) {
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
 	orgID := subscription.OrgID
 	orgName := subscription.OrgName
 
-	principal, err := m.store.GetPrincipalByID(ctx, principalIDForFirstUser)
+	principal, err := m.store.GetPrincipalByID(ctx, api.PrincipalIDForFirstUser)
 	if err != nil {
-		log.Debug("unable to get the first principal user", zap.Int("id", principalIDForFirstUser), zap.Error(err))
+		log.Debug("unable to get the first principal user", zap.Int("id", api.PrincipalIDForFirstUser), zap.Error(err))
 	}
 	email := ""
 	if principal != nil {
@@ -147,7 +147,8 @@ func (m *MetricReporter) identify(ctx context.Context) {
 	}
 }
 
-func (m *MetricReporter) report(metric *metric.Metric) {
+// Report will report a metric.
+func (m *Reporter) Report(metric *metric.Metric) {
 	if err := m.reporter.Report(metric); err != nil {
 		log.Error(
 			"Failed to report metric",

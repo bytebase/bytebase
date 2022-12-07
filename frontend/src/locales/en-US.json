@@ -70,6 +70,7 @@
     "next": "Next",
     "edit": "Edit",
     "update": "Update",
+    "updated": "Updated",
     "visit": "Visit",
     "role": {
       "dba": "DBA",
@@ -1178,7 +1179,8 @@
       "disabled": "Skip LGTM check",
       "project-member": "Require LGTM from project members",
       "project-owner": "Require LGTM from project owner"
-    }
+    },
+    "successfully-updated-db-name-template": "Successfully updated database name template."
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -1397,17 +1399,16 @@
     "use-tips": "Click a database/table to start.",
     "preview-issue": "Preview issue",
     "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
-    "list": "List",
     "raw-sql": "Raw SQL",
     "actions": {
       "create-table": "New table",
+      "rename": "Rename",
       "drop-table": "Drop table",
-      "drop": "Drop",
       "restore": "Restore",
       "add-column": "Add column",
       "drop-column": "Drop column",
       "sql-preview": "SQL Preview",
-      "discard-changes": "Discard Changes",
+      "reset": "Reset",
       "save": "Save"
     },
     "database": {
@@ -1418,11 +1419,11 @@
       "collation": "Collation",
       "comment": "Comment"
     },
-    "tables": "Tables",
+    "table-list": "Table List",
     "table": {
       "name": "Table Name"
     },
-    "columns": "Columns",
+    "column-list": "Column List",
     "column": {
       "name": "Name",
       "type": "Type",

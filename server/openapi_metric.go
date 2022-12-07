@@ -21,7 +21,7 @@ func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc 
 			responseCode := c.Response().Status
 
 			if s.MetricReporter != nil {
-				s.MetricReporter.report(&metric.Metric{
+				s.MetricReporter.Report(&metric.Metric{
 					Name:  metricAPI.OpenAPIMetricName,
 					Value: 1,
 					Labels: map[string]interface{}{

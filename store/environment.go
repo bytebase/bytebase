@@ -156,7 +156,7 @@ func (s *Store) createEnvironmentRaw(ctx context.Context, create *api.Environmen
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
+	if err := s.cache.UpsertCache(environmentCacheNamespace, environment.ID, environment); err != nil {
 		return nil, err
 	}
 
@@ -178,7 +178,7 @@ func (s *Store) findEnvironmentRaw(ctx context.Context, find *api.EnvironmentFin
 
 	if err == nil {
 		for _, environment := range list {
-			if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
+			if err := s.cache.UpsertCache(environmentCacheNamespace, environment.ID, environment); err != nil {
 				return nil, err
 			}
 		}
@@ -191,7 +191,7 @@ func (s *Store) findEnvironmentRaw(ctx context.Context, find *api.EnvironmentFin
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environmentRaw, error) {
 	envRaw := &environmentRaw{}
-	has, err := s.cache.FindCache(api.EnvironmentCache, id, envRaw)
+	has, err := s.cache.FindCache(environmentCacheNamespace, id, envRaw)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environment
 	} else if len(envRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d environments with filter %+v, expect 1", len(envRawList), find)}
 	}
-	if err := s.cache.UpsertCache(api.EnvironmentCache, envRawList[0].ID, envRawList[0]); err != nil {
+	if err := s.cache.UpsertCache(environmentCacheNamespace, envRawList[0].ID, envRawList[0]); err != nil {
 		return nil, err
 	}
 	return envRawList[0], nil
@@ -240,7 +240,7 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *api.EnvironmentP
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.EnvironmentCache, envRaw.ID, envRaw); err != nil {
+	if err := s.cache.UpsertCache(environmentCacheNamespace, envRaw.ID, envRaw); err != nil {
 		return nil, err
 	}
 

@@ -984,6 +984,24 @@ func (ctl *controller) getOnePageIssuesWithToken(issueFind api.IssueFind, token 
 	return issueResp.Issues, issueResp.NextToken, nil
 }
 
+func (ctl *controller) patchIssue(issuePatch api.IssuePatch) (*api.Issue, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &issuePatch); err != nil {
+		return nil, errors.Wrap(err, "failed to marshal issue patch")
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/issue/%d", issuePatch.ID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	issue := new(api.Issue)
+	if err = jsonapi.UnmarshalPayload(body, issue); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal patch issue patch response")
+	}
+	return issue, nil
+}
+
 // patchIssue patches the issue with given ID.
 func (ctl *controller) patchIssueStatus(issueStatusPatch api.IssueStatusPatch) (*api.Issue, error) {
 	buf := new(bytes.Buffer)
