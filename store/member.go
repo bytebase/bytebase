@@ -182,7 +182,7 @@ func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
+	if err := s.cache.UpsertCache(memberCacheNamespace, member.PrincipalID, member); err != nil {
 		return nil, err
 	}
 
@@ -203,7 +203,7 @@ func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) ([]*mem
 	}
 
 	for _, member := range memberRawList {
-		if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
+		if err := s.cache.UpsertCache(memberCacheNamespace, member.PrincipalID, member); err != nil {
 			return nil, err
 		}
 	}
@@ -216,7 +216,7 @@ func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) ([]*mem
 func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*memberRaw, error) {
 	if find.PrincipalID != nil {
 		memberRaw := &memberRaw{}
-		has, err := s.cache.FindCache(api.MemberCache, *find.PrincipalID, memberRaw)
+		has, err := s.cache.FindCache(memberCacheNamespace, *find.PrincipalID, memberRaw)
 		if err != nil {
 			return nil, err
 		}
@@ -241,7 +241,7 @@ func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*member
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d members with filter %+v, expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.MemberCache, list[0].PrincipalID, list[0]); err != nil {
+	if err := s.cache.UpsertCache(memberCacheNamespace, list[0].PrincipalID, list[0]); err != nil {
 		return nil, err
 	}
 	return list[0], nil
@@ -265,7 +265,7 @@ func (s *Store) patchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*me
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
+	if err := s.cache.UpsertCache(memberCacheNamespace, member.PrincipalID, member); err != nil {
 		return nil, err
 	}
 
