@@ -128,7 +128,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		targetProject := database.Project
 		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != database.ProjectID {
 			// Before updating database's projectID, we need to check if there are still bound sheets.
 			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.ID}, currentPrincipalID)
@@ -146,14 +145,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			if toProject == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
 			}
-			targetProject = toProject
 		}
 
 		// Patch database labels
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
 		if dbPatch.Labels != nil {
-			if err := utils.SetDatabaseLabels(ctx, s.store, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
+			if err := utils.SetDatabaseLabels(ctx, s.store, *dbPatch.Labels, database, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
