@@ -23,6 +23,7 @@ import (
 	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/backuprun"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/store"
 )
@@ -228,7 +229,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, store *s
 	binlogDir := common.GetBinlogAbsDir(profile.DataDir, task.Instance.ID)
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 
-	backupAbsPathLocal := getBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
+	backupAbsPathLocal := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
 	if backup.StorageBackend == api.BackupStorageBackendS3 {
 		if err := downloadBackupFileFromCloud(ctx, s3Client, backup.Path, backupAbsPathLocal); err != nil {
 			return nil, errors.Wrapf(err, "failed to download backup %q from S3", backup.Path)
@@ -334,7 +335,7 @@ func (*PITRRestoreTaskExecutor) doRestoreInPlacePostgres(ctx context.Context, st
 	if backup == nil {
 		return nil, errors.Errorf("backup with ID %d not found", *payload.BackupID)
 	}
-	backupFileName := getBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
+	backupFileName := backuprun.GetBackupAbsFilePath(profile.DataDir, backup.DatabaseID, backup.Name)
 	backupFile, err := os.Open(backupFileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to open backup file %q", backupFileName)

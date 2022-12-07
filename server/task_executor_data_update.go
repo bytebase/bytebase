@@ -15,11 +15,10 @@ import (
 )
 
 // NewDataUpdateTaskExecutor creates a data update (DML) task executor.
-func NewDataUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+func NewDataUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &DataUpdateTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
-		rollbackRunner:  rollbackRunner,
 		activityManager: activityManager,
 		profile:         profile,
 	}
@@ -29,7 +28,6 @@ func NewDataUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactor
 type DataUpdateTaskExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
-	rollbackRunner  *RollbackRunner
 	activityManager *activity.Manager
 	profile         config.Profile
 }
@@ -41,5 +39,5 @@ func (exec *DataUpdateTaskExecutor) RunOnce(ctx context.Context, task *api.Task)
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.rollbackRunner, exec.activityManager, exec.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }

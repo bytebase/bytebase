@@ -18,11 +18,10 @@ import (
 )
 
 // NewSchemaUpdateSDLTaskExecutor creates a schema update (SDL) task executor.
-func NewSchemaUpdateSDLTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+func NewSchemaUpdateSDLTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &SchemaUpdateSDLTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
-		rollbackRunner:  rollbackRunner,
 		activityManager: activityManager,
 		profile:         profile,
 	}
@@ -32,7 +31,6 @@ func NewSchemaUpdateSDLTaskExecutor(store *store.Store, dbFactory *dbfactory.DBF
 type SchemaUpdateSDLTaskExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
-	rollbackRunner  *RollbackRunner
 	activityManager *activity.Manager
 	profile         config.Profile
 }
@@ -48,7 +46,7 @@ func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, task *api.
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.rollbackRunner, exec.activityManager, exec.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // computeDatabaseSchemaDiff computes the diff between current database schema
