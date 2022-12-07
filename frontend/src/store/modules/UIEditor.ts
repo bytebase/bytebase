@@ -91,6 +91,16 @@ export const useUIEditorStore = defineStore("UIEditor", {
       if (tab.type === UIEditorTabType.TabForDatabase) {
         // Edit database metadata is not allowed.
       } else if (tab.type === UIEditorTabType.TabForTable) {
+        if (tab.tableId === UNKNOWN_ID) {
+          return;
+        }
+
+        const originTable = useTableStore().getTableByDatabaseIdAndTableId(
+          tab.databaseId,
+          tab.tableId
+        );
+        tab.table.name = originTable.name;
+        tab.table.columnList = cloneDeep(originTable.columnList);
         tab.tableCache.name = tab.table.name;
         tab.tableCache.columnList = cloneDeep(tab.table.columnList);
       }
@@ -121,6 +131,15 @@ export const useUIEditorStore = defineStore("UIEditor", {
         }
       }
       this.tabState.tabMap.delete(tabId);
+    },
+    getTableTabByTable(table: Table): TableTabContext | undefined {
+      const tab = this.tabList.find((item) => {
+        if (item.type === UIEditorTabType.TabForTable && item.table === table) {
+          return true;
+        }
+        return false;
+      });
+      return tab as TableTabContext;
     },
     async fetchDatabaseList(databaseIdList: DatabaseId[]) {
       const databaseList: Database[] = [];
@@ -190,13 +209,6 @@ export const useUIEditorStore = defineStore("UIEditor", {
         this.tableList.splice(index, 1);
       } else {
         this.droppedTableList.push(table);
-      }
-
-      const tab = this.tabList.find(
-        (tab) => tab.type === UIEditorTabType.TabForTable && tab.table === table
-      );
-      if (tab) {
-        this.closeTab(tab.id);
       }
     },
     restoreTable(databaseId: DatabaseId, tableId: TableId, tableName: string) {
