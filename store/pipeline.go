@@ -183,7 +183,7 @@ func (s *Store) createPipelineRaw(ctx context.Context, create *api.PipelineCreat
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PipelineCache, pipeline.ID, pipeline); err != nil {
+	if err := s.cache.UpsertCache(pipelineCacheNamespace, pipeline.ID, pipeline); err != nil {
 		return nil, err
 	}
 
@@ -205,7 +205,7 @@ func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]
 
 	if err == nil {
 		for _, pipeline := range list {
-			if err := s.cache.UpsertCache(api.PipelineCache, pipeline.ID, pipeline); err != nil {
+			if err := s.cache.UpsertCache(pipelineCacheNamespace, pipeline.ID, pipeline); err != nil {
 				return nil, err
 			}
 		}
@@ -219,7 +219,7 @@ func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]
 func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pipelineRaw, error) {
 	if find.ID != nil {
 		pipelineRaw := &pipelineRaw{}
-		has, err := s.cache.FindCache(api.PipelineCache, *find.ID, pipelineRaw)
+		has, err := s.cache.FindCache(pipelineCacheNamespace, *find.ID, pipelineRaw)
 		if err != nil {
 			return nil, err
 		}
@@ -244,7 +244,7 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 	} else if len(pipelineRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d pipelines with filter %+v, expect 1", len(pipelineRawList), find)}
 	}
-	if err := s.cache.UpsertCache(api.PipelineCache, pipelineRawList[0].ID, pipelineRawList[0]); err != nil {
+	if err := s.cache.UpsertCache(pipelineCacheNamespace, pipelineRawList[0].ID, pipelineRawList[0]); err != nil {
 		return nil, err
 	}
 	return pipelineRawList[0], nil
@@ -268,7 +268,7 @@ func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) 
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PipelineCache, pipelineRaw.ID, pipelineRaw); err != nil {
+	if err := s.cache.UpsertCache(pipelineCacheNamespace, pipelineRaw.ID, pipelineRaw); err != nil {
 		return nil, err
 	}
 
