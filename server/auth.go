@@ -15,6 +15,7 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 func (s *Server) registerAuthRoutes(g *echo.Group) {
@@ -301,7 +302,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int
 			Level:       api.ActivityInfo,
 			Payload:     string(bytes),
 		}
-		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after create member: %d", member.ID)).SetInternal(err)
 		}

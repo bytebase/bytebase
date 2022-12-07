@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 var (
@@ -397,8 +398,8 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				Type:        api.ActivityPipelineTaskStatementUpdate,
 				Payload:     string(payload),
 				Level:       api.ActivityInfo,
-			}, &ActivityMeta{
-				issue: issue,
+			}, &activity.Metadata{
+				Issue: issue,
 			}); err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 			}
@@ -514,10 +515,9 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			Payload:     string(payload),
 			Level:       api.ActivityInfo,
 		}
-		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-			issue: issue,
-		})
-		if err != nil {
+		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
 		}
 

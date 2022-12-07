@@ -11,13 +11,14 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/differ"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewSchemaUpdateSDLTaskExecutor creates a schema update (SDL) task executor.
-func NewSchemaUpdateSDLTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *ActivityManager, profile config.Profile) TaskExecutor {
+func NewSchemaUpdateSDLTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &SchemaUpdateSDLTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
@@ -32,7 +33,7 @@ type SchemaUpdateSDLTaskExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	rollbackRunner  *RollbackRunner
-	activityManager *ActivityManager
+	activityManager *activity.Manager
 	profile         config.Profile
 }
 

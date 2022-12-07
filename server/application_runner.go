@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/app/feishu"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/store"
 )
@@ -33,7 +34,7 @@ const (
 )
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, feishuProvider *feishu.Provider, profile config.Profile) *ApplicationRunner {
+func NewApplicationRunner(store *store.Store, activityManager *activity.Manager, feishuProvider *feishu.Provider, profile config.Profile) *ApplicationRunner {
 	return &ApplicationRunner{
 		store:           store,
 		activityManager: activityManager,
@@ -45,7 +46,7 @@ func NewApplicationRunner(store *store.Store, activityManager *ActivityManager, 
 // ApplicationRunner is a runner which periodically checks external approval status and approve the correspoding stages.
 type ApplicationRunner struct {
 	store           *store.Store
-	activityManager *ActivityManager
+	activityManager *activity.Manager
 	p               *feishu.Provider
 	profile         config.Profile
 }
@@ -237,7 +238,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 									Payload:     string(activityPayload),
 								}
 
-								if _, err = r.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+								if _, err = r.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 									return errors.Wrap(err, "failed to create activity after external approval rejected")
 								}
 								return nil
