@@ -40,9 +40,9 @@ import (
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/server/runner/anomaly"
-	"github.com/bytebase/bytebase/server/runner/application"
+	"github.com/bytebase/bytebase/server/runner/apprun"
 	"github.com/bytebase/bytebase/server/runner/backuprun"
-	"github.com/bytebase/bytebase/server/runner/rollback"
+	"github.com/bytebase/bytebase/server/runner/rollbackrun"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/server/runner/taskcheck"
 	"github.com/bytebase/bytebase/store"
@@ -95,10 +95,10 @@ type Server struct {
 	TaskCheckScheduler *taskcheck.Scheduler
 	MetricReporter     *MetricReporter
 	SchemaSyncer       *schemasync.Syncer
-	BackupRunner       *backuprun.BackupRunner
+	BackupRunner       *backuprun.Runner
 	AnomalyScanner     *anomaly.Scanner
-	ApplicationRunner  *application.Runner
-	RollbackRunner     *rollback.RollbackRunner
+	ApplicationRunner  *apprun.Runner
+	RollbackRunner     *rollbackrun.Runner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *activity.Manager
@@ -292,9 +292,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
-		s.ApplicationRunner = application.NewApplicationRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
-		s.BackupRunner = backuprun.NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
-		s.RollbackRunner = rollback.NewRollbackRunner(storeInstance, s.dbFactory)
+		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
+		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
+		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory)
 
 		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
 		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor())

@@ -20,7 +20,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
-	"github.com/bytebase/bytebase/server/runner/application"
+	"github.com/bytebase/bytebase/server/runner/apprun"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
@@ -31,7 +31,7 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *application.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
 		server:            server,
 		store:             store,
@@ -48,7 +48,7 @@ func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *app
 type TaskScheduler struct {
 	server            *Server
 	store             *store.Store
-	applicationRunner *application.Runner
+	applicationRunner *apprun.Runner
 	schemaSyncer      *schemasync.Syncer
 	activityManager   *activity.Manager
 	licenseService    enterpriseAPI.LicenseService

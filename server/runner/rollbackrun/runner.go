@@ -1,5 +1,5 @@
-// Package rollback is the runner for generating rollback statements for DMLs.
-package rollback
+// Package rollbackrun is the runner for generating rollback statements for DMLs.
+package rollbackrun
 
 import (
 	"context"
@@ -20,22 +20,22 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewRollbackRunner creates a new rollback runner.
-func NewRollbackRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *RollbackRunner {
-	return &RollbackRunner{
+// NewRunner creates a new rollback runner.
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *Runner {
+	return &Runner{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
-// RollbackRunner is the rollback runner generating rollback SQL statements.
-type RollbackRunner struct {
+// Runner is the rollback runner generating rollback SQL statements.
+type Runner struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
 // Run starts the rollback runner.
-func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -58,7 +58,7 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // retryGenerateRollbackSQL retries generating rollback SQL for tasks.
 // It is currently called when Bytebase server starts and only rerun unfinished generation.
-func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
+func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
@@ -75,7 +75,7 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 	}
 }
 
-func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task) {
+func (r *Runner) generateRollbackSQL(ctx context.Context, task *api.Task) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -117,7 +117,7 @@ func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task
 	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
 }
 
-func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
 	basename, seqStart, err := mysql.ParseBinlogName(payload.BinlogFileStart)
 	if err != nil {
 		return "", errors.WithMessagef(err, "invalid start binlog file name %s", payload.BinlogFileStart)

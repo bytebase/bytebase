@@ -28,9 +28,9 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewBackupRunner creates a new backup runner.
-func NewBackupRunner(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *s3.Client, profile *config.Profile) *BackupRunner {
-	return &BackupRunner{
+// NewRunner creates a new backup runner.
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *s3.Client, profile *config.Profile) *Runner {
+	return &Runner{
 		store:                     store,
 		dbFactory:                 dbFactory,
 		s3Client:                  s3Client,
@@ -39,8 +39,8 @@ func NewBackupRunner(store *store.Store, dbFactory *dbfactory.DBFactory, s3Clien
 	}
 }
 
-// BackupRunner is the backup runner scheduling automatic backups.
-type BackupRunner struct {
+// Runner is the backup runner scheduling automatic backups.
+type Runner struct {
 	store                     *store.Store
 	dbFactory                 *dbfactory.DBFactory
 	s3Client                  *s3.Client
@@ -52,7 +52,7 @@ type BackupRunner struct {
 }
 
 // Run is the runner for backup runner.
-func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(r.profile.BackupRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -86,7 +86,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // TODO(dragonly): Make best effort to assure that users could recover to at least RetentionPeriodTs ago.
 // This may require pending deleting expired backup files and binlog files.
-func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
+func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 	backupSettingList, err := r.store.FindBackupSetting(ctx, api.BackupSettingFind{})
 	if err != nil {
 		log.Error("Failed to find all the backup settings.", zap.Error(err))
@@ -142,7 +142,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 	}
 }
 
-func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *api.Instance) (int, error) {
+func (r *Runner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Context, instance *api.Instance) (int, error) {
 	backupSettingList, err := r.store.FindBackupSetting(ctx, api.BackupSettingFind{InstanceID: &instance.ID})
 	if err != nil {
 		log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
@@ -157,7 +157,7 @@ func (r *BackupRunner) getMaxRetentionPeriodTsForMySQLInstance(ctx context.Conte
 	return maxRetentionPeriodTs, nil
 }
 
-func (r *BackupRunner) purgeBinlogFiles(ctx context.Context, instanceID, retentionPeriodTs int) error {
+func (r *Runner) purgeBinlogFiles(ctx context.Context, instanceID, retentionPeriodTs int) error {
 	binlogDir := common.GetBinlogAbsDir(r.profile.DataDir, instanceID)
 	switch r.profile.BackupStorageBackend {
 	case api.BackupStorageBackendLocal:
@@ -169,7 +169,7 @@ func (r *BackupRunner) purgeBinlogFiles(ctx context.Context, instanceID, retenti
 	}
 }
 
-func (r *BackupRunner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir string, retentionPeriodTs int) error {
+func (r *Runner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir string, retentionPeriodTs int) error {
 	binlogDirOnCloud := common.GetBinlogRelativeDir(binlogDir)
 	listOutput, err := r.s3Client.ListObjects(ctx, binlogDirOnCloud)
 	if err != nil {
@@ -192,7 +192,7 @@ func (r *BackupRunner) purgeBinlogFilesOnCloud(ctx context.Context, binlogDir st
 }
 
 // TODO(dragonly): Remove metadata as well.
-func (*BackupRunner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs int) error {
+func (*Runner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs int) error {
 	binlogFileInfoList, err := os.ReadDir(binlogDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read backup directory %q", binlogDir)
@@ -220,7 +220,7 @@ func (*BackupRunner) purgeBinlogFilesLocal(binlogDir string, retentionPeriodTs i
 	return nil
 }
 
-func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) error {
+func (r *Runner) purgeBackup(ctx context.Context, backup *api.Backup) error {
 	archive := api.Archived
 	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
@@ -250,7 +250,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 	return nil
 }
 
-func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
+func (r *Runner) downloadBinlogFiles(ctx context.Context) {
 	instanceList, err := r.store.FindInstanceWithDatabaseBackupEnabled(ctx, db.MySQL)
 	if err != nil {
 		log.Error("Failed to retrieve MySQL instance list with at least one database backup enabled", zap.Error(err))
@@ -268,7 +268,7 @@ func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 	}
 }
 
-func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance) {
+func (r *Runner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance) {
 	defer func() {
 		r.downloadBinlogMu.Lock()
 		delete(r.downloadBinlogInstanceIDs, instance.ID)
@@ -297,7 +297,7 @@ func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 	}
 }
 
-func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.RWMutex) {
+func (r *Runner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.RWMutex) {
 	// Find all databases that need a backup in this hour.
 	t := time.Now().UTC().Truncate(time.Hour)
 	match := &api.BackupSettingsMatch{
@@ -370,7 +370,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 }
 
 // ScheduleBackupTask schedules a backup task.
-func (r *BackupRunner) ScheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
+func (r *Runner) ScheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
 	// Store the migration history version if exists.
 	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {

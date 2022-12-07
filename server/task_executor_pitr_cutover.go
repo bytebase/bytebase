@@ -26,7 +26,7 @@ import (
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, backupRunner *backuprun.BackupRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, backupRunner *backuprun.Runner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &PITRCutoverTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
@@ -42,7 +42,7 @@ type PITRCutoverTaskExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	schemaSyncer    *schemasync.Syncer
-	backupRunner    *backuprun.BackupRunner
+	backupRunner    *backuprun.Runner
 	activityManager *activity.Manager
 	profile         config.Profile
 }
@@ -94,7 +94,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, task *api.Task
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
-func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.BackupRunner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.Runner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err

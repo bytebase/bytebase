@@ -1,5 +1,5 @@
-// Package application is an application runner for scanning Feishu approval instances.
-package application
+// Package apprun is an application runner for scanning Feishu approval instances.
+package apprun
 
 import (
 	"context"
@@ -21,11 +21,11 @@ import (
 )
 
 const (
-	applicationRunnerInterval = time.Duration(60) * time.Second
+	runnerInterval = time.Duration(60) * time.Second
 )
 
-// NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *activity.Manager, feishuProvider *feishu.Provider, profile config.Profile) *Runner {
+// NewRunner returns a runner.
+func NewRunner(store *store.Store, activityManager *activity.Manager, feishuProvider *feishu.Provider, profile config.Profile) *Runner {
 	return &Runner{
 		store:           store,
 		activityManager: activityManager,
@@ -44,10 +44,10 @@ type Runner struct {
 
 // Run runs the ApplicationRunner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(applicationRunnerInterval)
+	ticker := time.NewTicker(runnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Application runner started and will run every %v", applicationRunnerInterval))
+	log.Debug(fmt.Sprintf("Application runner started and will run every %v", runnerInterval))
 	// Try to update approval definition if external approval is enabled, because our approval definition may have changed.
 	if err := r.tryUpdateApprovalDefinition(ctx); err != nil {
 		log.Error("failed to update approval definition on application runner start", zap.Error(err))
