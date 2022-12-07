@@ -23,7 +23,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/server/component/activity"
-	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/server/utils"
 )
 
@@ -1297,7 +1296,7 @@ func (s *Server) setTaskProgressForIssue(issue *api.Issue) {
 	}
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
-			if progress, ok := state.TaskProgress.Load(task.ID); ok {
+			if progress, ok := s.stateCfg.TaskProgress.Load(task.ID); ok {
 				task.Progress = progress.(api.Progress)
 			}
 		}

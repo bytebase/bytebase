@@ -47,7 +47,7 @@ var (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
+func NewTaskScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
 		store:             store,
 		applicationRunner: applicationRunner,
@@ -55,6 +55,7 @@ func NewTaskScheduler(store *store.Store, applicationRunner *apprun.Runner, sche
 		activityManager:   activityManager,
 		licenseService:    licenseService,
 		profile:           profile,
+		stateCfg:          stateCfg,
 		executorMap:       make(map[api.TaskType]Executor),
 	}
 }
@@ -66,6 +67,7 @@ type TaskScheduler struct {
 	schemaSyncer      *schemasync.Syncer
 	activityManager   *activity.Manager
 	licenseService    enterpriseAPI.LicenseService
+	stateCfg          *state.State
 	profile           config.Profile
 	executorMap       map[api.TaskType]Executor
 
@@ -176,7 +178,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						defer func() {
 							s.runningTasks.Delete(task.ID)
 							s.runningTasksCancel.Delete(task.ID)
-							state.TaskProgress.Delete(task.ID)
+							s.stateCfg.TaskProgress.Delete(task.ID)
 						}()
 
 						executorCtx, cancel := context.WithCancel(ctx)

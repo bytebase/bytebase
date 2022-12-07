@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/bytebase/bytebase/server/component/state"
 )
 
 // pgConnectionInfo represents the embedded postgres instance connection info.
@@ -472,7 +471,7 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		state.InstanceDatabaseSyncChan <- instance
+		s.stateCfg.InstanceDatabaseSyncChan <- instance
 	}
 
 	return instance, nil
@@ -557,7 +556,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 					zap.Error(err))
 			}
 			// Sync all databases in the instance asynchronously.
-			state.InstanceDatabaseSyncChan <- instancePatched
+			s.stateCfg.InstanceDatabaseSyncChan <- instancePatched
 		}
 	}
 

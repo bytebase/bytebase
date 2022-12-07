@@ -11,15 +11,17 @@ import (
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewDataUpdateExecutor creates a data update (DML) task executor.
-func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) Executor {
+func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, profile config.Profile) Executor {
 	return &DataUpdateExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		stateCfg:        stateCfg,
 		profile:         profile,
 	}
 }
@@ -29,6 +31,7 @@ type DataUpdateExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	stateCfg        *state.State
 	profile         config.Profile
 }
 
@@ -39,5 +42,5 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (te
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }

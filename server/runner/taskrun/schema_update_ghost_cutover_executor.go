@@ -28,11 +28,12 @@ import (
 )
 
 // NewSchemaUpdateGhostCutoverExecutor creates a schema update (gh-ost) cutover task executor.
-func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) Executor {
+func NewSchemaUpdateGhostCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, profile config.Profile) Executor {
 	return &SchemaUpdateGhostCutoverExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
+		stateCfg:        stateCfg,
 		profile:         profile,
 	}
 }
@@ -42,6 +43,7 @@ type SchemaUpdateGhostCutoverExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
+	stateCfg        *state.State
 	profile         config.Profile
 }
 
@@ -53,7 +55,7 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	}
 
 	syncTaskID := taskDAG.FromTaskID
-	defer state.GhostTaskState.Delete(syncTaskID)
+	defer exec.stateCfg.GhostTaskState.Delete(syncTaskID)
 
 	syncTask, err := exec.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {
@@ -71,7 +73,7 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 
 	postponeFilename := utils.GetPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
-	value, ok := state.GhostTaskState.Load(syncTaskID)
+	value, ok := exec.stateCfg.GhostTaskState.Load(syncTaskID)
 	if !ok {
 		return true, nil, errors.Errorf("failed to get gh-ost state from sync task")
 	}

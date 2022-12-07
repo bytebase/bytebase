@@ -30,12 +30,13 @@ import (
 )
 
 // NewPITRRestoreExecutor creates a PITR restore task executor.
-func NewPITRRestoreExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewPITRRestoreExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, schemaSyncer *schemasync.Syncer, stateCfg *state.State, profile config.Profile) Executor {
 	return &PITRRestoreExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
 		s3Client:     s3Client,
 		schemaSyncer: schemaSyncer,
+		stateCfg:     stateCfg,
 		profile:      profile,
 	}
 }
@@ -46,6 +47,7 @@ type PITRRestoreExecutor struct {
 	dbFactory    *dbfactory.DBFactory
 	s3Client     *bbs3.Client
 	schemaSyncer *schemasync.Syncer
+	stateCfg     *state.State
 	profile      config.Profile
 }
 
@@ -383,7 +385,7 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, store 
 	}, nil
 }
 
-func (*PITRRestoreExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, taskID int, backupFile *os.File, startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) error {
+func (exec *PITRRestoreExecutor) updateProgress(ctx context.Context, driver *mysql.Driver, taskID int, backupFile *os.File, startBinlogInfo, targetBinlogInfo api.BinlogInfo, binlogDir string) error {
 	backupFileInfo, err := backupFile.Stat()
 	if err != nil {
 		return errors.Wrapf(err, "failed to get stat of backup file %q", backupFile.Name())
@@ -403,7 +405,7 @@ func (*PITRRestoreExecutor) updateProgress(ctx context.Context, driver *mysql.Dr
 		defer ticker.Stop()
 		createdTs := time.Now().Unix()
 		totalUnit := backupFileBytes + totalBinlogBytes
-		state.TaskProgress.Store(taskID, api.Progress{
+		exec.stateCfg.TaskProgress.Store(taskID, api.Progress{
 			TotalUnit:     totalUnit,
 			CompletedUnit: 0,
 			CreatedTs:     createdTs,
@@ -412,7 +414,7 @@ func (*PITRRestoreExecutor) updateProgress(ctx context.Context, driver *mysql.Dr
 		for {
 			select {
 			case <-ticker.C:
-				state.TaskProgress.Store(taskID, api.Progress{
+				exec.stateCfg.TaskProgress.Store(taskID, api.Progress{
 					TotalUnit:     totalUnit,
 					CompletedUnit: driver.GetRestoredBackupBytes() + driver.GetReplayedBinlogBytes(),
 					CreatedTs:     createdTs,

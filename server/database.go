@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
 	"github.com/bytebase/bytebase/server/component/activity"
-	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/server/utils"
 )
 
@@ -651,7 +650,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		state.InstanceDatabaseSyncChan <- updatedInstance
+		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -732,7 +731,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		state.InstanceDatabaseSyncChan <- updatedInstance
+		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {

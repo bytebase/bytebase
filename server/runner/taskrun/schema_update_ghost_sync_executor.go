@@ -21,15 +21,17 @@ import (
 )
 
 // NewSchemaUpdateGhostSyncExecutor creates a schema update (gh-ost) sync task executor.
-func NewSchemaUpdateGhostSyncExecutor(store *store.Store) Executor {
+func NewSchemaUpdateGhostSyncExecutor(store *store.Store, stateCfg *state.State) Executor {
 	return &SchemaUpdateGhostSyncExecutor{
-		store: store,
+		store:    store,
+		stateCfg: stateCfg,
 	}
 }
 
 // SchemaUpdateGhostSyncExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncExecutor struct {
-	store *store.Store
+	store    *store.Store
+	stateCfg *state.State
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
@@ -46,7 +48,7 @@ type sharedGhostState struct {
 	errCh            <-chan error
 }
 
-func (*SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, store *store.Store, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, store *store.Store, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -92,7 +94,7 @@ func (*SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, sto
 					completedUnit = migrationContext.GetTotalRowsCopied()
 					updatedTs     = time.Now().Unix()
 				)
-				state.TaskProgress.Store(task.ID, api.Progress{
+				exec.stateCfg.TaskProgress.Store(task.ID, api.Progress{
 					TotalUnit:     totalUnit,
 					CompletedUnit: completedUnit,
 					CreatedTs:     createdTs,
@@ -123,7 +125,7 @@ func (*SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, sto
 
 	select {
 	case <-syncDone:
-		state.GhostTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
+		exec.stateCfg.GhostTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-migrationError:
 		return true, nil, err
