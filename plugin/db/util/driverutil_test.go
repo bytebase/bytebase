@@ -279,6 +279,17 @@ func TestExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for explicit database name.
+			statement:  `select concat(db.t.a, db.t.b, db.t.c) from t`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "concat(db.t.a, db.t.b, db.t.c)",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for Recursive Common Table Expression dependent closures.
 			statement: `
 				with recursive t1(cc1, cc2, cc3, n) as (
