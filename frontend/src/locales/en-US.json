@@ -1398,17 +1398,16 @@
     "use-tips": "Click a database/table to start.",
     "preview-issue": "Preview issue",
     "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
-    "list": "List",
     "raw-sql": "Raw SQL",
     "actions": {
       "create-table": "New table",
+      "rename": "Rename",
       "drop-table": "Drop table",
-      "drop": "Drop",
       "restore": "Restore",
       "add-column": "Add column",
       "drop-column": "Drop column",
       "sql-preview": "SQL Preview",
-      "discard-changes": "Discard Changes",
+      "reset": "Reset",
       "save": "Save"
     },
     "database": {
@@ -1419,11 +1418,11 @@
       "collation": "Collation",
       "comment": "Comment"
     },
-    "tables": "Tables",
+    "table-list": "Table List",
     "table": {
       "name": "Table Name"
     },
-    "columns": "Columns",
+    "column-list": "Column List",
     "column": {
       "name": "Name",
       "type": "Type",
