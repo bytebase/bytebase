@@ -1179,7 +1179,8 @@
       "disabled": "Skip LGTM check",
       "project-member": "Require LGTM from project members",
       "project-owner": "Require LGTM from project owner"
-    }
+    },
+    "successfully-updated-db-name-template": "Successfully updated database name template."
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
