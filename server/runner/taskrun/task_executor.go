@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -23,11 +23,12 @@ import (
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/server/component/state"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
-// TaskExecutor is the task executor.
-type TaskExecutor interface {
+// Executor is the task executor.
+type Executor interface {
 	// RunOnce will be called periodically by the scheduler until terminated is true.
 	//
 	// NOTE
@@ -38,8 +39,8 @@ type TaskExecutor interface {
 	RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
-// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+// RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
+func RunExecutorOnce(ctx context.Context, exec Executor, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -126,7 +127,7 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
+func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
@@ -171,7 +172,7 @@ func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfact
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 		// The runner will periodically scan the map to generate rollback SQL asynchronously.
-		state.RollbackGenerateMap.Store(updatedTask.ID, updatedTask)
+		stateCfg.RollbackGenerateMap.Store(updatedTask.ID, updatedTask)
 	}
 
 	return migrationID, schema, nil
@@ -420,12 +421,12 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 	}, nil
 }
 
-func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := preMigration(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := executeMigration(ctx, store, dbFactory, task, statement, mi)
+	migrationID, schema, err := executeMigration(ctx, store, dbFactory, stateCfg, task, statement, mi)
 	if err != nil {
 		return true, nil, err
 	}
@@ -453,7 +454,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -526,7 +527,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 				ClientSecret: repo2.VCS.Secret,
 				AccessToken:  repo2.AccessToken,
 				RefreshToken: repo2.RefreshToken,
-				Refresher:    refreshToken(ctx, store, repo2.WebURL),
+				Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
 			},
 			repo2.VCS.InstanceURL,
 			repo2.ExternalID,
@@ -549,7 +550,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 				ClientSecret: repo2.VCS.Secret,
 				AccessToken:  repo2.AccessToken,
 				RefreshToken: repo2.RefreshToken,
-				Refresher:    refreshToken(ctx, store, repo2.WebURL),
+				Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
 			},
 			repo2.VCS.InstanceURL,
 			repo2.ExternalID,
@@ -579,7 +580,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 			ClientSecret: repo2.VCS.Secret,
 			AccessToken:  repo2.AccessToken,
 			RefreshToken: repo2.RefreshToken,
-			Refresher:    refreshToken(ctx, store, repo2.WebURL),
+			Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
 		},
 		repo2.VCS.InstanceURL,
 		repo2.ExternalID,

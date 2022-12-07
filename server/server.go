@@ -39,6 +39,7 @@ import (
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/server/runner/anomaly"
 	"github.com/bytebase/bytebase/server/runner/apprun"
 	"github.com/bytebase/bytebase/server/runner/backuprun"
@@ -46,6 +47,7 @@ import (
 	"github.com/bytebase/bytebase/server/runner/rollbackrun"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/server/runner/taskcheck"
+	"github.com/bytebase/bytebase/server/runner/taskrun"
 	"github.com/bytebase/bytebase/store"
 
 	// Register clickhouse driver.
@@ -92,7 +94,7 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	TaskScheduler      *TaskScheduler
+	TaskScheduler      *taskrun.TaskScheduler
 	TaskCheckScheduler *taskcheck.Scheduler
 	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
@@ -123,6 +125,9 @@ type Server struct {
 
 	s3Client       *bbs3.Client
 	feishuProvider *feishu.Provider
+
+	// stateCfg is the shared in-momory state within the server.
+	stateCfg *state.State
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -240,6 +245,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot open db")
 	}
 
+	s.stateCfg = &state.State{
+		InstanceDatabaseSyncChan: make(chan *api.Instance, 100),
+	}
 	storeInstance := store.New(storeDB)
 	s.store = storeInstance
 	// TODO(d): backfill activity. Remove this whenever the backfill is completed over the time.
@@ -263,7 +271,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	s.ActivityManager = activity.NewManager(storeInstance, profile)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, profile.DataDir)
-
 	e := echo.New()
 	e.Debug = profile.Debug
 	e.HideBanner = true
@@ -290,28 +297,44 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	if !profile.Readonly {
-		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory)
+		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg)
 		// TODO(p0ny): enable Feishu provider only when it is needed.
 		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
 		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
 		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
-		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory)
+		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory, s.stateCfg)
 
-		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
-		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor())
-		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor(storeInstance, s.dbFactory, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor(storeInstance, taskScheduler))
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor(storeInstance, s.dbFactory, taskScheduler, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseRestorePITRRestore, NewPITRRestoreTaskExecutor(storeInstance, s.dbFactory, s.s3Client, taskScheduler, s.SchemaSyncer, profile))
-		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
-		s.TaskScheduler = taskScheduler
+		s.TaskScheduler = taskrun.NewTaskScheduler(storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, s.stateCfg, profile)
+		s.TaskScheduler.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
+		s.TaskScheduler.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg))
+		s.TaskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.ActivityManager, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.SchemaSyncer, s.stateCfg, profile))
+		s.TaskScheduler.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 
-		s.TaskCheckScheduler = taskcheck.NewTaskCheckScheduler(storeInstance, s.dbFactory, s.licenseService)
+		s.TaskCheckScheduler = taskcheck.NewScheduler(storeInstance, s.licenseService)
+		statementSimpleExecutor := taskcheck.NewStatementAdvisorSimpleExecutor()
+		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
+		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
+		statementCompositeExecutor := taskcheck.NewStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory)
+		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
+		statementTypeExecutor := taskcheck.NewStatementTypeExecutor(storeInstance)
+		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
+		databaseConnectExecutor := taskcheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
+		s.TaskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
+		migrationSchemaExecutor := taskcheck.NewMigrationSchemaExecutor(storeInstance, s.dbFactory)
+		s.TaskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
+		ghostSyncExecutor := taskcheck.NewGhostSyncExecutor(storeInstance)
+		s.TaskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
+		checkLGTMExecutor := taskcheck.NewLGTMExecutor(storeInstance)
+		s.TaskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
+		pitrMySQLExecutor := taskcheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
+		s.TaskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
 
 		// Anomaly scanner
 		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
