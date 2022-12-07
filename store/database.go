@@ -329,7 +329,7 @@ func (s *Store) createDatabaseRawTx(ctx context.Context, tx *Tx, create *api.Dat
 		}
 	}
 
-	if err := s.cache.UpsertCache(api.DatabaseCache, databaseRaw.ID, databaseRaw); err != nil {
+	if err := s.cache.UpsertCache(databaseCacheNamespace, databaseRaw.ID, databaseRaw); err != nil {
 		return nil, err
 	}
 
@@ -351,7 +351,7 @@ func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]
 
 	if err == nil {
 		for _, database := range list {
-			if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+			if err := s.cache.UpsertCache(databaseCacheNamespace, database.ID, database); err != nil {
 				return nil, err
 			}
 		}
@@ -365,7 +365,7 @@ func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]
 func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*databaseRaw, error) {
 	if find.ID != nil {
 		databaseRaw := &databaseRaw{}
-		has, err := s.cache.FindCache(api.DatabaseCache, *find.ID, databaseRaw)
+		has, err := s.cache.FindCache(databaseCacheNamespace, *find.ID, databaseRaw)
 		if err != nil {
 			return nil, err
 		}
@@ -391,7 +391,7 @@ func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*da
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(list), find)}
 	}
 
-	if err := s.cache.UpsertCache(api.DatabaseCache, list[0].ID, list[0]); err != nil {
+	if err := s.cache.UpsertCache(databaseCacheNamespace, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
 
@@ -416,7 +416,7 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+	if err := s.cache.UpsertCache(databaseCacheNamespace, database.ID, database); err != nil {
 		return nil, err
 	}
 

@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
@@ -274,10 +275,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 				Level:       api.ActivityInfo,
 				Payload:     string(payload),
 			}
-			_, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-				issue: updatedIssue,
-			})
-			if err != nil {
+			if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+				Issue: updatedIssue,
+			}); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating issue: %v", updatedIssue.Name)).SetInternal(err)
 			}
 		}
@@ -416,10 +416,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		Level:       api.ActivityInfo,
 		Payload:     string(bytes),
 	}
-	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-		issue: issue,
-	})
-	if err != nil {
+	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: issue,
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
 	}
 	return issue, nil
@@ -1026,7 +1025,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	}
 	// Validate the labels. Labels are set upon task completion.
 	if c.Labels != "" {
-		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
+		if err := setDatabaseLabels(ctx, s.store, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
 		}
 	}

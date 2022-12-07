@@ -18,7 +18,9 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -27,18 +29,16 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *ApplicationRunner, schemaSyncer *SchemaSyncer, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *ApplicationRunner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
-		server:                 server,
-		store:                  store,
-		applicationRunner:      applicationRunner,
-		schemaSyncer:           schemaSyncer,
-		activityManager:        activityManager,
-		licenseService:         licenseService,
-		profile:                profile,
-		executorGetters:        make(map[api.TaskType]func() TaskExecutor),
-		runningExecutors:       make(map[int]TaskExecutor),
-		runningExecutorsCancel: make(map[int]context.CancelFunc),
+		server:            server,
+		store:             store,
+		applicationRunner: applicationRunner,
+		schemaSyncer:      schemaSyncer,
+		activityManager:   activityManager,
+		licenseService:    licenseService,
+		profile:           profile,
+		executorMap:       make(map[api.TaskType]TaskExecutor),
 	}
 }
 
@@ -47,17 +47,16 @@ type TaskScheduler struct {
 	server            *Server
 	store             *store.Store
 	applicationRunner *ApplicationRunner
-	schemaSyncer      *SchemaSyncer
-	activityManager   *ActivityManager
+	schemaSyncer      *schemasync.Syncer
+	activityManager   *activity.Manager
 	licenseService    enterpriseAPI.LicenseService
 	profile           config.Profile
+	executorMap       map[api.TaskType]TaskExecutor
 
-	executorGetters        map[api.TaskType]func() TaskExecutor
-	runningExecutors       map[int]TaskExecutor
-	runningExecutorsCancel map[int]context.CancelFunc
-	runningExecutorsMutex  sync.Mutex
-	taskProgress           sync.Map // map[taskID]api.Progress
-	sharedTaskState        sync.Map // map[taskID]interface{}
+	runningTasks       sync.Map // map[taskID]bool
+	runningTasksCancel sync.Map // map[taskID]context.CancelFunc
+	taskProgress       sync.Map // map[taskID]api.Progress
+	sharedTaskState    sync.Map // map[taskID]interface{}
 }
 
 // Run will run the task scheduler.
@@ -81,13 +80,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
-
-				// Update task progress
-				s.runningExecutorsMutex.Lock()
-				for i, executor := range s.runningExecutors {
-					s.taskProgress.Store(i, executor.GetProgress())
-				}
-				s.runningExecutorsMutex.Unlock()
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
 				pipelineStatus := api.PipelineOpen
@@ -144,10 +136,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 					// Skip the task that is already being executed.
-					s.runningExecutorsMutex.Lock()
-					_, ok := s.runningExecutors[task.ID]
-					s.runningExecutorsMutex.Unlock()
-					if ok {
+					if _, ok := s.runningTasks.Load(task.ID); ok {
 						continue
 					}
 					// Skip the task that is not the earliest task of the database.
@@ -158,7 +147,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 					}
 
-					executorGetter, ok := s.executorGetters[task.Type]
+					executor, ok := s.executorMap[task.Type]
 					if !ok {
 						log.Error("Skip running task with unknown type",
 							zap.Int("id", task.ID),
@@ -168,26 +157,18 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					executor := executorGetter()
-					s.runningExecutorsMutex.Lock()
-					s.runningExecutors[task.ID] = executor
-					s.runningExecutorsMutex.Unlock()
-
+					s.runningTasks.Store(task.ID, true)
 					go func(ctx context.Context, task *api.Task, executor TaskExecutor) {
 						defer func() {
-							s.runningExecutorsMutex.Lock()
-							delete(s.runningExecutors, task.ID)
-							delete(s.runningExecutorsCancel, task.ID)
-							s.runningExecutorsMutex.Unlock()
+							s.runningTasks.Delete(task.ID)
+							s.runningTasksCancel.Delete(task.ID)
 							s.taskProgress.Delete(task.ID)
 						}()
 
 						executorCtx, cancel := context.WithCancel(ctx)
-						s.runningExecutorsMutex.Lock()
-						s.runningExecutorsCancel[task.ID] = cancel
-						s.runningExecutorsMutex.Unlock()
+						s.runningTasksCancel.Store(task.ID, cancel)
 
-						done, result, err := RunTaskExecutorOnce(executorCtx, executor, s.server, task)
+						done, result, err := RunTaskExecutorOnce(executorCtx, executor, task)
 
 						select {
 						case <-executorCtx.Done():
@@ -321,14 +302,14 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register a task executor factory.
-func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() TaskExecutor) {
+func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter TaskExecutor) {
 	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
-	if _, dup := s.executorGetters[taskType]; dup {
+	if _, dup := s.executorMap[taskType]; dup {
 		panic("scheduler: Register called twice for task type: " + taskType)
 	}
-	s.executorGetters[taskType] = executorGetter
+	s.executorMap[taskType] = executorGetter
 }
 
 // ClearRunningTasks changes all RUNNING tasks to CANCELED.
@@ -621,9 +602,8 @@ func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, tas
 		if !taskCancellationImplemented[task.Type] {
 			return nil, common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
 		}
-		s.runningExecutorsMutex.Lock()
-		cancel, ok := s.runningExecutorsCancel[task.ID]
-		s.runningExecutorsMutex.Unlock()
+		cancelAny, ok := s.runningTasksCancel.Load(task.ID)
+		cancel := cancelAny.(context.CancelFunc)
 		if !ok {
 			return nil, errors.New("failed to cancel task")
 		}
@@ -669,7 +649,7 @@ func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, tas
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
 		}
-		if err := s.schemaSyncer.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
 			log.Error("failed to sync database schema",
 				zap.String("instanceName", instance.Name),
 				zap.String("databaseName", taskPatched.Database.Name),
@@ -790,7 +770,7 @@ func (s *TaskScheduler) createTaskStatusUpdateActivity(ctx context.Context, task
 		activityCreate.Comment = *taskStatusPatch.Comment
 	}
 
-	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue}); err != nil {
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
 		return err
 	}
 	return nil
@@ -1039,8 +1019,8 @@ func (s *TaskScheduler) changeIssueStatus(ctx context.Context, issue *api.Issue,
 		Payload:     string(payload),
 	}
 
-	if _, err = s.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-		issue: updatedIssue,
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: updatedIssue,
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
 	}

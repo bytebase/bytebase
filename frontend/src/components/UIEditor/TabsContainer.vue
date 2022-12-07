@@ -27,7 +27,7 @@
           </span>
           <NEllipsis
             class="text-sm w-24"
-            :class="checkTabSaved(tab) ? '' : 'text-yellow-700 italic'"
+            :class="getTabComputedClassList(tab)"
             >{{ getTabName(tab) }}</NEllipsis
           >
         </div>
@@ -47,10 +47,11 @@ import { isEqual } from "lodash-es";
 import { NEllipsis, useDialog } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { useUIEditorStore } from "@/store";
-import { TabContext, UIEditorTabType } from "@/types";
+import { useTableStore, useUIEditorStore } from "@/store";
+import { TabContext, UIEditorTabType, UNKNOWN_ID } from "@/types";
 
 const editorStore = useUIEditorStore();
+const tableStore = useTableStore();
 const dialog = useDialog();
 const tabsContainerRef = ref();
 const tabList = computed(() => {
@@ -76,17 +77,25 @@ watch(
   }
 );
 
-const checkTabSaved = (tab: TabContext) => {
-  if (tab.type === UIEditorTabType.TabForDatabase) {
-    // Edit database metadata is not allowed.
-    return true;
-  } else if (tab.type === UIEditorTabType.TabForTable) {
-    if (!isEqual(tab.tableCache, tab.table)) {
-      return false;
+const getTabComputedClassList = (tab: TabContext) => {
+  if (tab.type === UIEditorTabType.TabForTable) {
+    if (editorStore.droppedTableList.includes(tab.table)) {
+      return ["text-red-700", "line-through"];
+    }
+    if (tab.table.id === UNKNOWN_ID) {
+      return ["text-green-700"];
+    }
+
+    const originTable = tableStore.getTableByDatabaseIdAndTableId(
+      tab.databaseId,
+      tab.tableId
+    );
+    if (!isEqual(tab.table, originTable)) {
+      return ["text-yellow-700"];
     }
   }
 
-  return true;
+  return [];
 };
 
 const getTabName = (tab: TabContext) => {

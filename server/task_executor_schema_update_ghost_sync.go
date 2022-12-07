@@ -22,38 +22,26 @@ import (
 )
 
 // NewSchemaUpdateGhostSyncTaskExecutor creates a schema update (gh-ost) sync task executor.
-func NewSchemaUpdateGhostSyncTaskExecutor() TaskExecutor {
-	return &SchemaUpdateGhostSyncTaskExecutor{}
+func NewSchemaUpdateGhostSyncTaskExecutor(store *store.Store, taskScheduler *TaskScheduler) TaskExecutor {
+	return &SchemaUpdateGhostSyncTaskExecutor{
+		store:         store,
+		taskScheduler: taskScheduler,
+	}
 }
 
 // SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncTaskExecutor struct {
-	completed int32
-	progress  atomic.Value // api.Progress
+	store         *store.Store
+	taskScheduler *TaskScheduler
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer atomic.StoreInt32(&exec.completed, 1)
+func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
-	return exec.runGhostMigration(ctx, server.store, server.TaskScheduler, task, payload.Statement)
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
-}
-
-// GetProgress returns the task progress.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
-	progress := exec.progress.Load()
-	if progress == nil {
-		return api.Progress{}
-	}
-	return progress.(api.Progress)
+	return exec.runGhostMigration(ctx, exec.store, exec.taskScheduler, task, payload.Statement)
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
@@ -210,7 +198,7 @@ func getGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.
 	}
 }
 
-func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, store *store.Store, taskScheduler *TaskScheduler, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (*SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context, store *store.Store, taskScheduler *TaskScheduler, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -256,7 +244,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Con
 					completedUnit = migrationContext.GetTotalRowsCopied()
 					updatedTs     = time.Now().Unix()
 				)
-				exec.progress.Store(api.Progress{
+				taskScheduler.taskProgress.Store(task.ID, api.Progress{
 					TotalUnit:     totalUnit,
 					CompletedUnit: completedUnit,
 					CreatedTs:     createdTs,

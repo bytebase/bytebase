@@ -33,11 +33,14 @@ import (
 	"github.com/bytebase/bytebase/metric"
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
 	"github.com/bytebase/bytebase/plugin/app/feishu"
-	s3bb "github.com/bytebase/bytebase/plugin/storage/s3"
+	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/anomaly"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/store"
 
 	// Register clickhouse driver.
@@ -87,14 +90,14 @@ type Server struct {
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
 	MetricReporter     *MetricReporter
-	SchemaSyncer       *SchemaSyncer
+	SchemaSyncer       *schemasync.Syncer
 	BackupRunner       *BackupRunner
-	AnomalyScanner     *AnomalyScanner
+	AnomalyScanner     *anomaly.Scanner
 	ApplicationRunner  *ApplicationRunner
 	RollbackRunner     *RollbackRunner
 	runnerWG           sync.WaitGroup
 
-	ActivityManager *ActivityManager
+	ActivityManager *activity.Manager
 
 	licenseService enterpriseAPI.LicenseService
 
@@ -113,7 +116,7 @@ type Server struct {
 	// Postgres utility binaries
 	pgBinDir string
 
-	s3Client *s3bb.Client
+	s3Client *bbs3.Client
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -231,8 +234,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot open db")
 	}
 
-	cacheService := NewCacheService()
-	storeInstance := store.New(storeDB, cacheService)
+	storeInstance := store.New(storeDB)
 	s.store = storeInstance
 	// TODO(d): backfill activity. Remove this whenever the backfill is completed over the time.
 	if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
@@ -253,7 +255,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
-	s.ActivityManager = NewActivityManager(storeInstance, profile)
+	s.ActivityManager = activity.NewManager(storeInstance, profile)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, profile.DataDir)
 
 	e := echo.New()
@@ -270,11 +272,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.e = e
 
 	if profile.BackupBucket != "" {
-		credentials, err := s3bb.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
+		credentials, err := bbs3.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get credentials from file")
 		}
-		s3Client, err := s3bb.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
+		s3Client, err := bbs3.NewClient(ctx, profile.BackupRegion, profile.BackupBucket, credentials)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create AWS S3 client")
 		}
@@ -282,33 +284,23 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	if !profile.Readonly {
-		s.SchemaSyncer = NewSchemaSyncer(storeInstance, s.dbFactory)
+		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory)
 		s.ApplicationRunner = NewApplicationRunner(storeInstance, s.ActivityManager, feishu.NewProvider(profile.FeishuAPIURL), profile)
+		s.BackupRunner = NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
+		s.RollbackRunner = NewRollbackRunner(storeInstance, s.dbFactory)
 
 		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
-
-		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseRestorePITRRestore, NewPITRRestoreTaskExecutor)
-
-		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor)
-
+		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor())
+		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor(storeInstance, s.dbFactory, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor(storeInstance, taskScheduler))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor(storeInstance, s.dbFactory, taskScheduler, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseRestorePITRRestore, NewPITRRestoreTaskExecutor(storeInstance, s.dbFactory, s.s3Client, taskScheduler, s.SchemaSyncer, profile))
+		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler
@@ -341,14 +333,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 		s.TaskCheckScheduler = taskCheckScheduler
 
-		// Backup runner
-		s.BackupRunner = NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
-
 		// Anomaly scanner
-		s.AnomalyScanner = NewAnomalyScanner(storeInstance, s.dbFactory, s.licenseService)
-
-		// Rollback SQL generator
-		s.RollbackRunner = NewRollbackRunner(storeInstance, s.dbFactory)
+		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)

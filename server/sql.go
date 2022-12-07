@@ -25,6 +25,8 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/component/state"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -126,11 +128,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if instance == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", *sync.InstanceID))
 			}
-			if _, err := s.SchemaSyncer.syncInstance(ctx, instance); err != nil {
+			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 				resultSet.Error = err.Error()
 			}
 			// Sync all databases in the instance asynchronously.
-			instanceDatabaseSyncChan <- instance
+			state.InstanceDatabaseSyncChan <- instance
 		}
 		if sync.DatabaseID != nil {
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
@@ -140,7 +142,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if database == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
 			}
-			if err := s.SchemaSyncer.syncDatabaseSchema(ctx, database.Instance, database.Name); err != nil {
+			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database.Instance, database.Name); err != nil {
 				resultSet.Error = err.Error()
 			}
 		}
@@ -547,23 +549,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 }
 
-func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {
-	// TODO(d): support semantic versioning.
-	limit := 1
-	history, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-		Database: &databaseName,
-		Limit:    &limit,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
-	}
-	var schemaVersion string
-	if len(history) == 1 {
-		schemaVersion = history[0].Version
-	}
-	return schemaVersion, nil
-}
-
 func validateSQLSelectStatement(sqlStatement string) bool {
 	// Check if the query has only one statement.
 	count := 0
@@ -610,7 +595,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 		Payload: string(activityBytes),
 	}
 
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		log.Warn("Failed to create activity after executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
 			zap.Int("instance_id", payload.InstanceID),

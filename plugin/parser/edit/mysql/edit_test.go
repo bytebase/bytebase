@@ -33,7 +33,7 @@ func TestDeparseCreateTable(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n);",
+			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n);\n",
 		},
 		{
 			name: "create table t1 with column name of SQL keyword",
@@ -52,7 +52,7 @@ func TestDeparseCreateTable(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE `t1` (\n  `type` INT NOT NULL\n);",
+			want: "CREATE TABLE `t1` (\n  `type` INT NOT NULL\n);\n",
 		},
 		{
 			name: "create table t1&t2",
@@ -83,7 +83,7 @@ func TestDeparseCreateTable(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n) ENGINE=InnoDB;\nCREATE TABLE `t2` (\n  `id` INT NOT NULL\n) ENGINE=InnoDB;",
+			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL\n) ENGINE=InnoDB;\n\nCREATE TABLE `t2` (\n  `id` INT NOT NULL\n) ENGINE=InnoDB;\n",
 		},
 		{
 			name: "create table t1 with name",
@@ -111,7 +111,7 @@ func TestDeparseCreateTable(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE `t1` (\n  `id` INT COMMENT 'ID' DEFAULT '0',\n  `name` VARCHAR(32) COMMENT 'Name' NOT NULL\n) ENGINE=InnoDB;",
+			want: "CREATE TABLE `t1` (\n  `id` INT COMMENT 'ID' DEFAULT '0',\n  `name` VARCHAR(32) COMMENT 'Name' NOT NULL\n) ENGINE=InnoDB;\n",
 		},
 	}
 
@@ -149,7 +149,7 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);",
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);\n",
 		},
 		{
 			name: "alter table t1 and modify column id",
@@ -170,7 +170,7 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` CHANGE COLUMN `id` `id` INT COMMENT 'Name';",
+			want: "ALTER TABLE `t1` CHANGE COLUMN `id` `id` INT COMMENT 'Name';\n",
 		},
 		{
 			name: "alter table t1 and drop column id",
@@ -187,7 +187,7 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` DROP COLUMN `id`;",
+			want: "ALTER TABLE `t1` DROP COLUMN `id`;\n",
 		},
 		{
 			name: "alter table t1",
@@ -218,7 +218,7 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), CHANGE COLUMN `id_card` `id_card2` INT COMMENT 'ID Card' NOT NULL, DROP COLUMN `email`;",
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), CHANGE COLUMN `id_card` `id_card2` INT COMMENT 'ID Card' NOT NULL, DROP COLUMN `email`;\n",
 		},
 	}
 
@@ -247,7 +247,7 @@ func TestDeparseRenameTable(t *testing.T) {
 					},
 				},
 			},
-			want: "RENAME TABLE `t1` TO `t2`;",
+			want: "RENAME TABLE `t1` TO `t2`;\n",
 		},
 	}
 
@@ -291,7 +291,7 @@ func TestDeparseAlterAndRenameTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);\nRENAME TABLE `t1` TO `t2`;",
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);\n\nRENAME TABLE `t1` TO `t2`;\n",
 		},
 	}
 
@@ -319,7 +319,7 @@ func TestDeparseDropTable(t *testing.T) {
 					},
 				},
 			},
-			want: "DROP TABLE IF EXISTS `t1`;",
+			want: "DROP TABLE IF EXISTS `t1`;\n",
 		},
 	}
 
