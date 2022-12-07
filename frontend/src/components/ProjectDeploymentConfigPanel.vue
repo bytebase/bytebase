@@ -352,14 +352,6 @@ export default defineComponent({
       }
     };
 
-    watchEffect(() => {
-      console.log(
-        state.dbNameTemplate,
-        props.project.dbNameTemplate,
-        state.dbNameTemplate === props.project.dbNameTemplate
-      );
-    });
-
     return {
       EMPTY_ID,
       state,
