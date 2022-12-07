@@ -67,10 +67,18 @@
           >
             {{ issue.name }}
           </div>
-          <heroicons-outline:bell-alert
-            v-if="isAssigneeAttentionOn(issue)"
-            class="w-4 h-4 ml-1"
-          />
+          <NTooltip v-if="isAssigneeAttentionOn(issue)">
+            <template #trigger>
+              <span>
+                <heroicons-outline:paper-airplane
+                  class="w-4 h-4 text-accent rotate-45 -mt-[3px] ml-2"
+                />
+              </span>
+            </template>
+            <span class="whitespace-nowrap">
+              {{ $t("issue.needs-approval") }}
+            </span>
+          </NTooltip>
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
