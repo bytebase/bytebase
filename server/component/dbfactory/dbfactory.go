@@ -41,6 +41,9 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *api.In
 		dbBinDir = d.pgBinDir
 	}
 
+	if databaseName == "" {
+		databaseName = instance.Database
+	}
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
