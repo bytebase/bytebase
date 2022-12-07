@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -25,9 +25,9 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, backupRunner *backuprun.Runner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
-	return &PITRCutoverTaskExecutor{
+// NewPITRCutoverExecutor creates a PITR cutover task executor.
+func NewPITRCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, backupRunner *backuprun.Runner, activityManager *activity.Manager, profile config.Profile) Executor {
+	return &PITRCutoverExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		schemaSyncer:    schemaSyncer,
@@ -37,8 +37,8 @@ func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFacto
 	}
 }
 
-// PITRCutoverTaskExecutor is the PITR cutover task executor.
-type PITRCutoverTaskExecutor struct {
+// PITRCutoverExecutor is the PITR cutover task executor.
+type PITRCutoverExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	schemaSyncer    *schemasync.Syncer
@@ -48,7 +48,7 @@ type PITRCutoverTaskExecutor struct {
 }
 
 // RunOnce will run the PITR cutover task executor once.
-func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 	issue, err := getIssueByPipelineID(ctx, exec.store, task.PipelineID)
 	if err != nil {
@@ -94,7 +94,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, task *api.Task
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
-func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.Runner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.Runner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
@@ -148,7 +148,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, dbFactory 
 	}, nil
 }
 
-func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
+func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
 	switch task.Instance.Engine {
 	case db.Postgres:
 		// Retry so that if there are clients reconnecting to the related databases, we can potentially kill the connections and do the cutover successfully.
@@ -182,7 +182,7 @@ func (exec *PITRCutoverTaskExecutor) doCutover(ctx context.Context, driver db.Dr
 	}
 }
 
-func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
+func (*PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
 	driverDB, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
@@ -202,7 +202,7 @@ func (*PITRCutoverTaskExecutor) pitrCutoverMySQL(ctx context.Context, driver db.
 	return nil
 }
 
-func (*PITRCutoverTaskExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
+func (*PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, driver db.Driver, task *api.Task, issue *api.Issue) error {
 	pitrDatabaseName := util.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
 	pitrOldDatabaseName := util.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
 	db, err := driver.GetDBConnection(ctx, db.BytebaseDatabase)
