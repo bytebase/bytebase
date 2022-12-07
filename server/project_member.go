@@ -130,7 +130,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		batchUpdateProjectMember := &api.ProjectMemberBatchUpdate{
-			ID:           projectID,
+			ProjectID:    projectID,
 			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
 			RoleProvider: roleProvider,
 			List:         createList,

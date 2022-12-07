@@ -189,6 +189,8 @@ func (s *Store) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.P
 		}
 		deletedMemberList = append(deletedMemberList, deletedMember)
 	}
+	// Invalidate the cache.
+	s.cache.DeleteCache(projectMemberCacheNamespace, batchUpdate.ProjectID)
 	return createdMemberList, deletedMemberList, nil
 }
 
@@ -348,7 +350,7 @@ func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *ap
 	defer txRead.Rollback()
 
 	findProjectMember := &api.ProjectMemberFind{
-		ProjectID:    &batchUpdate.ID,
+		ProjectID:    &batchUpdate.ProjectID,
 		RoleProvider: &batchUpdate.RoleProvider,
 	}
 	oldProjectMemberRawList, err := findProjectMemberImpl(ctx, txRead, findProjectMember)
