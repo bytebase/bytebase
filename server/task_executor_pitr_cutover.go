@@ -17,13 +17,14 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *SchemaSyncer, backupRunner *BackupRunner, activityManager *ActivityManager, profile config.Profile) TaskExecutor {
+func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *SchemaSyncer, backupRunner *BackupRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &PITRCutoverTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
@@ -40,7 +41,7 @@ type PITRCutoverTaskExecutor struct {
 	dbFactory       *dbfactory.DBFactory
 	schemaSyncer    *SchemaSyncer
 	backupRunner    *BackupRunner
-	activityManager *ActivityManager
+	activityManager *activity.Manager
 	profile         config.Profile
 }
 
@@ -80,9 +81,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, task *api.Task
 		Payload:     string(payload),
 		Comment:     fmt.Sprintf("Restore database %s in instance %s successfully.", task.Database.Name, task.Instance.Name),
 	}
-	activityMeta := ActivityMeta{}
-	activityMeta.issue = issue
-	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activityMeta); err != nil {
+	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
 		log.Error("cannot create an pitr activity", zap.Error(err))
 	}
 

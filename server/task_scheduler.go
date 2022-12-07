@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/store"
 )
@@ -27,7 +28,7 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *ApplicationRunner, schemaSyncer *SchemaSyncer, activityManager *ActivityManager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *ApplicationRunner, schemaSyncer *SchemaSyncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
 		server:            server,
 		store:             store,
@@ -46,7 +47,7 @@ type TaskScheduler struct {
 	store             *store.Store
 	applicationRunner *ApplicationRunner
 	schemaSyncer      *SchemaSyncer
-	activityManager   *ActivityManager
+	activityManager   *activity.Manager
 	licenseService    enterpriseAPI.LicenseService
 	profile           config.Profile
 	executorMap       map[api.TaskType]TaskExecutor
@@ -768,7 +769,7 @@ func (s *TaskScheduler) createTaskStatusUpdateActivity(ctx context.Context, task
 		activityCreate.Comment = *taskStatusPatch.Comment
 	}
 
-	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{issue: issue}); err != nil {
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
 		return err
 	}
 	return nil
@@ -1017,8 +1018,8 @@ func (s *TaskScheduler) changeIssueStatus(ctx context.Context, issue *api.Issue,
 		Payload:     string(payload),
 	}
 
-	if _, err = s.activityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-		issue: updatedIssue,
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: updatedIssue,
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
 	}
