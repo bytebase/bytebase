@@ -186,7 +186,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		database = updatedDatabase
 	}
 	// Set database labels, except bb.environment is immutable and must match instance environment.
-	if err := utils.SetDatabaseLabels(ctx, exec.store, payload.Labels, database, project, database.CreatorID, false); err != nil {
+	if err := utils.SetDatabaseLabels(ctx, exec.store, payload.Labels, database, database.CreatorID, false); err != nil {
 		return true, nil, errors.Errorf("failed to record database labels after creating database %v", database.ID)
 	}
 
