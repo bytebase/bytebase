@@ -16,7 +16,7 @@ import (
 
 // NewSchemaUpdateExecutor creates a schema update (DDL) task executor.
 func NewSchemaUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) Executor {
-	return &SchemaUpdateTaskExecutor{
+	return &SchemaUpdateExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
@@ -24,8 +24,8 @@ func NewSchemaUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory,
 	}
 }
 
-// SchemaUpdateTaskExecutor is the schema update (DDL) task executor.
-type SchemaUpdateTaskExecutor struct {
+// SchemaUpdateExecutor is the schema update (DDL) task executor.
+type SchemaUpdateExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
@@ -33,7 +33,7 @@ type SchemaUpdateTaskExecutor struct {
 }
 
 // RunOnce will run the schema update (DDL) task executor once.
-func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")

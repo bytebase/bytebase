@@ -16,7 +16,7 @@ import (
 
 // NewSchemaBaselineExecutor creates a schema baseline task executor.
 func NewSchemaBaselineExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) Executor {
-	return &SchemaBaselineTaskExecutor{
+	return &SchemaBaselineExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
@@ -24,8 +24,8 @@ func NewSchemaBaselineExecutor(store *store.Store, dbFactory *dbfactory.DBFactor
 	}
 }
 
-// SchemaBaselineTaskExecutor is the schema baseline task executor.
-type SchemaBaselineTaskExecutor struct {
+// SchemaBaselineExecutor is the schema baseline task executor.
+type SchemaBaselineExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
@@ -33,7 +33,7 @@ type SchemaBaselineTaskExecutor struct {
 }
 
 // RunOnce will run the schema update (DDL) task executor once.
-func (exec *SchemaBaselineTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaBaselinePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema baseline payload")

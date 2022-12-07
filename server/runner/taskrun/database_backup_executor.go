@@ -28,7 +28,7 @@ const (
 
 // NewDatabaseBackupExecutor creates a new database backup task executor.
 func NewDatabaseBackupExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile) Executor {
-	return &DatabaseBackupTaskExecutor{
+	return &DatabaseBackupExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 		s3Client:  s3Client,
@@ -36,8 +36,8 @@ func NewDatabaseBackupExecutor(store *store.Store, dbFactory *dbfactory.DBFactor
 	}
 }
 
-// DatabaseBackupTaskExecutor is the task executor for database backup.
-type DatabaseBackupTaskExecutor struct {
+// DatabaseBackupExecutor is the task executor for database backup.
+type DatabaseBackupExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 	s3Client  *bbs3.Client
@@ -45,7 +45,7 @@ type DatabaseBackupTaskExecutor struct {
 }
 
 // RunOnce will run database backup once.
-func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database backup payload")
@@ -142,7 +142,7 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupF
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
+func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
