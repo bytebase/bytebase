@@ -20,6 +20,9 @@ const (
 	// SystemBot is the principal type for SYSTEM_BOT.
 	// SystemBot represents the internal system bot performing operations.
 	SystemBot PrincipalType = "SYSTEM_BOT"
+
+	// PrincipalIDForFirstUser is the principal id for the first user in workspace.
+	PrincipalIDForFirstUser = 101
 )
 
 // PrincipalAuthProvider is the type of an authentication provider.

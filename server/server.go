@@ -42,6 +42,7 @@ import (
 	"github.com/bytebase/bytebase/server/runner/anomaly"
 	"github.com/bytebase/bytebase/server/runner/apprun"
 	"github.com/bytebase/bytebase/server/runner/backuprun"
+	"github.com/bytebase/bytebase/server/runner/metricreport"
 	"github.com/bytebase/bytebase/server/runner/rollbackrun"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/server/runner/taskcheck"
@@ -93,7 +94,7 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *taskcheck.Scheduler
-	MetricReporter     *MetricReporter
+	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
 	BackupRunner       *backuprun.Runner
 	AnomalyScanner     *anomaly.Scanner
@@ -434,7 +435,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 func (s *Server) initMetricReporter(workspaceID string) {
 	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo && !s.profile.DisableMetric
 	if enabled {
-		metricReporter := NewMetricReporter(s.store, s.licenseService, s.profile, workspaceID)
+		metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, workspaceID)
 		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
 		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
 		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
@@ -456,6 +457,9 @@ type workspaceConfig struct {
 }
 
 func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, error) {
+	// secretLength is the length for the secret used to sign the JWT auto token.
+	const secretLength = 32
+
 	// initial branding
 	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
