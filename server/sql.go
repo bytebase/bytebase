@@ -563,7 +563,7 @@ func validateSQLSelectStatement(sqlStatement string) bool {
 	}
 
 	// Allow SELECT and EXPLAIN queries only.
-	whiteListRegs := []string{`^SELECT\s+?`, `^EXPLAIN\s+?`}
+	whiteListRegs := []string{`^SELECT\s+?`, `^EXPLAIN\s+?`, `^WITH\s+?`}
 	formattedStr := strings.ToUpper(strings.TrimSpace(sqlStatement))
 	for _, reg := range whiteListRegs {
 		matchResult, _ := regexp.MatchString(reg, formattedStr)
