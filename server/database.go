@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -197,7 +198,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						Comment:     fmt.Sprintf("Transferred out database %q to project %q.", dbPatched.Name, dbPatched.Project.Name),
 						Payload:     string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 				}
 
 				if err != nil {
@@ -218,7 +219,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						Comment:     fmt.Sprintf("Transferred in database %q from project %q.", dbExisting.Name, dbExisting.Project.Name),
 						Payload:     string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 					if err != nil {
 						log.Warn("Failed to create project activity after transferring database",
 							zap.Int("database_id", dbPatched.ID),

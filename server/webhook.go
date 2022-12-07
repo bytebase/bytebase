@@ -30,6 +30,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 const (
@@ -529,7 +530,7 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 				createdMessageList = append(createdMessageList, createdMessage)
 			} else {
 				for _, activityCreate := range activityCreateList {
-					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 						log.Warn("Failed to create project activity for the ignored repository files", zap.Error(err))
 					}
 				}
@@ -861,7 +862,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
 		Payload:     string(activityPayload),
 	}
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 	}
 
