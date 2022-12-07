@@ -335,6 +335,19 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				dropSequence.SequenceNameList = append(dropSequence.SequenceNameList, sequenceDef)
 			}
 			return dropSequence, nil
+		case pgquery.ObjectType_OBJECT_EXTENSION:
+			dropExtension := &ast.DropExtensionStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
+			for _, extension := range in.DropStmt.Objects {
+				extensionName, ok := extension.Node.(*pgquery.Node_String_)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected String but found %t", extension.Node)
+				}
+				dropExtension.NameList = append(dropExtension.NameList, extensionName.String_.Str)
+			}
+			return dropExtension, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -557,6 +570,25 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 		}
 		return &createSchemaStmt, nil
+	case *pgquery.Node_CreateExtensionStmt:
+		createExtensionStmt := &ast.CreateExtensionStmt{
+			Name:        in.CreateExtensionStmt.Extname,
+			IfNotExists: in.CreateExtensionStmt.IfNotExists,
+		}
+
+		for _, option := range in.CreateExtensionStmt.Options {
+			if item, ok := option.Node.(*pgquery.Node_DefElem); ok {
+				if item.DefElem.Defname == "schema" {
+					schemaName, ok := item.DefElem.Arg.Node.(*pgquery.Node_String_)
+					if !ok {
+						return nil, parser.NewConvertErrorf("expected String but found %t", item.DefElem.Arg.Node)
+					}
+					createExtensionStmt.Schema = schemaName.String_.Str
+				}
+			}
+		}
+
+		return createExtensionStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}

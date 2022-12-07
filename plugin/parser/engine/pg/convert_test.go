@@ -2628,3 +2628,52 @@ func TestAlterSequence(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestCreateExtension(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public`,
+			want: []ast.Node{
+				&ast.CreateExtensionStmt{
+					Schema:      "public",
+					Name:        "pg_trgm",
+					IfNotExists: true,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestDropExtension(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `DROP EXTENSION IF EXISTS pg_trgm, hstore`,
+			want: []ast.Node{
+				&ast.DropExtensionStmt{
+					IfExists: true,
+					NameList: []string{
+						"pg_trgm",
+						"hstore",
+					},
+					Behavior: ast.DropBehaviorRestrict,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `DROP EXTENSION IF EXISTS pg_trgm, hstore`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
