@@ -72,13 +72,6 @@ export const useUIEditorStore = defineStore("UIEditor", {
       if (tabCache !== undefined) {
         tab = tabCache;
       } else {
-        // Don't show tab for dropped table.
-        if (tab.type === UIEditorTabType.TabForTable) {
-          if (this.droppedTableList.includes(tab.table)) {
-            return;
-          }
-        }
-
         this.tabState.tabMap.set(tab.id, tab);
       }
 

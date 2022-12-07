@@ -10,11 +10,7 @@
         </template>
       </NInput>
     </div>
-    <div
-      ref="treeRef"
-      class="ui-editor-database-tree pb-2 h-auto"
-      v-bind="$attrs"
-    >
+    <div ref="treeRef" class="ui-editor-database-tree pb-2 h-auto">
       <n-tree
         block-line
         :data="treeDataRef"
