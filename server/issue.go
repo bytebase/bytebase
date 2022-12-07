@@ -1026,7 +1026,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	}
 	// Validate the labels. Labels are set upon task completion.
 	if c.Labels != "" {
-		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
+		if err := setDatabaseLabels(ctx, s.store, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, &project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
 		}
 	}

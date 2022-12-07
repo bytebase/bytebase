@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,24 +19,35 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor() TaskExecutor {
-	return &PITRCutoverTaskExecutor{}
+func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *SchemaSyncer, backupRunner *BackupRunner, activityManager *ActivityManager, profile config.Profile) TaskExecutor {
+	return &PITRCutoverTaskExecutor{
+		store:           store,
+		dbFactory:       dbFactory,
+		schemaSyncer:    schemaSyncer,
+		backupRunner:    backupRunner,
+		activityManager: activityManager,
+		profile:         profile,
+	}
 }
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
-	completed int32
+	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
+	schemaSyncer    *SchemaSyncer
+	backupRunner    *BackupRunner
+	activityManager *ActivityManager
+	profile         config.Profile
 }
 
 // RunOnce will run the PITR cutover task executor once.
-func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
-	defer atomic.StoreInt32(&exec.completed, 1)
-
-	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
+	issue, err := getIssueByPipelineID(ctx, exec.store, task.PipelineID)
 	if err != nil {
 		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
 		return true, nil, err
@@ -45,7 +55,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
 
-	terminated, result, err = exec.pitrCutover(ctx, server.dbFactory, server.BackupRunner, server.SchemaSyncer, server.profile, task, issue)
+	terminated, result, err = exec.pitrCutover(ctx, exec.dbFactory, exec.backupRunner, exec.schemaSyncer, exec.profile, task, issue)
 	if err != nil {
 		return terminated, result, err
 	}
@@ -72,21 +82,11 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}
 	activityMeta := ActivityMeta{}
 	activityMeta.issue = issue
-	if _, err = server.ActivityManager.CreateActivity(ctx, activityCreate, &activityMeta); err != nil {
+	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activityMeta); err != nil {
 		log.Error("cannot create an pitr activity", zap.Error(err))
 	}
 
 	return terminated, result, nil
-}
-
-// IsCompleted tells the scheduler if the task execution has completed.
-func (exec *PITRCutoverTaskExecutor) IsCompleted() bool {
-	return atomic.LoadInt32(&exec.completed) == 1
-}
-
-// GetProgress returns the task progress.
-func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
 }
 
 // pitrCutover performs the PITR cutover algorithm:
