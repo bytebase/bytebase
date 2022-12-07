@@ -1,16 +1,16 @@
 <template>
   <div class="grid auto-rows-auto w-full h-full overflow-y-auto">
     <div
-      class="pt-3 w-full flex justify-start items-center border-b border-b-gray-300"
+      class="pt-3 pl-1 w-full flex justify-start items-center border-b border-b-gray-300"
     >
       <span
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
-          state.selectedTab === 'list' &&
+          state.selectedTab === 'table-list' &&
           'bg-white border-gray-300 text-gray-800'
         "
-        @click="handleChangeTab('list')"
-        >{{ $t("ui-editor.list") }}</span
+        @click="handleChangeTab('table-list')"
+        >{{ $t("ui-editor.table-list") }}</span
       >
       <span
         class="hidden -mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
@@ -33,11 +33,8 @@
     </div>
 
     <!-- List view -->
-    <template v-if="state.selectedTab === 'list'">
+    <template v-if="state.selectedTab === 'table-list'">
       <div class="py-2 w-full flex justify-between items-center space-x-2">
-        <span class="ml-3 text-sm text-gray-500">{{
-          $t("ui-editor.tables")
-        }}</span>
         <button
           class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:bg-gray-100"
           @click="handleCreateNewTable"
@@ -132,10 +129,18 @@
       </template>
     </div>
   </div>
+
+  <TableNameModal
+    v-if="state.tableNameModalContext !== undefined"
+    :database-id="state.tableNameModalContext.databaseId"
+    :table="state.tableNameModalContext.table"
+    @close="state.tableNameModalContext = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
+import { NEllipsis } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -144,17 +149,27 @@ import {
   useTableStore,
   useUIEditorStore,
 } from "@/store";
-import { DatabaseTabContext, Table, UIEditorTabType } from "@/types";
+import {
+  DatabaseId,
+  DatabaseTabContext,
+  Table,
+  UIEditorTabType,
+} from "@/types";
 import { bytesToString } from "@/utils";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import TableNameModal from "../Modals/TableNameModal.vue";
 
-type TabType = "list" | "er-diagram" | "raw-sql";
+type TabType = "table-list" | "er-diagram" | "raw-sql";
 
 interface LocalState {
   selectedTab: TabType;
   isFetchingDDL: boolean;
   statement: string;
+  tableNameModalContext?: {
+    databaseId: DatabaseId;
+    table: Table | undefined;
+  };
 }
 
 const { t } = useI18n();
@@ -162,7 +177,7 @@ const editorStore = useUIEditorStore();
 const databaseStore = useDatabaseStore();
 const tableStore = useTableStore();
 const state = reactive<LocalState>({
-  selectedTab: "list",
+  selectedTab: "table-list",
   isFetchingDDL: false,
   statement: "",
 });
@@ -255,15 +270,10 @@ const handleChangeTab = (tab: TabType) => {
 };
 
 const handleCreateNewTable = () => {
-  const table = editorStore.createNewTable(database.id);
-  editorStore.addTab({
-    id: generateUniqueTabId(),
-    type: UIEditorTabType.TabForTable,
+  state.tableNameModalContext = {
     databaseId: database.id,
-    tableId: table.id,
-    table: table,
-    tableCache: cloneDeep(table),
-  });
+    table: undefined,
+  };
 };
 
 const handleTableItemClick = (table: Table) => {

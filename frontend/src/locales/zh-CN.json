@@ -1398,7 +1398,6 @@
     "use-tips": "选择需要编辑的数据库或者表",
     "preview-issue": "预览工单",
     "sync-sql-from-ui-editor": "从 UI 编辑器中同步 SQL",
-    "list": "列表",
     "raw-sql": "SQL 语句",
     "actions": {
       "create-table": "新建表",
@@ -1408,7 +1407,7 @@
       "add-column": "添加列",
       "drop-column": "删除列",
       "sql-preview": "预览 SQL",
-      "discard-changes": "撤销更改",
+      "reset": "重置",
       "save": "保存"
     },
     "database": {
@@ -1419,11 +1418,11 @@
       "collation": "字符排序规则",
       "comment": "注释"
     },
-    "tables": "数据表",
+    "table-list": "表",
     "table": {
       "name": "表名"
     },
-    "columns": "数据列",
+    "column-list": "列",
     "column": {
       "name": "名称",
       "type": "类型",
