@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -610,7 +611,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 		Payload: string(activityBytes),
 	}
 
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		log.Warn("Failed to create activity after executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
 			zap.Int("instance_id", payload.InstanceID),

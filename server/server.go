@@ -36,6 +36,7 @@ import (
 	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
@@ -94,7 +95,7 @@ type Server struct {
 	RollbackRunner     *RollbackRunner
 	runnerWG           sync.WaitGroup
 
-	ActivityManager *ActivityManager
+	ActivityManager *activity.Manager
 
 	licenseService enterpriseAPI.LicenseService
 
@@ -253,7 +254,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.secret = config.secret
 	s.workspaceID = config.workspaceID
 
-	s.ActivityManager = NewActivityManager(storeInstance, profile)
+	s.ActivityManager = activity.NewManager(storeInstance, profile)
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, profile.DataDir)
 
 	e := echo.New()

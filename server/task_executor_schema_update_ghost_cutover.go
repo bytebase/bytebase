@@ -19,13 +19,14 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewSchemaUpdateGhostCutoverTaskExecutor creates a schema update (gh-ost) cutover task executor.
-func NewSchemaUpdateGhostCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, taskScheduler *TaskScheduler, activityManager *ActivityManager, profile config.Profile) TaskExecutor {
+func NewSchemaUpdateGhostCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, taskScheduler *TaskScheduler, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &SchemaUpdateGhostCutoverTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
@@ -40,7 +41,7 @@ type SchemaUpdateGhostCutoverTaskExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	taskScheduler   *TaskScheduler
-	activityManager *ActivityManager
+	activityManager *activity.Manager
 	profile         config.Profile
 }
 
@@ -79,7 +80,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, t
 	return cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 }
 
-func cutover(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *ActivityManager, profile config.Profile, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 
 	mi, err := preMigration(ctx, store, profile, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
