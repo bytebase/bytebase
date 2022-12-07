@@ -8,23 +8,37 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewDataUpdateTaskExecutor creates a data update (DML) task executor.
-func NewDataUpdateTaskExecutor() TaskExecutor {
-	return &DataUpdateTaskExecutor{}
+func NewDataUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *ActivityManager, profile config.Profile) TaskExecutor {
+	return &DataUpdateTaskExecutor{
+		store:           store,
+		dbFactory:       dbFactory,
+		rollbackRunner:  rollbackRunner,
+		activityManager: activityManager,
+		profile:         profile,
+	}
 }
 
 // DataUpdateTaskExecutor is the data update (DML) task executor.
 type DataUpdateTaskExecutor struct {
+	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
+	rollbackRunner  *RollbackRunner
+	activityManager *ActivityManager
+	profile         config.Profile
 }
 
 // RunOnce will run the data update (DML) task executor once.
-func (*DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DataUpdateTaskExecutor) RunOnce(ctx context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
-	return runMigration(ctx, server.store, server.dbFactory, server.RollbackRunner, server.ActivityManager, server.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.rollbackRunner, exec.activityManager, exec.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }

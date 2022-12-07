@@ -27,16 +27,29 @@ import (
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor() TaskExecutor {
-	return &PITRRestoreTaskExecutor{}
+func NewPITRRestoreTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, taskScheduler *TaskScheduler, schemaSyncer *SchemaSyncer, profile config.Profile) TaskExecutor {
+	return &PITRRestoreTaskExecutor{
+		store:         store,
+		dbFactory:     dbFactory,
+		s3Client:      s3Client,
+		taskScheduler: taskScheduler,
+		schemaSyncer:  schemaSyncer,
+		profile:       profile,
+	}
 }
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
+	store         *store.Store
+	dbFactory     *dbfactory.DBFactory
+	s3Client      *bbs3.Client
+	taskScheduler *TaskScheduler
+	schemaSyncer  *SchemaSyncer
+	profile       config.Profile
 }
 
 // RunOnce will run the PITR restore task executor once.
-func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR restore task", zap.String("task", task.Name))
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
@@ -57,11 +70,11 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	if payload.BackupID != nil {
 		// Restore Backup
-		resultPayload, err := exec.doBackupRestore(ctx, server.store, server.dbFactory, server.s3Client, server.SchemaSyncer, server.profile, task, payload)
+		resultPayload, err := exec.doBackupRestore(ctx, exec.store, exec.dbFactory, exec.s3Client, exec.schemaSyncer, exec.profile, task, payload)
 		return true, resultPayload, err
 	}
 
-	resultPayload, err := exec.doPITRRestore(ctx, server.store, server.dbFactory, server.s3Client, server.TaskScheduler, server.profile, task, payload)
+	resultPayload, err := exec.doPITRRestore(ctx, exec.store, exec.dbFactory, exec.s3Client, exec.taskScheduler, exec.profile, task, payload)
 	return true, resultPayload, err
 }
 

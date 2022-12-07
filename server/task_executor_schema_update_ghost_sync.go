@@ -22,21 +22,26 @@ import (
 )
 
 // NewSchemaUpdateGhostSyncTaskExecutor creates a schema update (gh-ost) sync task executor.
-func NewSchemaUpdateGhostSyncTaskExecutor() TaskExecutor {
-	return &SchemaUpdateGhostSyncTaskExecutor{}
+func NewSchemaUpdateGhostSyncTaskExecutor(store *store.Store, taskScheduler *TaskScheduler) TaskExecutor {
+	return &SchemaUpdateGhostSyncTaskExecutor{
+		store:         store,
+		taskScheduler: taskScheduler,
+	}
 }
 
 // SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncTaskExecutor struct {
+	store         *store.Store
+	taskScheduler *TaskScheduler
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
-	return exec.runGhostMigration(ctx, server.store, server.TaskScheduler, task, payload.Statement)
+	return exec.runGhostMigration(ctx, exec.store, exec.taskScheduler, task, payload.Statement)
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {

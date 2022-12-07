@@ -18,21 +18,29 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewDatabaseCreateTaskExecutor creates a database create task executor.
-func NewDatabaseCreateTaskExecutor() TaskExecutor {
-	return &DatabaseCreateTaskExecutor{}
+func NewDatabaseCreateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile) TaskExecutor {
+	return &DatabaseCreateTaskExecutor{
+		store:     store,
+		dbFactory: dbFactory,
+		profile:   profile,
+	}
 }
 
 // DatabaseCreateTaskExecutor is the database create task executor.
 type DatabaseCreateTaskExecutor struct {
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
+	profile   config.Profile
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
@@ -44,13 +52,13 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := server.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
 
-	project, err := server.store.GetProjectByID(ctx, payload.ProjectID)
+	project, err := exec.store.GetProjectByID(ctx, payload.ProjectID)
 	if err != nil {
 		return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
 	}
@@ -65,7 +73,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		if err != nil {
 			return true, nil, errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", payload.DatabaseName, project.DBNameTemplate, payload.Labels)
 		}
-		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, server.store, server.dbFactory, instance, project, project.ID, baseDatabaseName)
+		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project, project.ID, baseDatabaseName)
 		if err != nil {
 			return true, nil, err
 		}
@@ -92,7 +100,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	// Create a migrate migration history upon creating the database.
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
-		ReleaseVersion: server.profile.Version,
+		ReleaseVersion: exec.profile.Version,
 		Version:        schemaVersion,
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
@@ -103,7 +111,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		CreateDatabase: true,
 		Force:          true,
 	}
-	creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
+	creator, err := exec.store.GetPrincipalByID(ctx, task.CreatorID)
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.
@@ -114,7 +122,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	} else {
 		mi.Creator = creator.Name
 	}
-	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := exec.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
@@ -145,7 +153,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
 	// sync will place the synced db into the default project.
 	// 2. Allow user to see the created database right away.
-	database, err := server.store.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &task.InstanceID, Name: &payload.DatabaseName})
+	database, err := exec.store.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &task.InstanceID, Name: &payload.DatabaseName})
 	if err != nil {
 		return true, nil, err
 	}
@@ -162,7 +170,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 			Labels:               &payload.Labels,
 			SchemaVersion:        schemaVersion,
 		}
-		createdDatabase, err := server.store.CreateDatabase(ctx, databaseCreate)
+		createdDatabase, err := exec.store.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			return true, nil, err
 		}
@@ -170,14 +178,14 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	} else {
 		// The database didn't exist before the current run so there was a race condition between sync schema and migration execution.
 		// We need to update the project ID from the default project to the target project.
-		updatedDatabase, err := server.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: api.SystemBotID, ProjectID: &payload.ProjectID})
+		updatedDatabase, err := exec.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: api.SystemBotID, ProjectID: &payload.ProjectID})
 		if err != nil {
 			return true, nil, err
 		}
 		database = updatedDatabase
 	}
 	// Set database labels, except bb.environment is immutable and must match instance environment.
-	if err := server.setDatabaseLabels(ctx, payload.Labels, database, project, database.CreatorID, false); err != nil {
+	if err := setDatabaseLabels(ctx, exec.store, payload.Labels, database, project, database.CreatorID, false); err != nil {
 		return true, nil, errors.Errorf("failed to record database labels after creating database %v", database.ID)
 	}
 
@@ -199,7 +207,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		DatabaseID: &database.ID,
 		Payload:    &payloadStr,
 	}
-	if _, err = server.store.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
+	if _, err = exec.store.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
 	}
 

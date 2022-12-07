@@ -11,30 +11,43 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/differ"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/store"
 )
 
 // NewSchemaUpdateSDLTaskExecutor creates a schema update (SDL) task executor.
-func NewSchemaUpdateSDLTaskExecutor() TaskExecutor {
-	return &SchemaUpdateSDLTaskExecutor{}
+func NewSchemaUpdateSDLTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *ActivityManager, profile config.Profile) TaskExecutor {
+	return &SchemaUpdateSDLTaskExecutor{
+		store:           store,
+		dbFactory:       dbFactory,
+		rollbackRunner:  rollbackRunner,
+		activityManager: activityManager,
+		profile:         profile,
+	}
 }
 
 // SchemaUpdateSDLTaskExecutor is the schema update (SDL) task executor.
 type SchemaUpdateSDLTaskExecutor struct {
+	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
+	rollbackRunner  *RollbackRunner
+	activityManager *ActivityManager
+	profile         config.Profile
 }
 
 // RunOnce will run the schema update (SDL) task executor once.
-func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateSDLTaskExecutor) RunOnce(ctx context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	ddl, err := exec.computeDatabaseSchemaDiff(ctx, server.dbFactory, task.Database, payload.Statement)
+	ddl, err := exec.computeDatabaseSchemaDiff(ctx, exec.dbFactory, task.Database, payload.Statement)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
-	return runMigration(ctx, server.store, server.dbFactory, server.RollbackRunner, server.ActivityManager, server.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.rollbackRunner, exec.activityManager, exec.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 // computeDatabaseSchemaDiff computes the diff between current database schema

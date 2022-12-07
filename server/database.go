@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -153,7 +154,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
 		if dbPatch.Labels != nil {
-			if err := s.setDatabaseLabels(ctx, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
+			if err := setDatabaseLabels(ctx, s.store, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
@@ -831,7 +832,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
+func setDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
 	if labelsJSON == "" {
 		return nil
 	}
@@ -848,7 +849,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	}
 
 	rowStatus := api.Normal
-	labelKeyList, err := s.store.FindLabelKey(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
+	labelKeyList, err := store.FindLabelKey(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
 	}
@@ -875,7 +876,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	}
 
 	if !validateOnly {
-		if _, err = s.store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
+		if _, err = store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
 		}
 	}

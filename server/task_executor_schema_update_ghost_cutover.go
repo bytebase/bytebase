@@ -25,25 +25,36 @@ import (
 )
 
 // NewSchemaUpdateGhostCutoverTaskExecutor creates a schema update (gh-ost) cutover task executor.
-func NewSchemaUpdateGhostCutoverTaskExecutor() TaskExecutor {
-	return &SchemaUpdateGhostCutoverTaskExecutor{}
+func NewSchemaUpdateGhostCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, taskScheduler *TaskScheduler, activityManager *ActivityManager, profile config.Profile) TaskExecutor {
+	return &SchemaUpdateGhostCutoverTaskExecutor{
+		store:           store,
+		dbFactory:       dbFactory,
+		taskScheduler:   taskScheduler,
+		activityManager: activityManager,
+		profile:         profile,
+	}
 }
 
 // SchemaUpdateGhostCutoverTaskExecutor is the schema update (gh-ost) cutover task executor.
 type SchemaUpdateGhostCutoverTaskExecutor struct {
+	store           *store.Store
+	dbFactory       *dbfactory.DBFactory
+	taskScheduler   *TaskScheduler
+	activityManager *ActivityManager
+	profile         config.Profile
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
-func (*SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	taskDAG, err := server.store.GetTaskDAGByToTaskID(ctx, task.ID)
+func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	taskDAG, err := exec.store.GetTaskDAGByToTaskID(ctx, task.ID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
 	}
 
 	syncTaskID := taskDAG.FromTaskID
-	defer server.TaskScheduler.sharedTaskState.Delete(syncTaskID)
+	defer exec.taskScheduler.sharedTaskState.Delete(syncTaskID)
 
-	syncTask, err := server.store.GetTaskByID(ctx, syncTaskID)
+	syncTask, err := exec.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get schema update gh-ost sync task for cutover task")
 	}
@@ -59,13 +70,13 @@ func (*SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server
 
 	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
-	value, ok := server.TaskScheduler.sharedTaskState.Load(syncTaskID)
+	value, ok := exec.taskScheduler.sharedTaskState.Load(syncTaskID)
 	if !ok {
 		return true, nil, errors.Errorf("failed to get gh-ost state from sync task")
 	}
 	sharedGhost := value.(sharedGhostState)
 
-	return cutover(ctx, server.store, server.dbFactory, server.ActivityManager, server.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	return cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 }
 
 func cutover(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *ActivityManager, profile config.Profile, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
