@@ -232,8 +232,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot open db")
 	}
 
-	cacheService := NewCacheService()
-	storeInstance := store.New(storeDB, cacheService)
+	storeInstance := store.New(storeDB)
 	s.store = storeInstance
 	// TODO(d): backfill activity. Remove this whenever the backfill is completed over the time.
 	if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
