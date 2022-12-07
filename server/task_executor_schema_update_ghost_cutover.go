@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -64,12 +65,12 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, t
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")
 	}
 
-	tableName, err := getTableNameFromStatement(payload.Statement)
+	tableName, err := utils.GetTableNameFromStatement(payload.Statement)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to parse table name from statement")
 	}
 
-	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
+	postponeFilename := utils.GetPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
 	value, ok := exec.taskScheduler.sharedTaskState.Load(syncTaskID)
 	if !ok {
