@@ -40,6 +40,10 @@ import (
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/server/runner/anomaly"
+	"github.com/bytebase/bytebase/server/runner/apprun"
+	"github.com/bytebase/bytebase/server/runner/backuprun"
+	"github.com/bytebase/bytebase/server/runner/metricreport"
+	"github.com/bytebase/bytebase/server/runner/rollbackrun"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/server/runner/taskcheck"
 	"github.com/bytebase/bytebase/store"
@@ -90,12 +94,12 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *taskcheck.Scheduler
-	MetricReporter     *MetricReporter
+	MetricReporter     *metricreport.Reporter
 	SchemaSyncer       *schemasync.Syncer
-	BackupRunner       *BackupRunner
+	BackupRunner       *backuprun.Runner
 	AnomalyScanner     *anomaly.Scanner
-	ApplicationRunner  *ApplicationRunner
-	RollbackRunner     *RollbackRunner
+	ApplicationRunner  *apprun.Runner
+	RollbackRunner     *rollbackrun.Runner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *activity.Manager
@@ -117,7 +121,8 @@ type Server struct {
 	// Postgres utility binaries
 	pgBinDir string
 
-	s3Client *bbs3.Client
+	s3Client       *bbs3.Client
+	feishuProvider *feishu.Provider
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -286,17 +291,19 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	if !profile.Readonly {
 		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory)
-		s.ApplicationRunner = NewApplicationRunner(storeInstance, s.ActivityManager, feishu.NewProvider(profile.FeishuAPIURL), profile)
-		s.BackupRunner = NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
-		s.RollbackRunner = NewRollbackRunner(storeInstance, s.dbFactory)
+		// TODO(p0ny): enable Feishu provider only when it is needed.
+		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
+		s.ApplicationRunner = apprun.NewRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
+		s.BackupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
+		s.RollbackRunner = rollbackrun.NewRunner(storeInstance, s.dbFactory)
 
 		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
 		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor())
 		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor(storeInstance, s.dbFactory, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
 		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor(storeInstance, taskScheduler))
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor(storeInstance, s.dbFactory, taskScheduler, s.ActivityManager, profile))
@@ -428,7 +435,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 func (s *Server) initMetricReporter(workspaceID string) {
 	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo && !s.profile.DisableMetric
 	if enabled {
-		metricReporter := NewMetricReporter(s.store, s.licenseService, s.profile, workspaceID)
+		metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, workspaceID)
 		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
 		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
 		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
@@ -450,6 +457,9 @@ type workspaceConfig struct {
 }
 
 func getInitSetting(ctx context.Context, store *store.Store) (*workspaceConfig, error) {
+	// secretLength is the length for the secret used to sign the JWT auto token.
+	const secretLength = 32
+
 	// initial branding
 	if _, _, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,

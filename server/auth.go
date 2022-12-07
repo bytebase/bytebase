@@ -212,8 +212,8 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
 		}
 
-		if user.ID == principalIDForFirstUser && s.MetricReporter != nil {
-			s.MetricReporter.report(&metric.Metric{
+		if user.ID == api.PrincipalIDForFirstUser && s.MetricReporter != nil {
+			s.MetricReporter.Report(&metric.Metric{
 				Name:  metricAPI.FirstPrincipalMetricName,
 				Value: 1,
 				Labels: map[string]interface{}{

@@ -17,6 +17,7 @@ import (
 	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/backuprun"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -105,7 +106,7 @@ func removeLocalBackupFile(dataDir string, backup *api.Backup) error {
 	if backup.StorageBackend != api.BackupStorageBackendLocal {
 		return nil
 	}
-	backupFilePath := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
+	backupFilePath := backuprun.GetBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
 	if err := os.Remove(backupFilePath); err != nil {
 		return errors.Wrapf(err, "failed to delete the local backup file %s", backupFilePath)
 	}
@@ -179,26 +180,4 @@ func (*DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, dbFactory
 	default:
 		return "", errors.Errorf("backup to %s not implemented yet", backup.StorageBackend)
 	}
-}
-
-// Get backup dir relative to the data dir.
-func getBackupRelativeDir(databaseID int) string {
-	return filepath.Join("backup", "db", fmt.Sprintf("%d", databaseID))
-}
-
-func getBackupRelativeFilePath(databaseID int, name string) string {
-	dir := getBackupRelativeDir(databaseID)
-	return filepath.Join(dir, fmt.Sprintf("%s.sql", name))
-}
-
-func getBackupAbsFilePath(dataDir string, databaseID int, name string) string {
-	path := getBackupRelativeFilePath(databaseID, name)
-	return filepath.Join(dataDir, path)
-}
-
-// Create backup directory for database.
-func createBackupDirectory(dataDir string, databaseID int) error {
-	dir := getBackupRelativeDir(databaseID)
-	absDir := filepath.Join(dataDir, dir)
-	return os.MkdirAll(absDir, os.ModePerm)
 }
