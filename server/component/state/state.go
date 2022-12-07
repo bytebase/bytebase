@@ -10,6 +10,12 @@ import (
 var (
 	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
 	InstanceDatabaseSyncChan = make(chan *api.Instance, 100)
+
 	// RollbackGenerateMap is the set of tasks for generating rollback statements.
 	RollbackGenerateMap sync.Map
+
+	// TaskProgress is the map from task ID to task progress.
+	TaskProgress sync.Map // map[taskID]api.Progress
+	// GhostTaskState is the map from task ID to gh-ost state.
+	GhostTaskState sync.Map // map[taskID]sharedGhostState
 )

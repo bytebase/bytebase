@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"bytes"
@@ -24,24 +24,24 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewDatabaseCreateTaskExecutor creates a database create task executor.
-func NewDatabaseCreateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile) TaskExecutor {
-	return &DatabaseCreateTaskExecutor{
+// NewDatabaseCreateExecutor creates a database create task executor.
+func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile) Executor {
+	return &DatabaseCreateExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 		profile:   profile,
 	}
 }
 
-// DatabaseCreateTaskExecutor is the database create task executor.
-type DatabaseCreateTaskExecutor struct {
+// DatabaseCreateExecutor is the database create task executor.
+type DatabaseCreateExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 	profile   config.Profile
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
@@ -186,7 +186,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, task *api.T
 		database = updatedDatabase
 	}
 	// Set database labels, except bb.environment is immutable and must match instance environment.
-	if err := setDatabaseLabels(ctx, exec.store, payload.Labels, database, project, database.CreatorID, false); err != nil {
+	if err := utils.SetDatabaseLabels(ctx, exec.store, payload.Labels, database, project, database.CreatorID, false); err != nil {
 		return true, nil, errors.Errorf("failed to record database labels after creating database %v", database.ID)
 	}
 
@@ -219,47 +219,6 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, task *api.T
 	}, nil
 }
 
-func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, databaseName, adminDatasourceUser string) (string, error) {
-	var stmt string
-	switch dbType {
-	case db.MySQL, db.TiDB:
-		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation), nil
-	case db.Postgres:
-		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
-		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
-		if adminDatasourceUser != "" && createDatabaseContext.Owner != adminDatasourceUser {
-			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", createDatabaseContext.Owner, adminDatasourceUser)
-		}
-		if createDatabaseContext.Collation == "" {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, createDatabaseContext.CharacterSet)
-		} else {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
-		}
-		// Set the database owner.
-		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
-		// However, people can still use ALTER DATABASE to change the owner afterwards.
-		// Error string below:
-		// query: CREATE DATABASE h1 WITH OWNER hello;
-		// ERROR:  must be member of role "hello"
-		//
-		// For tenant project, the schema for the newly created database will belong to the same owner.
-		// TODO(d): alter schema "public" owner to the database owner.
-		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;", stmt, databaseName, createDatabaseContext.Owner), nil
-	case db.ClickHouse:
-		clusterPart := ""
-		if createDatabaseContext.Cluster != "" {
-			clusterPart = fmt.Sprintf(" ON CLUSTER `%s`", createDatabaseContext.Cluster)
-		}
-		return fmt.Sprintf("CREATE DATABASE `%s`%s;", databaseName, clusterPart), nil
-	case db.Snowflake:
-		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
-	case db.SQLite:
-		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
-		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
-	}
-	return "", errors.Errorf("unsupported database type %s", dbType)
-}
-
 func getConnectionStatement(dbType db.Type, databaseName string) (string, error) {
 	switch dbType {
 	case db.MySQL, db.TiDB:
@@ -281,7 +240,7 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateTaskExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, instance *api.Instance, project *api.Project, projectID int, baseDatabaseName string) (string, string, error) {
+func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, instance *api.Instance, project *api.Project, projectID int, baseDatabaseName string) (string, string, error) {
 	// Find all databases in the project.
 	dbList, err := store.FindDatabase(ctx, &api.DatabaseFind{
 		ProjectID: &projectID,
@@ -298,7 +257,7 @@ func (*DatabaseCreateTaskExecutor) getSchemaFromPeerTenantDatabase(ctx context.C
 	if err != nil {
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
 	}
-	matrix, err := getDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
 	if err != nil {
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
 	}
@@ -323,7 +282,7 @@ func (*DatabaseCreateTaskExecutor) getSchemaFromPeerTenantDatabase(ctx context.C
 			for _, label := range labelList {
 				labelMap[label.Key] = label.Value
 			}
-			dbName, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, labelMap)
+			dbName, err := utils.FormatDatabaseName(baseDatabaseName, project.DBNameTemplate, labelMap)
 			if err != nil {
 				return "", "", errors.Wrapf(err, "failed to format database name formatDatabaseName(%q, %q, %+v)", baseDatabaseName, project.DBNameTemplate, labelMap)
 			}

@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -25,8 +25,8 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, backupRunner *backuprun.Runner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+// NewPITRCutoverExecutor creates a PITR cutover task executor.
+func NewPITRCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, backupRunner *backuprun.Runner, activityManager *activity.Manager, profile config.Profile) Executor {
 	return &PITRCutoverTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,

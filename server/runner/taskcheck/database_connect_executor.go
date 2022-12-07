@@ -10,22 +10,22 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// newTaskCheckDatabaseConnectExecutor creates a task check database connect executor.
-func newTaskCheckDatabaseConnectExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) taskCheckExecutor {
-	return &taskCheckDatabaseConnectExecutor{
+// NewDatabaseConnectExecutor creates a task check database connect executor.
+func NewDatabaseConnectExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
+	return &DatabaseConnectExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
-// taskCheckDatabaseConnectExecutor is the task check database connect executor.
-type taskCheckDatabaseConnectExecutor struct {
+// DatabaseConnectExecutor is the task check database connect executor.
+type DatabaseConnectExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check database connector executor once.
-func (e *taskCheckDatabaseConnectExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *DatabaseConnectExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)

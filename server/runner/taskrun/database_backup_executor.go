@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -26,8 +26,8 @@ const (
 	minAvailableFSBytes = 500 * 1024 * 1024
 )
 
-// NewDatabaseBackupTaskExecutor creates a new database backup task executor.
-func NewDatabaseBackupTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile) TaskExecutor {
+// NewDatabaseBackupExecutor creates a new database backup task executor.
+func NewDatabaseBackupExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile) Executor {
 	return &DatabaseBackupTaskExecutor{
 		store:     store,
 		dbFactory: dbFactory,

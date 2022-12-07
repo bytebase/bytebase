@@ -31,6 +31,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
 const (
@@ -206,7 +207,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				ClientSecret: repo.VCS.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 			},
 			repo.VCS.InstanceURL,
 			request.RepositoryID,
@@ -318,7 +319,7 @@ func (s *Server) sqlAdviceForFile(
 			ClientSecret: fileInfo.repository.VCS.Secret,
 			AccessToken:  fileInfo.repository.AccessToken,
 			RefreshToken: fileInfo.repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, fileInfo.repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, fileInfo.repository.WebURL),
 		},
 		fileInfo.repository.VCS.InstanceURL,
 		fileInfo.repository.ExternalID,
@@ -561,7 +562,7 @@ func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Reposit
 			ClientSecret: repo.VCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 		},
 		repo.VCS.InstanceURL,
 		repo.ExternalID,
@@ -984,7 +985,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 			ClientSecret: repo.VCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 		},
 		repo.VCS.InstanceURL,
 		repo.ExternalID,

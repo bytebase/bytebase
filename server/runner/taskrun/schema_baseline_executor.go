@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewSchemaBaselineTaskExecutor creates a schema baseline task executor.
-func NewSchemaBaselineTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+// NewSchemaBaselineExecutor creates a schema baseline task executor.
+func NewSchemaBaselineExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) Executor {
 	return &SchemaBaselineTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,

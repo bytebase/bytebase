@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewSchemaUpdateTaskExecutor creates a schema update (DDL) task executor.
-func NewSchemaUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+// NewSchemaUpdateExecutor creates a schema update (DDL) task executor.
+func NewSchemaUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) Executor {
 	return &SchemaUpdateTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,

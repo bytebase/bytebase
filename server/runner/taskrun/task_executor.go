@@ -1,4 +1,4 @@
-package server
+package taskrun
 
 import (
 	"context"
@@ -23,11 +23,12 @@ import (
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/server/component/state"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
-// TaskExecutor is the task executor.
-type TaskExecutor interface {
+// Executor is the task executor.
+type Executor interface {
 	// RunOnce will be called periodically by the scheduler until terminated is true.
 	//
 	// NOTE
@@ -38,8 +39,8 @@ type TaskExecutor interface {
 	RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
-// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+// RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
+func RunExecutorOnce(ctx context.Context, exec Executor, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -453,7 +454,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -526,7 +527,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 				ClientSecret: repo2.VCS.Secret,
 				AccessToken:  repo2.AccessToken,
 				RefreshToken: repo2.RefreshToken,
-				Refresher:    refreshToken(ctx, store, repo2.WebURL),
+				Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
 			},
 			repo2.VCS.InstanceURL,
 			repo2.ExternalID,
@@ -549,7 +550,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 				ClientSecret: repo2.VCS.Secret,
 				AccessToken:  repo2.AccessToken,
 				RefreshToken: repo2.RefreshToken,
-				Refresher:    refreshToken(ctx, store, repo2.WebURL),
+				Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
 			},
 			repo2.VCS.InstanceURL,
 			repo2.ExternalID,
@@ -579,7 +580,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 			ClientSecret: repo2.VCS.Secret,
 			AccessToken:  repo2.AccessToken,
 			RefreshToken: repo2.RefreshToken,
-			Refresher:    refreshToken(ctx, store, repo2.WebURL),
+			Refresher:    utils.RefreshToken(ctx, store, repo2.WebURL),
 		},
 		repo2.VCS.InstanceURL,
 		repo2.ExternalID,
