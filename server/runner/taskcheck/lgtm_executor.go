@@ -1,4 +1,4 @@
-package server
+package taskcheck
 
 import (
 	"context"
@@ -11,20 +11,20 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewTaskCheckLGTMExecutor creates a task check LGTM executor.
-func NewTaskCheckLGTMExecutor(store *store.Store) TaskCheckExecutor {
-	return &TaskCheckLGTMExecutor{
+// newTaskCheckLGTMExecutor creates a task check LGTM executor.
+func newTaskCheckLGTMExecutor(store *store.Store) taskCheckExecutor {
+	return &taskCheckLGTMExecutor{
 		store: store,
 	}
 }
 
-// TaskCheckLGTMExecutor is the task check LGTM executor. It checks if "LGTM" comments are present.
-type TaskCheckLGTMExecutor struct {
+// taskCheckLGTMExecutor is the task check LGTM executor. It checks if "LGTM" comments are present.
+type taskCheckLGTMExecutor struct {
 	store *store.Store
 }
 
 // Run will run the task check LGTM executor once.
-func (e *TaskCheckLGTMExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *taskCheckLGTMExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)

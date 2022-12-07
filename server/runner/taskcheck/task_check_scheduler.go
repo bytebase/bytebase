@@ -1,4 +1,5 @@
-package server
+// Package taskcheck is a runner for task checks.
+package taskcheck
 
 import (
 	"context"
@@ -14,33 +15,63 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/store"
 )
 
+const (
+	taskCheckSchedulerInterval = time.Duration(1) * time.Second
+)
+
 // NewTaskCheckScheduler creates a task check scheduler.
-func NewTaskCheckScheduler(server *Server, store *store.Store, licenseService enterpriseAPI.LicenseService) *TaskCheckScheduler {
-	return &TaskCheckScheduler{
-		server:         server,
+func NewTaskCheckScheduler(store *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterpriseAPI.LicenseService) *Scheduler {
+	taskCheckScheduler := &Scheduler{
 		store:          store,
 		licenseService: licenseService,
-		executors:      make(map[api.TaskCheckType]TaskCheckExecutor),
+		executors:      make(map[api.TaskCheckType]taskCheckExecutor),
 	}
+
+	statementSimpleExecutor := newTaskCheckStatementAdvisorSimpleExecutor()
+	taskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
+	taskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
+
+	statementCompositeExecutor := newTaskCheckStatementAdvisorCompositeExecutor(store, dbFactory)
+	taskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
+
+	statementTypeExecutor := newTaskCheckStatementTypeExecutor(store)
+	taskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
+
+	databaseConnectExecutor := newTaskCheckDatabaseConnectExecutor(store, dbFactory)
+	taskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
+
+	migrationSchemaExecutor := newTaskCheckMigrationSchemaExecutor(store, dbFactory)
+	taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
+
+	ghostSyncExecutor := newTaskCheckGhostSyncExecutor(store)
+	taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
+
+	checkLGTMExecutor := newTaskCheckLGTMExecutor(store)
+	taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
+
+	pitrMySQLExecutor := newTaskCheckPITRMySQLExecutor(store, dbFactory)
+	taskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
+
+	return taskCheckScheduler
 }
 
-// TaskCheckScheduler is the task check scheduler.
-type TaskCheckScheduler struct {
-	server         *Server
+// Scheduler is the task check scheduler.
+type Scheduler struct {
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
-	executors      map[api.TaskCheckType]TaskCheckExecutor
+	executors      map[api.TaskCheckType]taskCheckExecutor
 }
 
 // Run will run the task check scheduler once.
-func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(taskSchedulerInterval)
+func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(taskCheckSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskSchedulerInterval))
+	log.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskCheckSchedulerInterval))
 	runningTaskChecks := make(map[int]bool)
 	mu := sync.RWMutex{}
 	for {
@@ -173,7 +204,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register the task check executor.
-func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskCheckExecutor) {
+func (s *Scheduler) Register(taskType api.TaskCheckType, executor taskCheckExecutor) {
 	if executor == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
@@ -183,7 +214,7 @@ func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskC
 	s.executors[taskType] = executor
 }
 
-func (s *TaskCheckScheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	var createList []*api.TaskCheckRunCreate
 
 	create, err := s.getLGTMTaskCheck(ctx, task, creatorID)
@@ -248,7 +279,7 @@ func (s *TaskCheckScheduler) getTaskCheck(ctx context.Context, task *api.Task, c
 }
 
 // ScheduleCheck schedules variouse task checks depending on the task type.
-func (s *TaskCheckScheduler) ScheduleCheck(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
+func (s *Scheduler) ScheduleCheck(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
 	createList, err := s.getTaskCheck(ctx, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to getTaskCheck")
@@ -261,7 +292,7 @@ func (s *TaskCheckScheduler) ScheduleCheck(ctx context.Context, task *api.Task, 
 	return task, err
 }
 
-func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
+func (*Scheduler) getStatement(task *api.Task) (string, error) {
 	switch task.Type {
 	case api.TaskDatabaseSchemaUpdate:
 		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
@@ -292,7 +323,7 @@ func (*TaskCheckScheduler) getStatement(task *api.Task) (string, error) {
 	}
 }
 
-func (*TaskCheckScheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
+func (*Scheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsStatementTypeCheckSupported(database.Instance.Engine) {
 		return nil, nil
 	}
@@ -315,7 +346,7 @@ func (*TaskCheckScheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Tas
 	}, nil
 }
 
-func (s *TaskCheckScheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
+func (s *Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsSQLReviewSupported(database.Instance.Engine) {
 		return nil, nil
 	}
@@ -366,7 +397,7 @@ func getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, creatorID int, d
 	}, nil
 }
 
-func (*TaskCheckScheduler) getGeneralTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (*Scheduler) getGeneralTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	return []*api.TaskCheckRunCreate{
 		{
 			CreatorID: creatorID,
@@ -381,7 +412,7 @@ func (*TaskCheckScheduler) getGeneralTaskCheck(_ context.Context, task *api.Task
 	}, nil
 }
 
-func (*TaskCheckScheduler) getGhostTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (*Scheduler) getGhostTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return nil, nil
 	}
@@ -394,7 +425,7 @@ func (*TaskCheckScheduler) getGhostTaskCheck(_ context.Context, task *api.Task, 
 	}, nil
 }
 
-func (*TaskCheckScheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (*Scheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if task.Type != api.TaskDatabaseRestorePITRRestore {
 		return nil, nil
 	}
@@ -407,7 +438,7 @@ func (*TaskCheckScheduler) getPITRTaskCheck(_ context.Context, task *api.Task, c
 	}, nil
 }
 
-func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if !s.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
 		return nil, nil
 	}
@@ -441,4 +472,22 @@ func (s *TaskCheckScheduler) getLGTMTaskCheck(ctx context.Context, task *api.Tas
 			Type:      api.TaskCheckIssueLGTM,
 		},
 	}, nil
+}
+
+// SchedulePipelineTaskCheck schedules the task checks for a pipeline.
+func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, pipeline *api.Pipeline) error {
+	var createList []*api.TaskCheckRunCreate
+	for _, stage := range pipeline.StageList {
+		for _, task := range stage.TaskList {
+			create, err := s.getTaskCheck(ctx, task, api.SystemBotID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get task check for task %d", task.ID)
+			}
+			createList = append(createList, create...)
+		}
+	}
+	if _, err := s.store.BatchCreateTaskCheckRun(ctx, createList); err != nil {
+		return errors.Wrap(err, "failed to batch insert TaskCheckRunCreate")
+	}
+	return nil
 }
