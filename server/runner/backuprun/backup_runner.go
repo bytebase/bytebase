@@ -1,4 +1,5 @@
-package server
+// Package backuprun is the runner for backups.
+package backuprun
 
 import (
 	"context"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -232,7 +234,7 @@ func (r *BackupRunner) purgeBackup(ctx context.Context, backup *api.Backup) erro
 
 	switch backup.StorageBackend {
 	case api.BackupStorageBackendLocal:
-		backupFilePath := getBackupAbsFilePath(r.profile.DataDir, backup.DatabaseID, backup.Name)
+		backupFilePath := GetBackupAbsFilePath(r.profile.DataDir, backup.DatabaseID, backup.Name)
 		if err := os.Remove(backupFilePath); err != nil {
 			return errors.Wrapf(err, "failed to delete an expired backup file %q", backupFilePath)
 		}
@@ -346,7 +348,7 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 				zap.String("database", database.Name),
 				zap.String("backup", backupName),
 			)
-			if _, err := r.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.SystemBotID); err != nil {
+			if _, err := r.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.SystemBotID); err != nil {
 				log.Error("Failed to create automatic backup for database",
 					zap.Int("databaseID", database.ID),
 					zap.Error(err))
@@ -367,7 +369,8 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 	}
 }
 
-func (r *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
+// ScheduleBackupTask schedules a backup task.
+func (r *BackupRunner) ScheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
 	// Store the migration history version if exists.
 	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
@@ -442,4 +445,27 @@ func (r *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return nil, errors.Wrapf(err, "failed to create task for backup %q", backupName)
 	}
 	return backupNew, nil
+}
+
+// Get backup dir relative to the data dir.
+func getBackupRelativeDir(databaseID int) string {
+	return filepath.Join("backup", "db", fmt.Sprintf("%d", databaseID))
+}
+
+func getBackupRelativeFilePath(databaseID int, name string) string {
+	dir := getBackupRelativeDir(databaseID)
+	return filepath.Join(dir, fmt.Sprintf("%s.sql", name))
+}
+
+// GetBackupAbsFilePath returns backup absolute file path for a database.
+func GetBackupAbsFilePath(dataDir string, databaseID int, name string) string {
+	path := getBackupRelativeFilePath(databaseID, name)
+	return filepath.Join(dataDir, path)
+}
+
+// Create backup directory for database.
+func createBackupDirectory(dataDir string, databaseID int) error {
+	dir := getBackupRelativeDir(databaseID)
+	absDir := filepath.Join(dataDir, dir)
+	return os.MkdirAll(absDir, os.ModePerm)
 }

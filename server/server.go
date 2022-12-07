@@ -40,6 +40,9 @@ import (
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/server/runner/anomaly"
+	"github.com/bytebase/bytebase/server/runner/application"
+	"github.com/bytebase/bytebase/server/runner/backuprun"
+	"github.com/bytebase/bytebase/server/runner/rollback"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/server/runner/taskcheck"
 	"github.com/bytebase/bytebase/store"
@@ -92,10 +95,10 @@ type Server struct {
 	TaskCheckScheduler *taskcheck.Scheduler
 	MetricReporter     *MetricReporter
 	SchemaSyncer       *schemasync.Syncer
-	BackupRunner       *BackupRunner
+	BackupRunner       *backuprun.BackupRunner
 	AnomalyScanner     *anomaly.Scanner
-	ApplicationRunner  *ApplicationRunner
-	RollbackRunner     *RollbackRunner
+	ApplicationRunner  *application.Runner
+	RollbackRunner     *rollback.RollbackRunner
 	runnerWG           sync.WaitGroup
 
 	ActivityManager *activity.Manager
@@ -117,7 +120,8 @@ type Server struct {
 	// Postgres utility binaries
 	pgBinDir string
 
-	s3Client *bbs3.Client
+	s3Client       *bbs3.Client
+	feishuProvider *feishu.Provider
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -286,17 +290,19 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	if !profile.Readonly {
 		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory)
-		s.ApplicationRunner = NewApplicationRunner(storeInstance, s.ActivityManager, feishu.NewProvider(profile.FeishuAPIURL), profile)
-		s.BackupRunner = NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
-		s.RollbackRunner = NewRollbackRunner(storeInstance, s.dbFactory)
+		// TODO(p0ny): enable Feishu provider only when it is needed.
+		s.feishuProvider = feishu.NewProvider(profile.FeishuAPIURL)
+		s.ApplicationRunner = application.NewApplicationRunner(storeInstance, s.ActivityManager, s.feishuProvider, profile)
+		s.BackupRunner = backuprun.NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
+		s.RollbackRunner = rollback.NewRollbackRunner(storeInstance, s.dbFactory)
 
 		taskScheduler := NewTaskScheduler(s, storeInstance, s.ApplicationRunner, s.SchemaSyncer, s.ActivityManager, s.licenseService, profile)
 		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor())
 		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor(storeInstance, s.dbFactory, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor(storeInstance, s.dbFactory, s.RollbackRunner, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaBaseline, NewSchemaBaselineTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateSDL, NewSchemaUpdateSDLTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor(storeInstance, s.dbFactory, s.ActivityManager, profile))
 		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor(storeInstance, taskScheduler))
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor(storeInstance, s.dbFactory, taskScheduler, s.ActivityManager, profile))

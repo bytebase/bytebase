@@ -1,4 +1,5 @@
-package server
+// Package application is an application runner for scanning Feishu approval instances.
+package application
 
 import (
 	"context"
@@ -15,27 +16,17 @@ import (
 	"github.com/bytebase/bytebase/plugin/app/feishu"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
 const (
 	applicationRunnerInterval = time.Duration(60) * time.Second
-
-	// externalApprovalCancelReasonGeneral is the general reason, used as a default.
-	externalApprovalCancelReasonGeneral string = "Canceled because the assignee has been changed, or the SQL has been modified, or all tasks of the stage have been approved or the issue is no longer open."
-	// externalApprovalCancelReasonIssueNotOpen is used if the issue is not open.
-	externalApprovalCancelReasonIssueNotOpen string = "Canceled because the containing issue is no longer open."
-	// externalApprovalCancelReasonReassigned is used if the assignee has been changed.
-	externalApprovalCancelReasonReassigned string = "Canceled because the assignee has changed."
-	// externalApprovalCancelReasonSQLModified is used if the task SQL statement has been modified.
-	externalApprovalCancelReasonSQLModified string = "Canceled because the SQL has been modified."
-	// externalApprovalCancelReasonNoTaskPendingApproval is used if there is no pending approval tasks.
-	externalApprovalCancelReasonNoTaskPendingApproval string = "Canceled because all tasks have been approved."
 )
 
 // NewApplicationRunner returns a ApplicationRunner.
-func NewApplicationRunner(store *store.Store, activityManager *activity.Manager, feishuProvider *feishu.Provider, profile config.Profile) *ApplicationRunner {
-	return &ApplicationRunner{
+func NewApplicationRunner(store *store.Store, activityManager *activity.Manager, feishuProvider *feishu.Provider, profile config.Profile) *Runner {
+	return &Runner{
 		store:           store,
 		activityManager: activityManager,
 		p:               feishuProvider,
@@ -43,8 +34,8 @@ func NewApplicationRunner(store *store.Store, activityManager *activity.Manager,
 	}
 }
 
-// ApplicationRunner is a runner which periodically checks external approval status and approve the correspoding stages.
-type ApplicationRunner struct {
+// Runner is a runner which periodically checks external approval status and approve the correspoding stages.
+type Runner struct {
 	store           *store.Store
 	activityManager *activity.Manager
 	p               *feishu.Provider
@@ -52,7 +43,7 @@ type ApplicationRunner struct {
 }
 
 // Run runs the ApplicationRunner.
-func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(applicationRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -130,12 +121,12 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.Error("expect to have found issue in application runner", zap.Int("issue_id", externalApproval.IssueID))
 							continue
 						}
-						stage := getActiveStage(issue.Pipeline.StageList)
+						stage := utils.GetActiveStage(issue.Pipeline.StageList)
 						if stage == nil {
 							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
 						if issue.Status != api.IssueOpen {
-							if err := r.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonIssueNotOpen); err != nil {
+							if err := r.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
 								log.Error("failed to cancel external approval", zap.Error(err))
 							}
 							continue
@@ -257,7 +248,7 @@ func (r *ApplicationRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
+func (r *Runner) cancelOldExternalApprovalIfNeeded(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) (*api.ExternalApproval, error) {
 	approval, err := r.store.GetExternalApprovalByIssueID(ctx, issue.ID)
 	if err != nil {
 		return nil, err
@@ -270,14 +261,14 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 		return nil, err
 	}
 
-	reason := externalApprovalCancelReasonGeneral
+	reason := api.ExternalApprovalCancelReasonGeneral
 	cancelOld := func() bool {
 		if payload.StageID != stage.ID {
-			reason = externalApprovalCancelReasonNoTaskPendingApproval
+			reason = api.ExternalApprovalCancelReasonNoTaskPendingApproval
 			return true
 		}
 		if payload.AssigneeID != issue.AssigneeID {
-			reason = externalApprovalCancelReasonReassigned
+			reason = api.ExternalApprovalCancelReasonReassigned
 			return true
 		}
 		pendingApprovalCount := 0
@@ -287,7 +278,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 			}
 		}
 		if pendingApprovalCount == 0 {
-			reason = externalApprovalCancelReasonNoTaskPendingApproval
+			reason = api.ExternalApprovalCancelReasonNoTaskPendingApproval
 			return true
 		}
 		return false
@@ -332,7 +323,7 @@ func (r *ApplicationRunner) cancelOldExternalApprovalIfNeeded(ctx context.Contex
 }
 
 // CancelExternalApproval cancels the active external approval of an issue.
-func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID int, reason string) error {
+func (r *Runner) CancelExternalApproval(ctx context.Context, issueID int, reason string) error {
 	settingName := api.SettingAppIM
 	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {
@@ -395,7 +386,7 @@ func (r *ApplicationRunner) CancelExternalApproval(ctx context.Context, issueID 
 	)
 }
 
-func (r *ApplicationRunner) shouldCreateExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
+func (r *Runner) shouldCreateExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, oldApproval *api.ExternalApproval) (bool, error) {
 	policy, err := r.store.GetPipelineApprovalPolicy(ctx, stage.EnvironmentID)
 	if err != nil {
 		return false, err
@@ -452,7 +443,7 @@ func (r *ApplicationRunner) shouldCreateExternalApproval(ctx context.Context, is
 	return true, nil
 }
 
-func (r *ApplicationRunner) createExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
+func (r *Runner) createExternalApproval(ctx context.Context, issue *api.Issue, stage *api.Stage, settingValue *api.SettingAppIMValue) error {
 	users, err := r.p.GetIDByEmail(ctx,
 		feishu.TokenCtx{
 			AppID:     settingValue.AppID,
@@ -548,7 +539,7 @@ func getTaskStatement(task *api.Task) (string, error) {
 }
 
 // scheduleApproval tries to cancel old external apporvals and create new external approvals if needed.
-func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Issue, settingValue *api.SettingAppIMValue) {
+func (r *Runner) scheduleApproval(ctx context.Context, issue *api.Issue, settingValue *api.SettingAppIMValue) {
 	if !settingValue.ExternalApproval.Enabled {
 		return
 	}
@@ -558,7 +549,7 @@ func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Iss
 		return
 	}
 
-	stage := getActiveStage(issue.Pipeline.StageList)
+	stage := utils.GetActiveStage(issue.Pipeline.StageList)
 	if stage == nil {
 		stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 	}
@@ -591,7 +582,7 @@ func (r *ApplicationRunner) scheduleApproval(ctx context.Context, issue *api.Iss
 
 // tryUpdateApprovalDefinition is run on application runner start.
 // The approval definition may have changed so we make idempotent POST request to patch the definition.
-func (r *ApplicationRunner) tryUpdateApprovalDefinition(ctx context.Context) error {
+func (r *Runner) tryUpdateApprovalDefinition(ctx context.Context) error {
 	settingName := api.SettingAppIM
 	setting, err := r.store.GetSetting(ctx, &api.SettingFind{Name: &settingName})
 	if err != nil {

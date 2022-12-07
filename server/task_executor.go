@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -125,7 +126,7 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
+func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
@@ -170,7 +171,7 @@ func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfact
 			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 		// The runner will periodically scan the map to generate rollback SQL asynchronously.
-		rollbackRunner.generateMap.Store(updatedTask.ID, updatedTask)
+		state.RollbackGenerateMap.Store(updatedTask.ID, updatedTask)
 	}
 
 	return migrationID, schema, nil
@@ -419,12 +420,12 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 	}, nil
 }
 
-func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *activity.Manager, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := preMigration(ctx, store, profile, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := executeMigration(ctx, store, dbFactory, rollbackRunner, task, statement, mi)
+	migrationID, schema, err := executeMigration(ctx, store, dbFactory, task, statement, mi)
 	if err != nil {
 		return true, nil, err
 	}

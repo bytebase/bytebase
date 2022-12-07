@@ -1,4 +1,5 @@
-package server
+// Package rollback is the runner for generating rollback statements for DMLs.
+package rollback
 
 import (
 	"context"
@@ -15,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -28,9 +30,8 @@ func NewRollbackRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *Roll
 
 // RollbackRunner is the rollback runner generating rollback SQL statements.
 type RollbackRunner struct {
-	store       *store.Store
-	dbFactory   *dbfactory.DBFactory
-	generateMap sync.Map
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
 }
 
 // Run starts the rollback runner.
@@ -42,11 +43,11 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			r.generateMap.Range(func(key, value any) bool {
+			state.RollbackGenerateMap.Range(func(key, value any) bool {
 				task := value.(*api.Task)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				r.generateRollbackSQL(ctx, task)
-				r.generateMap.Delete(key)
+				state.RollbackGenerateMap.Delete(key)
 				return true
 			})
 		case <-ctx.Done(): // if cancel() execute
@@ -70,7 +71,7 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 	}
 	for _, task := range taskList {
 		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
-		r.generateMap.Store(task.ID, task)
+		state.RollbackGenerateMap.Store(task.ID, task)
 	}
 }
 
