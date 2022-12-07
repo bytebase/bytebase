@@ -4,6 +4,7 @@ import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import { round } from "lodash-es";
+import semver from "semver";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
@@ -186,4 +187,15 @@ export function emitStorageChangedEvent() {
 
 export function removeElementBySelector(selector: string) {
   document.body.querySelectorAll(selector).forEach((e) => e.remove());
+}
+
+// semverCompare compares version string v1 is greater than v2.
+export function semverCompare(v1: string, v2: string) {
+  const formatedV1 = semver.coerce(v1);
+  const formatedV2 = semver.coerce(v2);
+  if (!formatedV1 || !formatedV2) {
+    return false;
+  }
+
+  return semver.gt(formatedV1, formatedV2);
 }
