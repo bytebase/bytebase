@@ -5,10 +5,10 @@
     @close="dismissModal"
   >
     <div
-      class="w-full flex flex-row justify-start items-center border-b border-b-gray-300"
+      class="w-full flex flex-row justify-start items-center border-b pl-1 border-b-gray-300"
     >
       <button
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
+        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
           state.selectedTab === 'ui-editor' &&
           'bg-white border-gray-300 text-gray-800'
@@ -18,7 +18,7 @@
         {{ $t("ui-editor.self") }}
       </button>
       <button
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
+        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
           state.selectedTab === 'raw-sql' &&
           'bg-white border-gray-300 text-gray-800'
