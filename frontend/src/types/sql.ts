@@ -9,6 +9,7 @@ export type ConnectionInfo = {
   username?: string;
   password?: string;
   useEmptyPassword: boolean;
+  database?: string;
   // Instance detail page has a Test Connection button, if user doesn't input new password, we
   // want the connection to use the existing password to test the connection, however, we do
   // not transfer the password back to client, thus we here pass the instanceId so the server
