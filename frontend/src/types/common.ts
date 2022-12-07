@@ -261,6 +261,7 @@ const makeUnknown = (type: ResourceType) => {
     engine: "MYSQL",
     engineVersion: "",
     host: "",
+    database: "",
   };
 
   const UNKNOWN_DATABASE: Database = {
@@ -712,6 +713,7 @@ const makeEmpty = (type: ResourceType) => {
     engine: "MYSQL",
     engineVersion: "",
     host: "",
+    database: "",
   };
 
   const EMPTY_DATABASE: Database = {
