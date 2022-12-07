@@ -15,11 +15,10 @@ import (
 )
 
 // NewSchemaBaselineTaskExecutor creates a schema baseline task executor.
-func NewSchemaBaselineTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+func NewSchemaBaselineTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &SchemaBaselineTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
-		rollbackRunner:  rollbackRunner,
 		activityManager: activityManager,
 		profile:         profile,
 	}
@@ -29,7 +28,6 @@ func NewSchemaBaselineTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFa
 type SchemaBaselineTaskExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
-	rollbackRunner  *RollbackRunner
 	activityManager *activity.Manager
 	profile         config.Profile
 }
@@ -41,5 +39,5 @@ func (exec *SchemaBaselineTaskExecutor) RunOnce(ctx context.Context, task *api.T
 		return true, nil, errors.Wrap(err, "invalid database schema baseline payload")
 	}
 
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.rollbackRunner, exec.activityManager, exec.profile, task, db.Baseline, payload.Statement, payload.SchemaVersion, nil /* vcsPushEvent */)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, db.Baseline, payload.Statement, payload.SchemaVersion, nil /* vcsPushEvent */)
 }

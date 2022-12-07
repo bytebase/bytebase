@@ -186,3 +186,15 @@ func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
 	}
 	return migrationContext, nil
 }
+
+// GetActiveStage returns an active stage among all stages.
+func GetActiveStage(stageList []*api.Stage) *api.Stage {
+	for _, stage := range stageList {
+		for _, task := range stage.TaskList {
+			if task.Status != api.TaskDone {
+				return stage
+			}
+		}
+	}
+	return nil
+}

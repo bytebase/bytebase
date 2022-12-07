@@ -1,4 +1,5 @@
-package server
+// Package rollbackrun is the runner for generating rollback statements for DMLs.
+package rollbackrun
 
 import (
 	"context"
@@ -15,26 +16,26 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewRollbackRunner creates a new rollback runner.
-func NewRollbackRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *RollbackRunner {
-	return &RollbackRunner{
+// NewRunner creates a new rollback runner.
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *Runner {
+	return &Runner{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
-// RollbackRunner is the rollback runner generating rollback SQL statements.
-type RollbackRunner struct {
-	store       *store.Store
-	dbFactory   *dbfactory.DBFactory
-	generateMap sync.Map
+// Runner is the rollback runner generating rollback SQL statements.
+type Runner struct {
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
 }
 
 // Run starts the rollback runner.
-func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -42,11 +43,11 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			r.generateMap.Range(func(key, value any) bool {
+			state.RollbackGenerateMap.Range(func(key, value any) bool {
 				task := value.(*api.Task)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				r.generateRollbackSQL(ctx, task)
-				r.generateMap.Delete(key)
+				state.RollbackGenerateMap.Delete(key)
 				return true
 			})
 		case <-ctx.Done(): // if cancel() execute
@@ -57,7 +58,7 @@ func (r *RollbackRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // retryGenerateRollbackSQL retries generating rollback SQL for tasks.
 // It is currently called when Bytebase server starts and only rerun unfinished generation.
-func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
+func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	find := &api.TaskFind{
 		StatusList: &[]api.TaskStatus{api.TaskDone},
 		TypeList:   &[]api.TaskType{api.TaskDatabaseDataUpdate},
@@ -70,11 +71,11 @@ func (r *RollbackRunner) retryGenerateRollbackSQL(ctx context.Context) {
 	}
 	for _, task := range taskList {
 		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
-		r.generateMap.Store(task.ID, task)
+		state.RollbackGenerateMap.Store(task.ID, task)
 	}
 }
 
-func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task) {
+func (r *Runner) generateRollbackSQL(ctx context.Context, task *api.Task) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -116,7 +117,7 @@ func (r *RollbackRunner) generateRollbackSQL(ctx context.Context, task *api.Task
 	log.Debug("Rollback SQL generation success", zap.Int("taskID", task.ID))
 }
 
-func (r *RollbackRunner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
 	basename, seqStart, err := mysql.ParseBinlogName(payload.BinlogFileStart)
 	if err != nil {
 		return "", errors.WithMessagef(err, "invalid start binlog file name %s", payload.BinlogFileStart)

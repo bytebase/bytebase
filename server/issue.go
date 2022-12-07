@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
@@ -197,7 +198,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if *issuePatch.AssigneeID == issue.AssigneeID {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d because it's already the case", *issuePatch.AssigneeID))
 			}
-			stage := getActiveStage(issue.Pipeline.StageList)
+			stage := utils.GetActiveStage(issue.Pipeline.StageList)
 			if stage == nil {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
@@ -224,7 +225,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 
 		// cancel external approval on assignee change
 		if issuePatch.AssigneeID != nil {
-			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonReassigned); err != nil {
+			if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonReassigned); err != nil {
 				log.Error("failed to cancel external approval on assignee change", zap.Int("issue_id", issue.ID), zap.Error(err))
 			}
 		}

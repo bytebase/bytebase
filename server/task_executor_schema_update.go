@@ -15,11 +15,10 @@ import (
 )
 
 // NewSchemaUpdateTaskExecutor creates a schema update (DDL) task executor.
-func NewSchemaUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, rollbackRunner *RollbackRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+func NewSchemaUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &SchemaUpdateTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
-		rollbackRunner:  rollbackRunner,
 		activityManager: activityManager,
 		profile:         profile,
 	}
@@ -29,7 +28,6 @@ func NewSchemaUpdateTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFact
 type SchemaUpdateTaskExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
-	rollbackRunner  *RollbackRunner
 	activityManager *activity.Manager
 	profile         config.Profile
 }
@@ -41,5 +39,5 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, task *api.Tas
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.rollbackRunner, exec.activityManager, exec.profile, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
