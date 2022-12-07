@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -343,7 +344,7 @@ func (*DatabaseCreateTaskExecutor) getSchemaFromPeerTenantDatabase(ctx context.C
 		return "", "", err
 	}
 	defer driver.Close(ctx)
-	schemaVersion, err := getLatestSchemaVersion(ctx, driver, similarDB.Name)
+	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, similarDB.Name)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.Name)
 	}

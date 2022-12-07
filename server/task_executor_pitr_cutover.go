@@ -20,11 +20,12 @@ import (
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *SchemaSyncer, backupRunner *BackupRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
+func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, backupRunner *BackupRunner, activityManager *activity.Manager, profile config.Profile) TaskExecutor {
 	return &PITRCutoverTaskExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
@@ -39,7 +40,7 @@ func NewPITRCutoverTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFacto
 type PITRCutoverTaskExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
-	schemaSyncer    *SchemaSyncer
+	schemaSyncer    *schemasync.Syncer
 	backupRunner    *BackupRunner
 	activityManager *activity.Manager
 	profile         config.Profile
@@ -92,7 +93,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, task *api.Task
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
-func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *BackupRunner, schemaSyncer *SchemaSyncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *BackupRunner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
@@ -133,7 +134,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, dbFactory 
 	}
 
 	// Sync database schema after restore is completed.
-	if err := schemaSyncer.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
+	if err := schemaSyncer.SyncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Database.Instance.Name),
 			zap.String("databaseName", task.Database.Name),
