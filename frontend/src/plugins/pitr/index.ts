@@ -1,5 +1,4 @@
 import { computed, Ref, watch } from "vue";
-import semverCompare from "semver/functions/compare";
 import {
   CreateDatabaseContext,
   Database,
@@ -15,6 +14,7 @@ import {
   useIssueStore,
 } from "@/store";
 import { useI18n } from "vue-i18n";
+import { semverCompare } from "@/utils";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
@@ -22,7 +22,7 @@ export const isPITRAvailableOnInstance = (instance: Instance): boolean => {
   const { engine, engineVersion } = instance;
   return (
     engine === "MYSQL" &&
-    semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION) >= 0
+    semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION)
   );
 };
 
@@ -42,10 +42,7 @@ export const usePITRLogic = (database: Ref<Database>) => {
     const { engine, engineVersion } = database.value.instance;
     if (
       engine === "MYSQL" &&
-      semverCompare(
-        engineVersion.split("-")[0],
-        MIN_PITR_SUPPORT_MYSQL_VERSION
-      ) >= 0
+      semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION)
     ) {
       if (doneBackupList.value.length > 0) {
         return { result: true, message: "ok" };
