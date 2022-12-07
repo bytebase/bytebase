@@ -75,7 +75,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 				if value.AppID == "" || value.AppSecret == "" {
 					return echo.NewHTTPError(http.StatusBadRequest, "Application ID and secret cannot be empty")
 				}
-				p := s.ApplicationRunner.p
+				p := s.feishuProvider
 				// clear token cache so that we won't use the previous token.
 				p.ClearTokenCache()
 

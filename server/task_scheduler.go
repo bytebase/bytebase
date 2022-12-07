@@ -20,7 +20,9 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/runner/apprun"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -29,7 +31,7 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *ApplicationRunner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
+func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, profile config.Profile) *TaskScheduler {
 	return &TaskScheduler{
 		server:            server,
 		store:             store,
@@ -46,7 +48,7 @@ func NewTaskScheduler(server *Server, store *store.Store, applicationRunner *App
 type TaskScheduler struct {
 	server            *Server
 	store             *store.Store
-	applicationRunner *ApplicationRunner
+	applicationRunner *apprun.Runner
 	schemaSyncer      *schemasync.Syncer
 	activityManager   *activity.Manager
 	licenseService    enterpriseAPI.LicenseService
@@ -264,7 +266,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 							if issue != nil {
-								if stage := getActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != taskPatched.StageID {
+								if stage := utils.GetActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != taskPatched.StageID {
 									environmentID := stage.EnvironmentID
 									ok, err := s.canPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
 									if err != nil {
@@ -524,20 +526,9 @@ func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool
 	return false, nil
 }
 
-func getActiveStage(stageList []*api.Stage) *api.Stage {
-	for _, stage := range stageList {
-		for _, task := range stage.TaskList {
-			if task.Status != api.TaskDone {
-				return stage
-			}
-		}
-	}
-	return nil
-}
-
 // ScheduleActiveStage tries to schedule the tasks in the active stage.
 func (s *TaskScheduler) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline) error {
-	stage := getActiveStage(pipeline.StageList)
+	stage := utils.GetActiveStage(pipeline.StageList)
 	if stage == nil {
 		return nil
 	}
@@ -686,7 +677,7 @@ func (s *TaskScheduler) patchTaskStatus(ctx context.Context, task *api.Task, tas
 		// every task in the stage completes
 		if foundStage && stageTaskAllDone {
 			// Cancel external approval, it's ok if we failed.
-			if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonNoTaskPendingApproval); err != nil {
+			if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonNoTaskPendingApproval); err != nil {
 				log.Error("failed to cancel external approval on stage tasks completion", zap.Int("issue_id", issue.ID), zap.Error(err))
 			}
 
@@ -996,7 +987,7 @@ func (s *TaskScheduler) changeIssueStatus(ctx context.Context, issue *api.Issue,
 
 	// Cancel external approval, it's ok if we failed.
 	if newStatus != api.IssueOpen {
-		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonIssueNotOpen); err != nil {
+		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
 			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
 		}
 	}
