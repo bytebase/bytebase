@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -20,8 +18,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
 	"github.com/bytebase/bytebase/server/component/activity"
-	"github.com/bytebase/bytebase/server/component/state"
-	"github.com/bytebase/bytebase/store"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -156,7 +153,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
 		if dbPatch.Labels != nil {
-			if err := setDatabaseLabels(ctx, s.store, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
+			if err := utils.SetDatabaseLabels(ctx, s.store, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
@@ -653,7 +650,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		state.InstanceDatabaseSyncChan <- updatedInstance
+		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -734,7 +731,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		state.InstanceDatabaseSyncChan <- updatedInstance
+		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
@@ -832,88 +829,4 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func setDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
-	if labelsJSON == "" {
-		return nil
-	}
-	// NOTE: this is a partially filled DatabaseLabel
-	var labels []*api.DatabaseLabel
-	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-		return err
-	}
-
-	// For scalability, each database can have up to four labels for now.
-	if len(labels) > api.DatabaseLabelSizeMax {
-		err := errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-	}
-
-	rowStatus := api.Normal
-	labelKeyList, err := store.FindLabelKey(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
-	}
-
-	if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
-	}
-
-	// Validate labels can match database name template on the project if the
-	// template is not a wildcard.
-	if project.DBNameTemplate != "" {
-		tokens := make(map[string]string)
-		for _, label := range labels {
-			tokens[label.Key] = tokens[label.Value]
-		}
-		baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, project.DBNameTemplate, labelsJSON)
-		if err != nil {
-			return errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", database.Name, project.DBNameTemplate, labelsJSON)
-		}
-		if _, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, tokens); err != nil {
-			err := errors.Errorf("database labels don't match with database name template %q", project.DBNameTemplate)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-	}
-
-	if !validateOnly {
-		if _, err = store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
-		}
-	}
-	return nil
-}
-
-func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {
-	keyValueList := make(map[string]map[string]bool)
-	for _, labelKey := range labelKeyList {
-		keyValueList[labelKey.Key] = map[string]bool{}
-		for _, value := range labelKey.ValueList {
-			keyValueList[labelKey.Key][value] = true
-		}
-	}
-
-	var environmentValue *string
-
-	// check label key & value availability
-	for _, label := range labelList {
-		if label.Key == api.EnvironmentKeyName {
-			environmentValue = &label.Value
-			continue
-		}
-		if _, ok := keyValueList[label.Key]; !ok {
-			return common.Errorf(common.Invalid, "invalid database label key: %v", label.Key)
-		}
-	}
-
-	// Environment label must exist and is immutable.
-	if environmentValue == nil {
-		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentKeyName)
-	}
-	if environmentName != *environmentValue {
-		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, *environmentValue)
-	}
-
-	return nil
 }

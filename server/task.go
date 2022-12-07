@@ -18,29 +18,6 @@ import (
 	"github.com/bytebase/bytebase/server/component/activity"
 )
 
-var (
-	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
-		api.TaskPendingApproval: {api.TaskPending, api.TaskDone},
-		api.TaskPending:         {api.TaskCanceled, api.TaskRunning, api.TaskPendingApproval, api.TaskDone},
-		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
-		api.TaskDone:            {},
-		api.TaskFailed:          {api.TaskPendingApproval, api.TaskDone},
-		api.TaskCanceled:        {api.TaskPendingApproval, api.TaskDone},
-	}
-	taskCancellationImplemented = map[api.TaskType]bool{
-		api.TaskDatabaseSchemaUpdateGhostSync: true,
-	}
-)
-
-func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
-	for _, allowedStatus := range applicableTaskStatusTransition[fromStatus] {
-		if allowedStatus == toStatus {
-			return true
-		}
-	}
-	return false
-}
-
 func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *echo.HTTPError {
 	// Allow frontend to change the SQL statement of
 	// 1. a PendingApproval task which hasn't started yet
@@ -50,7 +27,7 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q state", task.Status))
 	}
 	if task.Status == api.TaskPending {
-		ok, err := s.TaskScheduler.canSchedule(ctx, task)
+		ok, err := s.TaskScheduler.CanSchedule(ctx, task)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
 		}
@@ -204,7 +181,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 
-		taskPatched, err := s.TaskScheduler.patchTaskStatus(ctx, task, taskStatusPatch)
+		taskPatched, err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
@@ -406,7 +383,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 			// updated statement, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
 			if taskPatched.Status == api.TaskPending {
-				t, err := s.TaskScheduler.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+				t, err := s.TaskScheduler.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 					IDList:    []int{taskPatch.ID},
 					UpdaterID: taskPatch.UpdaterID,
 					Status:    api.TaskPendingApproval,
@@ -523,7 +500,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 
 		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
 		if taskPatched.Status == api.TaskPending {
-			t, err := s.TaskScheduler.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+			t, err := s.TaskScheduler.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 				IDList:    []int{taskPatch.ID},
 				UpdaterID: taskPatch.UpdaterID,
 				Status:    api.TaskPendingApproval,
