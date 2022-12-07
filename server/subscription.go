@@ -138,7 +138,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		subscription = s.licenseService.LoadSubscription(ctx)
 		currentPlan := subscription.Plan
 		if s.MetricReporter != nil {
-			s.MetricReporter.report(&metric.Metric{
+			s.MetricReporter.Report(&metric.Metric{
 				Name:  metricAPI.SubscriptionTrialMetricName,
 				Value: 1,
 				Labels: map[string]interface{}{
