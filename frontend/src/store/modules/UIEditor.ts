@@ -207,6 +207,14 @@ export const useUIEditorStore = defineStore("UIEditor", {
       const index = this.tableList.findIndex((item) => item === table);
       if (table.id === UNKNOWN_ID) {
         this.tableList.splice(index, 1);
+        // Close tab for new table.
+        const tab = this.tabList.find(
+          (tab) =>
+            tab.type === UIEditorTabType.TabForTable && tab.table === table
+        );
+        if (tab) {
+          this.closeTab(tab.id);
+        }
       } else {
         this.droppedTableList.push(table);
       }
