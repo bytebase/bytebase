@@ -1,4 +1,4 @@
-package server
+package taskcheck
 
 import (
 	"context"
@@ -9,23 +9,24 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewTaskCheckGhostSyncExecutor creates a task check gh-ost sync executor.
-func NewTaskCheckGhostSyncExecutor(store *store.Store) TaskCheckExecutor {
-	return &TaskCheckGhostSyncExecutor{
+// newTaskCheckGhostSyncExecutor creates a task check gh-ost sync executor.
+func newTaskCheckGhostSyncExecutor(store *store.Store) taskCheckExecutor {
+	return &taskCheckGhostSyncExecutor{
 		store: store,
 	}
 }
 
-// TaskCheckGhostSyncExecutor is the task check gh-ost sync executor.
-type TaskCheckGhostSyncExecutor struct {
+// taskCheckGhostSyncExecutor is the task check gh-ost sync executor.
+type taskCheckGhostSyncExecutor struct {
 	store *store.Store
 }
 
 // Run will run the task check database connector executor once.
-func (e *TaskCheckGhostSyncExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *taskCheckGhostSyncExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So
 	// capture the error and send it into the result list.
@@ -78,14 +79,14 @@ func (e *TaskCheckGhostSyncExecutor) Run(ctx context.Context, taskCheckRun *api.
 		return nil, common.Wrapf(err, common.Internal, "invalid database schema update gh-ost sync payload")
 	}
 
-	tableName, err := getTableNameFromStatement(payload.Statement)
+	tableName, err := utils.GetTableNameFromStatement(payload.Statement)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
 	}
 
-	config := getGhostConfig(task, adminDataSource, instanceUserList, tableName, payload.Statement, true, 20000000)
+	config := utils.GetGhostConfig(task, adminDataSource, instanceUserList, tableName, payload.Statement, true, 20000000)
 
-	migrationContext, err := newMigrationContext(config)
+	migrationContext, err := utils.NewMigrationContext(config)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}

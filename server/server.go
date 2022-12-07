@@ -41,6 +41,7 @@ import (
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/server/runner/anomaly"
 	"github.com/bytebase/bytebase/server/runner/schemasync"
+	"github.com/bytebase/bytebase/server/runner/taskcheck"
 	"github.com/bytebase/bytebase/store"
 
 	// Register clickhouse driver.
@@ -88,7 +89,7 @@ const (
 type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
-	TaskCheckScheduler *TaskCheckScheduler
+	TaskCheckScheduler *taskcheck.Scheduler
 	MetricReporter     *MetricReporter
 	SchemaSyncer       *schemasync.Syncer
 	BackupRunner       *BackupRunner
@@ -303,35 +304,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		taskScheduler.Register(api.TaskDatabaseRestorePITRCutover, NewPITRCutoverTaskExecutor(storeInstance, s.dbFactory, s.SchemaSyncer, s.BackupRunner, s.ActivityManager, profile))
 		s.TaskScheduler = taskScheduler
 
-		// Task check scheduler
-		taskCheckScheduler := NewTaskCheckScheduler(s, storeInstance, s.licenseService)
-
-		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor()
-		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
-		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
-
-		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor(storeInstance, s.dbFactory)
-		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
-
-		statementTypeExecutor := NewTaskCheckStatementTypeExecutor(storeInstance)
-		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementType, statementTypeExecutor)
-
-		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor(storeInstance, s.dbFactory)
-		taskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
-
-		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor(storeInstance, s.dbFactory)
-		taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
-
-		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor(storeInstance)
-		taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
-
-		checkLGTMExecutor := NewTaskCheckLGTMExecutor(storeInstance)
-		taskCheckScheduler.Register(api.TaskCheckIssueLGTM, checkLGTMExecutor)
-
-		pitrMySQLExecutor := NewTaskCheckPITRMySQLExecutor(storeInstance, s.dbFactory)
-		taskCheckScheduler.Register(api.TaskCheckPITRMySQL, pitrMySQLExecutor)
-
-		s.TaskCheckScheduler = taskCheckScheduler
+		s.TaskCheckScheduler = taskcheck.NewTaskCheckScheduler(storeInstance, s.dbFactory, s.licenseService)
 
 		// Anomaly scanner
 		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)

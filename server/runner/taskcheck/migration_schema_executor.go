@@ -1,4 +1,4 @@
-package server
+package taskcheck
 
 import (
 	"context"
@@ -10,22 +10,22 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// NewTaskCheckMigrationSchemaExecutor creates a task check migration schema executor.
-func NewTaskCheckMigrationSchemaExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) TaskCheckExecutor {
-	return &TaskCheckMigrationSchemaExecutor{
+// newTaskCheckMigrationSchemaExecutor creates a task check migration schema executor.
+func newTaskCheckMigrationSchemaExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) taskCheckExecutor {
+	return &taskCheckMigrationSchemaExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
-// TaskCheckMigrationSchemaExecutor is the task check migration schema executor.
-type TaskCheckMigrationSchemaExecutor struct {
+// taskCheckMigrationSchemaExecutor is the task check migration schema executor.
+type taskCheckMigrationSchemaExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the task check migration schema executor once.
-func (e *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *taskCheckMigrationSchemaExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
