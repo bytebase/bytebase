@@ -45,7 +45,7 @@ type SchemaUpdateGhostCutoverTaskExecutor struct {
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
-func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	taskDAG, err := exec.store.GetTaskDAGByToTaskID(ctx, task.ID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)

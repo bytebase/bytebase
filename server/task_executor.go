@@ -33,11 +33,11 @@ type TaskExecutor interface {
 	// 1. It's possible that err could be non-nil while terminated is false, which
 	// usually indicates a transient error and will make scheduler retry later.
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
-	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
+	RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
 // RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -51,7 +51,7 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 		}
 	}()
 
-	return exec.RunOnce(ctx, server, task)
+	return exec.RunOnce(ctx, task)
 }
 
 func preMigration(ctx context.Context, store *store.Store, profile config.Profile, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {

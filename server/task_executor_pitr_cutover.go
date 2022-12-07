@@ -45,7 +45,7 @@ type PITRCutoverTaskExecutor struct {
 }
 
 // RunOnce will run the PITR cutover task executor once.
-func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 	issue, err := getIssueByPipelineID(ctx, exec.store, task.PipelineID)
 	if err != nil {

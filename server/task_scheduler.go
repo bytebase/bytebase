@@ -166,7 +166,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						executorCtx, cancel := context.WithCancel(ctx)
 						s.runningTasksCancel.Store(task.ID, cancel)
 
-						done, result, err := RunTaskExecutorOnce(executorCtx, executor, s.server, task)
+						done, result, err := RunTaskExecutorOnce(executorCtx, executor, task)
 
 						select {
 						case <-executorCtx.Done():
