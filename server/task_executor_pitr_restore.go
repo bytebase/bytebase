@@ -23,11 +23,12 @@ import (
 	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, taskScheduler *TaskScheduler, schemaSyncer *SchemaSyncer, profile config.Profile) TaskExecutor {
+func NewPITRRestoreTaskExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, taskScheduler *TaskScheduler, schemaSyncer *schemasync.Syncer, profile config.Profile) TaskExecutor {
 	return &PITRRestoreTaskExecutor{
 		store:         store,
 		dbFactory:     dbFactory,
@@ -44,7 +45,7 @@ type PITRRestoreTaskExecutor struct {
 	dbFactory     *dbfactory.DBFactory
 	s3Client      *bbs3.Client
 	taskScheduler *TaskScheduler
-	schemaSyncer  *SchemaSyncer
+	schemaSyncer  *schemasync.Syncer
 	profile       config.Profile
 }
 
@@ -78,7 +79,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, task *api.Task
 	return true, resultPayload, err
 }
 
-func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, schemaSyncer *SchemaSyncer, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	backup, err := store.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
@@ -153,7 +154,7 @@ func (exec *PITRRestoreTaskExecutor) doBackupRestore(ctx context.Context, store 
 	}
 
 	// Sync database schema after restore is completed.
-	if err := schemaSyncer.syncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
+	if err := schemaSyncer.SyncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", targetDatabase.Instance.Name),
 			zap.String("databaseName", targetDatabase.Name),

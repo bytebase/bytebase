@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
 	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -646,13 +647,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceDatabaseSyncChan <- updatedInstance
+		state.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -727,13 +728,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceDatabaseSyncChan <- updatedInstance
+		state.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
