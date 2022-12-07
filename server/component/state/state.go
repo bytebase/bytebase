@@ -19,4 +19,13 @@ type State struct {
 	TaskProgress sync.Map // map[taskID]api.Progress
 	// GhostTaskState is the map from task ID to gh-ost state.
 	GhostTaskState sync.Map // map[taskID]sharedGhostState
+
+	// RunningBackupDatabases is the set of databases running backups.
+	RunningBackupDatabases sync.Map // map[databaseID]bool
+	// RunningTaskChecks is the set of running task checks.
+	RunningTaskChecks sync.Map // map[taskCheckID]bool
+	// RunningTasks is the set of running tasks.
+	RunningTasks sync.Map // map[taskID]bool
+	// RunningTasksCancel is the cancel's of running tasks.
+	RunningTasksCancel sync.Map // map[taskID]context.CancelFunc
 }
