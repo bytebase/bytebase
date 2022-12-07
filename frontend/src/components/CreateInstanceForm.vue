@@ -432,9 +432,6 @@ const changeInstanceEngine = (engine: EngineType) => {
       state.instance.host = isDev() ? "127.0.0.1" : "host.docker.internal";
     }
   }
-  if (engine !== "POSTGRES") {
-    state.instance.database = "";
-  }
   state.instance.engine = engine;
 };
 
@@ -564,6 +561,11 @@ const tryCreate = () => {
 // Conceptually, data source is the proper place to store connection info (thinking of DSN)
 const doCreate = () => {
   state.isCreatingInstance = true;
+
+  if (state.instance.engine !== "POSTGRES") {
+    // Clear the `database` field if not needed.
+    state.instance.database = "";
+  }
   useInstanceStore()
     .createInstance(state.instance)
     .then((createdInstance) => {
@@ -592,7 +594,8 @@ const testConnection = () => {
     engine: instance.engine,
     username: instance.username,
     password: instance.password,
-    database: instance.database,
+    // Use the `database` field only when needed.
+    database: instance.engine === "POSTGRES" ? instance.database : undefined,
     useEmptyPassword: false,
     instanceId: undefined,
   };
