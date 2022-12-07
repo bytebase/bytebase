@@ -39,6 +39,8 @@ import (
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/anomaly"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/store"
 
 	// Register clickhouse driver.
@@ -88,9 +90,9 @@ type Server struct {
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
 	MetricReporter     *MetricReporter
-	SchemaSyncer       *SchemaSyncer
+	SchemaSyncer       *schemasync.Syncer
 	BackupRunner       *BackupRunner
-	AnomalyScanner     *AnomalyScanner
+	AnomalyScanner     *anomaly.Scanner
 	ApplicationRunner  *ApplicationRunner
 	RollbackRunner     *RollbackRunner
 	runnerWG           sync.WaitGroup
@@ -282,7 +284,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	if !profile.Readonly {
-		s.SchemaSyncer = NewSchemaSyncer(storeInstance, s.dbFactory)
+		s.SchemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory)
 		s.ApplicationRunner = NewApplicationRunner(storeInstance, s.ActivityManager, feishu.NewProvider(profile.FeishuAPIURL), profile)
 		s.BackupRunner = NewBackupRunner(storeInstance, s.dbFactory, s.s3Client, &profile)
 		s.RollbackRunner = NewRollbackRunner(storeInstance, s.dbFactory)
@@ -332,7 +334,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Anomaly scanner
-		s.AnomalyScanner = NewAnomalyScanner(storeInstance, s.dbFactory, s.licenseService)
+		s.AnomalyScanner = anomaly.NewScanner(storeInstance, s.dbFactory, s.licenseService)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)

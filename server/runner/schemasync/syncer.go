@@ -1,4 +1,5 @@
-package server
+// Package schemasync is a runner that synchronize database schemas.
+package schemasync
 
 import (
 	"context"
@@ -16,6 +17,8 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -23,26 +26,22 @@ const (
 	schemaSyncInterval = 30 * time.Minute
 )
 
-var (
-	instanceDatabaseSyncChan = make(chan *api.Instance, 100)
-)
-
-// NewSchemaSyncer creates a schema syncer.
-func NewSchemaSyncer(store *store.Store, dbFactory *dbfactory.DBFactory) *SchemaSyncer {
-	return &SchemaSyncer{
+// NewSyncer creates a schema syncer.
+func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory) *Syncer {
+	return &Syncer{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
-// SchemaSyncer is the schema syncer.
-type SchemaSyncer struct {
+// Syncer is the schema syncer.
+type Syncer struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
 // Run will run the schema syncer once.
-func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(schemaSyncInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -53,7 +52,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 			s.syncAllInstances(ctx)
 			// Sync all databases for all instances.
 			s.syncAllDatabases(ctx, nil /* instanceID */)
-		case instance := <-instanceDatabaseSyncChan:
+		case instance := <-state.InstanceDatabaseSyncChan:
 			// Sync all databases for instance.
 			s.syncAllDatabases(ctx, &instance.ID)
 		case <-ctx.Done(): // if cancel() execute
@@ -62,7 +61,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *SchemaSyncer) syncAllInstances(ctx context.Context) {
+func (s *Syncer) syncAllInstances(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -89,7 +88,7 @@ func (s *SchemaSyncer) syncAllInstances(ctx context.Context) {
 		go func(instance *api.Instance) {
 			defer instanceWG.Done()
 			log.Debug("Sync instance schema", zap.String("instance", instance.Name))
-			if _, err := s.syncInstance(ctx, instance); err != nil {
+			if _, err := s.SyncInstance(ctx, instance); err != nil {
 				log.Debug("Failed to sync instance",
 					zap.Int("id", instance.ID),
 					zap.String("name", instance.Name),
@@ -101,7 +100,7 @@ func (s *SchemaSyncer) syncAllInstances(ctx context.Context) {
 	instanceWG.Wait()
 }
 
-func (s *SchemaSyncer) syncAllDatabases(ctx context.Context, instanceID *int) {
+func (s *Syncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -145,7 +144,7 @@ func (s *SchemaSyncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 					zap.Int64("lastSuccessfulSyncTs", database.LastSuccessfulSyncTs),
 				)
 				// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-				if err := s.syncDatabaseSchema(ctx, instance, database.Name); err != nil {
+				if err := s.SyncDatabaseSchema(ctx, instance, database.Name); err != nil {
 					log.Debug("Failed to sync database schema",
 						zap.Int("instanceID", instance.ID),
 						zap.String("instanceName", instance.Name),
@@ -158,7 +157,8 @@ func (s *SchemaSyncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 	instanceWG.Wait()
 }
 
-func (s *SchemaSyncer) syncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
+// SyncInstance syncs the schema for all databases in an instance.
+func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (s *SchemaSyncer) syncInstance(ctx context.Context, instance *api.Instance)
 }
 
 // syncInstanceSchema syncs the instance and all database metadata first without diving into the deep structure of each database.
-func (s *SchemaSyncer) syncInstanceSchema(ctx context.Context, instance *api.Instance, driver db.Driver) ([]string, error) {
+func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance, driver db.Driver) ([]string, error) {
 	// Sync instance metadata.
 	instanceMeta, err := driver.SyncInstance(ctx)
 	if err != nil {
@@ -315,7 +315,8 @@ func (s *SchemaSyncer) syncInstanceSchema(ctx context.Context, instance *api.Ins
 	return databaseList, nil
 }
 
-func (s *SchemaSyncer) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
+// SyncDatabaseSchema will sync the schema for a database.
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return err
@@ -339,7 +340,7 @@ func (s *SchemaSyncer) syncDatabaseSchema(ctx context.Context, instance *api.Ins
 
 	// When there are too many databases, this might have performance issue and will
 	// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
-	schemaVersion, err := getLatestSchemaVersion(ctx, driver, schema.Name)
+	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, schema.Name)
 	if err != nil {
 		return err
 	}
