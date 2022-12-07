@@ -233,7 +233,7 @@ func (*SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(ctx context.Context,
 	childCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func(childCtx context.Context) {
-		ticker := time.NewTicker(1 * time.Millisecond)
+		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		createdTs := time.Now().Unix()
 		for {
