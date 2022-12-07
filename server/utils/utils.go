@@ -206,7 +206,7 @@ func GetActiveStage(stageList []*api.Stage) *api.Stage {
 }
 
 // SetDatabaseLabels sets the labels for a database.
-func SetDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
+func SetDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON string, database *api.Database, updaterID int, validateOnly bool) error {
 	if labelsJSON == "" {
 		return nil
 	}
@@ -228,29 +228,12 @@ func SetDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON strin
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
 	}
 
-	if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
+	if err := validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 	}
 
-	// Validate labels can match database name template on the project if the
-	// template is not a wildcard.
-	if project.DBNameTemplate != "" {
-		tokens := make(map[string]string)
-		for _, label := range labels {
-			tokens[label.Key] = tokens[label.Value]
-		}
-		baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, project.DBNameTemplate, labelsJSON)
-		if err != nil {
-			return errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", database.Name, project.DBNameTemplate, labelsJSON)
-		}
-		if _, err := FormatDatabaseName(baseDatabaseName, project.DBNameTemplate, tokens); err != nil {
-			err := errors.Errorf("database labels don't match with database name template %q", project.DBNameTemplate)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-	}
-
 	if !validateOnly {
-		if _, err = store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
+		if _, err := store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
 		}
 	}
