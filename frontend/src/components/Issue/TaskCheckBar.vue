@@ -30,7 +30,7 @@
       :title="$t('task.check-result.title', { name: task.name })"
       @close="dismissDialog"
     >
-      <div class="space-y-4 w-208">
+      <div class="space-y-4 md:min-w-[40rem] max-w-[52rem]">
         <div>
           <TaskCheckBadgeBar
             :task-check-run-list="task.taskCheckRunList"
