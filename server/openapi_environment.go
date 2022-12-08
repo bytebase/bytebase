@@ -76,6 +76,9 @@ func (s *Server) createEnvironmentByOpenAPI(c echo.Context) error {
 	if err := s.validateEnvironmentPolicy(api.PolicyTypeEnvironmentTier, upsert.EnvironmentTierPolicy); err != nil {
 		return err
 	}
+	if err := s.validateEnvironmentPolicy(api.PolicyTypeSQLReview, upsert.SQLReviewPolicy); err != nil {
+		return err
+	}
 
 	creatorID := c.Get(getPrincipalIDContextKey()).(int)
 
@@ -84,6 +87,7 @@ func (s *Server) createEnvironmentByOpenAPI(c echo.Context) error {
 		EnvironmentTierPolicy:  upsert.EnvironmentTierPolicy,
 		PipelineApprovalPolicy: upsert.PipelineApprovalPolicy,
 		BackupPlanPolicy:       upsert.BackupPlanPolicy,
+		SQLReviewPolicy:        upsert.SQLReviewPolicy,
 		Name:                   *upsert.Name,
 		Order:                  upsert.Order,
 	})
@@ -148,6 +152,9 @@ func (s *Server) updateEnvironmentByOpenAPI(c echo.Context) error {
 	if err := s.validateEnvironmentPolicy(api.PolicyTypeEnvironmentTier, upsert.EnvironmentTierPolicy); err != nil {
 		return err
 	}
+	if err := s.validateEnvironmentPolicy(api.PolicyTypeSQLReview, upsert.SQLReviewPolicy); err != nil {
+		return err
+	}
 
 	env, err := s.updateEnvironment(ctx, &store.EnvironmentPatch{
 		ID:                     id,
@@ -155,6 +162,7 @@ func (s *Server) updateEnvironmentByOpenAPI(c echo.Context) error {
 		EnvironmentTierPolicy:  upsert.EnvironmentTierPolicy,
 		PipelineApprovalPolicy: upsert.PipelineApprovalPolicy,
 		BackupPlanPolicy:       upsert.BackupPlanPolicy,
+		SQLReviewPolicy:        upsert.SQLReviewPolicy,
 		Name:                   upsert.Name,
 		Order:                  upsert.Order,
 	})
@@ -213,6 +221,14 @@ func (s *Server) convertToOpenAPIEnvironment(ctx context.Context, env *api.Envir
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the environment tier policy for environment %d", env.ID)).SetInternal(err)
 	}
 
+	environmentResourceType := api.PolicyResourceTypeEnvironment
+	sqlReviewPolicy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &env.ID})
+	if err != nil {
+		if e, ok := err.(*common.Error); ok && e.Code != common.NotFound {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the SQL review policy for environment %d", env.ID)).SetInternal(err)
+		}
+	}
+
 	return &openAPIV1.Environment{
 		ID:                     env.ID,
 		Name:                   env.Name,
@@ -220,6 +236,7 @@ func (s *Server) convertToOpenAPIEnvironment(ctx context.Context, env *api.Envir
 		BackupPlanPolicy:       backupPolicy,
 		PipelineApprovalPolicy: pipelineApprovalPolicy,
 		EnvironmentTierPolicy:  environmentTierPolicy,
+		SQLReviewPolicy:        sqlReviewPolicy,
 	}, nil
 }
 

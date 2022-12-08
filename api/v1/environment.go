@@ -1,6 +1,9 @@
 package v1
 
-import "github.com/bytebase/bytebase/api"
+import (
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/advisor"
+)
 
 // Environment is the API message for an environment.
 type Environment struct {
@@ -10,6 +13,7 @@ type Environment struct {
 	EnvironmentTierPolicy  *api.EnvironmentTierPolicy  `json:"environmentTierPolicy"`
 	PipelineApprovalPolicy *api.PipelineApprovalPolicy `json:"pipelineApprovalPolicy"`
 	BackupPlanPolicy       *api.BackupPlanPolicy       `json:"backupPlanPolicy"`
+	SQLReviewPolicy        *advisor.SQLReviewPolicy    `json:"sqlReviewPolicy"`
 
 	// Domain specific fields
 	Name  string `json:"name"`
@@ -22,6 +26,7 @@ type EnvironmentUpsert struct {
 	EnvironmentTierPolicy  *api.EnvironmentTierPolicy  `json:"environmentTierPolicy"`
 	PipelineApprovalPolicy *api.PipelineApprovalPolicy `json:"pipelineApprovalPolicy"`
 	BackupPlanPolicy       *api.BackupPlanPolicy       `json:"backupPlanPolicy"`
+	SQLReviewPolicy        *advisor.SQLReviewPolicy    `json:"sqlReviewPolicy"`
 
 	// Domain specific fields
 	Name  *string `json:"name"`

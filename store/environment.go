@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 // EnvironmentCreate is the API message for creating an environment.
@@ -24,6 +25,7 @@ type EnvironmentCreate struct {
 	EnvironmentTierPolicy  *api.EnvironmentTierPolicy
 	PipelineApprovalPolicy *api.PipelineApprovalPolicy
 	BackupPlanPolicy       *api.BackupPlanPolicy
+	SQLReviewPolicy        *advisor.SQLReviewPolicy
 
 	// Domain specific fields
 	Name  string
@@ -43,6 +45,7 @@ type EnvironmentPatch struct {
 	EnvironmentTierPolicy  *api.EnvironmentTierPolicy
 	PipelineApprovalPolicy *api.PipelineApprovalPolicy
 	BackupPlanPolicy       *api.BackupPlanPolicy
+	SQLReviewPolicy        *advisor.SQLReviewPolicy
 
 	// Domain specific fields
 	Name  *string
@@ -203,6 +206,11 @@ func (s *Store) createEnvironmentRaw(ctx context.Context, create *EnvironmentCre
 			return nil, err
 		}
 	}
+	if p := create.SQLReviewPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeSQLReview, p); err != nil {
+			return nil, err
+		}
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
@@ -324,6 +332,11 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *EnvironmentPatch
 	}
 	if p := patch.EnvironmentTierPolicy; p != nil {
 		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeEnvironmentTier, p); err != nil {
+			return nil, err
+		}
+	}
+	if p := patch.SQLReviewPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeSQLReview, p); err != nil {
 			return nil, err
 		}
 	}
