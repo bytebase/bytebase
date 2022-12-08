@@ -37,10 +37,12 @@ type diffNode struct {
 	dropColumnList             []ast.Node
 	dropTableList              []ast.Node
 	dropSequenceList           []ast.Node
+	dropExtensionList          []ast.Node
 	dropSchemaList             []ast.Node
 
 	// Create nodes
 	createSchemaList               []ast.Node
+	createExtensionList            []ast.Node
 	createSequenceList             []ast.Node
 	alterSequenceExceptOwnedByList []ast.Node
 	createTableList                []ast.Node
@@ -58,6 +60,7 @@ type tableMap map[string]*tableInfo
 type constraintMap map[string]*constraintInfo
 type indexMap map[string]*indexInfo
 type sequenceMap map[string]*sequenceInfo
+type extensionMap map[string]*extensionInfo
 
 type schemaInfo struct {
 	id           int
@@ -66,6 +69,7 @@ type schemaInfo struct {
 	tableMap     tableMap
 	indexMap     indexMap
 	sequenceMap  sequenceMap
+	extensionMap extensionMap
 }
 
 func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
@@ -76,6 +80,7 @@ func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 		tableMap:     make(tableMap),
 		indexMap:     make(indexMap),
 		sequenceMap:  make(sequenceMap),
+		extensionMap: make(extensionMap),
 	}
 }
 
@@ -152,6 +157,20 @@ func newSequenceOwnedByInfo(id int, ownedBy *ast.AlterSequenceStmt) *sequenceOwn
 	}
 }
 
+type extensionInfo struct {
+	id              int
+	existsInNew     bool
+	createExtension *ast.CreateExtensionStmt
+}
+
+func newExtensionInfo(id int, createExtension *ast.CreateExtensionStmt) *extensionInfo {
+	return &extensionInfo{
+		id:              id,
+		existsInNew:     false,
+		createExtension: createExtension,
+	}
+}
+
 func (m schemaMap) addTable(id int, table *ast.CreateTableStmt) error {
 	schema, exists := m[table.Name.Schema]
 	if !exists {
@@ -196,6 +215,23 @@ func (m schemaMap) getConstraint(schemaName string, tableName string, constraint
 		return nil
 	}
 	return table.constraintMap[constraintName]
+}
+
+func (m schemaMap) addExtension(id int, extension *ast.CreateExtensionStmt) error {
+	schema, exists := m[extension.Schema]
+	if !exists {
+		return errors.Errorf("failed to add extension: schema %s not found", extension.Schema)
+	}
+	schema.extensionMap[extension.Name] = newExtensionInfo(id, extension)
+	return nil
+}
+
+func (m schemaMap) getExtension(schemaName string, extensionName string) *extensionInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.extensionMap[extensionName]
 }
 
 func (m schemaMap) addIndex(id int, index *ast.CreateIndexStmt) error {
@@ -373,6 +409,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := oldSchemaMap.addSequenceOwnedBy(i, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CreateExtensionStmt:
+			if err := oldSchemaMap.addExtension(i, stmt); err != nil {
+				return "", err
+			}
 			// TODO(rebelice): add default back here
 		}
 	}
@@ -465,6 +505,18 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			}
 			oldSequence.ownedByInfo.existsInNew = true
 			if err := diff.modifySequenceOwnedBy(oldSequence.ownedByInfo.ownedBy, stmt); err != nil {
+				return "", err
+			}
+		case *ast.CreateExtensionStmt:
+			oldExtension := oldSchemaMap.getExtension(stmt.Schema, stmt.Name)
+			// Add the extension.
+			if oldExtension == nil {
+				diff.createExtensionList = append(diff.createExtensionList, stmt)
+				continue
+			}
+			oldExtension.existsInNew = true
+			// Modify the extension.
+			if err := diff.modifyExtension(oldExtension.createExtension, stmt); err != nil {
 				return "", err
 			}
 		}
@@ -561,6 +613,11 @@ func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 	// Drop the remaining old sequence.
 	if dropSequenceStmt := dropSequence(oldSchemaMap); dropSequenceStmt != nil {
 		diff.dropSequenceList = append(diff.dropSequenceList, dropSequenceStmt)
+	}
+
+	// Drop the remaining old extension.
+	if dropExtensionStmt := dropExtension(oldSchemaMap); dropExtensionStmt != nil {
+		diff.dropExtensionList = append(diff.dropExtensionList, dropExtensionStmt)
 	}
 
 	return nil
@@ -763,6 +820,17 @@ func (diff *diffNode) modifyColumn(tableName *ast.TableDef, oldColumn *ast.Colum
 	return nil
 }
 
+func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, newExtension *ast.CreateExtensionStmt) error {
+	// TODO(rebelice): not use Text(), it only works for pg_dump.
+	if oldExtension.Text() != newExtension.Text() {
+		diff.dropExtensionList = append(diff.dropExtensionList, &ast.DropExtensionStmt{
+			NameList: []string{oldExtension.Name},
+		})
+		diff.createExtensionList = append(diff.createExtensionList, newExtension)
+	}
+	return nil
+}
+
 func (diff *diffNode) modifyIndex(oldIndex *ast.CreateIndexStmt, newIndex *ast.CreateIndexStmt) error {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldIndex.Text() != newIndex.Text() {
@@ -940,6 +1008,15 @@ func equivalentType(typeA ast.DataType, typeB ast.DataType) (bool, error) {
 	return typeStringA == typeStringB, nil
 }
 
+func printStmtSliceByText(buf io.Writer, nodeList []ast.Node) error {
+	for _, node := range nodeList {
+		if err := writeStringWithNewLine(buf, node.Text()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func printStmtSlice(buf io.Writer, nodeList []ast.Node) error {
 	for _, node := range nodeList {
 		sql, err := parser.Deparse(parser.Postgres, parser.DeparseContext{}, node)
@@ -982,12 +1059,18 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.dropSequenceList); err != nil {
 		return "", err
 	}
+	if err := printStmtSlice(&buf, diff.dropExtensionList); err != nil {
+		return "", err
+	}
 	if err := printStmtSlice(&buf, diff.dropSchemaList); err != nil {
 		return "", err
 	}
 
 	// create
 	if err := printStmtSlice(&buf, diff.createSchemaList); err != nil {
+		return "", err
+	}
+	if err := printStmtSliceByText(&buf, diff.createExtensionList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.createSequenceList); err != nil {
@@ -1094,6 +1177,33 @@ func dropSchema(m schemaMap) *ast.DropSchemaStmt {
 	}
 	return &ast.DropSchemaStmt{
 		SchemaList: schemaNameList,
+	}
+}
+
+func dropExtension(m schemaMap) *ast.DropExtensionStmt {
+	var extensionList []*extensionInfo
+	for _, schema := range m {
+		for _, extension := range schema.extensionMap {
+			if extension.existsInNew {
+				// no need to drop
+				continue
+			}
+			extensionList = append(extensionList, extension)
+		}
+	}
+	if len(extensionList) == 0 {
+		return nil
+	}
+	sort.Slice(extensionList, func(i, j int) bool {
+		return extensionList[i].id < extensionList[j].id
+	})
+
+	var extensionNameList []string
+	for _, extension := range extensionList {
+		extensionNameList = append(extensionNameList, extension.createExtension.Name)
+	}
+	return &ast.DropExtensionStmt{
+		NameList: extensionNameList,
 	}
 }
 
