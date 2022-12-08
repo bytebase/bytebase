@@ -200,14 +200,6 @@ working on the code:
 
    Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
 
-1. (_Optional_) Install [pre-commit](https://pre-commit.com/index.html#install).
-
-   ```bash
-   cd bytebase
-   pre-commit install
-   pre-commit install --hook-type commit-msg
-   ```
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase&type=Date)](https://star-history.com/#bytebase/bytebase&Date)
