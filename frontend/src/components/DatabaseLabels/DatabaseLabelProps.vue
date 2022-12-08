@@ -5,7 +5,6 @@
       <DatabaseLabelPropItem
         :label-key="label"
         :value="getLabelValue(label)"
-        :required="isRequired(label)"
         :database="database"
         :allow-edit="allowEdit"
         @update:value="(value) => onUpdateValue(label, value)"
@@ -16,14 +15,14 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { computed, withDefaults, watch, reactive } from "vue";
+import { withDefaults, watch, reactive } from "vue";
 import type {
   Database,
   DatabaseLabel,
   LabelKeyType,
   LabelValueType,
 } from "@/types";
-import { parseLabelListInTemplate, PRESET_LABEL_KEYS } from "@/utils";
+import { PRESET_LABEL_KEYS } from "@/utils";
 import DatabaseLabelPropItem from "./DatabaseLabelPropItem.vue";
 
 const props = withDefaults(
@@ -49,18 +48,6 @@ watch(
   () => props.labelList,
   (list) => (state.labelList = cloneDeep(list))
 );
-
-const requiredLabelList = computed((): string[] => {
-  const { project } = props.database;
-  if (project.tenantMode !== "TENANT") return [];
-  if (!project.dbNameTemplate) return [];
-
-  return parseLabelListInTemplate(project.dbNameTemplate);
-});
-
-const isRequired = (key: LabelKeyType) => {
-  return requiredLabelList.value.includes(key);
-};
 
 const getLabelValue = (key: LabelKeyType): LabelValueType | undefined => {
   return state.labelList.find((label) => label.key === key)?.value || "";

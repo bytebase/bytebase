@@ -4,7 +4,6 @@
       {{ value || $t("label.empty-label-value") }}
 
       <heroicons-outline:pencil
-        v-if="editable"
         class="w-5 h-5 p-0.5 rounded cursor-pointer hover:bg-control-bg-hover"
         @click="startEditing"
       />
@@ -45,7 +44,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Database, LabelKeyType, LabelValueType } from "../../types";
 import { LABEL_VALUE_EMPTY, MAX_LABEL_VALUE_LENGTH } from "../../utils";
@@ -59,7 +58,6 @@ type LocalState = {
 
 const props = defineProps<{
   labelKey: LabelKeyType;
-  required: boolean;
   value: LabelValueType | undefined;
   database: Database;
   allowEdit: boolean;
@@ -84,12 +82,6 @@ watch(
   () => props.value,
   (value) => (state.value = value)
 );
-
-const editable = computed((): boolean => {
-  if (!props.allowEdit) return false;
-
-  return !props.required;
-});
 
 const startEditing = () => {
   state.value = props.value;
