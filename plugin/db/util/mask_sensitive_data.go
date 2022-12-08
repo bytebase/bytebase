@@ -1,6 +1,8 @@
 package util
 
 import (
+	"strings"
+
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 
@@ -605,23 +607,25 @@ func mergeJoinField(node *tidbast.Join, leftField []fieldInfo, rightField []fiel
 	rightFieldMap := make(map[string]fieldInfo)
 	var result []fieldInfo
 	for _, field := range leftField {
-		leftFieldMap[field.name] = field
+		// Column name in MySQL is NOT case-sensitive.
+		leftFieldMap[strings.ToLower(field.name)] = field
 	}
 	for _, field := range rightField {
-		rightFieldMap[field.name] = field
+		// Column name in MySQL is NOT case-sensitive.
+		rightFieldMap[strings.ToLower(field.name)] = field
 	}
 	if node.NaturalJoin {
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			// Merge the sensitive attribute for the same column name field.
-			if rField, exists := rightFieldMap[field.name]; exists && rField.sensitive {
+			if rField, exists := rightFieldMap[strings.ToLower(field.name)]; exists && rField.sensitive {
 				field.sensitive = true
 			}
 			result = append(result, field)
 		}
 
 		for _, field := range rightField {
-			if _, exists := leftFieldMap[field.name]; !exists {
+			if _, exists := leftFieldMap[strings.ToLower(field.name)]; !exists {
 				result = append(result, field)
 			}
 		}
@@ -630,12 +634,13 @@ func mergeJoinField(node *tidbast.Join, leftField []fieldInfo, rightField []fiel
 			// ... JOIN ... USING (...) will merge the column in USING.
 			usingMap := make(map[string]bool)
 			for _, column := range node.Using {
-				usingMap[column.Name.O] = true
+				// Column name in MySQL is NOT case-sensitive.
+				usingMap[column.Name.L] = true
 			}
 
 			for _, field := range leftField {
-				_, existsInUsingMap := usingMap[field.name]
-				rField, existsInRightField := rightFieldMap[field.name]
+				_, existsInUsingMap := usingMap[strings.ToLower(field.name)]
+				rField, existsInRightField := rightFieldMap[strings.ToLower(field.name)]
 				// Merge the sensitive attribute for the column name field in USING.
 				if existsInUsingMap && existsInRightField && rField.sensitive {
 					field.sensitive = true
@@ -644,8 +649,8 @@ func mergeJoinField(node *tidbast.Join, leftField []fieldInfo, rightField []fiel
 			}
 
 			for _, field := range rightField {
-				_, existsInUsingMap := usingMap[field.name]
-				_, existsInLeftField := leftFieldMap[field.name]
+				_, existsInUsingMap := usingMap[strings.ToLower(field.name)]
+				_, existsInLeftField := leftFieldMap[strings.ToLower(field.name)]
 				if existsInUsingMap && existsInLeftField {
 					continue
 				}

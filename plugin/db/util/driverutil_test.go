@@ -279,6 +279,29 @@ func TestExtractSensitiveField(t *testing.T) {
 		fieldList  []db.SensitiveField
 	}{
 		{
+			// Test for case-insensitive column names.
+			statement:  `SELECT * FROM (select * from (select a from t) t1 join t as t2 using(A)) result LIMIT 10000;`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []db.SensitiveField{
+				{
+					Name:      "a",
+					Sensitive: true,
+				},
+				{
+					Name:      "b",
+					Sensitive: false,
+				},
+				{
+					Name:      "c",
+					Sensitive: false,
+				},
+				{
+					Name:      "d",
+					Sensitive: true,
+				},
+			},
+		},
+		{
 			// Test for explicit database name.
 			statement:  `select concat(db.t.a, db.t.b, db.t.c) from t`,
 			schemaInfo: defaultDatabaseSchema,
