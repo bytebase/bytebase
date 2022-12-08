@@ -13,7 +13,8 @@
   >
     <div class="body">
       <Prefix :tab="tab" :index="index" />
-      <Label :tab="tab" :index="index" />
+      <Label v-if="tab.mode === TabMode.ReadOnly" :tab="tab" :index="index" />
+      <AdminLabel v-else :tab="tab" :index="index" />
       <Suffix :tab="tab" :index="index" @close="$emit('close', tab, index)" />
     </div>
   </div>
@@ -30,6 +31,7 @@ import { useTabStore } from "@/store";
 import Prefix from "./Prefix.vue";
 import Label from "./Label.vue";
 import Suffix from "./Suffix.vue";
+import AdminLabel from "./AdminLabel.vue";
 
 type LocalState = {
   hovering: boolean;
