@@ -144,6 +144,7 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 	for _, name := range tableNames {
 		var tbl db.Table
 		tbl.Name = name
+		tbl.ShortName = name
 		tbl.Type = "BASE TABLE"
 
 		if err := func() error {
