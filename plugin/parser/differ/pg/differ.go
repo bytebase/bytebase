@@ -1094,7 +1094,7 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.setDefaultList); err != nil {
 		return "", err
 	}
-	if err := printStmtSlice(&buf, diff.createIndexList); err != nil {
+	if err := printStmtSliceByText(&buf, diff.createIndexList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.createConstraintExceptFkList); err != nil {
