@@ -246,7 +246,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	s.stateCfg = &state.State{
-		InstanceDatabaseSyncChan: make(chan *api.Instance, 100),
+		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
+		InstanceOutstandingConnections: make(map[int]int),
 	}
 	storeInstance := store.New(storeDB)
 	s.store = storeInstance
