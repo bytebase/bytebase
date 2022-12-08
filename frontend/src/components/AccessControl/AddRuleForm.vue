@@ -85,12 +85,8 @@
 import { computed, PropType, reactive } from "vue";
 
 import type { Database, DatabaseId, Policy } from "@/types";
-import {
-  useDatabaseStore,
-  useEnvironmentStore,
-  useInstanceStore,
-} from "@/store";
-import { flatten } from "lodash-es";
+import { DEFAULT_PROJECT_ID } from "@/types";
+import { useDatabaseStore } from "@/store";
 
 type LocalState = {
   isLoading: boolean;
@@ -118,36 +114,15 @@ const state = reactive<LocalState>({
   selectedDatabaseIdList: new Set(),
 });
 
-const environmentStore = useEnvironmentStore();
-const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 
 const prepareList = async () => {
   state.isLoading = true;
 
-  // TODO: the server-side can't return all database list while calling
-  // [GET] /api/database
-  // So we need to call /api/database?instance={instance_id}
-  // for each instance in all protected environments
-  // respectively and combine the results.
-
-  const environmentList = environmentStore
-    .getEnvironmentList()
-    .filter((env) => env.tier === "PROTECTED");
-
-  await instanceStore.fetchInstanceList();
-  const instanceList = environmentList.flatMap((env) =>
-    instanceStore.getInstanceListByEnvironmentId(env.id)
-  );
-
-  const allDatabaseList = await Promise.all(
-    instanceList.map((instance) => {
-      return databaseStore.fetchDatabaseListByInstanceId(instance.id);
-    })
-  );
-  state.databaseList = flatten(allDatabaseList).filter(
-    (db) => db.instance.environment.tier === "PROTECTED"
-  );
+  const allDatabaseList = await databaseStore.fetchDatabaseList();
+  state.databaseList = allDatabaseList
+    .filter((db) => db.instance.environment.tier === "PROTECTED")
+    .filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
   state.isLoading = false;
 };
 
