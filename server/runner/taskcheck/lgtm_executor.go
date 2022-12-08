@@ -24,22 +24,7 @@ type LGTMExecutor struct {
 }
 
 // Run will run the task check LGTM executor once.
-func (e *LGTMExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
-	if err != nil {
-		return nil, common.Wrap(err, common.Internal)
-	}
-	if task == nil {
-		return []api.TaskCheckResult{
-			{
-				Status:    api.TaskCheckStatusError,
-				Namespace: api.BBNamespace,
-				Code:      common.Internal.Int(),
-				Title:     fmt.Sprintf("Failed to find task %d", taskCheckRun.TaskID),
-			},
-		}, nil
-	}
-
+func (e *LGTMExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
 	issue, err := e.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)

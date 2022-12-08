@@ -170,12 +170,22 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
+					if s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID] >= state.InstanceMaximumConnectionNumber {
+						continue
+					}
+					s.stateCfg.Lock()
+					s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]++
+					s.stateCfg.Unlock()
+
 					s.stateCfg.RunningTasks.Store(task.ID, true)
 					go func(ctx context.Context, task *api.Task, executor Executor) {
 						defer func() {
 							s.stateCfg.RunningTasks.Delete(task.ID)
 							s.stateCfg.RunningTasksCancel.Delete(task.ID)
 							s.stateCfg.TaskProgress.Delete(task.ID)
+							s.stateCfg.Lock()
+							s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]--
+							s.stateCfg.Unlock()
 						}()
 
 						executorCtx, cancel := context.WithCancel(ctx)

@@ -87,12 +87,48 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if _, ok := s.stateCfg.RunningTaskChecks.Load(taskCheckRun.ID); ok {
 						continue
 					}
+
+					task, err := s.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+					if err != nil {
+						log.Error("Failed to get task for task check run",
+							zap.Int("task_check_run_id", taskCheckRun.ID),
+							zap.Int("task_id", taskCheckRun.TaskID),
+							zap.String("type", string(taskCheckRun.Type)),
+							zap.Error(err),
+						)
+						taskCheckRunStatusPatch := &api.TaskCheckRunStatusPatch{
+							ID:        &taskCheckRun.ID,
+							UpdaterID: api.SystemBotID,
+							Status:    api.TaskCheckRunFailed,
+							Code:      common.Internal,
+						}
+						if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
+							log.Error("Failed to mark task check run as FAILED",
+								zap.Int("id", taskCheckRun.ID),
+								zap.Int("task_id", taskCheckRun.TaskID),
+								zap.String("type", string(taskCheckRun.Type)),
+								zap.Error(err),
+							)
+						}
+						continue
+					}
+
+					if s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID] >= state.InstanceMaximumConnectionNumber {
+						continue
+					}
+					s.stateCfg.Lock()
+					s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]++
+					s.stateCfg.Unlock()
+
 					s.stateCfg.RunningTaskChecks.Store(taskCheckRun.ID, true)
-					go func(taskCheckRun *api.TaskCheckRun) {
+					go func(taskCheckRun *api.TaskCheckRun, task *api.Task) {
 						defer func() {
 							s.stateCfg.RunningTaskChecks.Delete(taskCheckRun.ID)
+							s.stateCfg.Lock()
+							s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]--
+							s.stateCfg.Unlock()
 						}()
-						checkResultList, err := executor.Run(ctx, taskCheckRun)
+						checkResultList, err := executor.Run(ctx, taskCheckRun, task)
 
 						if err == nil {
 							bytes, err := json.Marshal(api.TaskCheckRunResultPayload{
@@ -115,8 +151,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      common.Ok,
 								Result:    string(bytes),
 							}
-							_, err = s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
-							if err != nil {
+							if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
 								log.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
@@ -151,8 +186,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      common.ErrorCode(err),
 								Result:    string(bytes),
 							}
-							_, err = s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
-							if err != nil {
+							if _, err := s.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch); err != nil {
 								log.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
@@ -161,7 +195,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								)
 							}
 						}
-					}(taskCheckRun)
+					}(taskCheckRun, task)
 				}
 			}()
 		case <-ctx.Done(): // if cancel() execute
