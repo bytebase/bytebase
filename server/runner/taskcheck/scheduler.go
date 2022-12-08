@@ -114,11 +114,11 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					s.stateCfg.Lock()
-					if s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID] >= state.InstanceMaximumConnectionNumber {
+					if s.stateCfg.InstanceOutstandingConnections[task.InstanceID] >= state.InstanceMaximumConnectionNumber {
 						s.stateCfg.Unlock()
 						continue
 					}
-					s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]++
+					s.stateCfg.InstanceOutstandingConnections[task.InstanceID]++
 					s.stateCfg.Unlock()
 
 					s.stateCfg.RunningTaskChecks.Store(taskCheckRun.ID, true)
@@ -126,7 +126,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						defer func() {
 							s.stateCfg.RunningTaskChecks.Delete(taskCheckRun.ID)
 							s.stateCfg.Lock()
-							s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]--
+							s.stateCfg.InstanceOutstandingConnections[task.InstanceID]--
 							s.stateCfg.Unlock()
 						}()
 						checkResultList, err := executor.Run(ctx, taskCheckRun, task)

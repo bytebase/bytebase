@@ -171,11 +171,11 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					s.stateCfg.Lock()
-					if s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID] >= state.InstanceMaximumConnectionNumber {
+					if s.stateCfg.InstanceOutstandingConnections[task.InstanceID] >= state.InstanceMaximumConnectionNumber {
 						s.stateCfg.Unlock()
 						continue
 					}
-					s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]++
+					s.stateCfg.InstanceOutstandingConnections[task.InstanceID]++
 					s.stateCfg.Unlock()
 
 					s.stateCfg.RunningTasks.Store(task.ID, true)
@@ -185,7 +185,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							s.stateCfg.RunningTasksCancel.Delete(task.ID)
 							s.stateCfg.TaskProgress.Delete(task.ID)
 							s.stateCfg.Lock()
-							s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]--
+							s.stateCfg.InstanceOutstandingConnections[task.InstanceID]--
 							s.stateCfg.Unlock()
 						}()
 

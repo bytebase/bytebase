@@ -26,7 +26,13 @@ type DatabaseConnectExecutor struct {
 
 // Run will run the task check database connector executor once.
 func (e *DatabaseConnectExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
-	database := task.Database
+	database, err := e.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+	if err != nil {
+		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
+	}
+	if database == nil {
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "database ID not found %v", task.DatabaseID)
+	}
 
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err == nil {
