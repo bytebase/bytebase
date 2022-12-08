@@ -71,6 +71,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.DropExtensionStmt:
+		if err := deparseDropExtension(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -1103,6 +1108,28 @@ func deparseAlterSequence(ctx parser.DeparseContext, in *ast.AlterSequenceStmt, 
 		}
 	}
 	return nil
+}
+
+func deparseDropExtension(ctx parser.DeparseContext, in *ast.DropExtensionStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("DROP EXTENSION "); err != nil {
+		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+	for i, name := range in.NameList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if err := writeSurrounding(buf, name, `"`); err != nil {
+			return err
+		}
+	}
+	return deparseDropBehavior(ctx, in.Behavior, buf)
 }
 
 func deparseDropSequence(ctx parser.DeparseContext, in *ast.DropSequenceStmt, buf *strings.Builder) error {
