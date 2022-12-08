@@ -162,7 +162,12 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err := db.db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
 		return errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
 	}
-	db.db.SetMaxOpenConns(maxConns - reservedConns)
+	maxOpenConns := maxConns - reservedConns
+	if maxOpenConns > 50 {
+		// capped to 50
+		maxOpenConns = 50
+	}
+	db.db.SetMaxOpenConns(maxOpenConns)
 
 	if err := db.setupDemoData(); err != nil {
 		return errors.Wrapf(err, "failed to setup demo data."+
