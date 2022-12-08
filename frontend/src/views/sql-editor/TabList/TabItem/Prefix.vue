@@ -9,13 +9,16 @@
       class="w-4 h-4"
     />
   </template>
+  <template v-if="tab.mode === TabMode.Admin">
+    <heroicons-outline:wrench class="w-4 h-4" />
+  </template>
 </template>
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 
 import type { TabInfo } from "@/types";
-import { unknown, UNKNOWN_ID } from "@/types";
+import { TabMode, unknown, UNKNOWN_ID } from "@/types";
 import { useSheetStore } from "@/store";
 
 const props = defineProps({
