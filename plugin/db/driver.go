@@ -97,9 +97,11 @@ type Column struct {
 // Table is the database table.
 type Table struct {
 	// Name is a concatination of schema and short name for legacy purpose.
-	Name      string
+	Name string
+	// ShortName is the short table name.
 	ShortName string
-	Schema    string
+	// Schema is the schema name for a table. It should be supported only for Postgres and Snowflake.
+	Schema string
 	// CreatedTs isn't supported for ClickHouse, SQLite.
 	CreatedTs int64
 	// UpdatedTs isn't supported for SQLite.
