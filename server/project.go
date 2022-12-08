@@ -23,7 +23,7 @@ import (
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	"github.com/bytebase/bytebase/store"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
 const (
@@ -719,7 +719,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				ClientSecret: vcs.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
@@ -745,7 +745,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					ClientSecret: vcs.Secret,
 					AccessToken:  repo.AccessToken,
 					RefreshToken: repo.RefreshToken,
-					Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+					Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 				},
 				vcs.InstanceURL,
 				repo.ExternalID,
@@ -762,7 +762,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					ClientSecret: vcs.Secret,
 					AccessToken:  repo.AccessToken,
 					RefreshToken: repo.RefreshToken,
-					Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+					Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 				},
 				vcs.InstanceURL,
 				repo.ExternalID,
@@ -779,7 +779,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					ClientSecret: vcs.Secret,
 					AccessToken:  repo.AccessToken,
 					RefreshToken: repo.RefreshToken,
-					Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+					Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 				},
 				vcs.InstanceURL,
 				repo.ExternalID,
@@ -898,7 +898,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -928,7 +928,7 @@ func (s *Server) setupVCSSQLReviewCI(ctx context.Context, repository *api.Reposi
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -951,7 +951,7 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -973,7 +973,7 @@ func (s *Server) setupVCSSQLReviewBranch(ctx context.Context, repository *api.Re
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -997,7 +997,7 @@ func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *a
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -1023,7 +1023,7 @@ func (s *Server) setupVCSSQLReviewCIForGitHub(ctx context.Context, repository *a
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -1051,7 +1051,7 @@ func (s *Server) setupVCSSQLReviewCIForGitLab(ctx context.Context, repository *a
 					ClientSecret: repository.VCS.Secret,
 					AccessToken:  repository.AccessToken,
 					RefreshToken: repository.RefreshToken,
-					Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+					Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 				},
 				repository.VCS.InstanceURL,
 				repository.ExternalID,
@@ -1098,7 +1098,7 @@ func (s *Server) createOrUpdateVCSSQLReviewFileForGitLab(
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -1132,7 +1132,7 @@ func (s *Server) createOrUpdateVCSSQLReviewFileForGitLab(
 				ClientSecret: repository.VCS.Secret,
 				AccessToken:  repository.AccessToken,
 				RefreshToken: repository.RefreshToken,
-				Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+				Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 			},
 			repository.VCS.InstanceURL,
 			repository.ExternalID,
@@ -1153,7 +1153,7 @@ func (s *Server) createOrUpdateVCSSQLReviewFileForGitLab(
 			ClientSecret: repository.VCS.Secret,
 			AccessToken:  repository.AccessToken,
 			RefreshToken: repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
 		},
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
@@ -1212,20 +1212,6 @@ func (s *Server) createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, w
 		return "", errors.Wrap(err, "failed to create webhook")
 	}
 	return webhookID, nil
-}
-
-// refreshToken is a token refresher that stores the latest access token configuration to repository.
-func refreshToken(ctx context.Context, store *store.Store, webURL string) common.TokenRefresher {
-	return func(token, refreshToken string, expiresTs int64) error {
-		_, err := store.PatchRepository(ctx, &api.RepositoryPatch{
-			WebURL:       &webURL,
-			UpdaterID:    api.SystemBotID,
-			AccessToken:  &token,
-			ExpiresTs:    &expiresTs,
-			RefreshToken: &refreshToken,
-		})
-		return err
-	}
 }
 
 // refreshToken is a no-op token refresher. It should be used when the repository isn't created yet.

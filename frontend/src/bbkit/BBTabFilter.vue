@@ -23,7 +23,10 @@
       </select>
     </div>
     <div :class="responsive ? 'hidden sm:block' : 'block'">
-      <div class="flex space-x-4" aria-label="Tabs">
+      <div
+        class="flex space-x-4 w-full overflow-x-auto hide-scrollbar"
+        aria-label="Tabs"
+      >
         <button
           v-for="(item, index) in tabItemList"
           :key="index"

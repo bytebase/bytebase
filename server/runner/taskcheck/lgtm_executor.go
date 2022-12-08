@@ -11,20 +11,20 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// newTaskCheckLGTMExecutor creates a task check LGTM executor.
-func newTaskCheckLGTMExecutor(store *store.Store) taskCheckExecutor {
-	return &taskCheckLGTMExecutor{
+// NewLGTMExecutor creates a task check LGTM executor.
+func NewLGTMExecutor(store *store.Store) Executor {
+	return &LGTMExecutor{
 		store: store,
 	}
 }
 
-// taskCheckLGTMExecutor is the task check LGTM executor. It checks if "LGTM" comments are present.
-type taskCheckLGTMExecutor struct {
+// LGTMExecutor is the task check LGTM executor. It checks if "LGTM" comments are present.
+type LGTMExecutor struct {
 	store *store.Store
 }
 
 // Run will run the task check LGTM executor once.
-func (e *taskCheckLGTMExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (e *LGTMExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)

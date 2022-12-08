@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -498,7 +497,7 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		state.InstanceDatabaseSyncChan <- instance
+		s.stateCfg.InstanceDatabaseSyncChan <- instance
 	}
 
 	return instance, nil
@@ -583,7 +582,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 					zap.Error(err))
 			}
 			// Sync all databases in the instance asynchronously.
-			state.InstanceDatabaseSyncChan <- instancePatched
+			s.stateCfg.InstanceDatabaseSyncChan <- instancePatched
 		}
 	}
 

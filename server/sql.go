@@ -26,7 +26,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	"github.com/bytebase/bytebase/server/component/activity"
-	"github.com/bytebase/bytebase/server/component/state"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -132,7 +131,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				resultSet.Error = err.Error()
 			}
 			// Sync all databases in the instance asynchronously.
-			state.InstanceDatabaseSyncChan <- instance
+			s.stateCfg.InstanceDatabaseSyncChan <- instance
 		}
 		if sync.DatabaseID != nil {
 			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
@@ -563,7 +562,7 @@ func validateSQLSelectStatement(sqlStatement string) bool {
 	}
 
 	// Allow SELECT and EXPLAIN queries only.
-	whiteListRegs := []string{`^SELECT\s+?`, `^EXPLAIN\s+?`}
+	whiteListRegs := []string{`^SELECT\s+?`, `^EXPLAIN\s+?`, `^WITH\s+?`}
 	formattedStr := strings.ToUpper(strings.TrimSpace(sqlStatement))
 	for _, reg := range whiteListRegs {
 		matchResult, _ := regexp.MatchString(reg, formattedStr)

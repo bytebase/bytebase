@@ -27,10 +27,11 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory) *Syncer {
+func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State) *Syncer {
 	return &Syncer{
 		store:     store,
 		dbFactory: dbFactory,
+		stateCfg:  stateCfg,
 	}
 }
 
@@ -38,6 +39,7 @@ func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory) *Syncer {
 type Syncer struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
+	stateCfg  *state.State
 }
 
 // Run will run the schema syncer once.
@@ -52,7 +54,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 			s.syncAllInstances(ctx)
 			// Sync all databases for all instances.
 			s.syncAllDatabases(ctx, nil /* instanceID */)
-		case instance := <-state.InstanceDatabaseSyncChan:
+		case instance := <-s.stateCfg.InstanceDatabaseSyncChan:
 			// Sync all databases for instance.
 			s.syncAllDatabases(ctx, &instance.ID)
 		case <-ctx.Done(): // if cancel() execute

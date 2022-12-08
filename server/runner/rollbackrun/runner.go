@@ -21,10 +21,11 @@ import (
 )
 
 // NewRunner creates a new rollback runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State) *Runner {
 	return &Runner{
 		store:     store,
 		dbFactory: dbFactory,
+		stateCfg:  stateCfg,
 	}
 }
 
@@ -32,6 +33,7 @@ func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory) *Runner {
 type Runner struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
+	stateCfg  *state.State
 }
 
 // Run starts the rollback runner.
@@ -43,11 +45,11 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			state.RollbackGenerateMap.Range(func(key, value any) bool {
+			r.stateCfg.RollbackGenerateMap.Range(func(key, value any) bool {
 				task := value.(*api.Task)
 				log.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				r.generateRollbackSQL(ctx, task)
-				state.RollbackGenerateMap.Delete(key)
+				r.stateCfg.RollbackGenerateMap.Delete(key)
 				return true
 			})
 		case <-ctx.Done(): // if cancel() execute
@@ -71,7 +73,7 @@ func (r *Runner) retryGenerateRollbackSQL(ctx context.Context) {
 	}
 	for _, task := range taskList {
 		log.Debug("retry generate rollback SQL for task", zap.Int("ID", task.ID), zap.String("name", task.Name))
-		state.RollbackGenerateMap.Store(task.ID, task)
+		r.stateCfg.RollbackGenerateMap.Store(task.ID, task)
 	}
 }
 
