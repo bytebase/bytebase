@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package bytebase.store;
+option go_package = "generated-go/store";
+
+// SchemaMetadata defines the schema for database schema metadata.
+message SchemaMetadata {
+  // The table_metadata is the metadata for a list of tables in a database.
+  repeated TableMetadata table_metadata = 1;
+}
+
+// TableMetadata is the metadata for a database table.
+message TableMetadata {
+  // The schema_name is the schema name of a table. It is an empty string for databases without such concept such as MySQL.
+  string schema_name = 1;
+  // The name is the name of a table.
+  string name = 2;
+}
