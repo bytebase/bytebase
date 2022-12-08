@@ -1,9 +1,10 @@
 <template>
-  <label class="flex items-center text-sm gap-x-0.5">
+  <label class="flex items-center text-sm">
     <template v-if="instance.id !== UNKNOWN_ID">
       <span>{{ instance.environment.name }}</span>
       <ProtectedEnvironmentIcon
         :environment="instance.environment"
+        class="w-4 h-4 ml-0.5"
         :class="isCurrentTab && '!text-accent'"
       />
     </template>
@@ -28,6 +29,7 @@ import { computed, PropType } from "vue";
 import type { TabInfo } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { useDatabaseById, useInstanceById, useTabStore } from "@/store";
+import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
 
 const props = defineProps({
   tab: {
