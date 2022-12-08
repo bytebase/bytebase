@@ -428,7 +428,8 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 	metadata := &storepb.SchemaMetadata{}
 	for _, t := range schema.TableList {
 		metadata.TableMetadata = append(metadata.TableMetadata, &storepb.TableMetadata{
-			Name: t.Name,
+			Schema: t.Schema,
+			Name:   t.ShortName,
 		})
 	}
 	bytes, err := protojson.Marshal(metadata)
