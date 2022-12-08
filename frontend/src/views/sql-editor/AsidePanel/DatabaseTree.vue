@@ -113,6 +113,11 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
       },
     ];
   } else {
+    // Don't show any context menu actions for disabled
+    // instances/databases
+    if (dropdownContext.value.disabled) {
+      return [];
+    }
     return [
       {
         key: "open-connection",
@@ -219,12 +224,12 @@ const renderPrefix = ({ option }: { option: ConnectionAtom }) => {
       }),
       h(ProtectedEnvironmentIcon, {
         environment: instance.environment,
-        class: "w-4 h-4",
+        class: "w-4 h-4 text-inherit",
       }),
       h(
         "span",
         {
-          class: "text-gray-500 text-sm",
+          class: ["text-sm", !option.disabled && "text-gray-500"],
         },
         `(${instance.environment.name})`
       ),
@@ -319,6 +324,8 @@ const handleClickoutside = () => {
 const nodeProps = ({ option }: { option: ConnectionAtom }) => {
   return {
     onClick(e: MouseEvent) {
+      if (option.disabled) return;
+
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
@@ -417,10 +424,6 @@ watch(
 .databases-tree .n-tree-node--selected,
 .databases-tree .n-tree-node--selected:hover {
   background-color: var(--n-node-color-active) !important;
-}
-.databases-tree .n-tree-node--disabled > * {
-  pointer-events: none;
-  cursor: not-allowed !important;
 }
 </style>
 
