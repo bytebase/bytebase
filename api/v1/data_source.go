@@ -21,9 +21,6 @@ type DataSource struct {
 
 // DataSourceCreate is the API message for creating a data source.
 type DataSourceCreate struct {
-	// Related fields
-	// DatabaseID int `json:"databaseId"`
-
 	// Domain specific fields
 	Name         string             `json:"name"`
 	Type         api.DataSourceType `json:"type"`
