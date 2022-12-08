@@ -332,6 +332,10 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
 	if len(policyRawList) == 0 {
 		ret = &policyRaw{
 			CreatorID: api.SystemBotID,

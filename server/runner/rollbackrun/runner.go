@@ -134,6 +134,7 @@ func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, pa
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}
+	defer driver.Close(ctx)
 	list, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{ID: &payload.MigrationID})
 	if err != nil {
 		return "", errors.WithMessagef(err, "failed to find migration history with ID %d", payload.MigrationID)
