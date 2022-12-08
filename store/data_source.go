@@ -490,3 +490,11 @@ func (*Store) deleteDataSourceImpl(ctx context.Context, tx *Tx, delete *api.Data
 	}
 	return nil
 }
+
+// clearDataSourceImpl deletes dataSources by instance id and database id.
+func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID, databaseID int) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM data_source WHERE instance_id = $1 AND database_id = $2`, instanceID, databaseID); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}

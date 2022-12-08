@@ -383,6 +383,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		return nil, err
 	}
 	// Create issue subscribers.
+	// TODO(p0ny): create subscriber in batch.
 	for _, subscriberID := range issueCreate.SubscriberIDList {
 		subscriberCreate := &api.IssueSubscriberCreate{
 			IssueID:      issue.ID,
@@ -795,14 +796,14 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	aggregatedMatrix := make([][]*api.Database, len(deploySchedule.Deployments))
 	databaseToMigrationList := make(map[int][]*api.MigrationDetail)
 
+	dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+		ProjectID: &issueCreate.ProjectID,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+	}
 	if databaseIDCount == 0 {
 		// Deploy to all tenant databases.
-		dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-			ProjectID: &issueCreate.ProjectID,
-		})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-		}
 		migrationDetail := c.DetailList[0]
 		baseDatabaseName := migrationDetail.DatabaseName
 		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
@@ -817,13 +818,14 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	} else {
+		databaseMap := make(map[int]*api.Database)
+		for _, db := range dbList {
+			databaseMap[db.ID] = db
+		}
 		for _, d := range c.DetailList {
-			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
-			}
-			if database == nil {
-				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
+			database, ok := databaseMap[d.DatabaseID]
+			if !ok {
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID %d not found in project %d", d.DatabaseID, issueCreate.ProjectID))
 			}
 			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, "" /* baseDatabaseName */, "" /* databaseNameTemplate */, []*api.Database{database})
 			if err != nil {

@@ -10,6 +10,7 @@
     <template #trigger>
       <heroicons-solid:shield-exclamation
         class="text-control inline-block"
+        :class="tooltip ? 'pointer-events-auto' : 'pointer-events-none'"
         v-bind="$attrs"
       />
     </template>
