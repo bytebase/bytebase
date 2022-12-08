@@ -170,6 +170,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			var table db.Table
 			table.Type = "BASE TABLE"
 			table.Name = name
+			table.ShortName = name
 			table.Engine = engine
 			table.Comment = comment
 			table.RowCount = rowCount

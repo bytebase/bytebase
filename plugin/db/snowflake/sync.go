@@ -260,6 +260,8 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		}
 
 		table.Name = fmt.Sprintf("%s.%s", schemaName, tableName)
+		table.Schema = schemaName
+		table.ShortName = tableName
 		table.ColumnList = columnMap[table.Name]
 		tables = append(tables, table)
 	}
