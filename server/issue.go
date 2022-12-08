@@ -383,6 +383,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		return nil, err
 	}
 	// Create issue subscribers.
+	// TODO(p0ny): create subscriber in batch.
 	for _, subscriberID := range issueCreate.SubscriberIDList {
 		subscriberCreate := &api.IssueSubscriberCreate{
 			IssueID:      issue.ID,
@@ -824,9 +825,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		for _, d := range c.DetailList {
 			database, ok := databaseMap[d.DatabaseID]
 			if !ok {
-				if database == nil {
-					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID %d not found in project %d", d.DatabaseID, issueCreate.ProjectID))
-				}
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID %d not found in project %d", d.DatabaseID, issueCreate.ProjectID))
 			}
 			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, "" /* baseDatabaseName */, "" /* databaseNameTemplate */, []*api.Database{database})
 			if err != nil {
