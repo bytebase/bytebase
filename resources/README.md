@@ -29,3 +29,13 @@ linux-glibc2.17-x86_64 used for Linux (MD5 55a7759e25cc527416150c8181ce3f6d): ht
 macos11-arm64 used for MacOS Apple Silicon development (MD5 f1943053b12428e4c0e4ed309a636fd0): https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.28-macos11-arm64.tar.gz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/libcrypto.1.1.dylib and lib/libssl.1.1.dylib.
 
 macos11-x86_64 used for MacOS Intel Silicon development (MD5 b2d5b57edb92811040fd61c84f1c9d6f): https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.28-macos11-x86_64.tar.gz, extract bin/mysqlbinlog, bin/mysql, bin/mysqldump, lib/libcrypto.1.1.dylib and lib/libssl.1.1.dylib.
+
+### mongoutil
+
+We embed mongoutil to execute the MongoDB commands input by users. It only contains the mongosh executable and the depending libs.
+
+monogoutil-linux-x86_64 used for Linux x86_64 (MD5 39aceeced14007e62d729ff0c2db74b9): https://downloads.mongodb.com/compass/mongosh-1.6.1-linux-x64.tgz, extract bin/mongosh, bin/mongosh_crypt_v1.so.
+
+monogoutil-darwin-arm64 used for MacOS Apple Silicon development (MD5 bea4e6d46e904773e6145d929fe65146): https://downloads.mongodb.com/compass/mongosh-1.6.1-darwin-arm64.zip, extract bin/mongosh, bin/mongosh_crypt_v1.dylib.
+
+monogoutil-darwin-x86_64 used for MacOS Intel Silicon development (MD5 80bd2b3c453d3c80dc6896db3e0d9436): https://downloads.mongodb.com/compass/mongosh-1.6.1-darwin-x64.zip, extract bin/mongosh, bin/mongosh_crypt_v1.dylib.
