@@ -126,8 +126,8 @@
   diff: |
     DROP INDEX "public"."idx2";
     DROP INDEX "public"."idx1";
-    CREATE INDEX "idx2" ON "public"."t1" USING btree (a);
-    CREATE INDEX "idx3" ON "public"."t1" USING btree (a, b);
+    CREATE INDEX idx2 ON public.t1 USING btree (a);
+    CREATE INDEX idx3 ON public.t1 USING btree (a, b);
 - oldSchema: |
     CREATE TABLE public.t (a int, b varchar(20), c boolean, d bit(2), e jsonb);
   newSchema: |
@@ -184,3 +184,10 @@
     CREATE SCHEMA "s2";
     CREATE EXTENSION IF NOT EXISTS e2 WITH SCHEMA s2;
     CREATE EXTENSION IF NOT EXISTS e3 WITH SCHEMA public;
+- oldSchema: ""
+  newSchema: |
+    CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+    CREATE INDEX trgm_idx ON public.test_trgm USING gin (t public.gin_trgm_ops);
+  diff: |
+    CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+    CREATE INDEX trgm_idx ON public.test_trgm USING gin (t public.gin_trgm_ops);
