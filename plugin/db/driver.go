@@ -96,7 +96,7 @@ type Column struct {
 
 // Table is the database table.
 type Table struct {
-	// Name is a concatination of schema and short name for legacy purpose.
+	// Name is a combination of schema and short name for legacy purpose.
 	Name string
 	// ShortName is the short table name.
 	ShortName string
