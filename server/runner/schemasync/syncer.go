@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -431,11 +431,11 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 			Name: t.Name,
 		})
 	}
-	m := jsonpb.Marshaler{}
-	metadataString, err := m.MarshalToString(metadata)
+	bytes, err := protojson.Marshal(metadata)
 	if err != nil {
 		return err
 	}
+	metadataString := string(bytes)
 	if dbSchema == nil || dbSchema.Metadata != metadataString {
 		if _, err := store.UpsertDBSchema(ctx, api.DBSchemaUpsert{
 			UpdatorID:  api.SystemBotID,
