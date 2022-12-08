@@ -24,16 +24,18 @@ import (
 	"github.com/bytebase/bytebase/plugin/storage/s3"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewRunner creates a new backup runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *s3.Client, profile *config.Profile) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *s3.Client, stateCfg *state.State, profile *config.Profile) *Runner {
 	return &Runner{
 		store:                     store,
 		dbFactory:                 dbFactory,
 		s3Client:                  s3Client,
+		stateCfg:                  stateCfg,
 		profile:                   profile,
 		downloadBinlogInstanceIDs: make(map[int]bool),
 	}
@@ -44,6 +46,7 @@ type Runner struct {
 	store                     *store.Store
 	dbFactory                 *dbfactory.DBFactory
 	s3Client                  *s3.Client
+	stateCfg                  *state.State
 	profile                   *config.Profile
 	downloadBinlogInstanceIDs map[int]bool
 	backupWg                  sync.WaitGroup
@@ -57,8 +60,6 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug("Auto backup runner started", zap.Duration("interval", r.profile.BackupRunnerInterval))
-	runningTasks := make(map[int]bool)
-	var mu sync.RWMutex
 	for {
 		select {
 		case <-ticker.C:
@@ -72,7 +73,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err), zap.Stack("panic-stack"))
 					}
 				}()
-				r.startAutoBackups(ctx, runningTasks, &mu)
+				r.startAutoBackups(ctx)
 				r.downloadBinlogFiles(ctx)
 				r.purgeExpiredBackupData(ctx)
 			}()
@@ -297,7 +298,7 @@ func (r *Runner) downloadBinlogFilesForInstance(ctx context.Context, instance *a
 	}
 }
 
-func (r *Runner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.RWMutex) {
+func (r *Runner) startAutoBackups(ctx context.Context) {
 	// Find all databases that need a backup in this hour.
 	t := time.Now().UTC().Truncate(time.Hour)
 	match := &api.BackupSettingsMatch{
@@ -311,14 +312,9 @@ func (r *Runner) startAutoBackups(ctx context.Context, runningTasks map[int]bool
 	}
 
 	for _, backupSetting := range backupSettingList {
-		mu.Lock()
-		if _, ok := runningTasks[backupSetting.ID]; ok {
-			mu.Unlock()
+		if _, ok := r.stateCfg.RunningBackupDatabases.Load(backupSetting.DatabaseID); ok {
 			continue
 		}
-		runningTasks[backupSetting.ID] = true
-		mu.Unlock()
-
 		db := backupSetting.Database
 		if db.Name == api.AllDatabaseName {
 			// Skip backup job for wildcard database `*`.
@@ -337,11 +333,11 @@ func (r *Runner) startAutoBackups(ctx context.Context, runningTasks map[int]bool
 			log.Debug("Skip creating backup because it already exists", zap.Int("database-id", db.ID), zap.String("name", backupName))
 			continue
 		}
-		go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
+
+		r.stateCfg.RunningBackupDatabases.Store(backupSetting.DatabaseID, true)
+		go func(database *api.Database, backupName string, hookURL string) {
 			defer func() {
-				mu.Lock()
-				delete(runningTasks, backupSettingID)
-				mu.Unlock()
+				r.stateCfg.RunningBackupDatabases.Delete(database.ID)
 				r.backupWg.Done()
 			}()
 			log.Debug("Schedule auto backup",
@@ -364,7 +360,7 @@ func (r *Runner) startAutoBackups(ctx context.Context, runningTasks map[int]bool
 					zap.Int("databaseID", database.ID),
 					zap.Error(err))
 			}
-		}(db, backupSetting.ID, backupName, backupSetting.HookURL)
+		}(db, backupName, backupSetting.HookURL)
 		r.backupWg.Add(1)
 	}
 }
