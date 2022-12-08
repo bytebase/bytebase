@@ -11,6 +11,7 @@
     "feishu": "Feishu",
     "wecom": "WeCom",
     "custom": "Custom",
+    "im": "IM",
     "overview": "Overview",
     "migration-history": "Migration History",
     "webhook": "Webhook",
@@ -571,7 +572,12 @@
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     },
     "rollback-from": "This task rollbacks from {link}.",
-    "issue-link-with-task": "Issue {issue} - task {task}"
+    "issue-link-with-task": "Issue {issue} - task {task}",
+    "assignee-attention": {
+      "send-approval-request-successfully": "Send a {im} approval request successfully",
+      "needs-attention": "Needs attention",
+      "click-to-mark": "Click to mark it as \"Needs attention\""
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
