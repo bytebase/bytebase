@@ -289,6 +289,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		); err != nil {
 			return nil, err
 		}
+		table.ShortName = table.Name
 
 		switch table.Type {
 		case baseTableType:

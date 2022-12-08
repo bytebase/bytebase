@@ -174,6 +174,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	for _, tbl := range tables {
 		var dbTable db.Table
 		dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
+		dbTable.Schema = tbl.schemaName
+		dbTable.ShortName = tbl.name
 		dbTable.Type = "BASE TABLE"
 		dbTable.Comment = tbl.comment
 		dbTable.RowCount = tbl.rowCount
