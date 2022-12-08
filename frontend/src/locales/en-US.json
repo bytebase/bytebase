@@ -573,12 +573,10 @@
     },
     "rollback-from": "This task rollbacks from {link}.",
     "issue-link-with-task": "Issue {issue} - task {task}",
-    "needs-approval": "Needs approval",
     "assignee-attention": {
-      "im-integration-not-enabled": "Enable the service on the page \"Settings - IM Integration\"",
-      "im-sent-already": "The {im} approval request has been sent already",
-      "click-to-send": "Click to send {assignee} a {im} approval request",
-      "send-approval-request-successfully": "Send a {im} approval request successfully"
+      "send-approval-request-successfully": "Send a {im} approval request successfully",
+      "needs-attention": "Needs attention",
+      "click-to-mark": "Click to mark it as \"Needs attention\""
     }
   },
   "alter-schema": {

@@ -573,12 +573,10 @@
     },
     "rollback-from": "当前任务回滚自 {link}。",
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
-    "needs-approval": "等待审批",
     "assignee-attention": {
-      "im-integration-not-enabled": "通过「设置 - IM 集成管理」开启这项服务",
-      "im-sent-already": "{im}审批请求已发送",
-      "click-to-send": "点击给 {assignee} 发送{im}审批请求",
-      "send-approval-request-successfully": "{im}审批请求发送成功"
+      "send-approval-request-successfully": "{im}审批请求发送成功",
+      "needs-attention": "需要关注",
+      "click-to-mark": "点击以标记为「需要关注」"
     }
   },
   "alter-schema": {

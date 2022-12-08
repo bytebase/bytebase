@@ -70,13 +70,13 @@
           <NTooltip v-if="isAssigneeAttentionOn(issue)">
             <template #trigger>
               <span>
-                <heroicons-outline:paper-airplane
-                  class="w-4 h-4 text-accent rotate-45 -mt-[3px] ml-2"
+                <heroicons-outline:bell-alert
+                  class="w-4 h-4 text-accent ml-1"
                 />
               </span>
             </template>
             <span class="whitespace-nowrap">
-              {{ $t("issue.needs-approval") }}
+              {{ $t("issue.assignee-attention.needs-attention") }}
             </span>
           </NTooltip>
         </div>
