@@ -11,11 +11,14 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/server/utils"
@@ -27,11 +30,12 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State) *Syncer {
+func NewSyncer(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile) *Syncer {
 	return &Syncer{
 		store:     store,
 		dbFactory: dbFactory,
 		stateCfg:  stateCfg,
+		profile:   profile,
 	}
 }
 
@@ -40,6 +44,7 @@ type Syncer struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 	stateCfg  *state.State
+	profile   config.Profile
 }
 
 // Run will run the schema syncer once.
@@ -387,6 +392,12 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		}
 		database = createdDatabase
 	}
+	// Sync database schema
+	if s.profile.Mode == common.ReleaseModeDev {
+		if err := syncDBSchema(ctx, s.store, database, schema); err != nil {
+			return err
+		}
+	}
 	if err := syncTableSchema(ctx, s.store, database, schema); err != nil {
 		return err
 	}
@@ -406,4 +417,34 @@ func syncViewSchema(ctx context.Context, store *store.Store, database *api.Datab
 
 func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
 	return store.SetDBExtensionList(ctx, schema, database.ID)
+}
+
+func syncDBSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
+	dbSchema, err := store.GetDBSchema(ctx, database.ID)
+	if err != nil {
+		return err
+	}
+	// TODO(d): finish the implementation.
+	metadata := &storepb.SchemaMetadata{}
+	for _, t := range schema.TableList {
+		metadata.TableMetadata = append(metadata.TableMetadata, &storepb.TableMetadata{
+			Name: t.Name,
+		})
+	}
+	bytes, err := protojson.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	metadataString := string(bytes)
+	if dbSchema == nil || dbSchema.Metadata != metadataString {
+		if _, err := store.UpsertDBSchema(ctx, api.DBSchemaUpsert{
+			UpdatorID:  api.SystemBotID,
+			DatabaseID: database.ID,
+			Metadata:   metadataString,
+			RawDump:    "",
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

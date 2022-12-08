@@ -32,6 +32,8 @@ run:
   timeout: 5m
   build-tags:
     - mysql
+  skip-dirs:
+    - proto/generated-go
 
 linters-settings:
   goimports:
