@@ -153,6 +153,17 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return errors.Wrapf(err, "failed to connect to database %q", db.connCfg.Username)
 	}
 
+	// Set the max open connections so that we won't exceed the connection limit of metaDB.
+	// The limit is the max connections minus connections reserved for superuser.
+	var maxConns, reservedConns int
+	if err := db.db.QueryRowContext(ctx, `SHOW max_connections`).Scan(&maxConns); err != nil {
+		return errors.Wrap(err, "failed to get max_connections from metaDB")
+	}
+	if err := db.db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
+		return errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
+	}
+	db.db.SetMaxOpenConns(maxConns - reservedConns)
+
 	if err := db.setupDemoData(); err != nil {
 		return errors.Wrapf(err, "failed to setup demo data."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
