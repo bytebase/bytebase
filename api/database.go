@@ -149,7 +149,6 @@ type CreateTableContext struct {
 
 // AlterTableContext is the edit database context to alter a table.
 type AlterTableContext struct {
-	TableID int    `json:"tableId"`
 	Name    string `json:"name"`
 
 	// ColumnNameList should be the final order of columns in UI editor and is used to confirm column positions.
@@ -168,7 +167,6 @@ type RenameTableContext struct {
 
 // DropTableContext is the edit database context to drop a table.
 type DropTableContext struct {
-	TableID int    `json:"tableId"`
 	Name    string `json:"name"`
 }
 

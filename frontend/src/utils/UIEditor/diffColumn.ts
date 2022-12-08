@@ -1,11 +1,10 @@
-import { isEqual, isUndefined } from "lodash-es";
+import { isEqual, isUndefined, omit } from "lodash-es";
 import type {
   AddColumnContext,
-  Column,
   DropColumnContext,
   ChangeColumnContext,
 } from "@/types";
-import { UNKNOWN_ID } from "@/types/const";
+import { Column } from "@/types/UIEditor";
 import {
   transformColumnToAddColumnContext,
   transformColumnToChangeColumnContext,
@@ -15,29 +14,28 @@ import {
 // Including addColumnList, modifyColumnList and dropColumnList.
 export const diffColumnList = (
   originColumnList: Column[],
-  targetColumnList: Column[]
+  columnList: Column[]
 ) => {
-  const targetColumnIdList = targetColumnList.map((column) => column.id);
-
   const addColumnContextList: AddColumnContext[] = [];
-  for (const column of targetColumnList) {
-    if (column.id === UNKNOWN_ID) {
-      addColumnContextList.push(transformColumnToAddColumnContext(column));
-    }
+  const addedColumnList = columnList.filter(
+    (column) => column.status === "created"
+  );
+  for (const column of addedColumnList) {
+    addColumnContextList.push(transformColumnToAddColumnContext(column));
   }
 
   const changeColumnContextList: ChangeColumnContext[] = [];
-  for (const column of targetColumnList) {
-    if (column.id === UNKNOWN_ID) {
-      continue;
-    }
+  const changedColumnList = columnList.filter(
+    (column) => column.status === undefined
+  );
+  for (const column of changedColumnList) {
     const originColumn = originColumnList.find(
-      (originColumn) => originColumn.id === column.id
+      (originColumn) => originColumn.oldName === column.oldName
     );
     if (isUndefined(originColumn)) {
       continue;
     }
-    if (!isEqual(originColumn, column)) {
+    if (!isEqual(omit(originColumn, "status"), omit(column, "status"))) {
       changeColumnContextList.push(
         transformColumnToChangeColumnContext(originColumn, column)
       );
@@ -45,12 +43,13 @@ export const diffColumnList = (
   }
 
   const dropColumnContextList: DropColumnContext[] = [];
-  for (const column of originColumnList) {
-    if (!targetColumnIdList.includes(column.id)) {
-      dropColumnContextList.push({
-        name: column.name,
-      });
-    }
+  const droppedColumnList = columnList.filter(
+    (column) => column.status === "dropped"
+  );
+  for (const column of droppedColumnList) {
+    dropColumnContextList.push({
+      name: column.oldName,
+    });
   }
 
   return {

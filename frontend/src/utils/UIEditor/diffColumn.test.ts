@@ -1,17 +1,16 @@
 import { expect, it } from "vitest";
 import {
   AddColumnContext,
-  Column,
   DropColumnContext,
   ChangeColumnContext,
 } from "@/types";
-import { UNKNOWN_ID } from "@/types/const";
+import { Column } from "@/types/UIEditor";
 import { diffColumnList } from "./diffColumn";
 
 it("diff add column list", () => {
   const testList: {
     originColumnList: Column[];
-    targetColumnList: Column[];
+    columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
       changeColumnList: ChangeColumnContext[];
@@ -20,16 +19,15 @@ it("diff add column list", () => {
   }[] = [
     {
       originColumnList: [],
-      targetColumnList: [
+      columnList: [
         {
-          id: UNKNOWN_ID,
-          name: "id",
+          oldName: "id",
+          newName: "id",
           type: "int",
-          characterSet: "",
-          collation: "",
           comment: "",
           nullable: false,
           default: undefined,
+          status: "created",
         } as Column,
       ],
       wanted: {
@@ -37,11 +35,11 @@ it("diff add column list", () => {
           {
             name: "id",
             type: "int",
-            characterSet: "",
-            collation: "",
             comment: "",
             nullable: false,
             default: undefined,
+            characterSet: "",
+            collation: "",
           },
         ],
         changeColumnList: [],
@@ -51,7 +49,7 @@ it("diff add column list", () => {
   ];
 
   for (const test of testList) {
-    const result = diffColumnList(test.originColumnList, test.targetColumnList);
+    const result = diffColumnList(test.originColumnList, test.columnList);
     expect(result).toStrictEqual(test.wanted);
   }
 });
@@ -59,7 +57,7 @@ it("diff add column list", () => {
 it("diff modify column list", () => {
   const testList: {
     originColumnList: Column[];
-    targetColumnList: Column[];
+    columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
       changeColumnList: ChangeColumnContext[];
@@ -69,23 +67,19 @@ it("diff modify column list", () => {
     {
       originColumnList: [
         {
-          id: 1,
-          name: "id",
+          oldName: "id",
+          newName: "id",
           type: "int",
-          characterSet: "",
-          collation: "",
           comment: "",
           nullable: true,
           default: undefined,
         } as Column,
       ],
-      targetColumnList: [
+      columnList: [
         {
-          id: 1,
-          name: "id",
+          oldName: "id",
+          newName: "id",
           type: "varchar",
-          characterSet: "",
-          collation: "",
           comment: "",
           nullable: false,
           default: undefined,
@@ -98,11 +92,11 @@ it("diff modify column list", () => {
             oldName: "id",
             newName: "id",
             type: "varchar",
-            characterSet: "",
-            collation: "",
             comment: "",
             nullable: false,
             default: undefined,
+            characterSet: "",
+            collation: "",
           },
         ],
         dropColumnList: [],
@@ -111,7 +105,7 @@ it("diff modify column list", () => {
   ];
 
   for (const test of testList) {
-    const result = diffColumnList(test.originColumnList, test.targetColumnList);
+    const result = diffColumnList(test.originColumnList, test.columnList);
     expect(result).toStrictEqual(test.wanted);
   }
 });
@@ -119,7 +113,7 @@ it("diff modify column list", () => {
 it("diff drop column list", () => {
   const testList: {
     originColumnList: Column[];
-    targetColumnList: Column[];
+    columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
       changeColumnList: ChangeColumnContext[];
@@ -129,17 +123,25 @@ it("diff drop column list", () => {
     {
       originColumnList: [
         {
-          id: 1,
-          name: "id",
+          oldName: "id",
+          newName: "id",
           type: "int",
-          characterSet: "",
-          collation: "",
           comment: "",
           nullable: true,
           default: undefined,
         } as Column,
       ],
-      targetColumnList: [],
+      columnList: [
+        {
+          oldName: "id",
+          newName: "id",
+          type: "int",
+          comment: "",
+          nullable: true,
+          default: undefined,
+          status: "dropped",
+        } as Column,
+      ],
       wanted: {
         addColumnList: [],
         changeColumnList: [],
@@ -153,7 +155,7 @@ it("diff drop column list", () => {
   ];
 
   for (const test of testList) {
-    const result = diffColumnList(test.originColumnList, test.targetColumnList);
+    const result = diffColumnList(test.originColumnList, test.columnList);
     expect(result).toStrictEqual(test.wanted);
   }
 });
@@ -161,7 +163,7 @@ it("diff drop column list", () => {
 it("diff column list", () => {
   const testList: {
     originColumnList: Column[];
-    targetColumnList: Column[];
+    columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
       changeColumnList: ChangeColumnContext[];
@@ -171,66 +173,64 @@ it("diff column list", () => {
     {
       originColumnList: [
         {
-          id: 1,
-          name: "id",
+          oldName: "id",
+          newName: "id",
           type: "int",
-          characterSet: "",
-          collation: "",
           comment: "",
           nullable: true,
           default: undefined,
         } as Column,
         {
-          id: 2,
-          name: "name",
+          oldName: "name",
+          newName: "name",
           type: "varchar",
-          characterSet: "",
-          collation: "",
           comment: "",
           nullable: true,
           default: undefined,
         } as Column,
         {
-          id: 3,
-          name: "city",
+          oldName: "city",
+          newName: "city",
           type: "varchar",
-          characterSet: "",
-          collation: "",
           comment: "",
           nullable: true,
           default: undefined,
         } as Column,
       ],
-      targetColumnList: [
+      columnList: [
         {
-          id: 1,
-          name: "id",
+          oldName: "id",
+          newName: "id",
           type: "int",
-          characterSet: "",
-          collation: "",
           comment: "this is id",
           nullable: true,
           default: undefined,
         } as Column,
         {
-          id: 2,
-          name: "name",
+          oldName: "name",
+          newName: "name",
           type: "varchar",
-          characterSet: "",
-          collation: "",
           comment: "",
           nullable: false,
           default: "",
         } as Column,
         {
-          id: UNKNOWN_ID,
-          name: "birthday",
+          oldName: "city",
+          newName: "city",
           type: "varchar",
-          characterSet: "",
-          collation: "",
+          comment: "",
+          nullable: true,
+          default: undefined,
+          status: "dropped",
+        } as Column,
+        {
+          oldName: "birthday",
+          newName: "birthday",
+          type: "varchar",
           comment: "",
           nullable: false,
           default: "",
+          status: "created",
         } as Column,
       ],
       wanted: {
@@ -277,7 +277,7 @@ it("diff column list", () => {
   ];
 
   for (const test of testList) {
-    const result = diffColumnList(test.originColumnList, test.targetColumnList);
+    const result = diffColumnList(test.originColumnList, test.columnList);
     expect(result).toStrictEqual(test.wanted);
   }
 });

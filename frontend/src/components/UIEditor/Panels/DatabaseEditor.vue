@@ -62,16 +62,21 @@
         <!-- table body -->
         <div class="w-full">
           <div
-            v-for="(table, index) in tableListRef"
-            :key="`${index}-${table.id}`"
+            v-for="(table, index) in tableList"
+            :key="`${index}-${table.newName}`"
             class="grid grid-cols-[repeat(6,_minmax(0,_1fr))_32px] text-sm even:bg-gray-50"
+            :class="
+              isDroppedTable(table) && 'text-red-700 !bg-red-50 opacity-70'
+            "
           >
             <div class="table-body-item-container">
               <NEllipsis
-                class="w-full cursor-pointer hover:text-accent"
-                @click="handleTableItemClick(table)"
-                >{{ table.name }}</NEllipsis
+                class="w-full cursor-pointer leading-6 my-2 hover:text-accent"
               >
+                <span @click="handleTableItemClick(table)">
+                  {{ table.newName }}
+                </span>
+              </NEllipsis>
             </div>
             <div class="table-body-item-container">
               {{ table.rowCount }}
@@ -89,7 +94,7 @@
               {{ table.comment }}
             </div>
             <div class="w-full flex justify-start items-center">
-              <n-tooltip trigger="hover">
+              <n-tooltip v-if="!isDroppedTable(table)" trigger="hover">
                 <template #trigger>
                   <heroicons:trash
                     class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
@@ -97,6 +102,15 @@
                   />
                 </template>
                 <span>{{ $t("ui-editor.actions.drop-table") }}</span>
+              </n-tooltip>
+              <n-tooltip v-else trigger="hover">
+                <template #trigger>
+                  <heroicons:arrow-uturn-left
+                    class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
+                    @click="handleRestoreTable(table)"
+                  />
+                </template>
+                <span>{{ $t("ui-editor.actions.restore") }}</span>
               </n-tooltip>
             </div>
           </div>
@@ -139,26 +153,20 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
   useDatabaseStore,
-  useTableStore,
   useUIEditorStore,
 } from "@/store";
-import {
-  DatabaseId,
-  DatabaseTabContext,
-  Table,
-  UIEditorTabType,
-} from "@/types";
+import { DatabaseId, DatabaseTabContext, UIEditorTabType } from "@/types";
+import { Table } from "@/types/UIEditor";
 import { bytesToString } from "@/utils";
-import { diffTableList } from "@/utils/UIEditor/diffTable";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
+import { diffTableList } from "@/utils/UIEditor/diffTable";
 
 type TabType = "table-list" | "er-diagram" | "raw-sql";
 
@@ -175,7 +183,6 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const databaseStore = useDatabaseStore();
-const tableStore = useTableStore();
 const state = reactive<LocalState>({
   selectedTab: "table-list",
   isFetchingDDL: false,
@@ -183,7 +190,10 @@ const state = reactive<LocalState>({
 });
 const currentTab = editorStore.currentTab as DatabaseTabContext;
 const database = databaseStore.getDatabaseById(currentTab.databaseId);
-const tableListRef = ref<Table[]>([]);
+
+const tableList = computed(() => {
+  return editorStore.tableList;
+});
 const tableHeaderList = computed(() => {
   return [
     {
@@ -214,31 +224,15 @@ const tableHeaderList = computed(() => {
 });
 
 watch(
-  [editorStore.tableList, editorStore.droppedTableList],
-  async () => {
-    const tableList = await editorStore.getOrFetchTableListByDatabaseId(
-      database.id
-    );
-    tableListRef.value = tableList.filter(
-      (table) => !editorStore.droppedTableList.includes(table)
-    );
-  },
-  {
-    immediate: true,
-  }
-);
-
-watch(
   () => state.selectedTab,
   async () => {
     if (state.selectedTab === "raw-sql") {
       state.isFetchingDDL = true;
-      const originTableList = await tableStore.getOrFetchTableListByDatabaseId(
-        database.id
+      const originTableList = editorStore.originTableList.filter(
+        (table) => table.databaseId === database.id
       );
-      const updatedTableList = (
-        await editorStore.getOrFetchTableListByDatabaseId(database.id)
-      ).filter((table) => !editorStore.droppedTableList.includes(table));
+      const updatedTableList =
+        await editorStore.getOrFetchTableListByDatabaseId(database.id);
       const diffTableListResult = diffTableList(
         originTableList,
         updatedTableList
@@ -265,6 +259,10 @@ watch(
   }
 );
 
+const isDroppedTable = (table: Table) => {
+  return table.status === "dropped";
+};
+
 const handleChangeTab = (tab: TabType) => {
   state.selectedTab = tab;
 };
@@ -281,14 +279,16 @@ const handleTableItemClick = (table: Table) => {
     id: generateUniqueTabId(),
     type: UIEditorTabType.TabForTable,
     databaseId: database.id,
-    tableId: table.id,
-    table: table,
-    tableCache: cloneDeep(table),
+    tableName: table.newName,
   });
 };
 
 const handleDropTable = (table: Table) => {
   editorStore.dropTable(table);
+};
+
+const handleRestoreTable = (table: Table) => {
+  editorStore.restoreTable(table);
 };
 </script>
 

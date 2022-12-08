@@ -31,14 +31,18 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-import { DatabaseId, Table, UNKNOWN_ID, UIEditorTabType } from "@/types";
+import { useI18n } from "vue-i18n";
+import { DatabaseId, UNKNOWN_ID, UIEditorTabType, unknown } from "@/types";
+import { Table, TableTabContext } from "@/types/UIEditor";
 import {
   useUIEditorStore,
   useNotificationStore,
   generateUniqueTabId,
 } from "@/store";
-import { cloneDeep } from "lodash-es";
-import { useI18n } from "vue-i18n";
+import {
+  transformColumnDataToColumn,
+  transformTableDataToTable,
+} from "@/utils/UIEditor/transform";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -65,7 +69,7 @@ const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
-  tableName: props.table?.name || "",
+  tableName: props.table?.newName || "",
 });
 
 const isCreatingTable = computed(() => {
@@ -90,7 +94,7 @@ const handleConfirmButtonClick = async () => {
   const tableList = await editorStore.getOrFetchTableListByDatabaseId(
     databaseId
   );
-  const tableNameList = tableList.map((table) => table.name);
+  const tableNameList = tableList.map((table) => table.newName);
   if (tableNameList.includes(state.tableName)) {
     notificationStore.pushNotification({
       module: "bytebase",
@@ -101,26 +105,38 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (isCreatingTable.value) {
-    const table = editorStore.createNewTable(props.databaseId);
-    table.name = state.tableName;
+    const unknownTable = unknown("TABLE");
+    const unknownColumn = unknown("COLUMN");
+    unknownColumn.name = "id";
+    unknownColumn.type = "int";
+    unknownColumn.comment = "ID";
+
+    const table = transformTableDataToTable(unknownTable);
+    table.databaseId = databaseId;
+    table.oldName = state.tableName;
+    table.newName = state.tableName;
+    table.status = "created";
+    const column = transformColumnDataToColumn(unknownColumn);
+    column.status = "created";
+    table.columnList.push(column);
+    editorStore.tableList.push(table);
     editorStore.addTab({
       id: generateUniqueTabId(),
       type: UIEditorTabType.TabForTable,
       databaseId: props.databaseId,
-      tableId: table.id,
-      table: table,
-      tableCache: cloneDeep(table),
+      tableName: table.newName,
     });
     dismissModal();
   } else {
-    const originTable = editorStore.tableList.find(
-      (item) => item === props.table
-    );
-    if (originTable) {
-      originTable.name = state.tableName;
-      const tab = editorStore.getTableTabByTable(originTable);
+    const table = editorStore.tableList.find((item) => item === props.table);
+    if (table) {
+      const tab = editorStore.findTab(
+        table.databaseId,
+        table.newName
+      ) as TableTabContext;
+      table.newName = state.tableName;
       if (tab) {
-        tab.tableCache.name = originTable.name;
+        tab.tableName = table.newName;
       }
     }
     dismissModal();
