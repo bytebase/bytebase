@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -241,7 +242,7 @@ func (s *Server) convertToOpenAPIEnvironment(ctx context.Context, env *api.Envir
 }
 
 func (s *Server) validateEnvironmentPolicy(policyType api.PolicyType, policy interface{}) error {
-	if policy == nil {
+	if policy == nil || reflect.ValueOf(policy).IsNil() {
 		return nil
 	}
 

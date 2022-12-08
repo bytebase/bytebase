@@ -10,10 +10,10 @@ type Environment struct {
 	ID int `json:"id"`
 
 	// Related fields
-	EnvironmentTierPolicy  *api.EnvironmentTierPolicy  `json:"environmentTierPolicy"`
-	PipelineApprovalPolicy *api.PipelineApprovalPolicy `json:"pipelineApprovalPolicy"`
-	BackupPlanPolicy       *api.BackupPlanPolicy       `json:"backupPlanPolicy"`
-	SQLReviewPolicy        *advisor.SQLReviewPolicy    `json:"sqlReviewPolicy"`
+	EnvironmentTierPolicy  *api.EnvironmentTierPolicy  `json:"environmentTierPolicy,omitempty"`
+	PipelineApprovalPolicy *api.PipelineApprovalPolicy `json:"pipelineApprovalPolicy,omitempty"`
+	BackupPlanPolicy       *api.BackupPlanPolicy       `json:"backupPlanPolicy,omitempty"`
+	SQLReviewPolicy        *advisor.SQLReviewPolicy    `json:"sqlReviewPolicy,omitempty"`
 
 	// Domain specific fields
 	Name  string `json:"name"`
