@@ -96,7 +96,10 @@ type Column struct {
 
 // Table is the database table.
 type Table struct {
-	Name string
+	// Name is a concatination of schema and short name for legacy purpose.
+	Name      string
+	ShortName string
+	Schema    string
 	// CreatedTs isn't supported for ClickHouse, SQLite.
 	CreatedTs int64
 	// UpdatedTs isn't supported for SQLite.
