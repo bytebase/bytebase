@@ -10,7 +10,7 @@
     />
   </template>
   <template v-if="tab.mode === TabMode.Admin">
-    <heroicons-outline:command-line class="w-4 h-4" />
+    <heroicons-outline:wrench class="w-4 h-4" />
   </template>
 </template>
 
