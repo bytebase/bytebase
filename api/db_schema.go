@@ -19,8 +19,6 @@ type DBSchemaUpsert struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdatorID int
-	CreatedTs int64
-	UpdatedTs int64
 
 	// Related fields
 	DatabaseID int
