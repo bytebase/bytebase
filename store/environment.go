@@ -15,6 +15,7 @@ import (
 )
 
 // EnvironmentCreate is the API message for creating an environment.
+// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
 type EnvironmentCreate struct {
 	// Standard fields
 	CreatorID int
@@ -30,6 +31,7 @@ type EnvironmentCreate struct {
 }
 
 // EnvironmentPatch is the API message for patching an environment.
+// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
 type EnvironmentPatch struct {
 	ID int
 
