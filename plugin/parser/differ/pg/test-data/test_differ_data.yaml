@@ -184,10 +184,18 @@
     CREATE SCHEMA "s2";
     CREATE EXTENSION IF NOT EXISTS e2 WITH SCHEMA s2;
     CREATE EXTENSION IF NOT EXISTS e3 WITH SCHEMA public;
-- oldSchema: ""
+- oldSchema: |
+    CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+    CREATE TABLE public.test_trgm (t text, t2 text);
+    CREATE INDEX trgm_idx ON public.test_trgm USING gin (t public.gin_trgm_ops);
+    CREATE INDEX trgm_idx2 ON public.test_trgm USING gin (t public.gin_trgm_ops);
+    CREATE INDEX trgm_idx3 ON public.test_trgm USING gin (t public.gin_trgm_ops);
   newSchema: |
     CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+    CREATE TABLE public.test_trgm (t text, t2 text);
     CREATE INDEX trgm_idx ON public.test_trgm USING gin (t public.gin_trgm_ops);
+    CREATE INDEX trgm_idx2 ON public.test_trgm USING gin (t2 public.gin_trgm_ops);
   diff: |
-    CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
-    CREATE INDEX trgm_idx ON public.test_trgm USING gin (t public.gin_trgm_ops);
+    DROP INDEX "public"."trgm_idx2";
+    DROP INDEX "public"."trgm_idx3";
+    CREATE INDEX trgm_idx2 ON public.test_trgm USING gin (t2 public.gin_trgm_ops);
