@@ -1,0 +1,4 @@
+- stmt: drop extension hstore, extension_a;
+  want: DROP EXTENSION "hstore", "extension_a";
+- stmt: drop extension if exists hstore cascade;
+  want: DROP EXTENSION IF EXISTS "hstore" CASCADE;
