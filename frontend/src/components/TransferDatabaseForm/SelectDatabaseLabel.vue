@@ -24,7 +24,6 @@
 
         <div class="flex flex-col space-y-1 w-64 mt-1">
           <BBTextField
-            :disabled="isParsedLabel(label)"
             :value="getLabelValue(label)"
             :placeholder="getLabelPlaceholder(label)"
             class="textfield"
