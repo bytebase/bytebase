@@ -1,3 +1,6 @@
+# Warning: please install diffutils macOS Ventura by: brew install diffutils
+# https://github.com/golangci/golangci-lint/discussions/3327
+
 linters:
   enable:
     - errcheck
