@@ -46,9 +46,9 @@ var (
 	}
 )
 
-// NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile) *TaskScheduler {
-	return &TaskScheduler{
+// NewScheduler creates a new task scheduler.
+func NewScheduler(store *store.Store, applicationRunner *apprun.Runner, schemaSyncer *schemasync.Syncer, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile) *Scheduler {
+	return &Scheduler{
 		store:             store,
 		applicationRunner: applicationRunner,
 		schemaSyncer:      schemaSyncer,
@@ -60,8 +60,8 @@ func NewTaskScheduler(store *store.Store, applicationRunner *apprun.Runner, sche
 	}
 }
 
-// TaskScheduler is the task scheduler.
-type TaskScheduler struct {
+// Scheduler is the task scheduler.
+type Scheduler struct {
 	store             *store.Store
 	applicationRunner *apprun.Runner
 	schemaSyncer      *schemasync.Syncer
@@ -70,13 +70,10 @@ type TaskScheduler struct {
 	stateCfg          *state.State
 	profile           config.Profile
 	executorMap       map[api.TaskType]Executor
-
-	runningTasks       sync.Map // map[taskID]bool
-	runningTasksCancel sync.Map // map[taskID]context.CancelFunc
 }
 
 // Run will run the task scheduler.
-func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -152,7 +149,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 					// Skip the task that is already being executed.
-					if _, ok := s.runningTasks.Load(task.ID); ok {
+					if _, ok := s.stateCfg.RunningTasks.Load(task.ID); ok {
 						continue
 					}
 					// Skip the task that is not the earliest task of the database.
@@ -173,16 +170,16 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					s.runningTasks.Store(task.ID, true)
+					s.stateCfg.RunningTasks.Store(task.ID, true)
 					go func(ctx context.Context, task *api.Task, executor Executor) {
 						defer func() {
-							s.runningTasks.Delete(task.ID)
-							s.runningTasksCancel.Delete(task.ID)
+							s.stateCfg.RunningTasks.Delete(task.ID)
+							s.stateCfg.RunningTasksCancel.Delete(task.ID)
 							s.stateCfg.TaskProgress.Delete(task.ID)
 						}()
 
 						executorCtx, cancel := context.WithCancel(ctx)
-						s.runningTasksCancel.Store(task.ID, cancel)
+						s.stateCfg.RunningTasksCancel.Store(task.ID, cancel)
 
 						done, result, err := RunExecutorOnce(executorCtx, executor, task)
 
@@ -318,7 +315,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register a task executor factory.
-func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter Executor) {
+func (s *Scheduler) Register(taskType api.TaskType, executorGetter Executor) {
 	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
@@ -332,7 +329,7 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter Executor)
 // When there are running tasks and Bytebase server is shutdown, these task executors are stopped, but the tasks' status are still RUNNING.
 // When Bytebase is restarted, the task scheduler will re-schedule those RUNNING tasks, which should be CANCELED instead.
 // So we change their status to CANCELED before starting the scheduler.
-func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
+func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	taskFind := &api.TaskFind{StatusList: &[]api.TaskStatus{api.TaskRunning}}
 	runningTasks, err := s.store.FindTask(ctx, taskFind, false)
 	if err != nil {
@@ -371,7 +368,7 @@ func (s *TaskScheduler) ClearRunningTasks(ctx context.Context) error {
 	return nil
 }
 
-func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
+func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
 	// schema update, data update and gh-ost sync task have required task check.
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		pass, err := s.passCheck(ctx, task, api.TaskCheckDatabaseConnect, allowedStatus)
@@ -446,7 +443,7 @@ func (s *TaskScheduler) passAllCheck(ctx context.Context, task *api.Task, allowe
 // For PendingApproval->Pending transitions, the minimum level is SUCCESS.
 // For Pending->Running transitions, the minimum level is WARN.
 // TODO(dragonly): refactor arguments.
-func (s *TaskScheduler) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
+func (s *Scheduler) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID:     &task.ID,
@@ -478,12 +475,12 @@ func (s *TaskScheduler) passCheck(ctx context.Context, task *api.Task, checkType
 }
 
 // auto transit PendingApproval to Pending if all required task checks pass.
-func (s *TaskScheduler) canAutoApprove(ctx context.Context, task *api.Task) (bool, error) {
+func (s *Scheduler) canAutoApprove(ctx context.Context, task *api.Task) (bool, error) {
 	return s.passAllCheck(ctx, task, api.TaskCheckStatusSuccess)
 }
 
 // CanSchedule returns whether a task can be scheduled.
-func (s *TaskScheduler) CanSchedule(ctx context.Context, task *api.Task) (bool, error) {
+func (s *Scheduler) CanSchedule(ctx context.Context, task *api.Task) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to check if task is blocked")
@@ -503,7 +500,7 @@ func (s *TaskScheduler) CanSchedule(ctx context.Context, task *api.Task) (bool, 
 //  1. its required check does not contain error in the latest run.
 //  2. it has no blocking tasks.
 //  3. it has passed the earliest allowed time.
-func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
+func (s *Scheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
 	schedule, err := s.CanSchedule(ctx, task)
 	if err != nil {
 		return nil, err
@@ -524,7 +521,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	return updatedTask, nil
 }
 
-func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, error) {
+func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, error) {
 	for _, blockingTaskIDString := range task.BlockedBy {
 		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
 		if err != nil {
@@ -542,7 +539,7 @@ func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool
 }
 
 // ScheduleActiveStage tries to schedule the tasks in the active stage.
-func (s *TaskScheduler) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline) error {
+func (s *Scheduler) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline) error {
 	stage := utils.GetActiveStage(pipeline.StageList)
 	if stage == nil {
 		return nil
@@ -581,7 +578,7 @@ func (s *TaskScheduler) ScheduleActiveStage(ctx context.Context, pipeline *api.P
 }
 
 // PatchTaskStatus patches a single task.
-func (s *TaskScheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
+func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
 			log.Error("Failed to change task status.",
@@ -608,7 +605,7 @@ func (s *TaskScheduler) PatchTaskStatus(ctx context.Context, task *api.Task, tas
 		if !taskCancellationImplemented[task.Type] {
 			return nil, common.Errorf(common.NotImplemented, "Canceling task type %s is not supported", task.Type)
 		}
-		cancelAny, ok := s.runningTasksCancel.Load(task.ID)
+		cancelAny, ok := s.stateCfg.RunningTasksCancel.Load(task.ID)
 		cancel := cancelAny.(context.CancelFunc)
 		if !ok {
 			return nil, errors.New("failed to cancel task")
@@ -754,7 +751,7 @@ func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
 	return false
 }
 
-func (s *TaskScheduler) createTaskStatusUpdateActivity(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue) error {
+func (s *Scheduler) createTaskStatusUpdateActivity(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch, issue *api.Issue) error {
 	var issueName string
 	if issue != nil {
 		issueName = issue.Name
@@ -791,7 +788,7 @@ func (s *TaskScheduler) createTaskStatusUpdateActivity(ctx context.Context, task
 	return nil
 }
 
-func (s *TaskScheduler) cancelDependingTasks(ctx context.Context, task *api.Task) error {
+func (s *Scheduler) cancelDependingTasks(ctx context.Context, task *api.Task) error {
 	queue := []int{task.ID}
 	seen := map[int]bool{task.ID: true}
 	var idList []int
@@ -833,7 +830,7 @@ func areAllTasksDone(pipeline *api.Pipeline) bool {
 }
 
 // GetDefaultAssigneeID gets the default assignee for an issue.
-func (s *TaskScheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
+func (s *Scheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int, projectID int, issueType api.IssueType) (int, error) {
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
 		return api.UnknownID, errors.Wrapf(err, "failed to GetPipelineApprovalPolicy for environmentID %d", environmentID)
@@ -868,7 +865,7 @@ func (s *TaskScheduler) GetDefaultAssigneeID(ctx context.Context, environmentID 
 }
 
 // getAnyFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
-func (s *TaskScheduler) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Member, error) {
+func (s *Scheduler) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Member, error) {
 	for _, role := range []api.Role{api.Owner, api.DBA} {
 		memberList, err := s.store.FindMember(ctx, &api.MemberFind{
 			Role: &role,
@@ -884,7 +881,7 @@ func (s *TaskScheduler) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Mem
 }
 
 // getAnyProjectOwner gets a default assignee from the project owners.
-func (s *TaskScheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*api.ProjectMember, error) {
+func (s *Scheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*api.ProjectMember, error) {
 	role := api.Owner
 	find := &api.ProjectMemberFind{
 		ProjectID: &projectID,
@@ -901,7 +898,7 @@ func (s *TaskScheduler) getAnyProjectOwner(ctx context.Context, projectID int) (
 }
 
 // CanPrincipalBeAssignee checks if a principal could be the assignee of an issue, judging by the principal role and the environment policy.
-func (s *TaskScheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
+func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int, environmentID int, projectID int, issueType api.IssueType) (bool, error) {
 	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
 	if err != nil {
 		return false, err
@@ -952,7 +949,7 @@ func (s *TaskScheduler) CanPrincipalBeAssignee(ctx context.Context, principalID 
 }
 
 // ChangeIssueStatus changes the status of an issue.
-func (s *TaskScheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
+func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
 	var pipelineStatus api.PipelineStatus
 	switch newStatus {
 	case api.IssueOpen:

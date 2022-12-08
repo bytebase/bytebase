@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	"github.com/bytebase/bytebase/server/component/state"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -23,10 +24,11 @@ const (
 )
 
 // NewScheduler creates a task check scheduler.
-func NewScheduler(store *store.Store, licenseService enterpriseAPI.LicenseService) *Scheduler {
+func NewScheduler(store *store.Store, licenseService enterpriseAPI.LicenseService, stateCfg *state.State) *Scheduler {
 	return &Scheduler{
 		store:          store,
 		licenseService: licenseService,
+		stateCfg:       stateCfg,
 		executors:      make(map[api.TaskCheckType]Executor),
 	}
 }
@@ -35,6 +37,7 @@ func NewScheduler(store *store.Store, licenseService enterpriseAPI.LicenseServic
 type Scheduler struct {
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
+	stateCfg       *state.State
 	executors      map[api.TaskCheckType]Executor
 }
 
@@ -44,8 +47,6 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskCheckSchedulerInterval))
-	runningTaskChecks := make(map[int]bool)
-	mu := sync.RWMutex{}
 	for {
 		select {
 		case <-ticker.C:
@@ -83,19 +84,13 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					mu.Lock()
-					if _, ok := runningTaskChecks[taskCheckRun.ID]; ok {
-						mu.Unlock()
+					if _, ok := s.stateCfg.RunningTaskChecks.Load(taskCheckRun.ID); ok {
 						continue
 					}
-					runningTaskChecks[taskCheckRun.ID] = true
-					mu.Unlock()
-
+					s.stateCfg.RunningTaskChecks.Store(taskCheckRun.ID, true)
 					go func(taskCheckRun *api.TaskCheckRun) {
 						defer func() {
-							mu.Lock()
-							delete(runningTaskChecks, taskCheckRun.ID)
-							mu.Unlock()
+							s.stateCfg.RunningTaskChecks.Delete(taskCheckRun.ID)
 						}()
 						checkResultList, err := executor.Run(ctx, taskCheckRun)
 
