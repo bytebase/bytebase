@@ -20,8 +20,6 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID", s.getInstanceByID)
 	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
 	g.DELETE("/instance/:instanceID", s.deleteInstanceByOpenAPI)
-	g.POST("/instance/:instanceID/data-source", s.updateInstanceByOpenAPI)
-	g.PATCH("/instance/:instanceID/data-source/:dataSourceID", s.updateInstanceByOpenAPI)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
