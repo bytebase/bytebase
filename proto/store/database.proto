@@ -11,8 +11,8 @@ message SchemaMetadata {
 
 // TableMetadata is the metadata for a database table.
 message TableMetadata {
-  // The schema_name is the schema name of a table. It is an empty string for databases without such concept such as MySQL.
-  string schema_name = 1;
   // The name is the name of a table.
-  string name = 2;
+  string name = 1;
+  // The schema_name is the schema name of a table. It is an empty string for databases without such concept such as MySQL.
+  string schema_name = 2;
 }
