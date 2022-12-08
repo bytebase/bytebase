@@ -25,23 +25,7 @@ type MigrationSchemaExecutor struct {
 }
 
 // Run will run the task check migration schema executor once.
-func (e *MigrationSchemaExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	task, err := e.store.GetTaskByID(ctx, taskCheckRun.TaskID)
-	if err != nil {
-		return []api.TaskCheckResult{}, common.Wrap(err, common.Internal)
-	}
-	if task == nil {
-		return []api.TaskCheckResult{
-			{
-				Status:    api.TaskCheckStatusError,
-				Namespace: api.BBNamespace,
-				Code:      common.Internal.Int(),
-				Title:     "Error",
-				Content:   fmt.Sprintf("task not found for ID %v", taskCheckRun.TaskID),
-			},
-		}, nil
-	}
-
+func (e *MigrationSchemaExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
 	instance, err := e.store.GetInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
