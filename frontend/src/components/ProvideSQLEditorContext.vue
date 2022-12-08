@@ -29,6 +29,7 @@ import {
   isSameConnection,
   isTempTab,
   isDatabaseAccessible,
+  isInstanceAccessible,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 
@@ -85,7 +86,14 @@ const prepareSQLEditorContext = async () => {
   let connectionTree: ConnectionAtom[] = [];
 
   const { instanceList, databaseList } = state;
-  connectionTree = instanceList.map(mapConnectionAtom("instance", 0));
+  const instanceMapper = mapConnectionAtom("instance", 0);
+  connectionTree = instanceList.map((instance) => {
+    const node = instanceMapper(instance);
+    if (!isInstanceAccessible(instance, currentUser.value)) {
+      node.disabled = true;
+    }
+    return node;
+  });
 
   for (const instance of instanceList) {
     const instanceItem = connectionTree.find(
