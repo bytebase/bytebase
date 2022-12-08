@@ -25,10 +25,13 @@ type DatabaseConnectExecutor struct {
 }
 
 // Run will run the task check database connector executor once.
-func (e *DatabaseConnectExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (e *DatabaseConnectExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
 	database := task.Database
 
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
+	if err == nil {
+		err = driver.Ping(ctx)
+	}
 	if err != nil {
 		return []api.TaskCheckResult{
 			{

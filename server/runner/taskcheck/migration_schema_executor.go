@@ -25,11 +25,8 @@ type MigrationSchemaExecutor struct {
 }
 
 // Run will run the task check migration schema executor once.
-func (e *MigrationSchemaExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
-	instance, err := e.store.GetInstanceByID(ctx, task.InstanceID)
-	if err != nil {
-		return []api.TaskCheckResult{}, err
-	}
+func (e *MigrationSchemaExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+	instance := task.Database.Instance
 
 	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {

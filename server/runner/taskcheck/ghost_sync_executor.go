@@ -26,7 +26,7 @@ type GhostSyncExecutor struct {
 }
 
 // Run will run the task check database connector executor once.
-func (e *GhostSyncExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So
 	// capture the error and send it into the result list.

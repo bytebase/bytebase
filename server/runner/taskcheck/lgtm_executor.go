@@ -24,7 +24,7 @@ type LGTMExecutor struct {
 }
 
 // Run will run the task check LGTM executor once.
-func (e *LGTMExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (e *LGTMExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
 	issue, err := e.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)

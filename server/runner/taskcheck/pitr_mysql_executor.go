@@ -28,7 +28,7 @@ type PITRMySQLExecutor struct {
 }
 
 // Run will run the task check migration schema executor once.
-func (e *PITRMySQLExecutor) Run(ctx context.Context, taskCheckRun *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
+func (e *PITRMySQLExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
 		return nil, errors.Wrapf(err, "invalid PITR restore payload: %s", task.Payload)

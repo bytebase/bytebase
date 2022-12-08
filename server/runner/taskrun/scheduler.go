@@ -170,10 +170,11 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
+					s.stateCfg.Lock()
 					if s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID] >= state.InstanceMaximumConnectionNumber {
+						s.stateCfg.Unlock()
 						continue
 					}
-					s.stateCfg.Lock()
 					s.stateCfg.InstanceOutstandingConnections[task.Database.InstanceID]++
 					s.stateCfg.Unlock()
 
