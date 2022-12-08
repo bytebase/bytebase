@@ -71,8 +71,16 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 
 		subscription := s.licenseService.LoadSubscription(ctx)
 		basePlan := subscription.Plan
-		upgradeTrial := subscription.Trialing && license.Plan.Priority() > subscription.Plan.Priority()
-		if upgradeTrial {
+		if license.Plan.Priority() <= subscription.Plan.Priority() {
+			// Ignore the request if the priority for the trial plan is lower than the current plan.
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+			if err := jsonapi.MarshalPayload(c.Response().Writer, &subscription); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
+			}
+			return nil
+		}
+
+		if subscription.Trialing {
 			license.ExpiresTs = subscription.ExpiresTs
 			license.IssuedTs = subscription.StartedTs
 		}
@@ -103,7 +111,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create license").SetInternal(err)
 			}
 
-			if created && upgradeTrial {
+			if created && subscription.Trialing {
 				// For trial upgrade
 				// Case 1: Users just have the SettingEnterpriseTrial, don't upload their license in SettingEnterpriseLicense.
 				// Case 2: Users have the SettingEnterpriseLicense with team plan and trialing status.
@@ -130,7 +138,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		subscription = s.licenseService.LoadSubscription(ctx)
 		currentPlan := subscription.Plan
 		if s.MetricReporter != nil {
-			s.MetricReporter.report(&metric.Metric{
+			s.MetricReporter.Report(&metric.Metric{
 				Name:  metricAPI.SubscriptionTrialMetricName,
 				Value: 1,
 				Labels: map[string]interface{}{

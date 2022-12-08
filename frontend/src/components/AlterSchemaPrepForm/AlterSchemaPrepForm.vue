@@ -342,7 +342,7 @@ const generateMultiDb = async () => {
     (id) => databaseList.value.find((db) => db.id === id)!
   );
 
-  if (allowUsingUIEditor(selectedDatabaseList)) {
+  if (isAlterSchema.value && allowUsingUIEditor(selectedDatabaseList)) {
     schemaEditorContext.value.databaseIdList = cloneDeep(
       flattenSelectedDatabaseIdList.value
     );
@@ -449,7 +449,7 @@ const generateTenant = async () => {
       });
       const selectedDatabaseList =
         databaseListGroupByName[state.selectedDatabaseName!];
-      if (allowUsingUIEditor(selectedDatabaseList)) {
+      if (isAlterSchema.value && allowUsingUIEditor(selectedDatabaseList)) {
         schemaEditorContext.value.databaseIdList = selectedDatabaseList.map(
           (database) => database.id
         );
@@ -465,7 +465,7 @@ const generateTenant = async () => {
       for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
         databaseList.push(databaseStore.getDatabaseById(databaseId));
       }
-      if (allowUsingUIEditor(databaseList)) {
+      if (isAlterSchema.value && allowUsingUIEditor(databaseList)) {
         schemaEditorContext.value.databaseIdList = Array.from(
           state.selectedDatabaseIdListForTenantMode.values()
         );
@@ -511,7 +511,7 @@ const generateTenant = async () => {
 
 const selectDatabase = async (database: Database) => {
   if (database.project.workflowType == "UI") {
-    if (allowUsingUIEditor([database])) {
+    if (isAlterSchema.value && allowUsingUIEditor([database])) {
       schemaEditorContext.value.databaseIdList = [database.id];
       state.showSchemaEditorModal = true;
       return;

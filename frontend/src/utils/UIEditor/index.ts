@@ -15,9 +15,8 @@ export const getDataTypeSuggestionList = (engineType: EngineType = "MYSQL") => {
   if (engineType === "MYSQL") {
     return [
       "bit",
-      "bool",
       "boolean",
-      "char",
+      "char(1)",
       "date",
       "datetime",
       "double",

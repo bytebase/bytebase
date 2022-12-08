@@ -15,30 +15,8 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/server/component/activity"
 )
-
-var (
-	applicableTaskStatusTransition = map[api.TaskStatus][]api.TaskStatus{
-		api.TaskPendingApproval: {api.TaskPending, api.TaskDone},
-		api.TaskPending:         {api.TaskCanceled, api.TaskRunning, api.TaskPendingApproval, api.TaskDone},
-		api.TaskRunning:         {api.TaskDone, api.TaskFailed, api.TaskCanceled},
-		api.TaskDone:            {},
-		api.TaskFailed:          {api.TaskPendingApproval, api.TaskDone},
-		api.TaskCanceled:        {api.TaskPendingApproval, api.TaskDone},
-	}
-	taskCancellationImplemented = map[api.TaskType]bool{
-		api.TaskDatabaseSchemaUpdateGhostSync: true,
-	}
-)
-
-func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
-	for _, allowedStatus := range applicableTaskStatusTransition[fromStatus] {
-		if allowedStatus == toStatus {
-			return true
-		}
-	}
-	return false
-}
 
 func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *echo.HTTPError {
 	// Allow frontend to change the SQL statement of
@@ -49,7 +27,7 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q state", task.Status))
 	}
 	if task.Status == api.TaskPending {
-		ok, err := s.TaskScheduler.canSchedule(ctx, task)
+		ok, err := s.TaskScheduler.CanSchedule(ctx, task)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
 		}
@@ -203,7 +181,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 
-		taskPatched, err := s.TaskScheduler.patchTaskStatus(ctx, task, taskStatusPatch)
+		taskPatched, err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
@@ -362,7 +340,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	// create an activity and trigger task check for statement update
 	if oldStatement != newStatement {
 		// it's ok to fail.
-		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, externalApprovalCancelReasonSQLModified); err != nil {
+		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
 			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
 		}
 
@@ -397,15 +375,15 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				Type:        api.ActivityPipelineTaskStatementUpdate,
 				Payload:     string(payload),
 				Level:       api.ActivityInfo,
-			}, &ActivityMeta{
-				issue: issue,
+			}, &activity.Metadata{
+				Issue: issue,
 			}); err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 			}
 
 			// updated statement, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
 			if taskPatched.Status == api.TaskPending {
-				t, err := s.TaskScheduler.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+				t, err := s.TaskScheduler.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 					IDList:    []int{taskPatch.ID},
 					UpdaterID: taskPatch.UpdaterID,
 					Status:    api.TaskPendingApproval,
@@ -514,16 +492,15 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			Payload:     string(payload),
 			Level:       api.ActivityInfo,
 		}
-		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{
-			issue: issue,
-		})
-		if err != nil {
+		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
 		}
 
 		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
 		if taskPatched.Status == api.TaskPending {
-			t, err := s.TaskScheduler.patchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+			t, err := s.TaskScheduler.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
 				IDList:    []int{taskPatch.ID},
 				UpdaterID: taskPatch.UpdaterID,
 				Status:    api.TaskPendingApproval,

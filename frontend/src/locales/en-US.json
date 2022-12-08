@@ -11,6 +11,7 @@
     "feishu": "Feishu",
     "wecom": "WeCom",
     "custom": "Custom",
+    "im": "IM",
     "overview": "Overview",
     "migration-history": "Migration History",
     "webhook": "Webhook",
@@ -70,6 +71,7 @@
     "next": "Next",
     "edit": "Edit",
     "update": "Update",
+    "updated": "Updated",
     "visit": "Visit",
     "role": {
       "dba": "DBA",
@@ -570,7 +572,12 @@
       "snowflake": "Use <<schema>>.<<table>> to specify a Snowflake table"
     },
     "rollback-from": "This task rollbacks from {link}.",
-    "issue-link-with-task": "Issue {issue} - task {task}"
+    "issue-link-with-task": "Issue {issue} - task {task}",
+    "assignee-attention": {
+      "send-approval-request-successfully": "Send a {im} approval request successfully",
+      "needs-attention": "Needs attention",
+      "click-to-mark": "Click to mark it as \"Needs attention\""
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1178,7 +1185,8 @@
       "disabled": "Skip LGTM check",
       "project-member": "Require LGTM from project members",
       "project-owner": "Require LGTM from project owner"
-    }
+    },
+    "successfully-updated-db-name-template": "Successfully updated database name template."
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -1397,17 +1405,16 @@
     "use-tips": "Click a database/table to start.",
     "preview-issue": "Preview issue",
     "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
-    "list": "List",
     "raw-sql": "Raw SQL",
     "actions": {
       "create-table": "New table",
+      "rename": "Rename",
       "drop-table": "Drop table",
-      "drop": "Drop",
       "restore": "Restore",
       "add-column": "Add column",
       "drop-column": "Drop column",
       "sql-preview": "SQL Preview",
-      "discard-changes": "Discard Changes",
+      "reset": "Reset",
       "save": "Save"
     },
     "database": {
@@ -1418,11 +1425,11 @@
       "collation": "Collation",
       "comment": "Comment"
     },
-    "tables": "Tables",
+    "table-list": "Table List",
     "table": {
       "name": "Table Name"
     },
-    "columns": "Columns",
+    "column-list": "Column List",
     "column": {
       "name": "Name",
       "type": "Type",

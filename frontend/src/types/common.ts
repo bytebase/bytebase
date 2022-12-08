@@ -261,6 +261,7 @@ const makeUnknown = (type: ResourceType) => {
     engine: "MYSQL",
     engineVersion: "",
     host: "",
+    database: "",
   };
 
   const UNKNOWN_DATABASE: Database = {
@@ -351,6 +352,7 @@ const makeUnknown = (type: ResourceType) => {
     type: "bb.issue.general",
     description: "",
     assignee: UNKNOWN_PRINCIPAL,
+    assigneeNeedAttention: false,
     subscriberList: [],
     payload: {},
   };
@@ -711,6 +713,7 @@ const makeEmpty = (type: ResourceType) => {
     engine: "MYSQL",
     engineVersion: "",
     host: "",
+    database: "",
   };
 
   const EMPTY_DATABASE: Database = {
@@ -801,6 +804,7 @@ const makeEmpty = (type: ResourceType) => {
     type: "bb.issue.general",
     description: "",
     assignee: EMPTY_PRINCIPAL,
+    assigneeNeedAttention: false,
     subscriberList: [],
     payload: {},
   };

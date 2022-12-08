@@ -19,9 +19,10 @@
         </div>
       </template>
 
-      <h2 class="textlabel flex items-center col-span-1 col-start-1">
-        {{ $t("common.assignee")
-        }}<span v-if="create" class="text-red-600">*</span>
+      <h2 class="textlabel flex items-center col-span-1 col-start-1 gap-x-1">
+        <span>{{ $t("common.assignee") }}</span>
+        <span v-if="create" class="text-red-600">*</span>
+        <AssigneeAttentionButton />
       </h2>
       <!-- Only DBA can be assigned to the issue -->
       <div class="col-span-2" data-label="bb-assignee-select-container">
@@ -278,6 +279,7 @@ import { NDatePicker } from "naive-ui";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+
 import StageSelect from "./StageSelect.vue";
 import TaskSelect from "./TaskSelect.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";

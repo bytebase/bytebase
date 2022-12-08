@@ -28,31 +28,21 @@
         />
       </template>
       <template v-if="applicableIssueStatusTransitionList.length > 0">
-        <button
-          id="user-menu"
-          type="button"
-          class="text-control-light"
-          aria-label="User menu"
-          aria-haspopup="true"
-          @click.prevent="menu?.toggle($event, {})"
-          @contextmenu.capture.prevent="menu?.toggle($event, {})"
+        <NDropdown
+          trigger="click"
+          :options="issueStatusTransitionDropdownOptions"
+          @select="handleIssueStatusTransitionDropdownSelect"
         >
-          <heroicons-solid:dots-vertical class="w-6 h-6" />
-        </button>
-        <BBContextMenu ref="menu" class="origin-top-right mt-10 w-42">
-          <template
-            v-for="(transition, index) in applicableIssueStatusTransitionList"
-            :key="index"
+          <button
+            id="user-menu"
+            type="button"
+            class="text-control-light"
+            aria-label="User menu"
+            aria-haspopup="true"
           >
-            <div
-              class="menu-item"
-              role="menuitem"
-              @click.prevent="tryStartIssueStatusTransition(transition)"
-            >
-              {{ $t(transition.buttonName) }}
-            </div>
-          </template>
-        </BBContextMenu>
+            <heroicons-solid:dots-vertical class="w-6 h-6" />
+          </button>
+        </NDropdown>
       </template>
     </div>
     <template v-else>
@@ -106,9 +96,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, Ref, ref } from "vue";
+import { computed, reactive, Ref } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
+import { DropdownOption, NDropdown } from "naive-ui";
+
 import {
   StageStatusTransition,
   taskCheckRunSummary,
@@ -124,7 +116,6 @@ import type {
   TaskCreate,
 } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { BBContextMenu } from "@/bbkit";
 import { useCurrentUser, useIssueStore } from "@/store";
 import StatusTransitionForm from "./StatusTransitionForm.vue";
 import {
@@ -163,8 +154,11 @@ type TaskStatusTransitionButtonAction = ButtonAction<{
   target: "TASK" | "STAGE";
 }>;
 
+type IssueStatusTransitionDropdownOption = DropdownOption & {
+  transition: IssueStatusTransition;
+};
+
 const { t } = useI18n();
-const menu = ref<InstanceType<typeof BBContextMenu>>();
 
 const {
   create,
@@ -204,6 +198,21 @@ const {
   getApplicableStageStatusTransitionList,
   getApplicableTaskStatusTransitionList,
 } = useIssueTransitionLogic(issue as Ref<Issue>);
+
+const issueStatusTransitionDropdownOptions = computed(() => {
+  return applicableIssueStatusTransitionList.value.map<IssueStatusTransitionDropdownOption>(
+    (transition) => {
+      return { label: t(transition.buttonName), transition };
+    }
+  );
+});
+
+const handleIssueStatusTransitionDropdownSelect = (
+  key: string,
+  option: IssueStatusTransitionDropdownOption
+) => {
+  tryStartIssueStatusTransition(option.transition);
+};
 
 const tryStartStageOrTaskStatusTransition = (
   transition: TaskStatusTransition | StageStatusTransition,

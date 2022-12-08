@@ -24,9 +24,14 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 func (s *Server) listInstance(c echo.Context) error {
 	ctx := c.Request().Context()
 	rowStatus := api.Normal
-	instanceList, err := s.store.FindInstance(ctx, &api.InstanceFind{
+	find := &api.InstanceFind{
 		RowStatus: &rowStatus,
-	})
+	}
+	if name := c.QueryParam("name"); name != "" {
+		find.Name = &name
+	}
+
+	instanceList, err := s.store.FindInstance(ctx, find)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
 	}

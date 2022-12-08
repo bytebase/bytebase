@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
@@ -19,6 +17,8 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -54,14 +54,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		var filteredList []*api.Database
 		role := c.Get(getRoleContextKey()).(api.Role)
-		// If caller is NOT requesting for a particular project and is NOT requesting for a particular
-		// instance or the caller is a Developer, then we will only return databases belonging to the
+		// If the caller is a developer, we will only return databases belonging to the
 		// project where the caller is a member of.
-		// Looking from the UI perspective:
-		// - The database list left sidebar will only return databases related to the caller regardless of the caller's role.
-		// - The database list on the instance page will return all databases if the caller is Owner or DBA, but will only return
-		//   related databases if the caller is Developer.
-		if projectIDStr == "" && (databaseFind.InstanceID == nil || role == api.Developer) {
+		if role == api.Developer {
 			principalID := c.Get(getPrincipalIDContextKey()).(int)
 			for _, database := range dbList {
 				for _, projectMember := range database.Project.ProjectMemberList {
@@ -133,7 +128,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		targetProject := database.Project
 		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != database.ProjectID {
 			// Before updating database's projectID, we need to check if there are still bound sheets.
 			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.ID}, currentPrincipalID)
@@ -151,14 +145,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			if toProject == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
 			}
-			targetProject = toProject
 		}
 
 		// Patch database labels
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
 		if dbPatch.Labels != nil {
-			if err := s.setDatabaseLabels(ctx, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
+			if err := utils.SetDatabaseLabels(ctx, s.store, *dbPatch.Labels, database, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
@@ -201,7 +194,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						Comment:     fmt.Sprintf("Transferred out database %q to project %q.", dbPatched.Name, dbPatched.Project.Name),
 						Payload:     string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 				}
 
 				if err != nil {
@@ -222,7 +215,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						Comment:     fmt.Sprintf("Transferred in database %q from project %q.", dbExisting.Name, dbExisting.Project.Name),
 						Payload:     string(bytes),
 					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 					if err != nil {
 						log.Warn("Failed to create project activity after transferring database",
 							zap.Int("database_id", dbPatched.ID),
@@ -451,7 +444,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Backup %q already exists", backupCreate.Name))
 		}
 
-		backup, err := s.BackupRunner.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
+		backup, err := s.BackupRunner.ScheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			if common.ErrorCode(err) == common.DbConnectionFailure {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)
@@ -649,13 +642,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceDatabaseSyncChan <- updatedInstance
+		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
@@ -730,13 +723,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.SchemaSyncer.syncInstance(ctx, updatedInstance); err != nil {
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, updatedInstance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", updatedInstance.ID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceDatabaseSyncChan <- updatedInstance
+		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
@@ -834,88 +827,4 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
-	if labelsJSON == "" {
-		return nil
-	}
-	// NOTE: this is a partially filled DatabaseLabel
-	var labels []*api.DatabaseLabel
-	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-		return err
-	}
-
-	// For scalability, each database can have up to four labels for now.
-	if len(labels) > api.DatabaseLabelSizeMax {
-		err := errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-	}
-
-	rowStatus := api.Normal
-	labelKeyList, err := s.store.FindLabelKey(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
-	}
-
-	if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
-	}
-
-	// Validate labels can match database name template on the project if the
-	// template is not a wildcard.
-	if project.DBNameTemplate != "" {
-		tokens := make(map[string]string)
-		for _, label := range labels {
-			tokens[label.Key] = tokens[label.Value]
-		}
-		baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, project.DBNameTemplate, labelsJSON)
-		if err != nil {
-			return errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", database.Name, project.DBNameTemplate, labelsJSON)
-		}
-		if _, err := formatDatabaseName(baseDatabaseName, project.DBNameTemplate, tokens); err != nil {
-			err := errors.Errorf("database labels don't match with database name template %q", project.DBNameTemplate)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-	}
-
-	if !validateOnly {
-		if _, err = s.store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
-		}
-	}
-	return nil
-}
-
-func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {
-	keyValueList := make(map[string]map[string]bool)
-	for _, labelKey := range labelKeyList {
-		keyValueList[labelKey.Key] = map[string]bool{}
-		for _, value := range labelKey.ValueList {
-			keyValueList[labelKey.Key][value] = true
-		}
-	}
-
-	var environmentValue *string
-
-	// check label key & value availability
-	for _, label := range labelList {
-		if label.Key == api.EnvironmentKeyName {
-			environmentValue = &label.Value
-			continue
-		}
-		if _, ok := keyValueList[label.Key]; !ok {
-			return common.Errorf(common.Invalid, "invalid database label key: %v", label.Key)
-		}
-	}
-
-	// Environment label must exist and is immutable.
-	if environmentValue == nil {
-		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentKeyName)
-	}
-	if environmentName != *environmentValue {
-		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, *environmentValue)
-	}
-
-	return nil
 }

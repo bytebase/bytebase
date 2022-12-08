@@ -30,6 +30,8 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
 const (
@@ -205,7 +207,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				ClientSecret: repo.VCS.Secret,
 				AccessToken:  repo.AccessToken,
 				RefreshToken: repo.RefreshToken,
-				Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 			},
 			repo.VCS.InstanceURL,
 			request.RepositoryID,
@@ -317,7 +319,7 @@ func (s *Server) sqlAdviceForFile(
 			ClientSecret: fileInfo.repository.VCS.Secret,
 			AccessToken:  fileInfo.repository.AccessToken,
 			RefreshToken: fileInfo.repository.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, fileInfo.repository.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, fileInfo.repository.WebURL),
 		},
 		fileInfo.repository.VCS.InstanceURL,
 		fileInfo.repository.ExternalID,
@@ -529,7 +531,7 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 				createdMessageList = append(createdMessageList, createdMessage)
 			} else {
 				for _, activityCreate := range activityCreateList {
-					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+					if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 						log.Warn("Failed to create project activity for the ignored repository files", zap.Error(err))
 					}
 				}
@@ -560,7 +562,7 @@ func (s *Server) filterFilesByCommitsDiff(ctx context.Context, repo *api.Reposit
 			ClientSecret: repo.VCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 		},
 		repo.VCS.InstanceURL,
 		repo.ExternalID,
@@ -861,7 +863,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
 		Payload:     string(activityPayload),
 	}
-	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 	}
 
@@ -983,7 +985,7 @@ func (s *Server) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, r
 			ClientSecret: repo.VCS.Secret,
 			AccessToken:  repo.AccessToken,
 			RefreshToken: repo.RefreshToken,
-			Refresher:    refreshToken(ctx, s.store, repo.WebURL),
+			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
 		},
 		repo.VCS.InstanceURL,
 		repo.ExternalID,

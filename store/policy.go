@@ -67,7 +67,7 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 	}
 	// Cache environment tier policy as it is used widely.
 	if upsert.Type == api.PolicyTypeEnvironmentTier {
-		if err := s.cache.UpsertCache(api.TierPolicyCache, upsert.ResourceID, policyRaw); err != nil {
+		if err := s.cache.UpsertCache(tierPolicyCacheNamespace, upsert.ResourceID, policyRaw); err != nil {
 			return nil, err
 		}
 	}
@@ -131,7 +131,7 @@ func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete
 	}
 
 	if policyDelete.Type == api.PolicyTypeEnvironmentTier {
-		s.cache.DeleteCache(api.TierPolicyCache, policyDelete.ResourceID)
+		s.cache.DeleteCache(tierPolicyCacheNamespace, policyDelete.ResourceID)
 	}
 	return nil
 }
@@ -228,7 +228,7 @@ func (s *Store) GetSQLReviewPolicyIDByEnvID(ctx context.Context, environmentID i
 // GetEnvironmentTierPolicyByEnvID will get the environment tier policy for an environment.
 func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environmentID int) (*api.EnvironmentTierPolicy, error) {
 	var policy *policyRaw
-	ok, err := s.cache.FindCache(api.TierPolicyCache, environmentID, &policy)
+	ok, err := s.cache.FindCache(tierPolicyCacheNamespace, environmentID, &policy)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (s *Store) GetEnvironmentTierPolicyByEnvID(ctx context.Context, environment
 		}
 		policy = p
 		// Cache the tier policy.
-		if err := s.cache.UpsertCache(api.TierPolicyCache, environmentID, policy); err != nil {
+		if err := s.cache.UpsertCache(tierPolicyCacheNamespace, environmentID, policy); err != nil {
 			return nil, err
 		}
 	}
@@ -330,6 +330,10 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 	var ret *policyRaw
 	if err != nil {
 		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	if len(policyRawList) == 0 {

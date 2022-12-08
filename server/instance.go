@@ -441,6 +441,9 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 	if err := s.disallowBytebaseStore(create.Engine, create.Host, create.Port); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
+	if create.Engine != db.Postgres && create.Database != "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres")
+	}
 
 	instance, err := s.store.CreateInstance(ctx, create)
 	if err != nil {
@@ -462,13 +465,13 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 				zap.String("engine", string(instance.Engine)),
 				zap.Error(err))
 		}
-		if _, err := s.SchemaSyncer.syncInstance(ctx, instance); err != nil {
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.Int("instance_id", instance.ID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		instanceDatabaseSyncChan <- instance
+		s.stateCfg.InstanceDatabaseSyncChan <- instance
 	}
 
 	return instance, nil
@@ -483,15 +486,21 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", patch.ID))
 	}
 
-	host, port := instance.Host, instance.Port
+	host, port, database := instance.Host, instance.Port, instance.Database
 	if patch.Host != nil {
 		host = *patch.Host
 	}
 	if patch.Port != nil {
 		port = *patch.Port
 	}
+	if patch.Database != nil {
+		database = *patch.Database
+	}
 	if err := s.disallowBytebaseStore(instance.Engine, host, port); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+	if instance.Engine != db.Postgres && database != "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres")
 	}
 
 	var instancePatched *api.Instance
@@ -541,13 +550,13 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 					zap.String("engine", string(instancePatched.Engine)),
 					zap.Error(err))
 			}
-			if _, err := s.SchemaSyncer.syncInstance(ctx, instancePatched); err != nil {
+			if _, err := s.SchemaSyncer.SyncInstance(ctx, instancePatched); err != nil {
 				log.Warn("Failed to sync instance",
 					zap.Int("instance_id", instancePatched.ID),
 					zap.Error(err))
 			}
 			// Sync all databases in the instance asynchronously.
-			instanceDatabaseSyncChan <- instancePatched
+			s.stateCfg.InstanceDatabaseSyncChan <- instancePatched
 		}
 	}
 

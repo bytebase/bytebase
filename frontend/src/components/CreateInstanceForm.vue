@@ -166,6 +166,24 @@
           />
         </div>
 
+        <div v-if="showDatabase" class="sm:col-span-1 sm:col-start-1">
+          <div class="flex flex-row items-center space-x-2">
+            <label for="database" class="textlabel block">
+              {{ $t("common.database") }}
+            </label>
+          </div>
+          <input
+            id="database"
+            name="database"
+            type="text"
+            class="textfield mt-1 w-full"
+            autocomplete="off"
+            :placeholder="$t('common.database')"
+            :value="state.instance.database"
+            @input="handleInstanceDatabaseInput"
+          />
+        </div>
+
         <div v-if="showSSL" class="sm:col-span-3 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
             <label class="textlabel block">{{
@@ -345,6 +363,10 @@ const showSSL = computed((): boolean => {
   return state.instance.engine === "CLICKHOUSE";
 });
 
+const showDatabase = computed((): boolean => {
+  return state.instance.engine === "POSTGRES";
+});
+
 const isInOnboaringCreateDatabaseGuide = computed(() => {
   const guideName = useOnboardingGuideStore().guideName;
   return guideName === "create-database";
@@ -437,6 +459,10 @@ const handleInstancePasswordInput = (event: Event) => {
   updateInstance("password", (event.target as HTMLInputElement).value);
 };
 
+const handleInstanceDatabaseInput = (event: Event) => {
+  updateInstance("database", (event.target as HTMLInputElement).value);
+};
+
 const updateInstance = (field: string, value: string) => {
   let str = value;
   if (
@@ -445,7 +471,8 @@ const updateInstance = (field: string, value: string) => {
     field === "port" ||
     field === "externalLink" ||
     field === "username" ||
-    field === "password"
+    field === "password" ||
+    field === "database"
   ) {
     str = value.trim();
   }
@@ -534,6 +561,11 @@ const tryCreate = () => {
 // Conceptually, data source is the proper place to store connection info (thinking of DSN)
 const doCreate = () => {
   state.isCreatingInstance = true;
+
+  if (state.instance.engine !== "POSTGRES") {
+    // Clear the `database` field if not needed.
+    state.instance.database = "";
+  }
   useInstanceStore()
     .createInstance(state.instance)
     .then((createdInstance) => {
@@ -562,6 +594,8 @@ const testConnection = () => {
     engine: instance.engine,
     username: instance.username,
     password: instance.password,
+    // Use the `database` field only when needed.
+    database: instance.engine === "POSTGRES" ? instance.database : undefined,
     useEmptyPassword: false,
     instanceId: undefined,
   };
