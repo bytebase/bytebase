@@ -33,7 +33,7 @@
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseId, UNKNOWN_ID, UIEditorTabType, unknown } from "@/types";
-import { Table, TableTabContext } from "@/types/UIEditor";
+import { TableTabContext } from "@/types/UIEditor";
 import {
   useUIEditorStore,
   useNotificationStore,
@@ -55,8 +55,8 @@ const props = defineProps({
     type: Number as PropType<DatabaseId>,
     default: UNKNOWN_ID,
   },
-  table: {
-    type: Object as PropType<Table | undefined>,
+  tableName: {
+    type: String as PropType<string | undefined>,
     default: undefined,
   },
 });
@@ -69,11 +69,11 @@ const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
-  tableName: props.table?.newName || "",
+  tableName: props.tableName || "",
 });
 
 const isCreatingTable = computed(() => {
-  return props.table === undefined;
+  return props.tableName === undefined;
 });
 
 const handleTableNameChange = (event: Event) => {
@@ -128,7 +128,10 @@ const handleConfirmButtonClick = async () => {
     });
     dismissModal();
   } else {
-    const table = editorStore.tableList.find((item) => item === props.table);
+    const table = editorStore.tableList.find(
+      (table) =>
+        table.databaseId === databaseId && table.newName === props.tableName
+    );
     if (table) {
       const tab = editorStore.findTab(
         table.databaseId,

@@ -147,7 +147,7 @@
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
     :database-id="state.tableNameModalContext.databaseId"
-    :table="state.tableNameModalContext.table"
+    :table-name="state.tableNameModalContext.tableName"
     @close="state.tableNameModalContext = undefined"
   />
 </template>
@@ -176,7 +176,7 @@ interface LocalState {
   statement: string;
   tableNameModalContext?: {
     databaseId: DatabaseId;
-    table: Table | undefined;
+    tableName: string | undefined;
   };
 }
 
@@ -270,7 +270,7 @@ const handleChangeTab = (tab: TabType) => {
 const handleCreateNewTable = () => {
   state.tableNameModalContext = {
     databaseId: database.id,
-    table: undefined,
+    tableName: undefined,
   };
 };
 

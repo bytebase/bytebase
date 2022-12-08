@@ -41,7 +41,7 @@
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
     :database-id="state.tableNameModalContext.databaseId"
-    :table="state.tableNameModalContext.table"
+    :table-name="state.tableNameModalContext.tableName"
     @close="state.tableNameModalContext = undefined"
   />
 </template>
@@ -104,7 +104,7 @@ interface LocalState {
   shouldRelocateTreeNode: boolean;
   tableNameModalContext?: {
     databaseId: DatabaseId;
-    table: Table | undefined;
+    tableName: string | undefined;
   };
 }
 
@@ -521,7 +521,7 @@ const handleContextMenuDropdownSelect = async (key: string) => {
       await loadSubTree(treeNode);
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
-        table: undefined,
+        tableName: undefined,
       };
     }
   } else if (treeNode?.type === "table") {
@@ -534,7 +534,7 @@ const handleContextMenuDropdownSelect = async (key: string) => {
     if (key === "rename") {
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
-        table: table,
+        tableName: table.newName,
       };
     } else if (key === "drop") {
       editorStore.dropTable(table);
