@@ -42,6 +42,8 @@ const (
 	dataSourceCacheNamespace cacheNamespace = "ds"
 	// tierPolicyCacheNamespace is the cache type of tier policy.
 	tierPolicyCacheNamespace cacheNamespace = "pot"
+	// schemaCacheNamespace is the cache type of database schema.
+	schemaCacheNamespace cacheNamespace = "sc"
 )
 
 // CacheService implements a cache.
