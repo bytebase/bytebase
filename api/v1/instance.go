@@ -9,7 +9,8 @@ type Instance struct {
 	ID int `json:"id"`
 
 	// Related fields
-	Environment string `json:"environment"`
+	Environment    string        `json:"environment"`
+	DataSourceList []*DataSource `json:"dataSourceList"`
 
 	// Domain specific fields
 	Name          string  `json:"name"`
@@ -19,13 +20,13 @@ type Instance struct {
 	Host          string  `json:"host"`
 	Port          string  `json:"port"`
 	Database      string  `json:"database"`
-	Username      string  `json:"username"`
 }
 
 // InstanceCreate is the API message for creating an instance.
 type InstanceCreate struct {
 	// Related fields
-	Environment string `json:"environment"`
+	Environment    string              `json:"environment"`
+	DataSourceList []*DataSourceCreate `json:"dataSourceList"`
 
 	// Domain specific fields
 	Name         string  `json:"name"`
@@ -34,15 +35,13 @@ type InstanceCreate struct {
 	Host         string  `json:"host"`
 	Port         string  `json:"port"`
 	Database     string  `json:"database"`
-	Username     string  `json:"username"`
-	Password     string  `json:"password"`
-	SslCa        string  `json:"sslCa"`
-	SslCert      string  `json:"sslCert"`
-	SslKey       string  `json:"sslKey"`
 }
 
 // InstancePatch is the API message for patching an instance.
 type InstancePatch struct {
+	// Related fields
+	DataSourceList []*DataSourceCreate `json:"dataSourceList"`
+
 	// Domain specific fields
 	Name         *string `json:"name"`
 	ExternalLink *string `json:"externalLink"`
