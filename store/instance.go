@@ -14,6 +14,48 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
+// InstanceCreate is the API message to create the instance.
+// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
+type InstanceCreate struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	CreatorID int
+
+	// Related fields
+	EnvironmentID  int
+	DataSourceList []*api.DataSourceCreate
+
+	// Domain specific fields
+	Name         string
+	Engine       db.Type
+	ExternalLink string
+	Host         string
+	Port         string
+	Database     string
+}
+
+// InstancePatch is the API message for patching an instance.
+// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
+type InstancePatch struct {
+	ID int
+
+	// Standard fields
+	RowStatus *string
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterID int
+
+	// Related fields
+	DataSourceList []*api.DataSourceCreate
+
+	// Domain specific fields
+	Name          *string
+	EngineVersion *string
+	ExternalLink  *string
+	Host          *string
+	Port          *string
+	Database      *string
+}
+
 // instanceRaw is the store model for an Instance.
 // Fields have exactly the same meanings as Instance.
 type instanceRaw struct {
@@ -67,7 +109,7 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 }
 
 // CreateInstance creates an instance of Instance.
-func (s *Store) CreateInstance(ctx context.Context, create *api.InstanceCreate) (*api.Instance, error) {
+func (s *Store) CreateInstance(ctx context.Context, create *InstanceCreate) (*api.Instance, error) {
 	instanceRaw, err := s.createInstanceRaw(ctx, create)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Instance with InstanceCreate[%+v]", create)
@@ -114,7 +156,7 @@ func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*ap
 }
 
 // PatchInstance patches an instance of Instance.
-func (s *Store) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
+func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.Instance, error) {
 	instanceRaw, err := s.patchInstanceRaw(ctx, patch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Instance with InstancePatch[%+v]", patch)
@@ -332,7 +374,7 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 }
 
 // createInstanceRaw creates a new instance.
-func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreate) (*instanceRaw, error) {
+func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (*instanceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -359,21 +401,22 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		return nil, err
 	}
 
-	// Create admin data source
-	adminDataSourceCreate := &api.DataSourceCreate{
-		CreatorID:  create.CreatorID,
-		InstanceID: instance.ID,
-		DatabaseID: allDatabase.ID,
-		Name:       api.AdminDataSourceName,
-		Type:       api.Admin,
-		Username:   create.Username,
-		Password:   create.Password,
-		SslKey:     create.SslKey,
-		SslCert:    create.SslCert,
-		SslCa:      create.SslCa,
-	}
-	if err := s.createDataSourceRawTx(ctx, tx, adminDataSourceCreate); err != nil {
-		return nil, err
+	for _, dataSource := range create.DataSourceList {
+		dataSourceCreate := &api.DataSourceCreate{
+			CreatorID:  create.CreatorID,
+			InstanceID: instance.ID,
+			DatabaseID: allDatabase.ID,
+			Name:       dataSource.Name,
+			Type:       dataSource.Type,
+			Username:   dataSource.Username,
+			Password:   dataSource.Password,
+			SslKey:     dataSource.SslKey,
+			SslCert:    dataSource.SslCert,
+			SslCa:      dataSource.SslCa,
+		}
+		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -443,7 +486,7 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 
 // patchInstanceRaw updates an existing instance by ID.
 // Returns ENOTFOUND if instance does not exist.
-func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) (*instanceRaw, error) {
+func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*instanceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -453,6 +496,49 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) 
 	instance, err := patchInstanceImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
+	}
+
+	if patch.DataSourceList != nil {
+		dbName := api.AllDatabaseName
+		dbFind := &api.DatabaseFind{
+			InstanceID:         &patch.ID,
+			Name:               &dbName,
+			IncludeAllDatabase: true,
+		}
+		databaseList, err := s.findDatabaseImpl(ctx, tx, dbFind)
+		if err != nil {
+			return nil, err
+		}
+		if len(databaseList) == 0 {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot find database with filter %+v. ", dbFind)}
+		}
+		if len(databaseList) > 1 {
+			return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(databaseList), dbFind)}
+		}
+		database := databaseList[0]
+
+		if err := s.clearDataSourceImpl(ctx, tx, patch.ID, database.ID); err != nil {
+			return nil, err
+		}
+		s.cache.DeleteCache(dataSourceCacheNamespace, patch.ID)
+
+		for _, dataSource := range patch.DataSourceList {
+			dataSourceCreate := &api.DataSourceCreate{
+				CreatorID:  patch.UpdaterID,
+				InstanceID: instance.ID,
+				DatabaseID: database.ID,
+				Name:       dataSource.Name,
+				Type:       dataSource.Type,
+				Username:   dataSource.Username,
+				Password:   dataSource.Password,
+				SslKey:     dataSource.SslKey,
+				SslCert:    dataSource.SslCert,
+				SslCa:      dataSource.SslCa,
+			}
+			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -467,7 +553,7 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) 
 }
 
 // createInstanceImpl creates a new instance.
-func createInstanceImpl(ctx context.Context, tx *Tx, create *api.InstanceCreate) (*instanceRaw, error) {
+func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*instanceRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO instance (
@@ -579,7 +665,7 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 }
 
 // patchInstanceImpl updates a instance by ID. Returns the new state of the instance after update.
-func patchInstanceImpl(ctx context.Context, tx *Tx, patch *api.InstancePatch) (*instanceRaw, error) {
+func patchInstanceImpl(ctx context.Context, tx *Tx, patch *InstancePatch) (*instanceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

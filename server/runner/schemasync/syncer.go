@@ -179,7 +179,7 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 	// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
 	// to avoid changing the updated_ts.
 	if instanceMeta.Version != instance.EngineVersion {
-		_, err := s.store.PatchInstance(ctx, &api.InstancePatch{
+		_, err := s.store.PatchInstance(ctx, &store.InstancePatch{
 			ID:            instance.ID,
 			UpdaterID:     api.SystemBotID,
 			EngineVersion: &instanceMeta.Version,
