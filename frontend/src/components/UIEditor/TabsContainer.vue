@@ -47,11 +47,10 @@ import { isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { useTableStore, useUIEditorStore } from "@/store";
-import { TabContext, UIEditorTabType, UNKNOWN_ID } from "@/types";
+import { useUIEditorStore } from "@/store";
+import { TabContext, UIEditorTabType } from "@/types";
 
 const editorStore = useUIEditorStore();
-const tableStore = useTableStore();
 const tabsContainerRef = ref();
 const tabList = computed(() => {
   return Array.from(editorStore.tabState.tabMap.values());
@@ -78,18 +77,23 @@ watch(
 
 const getTabComputedClassList = (tab: TabContext) => {
   if (tab.type === UIEditorTabType.TabForTable) {
-    if (editorStore.droppedTableList.includes(tab.table)) {
+    const table = editorStore.getTableWithTableTab(tab);
+    if (!table) {
+      return [];
+    }
+
+    if (table.status === "dropped") {
       return ["text-red-700", "line-through"];
     }
-    if (tab.table.id === UNKNOWN_ID) {
+    if (table.status === "created") {
       return ["text-green-700"];
     }
 
-    const originTable = tableStore.getTableByDatabaseIdAndTableId(
-      tab.databaseId,
-      tab.tableId
+    const originTable = editorStore.originTableList.find(
+      (item) =>
+        item.databaseId === table.databaseId && item.oldName === table.oldName
     );
-    if (!isEqual(tab.table, originTable)) {
+    if (!isEqual(originTable, table)) {
       return ["text-yellow-700"];
     }
   }
@@ -104,7 +108,7 @@ const getTabName = (tab: TabContext) => {
     );
     return `${database?.name || "unknown database"}`;
   } else if (tab.type === UIEditorTabType.TabForTable) {
-    return `${tab.table.name}`;
+    return `${tab.tableName}`;
   } else {
     // Should never reach here.
     return "unknown structure";
