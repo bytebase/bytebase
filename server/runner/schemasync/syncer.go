@@ -484,6 +484,55 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 				CreateOptions: table.CreateOptions,
 				Comment:       table.Comment,
 			}
+
+			sort.Slice(table.ColumnList, func(i, j int) bool {
+				return table.ColumnList[i].Position < table.ColumnList[j].Position
+			})
+			for _, column := range table.ColumnList {
+				columnMetadata := &storepb.ColumnMetadata{
+					Name:         column.Name,
+					Position:     int32(column.Position),
+					Nullable:     column.Nullable,
+					Type:         column.Type,
+					CharacterSet: column.CharacterSet,
+					Collation:    column.Collation,
+					Comment:      column.Comment,
+				}
+				if column.Default != nil {
+					columnMetadata.HasDefault = true
+					columnMetadata.Default = *column.Default
+				}
+				tableMetadata.Columns = append(tableMetadata.Columns, columnMetadata)
+			}
+
+			indexMap := make(map[string][]db.Index)
+			for _, expression := range table.IndexList {
+				indexMap[expression.Name] = append(indexMap[expression.Name], expression)
+			}
+			var indexNames []string
+			for indexName := range indexMap {
+				indexNames = append(indexNames, indexName)
+			}
+			sort.Strings(indexNames)
+			for _, indexName := range indexNames {
+				expressionList := indexMap[indexName]
+				sort.Slice(expressionList, func(i, j int) bool {
+					return expressionList[i].Position < expressionList[j].Position
+				})
+				indexMetadata := &storepb.IndexMetadata{
+					Name:    expressionList[0].Name,
+					Type:    expressionList[0].Type,
+					Unique:  expressionList[0].Unique,
+					Primary: expressionList[0].Primary,
+					Visible: expressionList[0].Visible,
+					Comment: expressionList[0].Comment,
+				}
+				for _, expression := range expressionList {
+					indexMetadata.Expressions = append(indexMetadata.Expressions, expression.Expression)
+				}
+				tableMetadata.Indexes = append(tableMetadata.Indexes, indexMetadata)
+			}
+
 			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
 		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, schemaMetadata)
