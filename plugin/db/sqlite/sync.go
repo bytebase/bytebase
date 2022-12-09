@@ -251,6 +251,7 @@ func getViews(txn *sql.Tx) ([]db.View, error) {
 		if err := rows.Scan(&view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
+		view.ShortName = view.Name
 		views = append(views, view)
 	}
 	if err := rows.Err(); err != nil {

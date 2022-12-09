@@ -47,6 +47,10 @@ type User struct {
 // View is the database view.
 type View struct {
 	Name string
+	// ShortName is the short table name.
+	ShortName string
+	// Schema is the schema name for a table. It should be supported only for Postgres and Snowflake.
+	Schema string
 	// CreatedTs isn't supported for ClickHouse.
 	CreatedTs  int64
 	UpdatedTs  int64
