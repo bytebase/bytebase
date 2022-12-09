@@ -151,10 +151,10 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 		WITH database_backup_policy AS (
 			SELECT db.id AS database_id, backup_policy.payload AS payload
 			FROM db, instance LEFT JOIN (
-				SELECT environment_id, payload
+				SELECT resource_id, payload
 				FROM policy
 				WHERE type = 'bb.policy.backup-plan'
-			) AS backup_policy ON instance.environment_id = backup_policy.environment_id
+			) AS backup_policy ON instance.environment_id = backup_policy.resource_id
 			WHERE db.instance_id = instance.id
 		), database_backup_setting AS(
 			SELECT db.id AS database_id, backup_setting.enabled AS enabled
