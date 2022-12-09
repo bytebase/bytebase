@@ -1390,7 +1390,6 @@
     "format": "格式化",
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
-    "open-connection": "打开连接",
     "visualize-explain": "可视化 Explain",
     "sql-execute-in-protected-environment": "下面的 SQL 语句将会在受保护的环境中执行。",
     "rows-upper-limit": "到达查询结果条数上限",
@@ -1398,7 +1397,12 @@
       "readonly": "只读",
       "admin": "管理员"
     },
-    "close-sheet": "关闭工作表"
+    "close-sheet": "关闭工作表",
+    "connect": "连接",
+    "connect-in-admin-mode": "以管理员模式连接",
+    "admin-mode": {
+      "self": "管理员模式"
+    }
   },
   "ui-editor": {
     "self": "UI 编辑器",
@@ -1408,6 +1412,7 @@
     "raw-sql": "SQL 语句",
     "actions": {
       "create-table": "新建表",
+      "rename": "重命名",
       "drop-table": "删除表",
       "drop": "删除",
       "restore": "恢复",
@@ -1435,7 +1440,7 @@
       "type": "类型",
       "default": "默认值",
       "comment": "注释",
-      "nullable": "是否可为空"
+      "not-null": "不可为空"
     },
     "nothing-changed": "无任何改动",
     "message": {

@@ -144,6 +144,7 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 	for _, name := range tableNames {
 		var tbl db.Table
 		tbl.Name = name
+		tbl.ShortName = name
 		tbl.Type = "BASE TABLE"
 
 		if err := func() error {
@@ -250,6 +251,7 @@ func getViews(txn *sql.Tx) ([]db.View, error) {
 		if err := rows.Scan(&view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
+		view.ShortName = view.Name
 		views = append(views, view)
 	}
 	if err := rows.Err(); err != nil {

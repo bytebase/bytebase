@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/store"
 )
 
 // pgConnectionInfo represents the embedded postgres instance connection info.
@@ -32,14 +33,32 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.POST("/instance", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		instanceCreate := &api.InstanceCreate{
-			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
-		}
+		instanceCreate := &api.InstanceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create instance request").SetInternal(err)
 		}
 
-		instance, err := s.createInstance(ctx, instanceCreate)
+		instance, err := s.createInstance(ctx, &store.InstanceCreate{
+			CreatorID:     c.Get(getPrincipalIDContextKey()).(int),
+			EnvironmentID: instanceCreate.EnvironmentID,
+			DataSourceList: []*api.DataSourceCreate{
+				{
+					Name:     api.AdminDataSourceName,
+					Type:     api.Admin,
+					Username: instanceCreate.Username,
+					Password: instanceCreate.Password,
+					SslCa:    instanceCreate.SslCa,
+					SslCert:  instanceCreate.SslCert,
+					SslKey:   instanceCreate.SslKey,
+				},
+			},
+			Name:         instanceCreate.Name,
+			Engine:       instanceCreate.Engine,
+			ExternalLink: instanceCreate.ExternalLink,
+			Host:         instanceCreate.Host,
+			Port:         instanceCreate.Port,
+			Database:     instanceCreate.Database,
+		})
 		if err != nil {
 			return err
 		}
@@ -99,15 +118,22 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instancePatch := &api.InstancePatch{
-			ID:        id,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-		}
+		instancePatch := &api.InstancePatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch instance request").SetInternal(err)
 		}
 
-		instancePatched, err := s.updateInstance(ctx, instancePatch)
+		instancePatched, err := s.updateInstance(ctx, &store.InstancePatch{
+			ID:            id,
+			RowStatus:     instancePatch.RowStatus,
+			UpdaterID:     c.Get(getPrincipalIDContextKey()).(int),
+			Name:          instancePatch.Name,
+			EngineVersion: instancePatch.EngineVersion,
+			ExternalLink:  instancePatch.ExternalLink,
+			Host:          instancePatch.Host,
+			Port:          instancePatch.Port,
+			Database:      instancePatch.Database,
+		})
 		if err != nil {
 			return err
 		}
@@ -433,7 +459,7 @@ func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error 
 	return nil
 }
 
-func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate) (*api.Instance, error) {
+func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreate) (*api.Instance, error) {
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
 	}
@@ -477,7 +503,7 @@ func (s *Server) createInstance(ctx context.Context, create *api.InstanceCreate)
 	return instance, nil
 }
 
-func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
+func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch) (*api.Instance, error) {
 	instance, err := s.store.GetInstanceByID(ctx, patch.ID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", patch.ID)).SetInternal(err)
@@ -503,8 +529,8 @@ func (s *Server) updateInstance(ctx context.Context, patch *api.InstancePatch) (
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres")
 	}
 
-	var instancePatched *api.Instance
-	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil || patch.Database != nil {
+	instancePatched := instance
+	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil || patch.Database != nil || patch.DataSourceList != nil {
 		// Users can switch instance status from ARCHIVED to NORMAL.
 		// So we need to check the current instance count with NORMAL status for quota limitation.
 		if patch.RowStatus != nil && *patch.RowStatus == string(api.Normal) {

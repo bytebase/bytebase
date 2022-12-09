@@ -121,6 +121,18 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidb
 		Specs: []*tidbast.AlterTableSpec{},
 	}
 
+	if len(alterTableContext.DropColumnList) > 0 {
+		for _, dropColumnContext := range alterTableContext.DropColumnList {
+			alterTableSpec := &tidbast.AlterTableSpec{
+				Tp: tidbast.AlterTableDropColumn,
+				OldColumnName: &tidbast.ColumnName{
+					Name: model.NewCIStr(dropColumnContext.Name),
+				},
+			}
+			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
+		}
+	}
+
 	if len(alterTableContext.AddColumnList) > 0 {
 		alterTableSpec := &tidbast.AlterTableSpec{
 			Tp:         tidbast.AlterTableAddColumns,
@@ -158,18 +170,6 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidb
 				return nil, err
 			}
 			alterTableSpec.NewColumns = []*tidbast.ColumnDef{column}
-			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
-		}
-	}
-
-	if len(alterTableContext.DropColumnList) > 0 {
-		for _, dropColumnContext := range alterTableContext.DropColumnList {
-			alterTableSpec := &tidbast.AlterTableSpec{
-				Tp: tidbast.AlterTableDropColumn,
-				OldColumnName: &tidbast.ColumnName{
-					Name: model.NewCIStr(dropColumnContext.Name),
-				},
-			}
 			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
 		}
 	}

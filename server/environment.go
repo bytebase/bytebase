@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
@@ -23,8 +24,11 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create environment request").SetInternal(err)
 		}
 
-		envCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		env, err := s.createEnvironment(ctx, envCreate)
+		env, err := s.createEnvironment(ctx, &store.EnvironmentCreate{
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+			Name:      envCreate.Name,
+			Order:     envCreate.Order,
+		})
 		if err != nil {
 			return err
 		}
@@ -62,15 +66,18 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Environment ID is not a number: %s", c.Param("environmentID"))).SetInternal(err)
 		}
 
-		envPatch := &api.EnvironmentPatch{
-			ID:        id,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-		}
+		envPatch := &api.EnvironmentPatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, envPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch environment request").SetInternal(err)
 		}
 
-		env, err := s.updateEnvironment(ctx, envPatch)
+		env, err := s.updateEnvironment(ctx, &store.EnvironmentPatch{
+			ID:        id,
+			RowStatus: envPatch.RowStatus,
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+			Name:      envPatch.Name,
+			Order:     envPatch.Order,
+		})
 		if err != nil {
 			return err
 		}
@@ -94,8 +101,12 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			if !ok {
 				return echo.NewHTTPError(http.StatusBadRequest, "Malformed environment reorder request").SetInternal(errors.New("failed to convert request item to *api.EnvironmentPatch"))
 			}
-			envPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
-			if _, err := s.store.PatchEnvironment(ctx, envPatch); err != nil {
+
+			if _, err := s.store.PatchEnvironment(ctx, &store.EnvironmentPatch{
+				ID:        envPatch.ID,
+				UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+				Order:     envPatch.Order,
+			}); err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Environment ID not found: %d", envPatch.ID))
 				}
@@ -143,7 +154,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) createEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
+func (s *Server) createEnvironment(ctx context.Context, create *store.EnvironmentCreate) (*api.Environment, error) {
 	normalRowStatus := api.Normal
 	envFind := &api.EnvironmentFind{
 		RowStatus: &normalRowStatus,
@@ -173,7 +184,7 @@ func (s *Server) createEnvironment(ctx context.Context, create *api.EnvironmentC
 	return env, nil
 }
 
-func (s *Server) updateEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
+func (s *Server) updateEnvironment(ctx context.Context, patch *store.EnvironmentPatch) (*api.Environment, error) {
 	if v := patch.Name; v != nil {
 		if err := api.IsValidEnvironmentName(*v); err != nil {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)

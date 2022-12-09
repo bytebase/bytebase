@@ -1,4 +1,40 @@
-import { Database, DatabaseId, Table, TableId } from ".";
+import { Database, DatabaseId, TableEngineType, TableType } from ".";
+
+type TableOrColumnStatus = "created" | "dropped";
+
+export interface Column {
+  // Related fields
+  databaseId: DatabaseId;
+
+  // Domain specific fields
+  oldName: string;
+  newName: string;
+  type: string;
+  nullable: boolean;
+  comment: string;
+  default: string | null;
+
+  status?: TableOrColumnStatus;
+}
+
+export interface Table {
+  // Related fields
+  databaseId: DatabaseId;
+
+  // Domain specific fields
+  oldName: string;
+  newName: string;
+  type: TableType;
+  engine: TableEngineType;
+  collation: string;
+  rowCount: number;
+  dataSize: number;
+  comment: string;
+  columnList: Column[];
+  originColumnList: Column[];
+
+  status?: TableOrColumnStatus;
+}
 
 export enum UIEditorTabType {
   TabForDatabase = "database",
@@ -17,11 +53,7 @@ export interface TableTabContext {
   id: string;
   type: UIEditorTabType.TabForTable;
   databaseId: DatabaseId;
-  tableId: TableId;
-  // Save the reference for those new tables.
-  table: Table;
-  // Save the editing table cache in tab.
-  tableCache: Table;
+  tableName: string;
 }
 
 export type TabContext = DatabaseTabContext | TableTabContext;
@@ -34,8 +66,8 @@ export interface UIEditorState {
     currentTabId?: TabId;
   };
   databaseList: Database[];
+  originTableList: Table[];
   tableList: Table[];
-  droppedTableList: Table[];
 }
 
 /**

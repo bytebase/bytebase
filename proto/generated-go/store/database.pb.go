@@ -20,20 +20,110 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// SchemaMetadata defines the schema for database schema metadata.
+// DatabaseMetadata is the metadata for databases.
+type DatabaseMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The schemas is the list of schemas in a database.
+	Schemas []*SchemaMetadata `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas,omitempty"`
+	// The character_set is the character set of a database.
+	CharacterSet string `protobuf:"bytes,3,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
+	// The collation is the collation of a database.
+	Collation string `protobuf:"bytes,4,opt,name=collation,proto3" json:"collation,omitempty"`
+	// The extensions is the list of extensions in a database.
+	Extensions []*ExtensionMetadata `protobuf:"bytes,5,rep,name=extensions,proto3" json:"extensions,omitempty"`
+}
+
+func (x *DatabaseMetadata) Reset() {
+	*x = DatabaseMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_database_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DatabaseMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DatabaseMetadata) ProtoMessage() {}
+
+func (x *DatabaseMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_database_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DatabaseMetadata.ProtoReflect.Descriptor instead.
+func (*DatabaseMetadata) Descriptor() ([]byte, []int) {
+	return file_database_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *DatabaseMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DatabaseMetadata) GetSchemas() []*SchemaMetadata {
+	if x != nil {
+		return x.Schemas
+	}
+	return nil
+}
+
+func (x *DatabaseMetadata) GetCharacterSet() string {
+	if x != nil {
+		return x.CharacterSet
+	}
+	return ""
+}
+
+func (x *DatabaseMetadata) GetCollation() string {
+	if x != nil {
+		return x.Collation
+	}
+	return ""
+}
+
+func (x *DatabaseMetadata) GetExtensions() []*ExtensionMetadata {
+	if x != nil {
+		return x.Extensions
+	}
+	return nil
+}
+
+// SchemaMetadata is the metadata for schemas.
+// This is the concept of schema in Postgres, but it's a no-op for MySQL.
 type SchemaMetadata struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The table_metadata is the metadata for a list of tables in a database.
-	TableMetadata []*TableMetadata `protobuf:"bytes,1,rep,name=table_metadata,json=tableMetadata,proto3" json:"table_metadata,omitempty"`
+	// The name is the schema name.
+	// It is an empty string for databases without such concept such as MySQL.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The tables is the list of tables in a schema.
+	Tables []*TableMetadata `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
+	// The views is the list of views in a schema.
+	Views []*ViewMetadata `protobuf:"bytes,3,rep,name=views,proto3" json:"views,omitempty"`
 }
 
 func (x *SchemaMetadata) Reset() {
 	*x = SchemaMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_database_proto_msgTypes[0]
+		mi := &file_database_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -46,7 +136,7 @@ func (x *SchemaMetadata) String() string {
 func (*SchemaMetadata) ProtoMessage() {}
 
 func (x *SchemaMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_database_proto_msgTypes[0]
+	mi := &file_database_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,32 +149,64 @@ func (x *SchemaMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaMetadata.ProtoReflect.Descriptor instead.
 func (*SchemaMetadata) Descriptor() ([]byte, []int) {
-	return file_database_proto_rawDescGZIP(), []int{0}
+	return file_database_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SchemaMetadata) GetTableMetadata() []*TableMetadata {
+func (x *SchemaMetadata) GetName() string {
 	if x != nil {
-		return x.TableMetadata
+		return x.Name
+	}
+	return ""
+}
+
+func (x *SchemaMetadata) GetTables() []*TableMetadata {
+	if x != nil {
+		return x.Tables
 	}
 	return nil
 }
 
-// TableMetadata is the metadata for a database table.
+func (x *SchemaMetadata) GetViews() []*ViewMetadata {
+	if x != nil {
+		return x.Views
+	}
+	return nil
+}
+
+// TableMetadata is the metadata for tables.
 type TableMetadata struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The schema is the schema name of a table. It is an empty string for databases without such concept such as MySQL.
-	Schema string `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
 	// The name is the name of a table.
-	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The columns is the ordered list of columns in a table.
+	Columns []*ColumnMetadata `protobuf:"bytes,2,rep,name=columns,proto3" json:"columns,omitempty"`
+	// The indexes is the list of indexes in a table.
+	Indexes []*IndexMetadata `protobuf:"bytes,3,rep,name=indexes,proto3" json:"indexes,omitempty"`
+	// The engine is the engine of a table.
+	Engine string `protobuf:"bytes,4,opt,name=engine,proto3" json:"engine,omitempty"`
+	// The collation is the collation of a table.
+	Collation string `protobuf:"bytes,5,opt,name=collation,proto3" json:"collation,omitempty"`
+	// The row_count is the estimated number of rows of a table.
+	RowCount int64 `protobuf:"varint,6,opt,name=row_count,json=rowCount,proto3" json:"row_count,omitempty"`
+	// The data_size is the estimated data size of a table.
+	DataSize int64 `protobuf:"varint,7,opt,name=data_size,json=dataSize,proto3" json:"data_size,omitempty"`
+	// The index_size is the estimated index size of a table.
+	IndexSize int64 `protobuf:"varint,8,opt,name=index_size,json=indexSize,proto3" json:"index_size,omitempty"`
+	// The data_free is the estimated free data size of a table.
+	DataFree int64 `protobuf:"varint,9,opt,name=data_free,json=dataFree,proto3" json:"data_free,omitempty"`
+	// The create_options is the create option of a table.
+	CreateOptions string `protobuf:"bytes,10,opt,name=create_options,json=createOptions,proto3" json:"create_options,omitempty"`
+	// The comment is the comment of a table.
+	Comment string `protobuf:"bytes,11,opt,name=comment,proto3" json:"comment,omitempty"`
 }
 
 func (x *TableMetadata) Reset() {
 	*x = TableMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_database_proto_msgTypes[1]
+		mi := &file_database_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -97,7 +219,7 @@ func (x *TableMetadata) String() string {
 func (*TableMetadata) ProtoMessage() {}
 
 func (x *TableMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_database_proto_msgTypes[1]
+	mi := &file_database_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -110,14 +232,7 @@ func (x *TableMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableMetadata.ProtoReflect.Descriptor instead.
 func (*TableMetadata) Descriptor() ([]byte, []int) {
-	return file_database_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *TableMetadata) GetSchema() string {
-	if x != nil {
-		return x.Schema
-	}
-	return ""
+	return file_database_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *TableMetadata) GetName() string {
@@ -127,23 +242,533 @@ func (x *TableMetadata) GetName() string {
 	return ""
 }
 
+func (x *TableMetadata) GetColumns() []*ColumnMetadata {
+	if x != nil {
+		return x.Columns
+	}
+	return nil
+}
+
+func (x *TableMetadata) GetIndexes() []*IndexMetadata {
+	if x != nil {
+		return x.Indexes
+	}
+	return nil
+}
+
+func (x *TableMetadata) GetEngine() string {
+	if x != nil {
+		return x.Engine
+	}
+	return ""
+}
+
+func (x *TableMetadata) GetCollation() string {
+	if x != nil {
+		return x.Collation
+	}
+	return ""
+}
+
+func (x *TableMetadata) GetRowCount() int64 {
+	if x != nil {
+		return x.RowCount
+	}
+	return 0
+}
+
+func (x *TableMetadata) GetDataSize() int64 {
+	if x != nil {
+		return x.DataSize
+	}
+	return 0
+}
+
+func (x *TableMetadata) GetIndexSize() int64 {
+	if x != nil {
+		return x.IndexSize
+	}
+	return 0
+}
+
+func (x *TableMetadata) GetDataFree() int64 {
+	if x != nil {
+		return x.DataFree
+	}
+	return 0
+}
+
+func (x *TableMetadata) GetCreateOptions() string {
+	if x != nil {
+		return x.CreateOptions
+	}
+	return ""
+}
+
+func (x *TableMetadata) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+// ColumnMetadata is the metadata for columns.
+type ColumnMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name is the name of a column.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The position is the position in columns.
+	Position int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
+	// The has_default is whether a column has a default.
+	// In proto3, we cannot distinguish between an empty string default value or no default.
+	// We have to introduce a boolean field to indicate the existance of a default.
+	HasDefault bool `protobuf:"varint,3,opt,name=has_default,json=hasDefault,proto3" json:"has_default,omitempty"`
+	// The default is the default of a column.
+	Default string `protobuf:"bytes,4,opt,name=default,proto3" json:"default,omitempty"`
+	// The nullable is the nullable of a column.
+	Nullable bool `protobuf:"varint,5,opt,name=nullable,proto3" json:"nullable,omitempty"`
+	// The type is the type of a column.
+	Type string `protobuf:"bytes,6,opt,name=Type,proto3" json:"Type,omitempty"`
+	// The character_set is the character_set of a column.
+	CharacterSet string `protobuf:"bytes,7,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
+	// The collation is the collation of a column.
+	Collation string `protobuf:"bytes,8,opt,name=collation,proto3" json:"collation,omitempty"`
+	// The comment is the comment of a column.
+	Comment string `protobuf:"bytes,9,opt,name=comment,proto3" json:"comment,omitempty"`
+}
+
+func (x *ColumnMetadata) Reset() {
+	*x = ColumnMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_database_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ColumnMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ColumnMetadata) ProtoMessage() {}
+
+func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_database_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ColumnMetadata.ProtoReflect.Descriptor instead.
+func (*ColumnMetadata) Descriptor() ([]byte, []int) {
+	return file_database_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ColumnMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ColumnMetadata) GetPosition() int32 {
+	if x != nil {
+		return x.Position
+	}
+	return 0
+}
+
+func (x *ColumnMetadata) GetHasDefault() bool {
+	if x != nil {
+		return x.HasDefault
+	}
+	return false
+}
+
+func (x *ColumnMetadata) GetDefault() string {
+	if x != nil {
+		return x.Default
+	}
+	return ""
+}
+
+func (x *ColumnMetadata) GetNullable() bool {
+	if x != nil {
+		return x.Nullable
+	}
+	return false
+}
+
+func (x *ColumnMetadata) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ColumnMetadata) GetCharacterSet() string {
+	if x != nil {
+		return x.CharacterSet
+	}
+	return ""
+}
+
+func (x *ColumnMetadata) GetCollation() string {
+	if x != nil {
+		return x.Collation
+	}
+	return ""
+}
+
+func (x *ColumnMetadata) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+// ViewMetadata is the metadata for views.
+type ViewMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name is the name of a view.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The definition is the definition of a view.
+	Definition string `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
+	// The comment is the comment of a view.
+	Comment string `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
+}
+
+func (x *ViewMetadata) Reset() {
+	*x = ViewMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_database_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ViewMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ViewMetadata) ProtoMessage() {}
+
+func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_database_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ViewMetadata.ProtoReflect.Descriptor instead.
+func (*ViewMetadata) Descriptor() ([]byte, []int) {
+	return file_database_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ViewMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ViewMetadata) GetDefinition() string {
+	if x != nil {
+		return x.Definition
+	}
+	return ""
+}
+
+func (x *ViewMetadata) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+// IndexMetadata is the metadata for indexes.
+type IndexMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name is the name of an index.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The expressions are the ordered columns or expressions of an index.
+	// This could refer to a column or an expression.
+	Expressions []string `protobuf:"bytes,2,rep,name=expressions,proto3" json:"expressions,omitempty"`
+	// The type is the type of an index.
+	Type string `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	// The unique is whether the index is unique.
+	Unique bool `protobuf:"varint,4,opt,name=unique,proto3" json:"unique,omitempty"`
+	// The primary is whether the index is a primary key index.
+	Primary bool `protobuf:"varint,5,opt,name=primary,proto3" json:"primary,omitempty"`
+	// The visible is whether the index is visible.
+	Visible bool `protobuf:"varint,6,opt,name=visible,proto3" json:"visible,omitempty"`
+	// The comment is the comment of an index.
+	Comment string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty"`
+}
+
+func (x *IndexMetadata) Reset() {
+	*x = IndexMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_database_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *IndexMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IndexMetadata) ProtoMessage() {}
+
+func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_database_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IndexMetadata.ProtoReflect.Descriptor instead.
+func (*IndexMetadata) Descriptor() ([]byte, []int) {
+	return file_database_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *IndexMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *IndexMetadata) GetExpressions() []string {
+	if x != nil {
+		return x.Expressions
+	}
+	return nil
+}
+
+func (x *IndexMetadata) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *IndexMetadata) GetUnique() bool {
+	if x != nil {
+		return x.Unique
+	}
+	return false
+}
+
+func (x *IndexMetadata) GetPrimary() bool {
+	if x != nil {
+		return x.Primary
+	}
+	return false
+}
+
+func (x *IndexMetadata) GetVisible() bool {
+	if x != nil {
+		return x.Visible
+	}
+	return false
+}
+
+func (x *IndexMetadata) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+// ExtensionMetadata is the metadata for extensions.
+type ExtensionMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name is the name of an extension.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The version is the version of an extension.
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	// The description is the description of an extension.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+}
+
+func (x *ExtensionMetadata) Reset() {
+	*x = ExtensionMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_database_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExtensionMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExtensionMetadata) ProtoMessage() {}
+
+func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_database_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExtensionMetadata.ProtoReflect.Descriptor instead.
+func (*ExtensionMetadata) Descriptor() ([]byte, []int) {
+	return file_database_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ExtensionMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ExtensionMetadata) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *ExtensionMetadata) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
 var File_database_proto protoreflect.FileDescriptor
 
 var file_database_proto_rawDesc = []byte{
 	0x0a, 0x0e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x12, 0x0e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65,
-	0x22, 0x56, 0x0a, 0x0e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
-	0x74, 0x61, 0x12, 0x44, 0x0a, 0x0e, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x6d, 0x65, 0x74, 0x61,
-	0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x54, 0x61, 0x62, 0x6c,
-	0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x0d, 0x74, 0x61, 0x62, 0x6c, 0x65,
-	0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x22, 0x3b, 0x0a, 0x0d, 0x54, 0x61, 0x62, 0x6c,
-	0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63, 0x68,
-	0x65, 0x6d, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x68, 0x65, 0x6d,
-	0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74,
-	0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x22, 0xe6, 0x01, 0x0a, 0x10, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74,
+	0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x38, 0x0a, 0x07, 0x73, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x62, 0x79, 0x74,
+	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x07, 0x73, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x73, 0x12, 0x23, 0x0a, 0x0d, 0x63, 0x68, 0x61, 0x72, 0x61, 0x63, 0x74, 0x65, 0x72,
+	0x5f, 0x73, 0x65, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x63, 0x68, 0x61, 0x72,
+	0x61, 0x63, 0x74, 0x65, 0x72, 0x53, 0x65, 0x74, 0x12, 0x1c, 0x0a, 0x09, 0x63, 0x6f, 0x6c, 0x6c,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x63, 0x6f, 0x6c,
+	0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x41, 0x0a, 0x0a, 0x65, 0x78, 0x74, 0x65, 0x6e, 0x73,
+	0x69, 0x6f, 0x6e, 0x73, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x62, 0x79, 0x74,
+	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x78, 0x74, 0x65,
+	0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x0a, 0x65,
+	0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x8f, 0x01, 0x0a, 0x0e, 0x53, 0x63,
+	0x68, 0x65, 0x6d, 0x61, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x12, 0x35, 0x0a, 0x06, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52,
+	0x06, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x32, 0x0a, 0x05, 0x76, 0x69, 0x65, 0x77, 0x73,
+	0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x56, 0x69, 0x65, 0x77, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0x52, 0x05, 0x76, 0x69, 0x65, 0x77, 0x73, 0x22, 0x83, 0x03, 0x0a, 0x0d,
+	0x54, 0x61, 0x62, 0x6c, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x12, 0x38, 0x0a, 0x07, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x2e, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
+	0x74, 0x61, 0x52, 0x07, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x12, 0x37, 0x0a, 0x07, 0x69,
+	0x6e, 0x64, 0x65, 0x78, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x07, 0x69, 0x6e, 0x64,
+	0x65, 0x78, 0x65, 0x73, 0x12, 0x16, 0x0a, 0x06, 0x65, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x65, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x12, 0x1c, 0x0a, 0x09,
+	0x63, 0x6f, 0x6c, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x09, 0x63, 0x6f, 0x6c, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1b, 0x0a, 0x09, 0x72, 0x6f,
+	0x77, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x72,
+	0x6f, 0x77, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x5f,
+	0x73, 0x69, 0x7a, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x64, 0x61, 0x74, 0x61,
+	0x53, 0x69, 0x7a, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x5f, 0x73, 0x69,
+	0x7a, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x53,
+	0x69, 0x7a, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x66, 0x72, 0x65, 0x65,
+	0x18, 0x09, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x64, 0x61, 0x74, 0x61, 0x46, 0x72, 0x65, 0x65,
+	0x12, 0x25, 0x0a, 0x0e, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65,
+	0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65,
+	0x6e, 0x74, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e,
+	0x74, 0x22, 0x88, 0x02, 0x0a, 0x0e, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x6f, 0x73, 0x69,
+	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x6f, 0x73, 0x69,
+	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1f, 0x0a, 0x0b, 0x68, 0x61, 0x73, 0x5f, 0x64, 0x65, 0x66, 0x61,
+	0x75, 0x6c, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0a, 0x68, 0x61, 0x73, 0x44, 0x65,
+	0x66, 0x61, 0x75, 0x6c, 0x74, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x12,
+	0x1a, 0x0a, 0x08, 0x6e, 0x75, 0x6c, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x08, 0x6e, 0x75, 0x6c, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x54,
+	0x79, 0x70, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12,
+	0x23, 0x0a, 0x0d, 0x63, 0x68, 0x61, 0x72, 0x61, 0x63, 0x74, 0x65, 0x72, 0x5f, 0x73, 0x65, 0x74,
+	0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x63, 0x68, 0x61, 0x72, 0x61, 0x63, 0x74, 0x65,
+	0x72, 0x53, 0x65, 0x74, 0x12, 0x1c, 0x0a, 0x09, 0x63, 0x6f, 0x6c, 0x6c, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x63, 0x6f, 0x6c, 0x6c, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x09, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x22, 0x5c, 0x0a, 0x0c,
+	0x56, 0x69, 0x65, 0x77, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x12, 0x1e, 0x0a, 0x0a, 0x64, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x64, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e,
+	0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x22, 0xbf, 0x01, 0x0a, 0x0d, 0x49,
+	0x6e, 0x64, 0x65, 0x78, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x12, 0x20, 0x0a, 0x0b, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x18,
+	0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0b, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x75, 0x6e, 0x69, 0x71, 0x75, 0x65,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x75, 0x6e, 0x69, 0x71, 0x75, 0x65, 0x12, 0x18,
+	0x0a, 0x07, 0x70, 0x72, 0x69, 0x6d, 0x61, 0x72, 0x79, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52,
+	0x07, 0x70, 0x72, 0x69, 0x6d, 0x61, 0x72, 0x79, 0x12, 0x18, 0x0a, 0x07, 0x76, 0x69, 0x73, 0x69,
+	0x62, 0x6c, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x76, 0x69, 0x73, 0x69, 0x62,
+	0x6c, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x07, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x22, 0x63, 0x0a, 0x11,
+	0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12,
+	0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67,
+	0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -158,18 +783,28 @@ func file_database_proto_rawDescGZIP() []byte {
 	return file_database_proto_rawDescData
 }
 
-var file_database_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_database_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_database_proto_goTypes = []interface{}{
-	(*SchemaMetadata)(nil), // 0: bytebase.store.SchemaMetadata
-	(*TableMetadata)(nil),  // 1: bytebase.store.TableMetadata
+	(*DatabaseMetadata)(nil),  // 0: bytebase.store.DatabaseMetadata
+	(*SchemaMetadata)(nil),    // 1: bytebase.store.SchemaMetadata
+	(*TableMetadata)(nil),     // 2: bytebase.store.TableMetadata
+	(*ColumnMetadata)(nil),    // 3: bytebase.store.ColumnMetadata
+	(*ViewMetadata)(nil),      // 4: bytebase.store.ViewMetadata
+	(*IndexMetadata)(nil),     // 5: bytebase.store.IndexMetadata
+	(*ExtensionMetadata)(nil), // 6: bytebase.store.ExtensionMetadata
 }
 var file_database_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.SchemaMetadata.table_metadata:type_name -> bytebase.store.TableMetadata
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 0: bytebase.store.DatabaseMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
+	6, // 1: bytebase.store.DatabaseMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
+	2, // 2: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
+	4, // 3: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
+	3, // 4: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	5, // 5: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_database_proto_init() }
@@ -179,7 +814,7 @@ func file_database_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_database_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SchemaMetadata); i {
+			switch v := v.(*DatabaseMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -191,7 +826,67 @@ func file_database_proto_init() {
 			}
 		}
 		file_database_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SchemaMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_database_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TableMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_database_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ColumnMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_database_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ViewMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_database_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*IndexMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_database_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExtensionMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -209,7 +904,7 @@ func file_database_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_database_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

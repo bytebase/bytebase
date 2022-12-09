@@ -3,16 +3,153 @@ syntax = "proto3";
 package bytebase.store;
 option go_package = "generated-go/store";
 
-// SchemaMetadata defines the schema for database schema metadata.
-message SchemaMetadata {
-  // The table_metadata is the metadata for a list of tables in a database.
-  repeated TableMetadata table_metadata = 1;
+// DatabaseMetadata is the metadata for databases.
+message DatabaseMetadata {
+  string name = 1;
+
+  // The schemas is the list of schemas in a database.
+  repeated SchemaMetadata schemas = 2;
+
+  // The character_set is the character set of a database.
+  string character_set = 3;
+
+  // The collation is the collation of a database.
+  string collation = 4;
+
+  // The extensions is the list of extensions in a database.
+  repeated ExtensionMetadata extensions = 5;
 }
 
-// TableMetadata is the metadata for a database table.
+// SchemaMetadata is the metadata for schemas.
+// This is the concept of schema in Postgres, but it's a no-op for MySQL.
+message SchemaMetadata {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The tables is the list of tables in a schema.
+  repeated TableMetadata tables = 2;
+
+  // The views is the list of views in a schema.
+  repeated ViewMetadata views = 3;
+}
+
+// TableMetadata is the metadata for tables.
 message TableMetadata {
-  // The schema is the schema name of a table. It is an empty string for databases without such concept such as MySQL.
-  string schema = 1;
   // The name is the name of a table.
-  string name = 2;
+  string name = 1;
+
+  // The columns is the ordered list of columns in a table.
+  repeated ColumnMetadata columns = 2;
+
+  // The indexes is the list of indexes in a table.
+  repeated IndexMetadata indexes = 3;
+
+  // TODO(d): figure out whether we need to store table type such as "BASE TABLE".
+
+  // The engine is the engine of a table.
+  string engine = 4;
+
+  // The collation is the collation of a table.
+  string collation = 5;
+
+  // The row_count is the estimated number of rows of a table.
+  int64 row_count = 6;
+
+  // The data_size is the estimated data size of a table.
+  int64 data_size = 7;
+
+  // The index_size is the estimated index size of a table.
+  int64 index_size = 8;
+
+  // The data_free is the estimated free data size of a table.
+  int64 data_free = 9;
+
+  // The create_options is the create option of a table.
+  string create_options = 10;
+
+  // The comment is the comment of a table.
+  string comment = 11;
+}
+
+// ColumnMetadata is the metadata for columns.
+message ColumnMetadata {
+  // The name is the name of a column.
+  string name = 1;
+
+  // The position is the position in columns.
+  int32 position = 2;
+
+  // The has_default is whether a column has a default.
+  // In proto3, we cannot distinguish between an empty string default value or no default.
+  // We have to introduce a boolean field to indicate the existance of a default.
+  bool has_default = 3;
+
+  // The default is the default of a column.
+  string default = 4;
+
+  // The nullable is the nullable of a column.
+  bool nullable = 5;
+
+  // The type is the type of a column.
+  string Type = 6;
+
+  // The character_set is the character_set of a column.
+  string character_set = 7;
+
+  // The collation is the collation of a column.
+  string collation = 8;
+
+  // The comment is the comment of a column.
+  string comment = 9;
+}
+
+// ViewMetadata is the metadata for views.
+message ViewMetadata {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The definition is the definition of a view.
+  string definition = 2;
+
+  // The comment is the comment of a view.
+  string comment = 3;
+}
+
+// IndexMetadata is the metadata for indexes.
+message IndexMetadata {
+  // The name is the name of an index.
+  string name = 1;
+
+  // The expressions are the ordered columns or expressions of an index.
+  // This could refer to a column or an expression.
+  repeated string expressions = 2;
+
+  // The type is the type of an index.
+  string type = 3;
+
+  // The unique is whether the index is unique.
+  bool unique = 4;
+
+  // The primary is whether the index is a primary key index.
+  bool primary = 5;
+
+  // The visible is whether the index is visible.
+  bool visible = 6;
+
+  // The comment is the comment of an index.
+  string comment = 7;
+}
+
+
+// ExtensionMetadata is the metadata for extensions.
+message ExtensionMetadata {
+  // The name is the name of an extension.
+  string name = 1;
+
+  // The version is the version of an extension.
+  string version = 2;
+
+  // The description is the description of an extension.
+  string description = 3;
 }

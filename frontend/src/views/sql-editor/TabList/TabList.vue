@@ -45,6 +45,7 @@ import Draggable from "vuedraggable";
 import scrollIntoView from "scroll-into-view-if-needed";
 
 import type { TabInfo } from "@/types";
+import { TabMode } from "@/types";
 import { useTabStore } from "@/store";
 import TabItem from "./TabItem";
 import { useResizeObserver } from "@vueuse/core";
@@ -81,7 +82,7 @@ const handleAddTab = () => {
 };
 
 const handleRemoveTab = async (tab: TabInfo, index: number) => {
-  if (!tab.isSaved) {
+  if (tab.mode === TabMode.ReadOnly && !tab.isSaved) {
     const $dialog = dialog.create({
       title: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.title"),
       content: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.content"),

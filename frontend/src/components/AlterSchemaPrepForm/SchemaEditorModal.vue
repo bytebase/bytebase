@@ -77,8 +77,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { head, isEqual } from "lodash-es";
-import { useDialog } from "naive-ui";
+import { head } from "lodash-es";
 import { onMounted, PropType, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -86,12 +85,10 @@ import {
   DatabaseEdit,
   DatabaseId,
   SQLDialect,
-  TabContext,
-  UIEditorTabType,
   UNKNOWN_ID,
 } from "@/types";
 import { allowGhostMigration } from "@/utils";
-import { useDatabaseStore, useTableStore, useUIEditorStore } from "@/store";
+import { useDatabaseStore, useUIEditorStore } from "@/store";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
 import UIEditor from "@/components/UIEditor/UIEditor.vue";
 import GhostDialog from "./GhostDialog.vue";
@@ -124,9 +121,7 @@ const state = reactive<LocalState>({
   editStatement: "",
 });
 const editorStore = useUIEditorStore();
-const tableStore = useTableStore();
 const databaseStore = useDatabaseStore();
-const dialog = useDialog();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseList = props.databaseIdList.map((databaseId) => {
@@ -194,16 +189,13 @@ const handleSyncSQLFromUIEditor = async () => {
 const fetchDatabaseEditMapWithUIEditor = async () => {
   const databaseEditList: DatabaseEdit[] = [];
   for (const database of editorStore.databaseList) {
-    const originTableList = await tableStore.getOrFetchTableListByDatabaseId(
+    const originTableList = editorStore.originTableList.filter(
+      (table) => table.databaseId === database.id
+    );
+    const tableList = await editorStore.getOrFetchTableListByDatabaseId(
       database.id
     );
-    const updatedTableList = (
-      await editorStore.getOrFetchTableListByDatabaseId(database.id)
-    ).filter((table) => !editorStore.droppedTableList.includes(table));
-    const diffTableListResult = diffTableList(
-      originTableList,
-      updatedTableList
-    );
+    const diffTableListResult = diffTableList(originTableList, tableList);
     if (
       diffTableListResult.createTableList.length > 0 ||
       diffTableListResult.alterTableList.length > 0 ||
@@ -225,28 +217,6 @@ const fetchDatabaseEditMapWithUIEditor = async () => {
     }
   }
   return databaseEditMap;
-};
-
-const unsavedDialogWarning = (): Promise<
-  "Close" | "NegativeClick" | "PositiveClick"
-> => {
-  return new Promise((resolve) => {
-    dialog.warning({
-      title: "Confirm to continue",
-      content: "There are unsaved changes. Are you sure confirm to continue?",
-      negativeText: "Discard",
-      positiveText: "Save",
-      onClose: () => {
-        resolve("Close");
-      },
-      onNegativeClick: () => {
-        resolve("NegativeClick");
-      },
-      onPositiveClick: () => {
-        resolve("PositiveClick");
-      },
-    });
-  });
 };
 
 const handlePreviewIssue = async () => {
@@ -286,30 +256,6 @@ const handlePreviewIssue = async () => {
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
   } else {
-    // Check whether tabs saved.
-    const unsavedTabList: TabContext[] = [];
-    for (const tab of editorStore.tabList) {
-      if (tab.type === UIEditorTabType.TabForTable) {
-        if (!isEqual(tab.tableCache, tab.table)) {
-          unsavedTabList.push(tab);
-        }
-      }
-    }
-    if (unsavedTabList.length > 0) {
-      const action = await unsavedDialogWarning();
-      if (action === "NegativeClick") {
-        for (const unsavedTab of unsavedTabList) {
-          editorStore.discardTabChanges(unsavedTab);
-        }
-      } else if (action === "PositiveClick") {
-        for (const unsavedTab of unsavedTabList) {
-          editorStore.saveTab(unsavedTab);
-        }
-      } else {
-        return;
-      }
-    }
-
     const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
     const databaseIdList = Array.from(databaseEditMap.keys());
     if (databaseIdList.length > 0) {

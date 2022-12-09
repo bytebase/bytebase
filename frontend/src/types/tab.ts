@@ -39,4 +39,5 @@ export interface TabInfo {
   adviceList?: Advice[];
 }
 
+export type CoreTabInfo = Pick<TabInfo, "connection" | "sheetId" | "mode">;
 export type AnyTabInfo = Partial<TabInfo>;

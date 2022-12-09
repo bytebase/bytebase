@@ -7,6 +7,9 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
+// InstanceMaximumConnectionNumber is the maximum number of connections outstanding per instance.
+const InstanceMaximumConnectionNumber = 20
+
 // State is the state for all in-memory states within the server.
 type State struct {
 	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
@@ -28,4 +31,8 @@ type State struct {
 	RunningTasks sync.Map // map[taskID]bool
 	// RunningTasksCancel is the cancel's of running tasks.
 	RunningTasksCancel sync.Map // map[taskID]context.CancelFunc
+	// InstanceOutstandingConnections is the maximum number of connections per instance.
+	InstanceOutstandingConnections map[int]int
+
+	sync.Mutex
 }
