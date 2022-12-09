@@ -76,6 +76,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.DropFunctionStmt:
+		if err := deparseDropFunction(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -1108,6 +1113,61 @@ func deparseAlterSequence(ctx parser.DeparseContext, in *ast.AlterSequenceStmt, 
 		}
 	}
 	return nil
+}
+
+func deparseDropFunction(ctx parser.DeparseContext, in *ast.DropFunctionStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("DROP FUNCTION "); err != nil {
+		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+	for i, function := range in.FunctionList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if err := deparseFunctionSignature(function, buf); err != nil {
+			return err
+		}
+	}
+	return deparseDropBehavior(ctx, in.Behavior, buf)
+}
+
+func deparseFunctionSignature(function *ast.FunctionDef, buf *strings.Builder) error {
+	if function.Schema != "" {
+		if err := writeSurrounding(buf, function.Schema, `"`); err != nil {
+			return err
+		}
+		if err := buf.WriteByte('.'); err != nil {
+			return err
+		}
+	}
+	if err := writeSurrounding(buf, function.Name, `"`); err != nil {
+		return err
+	}
+	if err := buf.WriteByte('('); err != nil {
+		return err
+	}
+	total := 0
+	for _, parameter := range function.ParameterList {
+		if parameter.Mode == ast.FunctionParameterModeOut {
+			continue
+		}
+		if total != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		total++
+		if err := deparseDataType(parser.DeparseContext{}, parameter.Type, buf); err != nil {
+			return err
+		}
+	}
+	return buf.WriteByte(')')
 }
 
 func deparseDropExtension(ctx parser.DeparseContext, in *ast.DropExtensionStmt, buf *strings.Builder) error {
