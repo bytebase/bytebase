@@ -348,6 +348,14 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				dropExtension.NameList = append(dropExtension.NameList, extensionName.String_.Str)
 			}
 			return dropExtension, nil
+		case pgquery.ObjectType_OBJECT_FUNCTION:
+			// dropFunctionStmt := &ast.DropFunctionStmt{
+			// 	IfExists: in.DropStmt.MissingOk,
+			// 	Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			// }
+			// for _, function := range in.DropStmt.Objects {
+
+			// }
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -589,11 +597,93 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return createExtensionStmt, nil
+	case *pgquery.Node_CreateFunctionStmt:
+		var err error
+		functionDef := &ast.FunctionDef{}
+
+		functionDef.Schema, functionDef.Name, err = convertFunctionName(in.CreateFunctionStmt.Funcname)
+		if err != nil {
+			return nil, err
+		}
+
+		functionDef.ParameterList, err = convertFunctionParameterList(in.CreateFunctionStmt.Parameters)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ast.CreateFunctionStmt{Function: functionDef}, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
 
 	return nil, nil
+}
+
+func convertFunctionParameterList(parameterList []*pgquery.Node) ([]*ast.FunctionParameterDef, error) {
+	var result []*ast.FunctionParameterDef
+	for _, node := range parameterList {
+		var err error
+		parameterNode, ok := node.Node.(*pgquery.Node_FunctionParameter)
+		if !ok {
+			return nil, parser.NewConvertErrorf("expected FunctionParameter buf found %t", node.Node)
+		}
+		parameterDef := &ast.FunctionParameterDef{
+			Name: parameterNode.FunctionParameter.Name,
+			Mode: convertParameterMode(parameterNode.FunctionParameter.Mode),
+		}
+		parameterDef.Type, err = convertDataType(parameterNode.FunctionParameter.ArgType)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, parameterDef)
+	}
+	return result, nil
+}
+
+func convertParameterMode(mode pgquery.FunctionParameterMode) ast.FunctionParameterMode {
+	switch mode {
+	case pgquery.FunctionParameterMode_FUNC_PARAM_IN:
+		return ast.FunctionParameterModeIn
+	case pgquery.FunctionParameterMode_FUNC_PARAM_OUT:
+		return ast.FunctionParameterModeOut
+	case pgquery.FunctionParameterMode_FUNC_PARAM_INOUT:
+		return ast.FunctionParameterModeInOut
+	case pgquery.FunctionParameterMode_FUNC_PARAM_VARIADIC:
+		return ast.FunctionParameterModeVariadic
+	default:
+		return ast.FunctionParameterModeUndefined
+	}
+}
+
+func convertFunctionName(list []*pgquery.Node) (string, string, error) {
+	switch len(list) {
+	case 2:
+		schema, err := convertToString(list[0])
+		if err != nil {
+			return "", "", err
+		}
+		name, err := convertToString(list[1])
+		if err != nil {
+			return "", "", err
+		}
+		return schema, name, nil
+	case 1:
+		name, err := convertToString(list[0])
+		if err != nil {
+			return "", "", err
+		}
+		return "", name, nil
+	default:
+		return "", "", parser.NewConvertErrorf("expected 1 or 2 items but found %d", len(list))
+	}
+}
+
+func convertToString(in *pgquery.Node) (string, error) {
+	stringNode, ok := in.Node.(*pgquery.Node_String_)
+	if !ok {
+		return "", parser.NewConvertErrorf("expected String but found %t", in.Node)
+	}
+	return stringNode.String_.Str, nil
 }
 
 func convertAlterSequence(in *pgquery.AlterSeqStmt) (*ast.AlterSequenceStmt, error) {
