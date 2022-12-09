@@ -304,13 +304,24 @@ onMounted(() => {
 const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 watch(
-  [create, issue, () => route.query.sql as string, issueLogic],
-  ([create, issue, sql, provider]) => {
-    // If 'sql' in URL query, update the issueCreate's statement
-    // Only works for the first time.
-    // E.g. redirected from SQL editor when user wants to execute DML.
-    if (create && issue && sql && provider) {
-      provider.updateStatement(sql);
+  [
+    create,
+    issue,
+    () => route.query.sqlList as string,
+    () => route.query.sql as string,
+    issueLogic,
+  ],
+  ([create, issue, sqlList, sql, provider]) => {
+    if (create && issue && provider) {
+      if (sqlList) {
+        // If 'sqlList' in URL query, update the tasks's statement in issueCreate.
+        provider.initialTaskListStatement();
+      } else if (sql) {
+        // If 'sql' in URL query, update the issueCreate's statement
+        // Only works for the first time.
+        // E.g. redirected from SQL editor when user wants to execute DML.
+        provider.updateStatement(sql);
+      }
     }
   }
 );
