@@ -1390,7 +1390,6 @@
     "format": "Format",
     "sql-review-result": "SQL review result",
     "alter-table": "Alter table",
-    "open-connection": "Open connection",
     "visualize-explain": "Visualize Explain",
     "sql-execute-in-protected-environment": "The SQL statement below will be executed in a protected environment.",
     "rows-upper-limit": "reached the limit of query results",
@@ -1398,7 +1397,12 @@
       "readonly": "Read-only",
       "admin": "Admin"
     },
-    "close-sheet": "Close sheet"
+    "close-sheet": "Close sheet",
+    "connect": "Connect",
+    "connect-in-admin-mode": "Connect in admin mode",
+    "admin-mode": {
+      "self": "Admin mode"
+    }
   },
   "ui-editor": {
     "self": "UI Editor",

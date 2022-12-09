@@ -32,15 +32,20 @@
       </section>
     </NAlert>
 
-    <div class="execute-hint-content mt-4 flex justify-end space-x-2">
-      <NButton @click="handleClose">{{ $t("common.close") }}</NButton>
-      <NButton type="primary" @click="gotoAlterSchema">
-        {{
-          isDDLSQLStatement
-            ? $t("database.alter-schema")
-            : $t("database.change-data")
-        }}
-      </NButton>
+    <div class="execute-hint-content mt-4 flex justify-between">
+      <div class="flex justify-start items-center space-x-2">
+        <AdminModeButton @enter="$emit('close')" />
+      </div>
+      <div class="flex justify-end items-center space-x-2">
+        <NButton @click="handleClose">{{ $t("common.close") }}</NButton>
+        <NButton type="primary" @click="gotoAlterSchema">
+          {{
+            isDDLSQLStatement
+              ? $t("database.alter-schema")
+              : $t("database.change-data")
+          }}
+        </NButton>
+      </div>
     </div>
   </div>
 </template>
@@ -52,6 +57,7 @@ import { useRouter } from "vue-router";
 import { pushNotification, useTabStore, useDatabaseStore } from "@/store";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
 import { UNKNOWN_ID } from "@/types";
+import AdminModeButton from "./AdminModeButton.vue";
 
 const emit = defineEmits<{
   (e: "close"): void;
