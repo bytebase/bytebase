@@ -2813,3 +2813,61 @@ func TestDropFunction(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestCreateTrigger(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();`,
+			want: []ast.Node{
+				&ast.CreateTriggerStmt{
+					Trigger: &ast.TriggerDef{
+						Name: "update_principal_updated_ts",
+						Table: &ast.TableDef{
+							Type:   ast.TableTypeUnknown,
+							Schema: "public",
+							Name:   "principal",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestDropTrigger(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `DROP TRIGGER update_ts ON public.principal`,
+			want: []ast.Node{
+				&ast.DropTriggerStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
+					Trigger: &ast.TriggerDef{
+						Name: "update_ts",
+						Table: &ast.TableDef{
+							Type:   ast.TableTypeUnknown,
+							Schema: "public",
+							Name:   "principal",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `DROP TRIGGER update_ts ON public.principal`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
