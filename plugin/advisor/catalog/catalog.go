@@ -84,10 +84,7 @@ type Column struct {
 
 // View is the database view.
 type View struct {
-	Name string
-	// CreatedTs isn't supported for ClickHouse.
-	CreatedTs  int64
-	UpdatedTs  int64
+	Name       string
 	Definition string
 	Comment    string
 }
