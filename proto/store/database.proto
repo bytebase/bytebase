@@ -15,6 +15,9 @@ message DatabaseMetadata {
 
   // The collation is the collation of a database.
   string collation = 4;
+
+  // The extensions is the list of extensions in a database.
+  repeated ExtensionMetadata extensions = 5;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -26,6 +29,9 @@ message SchemaMetadata {
 
   // The tables is the list of tables in a schema.
   repeated TableMetadata tables = 2;
+
+  // The views is the list of views in a schema.
+  repeated ViewMetadata views = 3;
 }
 
 // TableMetadata is the metadata for tables.
@@ -98,6 +104,18 @@ message ColumnMetadata {
 	string comment = 9;
 }
 
+// ViewMetadata is the metadata for views.
+message ViewMetadata {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The definition is the definition of a view.
+  string definition = 2;
+
+  // The comment is the comment of a view.
+  string comment = 3;
+}
+
 // IndexMetadata is the metadata for indexes.
 message IndexMetadata {
   // The name is the name of an index.
@@ -121,4 +139,17 @@ message IndexMetadata {
 
   // The comment is the comment of an index.
   string comment = 7;
+}
+
+
+// ExtensionMetadata is the metadata for extensions.
+message ExtensionMetadata {
+  // The name is the name of an extension.
+	string name = 1;
+
+  // The version is the version of an extension.
+  string version = 2;
+
+  // The description is the description of an extension.
+  string description = 3;
 }

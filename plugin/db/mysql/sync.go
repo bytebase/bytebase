@@ -345,6 +345,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		); err != nil {
 			return nil, err
 		}
+		view.ShortName = view.Name
 
 		info := viewInfoMap[fmt.Sprintf("%s/%s", dbName, view.Name)]
 		view.CreatedTs = info.createdTs

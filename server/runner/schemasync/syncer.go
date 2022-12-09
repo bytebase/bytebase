@@ -446,7 +446,6 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 }
 
 func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
-	// TODO(d): finish the implementation.
 	// TODO(d): add unit test.
 	databaseMetadata := &storepb.DatabaseMetadata{
 		Name:         schema.Name,
@@ -456,9 +455,14 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 
 	schemaNameMap := make(map[string]bool)
 	schemaTableMap := make(map[string][]db.Table)
+	schemaViewMap := make(map[string][]db.View)
 	for _, table := range schema.TableList {
 		schemaNameMap[table.Schema] = true
 		schemaTableMap[table.Schema] = append(schemaTableMap[table.Schema], table)
+	}
+	for _, view := range schema.ViewList {
+		schemaNameMap[view.Schema] = true
+		schemaViewMap[view.Schema] = append(schemaViewMap[view.Schema], view)
 	}
 	var schemaNames []string
 	for schemaName := range schemaNameMap {
@@ -535,7 +539,29 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 
 			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
 		}
+		views := schemaViewMap[schemaName]
+		sort.Slice(views, func(i, j int) bool {
+			return views[i].ShortName < views[j].ShortName
+		})
+		for _, view := range views {
+			schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
+				Name:       view.ShortName,
+				Definition: view.Definition,
+				Comment:    view.Comment,
+			})
+		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, schemaMetadata)
+	}
+
+	sort.Slice(schema.ExtensionList, func(i, j int) bool {
+		return schema.ExtensionList[i].Name < schema.ExtensionList[j].Name
+	})
+	for _, extension := range schema.ExtensionList {
+		databaseMetadata.Extensions = append(databaseMetadata.Extensions, &storepb.ExtensionMetadata{
+			Name:        extension.Name,
+			Version:     extension.Version,
+			Description: extension.Description,
+		})
 	}
 	return databaseMetadata
 }

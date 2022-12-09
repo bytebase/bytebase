@@ -301,6 +301,8 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 			return nil, nil, err
 		}
 		view.Name = fmt.Sprintf("%s.%s", schemaName, viewName)
+		view.Schema = schemaName
+		view.ShortName = viewName
 		if createdTs.Valid {
 			view.CreatedTs = createdTs.Int64
 		}
