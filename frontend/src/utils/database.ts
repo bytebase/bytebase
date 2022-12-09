@@ -82,6 +82,46 @@ export function allowGhostMigration(databaseList: Database[]): boolean {
   });
 }
 
+type DatabaseFilterFields = "name" | "project" | "instance" | "environment";
+export function filterDatabaseByKeyword(
+  db: Database,
+  keyword: string,
+  columns: DatabaseFilterFields[] = ["name"]
+): boolean {
+  keyword = keyword.trim().toLowerCase();
+  if (!keyword) {
+    // Skip the filter
+    return true;
+  }
+
+  if (columns.includes("name") && db.name.toLowerCase().includes(keyword)) {
+    return true;
+  }
+
+  if (
+    columns.includes("project") &&
+    db.project.name.toLowerCase().includes(keyword)
+  ) {
+    return true;
+  }
+
+  if (
+    columns.includes("instance") &&
+    db.instance.name.toLowerCase().includes(keyword)
+  ) {
+    return true;
+  }
+
+  if (
+    columns.includes("environment") &&
+    db.instance.environment.name.toLowerCase().includes(keyword)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 export function isPITRDatabase(db: Database): boolean {
   const { name } = db;
   // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
