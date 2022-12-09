@@ -60,6 +60,8 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/db/snowflake"
 	// Register sqlite driver.
 	_ "github.com/bytebase/bytebase/plugin/db/sqlite"
+	// Register mongodb driver.
+	_ "github.com/bytebase/bytebase/plugin/db/mongodb"
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
