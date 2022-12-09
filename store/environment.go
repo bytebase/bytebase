@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -11,7 +12,45 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
+
+// EnvironmentCreate is the API message for creating an environment.
+// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
+type EnvironmentCreate struct {
+	// Standard fields
+	CreatorID int
+
+	// Related fields
+	EnvironmentTierPolicy  *api.EnvironmentTierPolicy
+	PipelineApprovalPolicy *api.PipelineApprovalPolicy
+	BackupPlanPolicy       *api.BackupPlanPolicy
+	SQLReviewPolicy        *advisor.SQLReviewPolicy
+
+	// Domain specific fields
+	Name  string
+	Order *int
+}
+
+// EnvironmentPatch is the API message for patching an environment.
+// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
+type EnvironmentPatch struct {
+	ID int
+
+	// Standard fields
+	RowStatus *string
+	UpdaterID int
+
+	// Related fields
+	EnvironmentTierPolicy  *api.EnvironmentTierPolicy
+	PipelineApprovalPolicy *api.PipelineApprovalPolicy
+	BackupPlanPolicy       *api.BackupPlanPolicy
+	SQLReviewPolicy        *advisor.SQLReviewPolicy
+
+	// Domain specific fields
+	Name  *string
+	Order *int
+}
 
 // environmentRaw is the store model for an Environment.
 // Fields have exactly the same meanings as Environment.
@@ -48,7 +87,7 @@ func (raw *environmentRaw) toEnvironment() *api.Environment {
 }
 
 // CreateEnvironment creates an instance of Environment.
-func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
+func (s *Store) CreateEnvironment(ctx context.Context, create *EnvironmentCreate) (*api.Environment, error) {
 	environmentRaw, err := s.createEnvironmentRaw(ctx, create)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Environment with EnvironmentCreate[%+v]", create)
@@ -81,7 +120,7 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 }
 
 // PatchEnvironment patches an instance of Environment.
-func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
+func (s *Store) PatchEnvironment(ctx context.Context, patch *EnvironmentPatch) (*api.Environment, error) {
 	environmentRaw, err := s.patchEnvironmentRaw(ctx, patch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Environment with EnvironmentPatch[%+v]", patch)
@@ -140,7 +179,7 @@ func (s *Store) composeEnvironment(ctx context.Context, raw *environmentRaw) (*a
 }
 
 // createEnvironmentRaw creates a new environment.
-func (s *Store) createEnvironmentRaw(ctx context.Context, create *api.EnvironmentCreate) (*environmentRaw, error) {
+func (s *Store) createEnvironmentRaw(ctx context.Context, create *EnvironmentCreate) (*environmentRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -152,6 +191,27 @@ func (s *Store) createEnvironmentRaw(ctx context.Context, create *api.Environmen
 		return nil, err
 	}
 
+	if p := create.PipelineApprovalPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypePipelineApproval, p); err != nil {
+			return nil, err
+		}
+	}
+	if p := create.BackupPlanPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeBackupPlan, p); err != nil {
+			return nil, err
+		}
+	}
+	if p := create.EnvironmentTierPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeEnvironmentTier, p); err != nil {
+			return nil, err
+		}
+	}
+	if p := create.SQLReviewPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeSQLReview, p); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -161,6 +221,30 @@ func (s *Store) createEnvironmentRaw(ctx context.Context, create *api.Environmen
 	}
 
 	return environment, nil
+}
+
+func upsertEnvironmentPolicy(
+	ctx context.Context,
+	tx *Tx,
+	env *environmentRaw,
+	policyType api.PolicyType,
+	policy interface{},
+) (*policyRaw, error) {
+	bytes, err := json.Marshal(policy)
+	payload := string(bytes)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	policyUpsert := &api.PolicyUpsert{
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		ResourceID:   env.ID,
+		Type:         policyType,
+		UpdaterID:    env.CreatorID,
+		Payload:      &payload,
+	}
+
+	return upsertPolicyImpl(ctx, tx, policyUpsert)
 }
 
 // findEnvironmentRaw retrieves a list of environments based on find.
@@ -224,7 +308,7 @@ func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environment
 
 // patchEnvironmentRaw updates an existing environment by ID.
 // Returns ENOTFOUND if environment does not exist.
-func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *api.EnvironmentPatch) (*environmentRaw, error) {
+func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *EnvironmentPatch) (*environmentRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -234,6 +318,27 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *api.EnvironmentP
 	envRaw, err := s.patchEnvironmentImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
+	}
+
+	if p := patch.PipelineApprovalPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypePipelineApproval, p); err != nil {
+			return nil, err
+		}
+	}
+	if p := patch.BackupPlanPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeBackupPlan, p); err != nil {
+			return nil, err
+		}
+	}
+	if p := patch.EnvironmentTierPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeEnvironmentTier, p); err != nil {
+			return nil, err
+		}
+	}
+	if p := patch.SQLReviewPolicy; p != nil {
+		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeSQLReview, p); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -248,7 +353,7 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *api.EnvironmentP
 }
 
 // createEnvironmentImpl creates a new environment.
-func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *api.EnvironmentCreate) (*environmentRaw, error) {
+func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *EnvironmentCreate) (*environmentRaw, error) {
 	var order int
 
 	if create.Order != nil {
@@ -363,7 +468,7 @@ func (*Store) findEnvironmentImpl(ctx context.Context, tx *Tx, find *api.Environ
 }
 
 // patchEnvironmentImpl updates a environment by ID. Returns the new state of the environment after update.
-func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *api.EnvironmentPatch) (*environmentRaw, error) {
+func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *EnvironmentPatch) (*environmentRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {

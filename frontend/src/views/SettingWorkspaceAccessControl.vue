@@ -40,14 +40,7 @@
             </div>
           </BBTableCell>
           <BBTableCell class="w-[15%]">
-            <div class="flex flex-row items-center space-x-1">
-              <InstanceEngineIcon
-                :instance="databaseOfPolicy(policy).instance"
-              />
-              <span class="flex-1 whitespace-pre-wrap">
-                {{ instanceName(databaseOfPolicy(policy).instance) }}
-              </span>
-            </div>
+            {{ projectName(databaseOfPolicy(policy).project) }}
           </BBTableCell>
           <BBTableCell class="w-[10%]">
             <div class="flex items-center">
@@ -61,7 +54,14 @@
             </div>
           </BBTableCell>
           <BBTableCell class="w-[15%]">
-            {{ projectName(databaseOfPolicy(policy).project) }}
+            <div class="flex flex-row items-center space-x-1">
+              <InstanceEngineIcon
+                :instance="databaseOfPolicy(policy).instance"
+              />
+              <span class="flex-1 whitespace-pre-wrap">
+                {{ instanceName(databaseOfPolicy(policy).instance) }}
+              </span>
+            </div>
           </BBTableCell>
           <BBTableCell>
             {{ humanizeTs(policy.updatedTs) }}
