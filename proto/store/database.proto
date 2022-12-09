@@ -75,10 +75,10 @@ message TableMetadata {
 // ColumnMetadata is the metadata for columns.
 message ColumnMetadata {
   // The name is the name of a column.
-	string name = 1;
+  string name = 1;
 
   // The position is the position in columns.
-	int32 position = 2;
+  int32 position = 2;
 
   // The has_default is whether a column has a default.
   // In proto3, we cannot distinguish between an empty string default value or no default.
@@ -89,19 +89,19 @@ message ColumnMetadata {
   string default = 4;
 
   // The nullable is the nullable of a column.
-	bool nullable = 5;
+  bool nullable = 5;
 
   // The type is the type of a column.
   string Type = 6;
 
   // The character_set is the character_set of a column.
-	string character_set = 7;
+  string character_set = 7;
 
   // The collation is the collation of a column.
-	string collation = 8;
+  string collation = 8;
 
   // The comment is the comment of a column.
-	string comment = 9;
+  string comment = 9;
 }
 
 // ViewMetadata is the metadata for views.
@@ -119,14 +119,14 @@ message ViewMetadata {
 // IndexMetadata is the metadata for indexes.
 message IndexMetadata {
   // The name is the name of an index.
-	string name = 1;
+  string name = 1;
 
   // The expressions are the ordered columns or expressions of an index.
   // This could refer to a column or an expression.
-	repeated string expressions = 2;
+  repeated string expressions = 2;
 
   // The type is the type of an index.
-	string type = 3;
+  string type = 3;
 
   // The unique is whether the index is unique.
   bool unique = 4;
@@ -145,7 +145,7 @@ message IndexMetadata {
 // ExtensionMetadata is the metadata for extensions.
 message ExtensionMetadata {
   // The name is the name of an extension.
-	string name = 1;
+  string name = 1;
 
   // The version is the version of an extension.
   string version = 2;
