@@ -268,3 +268,50 @@
       RETURN NEW;
     END;
     $$;
+- oldSchema: |
+    CREATE TABLE public.t (a bigint);
+    CREATE FUNCTION public.f1(int, int, int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.a = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE FUNCTION public.f2(int, int, int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.a = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE TRIGGER update1 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f1();
+    CREATE TRIGGER update2 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f1();
+    CREATE TRIGGER update3 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f1();
+  newSchema: |
+    CREATE TABLE public.t (a bigint);
+    CREATE FUNCTION public.f1(int, int, int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.a = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE FUNCTION public.f2(int, int, int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.a = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE TRIGGER update1 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f1();
+    CREATE TRIGGER update3 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f2();
+    CREATE TRIGGER update4 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f1();
+  diff: |
+    DROP TRIGGER "update3" ON "public"."t";
+    DROP TRIGGER "update2" ON "public"."t";
+    CREATE TRIGGER update3 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f2();
+    CREATE TRIGGER update4 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f1();

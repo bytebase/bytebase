@@ -81,6 +81,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.DropTriggerStmt:
+		if err := deparseDropTrigger(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -1168,6 +1173,27 @@ func deparseFunctionSignature(function *ast.FunctionDef, buf *strings.Builder) e
 		}
 	}
 	return buf.WriteByte(')')
+}
+
+func deparseDropTrigger(ctx parser.DeparseContext, in *ast.DropTriggerStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("DROP TRIGGER "); err != nil {
+		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+	if err := writeSurrounding(buf, in.Trigger.Name, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" ON "); err != nil {
+		return err
+	}
+	if err := deparseTableDef(parser.DeparseContext{}, in.Trigger.Table, buf); err != nil {
+		return err
+	}
+	return deparseDropBehavior(ctx, in.Behavior, buf)
 }
 
 func deparseDropExtension(ctx parser.DeparseContext, in *ast.DropExtensionStmt, buf *strings.Builder) error {
