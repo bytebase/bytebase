@@ -11,7 +11,7 @@ message DatabaseMetadata {
   repeated SchemaMetadata schemas = 2;
 
   // The character_set is the character set of a database.
-	string character_set = 3;
+  string character_set = 3;
 
   // The collation is the collation of a database.
   string collation = 4;
