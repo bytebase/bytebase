@@ -192,22 +192,22 @@ func (s *Store) createEnvironmentRaw(ctx context.Context, create *EnvironmentCre
 	}
 
 	if p := create.PipelineApprovalPolicy; p != nil {
-		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypePipelineApproval, p); err != nil {
+		if _, err := s.upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypePipelineApproval, p); err != nil {
 			return nil, err
 		}
 	}
 	if p := create.BackupPlanPolicy; p != nil {
-		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeBackupPlan, p); err != nil {
+		if _, err := s.upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeBackupPlan, p); err != nil {
 			return nil, err
 		}
 	}
 	if p := create.EnvironmentTierPolicy; p != nil {
-		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeEnvironmentTier, p); err != nil {
+		if _, err := s.upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeEnvironmentTier, p); err != nil {
 			return nil, err
 		}
 	}
 	if p := create.SQLReviewPolicy; p != nil {
-		if _, err := upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeSQLReview, p); err != nil {
+		if _, err := s.upsertEnvironmentPolicy(ctx, tx, environment, api.PolicyTypeSQLReview, p); err != nil {
 			return nil, err
 		}
 	}
@@ -223,7 +223,7 @@ func (s *Store) createEnvironmentRaw(ctx context.Context, create *EnvironmentCre
 	return environment, nil
 }
 
-func upsertEnvironmentPolicy(
+func (s *Store) upsertEnvironmentPolicy(
 	ctx context.Context,
 	tx *Tx,
 	env *environmentRaw,
@@ -244,7 +244,19 @@ func upsertEnvironmentPolicy(
 		Payload:      &payload,
 	}
 
-	return upsertPolicyImpl(ctx, tx, policyUpsert)
+	policyRaw, err := upsertPolicyImpl(ctx, tx, policyUpsert)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache environment tier policy as it is used widely.
+	if policyUpsert.Type == api.PolicyTypeEnvironmentTier {
+		if err := s.cache.UpsertCache(tierPolicyCacheNamespace, policyUpsert.ResourceID, policyRaw); err != nil {
+			return nil, err
+		}
+	}
+
+	return policyRaw, nil
 }
 
 // findEnvironmentRaw retrieves a list of environments based on find.
@@ -321,22 +333,22 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *EnvironmentPatch
 	}
 
 	if p := patch.PipelineApprovalPolicy; p != nil {
-		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypePipelineApproval, p); err != nil {
+		if _, err := s.upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypePipelineApproval, p); err != nil {
 			return nil, err
 		}
 	}
 	if p := patch.BackupPlanPolicy; p != nil {
-		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeBackupPlan, p); err != nil {
+		if _, err := s.upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeBackupPlan, p); err != nil {
 			return nil, err
 		}
 	}
 	if p := patch.EnvironmentTierPolicy; p != nil {
-		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeEnvironmentTier, p); err != nil {
+		if _, err := s.upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeEnvironmentTier, p); err != nil {
 			return nil, err
 		}
 	}
 	if p := patch.SQLReviewPolicy; p != nil {
-		if _, err := upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeSQLReview, p); err != nil {
+		if _, err := s.upsertEnvironmentPolicy(ctx, tx, envRaw, api.PolicyTypeSQLReview, p); err != nil {
 			return nil, err
 		}
 	}
