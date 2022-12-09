@@ -37,12 +37,14 @@ type diffNode struct {
 	dropColumnList             []ast.Node
 	dropTableList              []ast.Node
 	dropSequenceList           []ast.Node
+	dropFunctionList           []ast.Node
 	dropExtensionList          []ast.Node
 	dropSchemaList             []ast.Node
 
 	// Create nodes
 	createSchemaList               []ast.Node
 	createExtensionList            []ast.Node
+	createFunctionList             []ast.Node
 	createSequenceList             []ast.Node
 	alterSequenceExceptOwnedByList []ast.Node
 	createTableList                []ast.Node
@@ -61,6 +63,7 @@ type constraintMap map[string]*constraintInfo
 type indexMap map[string]*indexInfo
 type sequenceMap map[string]*sequenceInfo
 type extensionMap map[string]*extensionInfo
+type functionMap map[string]*functionInfo
 
 type schemaInfo struct {
 	id           int
@@ -70,6 +73,7 @@ type schemaInfo struct {
 	indexMap     indexMap
 	sequenceMap  sequenceMap
 	extensionMap extensionMap
+	functionMap  functionMap
 }
 
 func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
@@ -81,6 +85,7 @@ func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 		indexMap:     make(indexMap),
 		sequenceMap:  make(sequenceMap),
 		extensionMap: make(extensionMap),
+		functionMap:  make(functionMap),
 	}
 }
 
@@ -171,6 +176,20 @@ func newExtensionInfo(id int, createExtension *ast.CreateExtensionStmt) *extensi
 	}
 }
 
+type functionInfo struct {
+	id             int
+	existsInNew    bool
+	createFunction *ast.CreateFunctionStmt
+}
+
+func newFunctionInfo(id int, createFunction *ast.CreateFunctionStmt) *functionInfo {
+	return &functionInfo{
+		id:             id,
+		existsInNew:    false,
+		createFunction: createFunction,
+	}
+}
+
 func (m schemaMap) addTable(id int, table *ast.CreateTableStmt) error {
 	schema, exists := m[table.Name.Schema]
 	if !exists {
@@ -232,6 +251,27 @@ func (m schemaMap) getExtension(schemaName string, extensionName string) *extens
 		return nil
 	}
 	return schema.extensionMap[extensionName]
+}
+
+func (m schemaMap) addFunction(id int, function *ast.CreateFunctionStmt) error {
+	schema, exists := m[function.Function.Schema]
+	if !exists {
+		return errors.Errorf("failed to add function: schema %s not found", function.Function.Schema)
+	}
+	signature, err := functionSignature(function.Function)
+	if err != nil {
+		return err
+	}
+	schema.functionMap[signature] = newFunctionInfo(id, function)
+	return nil
+}
+
+func (m schemaMap) getFunction(schemaName string, signature string) *functionInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.functionMap[signature]
 }
 
 func (m schemaMap) addIndex(id int, index *ast.CreateIndexStmt) error {
@@ -413,6 +453,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := oldSchemaMap.addExtension(i, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CreateFunctionStmt:
+			if err := oldSchemaMap.addFunction(i, stmt); err != nil {
+				return "", err
+			}
 			// TODO(rebelice): add default back here
 		}
 	}
@@ -519,6 +563,22 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := diff.modifyExtension(oldExtension.createExtension, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CreateFunctionStmt:
+			signature, err := functionSignature(stmt.Function)
+			if err != nil {
+				return "", err
+			}
+			oldFunction := oldSchemaMap.getFunction(stmt.Function.Schema, signature)
+			// Add the function.
+			if oldFunction == nil {
+				diff.createFunctionList = append(diff.createFunctionList, stmt)
+				continue
+			}
+			oldFunction.existsInNew = true
+			// Modify the function.
+			if err := diff.modifyFunction(oldFunction.createFunction, stmt); err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -618,6 +678,11 @@ func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 	// Drop the remaining old extension.
 	if dropExtensionStmt := dropExtension(oldSchemaMap); dropExtensionStmt != nil {
 		diff.dropExtensionList = append(diff.dropExtensionList, dropExtensionStmt)
+	}
+
+	// Drop the remaining old function.
+	if dropFunctionStmt := dropFunction(oldSchemaMap); dropFunctionStmt != nil {
+		diff.dropFunctionList = append(diff.dropFunctionList, dropFunctionStmt)
 	}
 
 	return nil
@@ -827,6 +892,17 @@ func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, new
 			NameList: []string{oldExtension.Name},
 		})
 		diff.createExtensionList = append(diff.createExtensionList, newExtension)
+	}
+	return nil
+}
+
+func (diff *diffNode) modifyFunction(oldFunction *ast.CreateFunctionStmt, newFunction *ast.CreateFunctionStmt) error {
+	// TODO(rebelice): not use Text(), it only works for pg_dump.
+	if oldFunction.Text() != newFunction.Text() {
+		diff.dropFunctionList = append(diff.dropFunctionList, &ast.DropFunctionStmt{
+			FunctionList: []*ast.FunctionDef{oldFunction.Function},
+		})
+		diff.createFunctionList = append(diff.createFunctionList, newFunction)
 	}
 	return nil
 }
@@ -1059,6 +1135,9 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.dropSequenceList); err != nil {
 		return "", err
 	}
+	if err := printStmtSlice(&buf, diff.dropFunctionList); err != nil {
+		return "", err
+	}
 	if err := printStmtSlice(&buf, diff.dropExtensionList); err != nil {
 		return "", err
 	}
@@ -1071,6 +1150,9 @@ func (diff *diffNode) deparse() (string, error) {
 		return "", err
 	}
 	if err := printStmtSliceByText(&buf, diff.createExtensionList); err != nil {
+		return "", err
+	}
+	if err := printStmtSliceByText(&buf, diff.createFunctionList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.createSequenceList); err != nil {
@@ -1207,6 +1289,31 @@ func dropExtension(m schemaMap) *ast.DropExtensionStmt {
 	}
 }
 
+func dropFunction(m schemaMap) *ast.DropFunctionStmt {
+	var functionList []*functionInfo
+	for _, schema := range m {
+		for _, function := range schema.functionMap {
+			if function.existsInNew {
+				// no need to drop
+				continue
+			}
+			functionList = append(functionList, function)
+		}
+	}
+	if len(functionList) == 0 {
+		return nil
+	}
+	sort.Slice(functionList, func(i, j int) bool {
+		return functionList[i].id < functionList[j].id
+	})
+
+	var functionDefList []*ast.FunctionDef
+	for _, function := range functionList {
+		functionDefList = append(functionDefList, function.createFunction.Function)
+	}
+	return &ast.DropFunctionStmt{FunctionList: functionDefList}
+}
+
 func dropIndex(m schemaMap) *ast.DropIndexStmt {
 	var indexList []*indexInfo
 	for _, schema := range m {
@@ -1303,4 +1410,11 @@ func writeStringWithNewLine(out io.Writer, str string) error {
 		return err
 	}
 	return nil
+}
+
+// use DROP FUNCTION statement as the function signature.
+func functionSignature(function *ast.FunctionDef) (string, error) {
+	return parser.Deparse(parser.Postgres, parser.DeparseContext{}, &ast.DropFunctionStmt{
+		FunctionList: []*ast.FunctionDef{function},
+	})
 }
