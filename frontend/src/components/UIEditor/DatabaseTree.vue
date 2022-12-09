@@ -41,30 +41,23 @@
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
     :database-id="state.tableNameModalContext.databaseId"
-    :table="state.tableNameModalContext.table"
+    :table-name="state.tableNameModalContext.tableName"
     @close="state.tableNameModalContext = undefined"
   />
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, escape, isEqual, isUndefined } from "lodash-es";
+import { escape, isEqual, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import scrollIntoView from "scroll-into-view-if-needed";
-import {
-  DatabaseId,
-  InstanceId,
-  Table,
-  TableId,
-  UIEditorTabType,
-  UNKNOWN_ID,
-} from "@/types";
+import { DatabaseId, InstanceId, UIEditorTabType } from "@/types";
+import { Table } from "@/types/UIEditor";
 import {
   useUIEditorStore,
   generateUniqueTabId,
   useInstanceStore,
-  useTableStore,
 } from "@/store";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
@@ -95,8 +88,7 @@ interface TreeNodeForTable extends BaseTreeNode {
   type: "table";
   instanceId: InstanceId;
   databaseId: DatabaseId;
-  tableId: TableId;
-  table: Table;
+  tableName: string;
 }
 
 type TreeNode = TreeNodeForInstance | TreeNodeForDatabase | TreeNodeForTable;
@@ -112,14 +104,13 @@ interface LocalState {
   shouldRelocateTreeNode: boolean;
   tableNameModalContext?: {
     databaseId: DatabaseId;
-    table: Table | undefined;
+    tableName: string | undefined;
   };
 }
 
 const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const instanceStore = useInstanceStore();
-const tableStore = useTableStore();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
@@ -144,15 +135,24 @@ const contextMenuOptions = computed(() => {
     return [];
   }
 
-  if (treeNode?.type === "database") {
+  if (treeNode.type === "database") {
     const options = [];
     options.push({
       key: "create-table",
       label: t("ui-editor.actions.create-table"),
     });
     return options;
-  } else if (treeNode?.type === "table") {
-    const isDropped = editorStore.droppedTableList.includes(treeNode.table);
+  } else if (treeNode.type === "table") {
+    const table = editorStore.tableList.find(
+      (table) =>
+        table.databaseId === treeNode.databaseId &&
+        table.newName === treeNode.tableName
+    );
+    if (!table) {
+      return [];
+    }
+
+    const isDropped = table.status === "dropped";
     const options = [];
     if (isDropped) {
       options.push({
@@ -252,7 +252,7 @@ watch([tableList.value, databaseDataLoadedSet.value], () => {
 
     const databaseTableList: Table[] = [];
     for (const table of tableList.value) {
-      if (table.database.id === database.id) {
+      if (table.databaseId === database.id) {
         databaseTableList.push(table);
       }
     }
@@ -264,14 +264,13 @@ watch([tableList.value, databaseDataLoadedSet.value], () => {
       databaseTreeNode.children = databaseTableList.map((table) => {
         return {
           type: "table",
-          key: `t-${table.database.id}-${table.id}-${table.name}`,
-          label: table.name,
+          key: `t-${table.databaseId}-${table.newName}`,
+          label: table.newName,
           children: [],
           isLeaf: true,
           instanceId: database.instance.id,
           databaseId: database.id,
-          tableId: table.id,
-          table: table,
+          tableName: table.newName,
         };
       });
     }
@@ -295,7 +294,7 @@ watch(
       if (!expandedKeysRef.value.includes(databaseTreeNodeKey)) {
         expandedKeysRef.value.push(databaseTreeNodeKey);
       }
-      const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableId}-${currentTab.tableCache.name}`;
+      const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableName}`;
       selectedKeysRef.value = [tableTreeNodeKey];
     }
 
@@ -359,17 +358,22 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
   const additionalClassList: string[] = ["select-none"];
 
   if (treeNode.type === "table") {
-    if (treeNode.tableId === UNKNOWN_ID) {
+    const table = editorStore.tableList.find(
+      (table) =>
+        table.databaseId === treeNode.databaseId &&
+        table.newName === treeNode.tableName
+    ) as Table;
+
+    if (table.status === "created") {
       additionalClassList.push("text-green-700");
+    } else if (table.status === "dropped") {
+      additionalClassList.push("text-red-700 line-through");
     } else {
-      const originTable = tableStore.getTableByDatabaseIdAndTableId(
-        treeNode.databaseId,
-        treeNode.tableId
+      const originTable = editorStore.originTableList.find(
+        (item) =>
+          item.databaseId === table.databaseId && item.oldName === table.oldName
       );
-      const isDropped = editorStore.droppedTableList.includes(treeNode.table);
-      if (isDropped) {
-        additionalClassList.push("text-red-700 line-through");
-      } else if (!isEqual(originTable, treeNode.table)) {
+      if (!isEqual(originTable, table)) {
         additionalClassList.push("text-yellow-700");
       }
     }
@@ -434,7 +438,7 @@ const loadSubTree = async (treeNode: TreeNode) => {
       databaseId
     );
     if (tableList.length === 0) {
-      treeNode.children = undefined;
+      treeNode.children = [];
       treeNode.isLeaf = true;
     }
   }
@@ -460,22 +464,18 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
             expandedKeysRef.value.push(treeNode.key);
           }
         } else if (treeNode.type === "database") {
+          await loadSubTree(treeNode);
           editorStore.addTab({
             id: generateUniqueTabId(),
             type: UIEditorTabType.TabForDatabase,
             databaseId: treeNode.databaseId,
           });
         } else if (treeNode.type === "table") {
-          const databaseId = treeNode.databaseId;
-          const tableId = treeNode.tableId;
-
           editorStore.addTab({
             id: generateUniqueTabId(),
             type: UIEditorTabType.TabForTable,
-            databaseId: databaseId,
-            tableId: tableId,
-            table: treeNode.table,
-            tableCache: cloneDeep(treeNode.table),
+            databaseId: treeNode.databaseId,
+            tableName: treeNode.tableName,
           });
         }
 
@@ -521,23 +521,25 @@ const handleContextMenuDropdownSelect = async (key: string) => {
       await loadSubTree(treeNode);
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
-        table: undefined,
+        tableName: undefined,
       };
     }
   } else if (treeNode?.type === "table") {
+    const table = editorStore.tableList.find(
+      (table) =>
+        table.databaseId === treeNode.databaseId &&
+        table.newName === treeNode.tableName
+    ) as Table;
+
     if (key === "rename") {
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
-        table: treeNode.table,
+        tableName: table.newName,
       };
     } else if (key === "drop") {
-      editorStore.dropTable(treeNode.table);
+      editorStore.dropTable(table);
     } else if (key === "restore") {
-      editorStore.restoreTable(
-        treeNode.databaseId,
-        treeNode.tableId,
-        treeNode.label
-      );
+      editorStore.restoreTable(table);
     }
   }
   contextMenu.showDropdown = false;

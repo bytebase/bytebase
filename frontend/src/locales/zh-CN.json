@@ -1408,6 +1408,7 @@
     "raw-sql": "SQL 语句",
     "actions": {
       "create-table": "新建表",
+      "rename": "重命名",
       "drop-table": "删除表",
       "drop": "删除",
       "restore": "恢复",
@@ -1435,7 +1436,7 @@
       "type": "类型",
       "default": "默认值",
       "comment": "注释",
-      "nullable": "是否可为空"
+      "is-nullable": "是否可为空"
     },
     "nothing-changed": "无任何改动",
     "message": {
