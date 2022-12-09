@@ -26,6 +26,7 @@ func (*SchemaEditor) ValidateDatabaseEdit(databaseEdit *api.DatabaseEdit) error 
 			return errors.Errorf("invalid column type: %s", addColumnContext.Type)
 		}
 		if addColumnContext.Default != nil {
+			// TEXT will be regarded as mysql.TypeBlob in the TiDB parser.
 			if columnType.GetType() == mysql.TypeBlob || columnType.GetType() == mysql.TypeGeometry || columnType.GetType() == mysql.TypeJSON {
 				return errors.Errorf("column type `%s` cannot have a default value", addColumnContext.Type)
 			}
