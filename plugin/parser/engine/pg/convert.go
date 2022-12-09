@@ -365,6 +365,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					return nil, err
 				}
 				functionDef.ParameterList, err = convertFunctionParameterList(functionNode.ObjectWithArgs.Objargs)
+				if err != nil {
+					return nil, err
+				}
+
 				dropFunctionStmt.FunctionList = append(dropFunctionStmt.FunctionList, functionDef)
 			}
 
