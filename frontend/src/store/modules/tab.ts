@@ -2,12 +2,13 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import { pick } from "lodash-es";
 import { watchThrottled } from "@vueuse/core";
-import type { TabInfo, AnyTabInfo } from "@/types";
+import type { TabInfo, CoreTabInfo, AnyTabInfo } from "@/types";
 import { UNKNOWN_ID, TabMode } from "@/types";
 import {
   getDefaultTab,
   INITIAL_TAB,
   isTempTab,
+  isSimilarTab,
   WebStorageHelper,
 } from "@/utils";
 import { useInstanceStore } from "./instance";
@@ -70,14 +71,19 @@ export const useTabStore = defineStore("tab", () => {
   });
 
   // actions
-  const addTab = (payload?: AnyTabInfo) => {
+  const addTab = (payload?: AnyTabInfo, beside = false) => {
     const newTab = reactive<TabInfo>({
       ...getDefaultTab(),
       ...payload,
     });
 
     const { id } = newTab;
-    tabIdList.value.push(id);
+    const index = tabIdList.value.indexOf(currentTabId.value ?? "");
+    if (beside && index >= 0) {
+      tabIdList.value.splice(index + 1, 0, id);
+    } else {
+      tabIdList.value.push(id);
+    }
     currentTabId.value = id;
     tabs.value.set(id, newTab);
 
@@ -98,7 +104,24 @@ export const useTabStore = defineStore("tab", () => {
   const setCurrentTabId = (id: string) => {
     currentTabId.value = id;
   };
+  const selectOrAddSimilarTab = (tab: CoreTabInfo, beside = false) => {
+    if (isDisconnected.value) {
+      return;
+    }
+    if (isSimilarTab(tab, currentTab.value)) {
+      return;
+    }
+    const similarTab = tabList.value.find((tmp) => isSimilarTab(tmp, tab));
+    if (similarTab) {
+      setCurrentTabId(similarTab.id);
+    } else {
+      addTab(tab, beside);
+    }
+  };
   const selectOrAddTempTab = () => {
+    if (isDisconnected.value) {
+      return;
+    }
     if (isTempTab(currentTab.value)) {
       return;
     }
@@ -228,6 +251,7 @@ export const useTabStore = defineStore("tab", () => {
     updateCurrentTab,
     setCurrentTabId,
     selectOrAddTempTab,
+    selectOrAddSimilarTab,
     reset,
   };
 });

@@ -22,7 +22,7 @@
       </NButton>
     </div>
     <div class="action-right space-x-2 flex justify-end items-center">
-      <TabModeSelect />
+      <AdminModeButton />
 
       <template v-if="showSheetsFeature">
         <NButton
@@ -66,7 +66,7 @@ import {
 import type { ExecuteConfig, ExecuteOption } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import SharePopover from "./SharePopover.vue";
-import TabModeSelect from "./TabModeSelect.vue";
+import AdminModeButton from "./AdminModeButton.vue";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;

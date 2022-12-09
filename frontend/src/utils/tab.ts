@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { computed } from "vue";
 import { v1 as uuidv1 } from "uuid";
 import { t } from "../plugins/i18n";
-import type { Connection, TabInfo } from "@/types";
+import type { Connection, CoreTabInfo, TabInfo } from "@/types";
 import { UNKNOWN_ID, TabMode } from "@/types";
 
 export const defaultTabName = computed(() => t("sql-editor.untitled-sheet"));
@@ -39,4 +39,12 @@ export const isTempTab = (tab: TabInfo): boolean => {
 
 export const isSameConnection = (a: Connection, b: Connection): boolean => {
   return a.instanceId === b.instanceId && a.databaseId === b.databaseId;
+};
+
+export const isSimilarTab = (a: CoreTabInfo, b: CoreTabInfo): boolean => {
+  return (
+    isSameConnection(a.connection, b.connection) &&
+    a.sheetId === b.sheetId &&
+    a.mode === b.mode
+  );
 };
