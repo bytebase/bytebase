@@ -2776,6 +2776,7 @@ func TestCreateFunction(t *testing.T) {
 func TestDropFunction(t *testing.T) {
 	tests := []testData{
 		{
+			// pg_query_go will skip the OUT parameters and only parse the parameter data type.
 			stmt: `DROP FUNCTION IF EXISTS public.func1(INOUT "Price_from" int, IN price_to int, OUT out_item int), func2()`,
 			want: []ast.Node{
 				&ast.DropFunctionStmt{
