@@ -180,8 +180,6 @@ func convertView(view *api.View) *catalog.View {
 func convertTable(table *api.Table) *catalog.Table {
 	return &catalog.Table{
 		Name:          table.Name,
-		CreatedTs:     table.CreatedTs,
-		UpdatedTs:     table.UpdatedTs,
 		Type:          table.Type,
 		Engine:        table.Engine,
 		Collation:     table.Collation,

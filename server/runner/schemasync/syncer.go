@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -424,15 +425,9 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 	if err != nil {
 		return err
 	}
-	// TODO(d): finish the implementation.
-	metadata := &storepb.SchemaMetadata{}
-	for _, t := range schema.TableList {
-		metadata.TableMetadata = append(metadata.TableMetadata, &storepb.TableMetadata{
-			Schema: t.Schema,
-			Name:   t.ShortName,
-		})
-	}
-	bytes, err := protojson.Marshal(metadata)
+
+	databaseMetadata := convertDBSchema(schema)
+	bytes, err := protojson.Marshal(databaseMetadata)
 	if err != nil {
 		return err
 	}
@@ -448,4 +443,50 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 		}
 	}
 	return nil
+}
+
+func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
+	// TODO(d): finish the implementation.
+	// TODO(d): add unit test.
+	databaseMetadata := &storepb.DatabaseMetadata{
+		Name:         schema.Name,
+		CharacterSet: schema.CharacterSet,
+		Collation:    schema.Collation,
+	}
+
+	schemaNameMap := make(map[string]bool)
+	schemaTableMap := make(map[string][]db.Table)
+	for _, table := range schema.TableList {
+		schemaNameMap[table.Schema] = true
+		schemaTableMap[table.Schema] = append(schemaTableMap[table.Schema], table)
+	}
+	var schemaNames []string
+	for schemaName := range schemaNameMap {
+		schemaNames = append(schemaNames, schemaName)
+	}
+	sort.Strings(schemaNames)
+	for _, schemaName := range schemaNames {
+		schemaMetadata := &storepb.SchemaMetadata{
+			Name: schemaName,
+		}
+		tables := schemaTableMap[schemaName]
+		sort.Slice(tables, func(i, j int) bool {
+			return tables[i].ShortName < tables[j].ShortName
+		})
+		for _, table := range tables {
+			tableMetadata := &storepb.TableMetadata{
+				Name:          table.ShortName,
+				Engine:        table.Engine,
+				Collation:     table.Collation,
+				RowCount:      table.RowCount,
+				DataSize:      table.DataSize,
+				DataFree:      table.DataFree,
+				CreateOptions: table.CreateOptions,
+				Comment:       table.Comment,
+			}
+			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
+		}
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, schemaMetadata)
+	}
+	return databaseMetadata
 }

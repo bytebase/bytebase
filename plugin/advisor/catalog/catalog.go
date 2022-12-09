@@ -30,11 +30,7 @@ type Schema struct {
 // Table is the database table.
 type Table struct {
 	Name string
-	// CreatedTs isn't supported for ClickHouse, SQLite.
-	CreatedTs int64
-	// UpdatedTs isn't supported for SQLite.
-	UpdatedTs int64
-	Type      string
+	Type string
 	// Engine isn't supported for Postgres, Snowflake, SQLite.
 	Engine string
 	// Collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
