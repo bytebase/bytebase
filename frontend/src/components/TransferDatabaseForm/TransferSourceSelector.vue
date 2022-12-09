@@ -1,41 +1,43 @@
 <template>
-  <div v-if="project.id != DEFAULT_PROJECT_ID" class="textlabel">
+  <div class="textlabel">
     <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mb-2">
       {{ $t("quick-action.unassigned-db-hint") }}
     </div>
     <div class="flex items-center justify-between">
       <div class="radio-set-row">
-        <label class="radio">
-          <input
-            v-model="state.transferSource"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="DEFAULT"
-          />
-          <span class="label">
-            {{ $t("quick-action.from-unassigned-databases") }}
-          </span>
-        </label>
-        <label class="radio">
-          <input
-            v-model="state.transferSource"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="OTHER"
-          />
-          <span class="label">
-            {{ $t("quick-action.from-projects") }}
-          </span>
-        </label>
+        <template v-if="project.id != DEFAULT_PROJECT_ID">
+          <label class="radio">
+            <input
+              v-model="state.transferSource"
+              tabindex="-1"
+              type="radio"
+              class="btn"
+              value="DEFAULT"
+            />
+            <span class="label">
+              {{ $t("quick-action.from-unassigned-databases") }}
+            </span>
+          </label>
+          <label class="radio">
+            <input
+              v-model="state.transferSource"
+              tabindex="-1"
+              type="radio"
+              class="btn"
+              value="OTHER"
+            />
+            <span class="label">
+              {{ $t("quick-action.from-projects") }}
+            </span>
+          </label>
+        </template>
       </div>
       <div>
         <BBTableSearch
           class="m-px"
           :value="searchText"
-          :placeholder="$t('database.search-database-name')"
-          @change-text="(text) => $emit('search-text-change', text)"
+          :placeholder="$t('database.search-database')"
+          @change-text="(text: string) => $emit('search-text-change', text)"
         />
       </div>
     </div>
