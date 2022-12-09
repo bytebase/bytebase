@@ -2677,3 +2677,139 @@ func TestDropExtension(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestCreateFunction(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `Create function get_car_Price("Price_from" int, Price_to int)  
+			returns int  
+			language plpgsql  
+			as  
+			$$  
+			Declare  
+			 Car_count integer;  
+			Begin  
+			   select count(*)   
+			   into Car_count  
+			   from Car  
+			   where Car_price between "Price_from" and Price_to;  
+			   return Car_count;  
+			End;  
+			$$;`,
+			want: []ast.Node{
+				&ast.CreateFunctionStmt{
+					Function: &ast.FunctionDef{
+						Schema: "",
+						Name:   "get_car_price",
+						ParameterList: []*ast.FunctionParameterDef{
+							{
+								Name: "Price_from",
+								Type: &ast.Integer{Size: 4},
+								Mode: ast.FunctionParameterModeIn,
+							},
+							{
+								Name: "price_to",
+								Type: &ast.Integer{Size: 4},
+								Mode: ast.FunctionParameterModeIn,
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `Create function get_car_Price("Price_from" int, Price_to int)  
+			returns int  
+			language plpgsql  
+			as  
+			$$  
+			Declare  
+			 Car_count integer;  
+			Begin  
+			   select count(*)   
+			   into Car_count  
+			   from Car  
+			   where Car_price between "Price_from" and Price_to;  
+			   return Car_count;  
+			End;  
+			$$;`,
+					LastLine: 15,
+				},
+			},
+		},
+		{
+			stmt: `CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+			LANGUAGE plpgsql
+			AS $$
+		BEGIN
+		  NEW.updated_ts = extract(epoch from now());
+		  RETURN NEW;
+		END;
+		$$;`,
+			want: []ast.Node{
+				&ast.CreateFunctionStmt{
+					Function: &ast.FunctionDef{
+						Schema: "public",
+						Name:   "trigger_update_updated_ts",
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+			LANGUAGE plpgsql
+			AS $$
+		BEGIN
+		  NEW.updated_ts = extract(epoch from now());
+		  RETURN NEW;
+		END;
+		$$;`,
+					LastLine: 8,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestDropFunction(t *testing.T) {
+	tests := []testData{
+		{
+			// pg_query_go will skip the OUT parameters and only parse the parameter data type.
+			stmt: `DROP FUNCTION IF EXISTS public.func1(INOUT "Price_from" int, IN price_to int, OUT out_item int), func2()`,
+			want: []ast.Node{
+				&ast.DropFunctionStmt{
+					IfExists: true,
+					FunctionList: []*ast.FunctionDef{
+						{
+							Schema: "public",
+							Name:   "func1",
+							ParameterList: []*ast.FunctionParameterDef{
+								{
+									Type: &ast.Integer{Size: 4},
+								},
+								{
+									Type: &ast.Integer{Size: 4},
+								},
+							},
+						},
+						{
+							Schema: "",
+							Name:   "func2",
+						},
+					},
+					Behavior: ast.DropBehaviorRestrict,
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `DROP FUNCTION IF EXISTS public.func1(INOUT "Price_from" int, IN price_to int, OUT out_item int), func2()`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
