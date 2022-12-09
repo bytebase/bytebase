@@ -1435,7 +1435,7 @@
       "type": "Type",
       "default": "Default",
       "comment": "Comment",
-      "is-nullable": "Is Nullable"
+      "not-null": "Not Null"
     },
     "nothing-changed": "Nothing changed",
     "message": {

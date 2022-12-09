@@ -14,15 +14,15 @@ export const allowUsingUIEditor = (databaseList: Database[]): boolean => {
 export const getDataTypeSuggestionList = (engineType: EngineType = "MYSQL") => {
   if (engineType === "MYSQL") {
     return [
-      "bit",
-      "boolean",
-      "char(1)",
-      "date",
-      "datetime",
-      "double",
-      "int",
-      "json",
-      "varchar(255)",
+      "BIT",
+      "BOOLEAN",
+      "CHAR(1)",
+      "DATE",
+      "DATETIME",
+      "DOUBLE",
+      "INT",
+      "JSON",
+      "VARCHAR(255)",
     ];
   }
 

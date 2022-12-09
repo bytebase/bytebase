@@ -218,7 +218,7 @@ func TestDeparseAlterTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), CHANGE COLUMN `id_card` `id_card2` INT COMMENT 'ID Card' NOT NULL, DROP COLUMN `email`;\n",
+			want: "ALTER TABLE `t1` DROP COLUMN `email`, ADD COLUMN (`id` INT NOT NULL), CHANGE COLUMN `id_card` `id_card2` INT COMMENT 'ID Card' NOT NULL;\n",
 		},
 	}
 
