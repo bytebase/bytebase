@@ -2,6 +2,7 @@
   <BBModal
     :title="$t('database.alter-schema')"
     class="ui-editor-modal-container !w-320 h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
+    :esc-closable="false"
     @close="dismissModal"
   >
     <div
@@ -81,6 +82,15 @@
 
   <!-- Select DDL mode for MySQL -->
   <GhostDialog ref="ghostDialog" />
+
+  <!-- Close modal confirm dialog -->
+  <ActionConfirmModal
+    v-if="state.showActionConfirmModal"
+    :title="$t('ui-editor.confirm-to-close.title')"
+    :description="$t('ui-editor.confirm-to-close.description')"
+    @close="state.showActionConfirmModal = false"
+    @confirm="emit('close')"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -105,12 +115,14 @@ import { diffTableList } from "@/utils/UIEditor/diffTable";
 import { validateDatabaseEdit } from "@/utils/UIEditor/validate";
 import UIEditor from "@/components/UIEditor/UIEditor.vue";
 import GhostDialog from "./GhostDialog.vue";
+import ActionConfirmModal from "../UIEditor/Modals/ActionConfirmModal.vue";
 
 type TabType = "raw-sql" | "ui-editor";
 
 interface LocalState {
   selectedTab: TabType;
   editStatement: string;
+  showActionConfirmModal: boolean;
 }
 
 const props = defineProps({
@@ -132,6 +144,7 @@ const router = useRouter();
 const state = reactive<LocalState>({
   selectedTab: "ui-editor",
   editStatement: "",
+  showActionConfirmModal: false,
 });
 const editorStore = useUIEditorStore();
 const databaseStore = useDatabaseStore();
@@ -186,7 +199,11 @@ const handleStatementChange = (value: string) => {
 };
 
 const dismissModal = () => {
-  emit("close");
+  if (allowPreviewIssue.value) {
+    state.showActionConfirmModal = true;
+  } else {
+    emit("close");
+  }
 };
 
 // 'normal' -> normal migration
