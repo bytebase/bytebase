@@ -494,7 +494,7 @@ func (r *Runner) createExternalApproval(ctx context.Context, issue *api.Issue, s
 			AppSecret: settingValue.AppSecret,
 		},
 		feishu.Content{
-			Issue:    issue.Name,
+			Issue:    fmt.Sprintf("#%d %s", issue.ID, issue.Name),
 			Stage:    stage.Name,
 			Link:     fmt.Sprintf("%s/issue/%s", r.profile.ExternalURL, api.IssueSlug(issue)),
 			TaskList: taskList,
