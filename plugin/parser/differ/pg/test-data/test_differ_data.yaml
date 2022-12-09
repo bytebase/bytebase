@@ -199,3 +199,72 @@
     DROP INDEX "public"."trgm_idx2";
     DROP INDEX "public"."trgm_idx3";
     CREATE INDEX trgm_idx2 ON public.test_trgm USING gin (t2 public.gin_trgm_ops);
+- oldSchema: |
+    CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.updated_ts = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE FUNCTION public.f1() RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.updated_ts = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE FUNCTION public.f1(int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.updated_ts = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+  newSchema: |
+    CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.updated_ts = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE FUNCTION public.f1(int, int, int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.updated_ts = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE FUNCTION public.f1(int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.ts = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+  diff: |
+    DROP FUNCTION "public"."f1"(integer);
+    DROP FUNCTION "public"."f1"();
+    CREATE FUNCTION public.f1(int, int, int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.updated_ts = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
+    CREATE FUNCTION public.f1(int) RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+    BEGIN
+      NEW.ts = extract(epoch from now());
+      RETURN NEW;
+    END;
+    $$;
