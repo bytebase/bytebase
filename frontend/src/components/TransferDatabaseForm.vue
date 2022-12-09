@@ -40,6 +40,7 @@ import {
 } from "../types";
 import {
   buildDatabaseNameRegExpByTemplate,
+  filterDatabaseByKeyword,
   PRESET_LABEL_KEY_PLACEHOLDERS,
   sortDatabaseList,
 } from "../utils";
@@ -108,9 +109,14 @@ const databaseList = computed(() => {
   }
 
   const keyword = state.searchText.trim();
-  if (keyword) {
-    list = list.filter((db) => db.name.toLowerCase().includes(keyword));
-  }
+  list = list.filter((db) =>
+    filterDatabaseByKeyword(db, keyword, [
+      "name",
+      "project",
+      "instance",
+      "environment",
+    ])
+  );
 
   return sortDatabaseList(list, environmentList.value);
 });
