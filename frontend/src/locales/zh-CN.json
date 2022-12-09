@@ -1436,7 +1436,7 @@
       "type": "类型",
       "default": "默认值",
       "comment": "注释",
-      "is-nullable": "是否可为空"
+      "not-null": "不可为空"
     },
     "nothing-changed": "无任何改动",
     "message": {
