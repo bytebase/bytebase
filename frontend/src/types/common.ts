@@ -553,7 +553,7 @@ const makeUnknown = (type: ResourceType) => {
     updatedTs: 0,
     name: "",
     position: 0,
-    nullable: false,
+    nullable: true,
     type: "",
     characterSet: "",
     collation: "",

@@ -110,14 +110,28 @@
                 </button>
               </NDropdown>
             </div>
-            <div class="table-body-item-container">
+            <div
+              class="table-body-item-container flex flex-row justify-between items-center"
+            >
               <input
                 v-model="column.default"
                 :disabled="disableAlterColumn(column)"
-                placeholder="column default value"
-                class="column-field-input"
+                :placeholder="column.default === null ? 'NULL' : ''"
+                class="column-field-input !pr-8"
                 type="text"
               />
+              <NDropdown
+                trigger="click"
+                :disabled="disableAlterColumn(column)"
+                :options="dataDefaultOptions"
+                @select="(defaultString:string)=>handleColumnDefaultFieldChange(column, defaultString)"
+              >
+                <button class="absolute right-5">
+                  <heroicons-solid:chevron-up-down
+                    class="w-4 h-auto text-gray-400"
+                  />
+                </button>
+              </NDropdown>
             </div>
             <div class="table-body-item-container">
               <input
@@ -133,9 +147,9 @@
             >
               <BBCheckbox
                 class="ml-3"
-                :value="column.nullable"
+                :value="!column.nullable"
                 :disabled="disableAlterColumn(column)"
-                @toggle="(value) => (column.nullable = value)"
+                @toggle="(value) => (column.nullable = !value)"
               />
             </div>
             <div class="w-full flex justify-start items-center">
@@ -235,6 +249,19 @@ const isDroppedTable = computed(() => {
   return state.tableCache.status === "dropped";
 });
 
+const allowResetTable = computed(() => {
+  if (state.tableCache.status === "created") {
+    return false;
+  }
+
+  const originTable = editorStore.originTableList.find(
+    (item) =>
+      item.databaseId === state.tableCache.databaseId &&
+      item.oldName === state.tableCache.oldName
+  );
+  return !isEqual(originTable, state.tableCache) || isDroppedTable.value;
+});
+
 const columnHeaderList = computed(() => {
   return [
     {
@@ -255,7 +282,7 @@ const columnHeaderList = computed(() => {
     },
     {
       key: "nullable",
-      label: t("ui-editor.column.is-nullable"),
+      label: t("ui-editor.column.not-null"),
     },
   ];
 });
@@ -270,18 +297,17 @@ const dataTypeOptions = computed(() => {
   });
 });
 
-const allowResetTable = computed(() => {
-  if (state.tableCache.status === "created") {
-    return false;
-  }
-
-  const originTable = editorStore.originTableList.find(
-    (item) =>
-      item.databaseId === state.tableCache.databaseId &&
-      item.oldName === state.tableCache.oldName
-  );
-  return !isEqual(originTable, state.tableCache) || isDroppedTable;
-});
+const dataDefaultOptions = [
+  // TODO(steven): support set default field with EMPTY.
+  // {
+  //   label: "EMPTY",
+  //   key: "EMPTY",
+  // },
+  {
+    label: "NULL",
+    key: "NULL",
+  },
+];
 
 watch(
   () => state.tableCache,
@@ -347,6 +373,15 @@ const handleAddColumn = () => {
   const column = transformColumnDataToColumn(unknown("COLUMN"));
   column.status = "created";
   state.tableCache.columnList.push(column);
+};
+
+const handleColumnDefaultFieldChange = (
+  column: Column,
+  defaultString: string
+) => {
+  if (defaultString === "NULL") {
+    column.default = null;
+  }
 };
 
 const handleDropColumn = (column: Column) => {
