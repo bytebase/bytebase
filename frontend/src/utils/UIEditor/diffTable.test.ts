@@ -1,11 +1,11 @@
 import { expect, it } from "vitest";
 import {
-  Table,
   DropTableContext,
   CreateTableContext,
   AlterTableContext,
   RenameTableContext,
 } from "@/types";
+import { Table } from "@/types/UIEditor";
 import { UNKNOWN_ID } from "@/types/const";
 import { diffTableList } from "./diffTable";
 
@@ -24,25 +24,27 @@ it("diff create table list", () => {
       originTableList: [],
       targetTableList: [
         {
-          id: UNKNOWN_ID,
-          name: "user",
+          oldName: "user",
+          newName: "user",
           type: "BASE TABLE",
           engine: "InnoDB",
           collation: "",
           comment: "",
+          originColumnList: [],
           columnList: [
             {
               id: UNKNOWN_ID,
-              name: "id",
+              oldName: "id",
+              newName: "id",
               type: "int",
-              characterSet: "",
-              collation: "",
               comment: "",
               nullable: false,
               default: undefined,
+              status: "created",
             },
           ],
-        } as Table,
+          status: "created",
+        } as any as Table,
       ],
       wanted: {
         createTableList: [
@@ -93,16 +95,16 @@ it("diff alter table list", () => {
     {
       originTableList: [
         {
-          // Temp table id for testing.
-          id: 1,
-          name: "user",
+          oldName: "user",
+          newName: "user",
           type: "BASE TABLE",
           engine: "InnoDB",
           collation: "",
           comment: "",
           columnList: [
             {
-              name: "id",
+              oldName: "id",
+              newName: "id",
               type: "int",
               characterSet: "",
               collation: "",
@@ -111,19 +113,20 @@ it("diff alter table list", () => {
               default: undefined,
             },
           ],
-        } as Table,
+        } as any as Table,
       ],
       targetTableList: [
         {
-          id: 1,
-          name: "user",
+          oldName: "user",
+          newName: "user",
           type: "BASE TABLE",
           engine: "InnoDB",
           collation: "",
           comment: "",
           columnList: [
             {
-              name: "id",
+              oldName: "id",
+              newName: "id",
               type: "int",
               characterSet: "",
               collation: "",
@@ -132,17 +135,18 @@ it("diff alter table list", () => {
               default: undefined,
             },
             {
-              id: UNKNOWN_ID,
-              name: "email",
+              oldName: "email",
+              newName: "email",
               type: "varchar",
               characterSet: "",
               collation: "",
               comment: "",
               nullable: false,
               default: undefined,
+              status: "created",
             },
           ],
-        } as Table,
+        } as any as Table,
       ],
       wanted: {
         createTableList: [],
@@ -191,7 +195,8 @@ it("diff drop table list", () => {
       originTableList: [
         {
           id: 1,
-          name: "user",
+          oldName: "user",
+          newName: "user",
           type: "BASE TABLE",
           engine: "InnoDB",
           collation: "",
@@ -207,9 +212,31 @@ it("diff drop table list", () => {
               default: undefined,
             },
           ],
-        } as Table,
+        } as any as Table,
       ],
-      targetTableList: [],
+      targetTableList: [
+        {
+          id: 1,
+          oldName: "user",
+          newName: "user",
+          type: "BASE TABLE",
+          engine: "InnoDB",
+          collation: "",
+          comment: "",
+          columnList: [
+            {
+              name: "id",
+              type: "int",
+              characterSet: "",
+              collation: "",
+              comment: "",
+              nullable: false,
+              default: undefined,
+            },
+          ],
+          status: "dropped",
+        } as any as Table,
+      ],
       wanted: {
         createTableList: [],
         alterTableList: [],
