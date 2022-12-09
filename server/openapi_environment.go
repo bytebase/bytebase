@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerOpenAPIRoutesForEnvironment(g *echo.Group) {
@@ -40,7 +43,11 @@ func (s *Server) listEnvironment(c echo.Context) error {
 
 	response := []*openAPIV1.Environment{}
 	for _, env := range envList {
-		response = append(response, convertToOpenAPIEnvironment(env))
+		env, err := s.convertToOpenAPIEnvironment(ctx, env)
+		if err != nil {
+			return err
+		}
+		response = append(response, env)
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -53,21 +60,48 @@ func (s *Server) createEnvironmentByOpenAPI(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	envCreate := &openAPIV1.EnvironmentCreate{}
-	if err := json.Unmarshal(body, envCreate); err != nil {
+	upsert := &openAPIV1.EnvironmentUpsert{}
+	if err := json.Unmarshal(body, upsert); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create environment request").SetInternal(err)
 	}
+	if upsert.Name == nil || *upsert.Name == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Environment name is required")
+	}
 
-	env, err := s.createEnvironment(ctx, &api.EnvironmentCreate{
-		CreatorID: c.Get(getPrincipalIDContextKey()).(int),
-		Name:      envCreate.Name,
-		Order:     envCreate.Order,
+	if err := s.validateEnvironmentPolicy(api.PolicyTypePipelineApproval, upsert.PipelineApprovalPolicy); err != nil {
+		return err
+	}
+	if err := s.validateEnvironmentPolicy(api.PolicyTypeBackupPlan, upsert.BackupPlanPolicy); err != nil {
+		return err
+	}
+	if err := s.validateEnvironmentPolicy(api.PolicyTypeEnvironmentTier, upsert.EnvironmentTierPolicy); err != nil {
+		return err
+	}
+	if err := s.validateEnvironmentPolicy(api.PolicyTypeSQLReview, upsert.SQLReviewPolicy); err != nil {
+		return err
+	}
+
+	creatorID := c.Get(getPrincipalIDContextKey()).(int)
+
+	env, err := s.createEnvironment(ctx, &store.EnvironmentCreate{
+		CreatorID:              creatorID,
+		EnvironmentTierPolicy:  upsert.EnvironmentTierPolicy,
+		PipelineApprovalPolicy: upsert.PipelineApprovalPolicy,
+		BackupPlanPolicy:       upsert.BackupPlanPolicy,
+		SQLReviewPolicy:        upsert.SQLReviewPolicy,
+		Name:                   *upsert.Name,
+		Order:                  upsert.Order,
 	})
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, convertToOpenAPIEnvironment(env))
+	res, err := s.convertToOpenAPIEnvironment(ctx, env)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, res)
 }
 
 func (s *Server) getEnvironmentByID(c echo.Context) error {
@@ -85,7 +119,12 @@ func (s *Server) getEnvironmentByID(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, convertToOpenAPIEnvironment(env))
+	res, err := s.convertToOpenAPIEnvironment(ctx, env)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, res)
 }
 
 func (s *Server) updateEnvironmentByOpenAPI(c echo.Context) error {
@@ -100,22 +139,44 @@ func (s *Server) updateEnvironmentByOpenAPI(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	envPatch := &openAPIV1.EnvironmentPatch{}
-	if err := json.Unmarshal(body, envPatch); err != nil {
+	upsert := &openAPIV1.EnvironmentUpsert{}
+	if err := json.Unmarshal(body, upsert); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch environment request").SetInternal(err)
 	}
 
-	env, err := s.updateEnvironment(ctx, &api.EnvironmentPatch{
-		ID:        id,
-		UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-		Name:      envPatch.Name,
-		Order:     envPatch.Order,
+	if err := s.validateEnvironmentPolicy(api.PolicyTypePipelineApproval, upsert.PipelineApprovalPolicy); err != nil {
+		return err
+	}
+	if err := s.validateEnvironmentPolicy(api.PolicyTypeBackupPlan, upsert.BackupPlanPolicy); err != nil {
+		return err
+	}
+	if err := s.validateEnvironmentPolicy(api.PolicyTypeEnvironmentTier, upsert.EnvironmentTierPolicy); err != nil {
+		return err
+	}
+	if err := s.validateEnvironmentPolicy(api.PolicyTypeSQLReview, upsert.SQLReviewPolicy); err != nil {
+		return err
+	}
+
+	env, err := s.updateEnvironment(ctx, &store.EnvironmentPatch{
+		ID:                     id,
+		UpdaterID:              c.Get(getPrincipalIDContextKey()).(int),
+		EnvironmentTierPolicy:  upsert.EnvironmentTierPolicy,
+		PipelineApprovalPolicy: upsert.PipelineApprovalPolicy,
+		BackupPlanPolicy:       upsert.BackupPlanPolicy,
+		SQLReviewPolicy:        upsert.SQLReviewPolicy,
+		Name:                   upsert.Name,
+		Order:                  upsert.Order,
 	})
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, convertToOpenAPIEnvironment(env))
+	res, err := s.convertToOpenAPIEnvironment(ctx, env)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, res)
 }
 
 func (s *Server) deleteEnvironmentByOpenAPI(c echo.Context) error {
@@ -135,7 +196,7 @@ func (s *Server) deleteEnvironmentByOpenAPI(c echo.Context) error {
 
 	rowStatus := string(api.Archived)
 	name := fmt.Sprintf("archived_%s_%d", env.Name, time.Now().Unix())
-	if _, err := s.updateEnvironment(ctx, &api.EnvironmentPatch{
+	if _, err := s.updateEnvironment(ctx, &store.EnvironmentPatch{
 		ID:        id,
 		UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		RowStatus: &rowStatus,
@@ -147,10 +208,63 @@ func (s *Server) deleteEnvironmentByOpenAPI(c echo.Context) error {
 	return c.String(http.StatusOK, "ok")
 }
 
-func convertToOpenAPIEnvironment(env *api.Environment) *openAPIV1.Environment {
-	return &openAPIV1.Environment{
-		ID:    env.ID,
-		Name:  env.Name,
-		Order: env.Order,
+func (s *Server) convertToOpenAPIEnvironment(ctx context.Context, env *api.Environment) (*openAPIV1.Environment, error) {
+	backupPolicy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, env.ID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the backup policy for environment %d", env.ID)).SetInternal(err)
 	}
+	pipelineApprovalPolicy, err := s.store.GetPipelineApprovalPolicy(ctx, env.ID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the pipeline approval policy for environment %d", env.ID)).SetInternal(err)
+	}
+	environmentTierPolicy, err := s.store.GetEnvironmentTierPolicyByEnvID(ctx, env.ID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the environment tier policy for environment %d", env.ID)).SetInternal(err)
+	}
+
+	environmentResourceType := api.PolicyResourceTypeEnvironment
+	sqlReviewPolicy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &env.ID})
+	if err != nil {
+		if e, ok := err.(*common.Error); ok && e.Code != common.NotFound {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the SQL review policy for environment %d", env.ID)).SetInternal(err)
+		}
+	}
+
+	return &openAPIV1.Environment{
+		ID:                     env.ID,
+		Name:                   env.Name,
+		Order:                  env.Order,
+		BackupPlanPolicy:       backupPolicy,
+		PipelineApprovalPolicy: pipelineApprovalPolicy,
+		EnvironmentTierPolicy:  environmentTierPolicy,
+		SQLReviewPolicy:        sqlReviewPolicy,
+	}, nil
+}
+
+func (s *Server) validateEnvironmentPolicy(policyType api.PolicyType, policy interface{}) error {
+	if policy == nil || reflect.ValueOf(policy).IsNil() {
+		return nil
+	}
+
+	bytes, err := json.Marshal(policy)
+	payload := string(bytes)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+	}
+
+	policyUpsert := &api.PolicyUpsert{
+		ResourceType: api.PolicyResourceTypeEnvironment,
+		Type:         api.PolicyTypePipelineApproval,
+		Payload:      &payload,
+	}
+
+	if err := s.hasAccessToUpsertPolicy(policyUpsert); err != nil {
+		return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
+	}
+
+	if err := api.ValidatePolicy(api.PolicyResourceTypeEnvironment, policyType, &payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid %s policy: %s", policyType, payload)).SetInternal(err)
+	}
+
+	return nil
 }
