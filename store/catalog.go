@@ -170,8 +170,6 @@ func splitPGSchema(name string) (string, string, error) {
 func convertView(view *api.View) *catalog.View {
 	return &catalog.View{
 		Name:       view.Name,
-		CreatedTs:  view.CreatedTs,
-		UpdatedTs:  view.UpdatedTs,
 		Definition: view.Definition,
 		Comment:    view.Comment,
 	}

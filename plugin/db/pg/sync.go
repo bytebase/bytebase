@@ -217,6 +217,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	for _, view := range views {
 		var dbView db.View
 		dbView.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
+		dbView.Schema = view.schemaName
+		dbView.ShortName = view.name
 		// Postgres does not store
 		dbView.CreatedTs = time.Now().Unix()
 		dbView.Definition = view.definition
