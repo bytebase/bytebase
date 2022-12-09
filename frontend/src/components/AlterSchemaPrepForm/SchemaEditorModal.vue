@@ -42,14 +42,30 @@
           class="w-full h-full pl-3 shrink-0 flex flex-row justify-between items-center"
         >
           <div>{{ $t("sql-editor.self") }}</div>
-          <div>
+          <div class="flex flex-row justify-end items-center space-x-3">
+            <label
+              for="sql-file-input"
+              class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <heroicons-outline:arrow-up-tray
+                class="w-4 h-auto mr-1 text-gray-500"
+              />
+              {{ $t("issue.upload-sql") }}
+              <input
+                id="sql-file-input"
+                type="file"
+                accept=".sql,.txt,application/sql,text/plain"
+                class="hidden"
+                @change="handleUploadFile"
+              />
+            </label>
             <button
               class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="!allowSyncSQLFromUIEditor"
               @click="handleSyncSQLFromUIEditor"
             >
               <heroicons-outline:exclamation-circle
-                class="w-5 h-auto mr-1 text-gray-500"
+                class="w-4 h-auto mr-1 text-gray-500"
               />
               {{ $t("ui-editor.sync-sql-from-ui-editor") }}
             </button>
@@ -97,6 +113,7 @@
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
   Database,
@@ -116,6 +133,8 @@ import { validateDatabaseEdit } from "@/utils/UIEditor/validate";
 import UIEditor from "@/components/UIEditor/UIEditor.vue";
 import GhostDialog from "./GhostDialog.vue";
 import ActionConfirmModal from "../UIEditor/Modals/ActionConfirmModal.vue";
+
+const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
 type TabType = "raw-sql" | "ui-editor";
 
@@ -140,6 +159,7 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
+const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
   selectedTab: "ui-editor",
@@ -274,6 +294,49 @@ const fetchDatabaseEditMapWithUIEditor = async () => {
     }
   }
   return databaseEditMap;
+};
+
+const handleUploadFile = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = (target.files || [])[0];
+  const cleanup = () => {
+    // Note that once selected a file, selecting the same file again will not
+    // trigger <input type="file">'s change event.
+    // So we need to do some cleanup stuff here.
+    target.files = null;
+    target.value = "";
+  };
+
+  if (!file) {
+    return cleanup();
+  }
+  if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
+    notificationStore.pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("issue.upload-sql-file-max-size-exceeded", {
+        size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
+      }),
+    });
+    return cleanup();
+  }
+  const fr = new FileReader();
+  fr.onload = () => {
+    const sql = fr.result as string;
+    state.editStatement = sql;
+  };
+  fr.onerror = (e) => {
+    notificationStore.pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: `Read file error`,
+      description: String(fr.error),
+    });
+    return;
+  };
+  fr.readAsText(file);
+
+  cleanup();
 };
 
 const handlePreviewIssue = async () => {
