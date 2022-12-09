@@ -349,13 +349,26 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 			return dropExtension, nil
 		case pgquery.ObjectType_OBJECT_FUNCTION:
-			// dropFunctionStmt := &ast.DropFunctionStmt{
-			// 	IfExists: in.DropStmt.MissingOk,
-			// 	Behavior: convertDropBehavior(in.DropStmt.Behavior),
-			// }
-			// for _, function := range in.DropStmt.Objects {
+			dropFunctionStmt := &ast.DropFunctionStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
+			for _, function := range in.DropStmt.Objects {
+				functionNode, ok := function.Node.(*pgquery.Node_ObjectWithArgs)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected ObjectWithArgs but found %t", function.Node)
+				}
+				functionDef := &ast.FunctionDef{}
+				var err error
+				functionDef.Schema, functionDef.Name, err = convertFunctionName(functionNode.ObjectWithArgs.Objname)
+				if err != nil {
+					return nil, err
+				}
+				functionDef.ParameterList, err = convertFunctionParameterList(functionNode.ObjectWithArgs.Objargs)
+				dropFunctionStmt.FunctionList = append(dropFunctionStmt.FunctionList, functionDef)
+			}
 
-			// }
+			return dropFunctionStmt, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -623,19 +636,27 @@ func convertFunctionParameterList(parameterList []*pgquery.Node) ([]*ast.Functio
 	var result []*ast.FunctionParameterDef
 	for _, node := range parameterList {
 		var err error
-		parameterNode, ok := node.Node.(*pgquery.Node_FunctionParameter)
-		if !ok {
-			return nil, parser.NewConvertErrorf("expected FunctionParameter buf found %t", node.Node)
+		switch parameterNode := node.Node.(type) {
+		case *pgquery.Node_FunctionParameter:
+			parameterDef := &ast.FunctionParameterDef{
+				Name: parameterNode.FunctionParameter.Name,
+				Mode: convertParameterMode(parameterNode.FunctionParameter.Mode),
+			}
+			parameterDef.Type, err = convertDataType(parameterNode.FunctionParameter.ArgType)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, parameterDef)
+		case *pgquery.Node_TypeName:
+			parameterDef := &ast.FunctionParameterDef{}
+			parameterDef.Type, err = convertDataType(parameterNode.TypeName)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, parameterDef)
+		default:
+			return nil, parser.NewConvertErrorf("expected FunctionParameter or TypeName but found %t", node.Node)
 		}
-		parameterDef := &ast.FunctionParameterDef{
-			Name: parameterNode.FunctionParameter.Name,
-			Mode: convertParameterMode(parameterNode.FunctionParameter.Mode),
-		}
-		parameterDef.Type, err = convertDataType(parameterNode.FunctionParameter.ArgType)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, parameterDef)
 	}
 	return result, nil
 }

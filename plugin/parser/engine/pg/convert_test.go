@@ -2681,7 +2681,7 @@ func TestDropExtension(t *testing.T) {
 func TestCreateFunction(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: `Create function get_car_Price(Price_from int, Price_to int)  
+			stmt: `Create function get_car_Price("Price_from" int, Price_to int)  
 			returns int  
 			language plpgsql  
 			as  
@@ -2692,7 +2692,7 @@ func TestCreateFunction(t *testing.T) {
 			   select count(*)   
 			   into Car_count  
 			   from Car  
-			   where Car_price between Price_from and Price_to;  
+			   where Car_price between "Price_from" and Price_to;  
 			   return Car_count;  
 			End;  
 			$$;`,
@@ -2703,7 +2703,7 @@ func TestCreateFunction(t *testing.T) {
 						Name:   "get_car_price",
 						ParameterList: []*ast.FunctionParameterDef{
 							{
-								Name: "price_from",
+								Name: "Price_from",
 								Type: &ast.Integer{Size: 4},
 								Mode: ast.FunctionParameterModeIn,
 							},
@@ -2718,7 +2718,7 @@ func TestCreateFunction(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text: `Create function get_car_Price(Price_from int, Price_to int)  
+					Text: `Create function get_car_Price("Price_from" int, Price_to int)  
 			returns int  
 			language plpgsql  
 			as  
@@ -2729,7 +2729,7 @@ func TestCreateFunction(t *testing.T) {
 			   select count(*)   
 			   into Car_count  
 			   from Car  
-			   where Car_price between Price_from and Price_to;  
+			   where Car_price between "Price_from" and Price_to;  
 			   return Car_count;  
 			End;  
 			$$;`,
@@ -2775,13 +2775,35 @@ func TestCreateFunction(t *testing.T) {
 
 func TestDropFunction(t *testing.T) {
 	tests := []testData{
-
 		{
-			stmt: `DROP FUNCTION IF EXISTS public.func1, func2`,
-			want: []ast.Node{},
+			stmt: `DROP FUNCTION IF EXISTS public.func1(INOUT "Price_from" int, IN price_to int, OUT out_item int), func2()`,
+			want: []ast.Node{
+				&ast.DropFunctionStmt{
+					IfExists: true,
+					FunctionList: []*ast.FunctionDef{
+						{
+							Schema: "public",
+							Name:   "func1",
+							ParameterList: []*ast.FunctionParameterDef{
+								{
+									Type: &ast.Integer{Size: 4},
+								},
+								{
+									Type: &ast.Integer{Size: 4},
+								},
+							},
+						},
+						{
+							Schema: "",
+							Name:   "func2",
+						},
+					},
+					Behavior: ast.DropBehaviorRestrict,
+				},
+			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     `DROP IF EXISTS FUNCTION public.func1, func2`,
+					Text:     `DROP FUNCTION IF EXISTS public.func1(INOUT "Price_from" int, IN price_to int, OUT out_item int), func2()`,
 					LastLine: 1,
 				},
 			},
