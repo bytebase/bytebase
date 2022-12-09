@@ -23,15 +23,17 @@ func init() {
 	db.Register(db.MongoDB, newDriver)
 }
 
+// Driver is the MongoDB driver.
 type Driver struct {
 	client *mongo.Client
 }
 
-func newDriver(dc db.DriverConfig) db.Driver {
+func newDriver(_ db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+// Open opens a MongoDB driver.
+func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	connectionURI := getMongoDBConnectionURI(connCfg)
 	client, err := mongo.NewClient(options.Client().ApplyURI(connectionURI))
 	if err != nil {
@@ -45,6 +47,7 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.Connection
 	return driver, nil
 }
 
+// Close closes the MongoDB driver.
 func (driver *Driver) Close(ctx context.Context) error {
 	if err := driver.client.Disconnect(ctx); err != nil {
 		return errors.Wrap(err, "failed to disconnect MongoDB")
@@ -52,6 +55,7 @@ func (driver *Driver) Close(ctx context.Context) error {
 	return nil
 }
 
+// Ping pings the database.
 func (driver *Driver) Ping(ctx context.Context) error {
 	if err := driver.client.Ping(ctx, nil); err != nil {
 		return errors.Wrap(err, "failed to ping MongoDB")
@@ -59,50 +63,63 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
+// GetDBConnection returns a database connection.
+func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+// Execute executes a statement.
+func (*Driver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+// Query queries a statement.
+func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interface{}, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+// SyncInstance syncs the instance meta.
+func (*Driver) SyncInstance(_ context.Context) (*db.InstanceMeta, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) SyncDBSchema(ctx context.Context, database string) (*db.Schema, error) {
+// SyncDBSchema syncs the database schema.
+func (*Driver) SyncDBSchema(_ context.Context, _ string) (*db.Schema, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
+// NeedsSetupMigration returns whether the driver needs to setup migration.
+func (*Driver) NeedsSetupMigration(_ context.Context) (bool, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
+// SetupMigrationIfNeeded sets up migration if needed.
+func (*Driver) SetupMigrationIfNeeded(_ context.Context) error {
 	panic("not implemented")
 }
 
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
+// ExecuteMigration executes a migration.
+func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string) (int64, string, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+// FindMigrationHistoryList finds the migration history list.
+func (*Driver) FindMigrationHistoryList(_ context.Context, _ *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+// Dump dumps the database.
+func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
 	panic("not implemented")
 }
 
-func (driver *Driver) Restore(ctx context.Context, src io.Reader) error {
+// Restore restores the backup read from src.
+func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 	panic("not implemented")
 }
 
+// getMongoDBConnectionURI returns the MongoDB connection URI.
+// https://www.mongodb.com/docs/manual/reference/connection-string/
 func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	connectionURL := "mongodb://"
 	if connConfig.SRV {
