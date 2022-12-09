@@ -51,6 +51,9 @@ type IssueLogic = {
   ) => any;
   createIssue: (issueCreate: IssueCreate) => any;
 
+  // state logic
+  initialTaskListStatement: () => any;
+
   // edit logic
   allowEditStatement: Ref<boolean>;
   selectedStatement: Ref<string>;

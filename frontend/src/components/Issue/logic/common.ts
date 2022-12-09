@@ -1,5 +1,6 @@
 import { computed } from "vue";
 import { cloneDeep } from "lodash-es";
+import { useRoute } from "vue-router";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
   useCurrentUser,
@@ -28,6 +29,7 @@ import {
   MigrationDetail,
   MigrationType,
   TaskDatabaseSchemaBaselinePayload,
+  DatabaseId,
 } from "@/types";
 import { useIssueLogic } from "./index";
 import { isDev, taskCheckRunSummary } from "@/utils";
@@ -35,6 +37,7 @@ import { isDev, taskCheckRunSummary } from "@/utils";
 export const useCommonLogic = () => {
   const { create, issue, selectedTask, createIssue, onStatusChanged } =
     useIssueLogic();
+  const route = useRoute();
   const currentUser = useCurrentUser();
   const databaseStore = useDatabaseStore();
   const issueStore = useIssueStore();
@@ -79,6 +82,36 @@ export const useCommonLogic = () => {
           postUpdated(updatedTask);
         }
       });
+  };
+
+  const initialTaskListStatement = () => {
+    if (create.value) {
+      const taskList = flattenTaskList<TaskCreate>(issue.value);
+      const databaseStatementMap = new Map<DatabaseId, string>();
+      // route.query.databaseList is comma-splitted databaseId list
+      // e.g. databaseList=7002,7006,7014
+      const idListString = route.query.databaseList as string;
+      // route.query.sqlList is JSON string of a string array.
+      const sqlListString = route.query.sqlList as string;
+      if (idListString && sqlListString) {
+        const databaseIdList = idListString.split(",");
+        const statementList = JSON.parse(sqlListString) as string[];
+        for (
+          let i = 0;
+          i < Math.min(databaseIdList.length, statementList.length);
+          i++
+        ) {
+          databaseStatementMap.set(Number(databaseIdList[i]), statementList[i]);
+        }
+      }
+
+      for (const [databaseId, statement] of databaseStatementMap) {
+        const task = taskList.find((task) => task.databaseId === databaseId);
+        if (task) {
+          task.statement = statement;
+        }
+      }
+    }
   };
 
   const allowEditStatement = computed(() => {
@@ -205,6 +238,7 @@ export const useCommonLogic = () => {
     patchTask,
     allowEditStatement,
     selectedStatement,
+    initialTaskListStatement,
     updateStatement,
     allowApplyStatementToOtherTasks,
     applyStatementToOtherTasks,

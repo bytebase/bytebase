@@ -43,9 +43,13 @@
           <div>{{ $t("sql-editor.self") }}</div>
           <div>
             <button
-              class="text-sm border px-3 leading-8 rounded cursor-pointer hover:bg-gray-100"
+              class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="!allowSyncSQLFromUIEditor"
               @click="handleSyncSQLFromUIEditor"
             >
+              <heroicons-outline:exclamation-circle
+                class="w-5 h-auto mr-1 text-gray-500"
+              />
               {{ $t("ui-editor.sync-sql-from-ui-editor") }}
             </button>
           </div>
@@ -65,7 +69,11 @@
       <button type="button" class="btn-normal" @click="dismissModal">
         {{ $t("common.cancel") }}
       </button>
-      <button class="btn-primary" @click="handlePreviewIssue">
+      <button
+        class="btn-primary"
+        :disabled="!allowPreviewIssue"
+        @click="handlePreviewIssue"
+      >
         {{ $t("ui-editor.preview-issue") }}
       </button>
     </div>
@@ -78,7 +86,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { onMounted, PropType, reactive, ref } from "vue";
+import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   Database,
@@ -88,8 +96,13 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { allowGhostMigration } from "@/utils";
-import { useDatabaseStore, useUIEditorStore } from "@/store";
+import {
+  useDatabaseStore,
+  useNotificationStore,
+  useUIEditorStore,
+} from "@/store";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
+import { validateDatabaseEdit } from "@/utils/UIEditor/validate";
 import UIEditor from "@/components/UIEditor/UIEditor.vue";
 import GhostDialog from "./GhostDialog.vue";
 
@@ -122,7 +135,25 @@ const state = reactive<LocalState>({
 });
 const editorStore = useUIEditorStore();
 const databaseStore = useDatabaseStore();
+const notificationStore = useNotificationStore();
+const statementFromUIEditor = ref<string>();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
+
+const allowPreviewIssue = computed(() => {
+  if (state.selectedTab === "ui-editor") {
+    const databaseEditList = getDatabaseEditListWithUIEditor();
+    return databaseEditList.length !== 0;
+  } else {
+    return state.editStatement !== "";
+  }
+});
+
+const allowSyncSQLFromUIEditor = computed(() => {
+  if (state.selectedTab === "raw-sql") {
+    return statementFromUIEditor.value !== state.editStatement;
+  }
+  return false;
+});
 
 const databaseList = props.databaseIdList.map((databaseId) => {
   return databaseStore.getDatabaseById(databaseId);
@@ -182,18 +213,23 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
 };
 
 const handleSyncSQLFromUIEditor = async () => {
+  if (!allowSyncSQLFromUIEditor.value) {
+    return;
+  }
+
   const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
   state.editStatement = Array.from(databaseEditMap.values()).join("\n");
+  statementFromUIEditor.value = state.editStatement;
 };
 
-const fetchDatabaseEditMapWithUIEditor = async () => {
+const getDatabaseEditListWithUIEditor = () => {
   const databaseEditList: DatabaseEdit[] = [];
   for (const database of editorStore.databaseList) {
     const originTableList = editorStore.originTableList.filter(
       (table) => table.databaseId === database.id
     );
-    const tableList = await editorStore.getOrFetchTableListByDatabaseId(
-      database.id
+    const tableList = editorStore.tableList.filter(
+      (table) => table.databaseId === database.id
     );
     const diffTableListResult = diffTableList(originTableList, tableList);
     if (
@@ -208,7 +244,11 @@ const fetchDatabaseEditMapWithUIEditor = async () => {
       });
     }
   }
+  return databaseEditList;
+};
 
+const fetchDatabaseEditMapWithUIEditor = async () => {
+  const databaseEditList = getDatabaseEditListWithUIEditor();
   const databaseEditMap: Map<DatabaseId, string> = new Map();
   if (databaseEditList.length > 0) {
     for (const databaseEdit of databaseEditList) {
@@ -256,14 +296,41 @@ const handlePreviewIssue = async () => {
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
   } else {
+    const databaseEditList = getDatabaseEditListWithUIEditor();
+    const validateResultList = databaseEditList.map((databaseEdit) =>
+      validateDatabaseEdit(databaseEdit)
+    );
+    const messageList = validateResultList.reduce(
+      (result, { messageList }) => {
+        result.push(...messageList);
+        return result;
+      },
+      [] as {
+        message: string;
+        level: "warning" | "error";
+      }[]
+    );
+    if (messageList.length > 0) {
+      notificationStore.pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Invalid request",
+        description: JSON.stringify(
+          messageList.map((message) => message.message)
+        ),
+      });
+      return;
+    }
+
     const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
     const databaseIdList = Array.from(databaseEditMap.keys());
     if (databaseIdList.length > 0) {
       const statmentList = Array.from(databaseEditMap.values());
-      query.sql = statmentList.join("\n");
-
-      if (!props.tenantMode) {
+      if (props.tenantMode) {
+        query.sql = statmentList.join("\n");
+      } else {
         query.databaseList = databaseIdList.join(",");
+        query.sqlList = JSON.stringify(statmentList);
         query.name = generateIssueName(
           databaseList
             .filter((database) => databaseIdList.includes(database.id))
@@ -304,6 +371,16 @@ const generateIssueName = (
 
   return issueNameParts.join(" ");
 };
+
+watch(
+  () => getDatabaseEditListWithUIEditor(),
+  () => {
+    statementFromUIEditor.value = undefined;
+  },
+  {
+    deep: true,
+  }
+);
 </script>
 
 <style>
