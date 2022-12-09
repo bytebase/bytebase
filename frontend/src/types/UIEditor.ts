@@ -12,7 +12,7 @@ export interface Column {
   type: string;
   nullable: boolean;
   comment: string;
-  default?: string;
+  default: string | null;
 
   status?: TableOrColumnStatus;
 }

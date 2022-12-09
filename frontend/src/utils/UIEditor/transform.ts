@@ -36,7 +36,7 @@ export const transformColumnDataToColumn = (columnData: ColumnData): Column => {
     type: columnData.type,
     nullable: columnData.nullable,
     comment: columnData.comment,
-    default: columnData.default,
+    default: columnData.default || null,
   };
 };
 
