@@ -373,6 +373,48 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 
 			return dropFunctionStmt, nil
+		case pgquery.ObjectType_OBJECT_TRIGGER:
+			dropTriggerStmt := &ast.DropTriggerStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
+
+			if len(in.DropStmt.Objects) != 1 {
+				return nil, parser.NewConvertErrorf("expected one trigger but found %d", len(in.DropStmt.Objects))
+			}
+			listNode, ok := in.DropStmt.Objects[0].Node.(*pgquery.Node_List)
+			if !ok {
+				return nil, parser.NewConvertErrorf("expected List but found %d", in.DropStmt.Objects[0].Node)
+			}
+
+			list, err := convertListToStringList(listNode)
+			if err != nil {
+				return nil, err
+			}
+			switch len(list) {
+			case 3:
+				dropTriggerStmt.Trigger = &ast.TriggerDef{
+					Name: list[2],
+					Table: &ast.TableDef{
+						Type:   ast.TableTypeUnknown,
+						Schema: list[0],
+						Name:   list[1],
+					},
+				}
+			case 2:
+				dropTriggerStmt.Trigger = &ast.TriggerDef{
+					Name: list[1],
+					Table: &ast.TableDef{
+						Type:   ast.TableTypeUnknown,
+						Schema: "",
+						Name:   list[0],
+					},
+				}
+			default:
+				return nil, parser.NewConvertErrorf("expected one or two but found %d", len(list))
+			}
+
+			return dropTriggerStmt, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -629,6 +671,15 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return &ast.CreateFunctionStmt{Function: functionDef}, nil
+	case *pgquery.Node_CreateTrigStmt:
+		createTriggerStmt := &ast.CreateTriggerStmt{
+			Trigger: &ast.TriggerDef{
+				Name:  in.CreateTrigStmt.Trigname,
+				Table: convertRangeVarToTableName(in.CreateTrigStmt.Relation, ast.TableTypeUnknown),
+			},
+		}
+
+		return createTriggerStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
