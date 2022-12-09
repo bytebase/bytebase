@@ -1452,7 +1452,7 @@
     },
     "confirm-to-close": {
       "title": "Confirm to close",
-      "description": "There are unsaved changes. Are you sure you want to close the panel? Your changes will be lost."
+      "description": "Are you sure you want to close the panel? Your changes will be lost."
     }
   },
   "label": {
