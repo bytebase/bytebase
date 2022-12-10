@@ -106,7 +106,7 @@ type InstancePatch struct {
 	Host          *string `jsonapi:"attr,host"`
 	Port          *string `jsonapi:"attr,port"`
 	Database      *string `jsonapi:"attr,database"`
-	// SRV record in used for MongoDB only.
+	// SRV record is used for MongoDB only.
 	SRV bool `jsonapi:"attr,srv"`
 }
 
