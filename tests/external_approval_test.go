@@ -78,7 +78,7 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 
 	// Provision an instance.
 	instanceRootDir := t.TempDir()
-	instanceName := "testInstance1"
+	instanceName := "test-instance-1"
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
@@ -236,7 +236,7 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 
 	// Provision an instance.
 	instanceRootDir := t.TempDir()
-	instanceName := "testInstance1"
+	instanceName := "test-instance-1"
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
