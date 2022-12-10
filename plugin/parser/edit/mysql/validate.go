@@ -11,6 +11,7 @@ import (
 )
 
 // ValidateDatabaseEdit validates the api message DatabaseEdit, including related column type.
+// TODO(steven): return a validation result struct list instead of string.
 func (*SchemaEditor) ValidateDatabaseEdit(databaseEdit *api.DatabaseEdit) error {
 	var invalidMessageList []string
 	var addColumnContextList []*api.AddColumnContext
