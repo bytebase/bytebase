@@ -34,7 +34,7 @@ type Instance struct {
 	// Database is the initial connection database for PostgreSQL only.
 	Database string `jsonapi:"attr,database"`
 	Username string `jsonapi:"attr,username"`
-	// SRV record in used for MongoDB only.
+	// SRV record is used for MongoDB only.
 	SRV bool `jsonapi:"attr,srv"`
 	// Password is not returned to the client
 	Password string
