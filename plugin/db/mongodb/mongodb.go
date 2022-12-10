@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -126,7 +127,9 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		connectionURL = "mongodb+srv://"
 	}
 	if connConfig.Username != "" {
-		connectionURL = fmt.Sprintf("%s%s:%s@", connectionURL, connConfig.Username, connConfig.Password)
+		percentEncodingUsername := replaceCharacterWithPercentEncoding(connConfig.Username)
+		percentEncodingPassword := replaceCharacterWithPercentEncoding(connConfig.Password)
+		connectionURL = fmt.Sprintf("%s%s:%s@", connectionURL, percentEncodingUsername, percentEncodingPassword)
 	}
 	connectionURL = fmt.Sprintf("%s%s", connectionURL, connConfig.Host)
 	if connConfig.Port != "" {
@@ -136,4 +139,20 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		connectionURL = fmt.Sprintf("%s/%s", connectionURL, connConfig.Database)
 	}
 	return connectionURL
+}
+
+func replaceCharacterWithPercentEncoding(s string) string {
+	m := map[string]string{
+		":": `%3A`,
+		"/": `%2F`,
+		"?": `%3F`,
+		"#": `%23`,
+		"[": `%5B`,
+		"]": `%5D`,
+		"@": `%40`,
+	}
+	for k, v := range m {
+		s = strings.ReplaceAll(s, k, v)
+	}
+	return s
 }

@@ -50,3 +50,25 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 		a.Equal(tt.want, got)
 	}
 }
+
+func TestReplaceCharactersWithPercentEncoding(t *testing.T) {
+	tests := []struct {
+		s    string
+		want string
+	}{
+		{
+			s:    "passw@rd",
+			want: `passw%40rd`,
+		},
+		{
+			s:    "passw@rd:/?#[]",
+			want: `passw%40rd%3A%2F%3F%23%5B%5D`,
+		},
+	}
+
+	a := require.New(t)
+	for _, tt := range tests {
+		got := replaceCharacterWithPercentEncoding(tt.s)
+		a.Equal(tt.want, got)
+	}
+}
