@@ -67,27 +67,17 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		for _, task := range tasks {
 			taskIDList = append(taskIDList, task.ID)
 		}
-		taskStatusPatch := &api.TaskStatusPatch{
-			IDList:    taskIDList,
-			UpdaterID: stageAllTaskStatusPatch.UpdaterID,
-			Status:    api.TaskPending,
-		}
-		patchedTaskList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
-		if err != nil {
+		if err := s.store.BatchPatchTaskStatusToPending(ctx, currentPrincipalID, taskIDList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task %q status", taskIDList)).SetInternal(err)
 		}
 		issue, err := s.store.GetIssueByPipelineID(ctx, tasks[0].PipelineID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch containing issue").SetInternal(err)
 		}
-		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, taskStatusPatch, issue, stage, tasks); err != nil {
+		if err := s.ActivityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, currentPrincipalID, issue, stage); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create task status update activity").SetInternal(err)
 		}
 
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, patchedTaskList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal update tasks status response").SetInternal(err)
-		}
-		return nil
+		return c.String(http.StatusOK, "")
 	})
 }
