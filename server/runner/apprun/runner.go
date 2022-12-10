@@ -158,15 +158,10 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 											tasks = append(tasks, task)
 										}
 									}
-									taskStatusPatch := &api.TaskStatusPatch{
-										IDList:    taskIDList,
-										UpdaterID: externalApproval.ApproverID,
-										Status:    api.TaskPending,
-									}
-									if _, err := r.store.PatchTaskStatus(ctx, taskStatusPatch); err != nil {
+									if err := r.store.BatchPatchTaskStatusToPending(ctx, externalApproval.ApproverID, taskIDList); err != nil {
 										return errors.Wrapf(err, "failed to update task status, task id list: %+v", taskIDList)
 									}
-									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, taskStatusPatch, issue, stage, tasks); err != nil {
+									if err := r.activityManager.BatchCreateTaskStatusUpdateApprovalActivity(ctx, tasks, externalApproval.ApproverID, issue, stage); err != nil {
 										return errors.Wrapf(err, "failed to create task status update activity")
 									}
 									return nil

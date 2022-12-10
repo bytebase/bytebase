@@ -182,6 +182,23 @@ func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch)
 	return taskList, nil
 }
 
+// BatchPatchTaskStatusToPending patches status to pending for a list of tasks.
+func (s *Store) BatchPatchTaskStatusToPending(ctx context.Context, updaterID int, taskIDs []int) error {
+	var ids []string
+	for _, id := range taskIDs {
+		ids = append(ids, fmt.Sprintf("%d", id))
+	}
+	query := fmt.Sprintf(`
+		UPDATE task
+		SET status = $1, updater_id = $2
+		WHERE id IN (%s);
+	`, strings.Join(ids, ","))
+	if _, err := s.db.db.ExecContext(ctx, query, api.TaskPending, updaterID); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
 // CountTaskGroupByTypeAndStatus counts the number of TaskGroup and group by TaskType.
 // Used for the metric collector.
 func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.TaskCountMetric, error) {

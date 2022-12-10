@@ -1041,30 +1041,14 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 }
 
 // patchStageAllTaskStatus patches the status of all tasks in the pipeline stage.
-func (ctl *controller) patchStageAllTaskStatus(stageAllTaskStatusPatch api.StageAllTaskStatusPatch, pipelineID int) ([]*api.Task, error) {
+func (ctl *controller) patchStageAllTaskStatus(stageAllTaskStatusPatch api.StageAllTaskStatusPatch, pipelineID int) error {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &stageAllTaskStatusPatch); err != nil {
-		return nil, errors.Wrap(err, "failed to marshal StageAllTaskStatusPatch")
+		return errors.Wrap(err, "failed to marshal StageAllTaskStatusPatch")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/stage/%d/status", pipelineID, stageAllTaskStatusPatch.ID), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	var tasks []*api.Task
-	untypedTasks, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Task)))
-	if err != nil {
-		return nil, errors.Wrap(err, "fail to unmarshal get tasks response")
-	}
-	for _, t := range untypedTasks {
-		task, ok := t.(*api.Task)
-		if !ok {
-			return nil, errors.Errorf("fail to convert task")
-		}
-		tasks = append(tasks, task)
-	}
-	return tasks, nil
+	_, err := ctl.patch(fmt.Sprintf("/pipeline/%d/stage/%d/status", pipelineID, stageAllTaskStatusPatch.ID), buf)
+	return err
 }
 
 // approveIssueNext approves the next pending approval task.
@@ -1101,7 +1085,7 @@ func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) erro
 		}
 	}
 	if stageID != 0 {
-		if _, err := ctl.patchStageAllTaskStatus(
+		if err := ctl.patchStageAllTaskStatus(
 			api.StageAllTaskStatusPatch{
 				ID:     stageID,
 				Status: api.TaskPending,
