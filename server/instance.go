@@ -42,8 +42,6 @@ const (
 	instanceNameMaxLength = 20
 )
 
-// var instanceNamePattern = regexp.MustCompile(`^([0-9a-z]+-?)+[0-9a-z]+$`)
-
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
