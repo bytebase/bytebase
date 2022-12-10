@@ -62,7 +62,7 @@ type InstanceCreate struct {
 	SslCert      string  `jsonapi:"attr,sslCert"`
 	SslKey       string  `jsonapi:"attr,sslKey"`
 
-	// SRV record in used for MongoDB only.
+	// SRV record is used for MongoDB only.
 	SRV bool `jsonapi:"attr,srv"`
 }
 
