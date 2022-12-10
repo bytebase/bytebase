@@ -73,6 +73,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, "TLS/SSL suite must all be set or not be set")
 			}
 		}
+
 		db, err := db.Open(
 			ctx,
 			connectionInfo.Engine,
@@ -83,6 +84,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				Host:      connectionInfo.Host,
 				Port:      connectionInfo.Port,
 				TLSConfig: tlsConfig,
+				SRV:       connectionInfo.SRV,
+				Database:  connectionInfo.Database,
 			},
 			db.ConnectionContext{},
 		)

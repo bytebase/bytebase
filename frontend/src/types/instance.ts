@@ -10,7 +10,8 @@ export type EngineType =
   | "MYSQL"
   | "POSTGRES"
   | "SNOWFLAKE"
-  | "TIDB";
+  | "TIDB"
+  | "MONGODB";
 
 export function defaultCharset(type: EngineType): string {
   switch (type) {
@@ -22,6 +23,8 @@ export function defaultCharset(type: EngineType): string {
       return "utf8mb4";
     case "POSTGRES":
       return "UTF8";
+    case "MONGODB":
+      return "";
   }
 }
 
@@ -37,6 +40,8 @@ export function defaultCollation(type: EngineType): string {
     // If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
     // install it.
     case "POSTGRES":
+      return "";
+    case "MONGODB":
       return "";
   }
 }
@@ -83,6 +88,8 @@ export type InstanceCreate = {
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
+  // DNS SRV record is only used for MongoDB.
+  useDNSSRVRecord: boolean;
 };
 
 export type InstancePatch = {
