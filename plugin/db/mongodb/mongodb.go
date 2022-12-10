@@ -36,13 +36,10 @@ func newDriver(_ db.DriverConfig) db.Driver {
 // Open opens a MongoDB driver.
 func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	connectionURI := getMongoDBConnectionURI(connCfg)
-	client, err := mongo.NewClient(options.Client().ApplyURI(connectionURI))
+	opts := options.Client().ApplyURI(connectionURI)
+	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create MongoDB client")
-	}
-	err = client.Connect(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to MongoDB")
 	}
 	driver.client = client
 	return driver, nil
