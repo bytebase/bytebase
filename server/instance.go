@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -27,6 +28,21 @@ type pgConnectionInfo struct {
 	Port     int    `json:"port"`
 	Username string `json:"username"`
 }
+
+const (
+	// instanceNamePattern is the regex to check the instance name.
+	// it allows lowercase and number, a single dash ("-") can be used as the word separator.
+	// e.g. foo, foo-bar.
+	instanceNamePattern = "^([0-9a-z]+-?)+[0-9a-z]+$"
+
+	// instanceNameMinLength is the minimum length for the instance name.
+	instanceNameMinLength = 2
+
+	// instanceNameMinLength is the maximum length for the instance name.
+	instanceNameMaxLength = 20
+)
+
+// var instanceNamePattern = regexp.MustCompile(`^([0-9a-z]+-?)+[0-9a-z]+$`)
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
@@ -463,6 +479,12 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.validateInstanceName(ctx, create.Name); err != nil {
+		return nil, err
+	}
+	if err := s.validateDataSourceList(create.DataSourceList); err != nil {
+		return nil, err
+	}
 
 	if err := s.disallowBytebaseStore(create.Engine, create.Host, create.Port); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
@@ -510,6 +532,17 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 	}
 	if instance == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", patch.ID))
+	}
+
+	if v := patch.Name; v != nil {
+		if err := s.validateInstanceName(ctx, *v); err != nil {
+			return nil, err
+		}
+	}
+	if v := patch.DataSourceList; v != nil {
+		if err := s.validateDataSourceList(v); err != nil {
+			return nil, err
+		}
 	}
 
 	host, port, database := instance.Host, instance.Port, instance.Database
@@ -587,4 +620,43 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 	}
 
 	return instancePatched, nil
+}
+
+func (s *Server) validateInstanceName(ctx context.Context, instanceName string) error {
+	if len(instanceName) < instanceNameMinLength || len(instanceName) > instanceNameMaxLength {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid length for the instance name %s, it should in %d-%d length", instanceName, instanceNameMinLength, instanceNameMaxLength))
+	}
+
+	pattern := regexp.MustCompile(instanceNamePattern)
+	if !pattern.MatchString(instanceName) {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The instance name \"%s\" doesn't matches the naming pattern, it should only contains lowercase and number, and a single dash (\"-\") can be used as the word separator", instanceName))
+	}
+
+	count, err := s.store.CountInstance(ctx, &api.InstanceFind{
+		Name: &instanceName,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count the instance by name").SetInternal(err)
+	}
+
+	if count > 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Duplicate instance name %s", instanceName))
+	}
+
+	return nil
+}
+
+func (*Server) validateDataSourceList(dataSourceList []*api.DataSourceCreate) error {
+	dataSourceMap := map[api.DataSourceType]bool{}
+	for _, dataSource := range dataSourceList {
+		if dataSourceMap[dataSource.Type] {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Duplicate data source type %s", dataSource.Type))
+		}
+		dataSourceMap[dataSource.Type] = true
+	}
+	if !dataSourceMap[api.Admin] {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Missing required data source type %s", api.Admin))
+	}
+
+	return nil
 }

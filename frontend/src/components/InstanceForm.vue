@@ -19,7 +19,14 @@
             :disabled="!allowEdit"
             :value="state.instance.name"
             @input="handleInstanceNameInput"
+            @blur="checkInstanceName"
           />
+          <div
+            class="text-sm text-gray-500 ml-1 mt-1"
+            :class="[state.instanceNameWarning ? 'text-red-500' : '']"
+          >
+            {{ getInstanceNameAttention() }}
+          </div>
         </div>
 
         <div class="sm:col-span-2 sm:col-start-1">
@@ -363,7 +370,9 @@
           <button
             v-if="allowEdit"
             type="button"
-            :disabled="!valueChanged || state.isUpdating"
+            :disabled="
+              !valueChanged || state.isUpdating || state.instanceNameWarning
+            "
             :class="
               !valueChanged || state.isUpdating ? 'btn-normal' : 'btn-primary'
             "
@@ -413,6 +422,10 @@ import {
   useSQLStore,
 } from "@/store";
 import { isNullOrUndefined } from "@/plugins/demo/utils";
+import {
+  getInstanceNameAttention,
+  validateInstanceName,
+} from "./InstanceForm/utils";
 
 interface EditDataSource extends DataSource {
   updatedPassword: string;
@@ -426,6 +439,7 @@ interface State {
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
   showFeatureModal: boolean;
+  instanceNameWarning: boolean;
 }
 
 const props = defineProps({
@@ -458,6 +472,7 @@ const state = reactive<State>({
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
   showFeatureModal: false,
+  instanceNameWarning: false,
 });
 
 const allowEdit = computed(() => {
@@ -469,6 +484,10 @@ const allowEdit = computed(() => {
     )
   );
 });
+
+const checkInstanceName = () => {
+  state.instanceNameWarning = !validateInstanceName(state.instance.name);
+};
 
 const valueChanged = computed(() => {
   return !isEqual(state.instance, state.originalInstance);

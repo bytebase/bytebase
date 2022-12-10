@@ -25,7 +25,7 @@
       </div>
       <!-- Instance Name -->
       <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 pt-4 sm:grid-cols-4">
-        <div class="sm:col-span-2 sm:col-start-1">
+        <div class="sm:col-span-4 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
             &nbsp;
@@ -40,7 +40,14 @@
             :disabled="!allowEdit"
             :value="state.instance.name"
             @input="handleInstanceNameInput"
+            @blur="checkInstanceName"
           />
+          <div
+            class="text-sm text-gray-500 ml-1 mt-1"
+            :class="[state.instanceNameWarning ? 'text-red-500' : '']"
+          >
+            {{ getInstanceNameAttention() }}
+          </div>
         </div>
 
         <div class="sm:col-span-2 sm:col-start-1">
@@ -239,7 +246,8 @@
               :disabled="
                 !allowCreate ||
                 state.isCreatingInstance ||
-                state.isPingingInstance
+                state.isPingingInstance ||
+                state.instanceNameWarning
               "
               @click.prevent="tryCreate"
             >
@@ -287,6 +295,10 @@ import {
   useOnboardingGuideStore,
   useSQLStore,
 } from "@/store";
+import {
+  getInstanceNameAttention,
+  validateInstanceName,
+} from "./InstanceForm/utils";
 
 interface LocalState {
   instance: InstanceCreate;
@@ -294,6 +306,7 @@ interface LocalState {
   isCreatingInstance: boolean;
   showCreateInstanceWarningModal: boolean;
   createInstanceWarning: string;
+  instanceNameWarning: boolean;
 }
 
 const emit = defineEmits(["dismiss"]);
@@ -330,6 +343,7 @@ const state = reactive<LocalState>({
   },
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
+  instanceNameWarning: false,
   isPingingInstance: false,
   isCreatingInstance: false,
 });
@@ -345,6 +359,13 @@ const allowCreate = computed(() => {
 const allowEdit = computed(() => {
   return true;
 });
+
+const checkInstanceName = () => {
+  if (state.instance.name === "") {
+    return;
+  }
+  state.instanceNameWarning = !validateInstanceName(state.instance.name);
+};
 
 const defaultPort = computed(() => {
   if (state.instance.engine == "CLICKHOUSE") {
