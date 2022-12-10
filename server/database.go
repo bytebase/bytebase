@@ -814,7 +814,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		engineType := parser.EngineType(database.Instance.Engine)
 		if err := edit.ValidateDatabaseEdit(engineType, databaseEdit); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid request: %s", err.Error()))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid request: \n%s", err.Error()))
 		}
 
 		statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
