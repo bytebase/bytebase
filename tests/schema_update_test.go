@@ -55,7 +55,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Provision an instance.
 	instanceRootDir := t.TempDir()
-	instanceName := "test-instance-1"
+	instanceName := "testInstance1"
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
@@ -420,7 +420,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Provision an instance.
-			instanceName := "test-instance-1"
+			instanceName := "testInstance1"
 			instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), instanceName)
 			a.NoError(err)
 
@@ -1309,7 +1309,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			a.NoError(err)
 			// Provision an instance.
 			instanceRootDir := t.TempDir()
-			instanceName := "test-instance-1"
+			instanceName := "testInstance1"
 			instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 			a.NoError(err)
 			instance, err := ctl.addInstance(api.InstanceCreate{

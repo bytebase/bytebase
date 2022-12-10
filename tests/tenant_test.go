@@ -20,8 +20,8 @@ import (
 var (
 	stagingTenantNumber = 1
 	prodTenantNumber    = 3
-	stagingInstanceName = "test-instance-staging"
-	prodInstanceName    = "test-instance-prod"
+	stagingInstanceName = "testInstanceStaging"
+	prodInstanceName    = "testInstanceProd"
 )
 
 const baseDirectory = "bbtest"

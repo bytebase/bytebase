@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -28,19 +27,6 @@ type pgConnectionInfo struct {
 	Port     int    `json:"port"`
 	Username string `json:"username"`
 }
-
-const (
-	// instanceNamePattern is the regex to check the instance name.
-	// it allows lowercase and number, a single dash ("-") can be used as the word separator.
-	// e.g. foo, foo-bar.
-	instanceNamePattern = "^([0-9a-z]+-?)+[0-9a-z]+$"
-
-	// instanceNameMinLength is the minimum length for the instance name.
-	instanceNameMinLength = 2
-
-	// instanceNameMinLength is the maximum length for the instance name.
-	instanceNameMaxLength = 20
-)
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
@@ -621,15 +607,6 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 }
 
 func (s *Server) validateInstanceName(ctx context.Context, instanceName string) error {
-	if len(instanceName) < instanceNameMinLength || len(instanceName) > instanceNameMaxLength {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid length for the instance name %s, it should in %d-%d length", instanceName, instanceNameMinLength, instanceNameMaxLength))
-	}
-
-	pattern := regexp.MustCompile(instanceNamePattern)
-	if !pattern.MatchString(instanceName) {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The instance name \"%s\" doesn't matches the naming pattern, it should only contains lowercase and number, and a single dash (\"-\") can be used as the word separator", instanceName))
-	}
-
 	count, err := s.store.CountInstance(ctx, &api.InstanceFind{
 		Name: &instanceName,
 	})

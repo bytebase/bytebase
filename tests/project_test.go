@@ -33,7 +33,7 @@ func TestArchiveProject(t *testing.T) {
 	a.NoError(err)
 
 	instanceRootDir := t.TempDir()
-	instanceName := "test-instance-1"
+	instanceName := "testInstance1"
 	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
