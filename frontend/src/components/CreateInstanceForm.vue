@@ -557,6 +557,7 @@ const tryCreate = () => {
     useEmptyPassword: false,
     host: instance.host,
     port: instance.port,
+    srv: instance.useDNSSRVRecord,
   };
 
   if (showSSL.value) {

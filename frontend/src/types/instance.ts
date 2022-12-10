@@ -89,7 +89,7 @@ export type InstanceCreate = {
   sslCert?: string;
   sslKey?: string;
   // DNS SRV record is only used for MongoDB.
-  useDNSSRVRecord?: boolean;
+  useDNSSRVRecord: boolean;
 };
 
 export type InstancePatch = {
