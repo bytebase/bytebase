@@ -1,6 +1,9 @@
 package mysql
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/pkg/errors"
 
@@ -9,6 +12,7 @@ import (
 
 // ValidateDatabaseEdit validates the api message DatabaseEdit, including related column type.
 func (*SchemaEditor) ValidateDatabaseEdit(databaseEdit *api.DatabaseEdit) error {
+	var invalidMessageList []string
 	var addColumnContextList []*api.AddColumnContext
 	var changeColumnContextList []*api.ChangeColumnContext
 
@@ -23,12 +27,12 @@ func (*SchemaEditor) ValidateDatabaseEdit(databaseEdit *api.DatabaseEdit) error 
 	for _, addColumnContext := range addColumnContextList {
 		columnType, err := transformColumnType(addColumnContext.Type)
 		if err != nil {
-			return errors.Errorf("invalid column type: %s", addColumnContext.Type)
+			invalidMessageList = append(invalidMessageList, fmt.Sprintf("invalid column type `%s`", addColumnContext.Type))
 		}
 		if addColumnContext.Default != nil {
 			// TEXT will be regarded as mysql.TypeBlob in the TiDB parser.
 			if columnType.GetType() == mysql.TypeBlob || columnType.GetType() == mysql.TypeGeometry || columnType.GetType() == mysql.TypeJSON {
-				return errors.Errorf("column type `%s` cannot have a default value", addColumnContext.Type)
+				invalidMessageList = append(invalidMessageList, fmt.Sprintf("column type `%s` cannot have a default value", addColumnContext.Type))
 			}
 		}
 	}
@@ -36,13 +40,17 @@ func (*SchemaEditor) ValidateDatabaseEdit(databaseEdit *api.DatabaseEdit) error 
 	for _, changeColumnContext := range changeColumnContextList {
 		columnType, err := transformColumnType(changeColumnContext.Type)
 		if err != nil {
-			return errors.Errorf("invalid column type: %s", changeColumnContext.Type)
+			invalidMessageList = append(invalidMessageList, fmt.Sprintf("invalid column type `%s`", changeColumnContext.Type))
 		}
 		if changeColumnContext.Default != nil {
 			if columnType.GetType() == mysql.TypeBlob || columnType.GetType() == mysql.TypeGeometry || columnType.GetType() == mysql.TypeJSON {
-				return errors.Errorf("column type `%s` cannot have a default value", changeColumnContext.Type)
+				invalidMessageList = append(invalidMessageList, fmt.Sprintf("column type `%s` cannot have a default value", changeColumnContext.Type))
 			}
 		}
+	}
+
+	if len(invalidMessageList) != 0 {
+		return errors.New(strings.Join(invalidMessageList, "\n"))
 	}
 	return nil
 }
