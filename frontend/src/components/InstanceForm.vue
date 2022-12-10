@@ -426,6 +426,7 @@ interface State {
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
   showFeatureModal: boolean;
+  useDNSSRVRecord: boolean;
 }
 
 const props = defineProps({
@@ -458,6 +459,7 @@ const state = reactive<State>({
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
   showFeatureModal: false,
+  useDNSSRVRecord: false,
 });
 
 const allowEdit = computed(() => {
@@ -892,6 +894,7 @@ const testConnection = () => {
     port: connectionPort,
     database: instance.database,
     instanceId: instance.id,
+    srv: state.useDNSSRVRecord,
   };
 
   if (typeof dataSource.sslCa !== "undefined") {

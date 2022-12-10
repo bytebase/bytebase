@@ -33,6 +33,8 @@ const (
 	SQLite Type = "SQLITE"
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
+	// MongoDB is the database type for MongoDB.
+	MongoDB Type = "MONGODB"
 
 	// BytebaseDatabase is the database installed in the controlled database server.
 	BytebaseDatabase = "bytebase"
@@ -447,6 +449,8 @@ type ConnectionConfig struct {
 	ReadOnly bool
 	// StrictUseDb will only set as true if the user gives only a database instead of a whole instance to access.
 	StrictUseDb bool
+	// SRV is only supported for MongoDB now.
+	SRV bool
 }
 
 // ConnectionContext is the context for connection.
