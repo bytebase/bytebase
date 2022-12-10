@@ -114,7 +114,7 @@
           />
         </div>
 
-        <template v-if="state.instance.engine == 'MONGODB' && isDev()">
+        <template v-if="state.instance.engine == 'MONGODB'">
           <div class="sm:row-span-1">
             <div class="ml-1">
               <BBCheckbox

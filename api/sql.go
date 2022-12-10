@@ -20,7 +20,7 @@ type ConnectionInfo struct {
 	SslCa            *string `jsonapi:"attr,sslCa"`
 	SslCert          *string `jsonapi:"attr,sslCert"`
 	SslKey           *string `jsonapi:"attr,sslKey"`
-	SRV              *bool   `jsonapi:"attr,srv"`
+	SRV              bool    `jsonapi:"attr,srv"`
 }
 
 // SQLSyncSchema is the API message for sync schemas.

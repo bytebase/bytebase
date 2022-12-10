@@ -35,7 +35,7 @@ type Instance struct {
 	Database string `jsonapi:"attr,database"`
 	Username string `jsonapi:"attr,username"`
 	// SRV record in used for MongoDB only.
-	SRV *bool `jsonapi:"attr,srv"`
+	SRV bool `jsonapi:"attr,srv"`
 	// Password is not returned to the client
 	Password string
 }
@@ -63,7 +63,7 @@ type InstanceCreate struct {
 	SslKey       string  `jsonapi:"attr,sslKey"`
 
 	// SRV record in used for MongoDB only.
-	SRV *bool `jsonapi:"attr,srv"`
+	SRV bool `jsonapi:"attr,srv"`
 }
 
 // InstanceFind is the API message for finding instances.
@@ -107,7 +107,7 @@ type InstancePatch struct {
 	Port          *string `jsonapi:"attr,port"`
 	Database      *string `jsonapi:"attr,database"`
 	// SRV record in used for MongoDB only.
-	SRV *bool `jsonapi:"attr,srv"`
+	SRV bool `jsonapi:"attr,srv"`
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from a instance.

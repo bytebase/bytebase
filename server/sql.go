@@ -74,11 +74,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 		}
 
-		var srv bool
-		if connectionInfo.Engine == db.MongoDB && connectionInfo.SRV != nil {
-			srv = *connectionInfo.SRV
-		}
-
 		db, err := db.Open(
 			ctx,
 			connectionInfo.Engine,
@@ -89,7 +84,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				Host:      connectionInfo.Host,
 				Port:      connectionInfo.Port,
 				TLSConfig: tlsConfig,
-				SRV:       srv,
+				SRV:       connectionInfo.SRV,
 				Database:  connectionInfo.Database,
 			},
 			db.ConnectionContext{},

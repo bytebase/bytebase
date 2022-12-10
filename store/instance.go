@@ -26,13 +26,12 @@ type InstanceCreate struct {
 	DataSourceList []*api.DataSourceCreate
 
 	// Domain specific fields
-	Name           string
-	Engine         db.Type
-	ExternalLink   string
-	Host           string
-	Port           string
-	Database       string
-	OptionsPayload string
+	Name         string
+	Engine       db.Type
+	ExternalLink string
+	Host         string
+	Port         string
+	Database     string
 }
 
 // InstancePatch is the API message for patching an instance.
@@ -49,13 +48,12 @@ type InstancePatch struct {
 	DataSourceList []*api.DataSourceCreate
 
 	// Domain specific fields
-	Name           *string
-	EngineVersion  *string
-	ExternalLink   *string
-	Host           *string
-	Port           *string
-	Database       *string
-	OptionsPayload *string
+	Name          *string
+	EngineVersion *string
+	ExternalLink  *string
+	Host          *string
+	Port          *string
+	Database      *string
 }
 
 // instanceRaw is the store model for an Instance.
@@ -74,14 +72,13 @@ type instanceRaw struct {
 	EnvironmentID int
 
 	// Domain specific fields
-	Name           string
-	Engine         db.Type
-	EngineVersion  string
-	ExternalLink   string
-	Host           string
-	Port           string
-	Database       string
-	OptionsPayload string
+	Name          string
+	Engine        db.Type
+	EngineVersion string
+	ExternalLink  string
+	Host          string
+	Port          string
+	Database      string
 }
 
 // toInstance creates an instance of Instance based on the instanceRaw.
