@@ -10,6 +10,9 @@
             <InstanceEngineIcon :instance="state.instance" />
             <span class="ml-1">{{ state.instance.engineVersion }}</span>
           </label>
+          <p class="text-sm text-gray-500 mt-1 mb-2">
+            {{ $t("instance.instance-name-unique") }}
+          </p>
           <input
             id="name"
             required

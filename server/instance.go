@@ -463,6 +463,12 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.validateInstanceName(ctx, create.Name); err != nil {
+		return nil, err
+	}
+	if err := s.validateDataSourceList(create.DataSourceList); err != nil {
+		return nil, err
+	}
 
 	if err := s.disallowBytebaseStore(create.Engine, create.Host, create.Port); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
@@ -504,6 +510,17 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 }
 
 func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch) (*api.Instance, error) {
+	if v := patch.Name; v != nil {
+		if err := s.validateInstanceName(ctx, *v); err != nil {
+			return nil, err
+		}
+	}
+	if v := patch.DataSourceList; v != nil {
+		if err := s.validateDataSourceList(v); err != nil {
+			return nil, err
+		}
+	}
+
 	instance, err := s.store.GetInstanceByID(ctx, patch.ID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", patch.ID)).SetInternal(err)
@@ -587,4 +604,34 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 	}
 
 	return instancePatched, nil
+}
+
+func (s *Server) validateInstanceName(ctx context.Context, instanceName string) error {
+	count, err := s.store.CountInstance(ctx, &api.InstanceFind{
+		Name: &instanceName,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count the instance by name").SetInternal(err)
+	}
+
+	if count > 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Duplicate instance name %s", instanceName))
+	}
+
+	return nil
+}
+
+func (*Server) validateDataSourceList(dataSourceList []*api.DataSourceCreate) error {
+	dataSourceMap := map[api.DataSourceType]bool{}
+	for _, dataSource := range dataSourceList {
+		if dataSourceMap[dataSource.Type] {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Duplicate data source type %s", dataSource.Type))
+		}
+		dataSourceMap[dataSource.Type] = true
+	}
+	if !dataSourceMap[api.Admin] {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Missing required data source type %s", api.Admin))
+	}
+
+	return nil
 }
