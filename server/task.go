@@ -233,10 +233,10 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
 			return nil, httpErr
 		}
+		schemaVersion := common.DefaultMigrationVersion()
+		taskPatch.SchemaVersion = &schemaVersion
 	}
 
-	schemaVersion := common.DefaultMigrationVersion()
-	taskPatch.SchemaVersion = &schemaVersion
 	taskPatched, err := s.store.PatchTask(ctx, taskPatch)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
