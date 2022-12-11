@@ -650,6 +650,15 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (
 	if v := patch.DatabaseID; v != nil {
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if (patch.Statement != nil || patch.SchemaVersion != nil) && patch.Payload != nil {
+		return nil, errors.Errorf("cannot set both statement/schemaVersion and payload for TaskPatch")
+	}
+	if v := patch.Statement; v != nil {
+		set, args = append(set, fmt.Sprintf(`payload['statement'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.SchemaVersion; v != nil {
+		set, args = append(set, fmt.Sprintf(`payload['schemaVersion'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+	}
 	if v := patch.Payload; v != nil {
 		payload := "{}"
 		if *v != "" {
