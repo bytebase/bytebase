@@ -365,12 +365,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 	}
 
 	if issueCreate.ValidateOnly {
-		// Create the pipeline, stages, and tasks.
-		pipeline, err := s.store.CreatePipelineValidateOnly(ctx, pipelineCreate)
-		if err != nil {
-			return nil, err
-		}
-		issue, err := s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate)
+		issue, err := s.store.CreateIssueValidateOnly(ctx, pipelineCreate, issueCreate)
 		if err != nil {
 			return nil, err
 		}
