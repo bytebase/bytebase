@@ -233,8 +233,10 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
 			return nil, httpErr
 		}
-		schemaVersion := common.DefaultMigrationVersion()
-		taskPatch.SchemaVersion = &schemaVersion
+		if issue.Project.WorkflowType == api.UIWorkflow {
+			schemaVersion := common.DefaultMigrationVersion()
+			taskPatch.SchemaVersion = &schemaVersion
+		}
 	}
 
 	taskPatched, err := s.store.PatchTask(ctx, taskPatch)
