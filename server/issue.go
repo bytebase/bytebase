@@ -364,12 +364,12 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
 	}
 
-	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate)
-	if err != nil {
-		return nil, err
-	}
-
 	if issueCreate.ValidateOnly {
+		// Create the pipeline, stages, and tasks.
+		pipeline, err := s.store.CreatePipelineValidateOnly(ctx, pipelineCreate)
+		if err != nil {
+			return nil, err
+		}
 		issue, err := s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate)
 		if err != nil {
 			return nil, err
@@ -377,6 +377,10 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 		return issue, nil
 	}
 
+	pipeline, err := s.createPipeline(ctx, issueCreate, pipelineCreate)
+	if err != nil {
+		return nil, err
+	}
 	issueCreate.PipelineID = pipeline.ID
 	issue, err := s.store.CreateIssue(ctx, issueCreate)
 	if err != nil {
@@ -427,26 +431,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 }
 
 func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreate, pipelineCreate *api.PipelineCreate) (*api.Pipeline, error) {
-	// Return an error if the issue has no task to be executed
-	hasTask := false
-	for _, stage := range pipelineCreate.StageList {
-		if len(stage.TaskList) > 0 {
-			hasTask = true
-			break
-		}
-	}
-	if !hasTask {
-		err := errors.Errorf("issue has no task to be executed")
-		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-	}
-
-	pipelineCreate.CreatorID = issueCreate.CreatorID
-
-	// Create the pipeline, stages, and tasks.
-	if issueCreate.ValidateOnly {
-		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate)
-	}
-
 	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
@@ -661,7 +645,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		})
 
 		return &api.PipelineCreate{
-			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
+			Name:      fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
+			CreatorID: issueCreate.CreatorID,
 			StageList: []api.StageCreate{
 				{
 					Name:          instance.Environment.Name,
@@ -680,7 +665,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}
 
 	return &api.PipelineCreate{
-		Name: fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
+		Name:      fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
+		CreatorID: issueCreate.CreatorID,
 		StageList: []api.StageCreate{
 			{
 				Name:          instance.Environment.Name,
@@ -717,7 +703,8 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}
 
 	return &api.PipelineCreate{
-		Name: "Database Point-in-time Recovery pipeline",
+		Name:      "Database Point-in-time Recovery pipeline",
+		CreatorID: issueCreate.CreatorID,
 		StageList: []api.StageCreate{
 			{
 				Name:             database.Instance.Environment.Name,
@@ -742,7 +729,8 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 	}
 	create := &api.PipelineCreate{
-		Name: "Change database pipeline",
+		Name:      "Change database pipeline",
+		CreatorID: issueCreate.CreatorID,
 	}
 
 	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
@@ -902,8 +890,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "not implemented yet")
 	}
 
-	create := &api.PipelineCreate{}
-	create.Name = "Update database schema (gh-ost) pipeline"
+	create := &api.PipelineCreate{
+		Name:      "Update database schema (gh-ost) pipeline",
+		CreatorID: issueCreate.CreatorID,
+	}
 	schemaVersion := common.DefaultMigrationVersion()
 	for _, detail := range c.DetailList {
 		if detail.Statement == "" {

@@ -273,7 +273,7 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 				// Convert array index to ID.
 				blockedBy = append(blockedBy, strconv.Itoa(blockedByIndex+idOffset))
 			}
-			taskRaw := &taskRaw{
+			task := &api.Task{
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
@@ -288,13 +288,34 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 				StageID:           stage.ID,
 				InstanceID:        tc.InstanceID,
 				DatabaseID:        tc.DatabaseID,
+				BlockedBy:         blockedBy,
 			}
-			task, err := s.composeTask(ctx, taskRaw)
-			// We need to compose task.BlockedBy here because task and taskDAG are not inserted yet.
-			task.BlockedBy = blockedBy
+			// Compose validation only task.
+			creator, err := s.GetPrincipalByID(ctx, task.CreatorID)
 			if err != nil {
 				return nil, err
 			}
+			task.Creator = creator
+			task.Updater = creator
+			instance, err := s.GetInstanceByID(ctx, task.InstanceID)
+			if err != nil {
+				return nil, err
+			}
+			if instance == nil {
+				return nil, errors.Errorf("instance not found with ID %v", task.InstanceID)
+			}
+			task.Instance = instance
+			if task.DatabaseID != nil {
+				database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+				if err != nil {
+					return nil, err
+				}
+				if database == nil {
+					return nil, errors.Errorf("database not found with ID %v", task.DatabaseID)
+				}
+				task.Database = database
+			}
+
 			stage.TaskList = append(stage.TaskList, task)
 		}
 		pipeline.StageList = append(pipeline.StageList, stage)
