@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
@@ -270,8 +272,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Code:      &code,
 								Result:    &result,
 							}
-							taskPatched, err := s.PatchTaskStatus(ctx, task, taskStatusPatch)
-							if err != nil {
+							if _, err := s.PatchTaskStatus(ctx, task, taskStatusPatch); err != nil {
 								log.Error("Failed to mark task as DONE",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
@@ -280,15 +281,15 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								return
 							}
 
-							issue, err := s.store.GetIssueByPipelineID(ctx, taskPatched.PipelineID)
+							issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 							if err != nil {
-								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", taskPatched.PipelineID), zap.Error(err))
+								log.Error("failed to getIssueByPipelineID", zap.Int("pipelineID", task.PipelineID), zap.Error(err))
 								return
 							}
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 							if issue != nil {
-								if stage := utils.GetActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != taskPatched.StageID {
+								if stage := utils.GetActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != task.StageID {
 									environmentID := stage.EnvironmentID
 									ok, err := s.CanPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
 									if err != nil {
@@ -323,6 +324,226 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		}
 	}
+}
+
+// PatchTaskStatement patches the statement and earliest allowed time for a patch.
+func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, error) {
+	if taskPatch.Statement != nil {
+		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
+			return nil, httpErr
+		}
+		if issue.Project.WorkflowType == api.UIWorkflow {
+			schemaVersion := common.DefaultMigrationVersion()
+			taskPatch.SchemaVersion = &schemaVersion
+		}
+	}
+
+	taskPatched, err := s.store.PatchTask(ctx, taskPatch)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
+	}
+	// Update statement or earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
+	// TODO(d): revisit this as task pending is only a short-period of time.
+	if taskPatched.Status == api.TaskPending {
+		t, err := s.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+			IDList:    []int{taskPatch.ID},
+			UpdaterID: taskPatch.UpdaterID,
+			Status:    api.TaskPendingApproval,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
+		}
+		taskPatched = t
+	}
+	if issue.AssigneeNeedAttention && issue.Project.WorkflowType == api.UIWorkflow {
+		needAttention := false
+		patch := &api.IssuePatch{
+			ID:                    issue.ID,
+			UpdaterID:             api.SystemBotID,
+			AssigneeNeedAttention: &needAttention,
+		}
+		if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
+		}
+	}
+
+	// Trigger task checks.
+	if taskPatch.Statement != nil {
+		// it's ok to fail.
+		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
+			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
+		}
+		if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID: taskPatched.CreatorID,
+				TaskID:    task.ID,
+				Type:      api.TaskCheckGhostSync,
+			}); err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				log.Error("Failed to trigger gh-ost dry run after changing the task statement",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
+			}
+		}
+
+		if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+				Statement: *taskPatch.Statement,
+				DbType:    task.Database.Instance.Engine,
+				Charset:   taskPatched.Database.CharacterSet,
+				Collation: taskPatched.Database.Collation,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
+			}
+			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID: api.SystemBotID,
+				TaskID:    task.ID,
+				Type:      api.TaskCheckDatabaseStatementSyntax,
+				Payload:   string(payload),
+			}); err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				log.Error("Failed to trigger syntax check after changing the task statement",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
+			}
+		}
+
+		if api.IsSQLReviewSupported(task.Database.Instance.Engine) {
+			if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
+			}
+		}
+
+		if api.IsStatementTypeCheckSupported(task.Instance.Engine) {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
+				Statement: *taskPatch.Statement,
+				DbType:    task.Instance.Engine,
+				Charset:   task.Database.CharacterSet,
+				Collation: task.Database.Collation,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
+			}
+			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID: api.SystemBotID,
+				TaskID:    task.ID,
+				Type:      api.TaskCheckDatabaseStatementType,
+				Payload:   string(payload),
+			}); err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				log.Error("Failed to trigger statement type check after changing the task statement",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
+			}
+		}
+	}
+
+	// Update statement activity.
+	if taskPatch.Statement != nil {
+		oldStatement, err := utils.GetTaskStatement(task)
+		if err != nil {
+			return nil, err
+		}
+		newStatement := *taskPatch.Statement
+
+		// create a task statement update activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
+			TaskID:       taskPatched.ID,
+			OldStatement: oldStatement,
+			NewStatement: newStatement,
+			TaskName:     task.Name,
+			IssueName:    issue.Name,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, &api.ActivityCreate{
+			CreatorID:   taskPatched.CreatorID,
+			ContainerID: taskPatched.PipelineID,
+			Type:        api.ActivityPipelineTaskStatementUpdate,
+			Payload:     string(payload),
+			Level:       api.ActivityInfo,
+		}, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
+		}
+	}
+	// Earliest allowed time update activity.
+	if taskPatch.EarliestAllowedTs != nil {
+		// create an activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
+			TaskID:               taskPatched.ID,
+			OldEarliestAllowedTs: task.EarliestAllowedTs,
+			NewEarliestAllowedTs: taskPatched.EarliestAllowedTs,
+			TaskName:             task.Name,
+			IssueName:            issue.Name,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal earliest allowed time activity payload: %v", task.Name))
+		}
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   taskPatched.CreatorID,
+			ContainerID: taskPatched.PipelineID,
+			Type:        api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+			Payload:     string(payload),
+			Level:       api.ActivityInfo,
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
+		}
+	}
+	return taskPatched, nil
+}
+
+func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
+	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+	if err != nil {
+		// It's OK if we failed to find the SQL review policy, just emit an error log
+		log.Error("Failed to found SQL review policy id for task",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.Int("environment_id", task.Instance.EnvironmentID),
+			zap.Error(err),
+		)
+		return nil
+	}
+
+	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+		Statement: statement,
+		DbType:    task.Database.Instance.Engine,
+		Charset:   task.Database.CharacterSet,
+		Collation: task.Database.Collation,
+		PolicyID:  policyID,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
+	}
+
+	if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID: api.SystemBotID,
+		TaskID:    task.ID,
+		Type:      api.TaskCheckDatabaseStatementAdvise,
+		Payload:   string(payload),
+	}); err != nil {
+		// It's OK if we failed to trigger a check, just emit an error log
+		log.Error("Failed to trigger statement advise task after changing task statement",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.Error(err),
+		)
+	}
+
+	return nil
 }
 
 // Register will register a task executor factory.
@@ -380,6 +601,37 @@ func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 		log.Debug(fmt.Sprintf("Changed backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed))
 		if err := removeLocalBackupFile(s.profile.DataDir, backup); err != nil {
 			log.Warn(err.Error())
+		}
+	}
+	return nil
+}
+
+var allowedStatementUpdateTaskTypes = map[api.TaskType]bool{
+	api.TaskDatabaseCreate:                true,
+	api.TaskDatabaseSchemaUpdate:          true,
+	api.TaskDatabaseSchemaUpdateSDL:       true,
+	api.TaskDatabaseDataUpdate:            true,
+	api.TaskDatabaseSchemaUpdateGhostSync: true,
+}
+
+func (s *Scheduler) canUpdateTaskStatement(ctx context.Context, task *api.Task) *echo.HTTPError {
+	if ok := allowedStatementUpdateTaskTypes[task.Type]; !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update statement for task type %q", task.Type))
+	}
+	// Allow frontend to change the SQL statement of
+	// 1. a PendingApproval task which hasn't started yet
+	// 2. a Failed task which can be retried
+	// 3. a Pending task which can't be scheduled because of failed task checks, task dependency or earliest allowed time
+	if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed && task.Status != api.TaskPending {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q state", task.Status))
+	}
+	if task.Status == api.TaskPending {
+		ok, err := s.CanSchedule(ctx, task)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
+		}
+		if ok {
+			return echo.NewHTTPError(http.StatusBadRequest, "cannot update the PENDING task because it can be running at any time")
 		}
 	}
 	return nil
