@@ -280,8 +280,10 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	DatabaseID        *int
+	DatabaseID *int
+	// Statement/SchemaVersion and Payload cannot be set at the same time.
 	Statement         *string `jsonapi:"attr,statement"`
+	SchemaVersion     *string
 	Payload           *string
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
 }
