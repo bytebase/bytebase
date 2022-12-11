@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/differ"
@@ -15,16 +17,18 @@ import (
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
 	"github.com/bytebase/bytebase/server/component/state"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewSchemaUpdateSDLExecutor creates a schema update (SDL) task executor.
-func NewSchemaUpdateSDLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, profile config.Profile) Executor {
+func NewSchemaUpdateSDLExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
 	return &SchemaUpdateSDLExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
 		stateCfg:        stateCfg,
+		schemaSyncer:    schemaSyncer,
 		profile:         profile,
 	}
 }
@@ -35,11 +39,12 @@ type SchemaUpdateSDLExecutor struct {
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
 	stateCfg        *state.State
+	schemaSyncer    *schemasync.Syncer
 	profile         config.Profile
 }
 
 // RunOnce will run the schema update (SDL) task executor once.
-func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *api.Task) (bool, *api.TaskRunResultPayload, error) {
 	payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
@@ -49,7 +54,17 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *api.Task
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
+	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.MigrateSDL, ddl, payload.SchemaVersion, payload.VCSPushEvent)
+
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, task.Instance, task.Database.Name); err != nil {
+		log.Error("failed to sync database schema",
+			zap.String("instanceName", task.Instance.Name),
+			zap.String("databaseName", task.Database.Name),
+			zap.Error(err),
+		)
+	}
+
+	return terminated, result, err
 }
 
 // computeDatabaseSchemaDiff computes the diff between current database schema
