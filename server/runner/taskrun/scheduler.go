@@ -346,6 +346,10 @@ func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get running tasks")
 	}
+	if len(runningTasks) == 0 {
+		return nil
+	}
+
 	var taskIDs []int
 	for _, task := range runningTasks {
 		taskIDs = append(taskIDs, task.ID)
