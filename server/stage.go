@@ -67,7 +67,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		for _, task := range tasks {
 			taskIDList = append(taskIDList, task.ID)
 		}
-		if err := s.store.BatchPatchTaskStatusToPending(ctx, currentPrincipalID, taskIDList); err != nil {
+		if err := s.store.BatchPatchTaskStatus(ctx, taskIDList, api.TaskPending, currentPrincipalID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task %q status", taskIDList)).SetInternal(err)
 		}
 		issue, err := s.store.GetIssueByPipelineID(ctx, tasks[0].PipelineID)

@@ -182,8 +182,8 @@ func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch)
 	return taskList, nil
 }
 
-// BatchPatchTaskStatusToPending patches status to pending for a list of tasks.
-func (s *Store) BatchPatchTaskStatusToPending(ctx context.Context, updaterID int, taskIDs []int) error {
+// BatchPatchTaskStatus patches status for a list of tasks.
+func (s *Store) BatchPatchTaskStatus(ctx context.Context, taskIDs []int, status api.TaskStatus, updaterID int) error {
 	var ids []string
 	for _, id := range taskIDs {
 		ids = append(ids, fmt.Sprintf("%d", id))
@@ -193,7 +193,7 @@ func (s *Store) BatchPatchTaskStatusToPending(ctx context.Context, updaterID int
 		SET status = $1, updater_id = $2
 		WHERE id IN (%s);
 	`, strings.Join(ids, ","))
-	if _, err := s.db.db.ExecContext(ctx, query, api.TaskPending, updaterID); err != nil {
+	if _, err := s.db.db.ExecContext(ctx, query, status, updaterID); err != nil {
 		return FormatError(err)
 	}
 	return nil
