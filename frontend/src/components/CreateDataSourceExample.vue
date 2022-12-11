@@ -116,7 +116,7 @@
 import { reactive, PropType } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { useI18n } from "vue-i18n";
-import { DataSourceType, EngineType } from "../types";
+import { DataSourceType, EngineType, engineName } from "../types";
 import { pushNotification } from "@/store";
 
 interface LocalState {
@@ -195,7 +195,9 @@ const copyGrantStatement = () => {
       pushNotification({
         module: "bytebase",
         style: "INFO",
-        title: t("instance.copy-grant-statement"),
+        title: t("instance.copy-grant-statement", {
+          engine: engineName(props.engineType),
+        }),
       });
     }
   );
