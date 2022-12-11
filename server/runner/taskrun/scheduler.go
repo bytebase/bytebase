@@ -663,21 +663,6 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		return nil, err
 	}
 
-	// If create database, schema update and gh-ost cutover task completes, we sync the corresponding instance schema immediately.
-	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
-		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to sync instance schema after completing task")
-		}
-		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
-			log.Error("failed to sync database schema",
-				zap.String("instanceName", instance.Name),
-				zap.String("databaseName", taskPatched.Database.Name),
-				zap.Error(err),
-			)
-		}
-	}
-
 	// Cancel every task depending on the canceled task.
 	if taskPatched.Status == api.TaskCanceled {
 		if err := s.cancelDependingTasks(ctx, taskPatched); err != nil {
