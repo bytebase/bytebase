@@ -56,7 +56,7 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 
 		// pick any task in the stage to validate
 		// because all tasks in the same stage share the issue & environment.
-		ok, err := s.canPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0], stageAllTaskStatusPatch.Status)
+		ok, err := s.TaskScheduler.CanPrincipalChangeTaskStatus(ctx, currentPrincipalID, tasks[0], stageAllTaskStatusPatch.Status)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate if the principal can change task status").SetInternal(err)
 		}
