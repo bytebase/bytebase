@@ -82,7 +82,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			for _, task := range stage.TaskList {
 				taskPatch := *taskPatch
 				taskPatch.ID = task.ID
-				taskPatched, httpErr := s.patchTask(ctx, task, &taskPatch, issue)
+				taskPatched, httpErr := s.patchTaskStatement(ctx, task, &taskPatch, issue)
 				if httpErr != nil {
 					return httpErr
 				}
@@ -138,7 +138,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
-		taskPatched, httpErr := s.patchTask(ctx, task, taskPatch, issue)
+		taskPatched, httpErr := s.patchTaskStatement(ctx, task, taskPatch, issue)
 		if httpErr != nil {
 			return httpErr
 		}
@@ -228,7 +228,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, error) {
+func (s *Server) patchTaskStatement(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, error) {
 	if taskPatch.Statement != nil {
 		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
 			return nil, httpErr
