@@ -243,8 +243,110 @@ func (s *Server) patchTaskStatement(ctx context.Context, task *api.Task, taskPat
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
 	}
+	// Update statement or earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
+	// TODO(d): revisit this as task pending is only a short-period of time.
+	if taskPatched.Status == api.TaskPending {
+		t, err := s.TaskScheduler.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
+			IDList:    []int{taskPatch.ID},
+			UpdaterID: taskPatch.UpdaterID,
+			Status:    api.TaskPendingApproval,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
+		}
+		taskPatched = t
+	}
+	if issue.AssigneeNeedAttention && issue.Project.WorkflowType == api.UIWorkflow {
+		needAttention := false
+		patch := &api.IssuePatch{
+			ID:                    issue.ID,
+			UpdaterID:             api.SystemBotID,
+			AssigneeNeedAttention: &needAttention,
+		}
+		if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
+		}
+	}
 
-	// create an activity and trigger task check for statement update
+	// Trigger task checks.
+	if taskPatch.Statement != nil {
+		// it's ok to fail.
+		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
+			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
+		}
+		if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID: taskPatched.CreatorID,
+				TaskID:    task.ID,
+				Type:      api.TaskCheckGhostSync,
+			}); err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				log.Error("Failed to trigger gh-ost dry run after changing the task statement",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
+			}
+		}
+
+		if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+				Statement: *taskPatch.Statement,
+				DbType:    task.Database.Instance.Engine,
+				Charset:   taskPatched.Database.CharacterSet,
+				Collation: taskPatched.Database.Collation,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
+			}
+			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID: api.SystemBotID,
+				TaskID:    task.ID,
+				Type:      api.TaskCheckDatabaseStatementSyntax,
+				Payload:   string(payload),
+			}); err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				log.Error("Failed to trigger syntax check after changing the task statement",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
+			}
+		}
+
+		if api.IsSQLReviewSupported(task.Database.Instance.Engine) {
+			if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
+			}
+		}
+
+		if api.IsStatementTypeCheckSupported(task.Instance.Engine) {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
+				Statement: *taskPatch.Statement,
+				DbType:    task.Instance.Engine,
+				Charset:   task.Database.CharacterSet,
+				Collation: task.Database.Collation,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
+			}
+			if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID: api.SystemBotID,
+				TaskID:    task.ID,
+				Type:      api.TaskCheckDatabaseStatementType,
+				Payload:   string(payload),
+			}); err != nil {
+				// It's OK if we failed to trigger a check, just emit an error log
+				log.Error("Failed to trigger statement type check after changing the task statement",
+					zap.Int("task_id", task.ID),
+					zap.String("task_name", task.Name),
+					zap.Error(err),
+				)
+			}
+		}
+	}
+
+	// Update statement activity.
 	if taskPatch.Statement != nil {
 		oldStatement, err := utils.GetTaskStatement(task)
 		if err != nil {
@@ -252,139 +354,30 @@ func (s *Server) patchTaskStatement(ctx context.Context, task *api.Task, taskPat
 		}
 		newStatement := *taskPatch.Statement
 
-		// it's ok to fail.
-		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
-			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
+		// create a task statement update activity
+		payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
+			TaskID:       taskPatched.ID,
+			OldStatement: oldStatement,
+			NewStatement: newStatement,
+			TaskName:     task.Name,
+			IssueName:    issue.Name,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
 		}
-
-		if issue.AssigneeNeedAttention && issue.Project.WorkflowType == api.UIWorkflow {
-			needAttention := false
-			patch := &api.IssuePatch{
-				ID:                    issue.ID,
-				UpdaterID:             api.SystemBotID,
-				AssigneeNeedAttention: &needAttention,
-			}
-			if _, err := s.store.PatchIssue(ctx, patch); err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to try to patch issue assignee_need_attention after updating task statement").SetInternal(err)
-			}
-		}
-
-		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateSDL || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-			// create a task statement update activity
-			payload, err := json.Marshal(api.ActivityPipelineTaskStatementUpdatePayload{
-				TaskID:       taskPatched.ID,
-				OldStatement: oldStatement,
-				NewStatement: newStatement,
-				TaskName:     task.Name,
-				IssueName:    issue.Name,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task statement: %v", taskPatched.Name).SetInternal(err)
-			}
-
-			if _, err = s.ActivityManager.CreateActivity(ctx, &api.ActivityCreate{
-				CreatorID:   taskPatched.CreatorID,
-				ContainerID: taskPatched.PipelineID,
-				Type:        api.ActivityPipelineTaskStatementUpdate,
-				Payload:     string(payload),
-				Level:       api.ActivityInfo,
-			}, &activity.Metadata{
-				Issue: issue,
-			}); err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
-			}
-
-			// updated statement, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
-			if taskPatched.Status == api.TaskPending {
-				t, err := s.TaskScheduler.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-					IDList:    []int{taskPatch.ID},
-					UpdaterID: taskPatch.UpdaterID,
-					Status:    api.TaskPendingApproval,
-				})
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
-				}
-				taskPatched = t
-			}
-
-			if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID: taskPatched.CreatorID,
-					TaskID:    task.ID,
-					Type:      api.TaskCheckGhostSync,
-				})
-				if err != nil {
-					// It's OK if we failed to trigger a check, just emit an error log
-					log.Error("Failed to trigger gh-ost dry run after changing the task statement",
-						zap.Int("task_id", task.ID),
-						zap.String("task_name", task.Name),
-						zap.Error(err),
-					)
-				}
-			}
-
-			if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
-				payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
-					Statement: *taskPatch.Statement,
-					DbType:    task.Database.Instance.Engine,
-					Charset:   taskPatched.Database.CharacterSet,
-					Collation: taskPatched.Database.Collation,
-				})
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
-				}
-				_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID: api.SystemBotID,
-					TaskID:    task.ID,
-					Type:      api.TaskCheckDatabaseStatementSyntax,
-					Payload:   string(payload),
-				})
-				if err != nil {
-					// It's OK if we failed to trigger a check, just emit an error log
-					log.Error("Failed to trigger syntax check after changing the task statement",
-						zap.Int("task_id", task.ID),
-						zap.String("task_name", task.Name),
-						zap.Error(err),
-					)
-				}
-			}
-
-			if api.IsSQLReviewSupported(task.Database.Instance.Engine) {
-				if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrap(err, "failed to trigger database statement advise task")).SetInternal(err)
-				}
-			}
-
-			if api.IsStatementTypeCheckSupported(task.Instance.Engine) {
-				payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
-					Statement: *taskPatch.Statement,
-					DbType:    task.Instance.Engine,
-					Charset:   task.Database.CharacterSet,
-					Collation: task.Database.Collation,
-				})
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
-				}
-				if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-					CreatorID: api.SystemBotID,
-					TaskID:    task.ID,
-					Type:      api.TaskCheckDatabaseStatementType,
-					Payload:   string(payload),
-				}); err != nil {
-					// It's OK if we failed to trigger a check, just emit an error log
-					log.Error("Failed to trigger statement type check after changing the task statement",
-						zap.Int("task_id", task.ID),
-						zap.String("task_name", task.Name),
-						zap.Error(err),
-					)
-				}
-			}
+		if _, err := s.ActivityManager.CreateActivity(ctx, &api.ActivityCreate{
+			CreatorID:   taskPatched.CreatorID,
+			ContainerID: taskPatched.PipelineID,
+			Type:        api.ActivityPipelineTaskStatementUpdate,
+			Payload:     string(payload),
+			Level:       api.ActivityInfo,
+		}, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 		}
 	}
-
-	// earliest allowed time update.
-	// - create an activity.
-	// - dismiss stale approval for Pending tasks.
+	// Earliest allowed time update activity.
 	if taskPatch.EarliestAllowedTs != nil {
 		// create an activity
 		payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
@@ -408,19 +401,6 @@ func (s *Server) patchTaskStatement(ctx context.Context, task *api.Task, taskPat
 			Issue: issue,
 		}); err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task earliest allowed time: %v", taskPatched.Name)).SetInternal(err)
-		}
-
-		// updated earliest allowed time, dismiss stale approvals and transfer the status to PendingApproval for Pending tasks.
-		if taskPatched.Status == api.TaskPending {
-			t, err := s.TaskScheduler.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-				IDList:    []int{taskPatch.ID},
-				UpdaterID: taskPatch.UpdaterID,
-				Status:    api.TaskPendingApproval,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change task status to PendingApproval after updating task: %v", taskPatched.Name)).SetInternal(err)
-			}
-			taskPatched = t
 		}
 	}
 	return taskPatched, nil
