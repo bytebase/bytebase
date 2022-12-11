@@ -28,6 +28,23 @@ export function defaultCharset(type: EngineType): string {
   }
 }
 
+export function engineName(type: EngineType): string {
+  switch (type) {
+    case "CLICKHOUSE":
+      return "ClickHouse";
+    case "MYSQL":
+      return "MySQL";
+    case "POSTGRES":
+      return "PostgreSQL";
+    case "SNOWFLAKE":
+      return "Snowflake";
+    case "TIDB":
+      return "TiDB";
+    case "MONGODB":
+      return "MongoDB";
+  }
+}
+
 export function defaultCollation(type: EngineType): string {
   switch (type) {
     case "CLICKHOUSE":
