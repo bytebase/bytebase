@@ -342,38 +342,44 @@ func (s *Scheduler) Register(taskType api.TaskType, executorGetter Executor) {
 // So we change their status to CANCELED before starting the scheduler.
 func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	taskFind := &api.TaskFind{StatusList: &[]api.TaskStatus{api.TaskRunning}}
-	runningTasks, err := s.store.FindTask(ctx, taskFind, false)
+	runningTasks, err := s.store.FindTask(ctx, taskFind, false /* returnOnErr */)
 	if err != nil {
 		return errors.Wrap(err, "failed to get running tasks")
 	}
+	if len(runningTasks) == 0 {
+		return nil
+	}
+
+	var taskIDs []int
 	for _, task := range runningTasks {
-		if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
-			IDList:    []int{task.ID},
-			UpdaterID: api.SystemBotID,
-			Status:    api.TaskCanceled,
-		}); err != nil {
-			return errors.Wrapf(err, "failed to change task %d's status to %s", task.ID, api.TaskFailed)
-		}
-		log.Debug(fmt.Sprintf("Changed task %d's status from RUNNING to %s", task.ID, api.TaskFailed))
+		taskIDs = append(taskIDs, task.ID)
+	}
+	if err := s.store.BatchPatchTaskStatus(ctx, taskIDs, api.TaskCanceled, api.SystemBotID); err != nil {
+		return errors.Wrapf(err, "failed to change task %v's status to %s", taskIDs, api.TaskCanceled)
+	}
+
+	for _, task := range runningTasks {
 		// If it's a backup task, we also change the corresponding backup's status to FAILED, because the task is canceled just now.
-		if task.Type == api.TaskDatabaseBackup {
-			var payload api.TaskDatabaseBackupPayload
-			if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-				return errors.Wrapf(err, "failed to parse the payload of backup task %d", task.ID)
-			}
-			statusFailed := string(api.BackupStatusFailed)
-			backup, err := s.store.PatchBackup(ctx, &api.BackupPatch{
-				ID:        payload.BackupID,
-				UpdaterID: api.SystemBotID,
-				Status:    &statusFailed,
-			})
-			if err != nil {
-				return errors.Wrapf(err, "failed to patch backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed)
-			}
-			log.Debug(fmt.Sprintf("Changed backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed))
-			if err := removeLocalBackupFile(s.profile.DataDir, backup); err != nil {
-				log.Warn(err.Error())
-			}
+		if task.Type != api.TaskDatabaseBackup {
+			continue
+		}
+		// TODO(d): batch patching backup status.
+		var payload api.TaskDatabaseBackupPayload
+		if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+			return errors.Wrapf(err, "failed to parse the payload of backup task %d", task.ID)
+		}
+		statusFailed := string(api.BackupStatusFailed)
+		backup, err := s.store.PatchBackup(ctx, &api.BackupPatch{
+			ID:        payload.BackupID,
+			UpdaterID: api.SystemBotID,
+			Status:    &statusFailed,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to patch backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed)
+		}
+		log.Debug(fmt.Sprintf("Changed backup %d's status from %s to %s", payload.BackupID, api.BackupStatusPendingCreate, api.BackupStatusFailed))
+		if err := removeLocalBackupFile(s.profile.DataDir, backup); err != nil {
+			log.Warn(err.Error())
 		}
 	}
 	return nil
@@ -819,12 +825,8 @@ func (s *Scheduler) cancelDependingTasks(ctx context.Context, task *api.Task) er
 			queue = append(queue, dag.ToTaskID)
 		}
 	}
-	if _, err := s.store.PatchTaskStatus(ctx, &api.TaskStatusPatch{
-		IDList:    idList,
-		UpdaterID: api.SystemBotID,
-		Status:    api.TaskCanceled,
-	}); err != nil {
-		return err
+	if err := s.store.BatchPatchTaskStatus(ctx, idList, api.TaskCanceled, api.SystemBotID); err != nil {
+		return errors.Wrapf(err, "failed to change task %v's status to %s", idList, api.TaskCanceled)
 	}
 	return nil
 }
