@@ -413,3 +413,14 @@ func RefreshToken(ctx context.Context, store *store.Store, webURL string) common
 		return err
 	}
 }
+
+// GetTaskStatement gets the statement of a task.
+func GetTaskStatement(task *api.Task) (string, error) {
+	var taskStatement struct {
+		Statement string `json:"statement"`
+	}
+	if err := json.Unmarshal([]byte(task.Payload), &taskStatement); err != nil {
+		return "", err
+	}
+	return taskStatement.Statement, nil
+}

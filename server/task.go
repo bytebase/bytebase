@@ -16,9 +16,21 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/server/utils"
 )
 
+var allowedStatementUpdateTaskTypes = map[api.TaskType]bool{
+	api.TaskDatabaseCreate:                true,
+	api.TaskDatabaseSchemaUpdate:          true,
+	api.TaskDatabaseSchemaUpdateSDL:       true,
+	api.TaskDatabaseDataUpdate:            true,
+	api.TaskDatabaseSchemaUpdateGhostSync: true,
+}
+
 func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *echo.HTTPError {
+	if ok := allowedStatementUpdateTaskTypes[task.Type]; !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update statement for task type %q", task.Type))
+	}
 	// Allow frontend to change the SQL statement of
 	// 1. a PendingApproval task which hasn't started yet
 	// 2. a Failed task which can be retried
@@ -63,17 +75,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", pipelineID))
-		}
-
-		if taskPatch.Statement != nil {
-			// check if all tasks can update statement
-			for _, stage := range issue.Pipeline.StageList {
-				for _, task := range stage.TaskList {
-					if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
-						return httpErr
-					}
-				}
-			}
 		}
 
 		var taskPatchedList []*api.Task
@@ -227,118 +228,28 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, *echo.HTTPError) {
-	var oldStatement string
-	var newStatement string
+func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, error) {
 	if taskPatch.Statement != nil {
 		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
 			return nil, httpErr
 		}
-		newStatement = *taskPatch.Statement
-
-		switch task.Type {
-		case api.TaskDatabaseSchemaUpdate:
-			payload := &api.TaskDatabaseSchemaUpdatePayload{}
-			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update payload").SetInternal(err)
-			}
-			oldStatement = payload.Statement
-			payload.Statement = *taskPatch.Statement
-			// 1. For VCS workflows, patchTask only happens when we modify the same file.
-			// 	  In that case, we want to use the same schema version parsed from the file name.
-			//    The task executor will force retry using the new SQL statement.
-			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
-			//    get migration history version conflict if the previous task has been attempted.
-			if issue.Project.WorkflowType == api.UIWorkflow {
-				payload.SchemaVersion = common.DefaultMigrationVersion()
-			}
-			bytes, err := json.Marshal(payload)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-			}
-			payloadStr := string(bytes)
-			taskPatch.Payload = &payloadStr
-		case api.TaskDatabaseSchemaUpdateSDL:
-			payload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
-			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update sdl payload").SetInternal(err)
-			}
-			oldStatement = payload.Statement
-			payload.Statement = *taskPatch.Statement
-			// 1. For VCS workflows, patchTask only happens when we modify the same file.
-			// 	  In that case, we want to use the same schema version parsed from the file name.
-			//    The task executor will force retry using the new SQL statement.
-			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
-			//    get migration history version conflict if the previous task has been attempted.
-			if issue.Project.WorkflowType == api.UIWorkflow {
-				payload.SchemaVersion = common.DefaultMigrationVersion()
-			}
-			bytes, err := json.Marshal(payload)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-			}
-			payloadStr := string(bytes)
-			taskPatch.Payload = &payloadStr
-		case api.TaskDatabaseDataUpdate:
-			payload := &api.TaskDatabaseDataUpdatePayload{}
-			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
-			}
-			oldStatement = payload.Statement
-			payload.Statement = *taskPatch.Statement
-			// 1. For VCS workflows, patchTask only happens when we modify the same file.
-			// 	  In that case, we want to use the same schema version parsed from the file name.
-			//    The task executor will force retry using the new SQL statement.
-			// 2. We should update the schema version if we've updated the SQL in the UI workflow, otherwise we will
-			//    get migration history version conflict if the previous task has been attempted.
-			if issue.Project.WorkflowType == api.UIWorkflow {
-				payload.SchemaVersion = common.DefaultMigrationVersion()
-			}
-			bytes, err := json.Marshal(payload)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-			}
-			payloadStr := string(bytes)
-			taskPatch.Payload = &payloadStr
-		case api.TaskDatabaseCreate:
-			payload := &api.TaskDatabaseCreatePayload{}
-			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database create payload").SetInternal(err)
-			}
-			oldStatement = payload.Statement
-			payload.Statement = *taskPatch.Statement
-			bytes, err := json.Marshal(payload)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-			}
-			payloadStr := string(bytes)
-			taskPatch.Payload = &payloadStr
-		case api.TaskDatabaseSchemaUpdateGhostSync:
-			payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
-			}
-			oldStatement = payload.Statement
-			payload.Statement = *taskPatch.Statement
-			// We should update the schema version if we've updated the SQL, otherwise we will
-			// get migration history version conflict if the previous task has been attempted.
-			payload.SchemaVersion = common.DefaultMigrationVersion()
-			bytes, err := json.Marshal(payload)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
-			}
-			payloadStr := string(bytes)
-			taskPatch.Payload = &payloadStr
-		}
 	}
 
+	schemaVersion := common.DefaultMigrationVersion()
+	taskPatch.SchemaVersion = &schemaVersion
 	taskPatched, err := s.store.PatchTask(ctx, taskPatch)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
 	}
 
 	// create an activity and trigger task check for statement update
-	if oldStatement != newStatement {
+	if taskPatch.Statement != nil {
+		oldStatement, err := utils.GetTaskStatement(task)
+		if err != nil {
+			return nil, err
+		}
+		newStatement := *taskPatch.Statement
+
 		// it's ok to fail.
 		if err := s.ApplicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
 			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))

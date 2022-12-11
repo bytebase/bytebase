@@ -196,17 +196,11 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	// The task database_id represents its related database entry both for creating and patching,
 	// so we should sync its value right here when the related database entry created.
 	// The new statement should include the schema from peer tenant database.
-	payload.Statement = statement
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		return true, nil, errors.Wrap(err, "Failed to construct updated task payload")
-	}
-	payloadStr := string(bytes)
 	taskDatabaseIDPatch := &api.TaskPatch{
 		ID:         task.ID,
 		UpdaterID:  api.SystemBotID,
 		DatabaseID: &database.ID,
-		Payload:    &payloadStr,
+		Statement:  &statement,
 	}
 	if _, err = exec.store.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
