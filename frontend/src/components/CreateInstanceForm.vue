@@ -293,6 +293,7 @@ import {
   ConnectionInfo,
   SQLResultSet,
   EngineType,
+  engineName,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
@@ -428,23 +429,6 @@ watch(showSSL, (ssl) => {
     state.instance.sslCert = "";
   }
 });
-
-const engineName = (type: EngineType): string => {
-  switch (type) {
-    case "CLICKHOUSE":
-      return "ClickHouse";
-    case "MYSQL":
-      return "MySQL";
-    case "POSTGRES":
-      return "PostgreSQL";
-    case "SNOWFLAKE":
-      return "Snowflake";
-    case "TIDB":
-      return "TiDB";
-    case "MONGODB":
-      return "MongoDB";
-  }
-};
 
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
