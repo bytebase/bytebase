@@ -385,9 +385,8 @@ func (s *Server) patchTaskStatement(ctx context.Context, task *api.Task, taskPat
 	// earliest allowed time update.
 	// - create an activity.
 	// - dismiss stale approval for Pending tasks.
-	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
+	if taskPatch.EarliestAllowedTs != nil {
 		// create an activity
-
 		payload, err := json.Marshal(api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
 			TaskID:               taskPatched.ID,
 			OldEarliestAllowedTs: task.EarliestAllowedTs,
