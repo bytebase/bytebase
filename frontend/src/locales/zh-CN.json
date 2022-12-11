@@ -720,7 +720,7 @@
     "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{0}",
     "successfully-created-instance-createdinstance-name": "成功创建实例'{0}'。",
     "successfully-updated-instance-instance-name": "成功更新实例'{0}'。",
-    "copy-grant-statement": "CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。",
+    "copy-grant-statement": "CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 {engine} 客户端。",
     "successfully-connected-instance": "成功连接到实例。",
     "failed-to-connect-instance": "连接到实例失败。",
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
