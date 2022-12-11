@@ -74,6 +74,17 @@ type Scheduler struct {
 	executorMap       map[api.TaskType]Executor
 }
 
+// Register will register a task executor factory.
+func (s *Scheduler) Register(taskType api.TaskType, executorGetter Executor) {
+	if executorGetter == nil {
+		panic("scheduler: Register executor is nil for task type: " + taskType)
+	}
+	if _, dup := s.executorMap[taskType]; dup {
+		panic("scheduler: Register called twice for task type: " + taskType)
+	}
+	s.executorMap[taskType] = executorGetter
+}
+
 // Run will run the task scheduler.
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(taskSchedulerInterval)
@@ -546,15 +557,79 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 	return nil
 }
 
-// Register will register a task executor factory.
-func (s *Scheduler) Register(taskType api.TaskType, executorGetter Executor) {
-	if executorGetter == nil {
-		panic("scheduler: Register executor is nil for task type: " + taskType)
+// CanPrincipalChangeTaskStatus validates if the principal has the privilege to update task status, judging from the principal role and the environment policy.
+func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalID int, task *api.Task, toStatus api.TaskStatus) (bool, error) {
+	// The creator can cancel task.
+	if toStatus == api.TaskCanceled {
+		if principalID == task.CreatorID {
+			return true, nil
+		}
 	}
-	if _, dup := s.executorMap[taskType]; dup {
-		panic("scheduler: Register called twice for task type: " + taskType)
+	// the workspace owner and DBA roles can always change task status.
+	principal, err := s.store.GetPrincipalByID(ctx, principalID)
+	if err != nil {
+		return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
 	}
-	s.executorMap[taskType] = executorGetter
+	if principal == nil {
+		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
+	}
+	if principal.Role == api.Owner || principal.Role == api.DBA {
+		return true, nil
+	}
+
+	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
+	if err != nil {
+		return false, common.Wrapf(err, common.Internal, "failed to find issue")
+	}
+	if issue == nil {
+		return false, common.Errorf(common.NotFound, "issue not found by pipeline ID: %d", task.PipelineID)
+	}
+	groupValue, err := s.getGroupValueForTask(ctx, issue, task)
+	if err != nil {
+		return false, common.Wrapf(err, common.Internal, "failed to get assignee group value for taskID %d", task.ID)
+	}
+	if groupValue == nil {
+		return false, nil
+	}
+	// as the policy says, the project owner has the privilege to change task status.
+	if *groupValue == api.AssigneeGroupValueProjectOwner {
+		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
+			ProjectID:   &issue.ProjectID,
+			PrincipalID: &principalID,
+		})
+		if err != nil {
+			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", issue.ProjectID, principalID)
+		}
+		if member != nil && member.Role == string(api.Owner) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *Scheduler) getGroupValueForTask(ctx context.Context, issue *api.Issue, task *api.Task) (*api.AssigneeGroupValue, error) {
+	environmentID := api.UnknownID
+	for _, stage := range issue.Pipeline.StageList {
+		if stage.ID == task.StageID {
+			environmentID = stage.EnvironmentID
+			break
+		}
+	}
+	if environmentID == api.UnknownID {
+		return nil, common.Errorf(common.NotFound, "failed to find environmentID by task.StageID %d", task.StageID)
+	}
+
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+	if err != nil {
+		return nil, common.Wrapf(err, common.Internal, "failed to get pipeline approval policy by environmentID %d", environmentID)
+	}
+
+	for _, assigneeGroup := range policy.AssigneeGroupList {
+		if assigneeGroup.IssueType == issue.Type {
+			return &assigneeGroup.Value, nil
+		}
+	}
+	return nil, nil
 }
 
 // ClearRunningTasks changes all RUNNING tasks to CANCELED.
