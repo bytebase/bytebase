@@ -20,24 +20,27 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
+	"github.com/bytebase/bytebase/server/runner/schemasync"
 	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
 // NewDatabaseCreateExecutor creates a database create task executor.
-func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile) Executor {
+func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
 	return &DatabaseCreateExecutor{
-		store:     store,
-		dbFactory: dbFactory,
-		profile:   profile,
+		store:        store,
+		dbFactory:    dbFactory,
+		schemaSyncer: schemaSyncer,
+		profile:      profile,
 	}
 }
 
 // DatabaseCreateExecutor is the database create task executor.
 type DatabaseCreateExecutor struct {
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
-	profile   config.Profile
+	store        *store.Store
+	dbFactory    *dbfactory.DBFactory
+	schemaSyncer *schemasync.Syncer
+	profile      config.Profile
 }
 
 // RunOnce will run the database create task executor once.
@@ -208,8 +211,16 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		DatabaseID: &database.ID,
 		Payload:    &payloadStr,
 	}
-	if _, err = exec.store.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
+	if _, err := exec.store.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
+	}
+
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, instance, database.Name); err != nil {
+		log.Error("failed to sync database schema",
+			zap.String("instanceName", instance.Name),
+			zap.String("databaseName", database.Name),
+			zap.Error(err),
+		)
 	}
 
 	return true, &api.TaskRunResultPayload{
