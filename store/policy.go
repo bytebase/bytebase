@@ -322,11 +322,13 @@ func (s *Store) composePolicy(ctx context.Context, raw *policyRaw) (*api.Policy,
 	}
 	policy.Updater = updater
 
-	env, err := s.GetEnvironmentByID(ctx, policy.ResourceID)
-	if err != nil {
-		return nil, err
+	if policy.ResourceType == api.PolicyResourceTypeEnvironment {
+		env, err := s.GetEnvironmentByID(ctx, policy.ResourceID)
+		if err != nil {
+			return nil, err
+		}
+		policy.Environment = env
 	}
-	policy.Environment = env
 
 	return policy, nil
 }
