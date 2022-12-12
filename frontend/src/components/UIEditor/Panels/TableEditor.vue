@@ -326,6 +326,7 @@ watch(
 
 watch([table.value], () => {
   state.tableCache.newName = table.value.newName;
+  state.tableCache.status = table.value.status;
 });
 
 watch(
@@ -414,7 +415,7 @@ const handleRestoreColumn = (column: Column) => {
     return;
   }
 
-  delete column.status;
+  column.status = "normal";
 };
 
 const handleDiscardChanges = () => {
@@ -424,12 +425,12 @@ const handleDiscardChanges = () => {
 
   state.tableCache.newName = state.tableCache.oldName;
   state.tableCache.columnList = cloneDeep(state.tableCache.originColumnList);
-  delete state.tableCache.status;
+  state.tableCache.status = "normal";
 
   const table = editorStore.getTableWithTableTab(currentTab) as Table;
   table.newName = table.oldName;
   table.columnList = cloneDeep(table.columnList);
-  delete table.status;
+  table.status = "normal";
 };
 </script>
 
