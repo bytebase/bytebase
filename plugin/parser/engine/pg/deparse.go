@@ -1205,8 +1205,7 @@ func deparseAlterType(ctx parser.DeparseContext, in *ast.AlterTypeStmt, buf *str
 	}
 
 	for _, item := range in.AlterItemList {
-		switch node := item.(type) {
-		case *ast.AddEnumLabelStmt:
+		if node, ok := item.(*ast.AddEnumLabelStmt); ok {
 			// The ADD ENUM VALUE statement use the cannot share the AlterType statement with other alter items.
 			return deparseAddEnumValue(ctx, node, buf)
 		}
@@ -1214,7 +1213,7 @@ func deparseAlterType(ctx parser.DeparseContext, in *ast.AlterTypeStmt, buf *str
 	return nil
 }
 
-func deparseAddEnumValue(ctx parser.DeparseContext, in *ast.AddEnumLabelStmt, buf *strings.Builder) error {
+func deparseAddEnumValue(_ parser.DeparseContext, in *ast.AddEnumLabelStmt, buf *strings.Builder) error {
 	if _, err := buf.WriteString("ADD VALUE "); err != nil {
 		return err
 	}
