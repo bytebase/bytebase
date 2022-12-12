@@ -182,9 +182,8 @@ func (*Store) createStageImpl(ctx context.Context, tx *Tx, creates []*api.StageC
 			pipeline_id,
 			environment_id,
 			name
-		)
-		VALUES %s
-    RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name ORDER BY id ASC`, strings.Join(valueStr, ","))
+		) VALUES %s
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name ORDER BY id ASC`, strings.Join(valueStr, ","))
 
 	rows, err := tx.QueryContext(ctx, query, values...)
 	if err != nil {
