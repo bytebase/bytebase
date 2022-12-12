@@ -17,6 +17,7 @@
         @click="handleChangeTab('ui-editor')"
       >
         {{ $t("ui-editor.self") }}
+        <BBBetaBadge />
       </button>
       <button
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
@@ -130,6 +131,7 @@ import {
 } from "@/store";
 import { diffTableList } from "@/utils/UIEditor/diffTable";
 import { validateDatabaseEdit } from "@/utils/UIEditor/validate";
+import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import UIEditor from "@/components/UIEditor/UIEditor.vue";
 import GhostDialog from "./GhostDialog.vue";
 import ActionConfirmModal from "../UIEditor/Modals/ActionConfirmModal.vue";
