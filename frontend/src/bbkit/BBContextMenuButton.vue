@@ -95,6 +95,10 @@ const props = defineProps({
     type: Array as PropType<ButtonAction[]>,
     required: true,
   },
+  defaultActionKey: {
+    type: String,
+    default: "",
+  },
   disabled: {
     type: Boolean,
     default: false,
@@ -112,7 +116,7 @@ const getStorage = () => {
   if (!preferenceKey) return undefined;
   // e.g key = "bb.button-with-context-menu.task-status-transition"
   const key = `${STORE_PREFIX}.${preferenceKey}`;
-  return useLocalStorage(key, "", {
+  return useLocalStorage(key, props.defaultActionKey, {
     listenToStorageChanges: false,
   });
 };
