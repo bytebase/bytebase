@@ -1,8 +1,9 @@
 package ast
 
 var (
-	_ DataType    = (*dataType)(nil)
-	_ NumericType = (*numericType)(nil)
+	_ DataType        = (*dataType)(nil)
+	_ NumericType     = (*numericType)(nil)
+	_ UserDefinedType = (*userDefinedType)(nil)
 )
 
 // DataType is the interface for data type.
@@ -48,3 +49,30 @@ type characterType struct {
 }
 
 func (*characterType) characterTypeInterface() {}
+
+// UserDefinedType is the interface for user defined types.
+type UserDefinedType interface {
+	DataType
+
+	TypeName() *TypeNameDef
+	userDefinedTypeInterface()
+}
+
+type userDefinedType struct {
+	dataType
+}
+
+func (*userDefinedType) userDefinedTypeInterface() {}
+
+// TypeName implements the UserDefinedType interface.
+func (*userDefinedType) TypeName() *TypeNameDef {
+	return &TypeNameDef{}
+}
+
+// TypeNameDef is the struct for user defined type names.
+type TypeNameDef struct {
+	node
+
+	Schema string
+	Name   string
+}
