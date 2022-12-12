@@ -600,6 +600,9 @@ const doCreate = () => {
           [createdInstance.name]
         ),
       });
+    })
+    .finally(() => {
+      state.isCreatingInstance = false;
     });
 };
 
