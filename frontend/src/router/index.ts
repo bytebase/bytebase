@@ -1206,18 +1206,39 @@ router.beforeEach((to, from, next) => {
   if (issueSlug) {
     if (issueSlug.toLowerCase() == "new") {
       // For preparing the database if user visits creating issue url directly.
-      const requests: Promise<any>[] = [];
-      if (to.query.databaseList) {
-        for (const databaseId of (to.query.databaseList as string).split(",")) {
-          requests.push(
-            databaseStore.fetchDatabaseById(parseInt(databaseId, 10))
+      // It's horrible to fetchDatabaseById one-by-one when query.databaseList
+      // is big (100+ sometimes)
+      // So we are fetching databaseList by project since that's better cached.
+      const prepare = async () => {
+        console.log("prepare");
+        if (to.query.project) {
+          // If we found query.project, we can directly fetchDatabaseListByProjectId
+          const projectId = to.query.project as string;
+          await databaseStore.fetchDatabaseListByProjectId(
+            parseInt(projectId, 10)
           );
+        } else {
+          // Otherwise, we don't have the projectId, so we need to fetch the first
+          // database in databaseList by id, and see what project it belongs.
+          const databaseIdList = (to.query.databaseList as string)
+            .split(",")
+            .map((str) => parseInt(str, 10));
+          if (databaseIdList.length > 0) {
+            const firstDB = await databaseStore.getOrFetchDatabaseById(
+              databaseIdList[0]
+            );
+            if (databaseIdList.length > 1) {
+              // If we have more than one databases in the list
+              // fetch the rest of databases by projectId
+              await databaseStore.fetchDatabaseListByProjectId(
+                firstDB.project.id
+              );
+            }
+          }
         }
-      }
-      Promise.all(requests)
-        .then(() => {
-          next();
-        })
+      };
+      prepare()
+        .then(() => next())
         .catch((error) => {
           next({
             name: "error.404",
