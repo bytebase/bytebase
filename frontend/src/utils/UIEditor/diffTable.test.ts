@@ -111,8 +111,10 @@ it("diff alter table list", () => {
               comment: "",
               nullable: false,
               default: undefined,
+              status: "normal",
             },
           ],
+          status: "normal",
         } as any as Table,
       ],
       targetTableList: [
@@ -133,6 +135,7 @@ it("diff alter table list", () => {
               comment: "",
               nullable: false,
               default: undefined,
+              status: "normal",
             },
             {
               oldName: "email",
@@ -146,6 +149,7 @@ it("diff alter table list", () => {
               status: "created",
             },
           ],
+          status: "normal",
         } as any as Table,
       ],
       wanted: {

@@ -73,6 +73,7 @@ it("diff modify column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
+          status: "normal",
         } as any as Column,
       ],
       columnList: [
@@ -83,6 +84,7 @@ it("diff modify column list", () => {
           comment: "",
           nullable: false,
           default: undefined,
+          status: "normal",
         } as any as Column,
       ],
       wanted: {
@@ -179,6 +181,7 @@ it("diff column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
+          status: "normal",
         } as any as Column,
         {
           oldName: "name",
@@ -187,6 +190,7 @@ it("diff column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
+          status: "normal",
         } as any as Column,
         {
           oldName: "city",
@@ -195,6 +199,7 @@ it("diff column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
+          status: "normal",
         } as any as Column,
       ],
       columnList: [
@@ -205,6 +210,7 @@ it("diff column list", () => {
           comment: "this is id",
           nullable: true,
           default: undefined,
+          status: "normal",
         } as any as Column,
         {
           oldName: "name",
@@ -213,6 +219,7 @@ it("diff column list", () => {
           comment: "",
           nullable: false,
           default: "",
+          status: "normal",
         } as Column,
         {
           oldName: "city",
