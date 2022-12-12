@@ -99,6 +99,7 @@ export default defineComponent({
     const projectTabItemList = computed((): ProjectTabItem[] => {
       const list: (ProjectTabItem | null)[] = [
         { name: t("common.overview"), hash: "overview" },
+        { name: t("common.databases"), hash: "databases" },
 
         isTenantProject.value
           ? null // Hide "Migration History" tab for tenant projects
@@ -107,14 +108,6 @@ export default defineComponent({
         { name: t("common.activities"), hash: "activity" },
         { name: t("common.version-control"), hash: "version-control" },
         { name: t("common.webhooks"), hash: "webhook" },
-
-        isTenantProject.value
-          ? {
-              name: t("common.deployment-config"),
-              hash: "deployment-config",
-            }
-          : null, // Show "Deployment Config" only for tenant projects
-
         { name: t("common.settings"), hash: "setting" },
       ];
       const filteredList = list.filter(

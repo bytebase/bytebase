@@ -6,6 +6,19 @@
       :database-list="databaseList"
     />
   </template>
+  <template v-else-if="hash === 'databases'">
+    <ProjectDeploymentConfigPanel
+      v-if="isTenantProject"
+      id="deployment-config"
+      :project="project"
+      :allow-edit="allowEdit"
+    />
+    <ProjectDatabasesPanel
+      v-else
+      :project="project"
+      :database-list="databaseList"
+    />
+  </template>
   <template v-if="hash === 'migration-history'">
     <ProjectMigrationHistoryPanel
       id="migration-history"
@@ -37,13 +50,6 @@
       :allow-edit="allowEdit"
     />
   </template>
-  <template v-else-if="hash === 'deployment-config'">
-    <ProjectDeploymentConfigPanel
-      id="deployment-config"
-      :project="project"
-      :allow-edit="allowEdit"
-    />
-  </template>
 </template>
 
 <script lang="ts">
@@ -52,6 +58,7 @@ import { idFromSlug, sortDatabaseList } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
 import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
+import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
 import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
 import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
@@ -70,6 +77,7 @@ export default defineComponent({
     ProjectWebhookPanel,
     ProjectSettingPanel,
     ProjectDeploymentConfigPanel,
+    ProjectDatabasesPanel,
   },
   props: {
     projectWebhookSlug: {
@@ -111,10 +119,15 @@ export default defineComponent({
       return sortDatabaseList(list, environmentList.value);
     });
 
+    const isTenantProject = computed(() => {
+      return project.value.tenantMode === "TENANT";
+    });
+
     return {
       hash,
       project,
       databaseList,
+      isTenantProject,
     };
   },
 });
