@@ -1217,8 +1217,9 @@ router.beforeEach((to, from, next) => {
             parseInt(projectId, 10)
           );
         } else {
-          // Otherwise, we don't have the projectId, so we need to fetch the first
-          // database in databaseList by id, and see what project it belongs.
+          // Otherwise, we don't have the projectId (very rare to see, theoretically)
+          // so we need to fetch the first database in databaseList by id,
+          // and see what project it belongs.
           const databaseIdList = (to.query.databaseList as string)
             .split(",")
             .map((str) => parseInt(str, 10));
