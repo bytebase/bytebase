@@ -198,7 +198,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if *issuePatch.AssigneeID == issue.AssigneeID {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d because it's already the case", *issuePatch.AssigneeID))
 			}
-			stage := utils.GetActiveStage(issue.Pipeline.StageList)
+			stage := utils.GetActiveStage(issue.Pipeline)
 			if stage == nil {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
