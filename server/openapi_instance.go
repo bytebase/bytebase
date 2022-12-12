@@ -1,16 +1,19 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 
+	"github.com/go-faster/errors"
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -20,6 +23,8 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID", s.getInstanceByID)
 	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
 	g.DELETE("/instance/:instanceID", s.deleteInstanceByOpenAPI)
+	g.POST("/instance/:instanceID/role", s.createPGRole)
+	g.GET("/instance/:instanceID/role/:roleName", s.getPGRole)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
@@ -173,6 +178,134 @@ func (s *Server) getInstanceByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, convertToOpenAPIInstance(instance))
 }
 
+func (s *Server) getPGRole(c echo.Context) error {
+	ctx := c.Request().Context()
+	roleName := c.Param("roleName")
+
+	instance, err := s.validateInstance(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	role, err := s.findRoleByName(ctx, instance, roleName)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, role)
+}
+
+func (s *Server) createPGRole(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+
+	create := &openAPIV1.PGRoleUpsert{}
+	if err := json.Unmarshal(body, create); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
+	}
+
+	instance, err := s.validateInstance(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	if err := func() error {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return err
+		}
+		defer driver.Close(ctx)
+
+		if _, err := driver.Execute(ctx, create.ToStatement(), false); err != nil {
+			return err
+		}
+
+		return nil
+	}(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to exec the statement: %v", create.ToStatement())).SetInternal(err)
+	}
+
+	role, err := s.findRoleByName(ctx, instance, create.Name)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, role)
+}
+
+func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Instance, error) {
+	instanceID, err := strconv.Atoi(c.Param("instanceID"))
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
+	}
+
+	instance, err := s.store.GetInstanceByID(ctx, instanceID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", instanceID)).SetInternal(err)
+	}
+	if instance == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", instanceID))
+	}
+	if instance.Engine != db.Postgres {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Only PostgreSQL supports create the role")
+	}
+
+	return instance, nil
+}
+
+func (s *Server) findRoleByName(ctx context.Context, instance *api.Instance, roleName string) (*openAPIV1.PGRole, error) {
+	rows, err := func() ([]interface{}, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		rowSet, err := driver.Query(ctx, fmt.Sprintf("SELECT * FROM pg_catalog.pg_roles WHERE rolname = '%s'", roleName), &db.QueryContext{
+			ReadOnly: true,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return rowSet, nil
+	}()
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+	}
+
+	if len(rows) != 3 {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Invalid query result length")
+	}
+
+	columnList, ok := rows[0].([]string)
+	if !ok {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get the column")
+	}
+	dataList, ok := rows[2].([]interface{})
+	if !ok {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get the data list")
+	}
+	if len(dataList) != 1 {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Invalid data list length")
+	}
+	data, ok := dataList[0].([]interface{})
+	if !ok {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get the data")
+	}
+
+	role, err := convertToPGRole(instance.Name, columnList, data)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert the role").SetInternal(err)
+	}
+
+	return role, nil
+}
+
 func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
 	dataSourceList := []*openAPIV1.DataSource{}
 	for _, dataSource := range instance.DataSourceList {
@@ -245,4 +378,51 @@ func convertToAPIDataSouceList(dataSourceList []*openAPIV1.DataSourceCreate) ([]
 	}
 
 	return res, nil
+}
+
+func convertToPGRole(instanceName string, columnList []string, raw []interface{}) (*openAPIV1.PGRole, error) {
+	if len(columnList) != len(raw) {
+		return nil, errors.Errorf("invalid raw data")
+	}
+
+	role := &openAPIV1.PGRole{
+		Instance:  instanceName,
+		Attribute: &openAPIV1.PGRoleAttribute{},
+	}
+
+	for i, column := range columnList {
+		switch column {
+		case "rolname":
+			role.Name = raw[i].(string)
+		case "rolsuper":
+			role.Attribute.SuperUser = raw[i].(bool)
+		case "rolinherit":
+			inherit := raw[i].(bool)
+			role.Attribute.NoInherit = !inherit
+		case "rolcreaterole":
+			role.Attribute.CreateRole = raw[i].(bool)
+		case "rolcreatedb":
+			role.Attribute.CreateDB = raw[i].(bool)
+		case "rolcanlogin":
+			role.Attribute.CanLogin = raw[i].(bool)
+		case "rolreplication":
+			role.Attribute.Replication = raw[i].(bool)
+		case "rolconnlimit":
+			limit := raw[i].(string)
+			count, err := strconv.Atoi(limit)
+			if err != nil {
+				return nil, err
+			}
+			role.ConnectionLimit = count
+		case "rolvaliduntil":
+			until, ok := raw[i].(string)
+			if ok {
+				role.ValidUntil = &until
+			}
+		case "rolbypassrls":
+			role.Attribute.ByPassRLS = raw[i].(bool)
+		}
+	}
+
+	return role, nil
 }
