@@ -194,7 +194,9 @@ const currentTab = editorStore.currentTab as DatabaseTabContext;
 const database = databaseStore.getDatabaseById(currentTab.databaseId);
 
 const tableList = computed(() => {
-  return editorStore.tableList;
+  return editorStore.tableList.filter(
+    (table) => table.databaseId === currentTab.databaseId
+  );
 });
 const tableHeaderList = computed(() => {
   return [
