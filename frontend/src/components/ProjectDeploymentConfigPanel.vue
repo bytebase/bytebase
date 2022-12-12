@@ -1,5 +1,18 @@
 <template>
   <div class="max-w-[60rem] mx-auto">
+    <div v-if="state.deployment" class="mb-6">
+      <div class="text-lg font-medium leading-7 text-main">
+        {{ $t("deployment-config.preview-deployment-pipeline") }}
+      </div>
+      <DeploymentMatrix
+        class="w-full mt-4 !px-0 overflow-x-auto"
+        :project="project"
+        :deployment="state.deployment"
+        :database-list="databaseList"
+        :environment-list="environmentList"
+      />
+    </div>
+
     <div class="text-lg font-medium leading-7 text-main">
       {{ $t("project.db-name-template") }}
     </div>
@@ -107,19 +120,6 @@
             </span>
           </NPopover>
         </div>
-      </div>
-
-      <div class="mt-6">
-        <div class="text-lg font-medium leading-7 text-main border-t pt-4">
-          {{ $t("deployment-config.preview-deployment-pipeline") }}
-        </div>
-        <DeploymentMatrix
-          class="w-full mt-4 !px-0 overflow-x-auto"
-          :project="project"
-          :deployment="state.deployment"
-          :database-list="databaseList"
-          :environment-list="environmentList"
-        />
       </div>
     </div>
 
