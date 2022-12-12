@@ -315,3 +315,22 @@
     DROP TRIGGER "update2" ON "public"."t";
     CREATE TRIGGER update3 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f2();
     CREATE TRIGGER update4 BEFORE UPDATE ON public.t FOR EACH ROW EXECUTE FUNCTION public.f1();
+- oldSchema: |
+    CREATE TYPE public.tp1 AS ENUM ('a', 'b', 'c');
+    CREATE TYPE public.tp2 AS ENUM ('a', 'b', 'c');
+    CREATE TYPE public.tp3 AS ENUM ('a', 'b', 'c');
+    CREATE TABLE public.t1(a public.tp1, b public.tp2, c public.tp3)
+  newSchema: |
+    CREATE TYPE public.tp1 AS ENUM ('a', 'b', 'c');
+    CREATE TYPE public.tp3 AS ENUM ('a', 'b', 'c', 'd');
+    CREATE TYPE public.tp4 AS ENUM ('a', 'b', 'c');
+    CREATE TABLE public.t1(a public.tp1, b public.tp3, c public.tp4)
+  diff: |
+    DROP TYPE "public"."tp3";
+    DROP TYPE "public"."tp2";
+    CREATE TYPE public.tp3 AS ENUM ('a', 'b', 'c', 'd');
+    CREATE TYPE public.tp4 AS ENUM ('a', 'b', 'c');
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "b" SET DATA TYPE public.tp3;
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "c" SET DATA TYPE public.tp4;

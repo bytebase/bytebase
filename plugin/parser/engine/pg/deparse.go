@@ -86,6 +86,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.DropTypeStmt:
+		if err := deparseDropType(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -1173,6 +1178,36 @@ func deparseFunctionSignature(function *ast.FunctionDef, buf *strings.Builder) e
 		}
 	}
 	return buf.WriteByte(')')
+}
+
+func deparseDropType(ctx parser.DeparseContext, in *ast.DropTypeStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("DROP TYPE "); err != nil {
+		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+	for i, tp := range in.TypeNameList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if tp.Schema != "" {
+			if err := writeSurrounding(buf, tp.Schema, `"`); err != nil {
+				return err
+			}
+			if err := buf.WriteByte('.'); err != nil {
+				return err
+			}
+		}
+		if err := writeSurrounding(buf, tp.Name, `"`); err != nil {
+			return err
+		}
+	}
+	return deparseDropBehavior(ctx, in.Behavior, buf)
 }
 
 func deparseDropTrigger(ctx parser.DeparseContext, in *ast.DropTriggerStmt, buf *strings.Builder) error {
