@@ -216,6 +216,7 @@ it("diff drop table list", () => {
               default: undefined,
             },
           ],
+          status: "normal",
         } as any as Table,
       ],
       targetTableList: [
