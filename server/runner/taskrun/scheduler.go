@@ -331,7 +331,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // PatchTaskStatement patches the statement and earliest allowed time for a patch.
-func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, error) {
+func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, *echo.HTTPError) {
 	if taskPatch.Statement != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
 			return nil, err
