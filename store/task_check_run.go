@@ -398,11 +398,6 @@ func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *api.TaskCh
 		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 
-	orderAndLimit := ""
-	if find.Latest {
-		orderAndLimit = " ORDER BY updated_ts DESC LIMIT 1"
-	}
-
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -418,7 +413,7 @@ func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *api.TaskCh
 			result,
 			payload
 		FROM task_check_run
-		WHERE `+strings.Join(where, " AND ")+orderAndLimit,
+		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
 	if err != nil {
