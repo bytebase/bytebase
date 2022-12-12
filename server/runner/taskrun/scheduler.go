@@ -107,23 +107,16 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				// Inspect all open pipelines and schedule the next PENDING task if applicable
-				pipelineStatus := api.PipelineOpen
-				pipelineFind := &api.PipelineFind{
-					Status: &pipelineStatus,
-				}
-				pipelineList, err := s.store.FindPipeline(ctx, pipelineFind, false)
-				if err != nil {
-					log.Error("Failed to retrieve open pipelines", zap.Error(err))
+				if err := s.scheduleAutoApprovedTasks(ctx); err != nil {
+					log.Error("Failed to schedule auto approved tasks", zap.Error(err))
 					return
 				}
-				for _, pipeline := range pipelineList {
-					if err := s.scheduleActiveStage(ctx, pipeline); err != nil {
-						log.Error("Failed to schedule tasks in the active stage",
-							zap.Int("pipeline_id", pipeline.ID),
-							zap.Error(err),
-						)
-					}
+
+				if err := s.scheduleActiveStageToRunning(ctx); err != nil {
+					log.Error("Failed to schedule tasks in the active stage",
+						zap.Error(err),
+					)
+					return
 				}
 
 				// Inspect all running tasks
@@ -300,7 +293,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 							if issue != nil {
-								if stage := utils.GetActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != task.StageID {
+								if stage := utils.GetActiveStage(issue.Pipeline); stage != nil && stage.ID != task.StageID {
 									environmentID := stage.EnvironmentID
 									ok, err := s.CanPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
 									if err != nil {
@@ -876,36 +869,63 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, er
 	return false, nil
 }
 
-// scheduleActiveStage tries to schedule the tasks in the active stage.
-func (s *Scheduler) scheduleActiveStage(ctx context.Context, pipeline *api.Pipeline) error {
-	stage := utils.GetActiveStage(pipeline.StageList)
-	if stage == nil {
-		return nil
+// scheduleAutoApprovedTasks schedules tasks that are approved automatically.
+func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
+	taskStatusList := []api.TaskStatus{api.TaskPendingApproval}
+	taskFind := &api.TaskFind{
+		StatusList: &taskStatusList,
 	}
-	for _, task := range stage.TaskList {
-		switch task.Status {
-		case api.TaskPendingApproval:
-			policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get approval policy for environment ID %d", task.Instance.EnvironmentID)
+	taskList, err := s.store.FindTask(ctx, taskFind, false)
+	if err != nil {
+		return err
+	}
+
+	for _, task := range taskList {
+		policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get approval policy for environment ID %d", task.Instance.EnvironmentID)
+		}
+		if policy.Value != api.PipelineApprovalValueManualNever {
+			continue
+		}
+
+		ok, err := s.passAllCheck(ctx, task, api.TaskCheckStatusSuccess)
+		if err != nil {
+			return errors.Wrap(err, "failed to check if can auto-approve")
+		}
+		if ok {
+			if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
+				IDList:    []int{task.ID},
+				UpdaterID: api.SystemBotID,
+				Status:    api.TaskPending,
+			}); err != nil {
+				return errors.Wrap(err, "failed to change task status")
 			}
-			if policy.Value == api.PipelineApprovalValueManualNever {
-				// transit into Pending for ManualNever (auto-approval) tasks if all required task checks passed.
-				ok, err := s.passAllCheck(ctx, task, api.TaskCheckStatusSuccess)
-				if err != nil {
-					return errors.Wrap(err, "failed to check if can auto-approve")
-				}
-				if ok {
-					if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						IDList:    []int{task.ID},
-						UpdaterID: api.SystemBotID,
-						Status:    api.TaskPending,
-					}); err != nil {
-						return errors.Wrap(err, "failed to change task status")
-					}
-				}
+		}
+	}
+	return nil
+}
+
+// scheduleActiveStageToRunning tries to schedule the tasks in the active stage.
+func (s *Scheduler) scheduleActiveStageToRunning(ctx context.Context) error {
+	pipelineStatus := api.PipelineOpen
+	pipelineFind := &api.PipelineFind{
+		Status: &pipelineStatus,
+	}
+	pipelineList, err := s.store.FindPipeline(ctx, pipelineFind, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to retrieve open pipelines")
+	}
+	for _, pipeline := range pipelineList {
+		stage := utils.GetActiveStage(pipeline)
+		if stage == nil {
+			continue
+		}
+		for _, task := range stage.TaskList {
+			if task.Status != api.TaskPending {
+				continue
 			}
-		case api.TaskPending:
+
 			if err := s.scheduleIfNeeded(ctx, task); err != nil {
 				return errors.Wrap(err, "failed to schedule task")
 			}

@@ -121,7 +121,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.Error("expect to have found issue in application runner", zap.Int("issue_id", externalApproval.IssueID))
 							continue
 						}
-						stage := utils.GetActiveStage(issue.Pipeline.StageList)
+						stage := utils.GetActiveStage(issue.Pipeline)
 						if stage == nil {
 							stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 						}
@@ -534,7 +534,7 @@ func (r *Runner) scheduleApproval(ctx context.Context, issue *api.Issue, setting
 		return
 	}
 
-	stage := utils.GetActiveStage(issue.Pipeline.StageList)
+	stage := utils.GetActiveStage(issue.Pipeline)
 	if stage == nil {
 		stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
 	}
