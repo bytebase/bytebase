@@ -4,7 +4,7 @@
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
-    <div class="w-80 mb-2">
+    <div class="w-80 mb-6">
       <p>{{ props.description }}</p>
     </div>
     <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
