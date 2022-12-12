@@ -1180,7 +1180,7 @@
       "standard": "Standard",
       "tenant": "Tenant"
     },
-    "db-name-template": "@:common.database @:common.name @:common.template",
+    "db-name-template": "Tenant Database Name Template",
     "select": "Select project",
     "lgtm-check": {
       "self": "LGTM check",
@@ -1476,7 +1476,7 @@
     "setting": {
       "description": "A label is a key-value pair that helps you identify the tenant for a database. {link}."
     },
-    "db-name-template-tips": "All tenant databases should follow this naming template. The databases with the same {placeholder} will be in the same group. {link}.",
+    "db-name-template-tips": "If your tenant databases follow a naming template, you can specify here. The databases with the same {placeholder} will be grouped together. If you don't want grouping, just leave it empty. {link}.",
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."

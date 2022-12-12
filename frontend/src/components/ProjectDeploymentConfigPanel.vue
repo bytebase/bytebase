@@ -25,7 +25,7 @@
         <template #link>
           <a
             class="normal-link inline-flex items-center"
-            href="https://bytebase.com/docs/tenant-database-management#database-name-template?source=console"
+            href="https://www.bytebase.com/docs/tenant-database-management/overview#database-name-template?source=console"
             target="__BLANK"
           >
             {{ $t("common.learn-more") }}
