@@ -304,7 +304,9 @@ const fetchDatabaseEditMapWithUIEditor = async () => {
           module: "bytebase",
           style: "CRITICAL",
           title: "Invalid request",
-          description: JSON.stringify(databaseEditResult.validateResultList),
+          description: databaseEditResult.validateResultList
+            .map((result) => result.message)
+            .join("\n"),
         });
         return;
       }
@@ -408,9 +410,9 @@ const handlePreviewIssue = async () => {
         module: "bytebase",
         style: "CRITICAL",
         title: "Invalid request",
-        description: JSON.stringify(
-          validateResultList.map((validateResult) => validateResult.message)
-        ),
+        description: validateResultList
+          .map((result) => result.message)
+          .join("\n"),
       });
       return;
     }
