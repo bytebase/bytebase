@@ -333,8 +333,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 // PatchTaskStatement patches the statement and earliest allowed time for a patch.
 func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, error) {
 	if taskPatch.Statement != nil {
-		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
-			return nil, httpErr
+		if err := canUpdateTaskStatement(task); err != nil {
+			return nil, err
 		}
 		if issue.Project.WorkflowType == api.UIWorkflow {
 			schemaVersion := common.DefaultMigrationVersion()
@@ -674,41 +674,47 @@ func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	return nil
 }
 
-var allowedStatementUpdateTaskTypes = map[api.TaskType]bool{
-	api.TaskDatabaseCreate:                true,
-	api.TaskDatabaseSchemaUpdate:          true,
-	api.TaskDatabaseSchemaUpdateSDL:       true,
-	api.TaskDatabaseDataUpdate:            true,
-	api.TaskDatabaseSchemaUpdateGhostSync: true,
-}
+var (
+	allowedStatementUpdateTaskTypes = map[api.TaskType]bool{
+		api.TaskDatabaseCreate:                true,
+		api.TaskDatabaseSchemaUpdate:          true,
+		api.TaskDatabaseSchemaUpdateSDL:       true,
+		api.TaskDatabaseDataUpdate:            true,
+		api.TaskDatabaseSchemaUpdateGhostSync: true,
+	}
+	allowedPatchStatementStatus = map[api.TaskStatus]bool{
+		api.TaskPendingApproval: true,
+		api.TaskFailed:          true,
+	}
+)
 
-func (s *Scheduler) canUpdateTaskStatement(ctx context.Context, task *api.Task) *echo.HTTPError {
+func canUpdateTaskStatement(task *api.Task) *echo.HTTPError {
 	if ok := allowedStatementUpdateTaskTypes[task.Type]; !ok {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update statement for task type %q", task.Type))
 	}
 	// Allow frontend to change the SQL statement of
-	// 1. a PendingApproval task which hasn't started yet
-	// 2. a Failed task which can be retried
-	// 3. a Pending task which can't be scheduled because of failed task checks, task dependency or earliest allowed time
-	if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed && task.Status != api.TaskPending {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q state", task.Status))
-	}
-	if task.Status == api.TaskPending {
-		ok, err := s.canSchedule(ctx, task)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
-		}
-		if ok {
-			return echo.NewHTTPError(http.StatusBadRequest, "cannot update the PENDING task because it can be running at any time")
-		}
+	// 1. a PendingApproval task which hasn't started yet;
+	// 2. a Failed task which can be retried.
+	if !allowedPatchStatementStatus[task.Status] {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q status", task.Status))
 	}
 	return nil
 }
 
 func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID:     &task.ID,
+		StatusList: &statusList,
+	}
+	taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+	if err != nil {
+		return false, err
+	}
+
 	// schema update, data update and gh-ost sync task have required task check.
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.passCheck(ctx, task, api.TaskCheckDatabaseConnect, allowedStatus)
+		pass, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseConnect, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -716,7 +722,7 @@ func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedSta
 			return false, nil
 		}
 
-		pass, err = s.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema, allowedStatus)
+		pass, err = passCheck(taskCheckRunList, api.TaskCheckInstanceMigrationSchema, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -733,42 +739,42 @@ func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedSta
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine) {
-			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
 				return false, err
 			}
-			if !pass {
+			if !ok {
 				return false, nil
 			}
 		}
 
 		if api.IsSQLReviewSupported(instance.Engine) {
-			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
 			if err != nil {
 				return false, err
 			}
-			if !pass {
+			if !ok {
 				return false, nil
 			}
 		}
 
 		if instance.Engine == db.Postgres {
-			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementType, allowedStatus)
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementType, allowedStatus)
 			if err != nil {
 				return false, err
 			}
-			if !pass {
+			if !ok {
 				return false, nil
 			}
 		}
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.passCheck(ctx, task, api.TaskCheckGhostSync, allowedStatus)
+		ok, err := passCheck(taskCheckRunList, api.TaskCheckGhostSync, allowedStatus)
 		if err != nil {
 			return false, err
 		}
-		if !pass {
+		if !ok {
 			return false, nil
 		}
 	}
@@ -780,26 +786,22 @@ func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedSta
 // For PendingApproval->Pending transitions, the minimum level is SUCCESS.
 // For Pending->Running transitions, the minimum level is WARN.
 // TODO(dragonly): refactor arguments.
-func (s *Scheduler) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
-	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskID:     &task.ID,
-		Type:       &checkType,
-		StatusList: &statusList,
-		Latest:     true,
+func passCheck(taskCheckRunList []*api.TaskCheckRun, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
+	var lastRun *api.TaskCheckRun
+	for _, run := range taskCheckRunList {
+		if checkType != run.Type {
+			continue
+		}
+		if lastRun == nil || lastRun.ID < run.ID {
+			lastRun = run
+		}
 	}
 
-	taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
-	if err != nil {
-		return false, err
-	}
-
-	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
+	if lastRun == nil || lastRun.Status == api.TaskCheckRunFailed {
 		return false, nil
 	}
-
 	checkResult := &api.TaskCheckRunResultPayload{}
-	if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+	if err := json.Unmarshal([]byte(lastRun.Result), checkResult); err != nil {
 		return false, err
 	}
 	for _, result := range checkResult.ResultList {
