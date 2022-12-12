@@ -12,3 +12,8 @@ type EnumTypeDef struct {
 func (e *EnumTypeDef) EquivalentType(tp string) bool {
 	return tp == e.Name.Name
 }
+
+// TypeName implements the UserDefinedType interface.
+func (e EnumTypeDef) TypeName() *TypeNameDef {
+	return e.Name
+}
