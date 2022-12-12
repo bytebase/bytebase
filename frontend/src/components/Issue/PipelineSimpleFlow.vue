@@ -66,7 +66,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref } from "vue";
 
 import { useDatabaseStore } from "@/store";
 import {
@@ -207,12 +207,6 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
 
   selectStageOrTask(stageId, ts);
 };
-
-watchEffect(() => {
-  if (create.value) {
-    databaseStore.fetchDatabaseListByProjectId(project.value.id);
-  }
-});
 </script>
 
 <style scoped lang="postcss">
