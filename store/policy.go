@@ -70,17 +70,10 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 		return nil, errors.Wrapf(err, "failed to compose policy with policyRaw[%+v]", policyRaw)
 	}
 
-	// Cache environment tier policy as it is used widely.
-	switch upsert.Type {
-	case api.PolicyTypeEnvironmentTier:
-		if err := s.cache.UpsertCache(tierPolicyCacheNamespace, upsert.ResourceID, &policy.Payload); err != nil {
-			return nil, err
-		}
-	case api.PolicyTypePipelineApproval:
-		if err := s.cache.UpsertCache(approvalPolicyCacheNamespace, upsert.ResourceID, &policy.Payload); err != nil {
-			return nil, err
-		}
+	if err := s.upsertPolicyCache(upsert.Type, upsert.ResourceID, policy.Payload); err != nil {
+		return nil, err
 	}
+
 	return policy, nil
 }
 
@@ -329,11 +322,13 @@ func (s *Store) composePolicy(ctx context.Context, raw *policyRaw) (*api.Policy,
 	}
 	policy.Updater = updater
 
-	env, err := s.GetEnvironmentByID(ctx, policy.ResourceID)
-	if err != nil {
-		return nil, err
+	if policy.ResourceType == api.PolicyResourceTypeEnvironment {
+		env, err := s.GetEnvironmentByID(ctx, policy.ResourceID)
+		if err != nil {
+			return nil, err
+		}
+		policy.Environment = env
 	}
-	policy.Environment = env
 
 	return policy, nil
 }
@@ -557,6 +552,21 @@ func (*Store) deletePolicyImpl(ctx context.Context, tx *Tx, delete *api.PolicyDe
 		api.Archived,
 	); err != nil {
 		return FormatError(err)
+	}
+	return nil
+}
+
+// Cache environment tier policy and pipeline approval policy as it is used widely.
+func (s *Store) upsertPolicyCache(policyType api.PolicyType, resourceID int, payload string) error {
+	switch policyType {
+	case api.PolicyTypeEnvironmentTier:
+		if err := s.cache.UpsertCache(tierPolicyCacheNamespace, resourceID, &payload); err != nil {
+			return err
+		}
+	case api.PolicyTypePipelineApproval:
+		if err := s.cache.UpsertCache(approvalPolicyCacheNamespace, resourceID, &payload); err != nil {
+			return err
+		}
 	}
 	return nil
 }
