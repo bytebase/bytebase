@@ -685,7 +685,6 @@ var (
 	allowedPatchStatementStatus = map[api.TaskStatus]bool{
 		api.TaskPendingApproval: true,
 		api.TaskFailed:          true,
-		api.TaskPending:         true,
 	}
 )
 
