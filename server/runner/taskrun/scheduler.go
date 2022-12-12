@@ -331,7 +331,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // PatchTaskStatement patches the statement and earliest allowed time for a patch.
-func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, *echo.HTTPError) {
+func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, error) {
 	if taskPatch.Statement != nil {
 		if err := canUpdateTaskStatement(task); err != nil {
 			return nil, err
@@ -693,9 +693,8 @@ func canUpdateTaskStatement(task *api.Task) *echo.HTTPError {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update statement for task type %q", task.Type))
 	}
 	// Allow frontend to change the SQL statement of
-	// 1. a PendingApproval task which hasn't started yet
-	// 2. a Failed task which can be retried
-	// 3. a Pending task which can't be scheduled because of failed task checks, task dependency or earliest allowed time
+	// 1. a PendingApproval task which hasn't started yet;
+	// 2. a Failed task which can be retried.
 	if !allowedPatchStatementStatus[task.Status] {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q status", task.Status))
 	}
