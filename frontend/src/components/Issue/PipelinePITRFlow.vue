@@ -64,7 +64,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { Pipeline, Stage, StageCreate, Task, TaskCreate } from "@/types";
 import {
   activeTask,
@@ -74,29 +74,14 @@ import {
   bytesToString,
 } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
-import { useDatabaseStore } from "@/store";
 import PipelineStageList from "./PipelineStageList.vue";
 import TaskMarkAsDoneButton from "./TaskMarkAsDoneButton.vue";
 import { useIssueLogic } from "./logic";
 
-const databaseStore = useDatabaseStore();
-
-const {
-  create,
-  issue,
-  project,
-  selectedStage,
-  selectedTask,
-  selectStageOrTask,
-} = useIssueLogic();
+const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
+  useIssueLogic();
 
 const pipeline = computed(() => issue.value.pipeline!);
-
-watchEffect(() => {
-  if (create.value) {
-    databaseStore.fetchDatabaseListByProjectId(project.value.id);
-  }
-});
 
 const taskList = computed(() => {
   return selectedStage.value.taskList;

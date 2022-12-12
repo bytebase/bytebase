@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref } from "vue";
 import type {
   Pipeline,
   Stage,
@@ -70,14 +70,8 @@ import { useDatabaseStore } from "@/store";
 import { useIssueLogic } from "./logic";
 import { useScroll } from "@vueuse/core";
 
-const {
-  create,
-  issue,
-  project,
-  selectedStage,
-  selectedTask,
-  selectStageOrTask,
-} = useIssueLogic();
+const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
+  useIssueLogic();
 
 const pipeline = computed(() => issue.value.pipeline!);
 
@@ -85,12 +79,6 @@ const databaseStore = useDatabaseStore();
 const taskBar = ref<HTMLDivElement>();
 
 const taskBarScrollState = useScroll(taskBar);
-
-watchEffect(() => {
-  if (create.value) {
-    databaseStore.fetchDatabaseListByProjectId(project.value.id);
-  }
-});
 
 const taskList = computed(() => selectedStage.value.taskList);
 
