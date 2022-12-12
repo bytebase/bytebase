@@ -876,6 +876,7 @@ func (s *Scheduler) schedulePendingTasksToRunning(ctx context.Context) ([]*api.T
 		})
 		if err != nil {
 			log.Error("failed to patch task to running", zap.Int("taskID", task.ID), zap.Error(err))
+			continue
 		}
 
 		runningTasks = append(runningTasks, updatedTask)
