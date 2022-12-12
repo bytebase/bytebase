@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -112,58 +111,18 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 
-				if err := s.scheduleActiveStageToRunning(ctx); err != nil {
-					log.Error("Failed to schedule tasks in the active stage",
+				taskList, err := s.schedulePendingTasksToRunning(ctx)
+				if err != nil {
+					log.Error("Failed to schedule pending tasks to running",
 						zap.Error(err),
 					)
 					return
 				}
 
-				// Inspect all running tasks
-				taskStatusList := []api.TaskStatus{api.TaskRunning}
-				taskFind := &api.TaskFind{
-					StatusList: &taskStatusList,
-				}
-				// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
-				// We may optimize this in the future since only some relationship info is needed by the executor
-				taskList, err := s.store.FindTask(ctx, taskFind, false)
-				if err != nil {
-					log.Error("Failed to retrieve running tasks", zap.Error(err))
-					return
-				}
-
-				// For each database, we will only execute the earliest running task (minimal task ID) and hold up the rest of the running tasks.
-				// Sort the taskList by ID first.
-				// databaseRunningTasks is the mapping from database ID to the earliest task of this database.
-				sort.Slice(taskList, func(i, j int) bool {
-					return taskList[i].ID < taskList[j].ID
-				})
-				databaseRunningTasks := make(map[int]int)
 				for _, task := range taskList {
-					if task.DatabaseID == nil {
-						continue
-					}
-					if _, ok := databaseRunningTasks[*task.DatabaseID]; ok {
-						continue
-					}
-					databaseRunningTasks[*task.DatabaseID] = task.ID
-				}
-
-				for _, task := range taskList {
-					// Skip task belongs to archived instances
-					if i := task.Instance; i == nil || i.RowStatus == api.Archived {
-						continue
-					}
 					// Skip the task that is already being executed.
 					if _, ok := s.stateCfg.RunningTasks.Load(task.ID); ok {
 						continue
-					}
-					// Skip the task that is not the earliest task of the database.
-					// earliestTaskID is the one that should be executed.
-					if task.DatabaseID != nil {
-						if earliestTaskID, ok := databaseRunningTasks[*task.DatabaseID]; ok && earliestTaskID != task.ID {
-							continue
-						}
 					}
 
 					executor, ok := s.executorMap[task.Type]
@@ -175,14 +134,6 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						)
 						continue
 					}
-
-					s.stateCfg.Lock()
-					if s.stateCfg.InstanceOutstandingConnections[task.InstanceID] >= state.InstanceMaximumConnectionNumber {
-						s.stateCfg.Unlock()
-						continue
-					}
-					s.stateCfg.InstanceOutstandingConnections[task.InstanceID]++
-					s.stateCfg.Unlock()
 
 					s.stateCfg.RunningTasks.Store(task.ID, true)
 					go func(ctx context.Context, task *api.Task, executor Executor) {
@@ -830,30 +781,6 @@ func (s *Scheduler) canSchedule(ctx context.Context, task *api.Task) (bool, erro
 	return s.passAllCheck(ctx, task, api.TaskCheckStatusWarn)
 }
 
-// scheduleIfNeeded schedules the task if
-//  1. its required check does not contain error in the latest run.
-//  2. it has no blocking tasks.
-//  3. it has passed the earliest allowed time.
-func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *api.Task) error {
-	schedule, err := s.canSchedule(ctx, task)
-	if err != nil {
-		return err
-	}
-	if !schedule {
-		return nil
-	}
-
-	if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
-		IDList:    []int{task.ID},
-		UpdaterID: api.SystemBotID,
-		Status:    api.TaskRunning,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, error) {
 	for _, blockingTaskIDString := range task.BlockedBy {
 		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
@@ -908,32 +835,53 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	return nil
 }
 
-// scheduleActiveStageToRunning tries to schedule the tasks in the active stage.
-func (s *Scheduler) scheduleActiveStageToRunning(ctx context.Context) error {
-	pipelineStatus := api.PipelineOpen
-	pipelineFind := &api.PipelineFind{
-		Status: &pipelineStatus,
+// schedulePendingTasks tries to schedule the pending tasks to running.
+func (s *Scheduler) schedulePendingTasksToRunning(ctx context.Context) ([]*api.Task, error) {
+	taskStatusList := []api.TaskStatus{api.TaskPending}
+	taskFind := &api.TaskFind{
+		StatusList: &taskStatusList,
 	}
-	pipelineList, err := s.store.FindPipeline(ctx, pipelineFind, false)
+	taskList, err := s.store.FindTask(ctx, taskFind, false)
 	if err != nil {
-		return errors.Wrap(err, "failed to retrieve open pipelines")
+		return nil, err
 	}
-	for _, pipeline := range pipelineList {
-		stage := utils.GetActiveStage(pipeline)
-		if stage == nil {
+	var runningTasks []*api.Task
+	for _, task := range taskList {
+		// Skip task belongs to archived instances
+		if i := task.Instance; i == nil || i.RowStatus == api.Archived {
 			continue
 		}
-		for _, task := range stage.TaskList {
-			if task.Status != api.TaskPending {
-				continue
-			}
-
-			if err := s.scheduleIfNeeded(ctx, task); err != nil {
-				return errors.Wrap(err, "failed to schedule task")
-			}
+		schedule, err := s.canSchedule(ctx, task)
+		if err != nil {
+			log.Error("failed to check task schedulable", zap.Int("taskID", task.ID), zap.Error(err))
+			continue
 		}
+		if !schedule {
+			continue
+		}
+
+		// Increment the maximum outstanding tasks per instance.
+		s.stateCfg.Lock()
+		if s.stateCfg.InstanceOutstandingConnections[task.InstanceID] >= state.InstanceMaximumConnectionNumber {
+			s.stateCfg.Unlock()
+			continue
+		}
+		s.stateCfg.InstanceOutstandingConnections[task.InstanceID]++
+		s.stateCfg.Unlock()
+
+		updatedTask, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
+			IDList:    []int{task.ID},
+			UpdaterID: api.SystemBotID,
+			Status:    api.TaskRunning,
+		})
+		if err != nil {
+			log.Error("failed to patch task to running", zap.Int("taskID", task.ID), zap.Error(err))
+			continue
+		}
+
+		runningTasks = append(runningTasks, updatedTask)
 	}
-	return nil
+	return runningTasks, nil
 }
 
 // PatchTaskStatus patches a single task.
