@@ -1,30 +1,18 @@
-import { DatabaseEdit } from "@/types";
-
-interface ValidateResult {
-  isValid: boolean;
-  messageList: {
-    message: string;
-    level: "warning" | "error";
-  }[];
-}
+import { DatabaseEdit, ValidateResult } from "@/types";
 
 export const validateDatabaseEdit = (
   databaseEdit: DatabaseEdit
-): ValidateResult => {
-  const validateResult: ValidateResult = {
-    isValid: true,
-    messageList: [],
-  };
+): ValidateResult[] => {
+  const validateResultList: ValidateResult[] = [];
 
   for (const createTableContext of databaseEdit.createTableList) {
     if (createTableContext.addColumnList.length === 0) {
-      validateResult.isValid = false;
-      validateResult.messageList.push({
+      validateResultList.push({
+        type: "ERROR",
         message: `Table ${createTableContext.name} should has at least one column.`,
-        level: "error",
       });
     }
   }
 
-  return validateResult;
+  return validateResultList;
 };

@@ -134,3 +134,16 @@ export interface ChangeColumnContext {
 export interface DropColumnContext {
   name: string;
 }
+
+/**
+ * Type definition for DatabaseEdit validation API message.
+ */
+export interface ValidateResult {
+  type: string;
+  message: string;
+}
+
+export interface DatabaseEditResult {
+  statement: string;
+  validateResultList: ValidateResult[];
+}

@@ -10,8 +10,8 @@ import (
 
 func TestValidateDatabaseEditColumnType(t *testing.T) {
 	tests := []struct {
-		databaseEdit *api.DatabaseEdit
-		errorMessage string
+		databaseEdit       *api.DatabaseEdit
+		validateResultList []*api.ValidateResult
 	}{
 		{
 			databaseEdit: &api.DatabaseEdit{
@@ -29,7 +29,7 @@ func TestValidateDatabaseEditColumnType(t *testing.T) {
 					},
 				},
 			},
-			errorMessage: "",
+			validateResultList: []*api.ValidateResult{},
 		},
 		{
 			databaseEdit: &api.DatabaseEdit{
@@ -47,45 +47,29 @@ func TestValidateDatabaseEditColumnType(t *testing.T) {
 					},
 				},
 			},
-			errorMessage: "invalid column type `int123`",
+			validateResultList: []*api.ValidateResult{
+				{
+					Type:    api.ValidateErrorResult,
+					Message: "invalid column type `int123`",
+				},
+			},
 		},
 	}
 
 	mysqlEditor := &SchemaEditor{}
 	for _, test := range tests {
-		err := mysqlEditor.ValidateDatabaseEdit(test.databaseEdit)
-		if err != nil {
-			assert.Equal(t, test.errorMessage, err.Error())
-		} else {
-			assert.Equal(t, test.errorMessage, "")
-		}
+		validateResultList, err := mysqlEditor.ValidateDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.validateResultList, validateResultList)
 	}
 }
 
 func TestValidateDatabaseEditColumnTypeAndDefault(t *testing.T) {
-	defaultValue := "123"
+	defaultValue := "default_value"
 	tests := []struct {
-		databaseEdit *api.DatabaseEdit
-		errorMessage string
+		databaseEdit       *api.DatabaseEdit
+		validateResultList []*api.ValidateResult
 	}{
-		{
-			databaseEdit: &api.DatabaseEdit{
-				DatabaseID: api.UnknownID,
-				CreateTableList: []*api.CreateTableContext{
-					{
-						Name: "t1",
-						Type: "BASE TABLE",
-						AddColumnList: []*api.AddColumnContext{
-							{
-								Name: "id",
-								Type: "TEXT",
-							},
-						},
-					},
-				},
-			},
-			errorMessage: "",
-		},
 		{
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
@@ -103,7 +87,7 @@ func TestValidateDatabaseEditColumnTypeAndDefault(t *testing.T) {
 					},
 				},
 			},
-			errorMessage: "",
+			validateResultList: []*api.ValidateResult{},
 		},
 		{
 			databaseEdit: &api.DatabaseEdit{
@@ -122,17 +106,19 @@ func TestValidateDatabaseEditColumnTypeAndDefault(t *testing.T) {
 					},
 				},
 			},
-			errorMessage: "column type `TEXT` cannot have a default value",
+			validateResultList: []*api.ValidateResult{
+				{
+					Type:    api.ValidateErrorResult,
+					Message: "column type `TEXT` cannot have a default value",
+				},
+			},
 		},
 	}
 
 	mysqlEditor := &SchemaEditor{}
 	for _, test := range tests {
-		err := mysqlEditor.ValidateDatabaseEdit(test.databaseEdit)
-		if err != nil {
-			assert.Equal(t, test.errorMessage, err.Error())
-		} else {
-			assert.Equal(t, test.errorMessage, "")
-		}
+		validateResultList, err := mysqlEditor.ValidateDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.validateResultList, validateResultList)
 	}
 }
