@@ -9,7 +9,7 @@
       class="w-full flex flex-row justify-start items-center border-b pl-1 border-b-gray-300"
     >
       <button
-        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
+        class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
           state.selectedTab === 'ui-editor' &&
           'bg-white border-gray-300 text-gray-800'
@@ -17,7 +17,9 @@
         @click="handleChangeTab('ui-editor')"
       >
         {{ $t("ui-editor.self") }}
-        <BBBetaBadge />
+        <div class="ml-1">
+          <BBBetaBadge />
+        </div>
       </button>
       <button
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
@@ -65,7 +67,7 @@
               :disabled="!allowSyncSQLFromUIEditor"
               @click="handleSyncSQLFromUIEditor"
             >
-              <heroicons-outline:exclamation-circle
+              <heroicons-outline:arrow-path
                 class="w-4 h-auto mr-1 text-gray-500"
               />
               {{ $t("ui-editor.sync-sql-from-ui-editor") }}

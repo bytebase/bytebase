@@ -1,6 +1,6 @@
 <template>
   <span
-    class="text-white text-xs px-[6px] py-[2px] rounded-lg select-none"
+    class="text-white text-[10px] px-[6px] py-[2px] rounded-lg select-none"
     style="background-color: var(--color-control)"
     :class="
       corner
