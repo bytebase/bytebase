@@ -728,7 +728,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				Name:   name,
 			}
 			// ADD ENUM VALUE STATEMENT
-			addEnumValueStmt := &ast.AddEnumValueStmt{
+			addEnumValueStmt := &ast.AddEnumLabelStmt{
 				EnumType:      typeName,
 				NewLabel:      in.AlterEnumStmt.NewVal,
 				NeighborLabel: in.AlterEnumStmt.NewValNeighbor,

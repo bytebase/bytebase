@@ -2942,7 +2942,7 @@ func TestAlterType(t *testing.T) {
 						Name:   "bug_status",
 					},
 					AlterItemList: []ast.Node{
-						&ast.AddEnumValueStmt{
+						&ast.AddEnumLabelStmt{
 							EnumType: &ast.TypeNameDef{
 								Schema: "public",
 								Name:   "bug_status",
@@ -2971,7 +2971,7 @@ func TestAlterType(t *testing.T) {
 						Name:   "bug_status",
 					},
 					AlterItemList: []ast.Node{
-						&ast.AddEnumValueStmt{
+						&ast.AddEnumLabelStmt{
 							EnumType: &ast.TypeNameDef{
 								Schema: "public",
 								Name:   "bug_status",
@@ -3000,7 +3000,7 @@ func TestAlterType(t *testing.T) {
 						Name:   "bug_status",
 					},
 					AlterItemList: []ast.Node{
-						&ast.AddEnumValueStmt{
+						&ast.AddEnumLabelStmt{
 							EnumType: &ast.TypeNameDef{
 								Schema: "public",
 								Name:   "bug_status",

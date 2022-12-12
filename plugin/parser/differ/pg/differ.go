@@ -1068,7 +1068,7 @@ func (diff *diffNode) addEnumValue(oldType *ast.CreateTypeStmt, newType *ast.Cre
 		for _, label := range newEnum.LabelList {
 			diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
 				Type: newType.Type.TypeName(),
-				AlterItemList: []ast.Node{&ast.AddEnumValueStmt{
+				AlterItemList: []ast.Node{&ast.AddEnumLabelStmt{
 					EnumType: newType.Type.TypeName(),
 					NewLabel: label,
 					Position: ast.PositionTypeEnd,
@@ -1090,7 +1090,7 @@ func (diff *diffNode) addEnumValue(oldType *ast.CreateTypeStmt, newType *ast.Cre
 	for i := firstOldLabelPos - 1; i >= 0; i-- {
 		diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
 			Type: newType.Type.TypeName(),
-			AlterItemList: []ast.Node{&ast.AddEnumValueStmt{
+			AlterItemList: []ast.Node{&ast.AddEnumLabelStmt{
 				EnumType:      newType.Type.TypeName(),
 				NewLabel:      newEnum.LabelList[i],
 				Position:      ast.PositionTypeBefore,
@@ -1109,7 +1109,7 @@ func (diff *diffNode) addEnumValue(oldType *ast.CreateTypeStmt, newType *ast.Cre
 		}
 		diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
 			Type: newType.Type.TypeName(),
-			AlterItemList: []ast.Node{&ast.AddEnumValueStmt{
+			AlterItemList: []ast.Node{&ast.AddEnumLabelStmt{
 				EnumType:      newType.Type.TypeName(),
 				NewLabel:      newLabel,
 				Position:      ast.PositionTypeAfter,
