@@ -64,7 +64,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type {
   Pipeline,
@@ -85,22 +85,10 @@ import { useIssueLogic } from "./logic";
 const { t } = useI18n();
 const databaseStore = useDatabaseStore();
 
-const {
-  create,
-  issue,
-  project,
-  selectedStage,
-  selectedTask,
-  selectStageOrTask,
-} = useIssueLogic();
+const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
+  useIssueLogic();
 
 const pipeline = computed(() => issue.value.pipeline!);
-
-watchEffect(() => {
-  if (create.value) {
-    databaseStore.fetchDatabaseListByProjectId(project.value.id);
-  }
-});
 
 const taskList = computed(() => {
   return selectedStage.value.taskList;

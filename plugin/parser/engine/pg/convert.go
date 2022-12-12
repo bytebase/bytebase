@@ -360,7 +360,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				}
 				functionDef := &ast.FunctionDef{}
 				var err error
-				functionDef.Schema, functionDef.Name, err = convertFunctionName(functionNode.ObjectWithArgs.Objname)
+				functionDef.Schema, functionDef.Name, err = convertObjectName(functionNode.ObjectWithArgs.Objname)
 				if err != nil {
 					return nil, err
 				}
@@ -415,6 +415,28 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}
 
 			return dropTriggerStmt, nil
+		case pgquery.ObjectType_OBJECT_TYPE:
+			dropTypeStmt := &ast.DropTypeStmt{
+				IfExists: in.DropStmt.MissingOk,
+				Behavior: convertDropBehavior(in.DropStmt.Behavior),
+			}
+
+			for _, object := range in.DropStmt.Objects {
+				typeName, ok := object.Node.(*pgquery.Node_TypeName)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected TypeName but found %t", object.Node)
+				}
+				schema, name, err := convertObjectName(typeName.TypeName.Names)
+				if err != nil {
+					return nil, err
+				}
+				dropTypeStmt.TypeNameList = append(dropTypeStmt.TypeNameList, &ast.TypeNameDef{
+					Schema: schema,
+					Name:   name,
+				})
+			}
+
+			return dropTypeStmt, nil
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
@@ -660,7 +682,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		var err error
 		functionDef := &ast.FunctionDef{}
 
-		functionDef.Schema, functionDef.Name, err = convertFunctionName(in.CreateFunctionStmt.Funcname)
+		functionDef.Schema, functionDef.Name, err = convertObjectName(in.CreateFunctionStmt.Funcname)
 		if err != nil {
 			return nil, err
 		}
@@ -680,11 +702,68 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return createTriggerStmt, nil
+	case *pgquery.Node_CreateEnumStmt:
+		var err error
+		enumTypeDef := &ast.EnumTypeDef{Name: &ast.TypeNameDef{}}
+
+		enumTypeDef.Name.Schema, enumTypeDef.Name.Name, err = convertObjectName(in.CreateEnumStmt.TypeName)
+		if err != nil {
+			return nil, err
+		}
+
+		enumTypeDef.LabelList, err = convertEnumLabelList(in.CreateEnumStmt.Vals)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ast.CreateTypeStmt{Type: enumTypeDef}, nil
+	case *pgquery.Node_AlterEnumStmt:
+		if in.AlterEnumStmt.OldVal == "" {
+			schema, name, err := convertObjectName(in.AlterEnumStmt.TypeName)
+			if err != nil {
+				return nil, err
+			}
+			typeName := &ast.TypeNameDef{
+				Schema: schema,
+				Name:   name,
+			}
+			// ADD ENUM VALUE STATEMENT
+			addEnumValueStmt := &ast.AddEnumLabelStmt{
+				EnumType:      typeName,
+				NewLabel:      in.AlterEnumStmt.NewVal,
+				NeighborLabel: in.AlterEnumStmt.NewValNeighbor,
+			}
+			if in.AlterEnumStmt.NewValNeighbor == "" {
+				addEnumValueStmt.Position = ast.PositionTypeEnd
+			} else if in.AlterEnumStmt.NewValIsAfter {
+				addEnumValueStmt.Position = ast.PositionTypeAfter
+			} else {
+				addEnumValueStmt.Position = ast.PositionTypeBefore
+			}
+
+			return &ast.AlterTypeStmt{
+				Type:          typeName,
+				AlterItemList: []ast.Node{addEnumValueStmt},
+			}, nil
+		}
+		// TODO(rebelice): support RENAME ENUM VALUE statements
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
 
 	return nil, nil
+}
+
+func convertEnumLabelList(list []*pgquery.Node) ([]string, error) {
+	var result []string
+	for _, node := range list {
+		stringNode, ok := node.Node.(*pgquery.Node_String_)
+		if !ok {
+			return nil, parser.NewConvertErrorf("expected String but found %t", node.Node)
+		}
+		result = append(result, stringNode.String_.Str)
+	}
+	return result, nil
 }
 
 func convertFunctionParameterList(parameterList []*pgquery.Node) ([]*ast.FunctionParameterDef, error) {
@@ -731,7 +810,8 @@ func convertParameterMode(mode pgquery.FunctionParameterMode) ast.FunctionParame
 	}
 }
 
-func convertFunctionName(list []*pgquery.Node) (string, string, error) {
+// convertObjectName requires one or two nodes, and return two strings.
+func convertObjectName(list []*pgquery.Node) (string, string, error) {
 	switch len(list) {
 	case 2:
 		schema, err := convertToString(list[0])

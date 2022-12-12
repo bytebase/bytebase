@@ -30,6 +30,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        "3xl": "1920px",
+        "4xl": "2160px",
+      },
       colors: {
         accent: "var(--color-accent)",
         "accent-disabled": "var(--color-accent-disabled)",

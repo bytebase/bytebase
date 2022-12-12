@@ -212,7 +212,11 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDebounceFn } from "@vueuse/core";
-import { useDatabaseStore, useUIEditorStore } from "@/store/modules";
+import {
+  useDatabaseStore,
+  useNotificationStore,
+  useUIEditorStore,
+} from "@/store/modules";
 import { TableTabContext, unknown } from "@/types";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import { getDataTypeSuggestionList } from "@/utils";
@@ -233,6 +237,7 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const databaseStore = useDatabaseStore();
+const notificationStore = useNotificationStore();
 const currentTab = editorStore.currentTab as TableTabContext;
 const state = reactive<LocalState>({
   selectedTab: "column-list",
@@ -321,6 +326,7 @@ watch(
 
 watch([table.value], () => {
   state.tableCache.newName = table.value.newName;
+  state.tableCache.status = table.value.status;
 });
 
 watch(
@@ -341,12 +347,22 @@ watch(
         ...diffTableListResult,
       };
       state.isFetchingDDL = true;
-      try {
-        const statement = await editorStore.postDatabaseEdit(databaseEdit);
-        state.statement = statement;
-      } catch (error) {
+      const databaseEditResult = await editorStore.postDatabaseEdit(
+        databaseEdit
+      );
+      if (databaseEditResult.validateResultList.length > 0) {
+        notificationStore.pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: "Invalid request",
+          description: databaseEditResult.validateResultList
+            .map((result) => result.message)
+            .join("\n"),
+        });
         state.statement = "";
+        return;
       }
+      state.statement = databaseEditResult.statement;
       state.isFetchingDDL = false;
     }
   }
@@ -399,7 +415,7 @@ const handleRestoreColumn = (column: Column) => {
     return;
   }
 
-  delete column.status;
+  column.status = "normal";
 };
 
 const handleDiscardChanges = () => {
@@ -409,12 +425,12 @@ const handleDiscardChanges = () => {
 
   state.tableCache.newName = state.tableCache.oldName;
   state.tableCache.columnList = cloneDeep(state.tableCache.originColumnList);
-  delete state.tableCache.status;
+  state.tableCache.status = "normal";
 
   const table = editorStore.getTableWithTableTab(currentTab) as Table;
   table.newName = table.oldName;
   table.columnList = cloneDeep(table.columnList);
-  delete table.status;
+  table.status = "normal";
 };
 </script>
 
