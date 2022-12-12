@@ -63,7 +63,11 @@ type userDefinedType struct {
 }
 
 func (*userDefinedType) userDefinedTypeInterface() {}
-func (*userDefinedType) TypeName() *TypeNameDef    { return &TypeNameDef{} }
+
+// TypeName implements the UserDefinedType interface.
+func (*userDefinedType) TypeName() *TypeNameDef {
+	return &TypeNameDef{}
+}
 
 // TypeNameDef is the struct for user defined type names.
 type TypeNameDef struct {
