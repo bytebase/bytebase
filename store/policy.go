@@ -555,14 +555,14 @@ func (*Store) deletePolicyImpl(ctx context.Context, tx *Tx, delete *api.PolicyDe
 }
 
 // Cache environment tier policy and pipeline approval policy as it is used widely.
-func (s *Store) upsertPolicyCache(policyType api.PolicyType, policyID int, payload string) error {
+func (s *Store) upsertPolicyCache(policyType api.PolicyType, resourceID int, payload string) error {
 	switch policyType {
 	case api.PolicyTypeEnvironmentTier:
-		if err := s.cache.UpsertCache(tierPolicyCacheNamespace, policyID, &payload); err != nil {
+		if err := s.cache.UpsertCache(tierPolicyCacheNamespace, resourceID, &payload); err != nil {
 			return err
 		}
 	case api.PolicyTypePipelineApproval:
-		if err := s.cache.UpsertCache(approvalPolicyCacheNamespace, policyID, &payload); err != nil {
+		if err := s.cache.UpsertCache(approvalPolicyCacheNamespace, resourceID, &payload); err != nil {
 			return err
 		}
 	}
