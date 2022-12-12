@@ -46,6 +46,7 @@ type diffNode struct {
 	// Create nodes
 	createSchemaList               []ast.Node
 	createTypeList                 []ast.Node
+	alterTypeList                  []ast.Node
 	createExtensionList            []ast.Node
 	createFunctionList             []ast.Node
 	createSequenceList             []ast.Node
@@ -1025,9 +1026,110 @@ func (diff *diffNode) modifyFunction(oldFunction *ast.CreateFunctionStmt, newFun
 	return nil
 }
 
+func isSubsequenceEnum(oldType ast.UserDefinedType, newType ast.UserDefinedType) bool {
+	oldEnum, ok := oldType.(*ast.EnumTypeDef)
+	if !ok {
+		return false
+	}
+	newEnum, ok := oldType.(*ast.EnumTypeDef)
+	if !ok {
+		return false
+	}
+
+	pos := 0
+	for _, oldLabel := range oldEnum.LabelList {
+		for {
+			if pos >= len(newEnum.LabelList) {
+				return false
+			}
+			if newEnum.LabelList[pos] == oldLabel {
+				break
+			}
+			pos++
+		}
+	}
+	return true
+}
+
+func (diff *diffNode) addEnumValue(oldType *ast.CreateTypeStmt, newType *ast.CreateTypeStmt) error {
+	oldEnum, ok := oldType.Type.(*ast.EnumTypeDef)
+	if !ok {
+		// never catch
+		return parser.NewConvertErrorf("expected EnumTypeDef but found %t", oldType.Type)
+	}
+	newEnum, ok := newType.Type.(*ast.EnumTypeDef)
+	if !ok {
+		// never catch
+		return parser.NewConvertErrorf("expected EnumTypeDef but found %t", newType.Type)
+	}
+
+	// oldEnum has empty label list, so append newEnum labels.
+	if len(oldEnum.LabelList) == 0 {
+		for _, label := range newEnum.LabelList {
+			diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
+				Type: newType.Type.TypeName(),
+				AlterItemList: []ast.Node{&ast.AddEnumValueStmt{
+					EnumType: newType.Type.TypeName(),
+					NewLabel: label,
+					Position: ast.PositionTypeEnd,
+				}},
+			})
+		}
+		return nil
+	}
+
+	firstOldLabelPos := 0
+	for {
+		if newEnum.LabelList[firstOldLabelPos] == oldEnum.LabelList[0] {
+			break
+		}
+		firstOldLabelPos++
+	}
+
+	// Add Labels before first equal label by BEFORE.
+	for i := firstOldLabelPos - 1; i >= 0; i-- {
+		diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
+			Type: newType.Type.TypeName(),
+			AlterItemList: []ast.Node{&ast.AddEnumValueStmt{
+				EnumType:      newType.Type.TypeName(),
+				NewLabel:      newEnum.LabelList[i],
+				Position:      ast.PositionTypeBefore,
+				NeighborLabel: newEnum.LabelList[i+1],
+			}},
+		})
+	}
+
+	// Add remaining labels by AFTER.
+	oldLabelPos := 1
+	for i := firstOldLabelPos + 1; i < len(newEnum.LabelList); i++ {
+		newLabel := newEnum.LabelList[i]
+		if len(oldEnum.LabelList) > oldLabelPos && newLabel == oldEnum.LabelList[oldLabelPos] {
+			oldLabelPos++
+			continue
+		}
+		diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
+			Type: newType.Type.TypeName(),
+			AlterItemList: []ast.Node{&ast.AddEnumValueStmt{
+				EnumType:      newType.Type.TypeName(),
+				NewLabel:      newLabel,
+				Position:      ast.PositionTypeAfter,
+				NeighborLabel: newEnum.LabelList[i-1],
+			}},
+		})
+	}
+
+	return nil
+}
+
 func (diff *diffNode) modifyType(oldType *ast.CreateTypeStmt, newType *ast.CreateTypeStmt) error {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldType.Text() != newType.Text() {
+		// Add enum value.
+		if isSubsequenceEnum(oldType.Type, newType.Type) {
+			return diff.addEnumValue(oldType, newType)
+		}
+
+		// DROP and RE-CREATE.
 		diff.dropTypeList = append(diff.dropTypeList, &ast.DropTypeStmt{
 			TypeNameList: []*ast.TypeNameDef{oldType.Type.TypeName()},
 		})
@@ -1296,6 +1398,9 @@ func (diff *diffNode) deparse() (string, error) {
 		return "", err
 	}
 	if err := printStmtSliceByText(&buf, diff.createTypeList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.alterTypeList); err != nil {
 		return "", err
 	}
 	if err := printStmtSliceByText(&buf, diff.createExtensionList); err != nil {

@@ -2930,3 +2930,97 @@ func TestDropType(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestAlterType(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `ALTER TYPE public.bug_status ADD VALUE 'a' BEFORE 'b'`,
+			want: []ast.Node{
+				&ast.AlterTypeStmt{
+					Type: &ast.TypeNameDef{
+						Schema: "public",
+						Name:   "bug_status",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddEnumValueStmt{
+							EnumType: &ast.TypeNameDef{
+								Schema: "public",
+								Name:   "bug_status",
+							},
+							NewLabel:      "a",
+							Position:      ast.PositionTypeBefore,
+							NeighborLabel: "b",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+
+					Text:     `ALTER TYPE public.bug_status ADD VALUE 'a' BEFORE 'b'`,
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: `ALTER TYPE public.bug_status ADD VALUE 'a' AFTER 'b'`,
+			want: []ast.Node{
+				&ast.AlterTypeStmt{
+					Type: &ast.TypeNameDef{
+						Schema: "public",
+						Name:   "bug_status",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddEnumValueStmt{
+							EnumType: &ast.TypeNameDef{
+								Schema: "public",
+								Name:   "bug_status",
+							},
+							NewLabel:      "a",
+							Position:      ast.PositionTypeAfter,
+							NeighborLabel: "b",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+
+					Text:     `ALTER TYPE public.bug_status ADD VALUE 'a' AFTER 'b'`,
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: `ALTER TYPE public.bug_status ADD VALUE 'a'`,
+			want: []ast.Node{
+				&ast.AlterTypeStmt{
+					Type: &ast.TypeNameDef{
+						Schema: "public",
+						Name:   "bug_status",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddEnumValueStmt{
+							EnumType: &ast.TypeNameDef{
+								Schema: "public",
+								Name:   "bug_status",
+							},
+							NewLabel:      "a",
+							Position:      ast.PositionTypeEnd,
+							NeighborLabel: "",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+
+					Text:     `ALTER TYPE public.bug_status ADD VALUE 'a'`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}

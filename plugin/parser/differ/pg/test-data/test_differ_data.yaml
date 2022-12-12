@@ -326,11 +326,41 @@
     CREATE TYPE public.tp4 AS ENUM ('a', 'b', 'c');
     CREATE TABLE public.t1(a public.tp1, b public.tp3, c public.tp4)
   diff: |
-    DROP TYPE "public"."tp3";
     DROP TYPE "public"."tp2";
-    CREATE TYPE public.tp3 AS ENUM ('a', 'b', 'c', 'd');
     CREATE TYPE public.tp4 AS ENUM ('a', 'b', 'c');
+    ALTER TYPE "public"."tp3" ADD VALUE 'd' AFTER 'c';
     ALTER TABLE "public"."t1"
         ALTER COLUMN "b" SET DATA TYPE public.tp3;
     ALTER TABLE "public"."t1"
         ALTER COLUMN "c" SET DATA TYPE public.tp4;
+- oldSchema: |
+    create type public.enum1 as enum ('a', 'b', 'c');
+    create table public.t1 (a enum1);
+  newSchema: |
+    create type public.enum1 as enum ('1', '2', 'a', '3', '4', 'b', '5', 'c', '6', '7');
+    create table public.t1 (a enum1);
+  diff: |
+    ALTER TYPE "public"."enum1" ADD VALUE '2' BEFORE 'a';
+    ALTER TYPE "public"."enum1" ADD VALUE '1' BEFORE '2';
+    ALTER TYPE "public"."enum1" ADD VALUE '3' AFTER 'a';
+    ALTER TYPE "public"."enum1" ADD VALUE '4' AFTER '3';
+    ALTER TYPE "public"."enum1" ADD VALUE '5' AFTER 'b';
+    ALTER TYPE "public"."enum1" ADD VALUE '6' AFTER 'c';
+    ALTER TYPE "public"."enum1" ADD VALUE '7' AFTER '6';
+- oldSchema: |
+    create type public.enum1 as enum ();
+    create table public.t1 (a enum1);
+  newSchema: |
+    create type public.enum1 as enum ('1', '2', 'a', '3', '4', 'b', '5', 'c', '6', '7');
+    create table public.t1 (a enum1);
+  diff: |
+    ALTER TYPE "public"."enum1" ADD VALUE '1';
+    ALTER TYPE "public"."enum1" ADD VALUE '2';
+    ALTER TYPE "public"."enum1" ADD VALUE 'a';
+    ALTER TYPE "public"."enum1" ADD VALUE '3';
+    ALTER TYPE "public"."enum1" ADD VALUE '4';
+    ALTER TYPE "public"."enum1" ADD VALUE 'b';
+    ALTER TYPE "public"."enum1" ADD VALUE '5';
+    ALTER TYPE "public"."enum1" ADD VALUE 'c';
+    ALTER TYPE "public"."enum1" ADD VALUE '6';
+    ALTER TYPE "public"."enum1" ADD VALUE '7';

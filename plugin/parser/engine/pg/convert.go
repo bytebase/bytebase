@@ -717,6 +717,36 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 		}
 
 		return &ast.CreateTypeStmt{Type: enumTypeDef}, nil
+	case *pgquery.Node_AlterEnumStmt:
+		if in.AlterEnumStmt.OldVal == "" {
+			schema, name, err := convertObjectName(in.AlterEnumStmt.TypeName)
+			if err != nil {
+				return nil, err
+			}
+			typeName := &ast.TypeNameDef{
+				Schema: schema,
+				Name:   name,
+			}
+			// ADD ENUM VALUE STATEMENT
+			addEnumValueStmt := &ast.AddEnumValueStmt{
+				EnumType:      typeName,
+				NewLabel:      in.AlterEnumStmt.NewVal,
+				NeighborLabel: in.AlterEnumStmt.NewValNeighbor,
+			}
+			if in.AlterEnumStmt.NewValNeighbor == "" {
+				addEnumValueStmt.Position = ast.PositionTypeEnd
+			} else if in.AlterEnumStmt.NewValIsAfter {
+				addEnumValueStmt.Position = ast.PositionTypeAfter
+			} else {
+				addEnumValueStmt.Position = ast.PositionTypeBefore
+			}
+
+			return &ast.AlterTypeStmt{
+				Type:          typeName,
+				AlterItemList: []ast.Node{addEnumValueStmt},
+			}, nil
+		}
+		// TODO(rebelice): support RENAME ENUM VALUE statements
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
