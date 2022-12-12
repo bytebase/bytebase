@@ -9,8 +9,9 @@ import {
   UIEditorTabType,
   TableTabContext,
   DatabaseEdit,
+  ResourceObject,
 } from "@/types";
-import { Table } from "@/types/UIEditor";
+import { DatabaseEditResult, Table } from "@/types/UIEditor";
 import { useDatabaseStore, useTableStore } from "./";
 import { transformTableDataToTable } from "@/utils/UIEditor/transform";
 
@@ -29,6 +30,14 @@ const getDefaultUIEditorState = (): UIEditorState => {
     tableList: [],
   };
 };
+
+function convertDatabaseEditResult(
+  databaseEditResult: ResourceObject
+): DatabaseEditResult {
+  return {
+    ...databaseEditResult.attributes,
+  } as any as DatabaseEditResult;
+}
 
 export const useUIEditorStore = defineStore("UIEditor", {
   state: (): UIEditorState => {
@@ -194,13 +203,14 @@ export const useUIEditorStore = defineStore("UIEditor", {
       delete table.status;
     },
     async postDatabaseEdit(databaseEdit: DatabaseEdit) {
-      const stmt = (
-        await axios.post<string>(
+      const resData = (
+        await axios.post(
           `/api/database/${databaseEdit.databaseId}/edit`,
           databaseEdit
         )
       ).data;
-      return stmt;
+      const databaseEditResult = convertDatabaseEditResult(resData.data);
+      return databaseEditResult;
     },
   },
 });

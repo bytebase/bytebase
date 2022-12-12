@@ -255,6 +255,9 @@ const handleSyncSQLFromUIEditor = async () => {
   }
 
   const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
+  if (!databaseEditMap) {
+    return;
+  }
   state.editStatement = Array.from(databaseEditMap.values()).join("\n");
   statementFromUIEditor.value = state.editStatement;
 };
@@ -289,8 +292,22 @@ const fetchDatabaseEditMapWithUIEditor = async () => {
   const databaseEditMap: Map<DatabaseId, string> = new Map();
   if (databaseEditList.length > 0) {
     for (const databaseEdit of databaseEditList) {
-      const statement = await editorStore.postDatabaseEdit(databaseEdit);
-      databaseEditMap.set(databaseEdit.databaseId, statement);
+      const databaseEditResult = await editorStore.postDatabaseEdit(
+        databaseEdit
+      );
+      if (databaseEditResult.validateResultList.length > 0) {
+        notificationStore.pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: "Invalid request",
+          description: JSON.stringify(databaseEditResult.validateResultList),
+        });
+        return;
+      }
+      databaseEditMap.set(
+        databaseEdit.databaseId,
+        databaseEditResult.statement
+      );
     }
   }
   return databaseEditMap;
@@ -377,32 +394,27 @@ const handlePreviewIssue = async () => {
     query.sql = state.editStatement;
   } else {
     const databaseEditList = getDatabaseEditListWithUIEditor();
-    const validateResultList = databaseEditList.map((databaseEdit) =>
-      validateDatabaseEdit(databaseEdit)
-    );
-    const messageList = validateResultList.reduce(
-      (result, { messageList }) => {
-        result.push(...messageList);
-        return result;
-      },
-      [] as {
-        message: string;
-        level: "warning" | "error";
-      }[]
-    );
-    if (messageList.length > 0) {
+    // Validate databaseEditList in frontend.
+    const validateResultList = [];
+    for (const databaseEdit of databaseEditList) {
+      validateResultList.push(...validateDatabaseEdit(databaseEdit));
+    }
+    if (validateResultList.length > 0) {
       notificationStore.pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: "Invalid request",
         description: JSON.stringify(
-          messageList.map((message) => message.message)
+          validateResultList.map((validateResult) => validateResult.message)
         ),
       });
       return;
     }
 
     const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
+    if (!databaseEditMap) {
+      return;
+    }
     const databaseIdList = Array.from(databaseEditMap.keys());
     if (databaseIdList.length > 0) {
       const statmentList = Array.from(databaseEditMap.values());

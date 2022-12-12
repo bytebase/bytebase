@@ -212,7 +212,11 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDebounceFn } from "@vueuse/core";
-import { useDatabaseStore, useUIEditorStore } from "@/store/modules";
+import {
+  useDatabaseStore,
+  useNotificationStore,
+  useUIEditorStore,
+} from "@/store/modules";
 import { TableTabContext, unknown } from "@/types";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import { getDataTypeSuggestionList } from "@/utils";
@@ -233,6 +237,7 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const databaseStore = useDatabaseStore();
+const notificationStore = useNotificationStore();
 const currentTab = editorStore.currentTab as TableTabContext;
 const state = reactive<LocalState>({
   selectedTab: "column-list",
@@ -341,12 +346,20 @@ watch(
         ...diffTableListResult,
       };
       state.isFetchingDDL = true;
-      try {
-        const statement = await editorStore.postDatabaseEdit(databaseEdit);
-        state.statement = statement;
-      } catch (error) {
+      const databaseEditResult = await editorStore.postDatabaseEdit(
+        databaseEdit
+      );
+      if (databaseEditResult.validateResultList.length > 0) {
+        notificationStore.pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: "Invalid request",
+          description: JSON.stringify(databaseEditResult.validateResultList),
+        });
         state.statement = "";
+        return;
       }
+      state.statement = databaseEditResult.statement;
       state.isFetchingDDL = false;
     }
   }
