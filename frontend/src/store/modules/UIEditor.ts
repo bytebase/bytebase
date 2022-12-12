@@ -87,14 +87,6 @@ export const useUIEditorStore = defineStore("UIEditor", {
         this.setCurrentTab(tab.id);
       }
     },
-    saveTab(tab: TabContext) {
-      if (tab.type === UIEditorTabType.TabForDatabase) {
-        // Edit database metadata is not allowed.
-      } else if (tab.type === UIEditorTabType.TabForTable) {
-        // tab.table.name = tab.tableCache.name;
-        // tab.table.columnList = cloneDeep(tab.tableCache.columnList);
-      }
-    },
     setCurrentTab(tabId: string) {
       if (isUndefined(this.tabState.tabMap.get(tabId))) {
         this.tabState.currentTabId = undefined;
@@ -187,10 +179,10 @@ export const useUIEditorStore = defineStore("UIEditor", {
       );
     },
     dropTable(table: Table) {
-      const index = this.tableList.findIndex((item) => item === table);
+      // Remove table record and close tab for created table.
       if (table.status === "created") {
+        const index = this.tableList.findIndex((item) => item === table);
         this.tableList.splice(index, 1);
-        // Close tab for new table.
         const tab = this.findTab(table.databaseId, table.newName);
         if (tab) {
           this.closeTab(tab.id);
@@ -200,7 +192,7 @@ export const useUIEditorStore = defineStore("UIEditor", {
       }
     },
     restoreTable(table: Table) {
-      delete table.status;
+      table.status = "normal";
     },
     async postDatabaseEdit(databaseEdit: DatabaseEdit) {
       const resData = (

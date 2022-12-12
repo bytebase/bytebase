@@ -1,4 +1,4 @@
-import { isEqual, isUndefined, omit } from "lodash-es";
+import { isEqual, isUndefined } from "lodash-es";
 import type {
   AddColumnContext,
   DropColumnContext,
@@ -26,7 +26,7 @@ export const diffColumnList = (
 
   const changeColumnContextList: ChangeColumnContext[] = [];
   const changedColumnList = columnList.filter(
-    (column) => column.status === undefined
+    (column) => column.status === "normal"
   );
   for (const column of changedColumnList) {
     const originColumn = originColumnList.find(
@@ -35,7 +35,7 @@ export const diffColumnList = (
     if (isUndefined(originColumn)) {
       continue;
     }
-    if (!isEqual(omit(originColumn, "status"), omit(column, "status"))) {
+    if (!isEqual(originColumn, column)) {
       changeColumnContextList.push(
         transformColumnToChangeColumnContext(originColumn, column)
       );

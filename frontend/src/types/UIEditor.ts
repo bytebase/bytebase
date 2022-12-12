@@ -1,6 +1,6 @@
 import { Database, DatabaseId, TableEngineType, TableType } from ".";
 
-type TableOrColumnStatus = "created" | "dropped";
+type TableOrColumnStatus = "normal" | "created" | "dropped";
 
 export interface Column {
   // Related fields
@@ -14,7 +14,7 @@ export interface Column {
   comment: string;
   default: string | null;
 
-  status?: TableOrColumnStatus;
+  status: TableOrColumnStatus;
 }
 
 export interface Table {
@@ -33,7 +33,7 @@ export interface Table {
   columnList: Column[];
   originColumnList: Column[];
 
-  status?: TableOrColumnStatus;
+  status: TableOrColumnStatus;
 }
 
 export enum UIEditorTabType {
