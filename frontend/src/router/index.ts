@@ -1210,7 +1210,6 @@ router.beforeEach((to, from, next) => {
       // is big (100+ sometimes)
       // So we are fetching databaseList by project since that's better cached.
       const prepare = async () => {
-        console.log("prepare");
         if (to.query.project) {
           // If we found query.project, we can directly fetchDatabaseListByProjectId
           const projectId = to.query.project as string;
