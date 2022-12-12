@@ -2,3 +2,9 @@
   want: DROP TYPE IF EXISTS "tp1", "public"."tp2";
 - stmt: drop type tp1 cascade;
   want: DROP TYPE "tp1" CASCADE;
+- stmt: alter type public.t1 add value 'a';
+  want: ALTER TYPE "public"."t1" ADD VALUE 'a';
+- stmt: alter type public.t1 add value 'a' after 'd';
+  want: ALTER TYPE "public"."t1" ADD VALUE 'a' AFTER 'd';
+- stmt: alter type public.t1 add value 'a' before 'x';
+  want: ALTER TYPE "public"."t1" ADD VALUE 'a' BEFORE 'x';
