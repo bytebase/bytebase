@@ -181,8 +181,6 @@ type TaskCheckRunFind struct {
 
 	// Domain specific fields
 	StatusList *[]TaskCheckRunStatus
-	// If true, only returns the latest
-	Latest bool
 }
 
 func (find *TaskCheckRunFind) String() string {
