@@ -1031,7 +1031,7 @@ func isSubsequenceEnum(oldType ast.UserDefinedType, newType ast.UserDefinedType)
 	if !ok {
 		return false
 	}
-	newEnum, ok := oldType.(*ast.EnumTypeDef)
+	newEnum, ok := newType.(*ast.EnumTypeDef)
 	if !ok {
 		return false
 	}
