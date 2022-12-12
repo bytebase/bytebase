@@ -197,3 +197,31 @@ type ChangeColumnContext struct {
 type DropColumnContext struct {
 	Name string `json:"name"`
 }
+
+// ValidateResultType is the type of a validate result.
+type ValidateResultType string
+
+const (
+	// ValidateErrorResult is the validate result type for ERROR validation.
+	ValidateErrorResult ValidateResultType = "ERROR"
+)
+
+// ValidateResult is a validation result type, including validation type and message.
+type ValidateResult struct {
+	Type    ValidateResultType `json:"type"`
+	Message string             `json:"message"`
+}
+
+func (result *ValidateResult) String() string {
+	str, err := json.Marshal(*result)
+	if err != nil {
+		return err.Error()
+	}
+	return string(str)
+}
+
+// DatabaseEditResult is the response api message for editing database.
+type DatabaseEditResult struct {
+	Statement          string            `jsonapi:"attr,statement"`
+	ValidateResultList []*ValidateResult `jsonapi:"attr,validateResultList"`
+}
