@@ -354,7 +354,9 @@ watch(
           module: "bytebase",
           style: "CRITICAL",
           title: "Invalid request",
-          description: JSON.stringify(databaseEditResult.validateResultList),
+          description: databaseEditResult.validateResultList
+            .map((result) => result.message)
+            .join("\n"),
         });
         state.statement = "";
         return;
