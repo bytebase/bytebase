@@ -40,10 +40,13 @@ type diffNode struct {
 	dropSequenceList           []ast.Node
 	dropFunctionList           []ast.Node
 	dropExtensionList          []ast.Node
+	dropTypeList               []ast.Node
 	dropSchemaList             []ast.Node
 
 	// Create nodes
 	createSchemaList               []ast.Node
+	createTypeList                 []ast.Node
+	alterTypeList                  []ast.Node
 	createExtensionList            []ast.Node
 	createFunctionList             []ast.Node
 	createSequenceList             []ast.Node
@@ -67,6 +70,7 @@ type sequenceMap map[string]*sequenceInfo
 type extensionMap map[string]*extensionInfo
 type functionMap map[string]*functionInfo
 type triggerMap map[string]*triggerInfo
+type typeMap map[string]*typeInfo
 
 type schemaInfo struct {
 	id           int
@@ -77,6 +81,7 @@ type schemaInfo struct {
 	sequenceMap  sequenceMap
 	extensionMap extensionMap
 	functionMap  functionMap
+	typeMap      typeMap
 }
 
 func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
@@ -89,6 +94,7 @@ func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 		sequenceMap:  make(sequenceMap),
 		extensionMap: make(extensionMap),
 		functionMap:  make(functionMap),
+		typeMap:      make(typeMap),
 	}
 }
 
@@ -206,6 +212,20 @@ func newTriggerInfo(id int, createTrigger *ast.CreateTriggerStmt) *triggerInfo {
 		id:            id,
 		existsInNew:   false,
 		createTrigger: createTrigger,
+	}
+}
+
+type typeInfo struct {
+	id          int
+	existsInNew bool
+	createType  *ast.CreateTypeStmt
+}
+
+func newTypeInfo(id int, createType *ast.CreateTypeStmt) *typeInfo {
+	return &typeInfo{
+		id:          id,
+		existsInNew: false,
+		createType:  createType,
 	}
 }
 
@@ -350,6 +370,23 @@ func (m schemaMap) getTrigger(schemaName string, tableName string, triggerName s
 		return nil
 	}
 	return table.triggerMap[triggerName]
+}
+
+func (m schemaMap) addType(id int, createType *ast.CreateTypeStmt) error {
+	schema, exists := m[createType.Type.TypeName().Schema]
+	if !exists {
+		return errors.Errorf("failed to add type: schema %s not found", createType.Type.TypeName().Schema)
+	}
+	schema.typeMap[createType.Type.TypeName().Name] = newTypeInfo(id, createType)
+	return nil
+}
+
+func (m schemaMap) getType(schemaName string, typeName string) *typeInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.typeMap[typeName]
 }
 
 func onlySetOwnedBy(sequence *ast.AlterSequenceStmt) bool {
@@ -505,6 +542,10 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := oldSchemaMap.addTrigger(i, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CreateTypeStmt:
+			if err := oldSchemaMap.addType(i, stmt); err != nil {
+				return "", err
+			}
 			// TODO(rebelice): add default back here
 		}
 	}
@@ -639,6 +680,18 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 			if err := diff.modifyTrigger(oldTrigger.createTrigger, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CreateTypeStmt:
+			oldType := oldSchemaMap.getType(stmt.Type.TypeName().Schema, stmt.Type.TypeName().Name)
+			// Add the type.
+			if oldType == nil {
+				diff.createTypeList = append(diff.createTypeList, stmt)
+				continue
+			}
+			oldType.existsInNew = true
+			// Modify the type.
+			if err := diff.modifyType(oldType.createType, stmt); err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -747,6 +800,9 @@ func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 
 	// Drop the remaining old trigger.
 	diff.dropTriggerStmt(oldSchemaMap)
+
+	// Drop the remaining old type.
+	diff.dropTypeStmt(oldSchemaMap)
 
 	return nil
 }
@@ -966,6 +1022,118 @@ func (diff *diffNode) modifyFunction(oldFunction *ast.CreateFunctionStmt, newFun
 			FunctionList: []*ast.FunctionDef{oldFunction.Function},
 		})
 		diff.createFunctionList = append(diff.createFunctionList, newFunction)
+	}
+	return nil
+}
+
+func isSubsequenceEnum(oldType ast.UserDefinedType, newType ast.UserDefinedType) bool {
+	oldEnum, ok := oldType.(*ast.EnumTypeDef)
+	if !ok {
+		return false
+	}
+	newEnum, ok := newType.(*ast.EnumTypeDef)
+	if !ok {
+		return false
+	}
+
+	pos := 0
+	for _, oldLabel := range oldEnum.LabelList {
+		for {
+			if pos >= len(newEnum.LabelList) {
+				return false
+			}
+			if newEnum.LabelList[pos] == oldLabel {
+				break
+			}
+			pos++
+		}
+	}
+	return true
+}
+
+func (diff *diffNode) addEnumValue(oldType *ast.CreateTypeStmt, newType *ast.CreateTypeStmt) error {
+	oldEnum, ok := oldType.Type.(*ast.EnumTypeDef)
+	if !ok {
+		// never catch
+		return parser.NewConvertErrorf("expected EnumTypeDef but found %t", oldType.Type)
+	}
+	newEnum, ok := newType.Type.(*ast.EnumTypeDef)
+	if !ok {
+		// never catch
+		return parser.NewConvertErrorf("expected EnumTypeDef but found %t", newType.Type)
+	}
+
+	// oldEnum has empty label list, so append newEnum labels.
+	if len(oldEnum.LabelList) == 0 {
+		for _, label := range newEnum.LabelList {
+			diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
+				Type: newType.Type.TypeName(),
+				AlterItemList: []ast.Node{&ast.AddEnumLabelStmt{
+					EnumType: newType.Type.TypeName(),
+					NewLabel: label,
+					Position: ast.PositionTypeEnd,
+				}},
+			})
+		}
+		return nil
+	}
+
+	firstOldLabelPos := 0
+	for {
+		if newEnum.LabelList[firstOldLabelPos] == oldEnum.LabelList[0] {
+			break
+		}
+		firstOldLabelPos++
+	}
+
+	// Add Labels before first equal label by BEFORE.
+	for i := firstOldLabelPos - 1; i >= 0; i-- {
+		diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
+			Type: newType.Type.TypeName(),
+			AlterItemList: []ast.Node{&ast.AddEnumLabelStmt{
+				EnumType:      newType.Type.TypeName(),
+				NewLabel:      newEnum.LabelList[i],
+				Position:      ast.PositionTypeBefore,
+				NeighborLabel: newEnum.LabelList[i+1],
+			}},
+		})
+	}
+
+	// Add remaining labels by AFTER.
+	oldLabelPos := 1
+	for i := firstOldLabelPos + 1; i < len(newEnum.LabelList); i++ {
+		newLabel := newEnum.LabelList[i]
+		if len(oldEnum.LabelList) > oldLabelPos && newLabel == oldEnum.LabelList[oldLabelPos] {
+			oldLabelPos++
+			continue
+		}
+		diff.alterTypeList = append(diff.alterTypeList, &ast.AlterTypeStmt{
+			Type: newType.Type.TypeName(),
+			AlterItemList: []ast.Node{&ast.AddEnumLabelStmt{
+				EnumType:      newType.Type.TypeName(),
+				NewLabel:      newLabel,
+				Position:      ast.PositionTypeAfter,
+				NeighborLabel: newEnum.LabelList[i-1],
+			}},
+		})
+	}
+
+	return nil
+}
+
+func (diff *diffNode) modifyType(oldType *ast.CreateTypeStmt, newType *ast.CreateTypeStmt) error {
+	// TODO(rebelice): not use Text(), it only works for pg_dump.
+	if oldType.Text() != newType.Text() {
+		// Add enum value.
+		if isSubsequenceEnum(oldType.Type, newType.Type) {
+			return diff.addEnumValue(oldType, newType)
+		}
+
+		// DROP and RE-CREATE.
+		diff.dropTypeList = append(diff.dropTypeList, &ast.DropTypeStmt{
+			TypeNameList: []*ast.TypeNameDef{oldType.Type.TypeName()},
+		})
+		diff.createTypeList = append(diff.createTypeList, newType)
 	}
 	return nil
 }
@@ -1218,12 +1386,21 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.dropExtensionList); err != nil {
 		return "", err
 	}
+	if err := printStmtSlice(&buf, diff.dropTypeList); err != nil {
+		return "", err
+	}
 	if err := printStmtSlice(&buf, diff.dropSchemaList); err != nil {
 		return "", err
 	}
 
 	// create
 	if err := printStmtSlice(&buf, diff.createSchemaList); err != nil {
+		return "", err
+	}
+	if err := printStmtSliceByText(&buf, diff.createTypeList); err != nil {
+		return "", err
+	}
+	if err := printStmtSlice(&buf, diff.alterTypeList); err != nil {
 		return "", err
 	}
 	if err := printStmtSliceByText(&buf, diff.createExtensionList); err != nil {
@@ -1392,6 +1569,31 @@ func dropFunction(m schemaMap) *ast.DropFunctionStmt {
 		functionDefList = append(functionDefList, function.createFunction.Function)
 	}
 	return &ast.DropFunctionStmt{FunctionList: functionDefList}
+}
+
+func (diff *diffNode) dropTypeStmt(m schemaMap) {
+	var typeList []*typeInfo
+	for _, schema := range m {
+		for _, tp := range schema.typeMap {
+			if tp.existsInNew {
+				// no need to drop
+				continue
+			}
+			typeList = append(typeList, tp)
+		}
+	}
+	if len(typeList) == 0 {
+		return
+	}
+	sort.Slice(typeList, func(i, j int) bool {
+		return typeList[i].id < typeList[j].id
+	})
+
+	for _, tp := range typeList {
+		diff.dropTypeList = append(diff.dropTypeList, &ast.DropTypeStmt{
+			TypeNameList: []*ast.TypeNameDef{tp.createType.Type.TypeName()},
+		})
+	}
 }
 
 func (diff *diffNode) dropTriggerStmt(m schemaMap) {

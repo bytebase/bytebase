@@ -25,70 +25,6 @@
     </div>
 
     <div class="space-y-2">
-      <div
-        class="text-lg font-medium leading-7 text-main flex items-center justify-between"
-      >
-        {{ $t("common.database") }}
-        <div v-if="isTenantProject">
-          <label for="search" class="sr-only">Search</label>
-          <div class="relative rounded-md shadow-sm">
-            <div
-              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-              aria-hidden="true"
-            >
-              <heroicons-solid:search class="mr-3 h-4 w-4 text-control" />
-            </div>
-            <input
-              v-model="state.databaseNameFilter"
-              type="text"
-              autocomplete="off"
-              name="search"
-              class="focus:ring-main focus:border-main block w-full pl-9 sm:text-sm border-control-border rounded-md"
-              :placeholder="$t('database.search-database-name')"
-            />
-          </div>
-        </div>
-      </div>
-
-      <YAxisRadioGroup
-        v-if="isTenantProject && state.yAxisLabel"
-        v-model:label="state.yAxisLabel"
-        :excluded-key-list="excludedKeyList"
-        class="text-sm font-normal py-1"
-      />
-
-      <template v-if="databaseList.length > 0">
-        <template v-if="isTenantProject">
-          <TenantDatabaseTable
-            v-if="state.yAxisLabel"
-            :database-list="filteredDatabaseList"
-            :project="project"
-            :x-axis-label="state.xAxisLabel"
-            :y-axis-label="state.yAxisLabel"
-          />
-          <div v-else class="w-full h-40 flex justify-center items-center">
-            <NSpin />
-          </div>
-        </template>
-        <DatabaseTable v-else :mode="'PROJECT'" :database-list="databaseList" />
-      </template>
-      <div v-else class="text-center textinfolabel">
-        <i18n-t keypath="project.overview.no-db-prompt" tag="p">
-          <template #newDb>
-            <span class="text-main">{{
-              $t("quick-action.new-db")
-            }}</span></template
-          >
-          <template #transferInDb>
-            <span class="text-main">{{
-              $t("quick-action.transfer-in-db")
-            }}</span></template
-          >
-        </i18n-t>
-      </div>
-    </div>
-
-    <div class="space-y-2">
       <p class="text-lg font-medium leading-7 text-main">
         {{ $t("common.issue") }}
       </p>
@@ -157,17 +93,11 @@ import {
   defineComponent,
   watch,
 } from "vue";
-import { NSpin } from "naive-ui";
 import ActivityTable from "../components/ActivityTable.vue";
-import DatabaseTable from "../components/DatabaseTable.vue";
-import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
 import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
-import {
-  useActivityStore,
-  usePolicyListByResourceTypeAndPolicyType,
-} from "@/store";
+import { useActivityStore } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
 
 // Show at most 5 activity
@@ -187,11 +117,7 @@ export default defineComponent({
   name: "ProjectOverviewPanel",
   components: {
     ActivityTable,
-    DatabaseTable,
-    TenantDatabaseTable,
     IssueTable,
-    YAxisRadioGroup,
-    NSpin,
     PagedIssueTable,
   },
   props: {
@@ -215,10 +141,6 @@ export default defineComponent({
       yAxisLabel: undefined,
     });
     const activityStore = useActivityStore();
-    const accessControlPolicyList = usePolicyListByResourceTypeAndPolicyType({
-      resourceType: "database",
-      policyType: "bb.policy.access-control",
-    });
 
     const prepareActivityList = () => {
       state.isFetchingActivityList = true;
@@ -276,7 +198,6 @@ export default defineComponent({
       isTenantProject,
       filteredDatabaseList,
       excludedKeyList,
-      accessControlPolicyList,
     };
   },
 });

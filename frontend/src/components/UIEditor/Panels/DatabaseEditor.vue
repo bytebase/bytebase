@@ -159,6 +159,7 @@ import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
   useDatabaseStore,
+  useNotificationStore,
   useUIEditorStore,
 } from "@/store";
 import { DatabaseId, DatabaseTabContext, UIEditorTabType } from "@/types";
@@ -183,6 +184,7 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useUIEditorStore();
 const databaseStore = useDatabaseStore();
+const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   selectedTab: "table-list",
   isFetchingDDL: false,
@@ -192,7 +194,9 @@ const currentTab = editorStore.currentTab as DatabaseTabContext;
 const database = databaseStore.getDatabaseById(currentTab.databaseId);
 
 const tableList = computed(() => {
-  return editorStore.tableList;
+  return editorStore.tableList.filter(
+    (table) => table.databaseId === currentTab.databaseId
+  );
 });
 const tableHeaderList = computed(() => {
   return [
@@ -247,12 +251,22 @@ watch(
           databaseId: database.id,
           ...diffTableListResult,
         };
-        try {
-          const statement = await editorStore.postDatabaseEdit(databaseEdit);
-          state.statement = statement;
-        } catch (error) {
+        const databaseEditResult = await editorStore.postDatabaseEdit(
+          databaseEdit
+        );
+        if (databaseEditResult.validateResultList.length > 0) {
+          notificationStore.pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: "Invalid request",
+            description: databaseEditResult.validateResultList
+              .map((result) => result.message)
+              .join("\n"),
+          });
           state.statement = "";
+          return;
         }
+        state.statement = databaseEditResult.statement;
       }
       state.isFetchingDDL = false;
     }

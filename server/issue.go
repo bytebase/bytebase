@@ -198,7 +198,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			if *issuePatch.AssigneeID == issue.AssigneeID {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d because it's already the case", *issuePatch.AssigneeID))
 			}
-			stage := utils.GetActiveStage(issue.Pipeline.StageList)
+			stage := utils.GetActiveStage(issue.Pipeline)
 			if stage == nil {
 				// all stages have finished, use the last stage
 				stage = issue.Pipeline.StageList[len(issue.Pipeline.StageList)-1]
@@ -388,18 +388,13 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 			IssueID:      issue.ID,
 			SubscriberID: subscriberID,
 		}
-		_, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate)
-		if err != nil {
+		if _, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate); err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
 		}
 	}
 
 	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, issue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Name)
-	}
-
-	if err := s.TaskScheduler.ScheduleActiveStage(ctx, issue.Pipeline); err != nil {
-		return nil, errors.Wrapf(err, "failed to schedule task after creating the issue: %v", issue.Name)
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{

@@ -1,4 +1,4 @@
-import { isEqual, isUndefined, omit } from "lodash-es";
+import { isEqual, isUndefined } from "lodash-es";
 import type {
   AlterTableContext,
   CreateTableContext,
@@ -29,7 +29,7 @@ export const diffTableList = (originTableList: Table[], tableList: Table[]) => {
   const alterTableContextList: AlterTableContext[] = [];
   const renameTableContextList: RenameTableContext[] = [];
   const changedTableList = tableList.filter(
-    (table) => table.status === undefined
+    (table) => table.status === "normal"
   );
   for (const table of changedTableList) {
     const originTable = originTableList.find(
@@ -41,7 +41,7 @@ export const diffTableList = (originTableList: Table[], tableList: Table[]) => {
       continue;
     }
 
-    if (!isEqual(omit(originTable, "status"), omit(table, "status"))) {
+    if (!isEqual(originTable, table)) {
       if (table.newName !== table.oldName) {
         renameTableContextList.push({
           oldName: table.oldName,

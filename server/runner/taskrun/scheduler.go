@@ -107,23 +107,16 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				// Inspect all open pipelines and schedule the next PENDING task if applicable
-				pipelineStatus := api.PipelineOpen
-				pipelineFind := &api.PipelineFind{
-					Status: &pipelineStatus,
-				}
-				pipelineList, err := s.store.FindPipeline(ctx, pipelineFind, false)
-				if err != nil {
-					log.Error("Failed to retrieve open pipelines", zap.Error(err))
+				if err := s.scheduleAutoApprovedTasks(ctx); err != nil {
+					log.Error("Failed to schedule auto approved tasks", zap.Error(err))
 					return
 				}
-				for _, pipeline := range pipelineList {
-					if err := s.ScheduleActiveStage(ctx, pipeline); err != nil {
-						log.Error("Failed to schedule tasks in the active stage",
-							zap.Int("pipeline_id", pipeline.ID),
-							zap.Error(err),
-						)
-					}
+
+				if err := s.scheduleActiveStageToRunning(ctx); err != nil {
+					log.Error("Failed to schedule tasks in the active stage",
+						zap.Error(err),
+					)
+					return
 				}
 
 				// Inspect all running tasks
@@ -300,7 +293,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							// The task has finished, and we may move to a new stage.
 							// if the current assignee doesn't fit in the new assignee group, we will reassign a new one based on the new assignee group.
 							if issue != nil {
-								if stage := utils.GetActiveStage(issue.Pipeline.StageList); stage != nil && stage.ID != task.StageID {
+								if stage := utils.GetActiveStage(issue.Pipeline); stage != nil && stage.ID != task.StageID {
 									environmentID := stage.EnvironmentID
 									ok, err := s.CanPrincipalBeAssignee(ctx, issue.AssigneeID, environmentID, issue.ProjectID, issue.Type)
 									if err != nil {
@@ -340,8 +333,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 // PatchTaskStatement patches the statement and earliest allowed time for a patch.
 func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, error) {
 	if taskPatch.Statement != nil {
-		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
-			return nil, httpErr
+		if err := canUpdateTaskStatement(task); err != nil {
+			return nil, err
 		}
 		if issue.Project.WorkflowType == api.UIWorkflow {
 			schemaVersion := common.DefaultMigrationVersion()
@@ -681,41 +674,47 @@ func (s *Scheduler) ClearRunningTasks(ctx context.Context) error {
 	return nil
 }
 
-var allowedStatementUpdateTaskTypes = map[api.TaskType]bool{
-	api.TaskDatabaseCreate:                true,
-	api.TaskDatabaseSchemaUpdate:          true,
-	api.TaskDatabaseSchemaUpdateSDL:       true,
-	api.TaskDatabaseDataUpdate:            true,
-	api.TaskDatabaseSchemaUpdateGhostSync: true,
-}
+var (
+	allowedStatementUpdateTaskTypes = map[api.TaskType]bool{
+		api.TaskDatabaseCreate:                true,
+		api.TaskDatabaseSchemaUpdate:          true,
+		api.TaskDatabaseSchemaUpdateSDL:       true,
+		api.TaskDatabaseDataUpdate:            true,
+		api.TaskDatabaseSchemaUpdateGhostSync: true,
+	}
+	allowedPatchStatementStatus = map[api.TaskStatus]bool{
+		api.TaskPendingApproval: true,
+		api.TaskFailed:          true,
+	}
+)
 
-func (s *Scheduler) canUpdateTaskStatement(ctx context.Context, task *api.Task) *echo.HTTPError {
+func canUpdateTaskStatement(task *api.Task) *echo.HTTPError {
 	if ok := allowedStatementUpdateTaskTypes[task.Type]; !ok {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update statement for task type %q", task.Type))
 	}
 	// Allow frontend to change the SQL statement of
-	// 1. a PendingApproval task which hasn't started yet
-	// 2. a Failed task which can be retried
-	// 3. a Pending task which can't be scheduled because of failed task checks, task dependency or earliest allowed time
-	if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed && task.Status != api.TaskPending {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q state", task.Status))
-	}
-	if task.Status == api.TaskPending {
-		ok, err := s.CanSchedule(ctx, task)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
-		}
-		if ok {
-			return echo.NewHTTPError(http.StatusBadRequest, "cannot update the PENDING task because it can be running at any time")
-		}
+	// 1. a PendingApproval task which hasn't started yet;
+	// 2. a Failed task which can be retried.
+	if !allowedPatchStatementStatus[task.Status] {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("cannot update task in %q status", task.Status))
 	}
 	return nil
 }
 
 func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedStatus api.TaskCheckStatus) (bool, error) {
+	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID:     &task.ID,
+		StatusList: &statusList,
+	}
+	taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+	if err != nil {
+		return false, err
+	}
+
 	// schema update, data update and gh-ost sync task have required task check.
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateSDL || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.passCheck(ctx, task, api.TaskCheckDatabaseConnect, allowedStatus)
+		pass, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseConnect, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -723,7 +722,7 @@ func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedSta
 			return false, nil
 		}
 
-		pass, err = s.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema, allowedStatus)
+		pass, err = passCheck(taskCheckRunList, api.TaskCheckInstanceMigrationSchema, allowedStatus)
 		if err != nil {
 			return false, err
 		}
@@ -740,42 +739,42 @@ func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedSta
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine) {
-			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementSyntax, allowedStatus)
 			if err != nil {
 				return false, err
 			}
-			if !pass {
+			if !ok {
 				return false, nil
 			}
 		}
 
 		if api.IsSQLReviewSupported(instance.Engine) {
-			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementAdvise, allowedStatus)
 			if err != nil {
 				return false, err
 			}
-			if !pass {
+			if !ok {
 				return false, nil
 			}
 		}
 
 		if instance.Engine == db.Postgres {
-			pass, err = s.passCheck(ctx, task, api.TaskCheckDatabaseStatementType, allowedStatus)
+			ok, err := passCheck(taskCheckRunList, api.TaskCheckDatabaseStatementType, allowedStatus)
 			if err != nil {
 				return false, err
 			}
-			if !pass {
+			if !ok {
 				return false, nil
 			}
 		}
 	}
 
 	if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
-		pass, err := s.passCheck(ctx, task, api.TaskCheckGhostSync, allowedStatus)
+		ok, err := passCheck(taskCheckRunList, api.TaskCheckGhostSync, allowedStatus)
 		if err != nil {
 			return false, err
 		}
-		if !pass {
+		if !ok {
 			return false, nil
 		}
 	}
@@ -787,26 +786,22 @@ func (s *Scheduler) passAllCheck(ctx context.Context, task *api.Task, allowedSta
 // For PendingApproval->Pending transitions, the minimum level is SUCCESS.
 // For Pending->Running transitions, the minimum level is WARN.
 // TODO(dragonly): refactor arguments.
-func (s *Scheduler) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
-	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
-	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskID:     &task.ID,
-		Type:       &checkType,
-		StatusList: &statusList,
-		Latest:     true,
+func passCheck(taskCheckRunList []*api.TaskCheckRun, checkType api.TaskCheckType, allowedStatus api.TaskCheckStatus) (bool, error) {
+	var lastRun *api.TaskCheckRun
+	for _, run := range taskCheckRunList {
+		if checkType != run.Type {
+			continue
+		}
+		if lastRun == nil || lastRun.ID < run.ID {
+			lastRun = run
+		}
 	}
 
-	taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
-	if err != nil {
-		return false, err
-	}
-
-	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
+	if lastRun == nil || lastRun.Status == api.TaskCheckRunFailed {
 		return false, nil
 	}
-
 	checkResult := &api.TaskCheckRunResultPayload{}
-	if err := json.Unmarshal([]byte(taskCheckRunList[0].Result), checkResult); err != nil {
+	if err := json.Unmarshal([]byte(lastRun.Result), checkResult); err != nil {
 		return false, err
 	}
 	for _, result := range checkResult.ResultList {
@@ -818,13 +813,8 @@ func (s *Scheduler) passCheck(ctx context.Context, task *api.Task, checkType api
 	return true, nil
 }
 
-// auto transit PendingApproval to Pending if all required task checks pass.
-func (s *Scheduler) canAutoApprove(ctx context.Context, task *api.Task) (bool, error) {
-	return s.passAllCheck(ctx, task, api.TaskCheckStatusSuccess)
-}
-
-// CanSchedule returns whether a task can be scheduled.
-func (s *Scheduler) CanSchedule(ctx context.Context, task *api.Task) (bool, error) {
+// canSchedule returns whether a task can be scheduled.
+func (s *Scheduler) canSchedule(ctx context.Context, task *api.Task) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to check if task is blocked")
@@ -840,29 +830,28 @@ func (s *Scheduler) CanSchedule(ctx context.Context, task *api.Task) (bool, erro
 	return s.passAllCheck(ctx, task, api.TaskCheckStatusWarn)
 }
 
-// ScheduleIfNeeded schedules the task if
+// scheduleIfNeeded schedules the task if
 //  1. its required check does not contain error in the latest run.
 //  2. it has no blocking tasks.
 //  3. it has passed the earliest allowed time.
-func (s *Scheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	schedule, err := s.CanSchedule(ctx, task)
+func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *api.Task) error {
+	schedule, err := s.canSchedule(ctx, task)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !schedule {
-		return task, nil
+		return nil
 	}
 
-	updatedTask, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
+	if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
 		IDList:    []int{task.ID},
 		UpdaterID: api.SystemBotID,
 		Status:    api.TaskRunning,
-	})
-	if err != nil {
-		return nil, err
+	}); err != nil {
+		return err
 	}
 
-	return updatedTask, nil
+	return nil
 }
 
 func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, error) {
@@ -882,38 +871,64 @@ func (s *Scheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, er
 	return false, nil
 }
 
-// ScheduleActiveStage tries to schedule the tasks in the active stage.
-func (s *Scheduler) ScheduleActiveStage(ctx context.Context, pipeline *api.Pipeline) error {
-	stage := utils.GetActiveStage(pipeline.StageList)
-	if stage == nil {
-		return nil
+// scheduleAutoApprovedTasks schedules tasks that are approved automatically.
+func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
+	taskStatusList := []api.TaskStatus{api.TaskPendingApproval}
+	taskFind := &api.TaskFind{
+		StatusList: &taskStatusList,
 	}
-	for _, task := range stage.TaskList {
-		switch task.Status {
-		case api.TaskPendingApproval:
-			policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get approval policy for environment ID %d", task.Instance.EnvironmentID)
+	taskList, err := s.store.FindTask(ctx, taskFind, false)
+	if err != nil {
+		return err
+	}
+
+	for _, task := range taskList {
+		policy, err := s.store.GetPipelineApprovalPolicy(ctx, task.Instance.EnvironmentID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get approval policy for environment ID %d", task.Instance.EnvironmentID)
+		}
+		if policy.Value != api.PipelineApprovalValueManualNever {
+			continue
+		}
+
+		ok, err := s.passAllCheck(ctx, task, api.TaskCheckStatusSuccess)
+		if err != nil {
+			return errors.Wrap(err, "failed to check if can auto-approve")
+		}
+		if ok {
+			if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
+				IDList:    []int{task.ID},
+				UpdaterID: api.SystemBotID,
+				Status:    api.TaskPending,
+			}); err != nil {
+				return errors.Wrap(err, "failed to change task status")
 			}
-			if policy.Value == api.PipelineApprovalValueManualNever {
-				// transit into Pending for ManualNever (auto-approval) tasks if all required task checks passed.
-				ok, err := s.canAutoApprove(ctx, task)
-				if err != nil {
-					return errors.Wrap(err, "failed to check if can auto-approve")
-				}
-				if ok {
-					if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						IDList:    []int{task.ID},
-						UpdaterID: api.SystemBotID,
-						Status:    api.TaskPending,
-					}); err != nil {
-						return errors.Wrap(err, "failed to change task status")
-					}
-				}
+		}
+	}
+	return nil
+}
+
+// scheduleActiveStageToRunning tries to schedule the tasks in the active stage.
+func (s *Scheduler) scheduleActiveStageToRunning(ctx context.Context) error {
+	pipelineStatus := api.PipelineOpen
+	pipelineFind := &api.PipelineFind{
+		Status: &pipelineStatus,
+	}
+	pipelineList, err := s.store.FindPipeline(ctx, pipelineFind, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to retrieve open pipelines")
+	}
+	for _, pipeline := range pipelineList {
+		stage := utils.GetActiveStage(pipeline)
+		if stage == nil {
+			continue
+		}
+		for _, task := range stage.TaskList {
+			if task.Status != api.TaskPending {
+				continue
 			}
-		case api.TaskPending:
-			_, err := s.ScheduleIfNeeded(ctx, task)
-			if err != nil {
+
+			if err := s.scheduleIfNeeded(ctx, task); err != nil {
 				return errors.Wrap(err, "failed to schedule task")
 			}
 		}

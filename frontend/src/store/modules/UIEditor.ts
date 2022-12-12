@@ -9,8 +9,9 @@ import {
   UIEditorTabType,
   TableTabContext,
   DatabaseEdit,
+  ResourceObject,
 } from "@/types";
-import { Table } from "@/types/UIEditor";
+import { DatabaseEditResult, Table } from "@/types/UIEditor";
 import { useDatabaseStore, useTableStore } from "./";
 import { transformTableDataToTable } from "@/utils/UIEditor/transform";
 
@@ -29,6 +30,14 @@ const getDefaultUIEditorState = (): UIEditorState => {
     tableList: [],
   };
 };
+
+function convertDatabaseEditResult(
+  databaseEditResult: ResourceObject
+): DatabaseEditResult {
+  return {
+    ...databaseEditResult.attributes,
+  } as any as DatabaseEditResult;
+}
 
 export const useUIEditorStore = defineStore("UIEditor", {
   state: (): UIEditorState => {
@@ -76,14 +85,6 @@ export const useUIEditorStore = defineStore("UIEditor", {
 
       if (setAsCurrentTab) {
         this.setCurrentTab(tab.id);
-      }
-    },
-    saveTab(tab: TabContext) {
-      if (tab.type === UIEditorTabType.TabForDatabase) {
-        // Edit database metadata is not allowed.
-      } else if (tab.type === UIEditorTabType.TabForTable) {
-        // tab.table.name = tab.tableCache.name;
-        // tab.table.columnList = cloneDeep(tab.tableCache.columnList);
       }
     },
     setCurrentTab(tabId: string) {
@@ -178,10 +179,10 @@ export const useUIEditorStore = defineStore("UIEditor", {
       );
     },
     dropTable(table: Table) {
-      const index = this.tableList.findIndex((item) => item === table);
+      // Remove table record and close tab for created table.
       if (table.status === "created") {
+        const index = this.tableList.findIndex((item) => item === table);
         this.tableList.splice(index, 1);
-        // Close tab for new table.
         const tab = this.findTab(table.databaseId, table.newName);
         if (tab) {
           this.closeTab(tab.id);
@@ -191,16 +192,17 @@ export const useUIEditorStore = defineStore("UIEditor", {
       }
     },
     restoreTable(table: Table) {
-      delete table.status;
+      table.status = "normal";
     },
     async postDatabaseEdit(databaseEdit: DatabaseEdit) {
-      const stmt = (
-        await axios.post<string>(
+      const resData = (
+        await axios.post(
           `/api/database/${databaseEdit.databaseId}/edit`,
           databaseEdit
         )
       ).data;
-      return stmt;
+      const databaseEditResult = convertDatabaseEditResult(resData.data);
+      return databaseEditResult;
     },
   },
 });
