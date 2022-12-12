@@ -13,6 +13,11 @@ import { Principal } from "./principal";
 // which from the ops perspective, having different meaning from the normal RW data source.
 export type DataSourceType = "ADMIN" | "RW" | "RO";
 
+// DataSourceOptions is the options for a data source.
+export type DataSourceOptions = {
+  srv: boolean;
+};
+
 export type DataSource = {
   id: DataSourceId;
 
@@ -40,6 +45,7 @@ export type DataSource = {
   hostOverride: string;
   portOverride: string;
 
+  options: DataSourceOptions;
   // UI-only fields
   updateSsl?: boolean;
 };

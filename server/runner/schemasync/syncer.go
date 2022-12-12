@@ -92,6 +92,10 @@ func (s *Syncer) syncAllInstances(ctx context.Context) {
 
 	var instanceWG sync.WaitGroup
 	for _, instance := range instanceList {
+		// TODO(zp): support sync schema for mongodb.
+		if instance.Engine == db.MongoDB {
+			continue
+		}
 		instanceWG.Add(1)
 		go func(instance *api.Instance) {
 			defer instanceWG.Done()

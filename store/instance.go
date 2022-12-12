@@ -413,6 +413,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 			SslKey:     dataSource.SslKey,
 			SslCert:    dataSource.SslCert,
 			SslCa:      dataSource.SslCa,
+			Options:    dataSource.Options,
 		}
 		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 			return nil, err

@@ -91,7 +91,7 @@ function convert(
       }
     }
   }
-
+  console.log(instance);
   return {
     ...(instancePartial as Omit<Instance, "environment" | "dataSourceList">),
     environment,

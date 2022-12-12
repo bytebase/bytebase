@@ -62,6 +62,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *api.In
 			Host:     instance.Host,
 			Port:     instance.Port,
 			Database: databaseName,
+			SRV:      adminDataSource.Options.SRV,
 		},
 		db.ConnectionContext{
 			EnvironmentName: instance.Environment.Name,

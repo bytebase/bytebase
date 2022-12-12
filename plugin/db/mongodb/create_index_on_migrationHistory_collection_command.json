@@ -1,0 +1,37 @@
+{
+  "createIndexes": "migrationHistory",
+  "indexes": [
+    {
+      "key": {
+        "namespace": 1,
+        "sequence": 1
+      },
+      "name": "bytebase_idx_unique_migration_history_namespace_sequence",
+      "unique": true
+    },
+    {
+      "key": {
+        "namespace": 1,
+        "version": 1
+      },
+      "name": "bytebase_idx_unique_migration_history_namespace_version",
+      "unique": true
+    },
+    {
+      "key": {
+        "namespace": 1,
+        "source": 1,
+        "type": 1
+      },
+      "name": "bytebase_idx_migration_history_namespace_source_type"
+    },
+    {
+      "key": {
+        "namespace": 1,
+        "created_ts": 1
+      },
+      "name": "bytebase_idx_migration_history_namespace_created"
+    }
+  ],
+  "writeConcern": { "w": "majority" }
+}
