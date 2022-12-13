@@ -803,6 +803,31 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	return databases, nil
 }
 
+// DatabaseEditResult is a subset struct of api.DatabaseEditResult for testing,
+// because of jsonapi doesn't support to unmarshal struct pointer slice.
+type DatabaseEditResult struct {
+	Statement string `jsonapi:"attr,statement"`
+}
+
+// postDatabaseEdit posts the database edit.
+func (ctl *controller) postDatabaseEdit(databaseEdit api.DatabaseEdit) (*DatabaseEditResult, error) {
+	buf, err := json.Marshal(&databaseEdit)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal databaseEdit")
+	}
+
+	res, err := ctl.post(fmt.Sprintf("/database/%v/edit", databaseEdit.DatabaseID), strings.NewReader(string(buf)))
+	if err != nil {
+		return nil, err
+	}
+
+	databaseEditResult := new(DatabaseEditResult)
+	if err = jsonapi.UnmarshalPayload(res, databaseEditResult); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal post database edit response")
+	}
+	return databaseEditResult, nil
+}
+
 func (ctl *controller) setLicense() error {
 	// Switch plan to increase instance limit.
 	license, err := fs.ReadFile(fakeFS, "fake/license")
