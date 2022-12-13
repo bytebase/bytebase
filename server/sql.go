@@ -870,7 +870,7 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, d
 
 func (s *Server) isWorkspaceOwnerOrDBA(ctx context.Context, principalID int) (bool, error) {
 	memberList, err := s.store.FindMember(ctx, &api.MemberFind{
-		ID: &principalID,
+		PrincipalID: &principalID,
 	})
 	if err != nil {
 		return false, err
