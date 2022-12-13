@@ -299,7 +299,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	policyPayload, err := prodTemplateSQLReviewPolicy()
 	a.NoError(err)
 
-	err = ctl.upsertPolicy(api.PolicyUpsert{
+	_, err = ctl.upsertPolicy(api.PolicyUpsert{
 		ResourceType: api.PolicyResourceTypeEnvironment,
 		ResourceID:   prodEnvironment.ID,
 		Type:         api.PolicyTypeSQLReview,
@@ -310,13 +310,14 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	err = ctl.setLicense()
 	a.NoError(err)
 
-	err = ctl.upsertPolicy(api.PolicyUpsert{
+	policy, err := ctl.upsertPolicy(api.PolicyUpsert{
 		ResourceType: api.PolicyResourceTypeEnvironment,
 		ResourceID:   prodEnvironment.ID,
 		Type:         api.PolicyTypeSQLReview,
 		Payload:      &policyPayload,
 	})
 	a.NoError(err)
+	a.NotNil(policy.Environment)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
@@ -354,7 +355,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	// disable the SQL review policy
 	disable := string(api.Archived)
-	err = ctl.upsertPolicy(api.PolicyUpsert{
+	_, err = ctl.upsertPolicy(api.PolicyUpsert{
 		ResourceType: api.PolicyResourceTypeEnvironment,
 		ResourceID:   prodEnvironment.ID,
 		Type:         api.PolicyTypeSQLReview,
@@ -1032,7 +1033,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	policyPayload, err := prodTemplateSQLReviewPolicy()
 	a.NoError(err)
 
-	err = ctl.upsertPolicy(api.PolicyUpsert{
+	_, err = ctl.upsertPolicy(api.PolicyUpsert{
 		ResourceType: api.PolicyResourceTypeEnvironment,
 		ResourceID:   prodEnvironment.ID,
 		Type:         api.PolicyTypeSQLReview,
@@ -1043,13 +1044,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	err = ctl.setLicense()
 	a.NoError(err)
 
-	err = ctl.upsertPolicy(api.PolicyUpsert{
+	policy, err := ctl.upsertPolicy(api.PolicyUpsert{
 		ResourceType: api.PolicyResourceTypeEnvironment,
 		ResourceID:   prodEnvironment.ID,
 		Type:         api.PolicyTypeSQLReview,
 		Payload:      &policyPayload,
 	})
 	a.NoError(err)
+	a.NotNil(policy.Environment)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
@@ -1120,7 +1122,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 
 	// disable the SQL review policy
 	disable := string(api.Archived)
-	err = ctl.upsertPolicy(api.PolicyUpsert{
+	_, err = ctl.upsertPolicy(api.PolicyUpsert{
 		ResourceType: api.PolicyResourceTypeEnvironment,
 		ResourceID:   prodEnvironment.ID,
 		Type:         api.PolicyTypeSQLReview,
