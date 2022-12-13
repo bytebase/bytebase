@@ -512,7 +512,7 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*p
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
 			%s
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, resource_id, inherit_from_parent, type, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, resource_type, resource_id, inherit_from_parent, type, payload
 	`, strings.Join(set, ","))
 	var policyRaw policyRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -531,6 +531,7 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*p
 		&policyRaw.UpdaterID,
 		&policyRaw.UpdatedTs,
 		&policyRaw.RowStatus,
+		&policyRaw.ResourceType,
 		&policyRaw.ResourceID,
 		&policyRaw.InheritFromParent,
 		&policyRaw.Type,
