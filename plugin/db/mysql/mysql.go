@@ -185,12 +185,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
-	rowsEffected, err := sqlResult.RowsAffected()
+	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
 		return 0, err
 	}
 
-	return rowsEffected, nil
+	return rowsAffected, nil
 }
 
 // GetMigrationConnID gets the ID of the connection executing migrations.

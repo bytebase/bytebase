@@ -122,17 +122,17 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	}
 	defer tx.Rollback()
 
-	totalRowsEffected := int64(0)
+	totalrowsAffected := int64(0)
 	f := func(stmt string) error {
 		sqlResult, err := tx.ExecContext(ctx, stmt)
 		if err != nil {
 			return err
 		}
-		rowsEffected, err := sqlResult.RowsAffected()
+		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
 			return err
 		}
-		totalRowsEffected += rowsEffected
+		totalrowsAffected += rowsAffected
 
 		return nil
 	}
