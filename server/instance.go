@@ -500,16 +500,13 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 				zap.String("engine", string(instance.Engine)),
 				zap.Error(err))
 		}
-		// TODO(zp): support sync instance and database for MongoDB.
-		if instance.Engine != db.MongoDB {
-			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
-				log.Warn("Failed to sync instance",
-					zap.Int("instance_id", instance.ID),
-					zap.Error(err))
-			}
-			// Sync all databases in the instance asynchronously.
-			s.stateCfg.InstanceDatabaseSyncChan <- instance
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.Int("instance_id", instance.ID),
+				zap.Error(err))
 		}
+		// Sync all databases in the instance asynchronously.
+		s.stateCfg.InstanceDatabaseSyncChan <- instance
 	}
 
 	return instance, nil
