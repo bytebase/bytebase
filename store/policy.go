@@ -93,9 +93,11 @@ func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Polic
 // DeletePolicy deletes an existing ARCHIVED policy by PolicyDelete.
 func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete) error {
 	// Validate policy.
-	// Currently we only support PolicyTypeSQLReview type policy to delete by id
-	if policyDelete.Type != api.PolicyTypeSQLReview {
-		return &common.Error{Code: common.Invalid, Err: errors.Errorf("invalid policy type")}
+	switch policyDelete.Type {
+	case api.PolicyTypeSQLReview:
+	case api.PolicyTypeAccessControl:
+	default:
+		return &common.Error{Code: common.Invalid, Err: errors.Errorf("disallow to delete policy type: %s", policyDelete.Type)}
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
