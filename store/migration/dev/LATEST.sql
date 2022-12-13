@@ -545,7 +545,7 @@ CREATE TABLE data_source (
     -- host_override and port_override are used for read-replicas that have different connection addresses.
     host_override TEXT NOT NULL DEFAULT '',
     port_override TEXT NOT NULL DEFAULT '',
-    options JSONB NOT NULL DEFAULT '{}',
+    options JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
