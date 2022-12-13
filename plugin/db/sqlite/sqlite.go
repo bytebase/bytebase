@@ -12,7 +12,9 @@ import (
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -168,12 +170,14 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
-	rowsEffected, err := sqlResult.RowsAffected()
+	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
-		return 0, err
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		log.Debug("rowsAffected returns error", zap.Error(err))
+		return 0, nil
 	}
 
-	return rowsEffected, nil
+	return rowsAffected, nil
 }
 
 // Query queries a SQL statement.
