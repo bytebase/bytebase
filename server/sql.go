@@ -184,6 +184,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
+		role := c.Get(getRoleContextKey()).(api.Role)
 		var database *api.Database
 		if exec.DatabaseName != "" {
 			database, err = s.getDatabase(ctx, instance.ID, exec.DatabaseName)
@@ -191,7 +192,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return err
 			}
 			// Database Access Control
-			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, database)
+			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, database)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", exec.DatabaseName)).SetInternal(err)
 			}
@@ -203,7 +204,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		// Database Access Control for MySQL dialect.
 		// MySQL dialect can query cross the database.
 		// We need special check.
-		role := c.Get(getRoleContextKey()).(api.Role)
 		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
