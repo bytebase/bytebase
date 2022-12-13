@@ -163,7 +163,7 @@ interface LocalState {
   isCreating: boolean;
 }
 
-const DEFAULT_DB_NAME_TEMPLATE = "{{DB_NAME}}__{{TENANT}}";
+const DEFAULT_DB_NAME_TEMPLATE = "{{DB_NAME}}_{{TENANT}}";
 
 export default defineComponent({
   name: "ProjectCreate",

@@ -135,6 +135,14 @@ const getDefaultAction = (): ButtonAction => {
       return storedDefaultAction;
     }
   }
+  if (props.defaultActionKey) {
+    const defaultAction = props.actionList.find(
+      (action) => action.key === props.defaultActionKey
+    );
+    if (defaultAction) {
+      return defaultAction;
+    }
+  }
 
   return props.actionList[0];
 };
