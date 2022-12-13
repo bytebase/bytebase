@@ -177,6 +177,7 @@ import {
   computed,
   ref,
   Ref,
+  nextTick,
 } from "vue";
 import { useDialog } from "naive-ui";
 import { useI18n } from "vue-i18n";
@@ -487,6 +488,7 @@ const useTempEditState = (state: LocalState) => {
 
   const startWatching = () => {
     const tempEditStateMap = new Map<TaskId, LocalEditState>();
+    const isSwitchingTask = ref(false);
 
     // The issue page is polling the issue entity, making the reference obj
     // of `selectedTask` changes every time.
@@ -496,13 +498,26 @@ const useTempEditState = (state: LocalState) => {
       return (selectedTask.value as Task).id;
     });
 
-    const beforeTaskIdChange = (id: TaskId) => {
+    watch(selectedTaskId, () => {
+      isSwitchingTask.value = true;
+      nextTick(() => {
+        isSwitchingTask.value = false;
+      });
+    });
+
+    const handleEditChange = () => {
+      // When we are switching between tasks, this will also be triggered.
+      // But we shouldn't update the temp store.
+      if (isSwitchingTask.value) {
+        return;
+      }
       // Save the temp edit state before switching task.
-      tempEditStateMap.set(id, {
+      tempEditStateMap.set(selectedTaskId.value, {
         editing: state.editing,
         editStatement: state.editStatement,
       });
     };
+
     const afterTaskIdChange = (id: TaskId) => {
       // Try to restore the saved temp edit state after switching task.
       const storedState = tempEditStateMap.get(id);
@@ -516,12 +531,11 @@ const useTempEditState = (state: LocalState) => {
       }
     };
 
+    // Save the temp editing state before switching tasks
     const stopWatchBeforeChange = watch(
-      selectedTaskId,
-      (_, id) => {
-        beforeTaskIdChange(id);
-      },
-      { flush: "pre" } // Listen to the event BEFORE selectedTaskId changes
+      [() => state.editing, () => state.editStatement],
+      handleEditChange,
+      { immediate: true }
     );
     const stopWatchAfterChange = watch(
       selectedTaskId,
