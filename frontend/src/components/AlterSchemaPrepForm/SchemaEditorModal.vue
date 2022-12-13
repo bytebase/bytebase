@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="$t('database.alter-schema')"
-    class="ui-editor-modal-container !w-320 h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
+    class="schema-editor-modal-container !w-320 h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
     :esc-closable="false"
     @close="dismissModal"
   >
@@ -11,12 +11,12 @@
       <button
         class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
-          state.selectedTab === 'ui-editor' &&
+          state.selectedTab === 'schema-editor' &&
           'bg-white border-gray-300 text-gray-800'
         "
-        @click="handleChangeTab('ui-editor')"
+        @click="handleChangeTab('schema-editor')"
       >
-        {{ $t("ui-editor.self") }}
+        {{ $t("schema-editor.self") }}
         <div class="ml-1">
           <BBBetaBadge />
         </div>
@@ -29,12 +29,12 @@
         "
         @click="handleChangeTab('raw-sql')"
       >
-        {{ $t("ui-editor.raw-sql") }}
+        {{ $t("schema-editor.raw-sql") }}
       </button>
     </div>
     <div class="w-full h-full max-h-full overflow-auto border-b mb-4">
-      <UIEditor
-        v-show="state.selectedTab === 'ui-editor'"
+      <SchemaEditor
+        v-show="state.selectedTab === 'schema-editor'"
         :database-id-list="props.databaseIdList"
       />
       <div
@@ -64,13 +64,13 @@
             </label>
             <button
               class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-              :disabled="!allowSyncSQLFromUIEditor"
-              @click="handleSyncSQLFromUIEditor"
+              :disabled="!allowSyncSQLFromSchemaEditor"
+              @click="handleSyncSQLFromSchemaEditor"
             >
               <heroicons-outline:arrow-path
                 class="w-4 h-auto mr-1 text-gray-500"
               />
-              {{ $t("ui-editor.sync-sql-from-ui-editor") }}
+              {{ $t("schema-editor.sync-sql-from-schema-editor") }}
             </button>
           </div>
         </div>
@@ -94,7 +94,7 @@
         :disabled="!allowPreviewIssue"
         @click="handlePreviewIssue"
       >
-        {{ $t("ui-editor.preview-issue") }}
+        {{ $t("schema-editor.preview-issue") }}
       </button>
     </div>
   </BBModal>
@@ -105,8 +105,8 @@
   <!-- Close modal confirm dialog -->
   <ActionConfirmModal
     v-if="state.showActionConfirmModal"
-    :title="$t('ui-editor.confirm-to-close.title')"
-    :description="$t('ui-editor.confirm-to-close.description')"
+    :title="$t('schema-editor.confirm-to-close.title')"
+    :description="$t('schema-editor.confirm-to-close.description')"
     @close="state.showActionConfirmModal = false"
     @confirm="emit('close')"
   />
@@ -129,18 +129,18 @@ import { allowGhostMigration } from "@/utils";
 import {
   useDatabaseStore,
   useNotificationStore,
-  useUIEditorStore,
+  useSchemaEditorStore,
 } from "@/store";
-import { diffTableList } from "@/utils/UIEditor/diffTable";
-import { validateDatabaseEdit } from "@/utils/UIEditor/validate";
+import { diffTableList } from "@/utils/schemaEditor/diffTable";
+import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
-import UIEditor from "@/components/UIEditor/UIEditor.vue";
+import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
+import ActionConfirmModal from "@/components/SchemaEditor/Modals/ActionConfirmModal.vue";
 import GhostDialog from "./GhostDialog.vue";
-import ActionConfirmModal from "../UIEditor/Modals/ActionConfirmModal.vue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
-type TabType = "raw-sql" | "ui-editor";
+type TabType = "raw-sql" | "schema-editor";
 
 interface LocalState {
   selectedTab: TabType;
@@ -166,28 +166,28 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
-  selectedTab: "ui-editor",
+  selectedTab: "schema-editor",
   editStatement: "",
   showActionConfirmModal: false,
 });
-const editorStore = useUIEditorStore();
+const editorStore = useSchemaEditorStore();
 const databaseStore = useDatabaseStore();
 const notificationStore = useNotificationStore();
-const statementFromUIEditor = ref<string>();
+const statementFromSchemaEditor = ref<string>();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const allowPreviewIssue = computed(() => {
-  if (state.selectedTab === "ui-editor") {
-    const databaseEditList = getDatabaseEditListWithUIEditor();
+  if (state.selectedTab === "schema-editor") {
+    const databaseEditList = getDatabaseEditListWithSchemaEditor();
     return databaseEditList.length !== 0;
   } else {
     return state.editStatement !== "";
   }
 });
 
-const allowSyncSQLFromUIEditor = computed(() => {
+const allowSyncSQLFromSchemaEditor = computed(() => {
   if (state.selectedTab === "raw-sql") {
-    return statementFromUIEditor.value !== state.editStatement;
+    return statementFromSchemaEditor.value !== state.editStatement;
   }
   return false;
 });
@@ -253,20 +253,20 @@ const isUsingGhostMigration = async (databaseList: Database[]) => {
   return "normal";
 };
 
-const handleSyncSQLFromUIEditor = async () => {
-  if (!allowSyncSQLFromUIEditor.value) {
+const handleSyncSQLFromSchemaEditor = async () => {
+  if (!allowSyncSQLFromSchemaEditor.value) {
     return;
   }
 
-  const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
+  const databaseEditMap = await fetchDatabaseEditMapWithSchemaEditor();
   if (!databaseEditMap) {
     return;
   }
   state.editStatement = Array.from(databaseEditMap.values()).join("\n");
-  statementFromUIEditor.value = state.editStatement;
+  statementFromSchemaEditor.value = state.editStatement;
 };
 
-const getDatabaseEditListWithUIEditor = () => {
+const getDatabaseEditListWithSchemaEditor = () => {
   const databaseEditList: DatabaseEdit[] = [];
   for (const database of editorStore.databaseList) {
     const originTableList = editorStore.originTableList.filter(
@@ -291,8 +291,8 @@ const getDatabaseEditListWithUIEditor = () => {
   return databaseEditList;
 };
 
-const fetchDatabaseEditMapWithUIEditor = async () => {
-  const databaseEditList = getDatabaseEditListWithUIEditor();
+const fetchDatabaseEditMapWithSchemaEditor = async () => {
+  const databaseEditList = getDatabaseEditListWithSchemaEditor();
   const databaseEditMap: Map<DatabaseId, string> = new Map();
   if (databaseEditList.length > 0) {
     for (const databaseEdit of databaseEditList) {
@@ -399,7 +399,7 @@ const handlePreviewIssue = async () => {
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
   } else {
-    const databaseEditList = getDatabaseEditListWithUIEditor();
+    const databaseEditList = getDatabaseEditListWithSchemaEditor();
     // Validate databaseEditList in frontend.
     const validateResultList = [];
     for (const databaseEdit of databaseEditList) {
@@ -417,7 +417,7 @@ const handlePreviewIssue = async () => {
       return;
     }
 
-    const databaseEditMap = await fetchDatabaseEditMapWithUIEditor();
+    const databaseEditMap = await fetchDatabaseEditMapWithSchemaEditor();
     if (!databaseEditMap) {
       return;
     }
@@ -471,9 +471,9 @@ const generateIssueName = (
 };
 
 watch(
-  () => getDatabaseEditListWithUIEditor(),
+  () => getDatabaseEditListWithSchemaEditor(),
   () => {
-    statementFromUIEditor.value = undefined;
+    statementFromSchemaEditor.value = undefined;
   },
   {
     deep: true,
@@ -482,7 +482,7 @@ watch(
 </script>
 
 <style>
-.ui-editor-modal-container > .modal-container {
+.schema-editor-modal-container > .modal-container {
   @apply w-full h-160 overflow-auto grid;
   grid-template-rows: min-content 1fr min-content;
 }

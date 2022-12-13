@@ -6,7 +6,7 @@ import {
   Column as ColumnData,
   Table as TableData,
 } from "@/types";
-import { Column, Table } from "@/types/UIEditor";
+import { Column, Table } from "@/types/schemaEditor";
 
 export const transformTableDataToTable = (tableData: TableData): Table => {
   const columnList = tableData.columnList.map((columnData) =>

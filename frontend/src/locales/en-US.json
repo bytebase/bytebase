@@ -1406,11 +1406,11 @@
       "self": "Admin mode"
     }
   },
-  "ui-editor": {
-    "self": "UI Editor",
+  "schema-editor": {
+    "self": "Schema Editor",
     "use-tips": "Click a database/table to start.",
     "preview-issue": "Preview issue",
-    "sync-sql-from-ui-editor": "Sync SQL from UI Editor",
+    "sync-sql-from-schema-editor": "Sync SQL from UI Editor",
     "raw-sql": "Raw SQL",
     "actions": {
       "create-table": "New table",
