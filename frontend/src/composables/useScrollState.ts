@@ -27,7 +27,6 @@ export const useVerticalScrollState = (
   const bottom = computed(() => {
     return show.value && !scroll.arrivedState.bottom;
   });
-  watchEffect(() => console.log(show.value, top.value, bottom.value));
   return computed(() => ({
     top: top.value,
     bottom: bottom.value,
