@@ -11,8 +11,8 @@
         ref="taskBar"
         class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
         :class="{
-          'more-bottom': !taskBarScrollState.arrivedState.bottom,
-          'more-top': !taskBarScrollState.arrivedState.top,
+          'more-bottom': taskBarScrollState.bottom,
+          'more-top': taskBarScrollState.top,
         }"
       >
         <div
@@ -68,7 +68,7 @@ import TaskStatusIcon from "./TaskStatusIcon.vue";
 import TaskMarkAsDoneButton from "./TaskMarkAsDoneButton.vue";
 import { useDatabaseStore } from "@/store";
 import { useIssueLogic } from "./logic";
-import { useScroll } from "@vueuse/core";
+import { useVerticalScrollState } from "@/composables/useScrollState";
 
 const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
   useIssueLogic();
@@ -77,8 +77,7 @@ const pipeline = computed(() => issue.value.pipeline!);
 
 const databaseStore = useDatabaseStore();
 const taskBar = ref<HTMLDivElement>();
-
-const taskBarScrollState = useScroll(taskBar);
+const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 
 const taskList = computed(() => selectedStage.value.taskList);
 
@@ -171,12 +170,12 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
 }
 
 .task-list::before {
-  @apply absolute top-0 h-4 w-full -ml-2 z-50 pointer-events-none transition-shadow;
+  @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }
 .task-list::after {
-  @apply absolute bottom-0 h-4 w-full -ml-2 z-50 pointer-events-none transition-shadow;
+  @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }

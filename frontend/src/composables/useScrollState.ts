@@ -1,0 +1,35 @@
+import { MaybeRef } from "@/types";
+import { useEventListener, useScroll } from "@vueuse/core";
+import { computed, ref, Ref, unref, watchEffect } from "vue";
+
+export const useVerticalScrollState = (
+  elemRef: Ref<HTMLElement | undefined>,
+  maxHeight: MaybeRef<number>
+) => {
+  const height = ref(0);
+  const updateHeight = () => {
+    const elem = elemRef.value;
+    console.log("update height", elem, elem?.scrollHeight);
+    if (!elem) {
+      height.value = 0;
+      return;
+    }
+    height.value = elem.scrollHeight;
+  };
+  watchEffect(updateHeight);
+  useEventListener("resize", updateHeight);
+  const show = computed(() => height.value > unref(maxHeight));
+
+  const scroll = useScroll(elemRef);
+  const top = computed(() => {
+    return show.value && !scroll.arrivedState.top;
+  });
+  const bottom = computed(() => {
+    return show.value && !scroll.arrivedState.bottom;
+  });
+  watchEffect(() => console.log(show.value, top.value, bottom.value));
+  return computed(() => ({
+    top: top.value,
+    bottom: bottom.value,
+  }));
+};
