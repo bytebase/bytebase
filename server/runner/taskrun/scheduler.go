@@ -113,7 +113,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				taskList, err := s.schedulePendingTasksToRunning(ctx)
 				if err != nil {
-					log.Error("Failed to schedule pending tasks to running",
+					log.Error("Failed to schedule PENDING tasks to RUNNING",
 						zap.Error(err),
 					)
 					return
