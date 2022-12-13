@@ -823,7 +823,7 @@ func isMySQLExcludeDatabase(database string) bool {
 
 func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, role api.Role, database *api.Database) (bool, error) {
 	// Workspace Owners and DBAs always have database access rights.
-	if s.isWorkspaceOwnerOrDBA(role) {
+	if role == api.Owner || role == api.DBA {
 		return true, nil
 	}
 
@@ -863,8 +863,4 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, r
 		hasAccessRights = true
 	}
 	return hasAccessRights, nil
-}
-
-func (s *Server) isWorkspaceOwnerOrDBA(role api.Role) bool {
-	return role == api.Owner || role == api.DBA
 }
