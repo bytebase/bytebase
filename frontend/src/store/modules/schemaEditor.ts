@@ -5,21 +5,21 @@ import {
   DatabaseId,
   Database,
   TabContext,
-  UIEditorState,
-  UIEditorTabType,
+  SchemaEditorState,
+  SchemaEditorTabType,
   TableTabContext,
   DatabaseEdit,
   ResourceObject,
 } from "@/types";
-import { DatabaseEditResult, Table } from "@/types/UIEditor";
-import { useDatabaseStore, useTableStore } from "./";
-import { transformTableDataToTable } from "@/utils/UIEditor/transform";
+import { DatabaseEditResult, Table } from "@/types/schemaEditor";
+import { useDatabaseStore, useTableStore } from ".";
+import { transformTableDataToTable } from "@/utils/schemaEditor/transform";
 
 export const generateUniqueTabId = () => {
   return uniqueId();
 };
 
-const getDefaultUIEditorState = (): UIEditorState => {
+const getDefaultSchemaEditorState = (): SchemaEditorState => {
   return {
     tabState: {
       tabMap: new Map<string, TabContext>(),
@@ -39,9 +39,9 @@ function convertDatabaseEditResult(
   } as any as DatabaseEditResult;
 }
 
-export const useUIEditorStore = defineStore("UIEditor", {
-  state: (): UIEditorState => {
-    return getDefaultUIEditorState();
+export const useSchemaEditorStore = defineStore("SchemaEditor", {
+  state: (): SchemaEditorState => {
+    return getDefaultSchemaEditorState();
   },
   getters: {
     currentTab(state) {
@@ -62,13 +62,13 @@ export const useUIEditorStore = defineStore("UIEditor", {
         }
 
         if (
-          item.type === UIEditorTabType.TabForDatabase &&
+          item.type === SchemaEditorTabType.TabForDatabase &&
           item.databaseId === tab.databaseId
         ) {
           return true;
         }
         if (
-          item.type === UIEditorTabType.TabForTable &&
+          item.type === SchemaEditorTabType.TabForTable &&
           item.databaseId === tab.databaseId &&
           item.tableName === (tab as TableTabContext).tableName
         ) {
@@ -115,9 +115,9 @@ export const useUIEditorStore = defineStore("UIEditor", {
       this.tabState.tabMap.delete(tabId);
     },
     findTab(databaseId: DatabaseId, tableName?: string) {
-      let tabType = UIEditorTabType.TabForDatabase;
+      let tabType = SchemaEditorTabType.TabForDatabase;
       if (tableName !== undefined) {
-        tabType = UIEditorTabType.TabForTable;
+        tabType = SchemaEditorTabType.TabForTable;
       }
 
       const tab = this.tabList.find((tab) => {
@@ -125,10 +125,10 @@ export const useUIEditorStore = defineStore("UIEditor", {
           return false;
         }
 
-        if (tab.type === UIEditorTabType.TabForDatabase) {
+        if (tab.type === SchemaEditorTabType.TabForDatabase) {
           return true;
         } else if (
-          tab.type === UIEditorTabType.TabForTable &&
+          tab.type === SchemaEditorTabType.TabForTable &&
           tab.tableName === tableName
         ) {
           return true;
