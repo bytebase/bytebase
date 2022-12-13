@@ -253,11 +253,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		return 0, err
 	}
 
-	rowsEffected, err := result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 	if err != nil {
-		return 0, err
+		log.Debug("rowsAffected returns error", zap.Error(err))
+		return 0, nil
 	}
-	return rowsEffected, nil
+	return rowsAffected, nil
 }
 
 // Query queries a SQL statement.
