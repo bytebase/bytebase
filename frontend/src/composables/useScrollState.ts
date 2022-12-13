@@ -9,7 +9,6 @@ export const useVerticalScrollState = (
   const height = ref(0);
   const updateHeight = () => {
     const elem = elemRef.value;
-    console.log("update height", elem, elem?.scrollHeight);
     if (!elem) {
       height.value = 0;
       return;
