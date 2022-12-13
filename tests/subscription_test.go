@@ -41,6 +41,7 @@ func TestSubscription(t *testing.T) {
 
 	trialList := []trial{
 		{
+			// Test trial the TEAM plan.
 			instanceCount:       20,
 			expectInstanceCount: 20,
 			plan:                api.TEAM,
@@ -48,6 +49,7 @@ func TestSubscription(t *testing.T) {
 			Days:                7,
 		},
 		{
+			// Test trial the ENTERPRISE plan.
 			instanceCount:       10,
 			expectInstanceCount: 10,
 			plan:                api.ENTERPRISE,
@@ -55,6 +57,7 @@ func TestSubscription(t *testing.T) {
 			Days:                7,
 		},
 		{
+			// Downgrade should be ignored.
 			instanceCount:       99,
 			expectInstanceCount: 10,
 			plan:                api.TEAM,
