@@ -67,7 +67,7 @@
                 >{{ $t("common.project") }}&nbsp;-&nbsp;</span
               >
               <router-link
-                :to="`/project/${projectSlug(database.project)}`"
+                :to="`/project/${projectSlug(database.project)}#databases`"
                 class="normal-link"
                 >{{ projectName(database.project) }}</router-link
               >
