@@ -15,18 +15,11 @@ export const MAX_LABEL_VALUE_LENGTH = 63;
 
 export const RESERVED_LABEL_KEYS = ["bb.environment"];
 
-export const PRESET_LABEL_KEYS = ["bb.location", "bb.tenant"];
+export const PRESET_LABEL_KEYS = ["bb.tenant"];
 
-export const PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS = [
-  "DB_NAME",
-  "LOCATION",
-  "TENANT",
-];
+export const PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS = ["DB_NAME", "TENANT"];
 
-export const PRESET_LABEL_KEY_PLACEHOLDERS = [
-  ["LOCATION", "bb.location"],
-  ["TENANT", "bb.tenant"],
-];
+export const PRESET_LABEL_KEY_PLACEHOLDERS = [["TENANT", "bb.tenant"]];
 
 export const LABEL_VALUE_EMPTY = "";
 
