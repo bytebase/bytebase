@@ -513,6 +513,8 @@ const defaultPort = computed(() => {
     return "443";
   } else if (state.instance.engine == "TIDB") {
     return "4000";
+  } else if (state.instance.engine == "MONGODB") {
+    return "27017";
   }
   return "3306";
 });
