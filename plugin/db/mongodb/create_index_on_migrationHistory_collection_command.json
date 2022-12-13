@@ -1,5 +1,5 @@
 {
-  "createIndexes": "migrationHistory",
+  "createIndexes": "migration_history",
   "indexes": [
     {
       "key": {

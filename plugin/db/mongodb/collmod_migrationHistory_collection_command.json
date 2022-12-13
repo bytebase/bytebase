@@ -1,5 +1,5 @@
 {
-  "collMod": "migrationHistory",
+  "collMod": "migration_history",
   "validator": {
     "$jsonSchema": {
       "title": "Bytebase Migration History Object Validation",

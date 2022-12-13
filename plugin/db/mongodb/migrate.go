@@ -19,7 +19,7 @@ const (
 	// migrationHistoryDefaultDatabase is the default database name for migration history.
 	migrationHistoryDefaultDatabase = "bytebase"
 	// migrationHistoryDefaultCollection is the default collection name for migration history.
-	migrationHistoryDefaultCollection = "migrationHistory"
+	migrationHistoryDefaultCollection = "migration_history"
 )
 
 var (
