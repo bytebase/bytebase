@@ -176,15 +176,17 @@ func (*Store) createStageImpl(ctx context.Context, tx *Tx, creates []*api.StageC
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO stage (
-			creator_id,
-			updater_id,
-			pipeline_id,
-			environment_id,
-			name
-		) VALUES %s
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name ORDER BY id ASC`, strings.Join(valueStr, ","))
-
+    WITH inserted AS (
+	  	INSERT INTO stage (
+	  		creator_id,
+	  		updater_id,
+	  		pipeline_id,
+	  		environment_id,
+	  		name
+	  	) VALUES %s
+	  	RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name
+    ) SELECT * FROM inserted ORDER BY id ASC
+    `, strings.Join(valueStr, ","))
 	rows, err := tx.QueryContext(ctx, query, values...)
 	if err != nil {
 		return nil, FormatError(err)
