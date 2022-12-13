@@ -53,7 +53,7 @@ import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { DatabaseId, InstanceId, SchemaEditorTabType } from "@/types";
-import { Table } from "@/types/schemaEditor";
+import { Table } from "@/types/schemaEditor/atomType";
 import {
   useSchemaEditorStore,
   generateUniqueTabId,

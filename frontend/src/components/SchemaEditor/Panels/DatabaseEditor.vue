@@ -163,7 +163,7 @@ import {
   useSchemaEditorStore,
 } from "@/store";
 import { DatabaseId, DatabaseTabContext, SchemaEditorTabType } from "@/types";
-import { Table } from "@/types/schemaEditor";
+import { Table } from "@/types/schemaEditor/atomType";
 import { bytesToString } from "@/utils";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
