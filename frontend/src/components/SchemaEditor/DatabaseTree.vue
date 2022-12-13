@@ -10,7 +10,7 @@
         </template>
       </NInput>
     </div>
-    <div ref="treeRef" class="ui-editor-database-tree pb-2 h-auto">
+    <div ref="treeRef" class="schema-editor-database-tree pb-2 h-auto">
       <n-tree
         block-line
         :data="treeDataRef"
@@ -52,10 +52,10 @@ import { TreeOption, NEllipsis, NInput } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { DatabaseId, InstanceId, UIEditorTabType } from "@/types";
-import { Table } from "@/types/UIEditor";
+import { DatabaseId, InstanceId, SchemaEditorTabType } from "@/types";
+import { Table } from "@/types/schemaEditor/atomType";
 import {
-  useUIEditorStore,
+  useSchemaEditorStore,
   generateUniqueTabId,
   useInstanceStore,
 } from "@/store";
@@ -109,7 +109,7 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const editorStore = useUIEditorStore();
+const editorStore = useSchemaEditorStore();
 const instanceStore = useInstanceStore();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
@@ -139,7 +139,7 @@ const contextMenuOptions = computed(() => {
     const options = [];
     options.push({
       key: "create-table",
-      label: t("ui-editor.actions.create-table"),
+      label: t("schema-editor.actions.create-table"),
     });
     return options;
   } else if (treeNode.type === "table") {
@@ -157,16 +157,16 @@ const contextMenuOptions = computed(() => {
     if (isDropped) {
       options.push({
         key: "restore",
-        label: t("ui-editor.actions.restore"),
+        label: t("schema-editor.actions.restore"),
       });
     } else {
       options.push({
         key: "rename",
-        label: t("ui-editor.actions.rename"),
+        label: t("schema-editor.actions.rename"),
       });
       options.push({
         key: "drop",
-        label: t("ui-editor.actions.drop-table"),
+        label: t("schema-editor.actions.drop-table"),
       });
     }
     return options;
@@ -221,7 +221,7 @@ onMounted(async () => {
     expandedKeysRef.value.push(node.key);
     editorStore.addTab({
       id: generateUniqueTabId(),
-      type: UIEditorTabType.TabForDatabase,
+      type: SchemaEditorTabType.TabForDatabase,
       databaseId: node.databaseId,
     });
   }
@@ -286,10 +286,10 @@ watch(
       return;
     }
 
-    if (currentTab.type === UIEditorTabType.TabForDatabase) {
+    if (currentTab.type === SchemaEditorTabType.TabForDatabase) {
       const key = `d-${currentTab.databaseId}`;
       selectedKeysRef.value = [key];
-    } else if (currentTab.type === UIEditorTabType.TabForTable) {
+    } else if (currentTab.type === SchemaEditorTabType.TabForTable) {
       const databaseTreeNodeKey = `d-${currentTab.databaseId}`;
       if (!expandedKeysRef.value.includes(databaseTreeNodeKey)) {
         expandedKeysRef.value.push(databaseTreeNodeKey);
@@ -467,13 +467,13 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
           await loadSubTree(treeNode);
           editorStore.addTab({
             id: generateUniqueTabId(),
-            type: UIEditorTabType.TabForDatabase,
+            type: SchemaEditorTabType.TabForDatabase,
             databaseId: treeNode.databaseId,
           });
         } else if (treeNode.type === "table") {
           editorStore.addTab({
             id: generateUniqueTabId(),
-            type: UIEditorTabType.TabForTable,
+            type: SchemaEditorTabType.TabForTable,
             databaseId: treeNode.databaseId,
             tableName: treeNode.tableName,
           });
@@ -565,36 +565,36 @@ const handleSelectedKeysChange = (selectedKeys: string[]) => {
 </script>
 
 <style>
-.ui-editor-database-tree .n-tree-node-wrapper {
+.schema-editor-database-tree .n-tree-node-wrapper {
   @apply !py-px;
 }
-.ui-editor-database-tree .n-tree-node-content__prefix {
+.schema-editor-database-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
 }
-.ui-editor-database-tree .n-tree-node-content__text {
+.schema-editor-database-tree .n-tree-node-content__text {
   @apply truncate mr-1;
 }
-.ui-editor-database-tree .n-tree-node-content__suffix {
+.schema-editor-database-tree .n-tree-node-content__suffix {
   @apply rounded-sm !hidden hover:opacity-80;
 }
-.ui-editor-database-tree
+.schema-editor-database-tree
   .n-tree-node-wrapper:hover
   .n-tree-node-content__suffix {
   @apply !flex;
 }
-.ui-editor-database-tree
+.schema-editor-database-tree
   .n-tree-node-wrapper
   .n-tree-node--selected
   .n-tree-node-content__suffix {
   @apply !flex;
 }
-.ui-editor-database-tree .n-tree-node-switcher {
+.schema-editor-database-tree .n-tree-node-switcher {
   @apply px-0 !w-4 !h-7;
 }
 </style>
 
 <style scoped>
-.ui-editor-database-tree {
+.schema-editor-database-tree {
   @apply overflow-y-auto;
   max-height: calc(100% - 48px);
 }
