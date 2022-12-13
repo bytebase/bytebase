@@ -1845,22 +1845,22 @@ func (ctl *controller) patchSetting(settingPatch api.SettingPatch) error {
 }
 
 // upsertPolicy upserts the policy.
-func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
+func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) (*api.Policy, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &policyUpsert); err != nil {
-		return errors.Wrap(err, "failed to marshal policyUpsert")
+		return nil, errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
 	body, err := ctl.patch(fmt.Sprintf("/policy/%s/%d?type=%s", strings.ToLower(string(policyUpsert.ResourceType)), policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	policy := new(api.Policy)
 	if err = jsonapi.UnmarshalPayload(body, policy); err != nil {
-		return errors.Wrap(err, "fail to unmarshal policy response")
+		return nil, errors.Wrap(err, "fail to unmarshal policy response")
 	}
-	return nil
+	return policy, nil
 }
 
 // deletePolicy deletes the archived policy.
