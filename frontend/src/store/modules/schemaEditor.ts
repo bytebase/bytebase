@@ -11,7 +11,8 @@ import {
   DatabaseEdit,
   ResourceObject,
 } from "@/types";
-import { DatabaseEditResult, Table } from "@/types/schemaEditor";
+import { DatabaseEditResult } from "@/types/schemaEditor";
+import { Table } from "@/types/schemaEditor/atomType";
 import { useDatabaseStore, useTableStore } from ".";
 import { transformTableDataToTable } from "@/utils/schemaEditor/transform";
 
