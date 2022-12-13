@@ -130,9 +130,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (in
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
-			return err
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			log.Debug("rowsAffected returns error", zap.Error(err))
+		} else {
+			totalRowsAffected += rowsAffected
 		}
-		totalRowsAffected += rowsAffected
 
 		return nil
 	}

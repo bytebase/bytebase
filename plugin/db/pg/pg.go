@@ -287,9 +287,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				}
 				rowsAffected, err := sqlResult.RowsAffected()
 				if err != nil {
-					return err
+					// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+					log.Debug("rowsAffected returns error", zap.Error(err))
+				} else {
+					totalRowsAffected += rowsAffected
 				}
-				totalRowsAffected += rowsAffected
 			}
 		} else {
 			if isSuperuserStatement(stmt) {
@@ -338,10 +340,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	}
 	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
-		return 0, err
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		log.Debug("rowsAffected returns error", zap.Error(err))
+	} else {
+		totalRowsAffected += rowsAffected
 	}
-	totalRowsAffected += rowsAffected
-
 	return totalRowsAffected, nil
 }
 
