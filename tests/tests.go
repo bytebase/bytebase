@@ -803,8 +803,8 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	return databases, nil
 }
 
-// jsonapi doesn't support to unmarshal struct pointer slice.
-// So we need to declare a subset struct for testing.
+// DatabaseEditResult is a subset struct of api.DatabaseEditResult for testing,
+// because of jsonapi doesn't support to unmarshal struct pointer slice.
 type DatabaseEditResult struct {
 	Statement string `jsonapi:"attr,statement"`
 }
