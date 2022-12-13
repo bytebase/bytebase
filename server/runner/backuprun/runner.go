@@ -417,16 +417,22 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *api.Database,
 		return nil, errors.Wrapf(err, "failed to create pipeline for backup %q", backupName)
 	}
 
-	createdStage, err := r.store.CreateStage(ctx, &api.StageCreate{
-		Name:          fmt.Sprintf("backup-%s", backupName),
-		EnvironmentID: database.Instance.EnvironmentID,
-		PipelineID:    createdPipeline.ID,
-		CreatorID:     creatorID,
+	createdStages, err := r.store.CreateStage(ctx, []*api.StageCreate{
+		{
+			Name:          fmt.Sprintf("backup-%s", backupName),
+			EnvironmentID: database.Instance.EnvironmentID,
+			PipelineID:    createdPipeline.ID,
+			CreatorID:     creatorID,
+		},
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create stage for backup %q", backupName)
 	}
+	if len(createdStages) != 1 {
+		return nil, errors.Errorf("expect to get one returned stage after creating stage, got %d", len(createdStages))
+	}
 
+	createdStage := createdStages[0]
 	if _, err := r.store.CreateTask(ctx, &api.TaskCreate{
 		Name:       fmt.Sprintf("backup-%s", backupName),
 		PipelineID: createdPipeline.ID,

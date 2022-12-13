@@ -426,14 +426,22 @@ func (s *Server) createPipeline(ctx context.Context, issueCreate *api.IssueCreat
 		return nil, errors.Wrap(err, "failed to create pipeline for issue")
 	}
 
-	// TODO(p0ny): create stages in batch.
-	for _, stageCreate := range pipelineCreate.StageList {
-		stageCreate.CreatorID = issueCreate.CreatorID
-		stageCreate.PipelineID = pipelineCreated.ID
-		createdStage, err := s.store.CreateStage(ctx, &stageCreate)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create stage for issue")
-		}
+	var stageCreates []*api.StageCreate
+	for i := range pipelineCreate.StageList {
+		pipelineCreate.StageList[i].CreatorID = issueCreate.CreatorID
+		pipelineCreate.StageList[i].PipelineID = pipelineCreated.ID
+		stageCreates = append(stageCreates, &pipelineCreate.StageList[i])
+	}
+	createdStages, err := s.store.CreateStage(ctx, stageCreates)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create stages for issue")
+	}
+	if len(createdStages) != len(stageCreates) {
+		return nil, errors.Errorf("failed to create stages, expect to have created %d stages, got %d", len(stageCreates), len(createdStages))
+	}
+
+	for i, stageCreate := range pipelineCreate.StageList {
+		createdStage := createdStages[i]
 
 		var taskCreateList []*api.TaskCreate
 		for _, taskCreate := range stageCreate.TaskList {
