@@ -235,7 +235,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 
 	connected := false
 	var remainingStmts []string
-	totalrowsAffected := int64(0)
+	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
 		// We will execute the statement directly before "\\connect" statement.
@@ -289,7 +289,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				if err != nil {
 					return err
 				}
-				totalrowsAffected += rowsAffected
+				totalRowsAffected += rowsAffected
 			}
 		} else {
 			if isSuperuserStatement(stmt) {
@@ -340,9 +340,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	if err != nil {
 		return 0, err
 	}
-	totalrowsAffected += rowsAffected
+	totalRowsAffected += rowsAffected
 
-	return totalrowsAffected, nil
+	return totalRowsAffected, nil
 }
 
 func isSuperuserStatement(stmt string) bool {
