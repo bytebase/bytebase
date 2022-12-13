@@ -835,7 +835,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 	return nil
 }
 
-// schedulePendingTasks tries to schedule the pending tasks to running.
+// schedulePendingTasks tries to schedule the PENDING tasks to RUNNING.
 func (s *Scheduler) schedulePendingTasksToRunning(ctx context.Context) ([]*api.Task, error) {
 	taskStatusList := []api.TaskStatus{api.TaskPending}
 	taskFind := &api.TaskFind{
