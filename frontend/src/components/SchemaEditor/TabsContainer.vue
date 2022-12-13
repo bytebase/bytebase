@@ -17,11 +17,11 @@
         <div class="flex flex-row justify-start items-center mr-1">
           <span class="mr-1">
             <heroicons-outline:circle-stack
-              v-if="tab.type === UIEditorTabType.TabForDatabase"
+              v-if="tab.type === SchemaEditorTabType.TabForDatabase"
               class="rounded w-4 h-auto text-gray-400"
             />
             <heroicons-outline:table-cells
-              v-else-if="tab.type === UIEditorTabType.TabForTable"
+              v-else-if="tab.type === SchemaEditorTabType.TabForTable"
               class="rounded w-4 h-auto text-gray-400"
             />
           </span>
@@ -47,10 +47,10 @@ import { isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { useUIEditorStore } from "@/store";
-import { TabContext, UIEditorTabType } from "@/types";
+import { useSchemaEditorStore } from "@/store";
+import { TabContext, SchemaEditorTabType } from "@/types";
 
-const editorStore = useUIEditorStore();
+const editorStore = useSchemaEditorStore();
 const tabsContainerRef = ref();
 const tabList = computed(() => {
   return Array.from(editorStore.tabState.tabMap.values());
@@ -76,7 +76,7 @@ watch(
 );
 
 const getTabComputedClassList = (tab: TabContext) => {
-  if (tab.type === UIEditorTabType.TabForTable) {
+  if (tab.type === SchemaEditorTabType.TabForTable) {
     const table = editorStore.getTableWithTableTab(tab);
     if (!table) {
       return [];
@@ -102,12 +102,12 @@ const getTabComputedClassList = (tab: TabContext) => {
 };
 
 const getTabName = (tab: TabContext) => {
-  if (tab.type === UIEditorTabType.TabForDatabase) {
+  if (tab.type === SchemaEditorTabType.TabForDatabase) {
     const database = editorStore.databaseList.find(
       (database) => database.id === tab.databaseId
     );
     return `${database?.name || "unknown database"}`;
-  } else if (tab.type === UIEditorTabType.TabForTable) {
+  } else if (tab.type === SchemaEditorTabType.TabForTable) {
     return `${tab.tableName}`;
   } else {
     // Should never reach here.

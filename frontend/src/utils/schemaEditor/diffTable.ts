@@ -5,7 +5,7 @@ import type {
   DropTableContext,
   RenameTableContext,
 } from "@/types";
-import { Table } from "@/types/UIEditor";
+import { Table } from "@/types/schemaEditor/atomType";
 import { transformTableToCreateTableContext } from "./transform";
 import { diffColumnList } from "./diffColumn";
 
