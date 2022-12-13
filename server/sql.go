@@ -203,6 +203,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		// Database Access Control for MySQL dialect.
 		// MySQL dialect can query cross the database.
 		// We need special check.
+		role := c.Get(getRoleContextKey()).(api.Role)
 		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
 			databaseList, err := parser.ExtractDatabaseList(parser.MySQL, exec.Statement)
 			if err != nil {
@@ -237,7 +238,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						return err
 					}
 
-					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, accessDatabase)
+					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, accessDatabase)
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.Name)).SetInternal(err)
 					}
@@ -820,9 +821,9 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
-func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, database *api.Database) (bool, error) {
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, role api.Role, database *api.Database) (bool, error) {
 	// Workspace Owners and DBAs always have database access rights.
-	yes, err := s.isWorkspaceOwnerOrDBA(ctx, principalID)
+	yes, err := s.isWorkspaceOwnerOrDBA(role)
 	if err != nil {
 		return false, err
 	}
@@ -868,19 +869,6 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, d
 	return hasAccessRights, nil
 }
 
-func (s *Server) isWorkspaceOwnerOrDBA(ctx context.Context, principalID int) (bool, error) {
-	memberList, err := s.store.FindMember(ctx, &api.MemberFind{
-		PrincipalID: &principalID,
-	})
-	if err != nil {
-		return false, err
-	}
-	if len(memberList) == 0 {
-		return false, errors.Errorf("Member: %d not found", principalID)
-	}
-	if len(memberList) > 1 {
-		// never catch.
-		return false, errors.Errorf("expected one member but found %d", len(memberList))
-	}
-	return memberList[0].Role == api.Owner || memberList[0].Role == api.DBA, nil
+func (s *Server) isWorkspaceOwnerOrDBA(role api.Role) (bool, error) {
+	return role == api.Owner || role == api.DBA, nil
 }
