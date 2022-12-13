@@ -36,7 +36,7 @@ export interface Table {
   status: TableOrColumnStatus;
 }
 
-export enum UIEditorTabType {
+export enum SchemaEditorTabType {
   TabForDatabase = "database",
   TabForTable = "table",
 }
@@ -44,14 +44,14 @@ export enum UIEditorTabType {
 // Tab context for editing database.
 export interface DatabaseTabContext {
   id: string;
-  type: UIEditorTabType.TabForDatabase;
+  type: SchemaEditorTabType.TabForDatabase;
   databaseId: DatabaseId;
 }
 
 // Tab context for editing table.
 export interface TableTabContext {
   id: string;
-  type: UIEditorTabType.TabForTable;
+  type: SchemaEditorTabType.TabForTable;
   databaseId: DatabaseId;
   tableName: string;
 }
@@ -60,7 +60,7 @@ export type TabContext = DatabaseTabContext | TableTabContext;
 
 type TabId = string;
 
-export interface UIEditorState {
+export interface SchemaEditorState {
   tabState: {
     tabMap: Map<TabId, TabContext>;
     currentTabId?: TabId;

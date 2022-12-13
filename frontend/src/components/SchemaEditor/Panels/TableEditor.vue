@@ -10,7 +10,7 @@
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('column-list')"
-        >{{ $t("ui-editor.column-list") }}</span
+        >{{ $t("schema-editor.column-list") }}</span
       >
       <span
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
@@ -19,7 +19,7 @@
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('raw-sql')"
-        >{{ $t("ui-editor.raw-sql") }}</span
+        >{{ $t("schema-editor.raw-sql") }}</span
       >
     </div>
 
@@ -32,7 +32,7 @@
             @click="handleAddColumn"
           >
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-            {{ $t("ui-editor.actions.add-column") }}
+            {{ $t("schema-editor.actions.add-column") }}
           </button>
         </div>
         <div class="w-auto flex flex-row justify-end items-center space-x-3">
@@ -45,7 +45,7 @@
             <heroicons-solid:arrow-uturn-left
               class="w-4 h-auto mr-1 text-gray-400"
             />
-            {{ $t("ui-editor.actions.reset") }}
+            {{ $t("schema-editor.actions.reset") }}
           </button>
         </div>
       </div>
@@ -163,7 +163,7 @@
                     <heroicons:trash class="w-4 h-auto" />
                   </button>
                 </template>
-                <span>{{ $t("ui-editor.actions.drop-column") }}</span>
+                <span>{{ $t("schema-editor.actions.drop-column") }}</span>
               </n-tooltip>
               <n-tooltip v-else trigger="hover">
                 <template #trigger>
@@ -175,7 +175,7 @@
                     <heroicons:arrow-uturn-left class="w-4 h-auto" />
                   </button>
                 </template>
-                <span>{{ $t("ui-editor.actions.restore") }}</span>
+                <span>{{ $t("schema-editor.actions.restore") }}</span>
               </n-tooltip>
             </div>
           </div>
@@ -200,7 +200,7 @@
           :code="state.statement"
         ></HighlightCodeBlock>
         <div v-else class="flex px-3 py-2 italic text-sm text-gray-600">
-          {{ $t("ui-editor.nothing-changed") }}
+          {{ $t("schema-editor.nothing-changed") }}
         </div>
       </template>
     </div>
@@ -215,15 +215,15 @@ import { useDebounceFn } from "@vueuse/core";
 import {
   useDatabaseStore,
   useNotificationStore,
-  useUIEditorStore,
+  useSchemaEditorStore,
 } from "@/store/modules";
 import { TableTabContext, unknown } from "@/types";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import { getDataTypeSuggestionList } from "@/utils";
-import { diffTableList } from "@/utils/UIEditor/diffTable";
+import { diffTableList } from "@/utils/schemaEditor/diffTable";
+import { transformColumnDataToColumn } from "@/utils/schemaEditor/transform";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
-import { Column, DatabaseEdit, Table } from "@/types/UIEditor";
-import { transformColumnDataToColumn } from "@/utils/UIEditor/transform";
+import { Column, DatabaseEdit, Table } from "@/types/schemaEditor";
 
 type TabType = "column-list" | "raw-sql";
 
@@ -235,7 +235,7 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const editorStore = useUIEditorStore();
+const editorStore = useSchemaEditorStore();
 const databaseStore = useDatabaseStore();
 const notificationStore = useNotificationStore();
 const currentTab = editorStore.currentTab as TableTabContext;
@@ -271,23 +271,23 @@ const columnHeaderList = computed(() => {
   return [
     {
       key: "name",
-      label: t("ui-editor.column.name"),
+      label: t("schema-editor.column.name"),
     },
     {
       key: "type",
-      label: t("ui-editor.column.type"),
+      label: t("schema-editor.column.type"),
     },
     {
       key: "default",
-      label: t("ui-editor.column.default"),
+      label: t("schema-editor.column.default"),
     },
     {
       key: "comment",
-      label: t("ui-editor.column.comment"),
+      label: t("schema-editor.column.comment"),
     },
     {
       key: "nullable",
-      label: t("ui-editor.column.not-null"),
+      label: t("schema-editor.column.not-null"),
     },
   ];
 });

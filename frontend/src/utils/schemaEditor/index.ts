@@ -1,7 +1,7 @@
 import { Database, EngineType } from "@/types";
 
-// Only allow using UI Editor with MySQL.
-export const allowUsingUIEditor = (databaseList: Database[]): boolean => {
+// Only allow using Schema Editor with MySQL.
+export const allowUsingSchemaEditor = (databaseList: Database[]): boolean => {
   return databaseList.every((db) => {
     return db.instance.engine === "MYSQL";
   });

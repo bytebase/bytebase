@@ -49,5 +49,5 @@ export * from "./sheetOrganizer";
 export * from "./sqlReview";
 export * from "./utils";
 export * from "./onboardingGuide";
-export * from "./UIEditor";
+export * from "./schemaEditor";
 export * from "./externalApproval";
