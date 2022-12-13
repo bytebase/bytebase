@@ -880,7 +880,7 @@ func (s *Server) isWorkspaceOwnerOrDBA(ctx context.Context, principalID int) (bo
 	}
 	if len(memberList) > 1 {
 		// never catch.
-		return false, errors.Errorf("expected one member but found %t", len(memberList))
+		return false, errors.Errorf("expected one member but found %d", len(memberList))
 	}
 	return memberList[0].Role == api.Owner || memberList[0].Role == api.DBA, nil
 }
