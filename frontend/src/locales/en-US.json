@@ -1410,7 +1410,7 @@
     "self": "Schema Editor",
     "use-tips": "Click a database/table to start.",
     "preview-issue": "Preview issue",
-    "sync-sql-from-schema-editor": "Sync SQL from UI Editor",
+    "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
     "actions": {
       "create-table": "New table",
