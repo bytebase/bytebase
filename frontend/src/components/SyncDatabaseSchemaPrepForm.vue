@@ -587,8 +587,8 @@ watch(
           state.targetDatabaseInfo.databaseId as DatabaseId
         );
         if (
-          targetDatabase &&
-          targetDatabase.instance.engine !== state.engineType
+          !targetDatabase ||
+          state.engineType !== targetDatabase.instance.engine
         ) {
           state.targetDatabaseInfo.databaseId = undefined;
         }
@@ -609,17 +609,22 @@ watch(
 
     const database = databaseStore.getDatabaseById(databaseId as DatabaseId);
     state.targetDatabaseInfo.currentSchema = undefined;
-    if (database) {
+    if (database && state.engineType === database.instance.engine) {
       const currentSchema = await useDatabaseStore().fetchDatabaseSchemaById(
         database.id
       );
       state.targetDatabaseInfo.currentSchema = currentSchema;
+    } else {
+      state.targetDatabaseInfo.databaseId = undefined;
     }
   }
 );
 
 watch(
-  () => [shouldShowDiff.value],
+  () => [
+    state.baseSchemaInfo.migrationHistory?.schema,
+    state.targetDatabaseInfo.currentSchema,
+  ],
   async () => {
     if (shouldShowDiff.value) {
       const statement = await getSchemaDiff(
