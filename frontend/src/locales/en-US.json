@@ -1042,7 +1042,7 @@
     "ui-workflow-description": "Classic SQL Review workflow where the developer submits a SQL review ticket directly from Bytebase and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL schema change after review approved.",
     "gitops-workflow": "GitOps workflow",
     "gitops-workflow-description": "Database migration scripts are stored in a git repository. To make schema changes, a developer would create a migration script and submit for review in the corresponding VCS such as GitLab. After the script is approved and merged into the configured branch, Bytebase will automatically kicks off the task to apply the new schema change.",
-    "configure-gitops": "Configure version control",
+    "configure-gitops": "Configure GitOps",
     "configure-gitops-success": "Successfully enabled GitOps workflow for {project}",
     "change-gitops-success": "Successfully changed repository for {project}"
   },
