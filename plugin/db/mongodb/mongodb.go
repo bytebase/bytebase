@@ -26,7 +26,8 @@ func init() {
 
 // Driver is the MongoDB driver.
 type Driver struct {
-	client *mongo.Client
+	connectionCtx db.ConnectionContext
+	client        *mongo.Client
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -34,7 +35,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens a MongoDB driver.
-func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	connectionURI := getMongoDBConnectionURI(connCfg)
 	opts := options.Client().ApplyURI(connectionURI)
 	client, err := mongo.Connect(ctx, opts)
@@ -42,6 +43,7 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.Connection
 		return nil, errors.Wrap(err, "failed to create MongoDB client")
 	}
 	driver.client = client
+	driver.connectionCtx = connCtx
 	return driver, nil
 }
 
@@ -83,26 +85,6 @@ func (*Driver) SyncInstance(_ context.Context) (*db.InstanceMeta, error) {
 
 // SyncDBSchema syncs the database schema.
 func (*Driver) SyncDBSchema(_ context.Context, _ string) (*db.Schema, error) {
-	panic("not implemented")
-}
-
-// NeedsSetupMigration returns whether the driver needs to setup migration.
-func (*Driver) NeedsSetupMigration(_ context.Context) (bool, error) {
-	panic("not implemented")
-}
-
-// SetupMigrationIfNeeded sets up migration if needed.
-func (*Driver) SetupMigrationIfNeeded(_ context.Context) error {
-	panic("not implemented")
-}
-
-// ExecuteMigration executes a migration.
-func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string) (int64, string, error) {
-	panic("not implemented")
-}
-
-// FindMigrationHistoryList finds the migration history list.
-func (*Driver) FindMigrationHistoryList(_ context.Context, _ *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
 	panic("not implemented")
 }
 

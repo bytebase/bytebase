@@ -255,6 +255,17 @@
           />
         </div>
 
+        <template v-if="state.instance.engine == 'MONGODB'">
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <div class="lex flex-row items-center space-x-2">
+              <BBCheckbox
+                title="DNS SRV Record"
+                :value="currentDataSource.options.srv"
+                @toggle="handleToggleSRV"
+              />
+            </div></div
+        ></template>
+
         <template v-if="state.currentDataSourceType === 'RO'">
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
             <div class="flex flex-row items-center space-x-2">
@@ -429,7 +440,6 @@ interface State {
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
   showFeatureModal: boolean;
-  useDNSSRVRecord: boolean;
 }
 
 const props = defineProps({
@@ -462,7 +472,6 @@ const state = reactive<State>({
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
   showFeatureModal: false,
-  useDNSSRVRecord: false,
 });
 
 const allowEdit = computed(() => {
@@ -504,6 +513,8 @@ const defaultPort = computed(() => {
     return "443";
   } else if (state.instance.engine == "TIDB") {
     return "4000";
+  } else if (state.instance.engine == "MONGODB") {
+    return "27017";
   }
   return "3306";
 });
@@ -597,6 +608,11 @@ const handleCurrentDataSourcePasswordInput = (event: Event) => {
   updateInstanceDataSource();
 };
 
+const handleToggleSRV = (on: boolean) => {
+  currentDataSource.value.options.srv = on;
+  updateInstanceDataSource();
+};
+
 const handleCurrentDataSourceHostOverrideInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.hostOverride = str;
@@ -661,6 +677,7 @@ const updateInstanceDataSource = () => {
   let newValue = {
     ...state.instance.dataSourceList[index],
     username: curr.username,
+    options: curr.options,
   };
 
   if (curr.type === "RO") {
@@ -897,7 +914,7 @@ const testConnection = () => {
     port: connectionPort,
     database: instance.database,
     instanceId: instance.id,
-    srv: state.useDNSSRVRecord,
+    srv: dataSource.options.srv,
   };
 
   if (typeof dataSource.sslCa !== "undefined") {
