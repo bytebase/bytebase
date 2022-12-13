@@ -184,6 +184,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
+		role := c.Get(getRoleContextKey()).(api.Role)
 		var database *api.Database
 		if exec.DatabaseName != "" {
 			database, err = s.getDatabase(ctx, instance.ID, exec.DatabaseName)
@@ -191,7 +192,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return err
 			}
 			// Database Access Control
-			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, database)
+			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, database)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", exec.DatabaseName)).SetInternal(err)
 			}
@@ -237,7 +238,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						return err
 					}
 
-					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, accessDatabase)
+					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, accessDatabase)
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.Name)).SetInternal(err)
 					}
@@ -820,7 +821,12 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
-func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, database *api.Database) (bool, error) {
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, role api.Role, database *api.Database) (bool, error) {
+	// Workspace Owners and DBAs always have database access rights.
+	if role == api.Owner || role == api.DBA {
+		return true, nil
+	}
+
 	// Only project member can access database.
 	if !api.HasActiveProjectMembership(principalID, database.Project) {
 		return false, nil
