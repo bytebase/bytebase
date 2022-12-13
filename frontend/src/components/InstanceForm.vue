@@ -677,7 +677,7 @@ const updateInstanceDataSource = () => {
   let newValue = {
     ...state.instance.dataSourceList[index],
     username: curr.username,
-    Options: curr.options,
+    options: curr.options,
   };
 
   if (curr.type === "RO") {
