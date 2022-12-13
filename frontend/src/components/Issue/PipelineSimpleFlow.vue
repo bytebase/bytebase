@@ -5,14 +5,13 @@
         {{ taskNameOfStage(stage) }}
       </template>
     </PipelineStageList>
-    <div class="relative">
+    <div v-if="shouldShowTaskBar" class="relative">
       <div
-        v-if="shouldShowTaskBar"
         ref="taskBar"
         class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
         :class="{
-          'more-bottom': !taskBarScrollState.arrivedState.bottom,
-          'more-top': !taskBarScrollState.arrivedState.top,
+          'more-bottom': taskBarScrollState.bottom,
+          'more-top': taskBarScrollState.top,
         }"
       >
         <template v-for="(task, i) in taskList" :key="i">
@@ -82,7 +81,7 @@ import {
 import { activeTaskInStage, taskSlug } from "@/utils";
 import { useIssueLogic } from "./logic";
 import TaskMarkAsDoneButton from "./TaskMarkAsDoneButton.vue";
-import { useScroll } from "@vueuse/core";
+import { useVerticalScrollState } from "@/composables/useScrollState";
 
 const {
   create,
@@ -96,8 +95,7 @@ const {
 const databaseStore = useDatabaseStore();
 
 const taskBar = ref<HTMLDivElement>();
-
-const taskBarScrollState = useScroll(taskBar);
+const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 
 const taskNameOfStage = (stage: Stage | StageCreate) => {
   if (create.value) {
@@ -241,12 +239,12 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
 }
 
 .task-list::before {
-  @apply absolute top-0 h-4 w-full -ml-2 z-50 pointer-events-none transition-shadow;
+  @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }
 .task-list::after {
-  @apply absolute bottom-0 h-4 w-full -ml-2 z-50 pointer-events-none transition-shadow;
+  @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
   content: "";
   box-shadow: none;
 }

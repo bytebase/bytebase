@@ -20,7 +20,6 @@
         :key="index"
       >
         <BBContextMenuButton
-          preference-key="task-status-transition"
           data-label="bb-issue-status-transition-button"
           default-action-key="APPROVE-STAGE"
           :disabled="!allowApplyTaskTransition(transition)"
