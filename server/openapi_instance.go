@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 
@@ -143,11 +144,21 @@ func (s *Server) deleteInstanceByOpenAPI(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 	}
 
+	instance, err := s.store.GetInstanceByID(ctx, id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+	}
+	if instance == nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance not found by id: %d", id))
+	}
+
+	name := fmt.Sprintf("archived_%s_%d", instance.Name, time.Now().Unix())
 	rowStatus := string(api.Archived)
 	if _, err := s.updateInstance(ctx, &store.InstancePatch{
 		ID:        id,
 		UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		RowStatus: &rowStatus,
+		Name:      &name,
 	}); err != nil {
 		return err
 	}
