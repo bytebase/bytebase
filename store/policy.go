@@ -93,12 +93,11 @@ func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Polic
 // DeletePolicy deletes an existing ARCHIVED policy by PolicyDelete.
 func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete) error {
 	// Validate policy.
-	// Currently we only support PolicyTypeSQLReview and PolicyTypeAccessControl type policy to delete by id
 	switch policyDelete.Type {
 	case api.PolicyTypeSQLReview:
 	case api.PolicyTypeAccessControl:
 	default:
-		return &common.Error{Code: common.Invalid, Err: errors.Errorf("invalid deleted policy type")}
+		return &common.Error{Code: common.Invalid, Err: errors.Errorf("disallow to delete policy type: %s", policyDelete.Type)}
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -120,7 +119,7 @@ func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete
 		return &common.Error{Code: common.NotFound, Err: errors.Errorf("failed to found policy with filter %+v, expect 1. ", find)}
 	}
 	policyRaw := policyRawList[0]
-	if policyRaw.RowStatus != api.Archived {
+	if policyRaw.RowStatus != api.Archived && policyDelete.Type == api.PolicyTypeSQLReview {
 		return &common.Error{Code: common.Invalid, Err: errors.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", policyDelete)}
 	}
 
@@ -547,12 +546,11 @@ func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*p
 func (*Store) deletePolicyImpl(ctx context.Context, tx *Tx, delete *api.PolicyDelete) error {
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM policy
-			WHERE resource_type = $1 AND resource_id = $2 AND type = $3 AND row_status = $4
+			WHERE resource_type = $1 AND resource_id = $2 AND type = $3
 		`,
 		delete.ResourceType,
 		delete.ResourceID,
 		delete.Type,
-		api.Archived,
 	); err != nil {
 		return FormatError(err)
 	}

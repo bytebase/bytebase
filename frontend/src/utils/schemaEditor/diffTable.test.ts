@@ -5,7 +5,7 @@ import {
   AlterTableContext,
   RenameTableContext,
 } from "@/types";
-import { Table } from "@/types/schemaEditor";
+import { Table } from "@/types/schemaEditor/atomType";
 import { UNKNOWN_ID } from "@/types/const";
 import { diffTableList } from "./diffTable";
 

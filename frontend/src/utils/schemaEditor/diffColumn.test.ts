@@ -4,7 +4,7 @@ import {
   DropColumnContext,
   ChangeColumnContext,
 } from "@/types";
-import { Column } from "@/types/schemaEditor";
+import { Column } from "@/types/schemaEditor/atomType";
 import { diffColumnList } from "./diffColumn";
 
 it("diff add column list", () => {

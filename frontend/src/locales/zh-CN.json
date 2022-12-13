@@ -1042,7 +1042,7 @@
     "ui-workflow-description": "经典的 SQL 审核工作流。开发者直接在 Bytebase 上提交一个 SQL 审核工单，然后等待被指派的 DBA 或者开发同事审核。在审核通过后，Bytebase 会进行相应的 SQL schema 变更。",
     "gitops-workflow": "GitOps 工作流",
     "gitops-workflow-description": "数据库变更脚本保存在 Git 仓库中。为了进行一次 schema 变更，开发者会创建一个变更脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。 当审核通过并且合并到配置的分支后，Bytebase 会自动开启流水线来进行新的 schema 变更。",
-    "configure-gitops": "配置 Git",
+    "configure-gitops": "配置 GitOps",
     "configure-gitops-success": "开启「{project}」GitOps 工作流成功",
     "change-gitops-success": "变更「{project}」仓库成功"
   },
