@@ -54,6 +54,7 @@ func getDefaultDataSourceOptions() DataSourceOptions {
 	}
 }
 
+// Scan implements database/sql Scanner interface, converts JSONB to DataSourceOptions struct.
 func (d *DataSourceOptions) Scan(src interface{}) error {
 	if bs, ok := src.([]byte); ok {
 		if string(bs) == "{}" {
