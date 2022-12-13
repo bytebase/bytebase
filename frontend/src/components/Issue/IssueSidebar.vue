@@ -205,7 +205,7 @@
           {{ hidePrefix(label.key) }}
         </h2>
 
-        <div class="col-span-2 text-sm font-medium text-main capitalize">
+        <div class="col-span-2 text-sm font-medium text-main">
           {{ label.value }}
         </div>
       </template>
@@ -306,12 +306,12 @@ import type {
 import {
   allTaskList,
   databaseSlug,
-  isReservedDatabaseLabel,
   hasWorkspacePermission,
   hidePrefix,
   taskSlug,
   isOwnerOfProject,
   extractDatabaseNameFromTask,
+  PRESET_LABEL_KEYS,
 } from "@/utils";
 import {
   hasFeature,
@@ -423,8 +423,8 @@ const visibleLabelList = computed((): DatabaseLabel[] => {
   // transform non-reserved labels to db properties
   if (!props.database) return [];
 
-  return props.database.labels.filter(
-    (label) => !isReservedDatabaseLabel(label)
+  return props.database.labels.filter((label) =>
+    PRESET_LABEL_KEYS.includes(label.key)
   );
 });
 
