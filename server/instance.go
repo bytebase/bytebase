@@ -50,6 +50,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					SslCa:    instanceCreate.SslCa,
 					SslCert:  instanceCreate.SslCert,
 					SslKey:   instanceCreate.SslKey,
+					Options: api.DataSourceOptions{
+						SRV: instanceCreate.SRV,
+					},
 				},
 			},
 			Name:         instanceCreate.Name,
@@ -473,8 +476,8 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 	if err := s.disallowBytebaseStore(create.Engine, create.Host, create.Port); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
-	if create.Engine != db.Postgres && create.Database != "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres")
+	if create.Engine != db.Postgres && create.Engine != db.MongoDB && create.Database != "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
 	}
 
 	instance, err := s.store.CreateInstance(ctx, create)
@@ -488,10 +491,10 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 	// Try creating the "bytebase" db in the added instance if needed.
 	// Since we allow user to add new instance upfront even providing the incorrect username/password,
 	// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-	db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err == nil {
-		defer db.Close(ctx)
-		if err := db.SetupMigrationIfNeeded(ctx); err != nil {
+		defer driver.Close(ctx)
+		if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
 			log.Warn("Failed to setup migration schema on instance creation",
 				zap.String("instance_name", instance.Name),
 				zap.String("engine", string(instance.Engine)),
@@ -542,8 +545,8 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 	if err := s.disallowBytebaseStore(instance.Engine, host, port); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
-	if instance.Engine != db.Postgres && database != "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres")
+	if instance.Engine != db.Postgres && instance.Engine != db.MongoDB && database != "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
 	}
 
 	instancePatched := instance
