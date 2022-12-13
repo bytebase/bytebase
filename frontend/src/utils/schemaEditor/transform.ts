@@ -6,7 +6,7 @@ import {
   Column as ColumnData,
   Table as TableData,
 } from "@/types";
-import { Column, Table } from "@/types/UIEditor";
+import { Column, Table } from "@/types/schemaEditor/atomType";
 
 export const transformTableDataToTable = (tableData: TableData): Table => {
   const columnList = tableData.columnList.map((columnData) =>
@@ -25,6 +25,7 @@ export const transformTableDataToTable = (tableData: TableData): Table => {
     comment: tableData.comment,
     originColumnList: columnList,
     columnList: cloneDeep(columnList),
+    status: "normal",
   };
 };
 
@@ -37,6 +38,7 @@ export const transformColumnDataToColumn = (columnData: ColumnData): Column => {
     nullable: columnData.nullable,
     comment: columnData.comment,
     default: columnData.default || null,
+    status: "normal",
   };
 };
 

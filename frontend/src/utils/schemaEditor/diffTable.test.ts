@@ -5,7 +5,7 @@ import {
   AlterTableContext,
   RenameTableContext,
 } from "@/types";
-import { Table } from "@/types/UIEditor";
+import { Table } from "@/types/schemaEditor/atomType";
 import { UNKNOWN_ID } from "@/types/const";
 import { diffTableList } from "./diffTable";
 
@@ -111,8 +111,10 @@ it("diff alter table list", () => {
               comment: "",
               nullable: false,
               default: undefined,
+              status: "normal",
             },
           ],
+          status: "normal",
         } as any as Table,
       ],
       targetTableList: [
@@ -133,6 +135,7 @@ it("diff alter table list", () => {
               comment: "",
               nullable: false,
               default: undefined,
+              status: "normal",
             },
             {
               oldName: "email",
@@ -146,6 +149,7 @@ it("diff alter table list", () => {
               status: "created",
             },
           ],
+          status: "normal",
         } as any as Table,
       ],
       wanted: {
@@ -212,6 +216,7 @@ it("diff drop table list", () => {
               default: undefined,
             },
           ],
+          status: "normal",
         } as any as Table,
       ],
       targetTableList: [

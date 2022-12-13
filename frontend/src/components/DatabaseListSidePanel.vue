@@ -145,7 +145,7 @@ export default defineComponent({
                 return {
                   id: `bb.project.${project.id}.database.${name}`,
                   name: label.join(" "),
-                  link: `/project/${projectSlug(project)}`,
+                  link: `/project/${projectSlug(project)}#databases`,
                 };
               }
             ),

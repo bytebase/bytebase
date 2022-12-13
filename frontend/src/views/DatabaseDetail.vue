@@ -67,7 +67,7 @@
                 >{{ $t("common.project") }}&nbsp;-&nbsp;</span
               >
               <router-link
-                :to="`/project/${projectSlug(database.project)}`"
+                :to="`/project/${projectSlug(database.project)}#databases`"
                 class="normal-link"
                 >{{ projectName(database.project) }}</router-link
               >
@@ -321,7 +321,7 @@ import {
   allowGhostMigration,
   isPITRDatabase,
   isDatabaseAccessible,
-  allowUsingUIEditor,
+  allowUsingSchemaEditor,
   isArchivedDatabase,
 } from "@/utils";
 import {
@@ -578,7 +578,7 @@ const createMigration = async (
   if (database.value.project.workflowType == "UI") {
     let mode: "online" | "normal" | false = "normal";
     if (type === "bb.issue.database.schema.update") {
-      if (allowUsingUIEditor([database.value])) {
+      if (allowUsingSchemaEditor([database.value])) {
         state.showSchemaEditorModal = true;
         return;
       }

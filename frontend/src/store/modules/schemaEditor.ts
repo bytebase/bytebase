@@ -5,20 +5,22 @@ import {
   DatabaseId,
   Database,
   TabContext,
-  UIEditorState,
-  UIEditorTabType,
+  SchemaEditorState,
+  SchemaEditorTabType,
   TableTabContext,
   DatabaseEdit,
+  ResourceObject,
 } from "@/types";
-import { Table } from "@/types/UIEditor";
-import { useDatabaseStore, useTableStore } from "./";
-import { transformTableDataToTable } from "@/utils/UIEditor/transform";
+import { DatabaseEditResult } from "@/types/schemaEditor";
+import { Table } from "@/types/schemaEditor/atomType";
+import { useDatabaseStore, useTableStore } from ".";
+import { transformTableDataToTable } from "@/utils/schemaEditor/transform";
 
 export const generateUniqueTabId = () => {
   return uniqueId();
 };
 
-const getDefaultUIEditorState = (): UIEditorState => {
+const getDefaultSchemaEditorState = (): SchemaEditorState => {
   return {
     tabState: {
       tabMap: new Map<string, TabContext>(),
@@ -30,9 +32,17 @@ const getDefaultUIEditorState = (): UIEditorState => {
   };
 };
 
-export const useUIEditorStore = defineStore("UIEditor", {
-  state: (): UIEditorState => {
-    return getDefaultUIEditorState();
+function convertDatabaseEditResult(
+  databaseEditResult: ResourceObject
+): DatabaseEditResult {
+  return {
+    ...databaseEditResult.attributes,
+  } as any as DatabaseEditResult;
+}
+
+export const useSchemaEditorStore = defineStore("SchemaEditor", {
+  state: (): SchemaEditorState => {
+    return getDefaultSchemaEditorState();
   },
   getters: {
     currentTab(state) {
@@ -53,13 +63,13 @@ export const useUIEditorStore = defineStore("UIEditor", {
         }
 
         if (
-          item.type === UIEditorTabType.TabForDatabase &&
+          item.type === SchemaEditorTabType.TabForDatabase &&
           item.databaseId === tab.databaseId
         ) {
           return true;
         }
         if (
-          item.type === UIEditorTabType.TabForTable &&
+          item.type === SchemaEditorTabType.TabForTable &&
           item.databaseId === tab.databaseId &&
           item.tableName === (tab as TableTabContext).tableName
         ) {
@@ -76,14 +86,6 @@ export const useUIEditorStore = defineStore("UIEditor", {
 
       if (setAsCurrentTab) {
         this.setCurrentTab(tab.id);
-      }
-    },
-    saveTab(tab: TabContext) {
-      if (tab.type === UIEditorTabType.TabForDatabase) {
-        // Edit database metadata is not allowed.
-      } else if (tab.type === UIEditorTabType.TabForTable) {
-        // tab.table.name = tab.tableCache.name;
-        // tab.table.columnList = cloneDeep(tab.tableCache.columnList);
       }
     },
     setCurrentTab(tabId: string) {
@@ -114,9 +116,9 @@ export const useUIEditorStore = defineStore("UIEditor", {
       this.tabState.tabMap.delete(tabId);
     },
     findTab(databaseId: DatabaseId, tableName?: string) {
-      let tabType = UIEditorTabType.TabForDatabase;
+      let tabType = SchemaEditorTabType.TabForDatabase;
       if (tableName !== undefined) {
-        tabType = UIEditorTabType.TabForTable;
+        tabType = SchemaEditorTabType.TabForTable;
       }
 
       const tab = this.tabList.find((tab) => {
@@ -124,10 +126,10 @@ export const useUIEditorStore = defineStore("UIEditor", {
           return false;
         }
 
-        if (tab.type === UIEditorTabType.TabForDatabase) {
+        if (tab.type === SchemaEditorTabType.TabForDatabase) {
           return true;
         } else if (
-          tab.type === UIEditorTabType.TabForTable &&
+          tab.type === SchemaEditorTabType.TabForTable &&
           tab.tableName === tableName
         ) {
           return true;
@@ -178,10 +180,10 @@ export const useUIEditorStore = defineStore("UIEditor", {
       );
     },
     dropTable(table: Table) {
-      const index = this.tableList.findIndex((item) => item === table);
+      // Remove table record and close tab for created table.
       if (table.status === "created") {
+        const index = this.tableList.findIndex((item) => item === table);
         this.tableList.splice(index, 1);
-        // Close tab for new table.
         const tab = this.findTab(table.databaseId, table.newName);
         if (tab) {
           this.closeTab(tab.id);
@@ -191,16 +193,17 @@ export const useUIEditorStore = defineStore("UIEditor", {
       }
     },
     restoreTable(table: Table) {
-      delete table.status;
+      table.status = "normal";
     },
     async postDatabaseEdit(databaseEdit: DatabaseEdit) {
-      const stmt = (
-        await axios.post<string>(
+      const resData = (
+        await axios.post(
           `/api/database/${databaseEdit.databaseId}/edit`,
           databaseEdit
         )
       ).data;
-      return stmt;
+      const databaseEditResult = convertDatabaseEditResult(resData.data);
+      return databaseEditResult;
     },
   },
 });

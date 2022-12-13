@@ -13,6 +13,7 @@
   </template>
   <template v-else>
     <div
+      v-if="targetProject.tenantMode === 'TENANT'"
       class="space-y-4 flex flex-col justify-center items-center"
       v-bind="$attrs"
     >

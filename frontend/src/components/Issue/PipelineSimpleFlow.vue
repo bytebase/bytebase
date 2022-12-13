@@ -5,57 +5,67 @@
         {{ taskNameOfStage(stage) }}
       </template>
     </PipelineStageList>
-
-    <div
-      v-if="shouldShowTaskBar"
-      class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
-    >
-      <template v-for="(task, i) in taskList" :key="i">
-        <div
-          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center overflow-hidden"
-          :class="taskClass(task)"
-          @click="onClickTask(task, i)"
-        >
-          <div class="flex-1">
-            <div class="flex items-center pb-1">
-              <TaskStatusIcon
-                :create="create"
-                :active="isActiveTask(task)"
-                :status="task.status"
-                class="transform scale-75"
-              />
-              <heroicons-solid:arrow-narrow-right
-                v-if="isActiveTask(task)"
-                class="name w-5 h-5"
-              />
-              <div class="name">
-                {{ databaseForTask(task).name }}
-                <span v-if="schemaVersionForTask(task)" class="schema-version">
-                  ({{ schemaVersionForTask(task) }})
-                </span>
-              </div>
-            </div>
-            <div class="flex items-center justify-between px-1 py-1">
-              <div class="flex flex-1 items-center whitespace-pre-wrap">
-                <InstanceEngineIcon
-                  :instance="databaseForTask(task).instance"
+    <div v-if="shouldShowTaskBar" class="relative">
+      <div
+        ref="taskBar"
+        class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 max-h-48 overflow-y-auto"
+        :class="{
+          'more-bottom': taskBarScrollState.bottom,
+          'more-top': taskBarScrollState.top,
+        }"
+      >
+        <template v-for="(task, i) in taskList" :key="i">
+          <div
+            class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center overflow-hidden"
+            :class="taskClass(task)"
+            @click="onClickTask(task, i)"
+          >
+            <div class="flex-1">
+              <div class="flex items-center pb-1">
+                <TaskStatusIcon
+                  :create="create"
+                  :active="isActiveTask(task)"
+                  :status="task.status"
+                  class="transform scale-75"
                 />
-                <span class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap">
-                  {{ instanceName(databaseForTask(task).instance) }}
-                </span>
+                <heroicons-solid:arrow-narrow-right
+                  v-if="isActiveTask(task)"
+                  class="name w-5 h-5"
+                />
+                <div class="name">
+                  {{ databaseForTask(task).name }}
+                  <span
+                    v-if="schemaVersionForTask(task)"
+                    class="schema-version"
+                  >
+                    ({{ schemaVersionForTask(task) }})
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between px-1 py-1">
+                <div class="flex flex-1 items-center whitespace-pre-wrap">
+                  <InstanceEngineIcon
+                    :instance="databaseForTask(task).instance"
+                  />
+                  <span
+                    class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap"
+                  >
+                    {{ instanceName(databaseForTask(task).instance) }}
+                  </span>
 
-                <TaskMarkAsDoneButton :task="(task as Task)" />
+                  <TaskMarkAsDoneButton :task="(task as Task)" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </template>
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed, ref } from "vue";
 
 import { useDatabaseStore } from "@/store";
 import {
@@ -71,6 +81,7 @@ import {
 import { activeTaskInStage, taskSlug } from "@/utils";
 import { useIssueLogic } from "./logic";
 import TaskMarkAsDoneButton from "./TaskMarkAsDoneButton.vue";
+import { useVerticalScrollState } from "@/composables/useScrollState";
 
 const {
   create,
@@ -82,6 +93,9 @@ const {
   selectStageOrTask,
 } = useIssueLogic();
 const databaseStore = useDatabaseStore();
+
+const taskBar = ref<HTMLDivElement>();
+const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 
 const taskNameOfStage = (stage: Stage | StageCreate) => {
   if (create.value) {
@@ -191,12 +205,6 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
 
   selectStageOrTask(stageId, ts);
 };
-
-watchEffect(() => {
-  if (create.value) {
-    databaseStore.fetchDatabaseListByProjectId(project.value.id);
-  }
-});
 </script>
 
 <style scoped lang="postcss">
@@ -228,5 +236,22 @@ watchEffect(() => {
 }
 .task.status_failed .name {
   @apply text-red-500;
+}
+
+.task-list::before {
+  @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  content: "";
+  box-shadow: none;
+}
+.task-list::after {
+  @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  content: "";
+  box-shadow: none;
+}
+.task-list.more-top::before {
+  box-shadow: inset 0 0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
+}
+.task-list.more-bottom::after {
+  box-shadow: inset 0 -0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
 }
 </style>

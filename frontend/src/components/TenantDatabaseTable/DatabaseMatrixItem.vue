@@ -82,7 +82,7 @@
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
 import { Database } from "../../types";
-import { databaseSlug, isReservedDatabaseLabel, hidePrefix } from "../../utils";
+import { databaseSlug, hidePrefix, PRESET_LABEL_KEYS } from "../../utils";
 import InstanceEngineIcon from "../InstanceEngineIcon.vue";
 import { NPopover } from "naive-ui";
 
@@ -102,7 +102,7 @@ export default defineComponent({
     const displayLabelList = computed(() => {
       return props.database.labels.filter((label) => {
         if (!label.value) return false;
-        if (isReservedDatabaseLabel(label)) return false;
+        if (!PRESET_LABEL_KEYS.includes(label.key)) return false;
         return true;
       });
     });

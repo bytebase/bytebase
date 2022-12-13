@@ -813,17 +813,26 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		engineType := parser.EngineType(database.Instance.Engine)
-		if err := edit.ValidateDatabaseEdit(engineType, databaseEdit); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid request: \n%s", err.Error()))
+		validateResultList, err := edit.ValidateDatabaseEdit(engineType, databaseEdit)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate DatabaseEdit").SetInternal(err)
 		}
 
-		statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
+		databaseEditResult := &api.DatabaseEditResult{
+			Statement:          "",
+			ValidateResultList: validateResultList,
 		}
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
-		if _, err := c.Response().Write([]byte(statement)); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write DDL statement response for database %v", databaseID)).SetInternal(err)
+		if len(validateResultList) == 0 {
+			statement, err := edit.DeparseDatabaseEdit(engineType, databaseEdit)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deparse DatabaseEdit").SetInternal(err)
+			}
+			databaseEditResult.Statement = statement
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, databaseEditResult); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database edit result response").SetInternal(err)
 		}
 		return nil
 	})

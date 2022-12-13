@@ -4,7 +4,7 @@ import {
   DropColumnContext,
   ChangeColumnContext,
 } from "@/types";
-import { Column } from "@/types/UIEditor";
+import { Column } from "@/types/schemaEditor/atomType";
 import { diffColumnList } from "./diffColumn";
 
 it("diff add column list", () => {
@@ -28,7 +28,7 @@ it("diff add column list", () => {
           nullable: false,
           default: undefined,
           status: "created",
-        } as Column,
+        } as any as Column,
       ],
       wanted: {
         addColumnList: [
@@ -73,7 +73,8 @@ it("diff modify column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
-        } as Column,
+          status: "normal",
+        } as any as Column,
       ],
       columnList: [
         {
@@ -83,7 +84,8 @@ it("diff modify column list", () => {
           comment: "",
           nullable: false,
           default: undefined,
-        } as Column,
+          status: "normal",
+        } as any as Column,
       ],
       wanted: {
         addColumnList: [],
@@ -129,7 +131,7 @@ it("diff drop column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
-        } as Column,
+        } as any as Column,
       ],
       columnList: [
         {
@@ -140,7 +142,7 @@ it("diff drop column list", () => {
           nullable: true,
           default: undefined,
           status: "dropped",
-        } as Column,
+        } as any as Column,
       ],
       wanted: {
         addColumnList: [],
@@ -179,7 +181,8 @@ it("diff column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
-        } as Column,
+          status: "normal",
+        } as any as Column,
         {
           oldName: "name",
           newName: "name",
@@ -187,7 +190,8 @@ it("diff column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
-        } as Column,
+          status: "normal",
+        } as any as Column,
         {
           oldName: "city",
           newName: "city",
@@ -195,7 +199,8 @@ it("diff column list", () => {
           comment: "",
           nullable: true,
           default: undefined,
-        } as Column,
+          status: "normal",
+        } as any as Column,
       ],
       columnList: [
         {
@@ -205,7 +210,8 @@ it("diff column list", () => {
           comment: "this is id",
           nullable: true,
           default: undefined,
-        } as Column,
+          status: "normal",
+        } as any as Column,
         {
           oldName: "name",
           newName: "name",
@@ -213,6 +219,7 @@ it("diff column list", () => {
           comment: "",
           nullable: false,
           default: "",
+          status: "normal",
         } as Column,
         {
           oldName: "city",
@@ -222,7 +229,7 @@ it("diff column list", () => {
           nullable: true,
           default: undefined,
           status: "dropped",
-        } as Column,
+        } as any as Column,
         {
           oldName: "birthday",
           newName: "birthday",

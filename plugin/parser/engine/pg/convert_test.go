@@ -2871,3 +2871,156 @@ func TestDropTrigger(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestCreateType(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `CREATE TYPE public.bug_status AS ENUM ('new', 'open', 'closed');`,
+			want: []ast.Node{
+				&ast.CreateTypeStmt{
+					Type: &ast.EnumTypeDef{
+						Name: &ast.TypeNameDef{
+							Schema: "public",
+							Name:   "bug_status",
+						},
+						LabelList: []string{"new", "open", "closed"},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `CREATE TYPE public.bug_status AS ENUM ('new', 'open', 'closed');`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestDropType(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `DROP TYPE public.bug_status, tp1`,
+			want: []ast.Node{
+				&ast.DropTypeStmt{
+					IfExists: false,
+					Behavior: ast.DropBehaviorRestrict,
+					TypeNameList: []*ast.TypeNameDef{
+						{
+							Schema: "public",
+							Name:   "bug_status",
+						},
+						{
+							Schema: "",
+							Name:   "tp1",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `DROP TYPE public.bug_status, tp1`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestAlterType(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `ALTER TYPE public.bug_status ADD VALUE 'a' BEFORE 'b'`,
+			want: []ast.Node{
+				&ast.AlterTypeStmt{
+					Type: &ast.TypeNameDef{
+						Schema: "public",
+						Name:   "bug_status",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddEnumLabelStmt{
+							EnumType: &ast.TypeNameDef{
+								Schema: "public",
+								Name:   "bug_status",
+							},
+							NewLabel:      "a",
+							Position:      ast.PositionTypeBefore,
+							NeighborLabel: "b",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+
+					Text:     `ALTER TYPE public.bug_status ADD VALUE 'a' BEFORE 'b'`,
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: `ALTER TYPE public.bug_status ADD VALUE 'a' AFTER 'b'`,
+			want: []ast.Node{
+				&ast.AlterTypeStmt{
+					Type: &ast.TypeNameDef{
+						Schema: "public",
+						Name:   "bug_status",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddEnumLabelStmt{
+							EnumType: &ast.TypeNameDef{
+								Schema: "public",
+								Name:   "bug_status",
+							},
+							NewLabel:      "a",
+							Position:      ast.PositionTypeAfter,
+							NeighborLabel: "b",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+
+					Text:     `ALTER TYPE public.bug_status ADD VALUE 'a' AFTER 'b'`,
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: `ALTER TYPE public.bug_status ADD VALUE 'a'`,
+			want: []ast.Node{
+				&ast.AlterTypeStmt{
+					Type: &ast.TypeNameDef{
+						Schema: "public",
+						Name:   "bug_status",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddEnumLabelStmt{
+							EnumType: &ast.TypeNameDef{
+								Schema: "public",
+								Name:   "bug_status",
+							},
+							NewLabel:      "a",
+							Position:      ast.PositionTypeEnd,
+							NeighborLabel: "",
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+
+					Text:     `ALTER TYPE public.bug_status ADD VALUE 'a'`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}

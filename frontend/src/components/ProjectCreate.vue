@@ -65,48 +65,6 @@
           </div>
         </div>
       </div>
-      <div v-if="state.project.tenantMode === 'TENANT'" class="col-span-1">
-        <label
-          class="text-base leading-6 font-medium text-control select-none flex items-center"
-        >
-          {{ $t("project.db-name-template") }}
-          <BBCheckbox
-            :value="state.enableDbNameTemplate"
-            class="ml-2"
-            @toggle="(on: boolean) => state.enableDbNameTemplate = on"
-          />
-        </label>
-        <p class="mt-1 textinfolabel">
-          <i18n-t keypath="label.db-name-template-tips">
-            <template #placeholder>
-              <!-- prettier-ignore -->
-              <code v-pre class="text-xs font-mono bg-control-bg">{{DB_NAME}}</code>
-            </template>
-            <template #link>
-              <a
-                class="normal-link inline-flex items-center"
-                href="https://bytebase.com/docs/tenant-database-management#database-name-template?source=console"
-                target="__BLANK"
-              >
-                {{ $t("common.learn-more") }}
-                <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-              </a>
-            </template>
-          </i18n-t>
-        </p>
-        <BBTextField
-          v-if="state.enableDbNameTemplate"
-          class="mt-2 w-full placeholder-gray-300"
-          :required="true"
-          :value="state.project.dbNameTemplate"
-          :placeholder="`e.g. ${DEFAULT_DB_NAME_TEMPLATE}`"
-          @input="
-            state.project.dbNameTemplate = (
-              $event.target as HTMLInputElement
-            ).value
-          "
-        />
-      </div>
     </div>
     <!-- Create button group -->
     <div class="pt-4 flex justify-end">
@@ -142,7 +100,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, defineComponent, watch } from "vue";
+import { computed, reactive, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
@@ -159,11 +117,8 @@ import {
 interface LocalState {
   project: ProjectCreate;
   showFeatureModal: boolean;
-  enableDbNameTemplate: boolean;
   isCreating: boolean;
 }
-
-const DEFAULT_DB_NAME_TEMPLATE = "{{DB_NAME}}__{{TENANT}}";
 
 export default defineComponent({
   name: "ProjectCreate",
@@ -178,11 +133,10 @@ export default defineComponent({
         name: "New Project",
         key: randomString(3).toUpperCase(),
         tenantMode: "DISABLED",
-        dbNameTemplate: "{{DB_NAME}}_{{TENANT}}",
+        dbNameTemplate: "",
         roleProvider: "BYTEBASE",
       } as Project,
       showFeatureModal: false,
-      enableDbNameTemplate: false,
       isCreating: false,
     });
 
@@ -195,34 +149,10 @@ export default defineComponent({
     const allowCreate = computed(() => {
       if (isEmpty(state.project.name)) return false;
 
-      if (state.project.tenantMode === "TENANT" && state.enableDbNameTemplate) {
-        if (!state.project.dbNameTemplate) {
-          return false;
-        }
-      }
-
       return true;
     });
 
-    watch(
-      () => state.enableDbNameTemplate,
-      (on) => {
-        if (on) {
-          state.project.dbNameTemplate = DEFAULT_DB_NAME_TEMPLATE;
-        } else {
-          state.project.dbNameTemplate = "";
-        }
-      }
-    );
-
     const create = async () => {
-      if (
-        state.project.tenantMode !== "TENANT" ||
-        !state.enableDbNameTemplate
-      ) {
-        // clear up unnecessary fields
-        state.project.dbNameTemplate = "";
-      }
       if (
         state.project.tenantMode == "TENANT" &&
         !hasFeature("bb.feature.multi-tenancy")
@@ -264,7 +194,6 @@ export default defineComponent({
     };
 
     return {
-      DEFAULT_DB_NAME_TEMPLATE,
       state,
       allowCreate,
       cancel,

@@ -42,4 +42,4 @@ export * from "./view";
 export * from "./dbExtension";
 export * from "./sqlReview";
 export * from "./onboardingGuide";
-export * from "./UIEditor";
+export * from "./schemaEditor";

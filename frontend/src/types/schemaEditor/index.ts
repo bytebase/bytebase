@@ -1,42 +1,7 @@
-import { Database, DatabaseId, TableEngineType, TableType } from ".";
+import { Database, DatabaseId } from "..";
+import { Table } from "./atomType";
 
-type TableOrColumnStatus = "created" | "dropped";
-
-export interface Column {
-  // Related fields
-  databaseId: DatabaseId;
-
-  // Domain specific fields
-  oldName: string;
-  newName: string;
-  type: string;
-  nullable: boolean;
-  comment: string;
-  default: string | null;
-
-  status?: TableOrColumnStatus;
-}
-
-export interface Table {
-  // Related fields
-  databaseId: DatabaseId;
-
-  // Domain specific fields
-  oldName: string;
-  newName: string;
-  type: TableType;
-  engine: TableEngineType;
-  collation: string;
-  rowCount: number;
-  dataSize: number;
-  comment: string;
-  columnList: Column[];
-  originColumnList: Column[];
-
-  status?: TableOrColumnStatus;
-}
-
-export enum UIEditorTabType {
+export enum SchemaEditorTabType {
   TabForDatabase = "database",
   TabForTable = "table",
 }
@@ -44,14 +9,14 @@ export enum UIEditorTabType {
 // Tab context for editing database.
 export interface DatabaseTabContext {
   id: string;
-  type: UIEditorTabType.TabForDatabase;
+  type: SchemaEditorTabType.TabForDatabase;
   databaseId: DatabaseId;
 }
 
 // Tab context for editing table.
 export interface TableTabContext {
   id: string;
-  type: UIEditorTabType.TabForTable;
+  type: SchemaEditorTabType.TabForTable;
   databaseId: DatabaseId;
   tableName: string;
 }
@@ -60,7 +25,7 @@ export type TabContext = DatabaseTabContext | TableTabContext;
 
 type TabId = string;
 
-export interface UIEditorState {
+export interface SchemaEditorState {
   tabState: {
     tabMap: Map<TabId, TabContext>;
     currentTabId?: TabId;
@@ -133,4 +98,17 @@ export interface ChangeColumnContext {
 
 export interface DropColumnContext {
   name: string;
+}
+
+/**
+ * Type definition for DatabaseEdit validation API message.
+ */
+export interface ValidateResult {
+  type: string;
+  message: string;
+}
+
+export interface DatabaseEditResult {
+  statement: string;
+  validateResultList: ValidateResult[];
 }

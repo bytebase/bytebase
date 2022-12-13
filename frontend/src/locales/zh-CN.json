@@ -1042,7 +1042,7 @@
     "ui-workflow-description": "经典的 SQL 审核工作流。开发者直接在 Bytebase 上提交一个 SQL 审核工单，然后等待被指派的 DBA 或者开发同事审核。在审核通过后，Bytebase 会进行相应的 SQL schema 变更。",
     "gitops-workflow": "GitOps 工作流",
     "gitops-workflow-description": "数据库变更脚本保存在 Git 仓库中。为了进行一次 schema 变更，开发者会创建一个变更脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。 当审核通过并且合并到配置的分支后，Bytebase 会自动开启流水线来进行新的 schema 变更。",
-    "configure-gitops": "配置 Git",
+    "configure-gitops": "配置 GitOps",
     "configure-gitops-success": "开启「{project}」GitOps 工作流成功",
     "change-gitops-success": "变更「{project}」仓库成功"
   },
@@ -1180,7 +1180,7 @@
       "standard": "标准",
       "tenant": "多租户"
     },
-    "db-name-template": "数据库名称模板",
+    "db-name-template": "租户数据库名称模板",
     "select": "选择项目",
     "lgtm-check": {
       "self": "LGTM 检查",
@@ -1406,11 +1406,11 @@
       "self": "管理员模式"
     }
   },
-  "ui-editor": {
-    "self": "UI 编辑器",
+  "schema-editor": {
+    "self": "Schema 编辑器",
     "use-tips": "选择需要编辑的数据库或者表",
     "preview-issue": "预览工单",
-    "sync-sql-from-ui-editor": "从 UI 编辑器中同步 SQL",
+    "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
     "raw-sql": "SQL 语句",
     "actions": {
       "create-table": "新建表",
@@ -1477,7 +1477,7 @@
     "setting": {
       "description": "标签是一组可用于标识数据库租户的键值对。{link}。"
     },
-    "db-name-template-tips": "所有租户数据库名字遵循命名模版。有着相同 {placeholder} 的数据库会被分成一组。{link}。",
+    "db-name-template-tips": "如果您的租户数据库名字遵循命名模版，您可以在这里指定。有着相同 {placeholder} 的数据库会分在一组。如果您不想分组，就让它为空。{link}。",
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。"

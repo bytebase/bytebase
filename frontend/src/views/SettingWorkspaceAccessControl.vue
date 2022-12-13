@@ -26,15 +26,7 @@
         :row-clickable="false"
       >
         <template #body="{ rowData: policy }: { rowData: Policy }">
-          <BBTableCell class="w-[1%] pl-4 pr-0">
-            <!-- w-[1%] means as narrow as possible -->
-            <BBSwitch
-              :disabled="!allowAdmin"
-              :value="policy.rowStatus === 'NORMAL'"
-              @toggle="handleToggleEnabled(policy, $event)"
-            />
-          </BBTableCell>
-          <BBTableCell class="w-[15%]">
+          <BBTableCell class="w-[25%]" :left-padding="4">
             <div class="flex items-center space-x-2">
               <span>{{ databaseOfPolicy(policy).name }}</span>
             </div>
@@ -42,7 +34,7 @@
           <BBTableCell class="w-[15%]">
             {{ projectName(databaseOfPolicy(policy).project) }}
           </BBTableCell>
-          <BBTableCell class="w-[10%]">
+          <BBTableCell class="w-[15%]">
             <div class="flex items-center">
               {{
                 environmentName(databaseOfPolicy(policy).instance.environment)
@@ -146,7 +138,7 @@ import {
 import { BBTableColumn } from "@/bbkit/types";
 import { hasWorkspacePermission } from "@/utils";
 import AddRuleForm from "@/components/AccessControl/AddRuleForm.vue";
-import { capitalize, uniq } from "lodash-es";
+import { uniq } from "lodash-es";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -254,31 +246,7 @@ const handleRemove = async (policy: Policy) => {
   }
 };
 
-const handleToggleEnabled = async (policy: Policy, on: boolean) => {
-  if (!hasAccessControlFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-
-  try {
-    const rowStatus = on ? "NORMAL" : "ARCHIVED";
-    await policyStore.upsertPolicyByDatabaseAndType({
-      databaseId: policy.resourceId as DatabaseId,
-      type: "bb.policy.access-control",
-      policyUpsert: {
-        rowStatus,
-      },
-    });
-    policy.rowStatus = rowStatus;
-  } catch {
-    // nothing todo
-  }
-};
-
 const COLUMN_LIST = computed((): BBTableColumn[] => [
-  {
-    title: capitalize(t("common.enabled")),
-  },
   {
     title: t("common.database"),
   },

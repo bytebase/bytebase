@@ -76,6 +76,7 @@ p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}/check, POST
 p, DEVELOPER, /sql/ping, POST
+p, DEVELOPER, /sql/sync-schema, POST
 p, DEVELOPER, /sql/execute, POST
 p, DEVELOPER, /vcs, GET
 p, DEVELOPER, /vcs/{vcsID}, GET

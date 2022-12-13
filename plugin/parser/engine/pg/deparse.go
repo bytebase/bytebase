@@ -86,6 +86,16 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.DropTypeStmt:
+		if err := deparseDropType(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
+	case *ast.AlterTypeStmt:
+		if err := deparseAlterType(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -1173,6 +1183,86 @@ func deparseFunctionSignature(function *ast.FunctionDef, buf *strings.Builder) e
 		}
 	}
 	return buf.WriteByte(')')
+}
+
+func deparseAlterType(ctx parser.DeparseContext, in *ast.AlterTypeStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("ALTER TYPE "); err != nil {
+		return err
+	}
+	if in.Type.Schema != "" {
+		if err := writeSurrounding(buf, in.Type.Schema, `"`); err != nil {
+			return err
+		}
+		if err := buf.WriteByte('.'); err != nil {
+			return err
+		}
+	}
+	if err := writeSurrounding(buf, in.Type.Name, `"`); err != nil {
+		return err
+	}
+	if err := buf.WriteByte(' '); err != nil {
+		return err
+	}
+
+	for _, item := range in.AlterItemList {
+		if node, ok := item.(*ast.AddEnumLabelStmt); ok {
+			// The ADD ENUM VALUE statement use the cannot share the AlterType statement with other alter items.
+			return deparseAddEnumValue(ctx, node, buf)
+		}
+	}
+	return nil
+}
+
+func deparseAddEnumValue(_ parser.DeparseContext, in *ast.AddEnumLabelStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("ADD VALUE "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.NewLabel, "'"); err != nil {
+		return err
+	}
+	switch in.Position {
+	case ast.PositionTypeEnd:
+		return nil
+	case ast.PositionTypeBefore:
+		if _, err := buf.WriteString(" BEFORE "); err != nil {
+			return err
+		}
+	case ast.PositionTypeAfter:
+		if _, err := buf.WriteString(" AFTER "); err != nil {
+			return err
+		}
+	}
+	return writeSurrounding(buf, in.NeighborLabel, "'")
+}
+
+func deparseDropType(ctx parser.DeparseContext, in *ast.DropTypeStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("DROP TYPE "); err != nil {
+		return err
+	}
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+	for i, tp := range in.TypeNameList {
+		if i != 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if tp.Schema != "" {
+			if err := writeSurrounding(buf, tp.Schema, `"`); err != nil {
+				return err
+			}
+			if err := buf.WriteByte('.'); err != nil {
+				return err
+			}
+		}
+		if err := writeSurrounding(buf, tp.Name, `"`); err != nil {
+			return err
+		}
+	}
+	return deparseDropBehavior(ctx, in.Behavior, buf)
 }
 
 func deparseDropTrigger(ctx parser.DeparseContext, in *ast.DropTriggerStmt, buf *strings.Builder) error {

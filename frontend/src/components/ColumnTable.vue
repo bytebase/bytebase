@@ -8,7 +8,11 @@
     v-bind="$attrs"
   >
     <template #body="{ rowData: column }">
-      <BBTableCell :left-padding="4" class="w-[1%] text-center">
+      <BBTableCell
+        v-if="showSensitiveColumn"
+        :left-padding="4"
+        class="w-[1%] text-center"
+      >
         <!-- width: 1% means as narrow as possible -->
         <input
           type="checkbox"
@@ -24,7 +28,7 @@
           "
         />
       </BBTableCell>
-      <BBTableCell class="w-16">
+      <BBTableCell class="w-16" :left-padding="showSensitiveColumn ? 2 : 4">
         {{ column.name }}
       </BBTableCell>
       <BBTableCell class="w-8">
@@ -79,6 +83,7 @@ import { useI18n } from "vue-i18n";
 import { cloneDeep } from "lodash-es";
 import { featureToRef, useCurrentUser, usePolicyStore } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
+import { BBTableColumn } from "@/bbkit/types";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -115,6 +120,9 @@ export default defineComponent({
     });
 
     const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+    const showSensitiveColumn = computed(() => {
+      return hasSensitiveDataFeature.value && props.engine === "MYSQL";
+    });
 
     const currentUser = useCurrentUser();
     const allowAdmin = computed(() => {
@@ -133,12 +141,40 @@ export default defineComponent({
       return false;
     });
 
-    const NORMAL_COLUMN_LIST = computed(() => [
-      {
-        title: t("database.sensitive"),
-        center: true,
-        nowrap: true,
-      },
+    const NORMAL_COLUMN_LIST = computed(() => {
+      const columnList: BBTableColumn[] = [
+        {
+          title: t("common.name"),
+        },
+        {
+          title: t("common.type"),
+        },
+        {
+          title: t("common.Default"),
+        },
+        {
+          title: t("database.nullable"),
+        },
+        {
+          title: t("db.character-set"),
+        },
+        {
+          title: t("db.collation"),
+        },
+        {
+          title: t("database.comment"),
+        },
+      ];
+      if (showSensitiveColumn.value) {
+        columnList.unshift({
+          title: t("database.sensitive"),
+          center: true,
+          nowrap: true,
+        });
+      }
+      return columnList;
+    });
+    const POSTGRES_COLUMN_LIST = computed((): BBTableColumn[] => [
       {
         title: t("common.name"),
       },
@@ -152,44 +188,13 @@ export default defineComponent({
         title: t("database.nullable"),
       },
       {
-        title: t("db.character-set"),
-      },
-      {
         title: t("db.collation"),
       },
       {
         title: t("database.comment"),
       },
     ]);
-    const POSTGRES_COLUMN_LIST = computed(() => [
-      {
-        title: t("database.sensitive"),
-        center: true,
-      },
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("common.type"),
-      },
-      {
-        title: t("common.Default"),
-      },
-      {
-        title: t("database.nullable"),
-      },
-      {
-        title: t("db.collation"),
-      },
-      {
-        title: t("database.comment"),
-      },
-    ]);
-    const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed(() => [
-      {
-        title: t("database.sensitive"),
-        center: true,
-      },
+    const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
       {
         title: t("common.name"),
       },
@@ -273,6 +278,7 @@ export default defineComponent({
     return {
       state,
       columnNameList,
+      showSensitiveColumn,
       allowAdmin,
       isSensitiveColumn,
       toggleSensitiveColumn,
