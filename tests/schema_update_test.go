@@ -1622,7 +1622,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			policyPayload, err := prodTemplateSQLReviewPolicy()
 			a.NoError(err)
 
-			err = ctl.upsertPolicy(api.PolicyUpsert{
+			_, err = ctl.upsertPolicy(api.PolicyUpsert{
 				ResourceType: api.PolicyResourceTypeEnvironment,
 				ResourceID:   prodEnvironment.ID,
 				Type:         api.PolicyTypeSQLReview,
