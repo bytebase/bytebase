@@ -64,9 +64,7 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 		return err
 	}
 
-	// Invalidate and refresh the subscription cache.
-	s.cachedSubscription = nil
-	s.LoadSubscription(ctx)
+	s.RefreshCache(ctx)
 	return nil
 }
 
@@ -124,6 +122,12 @@ func (s *LicenseService) GetPlanLimitValue(name api.PlanLimit) int64 {
 		return 0
 	}
 	return v[s.GetEffectivePlan()]
+}
+
+// RefreshCache will invalidate and refresh the subscription cache.
+func (s *LicenseService) RefreshCache(ctx context.Context) {
+	s.cachedSubscription = nil
+	s.LoadSubscription(ctx)
 }
 
 // loadLicense will load license and validate it.
