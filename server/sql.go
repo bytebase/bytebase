@@ -821,6 +821,15 @@ func isMySQLExcludeDatabase(database string) bool {
 }
 
 func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, database *api.Database) (bool, error) {
+	// Workspace Owners and DBAs always have database access rights.
+	yes, err := s.isWorkspaceOwnerOrDBA(ctx, principalID)
+	if err != nil {
+		return false, err
+	}
+	if yes {
+		return true, nil
+	}
+
 	// Only project member can access database.
 	if !api.HasActiveProjectMembership(principalID, database.Project) {
 		return false, nil
@@ -857,4 +866,21 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, d
 		hasAccessRights = true
 	}
 	return hasAccessRights, nil
+}
+
+func (s *Server) isWorkspaceOwnerOrDBA(ctx context.Context, principalID int) (bool, error) {
+	memberList, err := s.store.FindMember(ctx, &api.MemberFind{
+		ID: &principalID,
+	})
+	if err != nil {
+		return false, err
+	}
+	if len(memberList) == 0 {
+		return false, errors.Errorf("Member: %d not found", principalID)
+	}
+	if len(memberList) > 1 {
+		// never catch.
+		return false, errors.Errorf("expected one member but found %t", len(memberList))
+	}
+	return memberList[0].Role == api.Owner || memberList[0].Role == api.DBA, nil
 }
