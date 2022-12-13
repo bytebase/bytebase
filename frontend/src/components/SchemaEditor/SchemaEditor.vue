@@ -15,10 +15,10 @@
               class="w-full h-auto relative overflow-y-auto"
             >
               <DatabaseEditor
-                v-if="currentTab.type === UIEditorTabType.TabForDatabase"
+                v-if="currentTab.type === SchemaEditorTabType.TabForDatabase"
               />
               <TableEditor
-                v-else-if="currentTab.type === UIEditorTabType.TabForTable"
+                v-else-if="currentTab.type === SchemaEditorTabType.TabForTable"
               />
             </div>
           </template>
@@ -33,8 +33,8 @@
 import { uniq } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, onMounted, PropType, reactive } from "vue";
-import { useInstanceStore, useUIEditorStore } from "@/store";
-import { DatabaseId, UIEditorTabType } from "@/types";
+import { useInstanceStore, useSchemaEditorStore } from "@/store";
+import { DatabaseId, SchemaEditorTabType } from "@/types";
 import AsidePanel from "./AsidePanel.vue";
 import EmptyTips from "./EmptyTips.vue";
 import TabsContainer from "./TabsContainer.vue";
@@ -55,7 +55,7 @@ const state = reactive<LocalState>({
   isLoading: true,
 });
 
-const editorStore = useUIEditorStore();
+const editorStore = useSchemaEditorStore();
 const instanceStore = useInstanceStore();
 const currentTab = computed(() => {
   return editorStore.currentTab;
