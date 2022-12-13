@@ -219,11 +219,12 @@ import {
 } from "@/store/modules";
 import { TableTabContext, unknown } from "@/types";
 import { BBCheckbox, BBSpin } from "@/bbkit";
+import { DatabaseEdit } from "@/types/schemaEditor";
+import { Column, Table } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
 import { diffTableList } from "@/utils/schemaEditor/diffTable";
 import { transformColumnDataToColumn } from "@/utils/schemaEditor/transform";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
-import { Column, DatabaseEdit, Table } from "@/types/schemaEditor";
 
 type TabType = "column-list" | "raw-sql";
 
