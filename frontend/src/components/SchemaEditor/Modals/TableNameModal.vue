@@ -2,14 +2,14 @@
   <BBModal
     :title="
       isCreatingTable
-        ? $t('ui-editor.actions.create-table')
-        : $t('ui-editor.actions.rename')
+        ? $t('schema-editor.actions.create-table')
+        : $t('schema-editor.actions.rename')
     "
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
     <div class="w-72">
-      <p>{{ $t("ui-editor.table.name") }}</p>
+      <p>{{ $t("schema-editor.table.name") }}</p>
       <BBTextField
         class="my-2 w-full"
         :required="true"
@@ -32,17 +32,17 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseId, UNKNOWN_ID, UIEditorTabType, unknown } from "@/types";
-import { TableTabContext } from "@/types/UIEditor";
+import { DatabaseId, UNKNOWN_ID, SchemaEditorTabType, unknown } from "@/types";
+import { TableTabContext } from "@/types/schemaEditor";
 import {
-  useUIEditorStore,
+  useSchemaEditorStore,
   useNotificationStore,
   generateUniqueTabId,
 } from "@/store";
 import {
   transformColumnDataToColumn,
   transformTableDataToTable,
-} from "@/utils/UIEditor/transform";
+} from "@/utils/schemaEditor/transform";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -66,7 +66,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const editorStore = useUIEditorStore();
+const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   tableName: props.tableName || "",
@@ -85,7 +85,7 @@ const handleConfirmButtonClick = async () => {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("ui-editor.message.invalid-table-name"),
+      title: t("schema-editor.message.invalid-table-name"),
     });
     return;
   }
@@ -99,7 +99,7 @@ const handleConfirmButtonClick = async () => {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("ui-editor.message.duplicated-table-name"),
+      title: t("schema-editor.message.duplicated-table-name"),
     });
     return;
   }
@@ -122,7 +122,7 @@ const handleConfirmButtonClick = async () => {
     editorStore.tableList.push(table);
     editorStore.addTab({
       id: generateUniqueTabId(),
-      type: UIEditorTabType.TabForTable,
+      type: SchemaEditorTabType.TabForTable,
       databaseId: props.databaseId,
       tableName: table.newName,
     });

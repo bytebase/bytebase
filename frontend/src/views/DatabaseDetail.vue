@@ -321,7 +321,7 @@ import {
   allowGhostMigration,
   isPITRDatabase,
   isDatabaseAccessible,
-  allowUsingUIEditor,
+  allowUsingSchemaEditor,
   isArchivedDatabase,
 } from "@/utils";
 import {
@@ -578,7 +578,7 @@ const createMigration = async (
   if (database.value.project.workflowType == "UI") {
     let mode: "online" | "normal" | false = "normal";
     if (type === "bb.issue.database.schema.update") {
-      if (allowUsingUIEditor([database.value])) {
+      if (allowUsingSchemaEditor([database.value])) {
         state.showSchemaEditorModal = true;
         return;
       }
