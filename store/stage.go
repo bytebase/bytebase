@@ -2,14 +2,12 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
 
 // stageRaw is the store model for an Stage.
@@ -52,17 +50,21 @@ func (raw *stageRaw) toStage() *api.Stage {
 	}
 }
 
-// CreateStage creates an instance of Stage.
-func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.Stage, error) {
-	stageRaw, err := s.createStageRaw(ctx, create)
+// CreateStage creates an list of Stages.
+func (s *Store) CreateStage(ctx context.Context, creates []*api.StageCreate) ([]*api.Stage, error) {
+	stageRaws, err := s.createStageRaw(ctx, creates)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Stage with StageCreate[%+v]", create)
+		return nil, errors.Wrap(err, "failed to create Stage")
 	}
-	stage, err := s.composeStage(ctx, stageRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Stage with stageRaw[%+v]", stageRaw)
+	var stages []*api.Stage
+	for _, stageRaw := range stageRaws {
+		stage, err := s.composeStage(ctx, stageRaw)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to compose Stage with stageRaw[%+v]", stageRaw)
+		}
+		stages = append(stages, stage)
 	}
-	return stage, nil
+	return stages, nil
 }
 
 // FindStage finds a list of Stage instances.
@@ -121,15 +123,15 @@ func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, er
 	return stage, nil
 }
 
-// createStageRaw creates a new stage.
-func (s *Store) createStageRaw(ctx context.Context, create *api.StageCreate) (*stageRaw, error) {
+// createStageRaw creates a list of stages.
+func (s *Store) createStageRaw(ctx context.Context, creates []*api.StageCreate) ([]*stageRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	stage, err := s.createStageImpl(ctx, tx, create)
+	stages, err := s.createStageImpl(ctx, tx, creates)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +140,7 @@ func (s *Store) createStageRaw(ctx context.Context, create *api.StageCreate) (*s
 		return nil, FormatError(err)
 	}
 
-	return stage, nil
+	return stages, nil
 }
 
 // findStageRaw retrieves a list of stages based on find.
@@ -158,41 +160,61 @@ func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stage
 }
 
 // createStageImpl creates a new stage.
-func (*Store) createStageImpl(ctx context.Context, tx *Tx, create *api.StageCreate) (*stageRaw, error) {
-	query := `
-		INSERT INTO stage (
-			creator_id,
-			updater_id,
-			pipeline_id,
-			environment_id,
-			name
+func (*Store) createStageImpl(ctx context.Context, tx *Tx, creates []*api.StageCreate) ([]*stageRaw, error) {
+	var valueStr []string
+	var values []interface{}
+	for i, create := range creates {
+		values = append(values,
+			create.CreatorID,
+			create.CreatorID,
+			create.PipelineID,
+			create.EnvironmentID,
+			create.Name,
 		)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name` + `
-	`
-	var stageRaw stageRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.PipelineID,
-		create.EnvironmentID,
-		create.Name,
-	).Scan(
-		&stageRaw.ID,
-		&stageRaw.CreatorID,
-		&stageRaw.CreatedTs,
-		&stageRaw.UpdaterID,
-		&stageRaw.UpdatedTs,
-		&stageRaw.PipelineID,
-		&stageRaw.EnvironmentID,
-		&stageRaw.Name,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
+		const count = 5
+		valueStr = append(valueStr, fmt.Sprintf("($%d,$%d,$%d,$%d,$%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5))
+	}
+
+	query := fmt.Sprintf(`
+    WITH inserted AS (
+	  	INSERT INTO stage (
+	  		creator_id,
+	  		updater_id,
+	  		pipeline_id,
+	  		environment_id,
+	  		name
+	  	) VALUES %s
+	  	RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name
+    ) SELECT * FROM inserted ORDER BY id ASC
+    `, strings.Join(valueStr, ","))
+	rows, err := tx.QueryContext(ctx, query, values...)
+	if err != nil {
 		return nil, FormatError(err)
 	}
-	return &stageRaw, nil
+	defer rows.Close()
+
+	var stageRaws []*stageRaw
+	for rows.Next() {
+		var stageRaw stageRaw
+		if err := rows.Scan(
+			&stageRaw.ID,
+			&stageRaw.CreatorID,
+			&stageRaw.CreatedTs,
+			&stageRaw.UpdaterID,
+			&stageRaw.UpdatedTs,
+			&stageRaw.PipelineID,
+			&stageRaw.EnvironmentID,
+			&stageRaw.Name,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		stageRaws = append(stageRaws, &stageRaw)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return stageRaws, nil
 }
 
 func (*Store) findStageImpl(ctx context.Context, tx *Tx, find *api.StageFind) ([]*stageRaw, error) {
