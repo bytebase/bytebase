@@ -62,7 +62,7 @@ const currentTab = computed(() => {
 });
 
 onMounted(async () => {
-  // Reset UI editor state before fetching latest data when mounted.
+  // Reset Schema Editor state before fetching latest data when mounted.
   editorStore.$reset();
 
   // Prepare instance and database data.
