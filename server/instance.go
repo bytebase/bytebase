@@ -477,7 +477,7 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 	if create.Engine != db.Postgres && create.Engine != db.MongoDB && create.Database != "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
 	}
 
 	instance, err := s.store.CreateInstance(ctx, create)
@@ -549,7 +549,7 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 	if instance.Engine != db.Postgres && instance.Engine != db.MongoDB && database != "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
 	}
 
 	instancePatched := instance
