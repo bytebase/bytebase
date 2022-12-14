@@ -33,9 +33,6 @@
       <BBTableCell class="w-[14%]">
         {{ bytesToString(table.indexSize) }}
       </BBTableCell>
-      <BBTableCell v-if="!isPostgres" class="w-[14%]">
-        {{ humanizeTs(table.createdTs) }}
-      </BBTableCell>
     </template>
 
     <template v-if="hasReservedTables && !state.showReservedTableList" #footer>
@@ -122,9 +119,6 @@ export default defineComponent({
           },
           {
             title: t("database.index-size"),
-          },
-          {
-            title: t("common.created-at"),
           },
         ];
       }
