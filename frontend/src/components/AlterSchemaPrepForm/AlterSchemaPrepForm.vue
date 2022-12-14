@@ -6,10 +6,7 @@
           <template v-if="isTenantProject">
             <!-- tenant mode project -->
             <NTabs v-model:value="state.alterType">
-              <NTabPane
-                :tab="$t('alter-schema.alter-db-group')"
-                name="DB_GROUP"
-              >
+              <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
                 <ProjectTenantView
                   :state="state"
                   :database-list="databaseList"
@@ -161,7 +158,7 @@ import { computed, reactive, PropType, ref } from "vue";
 import { useRouter } from "vue-router";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
-import { cloneDeep, groupBy } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
 import {
   baseDirectoryWebUrl,
@@ -175,7 +172,6 @@ import {
 import {
   allowGhostMigration,
   allowUsingSchemaEditor,
-  parseDatabaseNameByTemplate,
   sortDatabaseList,
 } from "@/utils";
 import {
@@ -192,13 +188,11 @@ import ProjectStandardView, {
 import ProjectTenantView, {
   State as ProjectTenantState,
 } from "./ProjectTenantView.vue";
-import { State as CommonTenantState } from "./CommonTenantView.vue";
 import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
 
 type LocalState = ProjectStandardState &
-  ProjectTenantState &
-  CommonTenantState & {
+  ProjectTenantState & {
     project?: Project;
     searchText: string;
     showSchemaEditorModal: boolean;
@@ -247,8 +241,6 @@ const state = reactive<LocalState>({
     : undefined,
   alterType: "SINGLE_DB",
   selectedDatabaseIdListForEnvironment: new Map(),
-  tenantProjectId: undefined,
-  selectedDatabaseName: undefined,
   selectedDatabaseIdListForTenantMode: new Set<number>(),
   deployingTenantDatabaseList: [],
   searchText: "",
@@ -268,7 +260,7 @@ const isTenantProject = computed((): boolean => {
 if (isTenantProject.value) {
   // For tenant mode projects, alter multiple db via DeploymentConfig
   // is the default suggested way.
-  state.alterType = "DB_GROUP";
+  state.alterType = "TENANT";
 }
 
 const environmentList = useEnvironmentList(["NORMAL"]);
@@ -379,7 +371,7 @@ const generateMultiDb = async () => {
 };
 
 const showGenerateTenant = computed(() => {
-  // True when a tenant project is selected and "DB_GROUP" is selected.
+  // True when a tenant project is selected and "TENANT" is selected.
   if (isTenantProject.value) {
     return true;
   }
@@ -393,14 +385,11 @@ const allowGenerateTenant = computed(() => {
     }
   }
 
-  // All databases will be in the same group if dbNameTemplate is empty.
-  if (isTenantProject.value && state.project?.dbNameTemplate === "")
-    return true;
-  if (!state.selectedDatabaseName) return false;
-
-  // not allowed when database list filtered by deployment config is empty
-  // which means no database will be deployed
-  if (state.deployingTenantDatabaseList.length === 0) return false;
+  if (isTenantProject.value) {
+    // not allowed when database list filtered by deployment config is empty
+    // which means no database will be deployed
+    return state.deployingTenantDatabaseList.length > 0;
+  }
 
   return true;
 });
@@ -423,7 +412,7 @@ const generateTenant = async () => {
     return;
   }
 
-  const projectId = props.projectId || state.tenantProjectId;
+  const projectId = props.projectId;
   if (!projectId) return;
 
   const project = projectStore.getProjectById(projectId) as Project;
@@ -436,29 +425,24 @@ const generateTenant = async () => {
       project: project.id,
       mode: "tenant",
     };
-    if (state.alterType === "DB_GROUP") {
+    if (state.alterType === "TENANT") {
       const databaseList = useDatabaseStore().getDatabaseListByProjectId(
         project.id
       );
-      const databaseListGroupByName = groupBy(databaseList, (db) => {
-        if (project.dbNameTemplate) {
-          return parseDatabaseNameByTemplate(db.name, project.dbNameTemplate);
-        } else {
-          return "";
-        }
-      });
-      const selectedDatabaseList =
-        databaseListGroupByName[state.selectedDatabaseName!];
-      if (isAlterSchema.value && allowUsingSchemaEditor(selectedDatabaseList)) {
-        schemaEditorContext.value.databaseIdList = selectedDatabaseList.map(
+      if (isAlterSchema.value && allowUsingSchemaEditor(databaseList)) {
+        schemaEditorContext.value.databaseIdList = databaseList.map(
           (database) => database.id
         );
         schemaEditorContext.value.tenantMode = true;
         state.showSchemaEditorModal = true;
         return;
       }
-      query.name = generateIssueName([state.selectedDatabaseName!], false);
-      query.databaseName = state.selectedDatabaseName;
+      // In tenant deploy pipeline, we use project name instead of database name
+      // if more than one databases are to be deployed.
+      const name =
+        databaseList.length > 1 ? project.name : databaseList[0].name;
+      query.name = generateIssueName([name], false);
+      query.databaseName = "";
     } else {
       const databaseList: Database[] = [];
       const databaseStore = useDatabaseStore();
@@ -498,7 +482,6 @@ const generateTenant = async () => {
       .then((repository: Repository) => {
         window.open(
           baseDirectoryWebUrl(repository, {
-            DB_NAME: state.selectedDatabaseName!,
             TYPE:
               props.type === "bb.issue.database.schema.update" ? "ddl" : "dml",
           }),
