@@ -51,7 +51,6 @@ import { TabMode, UNKNOWN_ID } from "@/types";
 import {
   useCurrentUser,
   useDatabaseStore,
-  useInstanceStore,
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
@@ -60,11 +59,10 @@ import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
 import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
-import { isDatabaseAccessible, isInstanceAccessible } from "@/utils";
+import { isDatabaseAccessible } from "@/utils";
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
-const instanceStore = useInstanceStore();
 const sqlEditorStore = useSQLEditorStore();
 const currentUser = useCurrentUser();
 
@@ -72,11 +70,11 @@ const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
 
 const allowQuery = computed(() => {
-  const { databaseId, instanceId } = tabStore.currentTab.connection;
+  const { databaseId } = tabStore.currentTab.connection;
   const database = databaseStore.getDatabaseById(databaseId);
   if (database.id === UNKNOWN_ID) {
-    const instance = instanceStore.getInstanceById(instanceId);
-    return isInstanceAccessible(instance, currentUser.value);
+    // Allowed if connected to an instance
+    return true;
   }
   const { accessControlPolicyList } = sqlEditorStore;
   return isDatabaseAccessible(

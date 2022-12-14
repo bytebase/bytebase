@@ -29,7 +29,6 @@ import {
   isSameConnection,
   isTempTab,
   isDatabaseAccessible,
-  isInstanceAccessible,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 
@@ -55,6 +54,14 @@ const sqlEditorStore = useSQLEditorStore();
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
 
+const prepareAccessControlPolicy = async () => {
+  sqlEditorStore.accessControlPolicyList =
+    await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
+      "database",
+      "bb.policy.access-control"
+    );
+};
+
 const prepareAccessibleConnectionByProject = async () => {
   // It will also be called when user logout
   if (currentUser.value.id === UNKNOWN_ID) {
@@ -68,7 +75,15 @@ const prepareAccessibleConnectionByProject = async () => {
     await databaseStore.fetchDatabaseList({
       syncStatus: "OK",
     })
-  ).filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
+  )
+    .filter((db) => db.project.id !== DEFAULT_PROJECT_ID)
+    .filter((db) =>
+      isDatabaseAccessible(
+        db,
+        sqlEditorStore.accessControlPolicyList,
+        currentUser.value
+      )
+    );
   state.instanceList = uniqBy(
     databaseList.map((db) => db.instance),
     (instance) => instance.id
@@ -77,21 +92,12 @@ const prepareAccessibleConnectionByProject = async () => {
 };
 
 const prepareSQLEditorContext = async () => {
-  sqlEditorStore.accessControlPolicyList =
-    await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
-      "database",
-      "bb.policy.access-control"
-    );
-
   let connectionTree: ConnectionAtom[] = [];
 
   const { instanceList, databaseList } = state;
   const instanceMapper = mapConnectionAtom("instance", 0);
   connectionTree = instanceList.map((instance) => {
     const node = instanceMapper(instance);
-    if (!isInstanceAccessible(instance, currentUser.value)) {
-      node.disabled = true;
-    }
     return node;
   });
 
@@ -311,6 +317,7 @@ const syncURLWithConnection = () => {
 onMounted(async () => {
   if (sqlEditorStore.connectionTree.state === ConnectionTreeState.UNSET) {
     sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADING;
+    await prepareAccessControlPolicy();
     await prepareAccessibleConnectionByProject();
     await prepareSQLEditorContext();
     sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADED;
