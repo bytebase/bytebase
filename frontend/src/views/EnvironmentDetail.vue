@@ -252,7 +252,7 @@ export default defineComponent({
             payload: policy.payload,
           },
         })
-        .then((policy: Policy) => {
+        .then(async (policy: Policy) => {
           if (type === "bb.policy.pipeline-approval") {
             state.approvalPolicy = policy;
           } else if (type === "bb.policy.backup-plan") {
@@ -264,6 +264,18 @@ export default defineComponent({
             state.environment.tier = (
               policy.payload as EnvironmentTierPolicyPayload
             ).environmentTier;
+            // Also upsert the environment's access-control policy
+            const disallowed = state.environment.tier === "PROTECTED";
+            await policyStore.upsertPolicyByEnvironmentAndType({
+              environmentId: state.environment.id,
+              type: "bb.policy.access-control",
+              policyUpsert: {
+                inheritFromParent: false,
+                payload: {
+                  disallowRuleList: [{ fullDatabase: disallowed }],
+                },
+              },
+            });
           }
           success();
 
