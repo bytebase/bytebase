@@ -11,7 +11,7 @@
 
     <div class="pt-4 border-t border-block-border flex justify-end space-x-3">
       <button
-        v-if="needNegativeBtn"
+        v-if="showNegativeBtn"
         type="button"
         class="btn-normal py-2 px-4"
         @click.prevent="onNegativeClick"
@@ -47,7 +47,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  needNegativeBtn: {
+  showNegativeBtn: {
     type: Boolean,
     default: true,
   },

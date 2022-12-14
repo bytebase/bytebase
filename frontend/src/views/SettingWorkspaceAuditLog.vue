@@ -3,21 +3,14 @@
     <div v-if="auditLogList.length > 0">
       <AuditLogTable
         :audit-log-list="auditLogList.sort((a, b) => b.createdTs - a.createdTs)"
-        @view-detail="
-          (log: any) => {
-            console.log(log)
-            state.modalContent = log
-            state.showModal = true;
-            dialog!.open();
-          }
-        "
+        @view-detail="handleViewDetail"
       />
       <BBDialog
         ref="dialog"
         :title="$t('audit-log.audit-log-detail')"
         data-label="bb-audit-log-detail-dialog"
         :closable="true"
-        :need-negative-btn="false"
+        :show-negative-btn="false"
       >
         <div class="w-192 font-mono">
           <dl>
@@ -81,5 +74,11 @@ const logKeyMap = {
   level: t("audit-log.table.level"),
   comment: t("audit-log.table.comment"),
   payload: t("audit-log.table.payload"),
+};
+
+const handleViewDetail = (log: any) => {
+  state.modalContent = log;
+  state.showModal = true;
+  dialog.value!.open();
 };
 </script>
