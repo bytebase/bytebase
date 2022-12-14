@@ -258,7 +258,7 @@ const handleSyncSQLFromSchemaEditor = async () => {
     return;
   }
 
-  const databaseEditMap = await fetchDatabaseEditMapWithSchemaEditor();
+  const databaseEditMap = await fetchDatabaseEditStatementMapWithSchemaEditor();
   if (!databaseEditMap) {
     return;
   }
@@ -291,7 +291,7 @@ const getDatabaseEditListWithSchemaEditor = () => {
   return databaseEditList;
 };
 
-const fetchDatabaseEditMapWithSchemaEditor = async () => {
+const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
   const databaseEditList = getDatabaseEditListWithSchemaEditor();
   const databaseEditMap: Map<DatabaseId, string> = new Map();
   if (databaseEditList.length > 0) {
@@ -348,7 +348,7 @@ const handleUploadFile = (e: Event) => {
     const sql = fr.result as string;
     state.editStatement = sql;
   };
-  fr.onerror = (e) => {
+  fr.onerror = () => {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "WARN",
@@ -369,41 +369,41 @@ const handlePreviewIssue = async () => {
     return;
   }
 
-  let issueMode = "normal";
-
-  if (props.tenantMode) {
-    issueMode = "tenant";
-  } else {
-    const actionResult = await isUsingGhostMigration(databaseList);
-    if (actionResult === false) {
-      return;
-    }
-    issueMode = actionResult;
-  }
-
-  const isGhostMode = issueMode === "online";
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    name: generateIssueName(
-      databaseList.map((db) => db.name),
-      isGhostMode
-    ),
     project: projectId,
-    mode: issueMode,
+    mode: props.tenantMode ? "tenant" : "normal",
     databaseList: props.databaseIdList.join(","),
   };
-  if (isGhostMode) {
-    query.ghost = 1;
-  }
 
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
+
+    if (!props.tenantMode) {
+      // We should show select ghost mode dialog only for altering table statment not create/drop table.
+      // TODO(steven): parse the sql check if there only alter table statement.
+      const actionResult = await isUsingGhostMigration(databaseList);
+      if (actionResult === false) {
+        return;
+      }
+      query.mode = actionResult;
+      query.name = generateIssueName(
+        databaseList.map((db) => db.name),
+        query.mode === "online"
+      );
+    }
   } else {
     const databaseEditList = getDatabaseEditListWithSchemaEditor();
-    // Validate databaseEditList in frontend.
     const validateResultList = [];
+    let hasOnlyAlterTableChanges = true;
     for (const databaseEdit of databaseEditList) {
       validateResultList.push(...validateDatabaseEdit(databaseEdit));
+      if (
+        databaseEdit.createTableList.length > 0 ||
+        databaseEdit.dropTableList.length > 0
+      ) {
+        hasOnlyAlterTableChanges = false;
+      }
     }
     if (validateResultList.length > 0) {
       notificationStore.pushNotification({
@@ -417,28 +417,39 @@ const handlePreviewIssue = async () => {
       return;
     }
 
-    const databaseEditMap = await fetchDatabaseEditMapWithSchemaEditor();
-    if (!databaseEditMap) {
+    if (!props.tenantMode && hasOnlyAlterTableChanges) {
+      const actionResult = await isUsingGhostMigration(databaseList);
+      if (actionResult === false) {
+        return;
+      }
+      query.mode = actionResult;
+    }
+
+    const statementMap = await fetchDatabaseEditStatementMapWithSchemaEditor();
+    if (!statementMap) {
       return;
     }
-    const databaseIdList = Array.from(databaseEditMap.keys());
-    if (databaseIdList.length > 0) {
-      const statmentList = Array.from(databaseEditMap.values());
-      if (props.tenantMode) {
-        query.sql = statmentList.join("\n");
-      } else {
-        query.databaseList = databaseIdList.join(",");
-        query.sqlList = JSON.stringify(statmentList);
-        query.name = generateIssueName(
-          databaseList
-            .filter((database) => databaseIdList.includes(database.id))
-            .map((db) => db.name),
-          isGhostMode
-        );
-      }
+    const databaseIdList = Array.from(statementMap.keys());
+    const statmentList = Array.from(statementMap.values());
+    if (props.tenantMode) {
+      query.sql = statmentList.join("\n");
+      query.name = generateIssueName(
+        databaseList.map((db) => db.name),
+        query.mode === "online"
+      );
+    } else {
+      query.databaseList = databaseIdList.join(",");
+      query.sqlList = JSON.stringify(statmentList);
+      const databaseNameList = databaseList
+        .filter((database) => databaseIdList.includes(database.id))
+        .map((db) => db.name);
+      query.name = generateIssueName(databaseNameList, query.mode === "online");
     }
   }
 
+  if (query.mode === "online") {
+    query.ghost = 1;
+  }
   router.push({
     name: "workspace.issue.detail",
     params: {
