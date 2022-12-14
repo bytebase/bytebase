@@ -73,6 +73,7 @@ to prepare those instances ready for application use.
 - [x] Data Anonymization
 - [x] Role-based access control (RBAC)
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
+- [x] External approval integration for Feishu(飞书)
 
 <figcaption align = "center">Fig.1 - Dashboard</figcaption>
 
