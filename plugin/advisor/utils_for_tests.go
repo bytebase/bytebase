@@ -3,14 +3,18 @@ package advisor
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"io"
 	"math/rand"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
@@ -118,8 +122,84 @@ var (
 
 // TestCase is the data struct for test.
 type TestCase struct {
-	Statement string
-	Want      []Advice
+	Statement string   `yaml:"statement"`
+	Want      []Advice `yaml:"want"`
+}
+
+type testCatalog struct {
+	finder *catalog.Finder
+}
+
+func (c *testCatalog) GetFinder() *catalog.Finder {
+	return c.finder
+}
+
+// RunSQLReviewRuleTest helps to test the SQL review rule.
+func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, record bool) {
+	var tests []TestCase
+
+	fileName := strings.Map(func(r rune) rune {
+		switch r {
+		case '.', '-':
+			return '_'
+		default:
+			return r
+		}
+	}, string(rule))
+	filepath := filepath.Join("test", fileName+".yaml")
+	yamlFile, err := os.Open(filepath)
+	require.NoError(t, err)
+	defer yamlFile.Close()
+
+	byteValue, err := io.ReadAll(yamlFile)
+	require.NoError(t, err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	require.NoError(t, err, rule)
+
+	for i, tc := range tests {
+		database := MockMySQLDatabase
+		if dbType == db.Postgres {
+			database = MockPostgreSQLDatabase
+		}
+		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true})
+
+		payload, err := SetDefaultSQLReviewRulePayload(rule)
+		require.NoError(t, err)
+
+		ruleList := []*SQLReviewRule{
+			{
+				Type:    rule,
+				Level:   SchemaRuleLevelWarning,
+				Payload: string(payload),
+			},
+		}
+
+		ctx := SQLReviewCheckContext{
+			Charset:   "",
+			Collation: "",
+			DbType:    dbType,
+			Catalog:   &testCatalog{finder: finder},
+			Driver:    nil,
+			Context:   context.Background(),
+		}
+
+		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
+		require.NoError(t, err)
+		if record {
+			tests[i].Want = adviceList
+		} else {
+			require.Equal(t, tc.Want, adviceList, tc.Statement)
+		}
+	}
+
+	if record {
+		err := yamlFile.Close()
+		require.NoError(t, err)
+		byteValue, err := yaml.Marshal(tests)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		require.NoError(t, err)
+	}
 }
 
 // RunSQLReviewRuleTests helps to test the SQL review rule.
@@ -146,7 +226,7 @@ func RunSQLReviewRuleTests(
 		ctx.Catalog = finder
 		adviceList, err := adv.Check(ctx, tc.Statement)
 		require.NoError(t, err)
-		assert.Equal(t, tc.Want, adviceList, tc.Statement)
+		require.Equal(t, tc.Want, adviceList, tc.Statement)
 	}
 }
 
@@ -264,4 +344,132 @@ func (*MockDriver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (strin
 // Restore implements the Driver interface.
 func (*MockDriver) Restore(_ context.Context, _ io.Reader) error {
 	return nil
+}
+
+// SetDefaultSQLReviewRulePayload sets the default payload for this rule.
+func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
+	var payload []byte
+	var err error
+	switch ruleTp {
+	case SchemaRuleMySQLEngine,
+		SchemaRuleStatementNoSelectAll,
+		SchemaRuleStatementRequireWhere,
+		SchemaRuleStatementNoLeadingWildcardLike,
+		SchemaRuleStatementDisallowCommit,
+		SchemaRuleStatementDisallowLimit,
+		SchemaRuleStatementDisallowOrderBy,
+		SchemaRuleStatementMergeAlterTable,
+		SchemaRuleStatementInsertMustSpecifyColumn,
+		SchemaRuleStatementInsertDisallowOrderByRand,
+		SchemaRuleStatementDMLDryRun,
+		SchemaRuleTableRequirePK,
+		SchemaRuleTableNoFK,
+		SchemaRuleTableDisallowPartition,
+		SchemaRuleColumnNotNull,
+		SchemaRuleColumnDisallowChangeType,
+		SchemaRuleColumnSetDefaultForNotNull,
+		SchemaRuleColumnDisallowChange,
+		SchemaRuleColumnDisallowChangingOrder,
+		SchemaRuleColumnAutoIncrementMustInteger,
+		SchemaRuleColumnDisallowSetCharset,
+		SchemaRuleColumnAutoIncrementMustUnsigned,
+		SchemaRuleCurrentTimeColumnCountLimit,
+		SchemaRuleColumnRequireDefault,
+		SchemaRuleSchemaBackwardCompatibility,
+		SchemaRuleDropEmptyDatabase,
+		SchemaRuleIndexNoDuplicateColumn,
+		SchemaRuleIndexPKTypeLimit,
+		SchemaRuleIndexTypeNoBlob:
+	case SchemaRuleTableDropNamingConvention:
+		payload, err = json.Marshal(NamingRulePayload{
+			Format: "_delete$",
+		})
+	case SchemaRuleTableNaming:
+		fallthrough
+	case SchemaRuleColumnNaming:
+		payload, err = json.Marshal(NamingRulePayload{
+			Format:    "^[a-z]+(_[a-z]+)*$",
+			MaxLength: 64,
+		})
+	case SchemaRuleIDXNaming:
+		payload, err = json.Marshal(NamingRulePayload{
+			Format:    "^$|^idx_{{table}}_{{column_list}}$",
+			MaxLength: 64,
+		})
+	case SchemaRulePKNaming:
+		payload, err = json.Marshal(NamingRulePayload{
+			Format:    "^$|^pk_{{table}}_{{column_list}}$",
+			MaxLength: 64,
+		})
+	case SchemaRuleUKNaming:
+		payload, err = json.Marshal(NamingRulePayload{
+			Format:    "^$|^uk_{{table}}_{{column_list}}$",
+			MaxLength: 64,
+		})
+	case SchemaRuleFKNaming:
+		payload, err = json.Marshal(NamingRulePayload{
+			Format:    "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+			MaxLength: 64,
+		})
+	case SchemaRuleAutoIncrementColumnNaming:
+		payload, err = json.Marshal(NamingRulePayload{
+			Format:    "^id$",
+			MaxLength: 64,
+		})
+	case SchemaRuleStatementInsertRowLimit, SchemaRuleStatementAffectedRowLimit:
+		payload, err = json.Marshal(NumberTypeRulePayload{
+			Number: 5,
+		})
+	case SchemaRuleTableCommentConvention, SchemaRuleColumnCommentConvention:
+		payload, err = json.Marshal(CommentConventionRulePayload{
+			Required:  true,
+			MaxLength: 10,
+		})
+	case SchemaRuleRequiredColumn:
+		payload, err = json.Marshal(StringArrayTypeRulePayload{
+			List: []string{
+				"id",
+				"created_ts",
+				"updated_ts",
+				"creator_id",
+				"updater_id",
+			},
+		})
+	case SchemaRuleColumnTypeDisallowList:
+		payload, err = json.Marshal(StringArrayTypeRulePayload{
+			List: []string{"JSON"},
+		})
+	case SchemaRuleColumnMaximumCharacterLength:
+		payload, err = json.Marshal(NumberTypeRulePayload{
+			Number: 20,
+		})
+	case SchemaRuleColumnAutoIncrementInitialValue:
+		payload, err = json.Marshal(NumberTypeRulePayload{
+			Number: 20,
+		})
+	case SchemaRuleIndexKeyNumberLimit, SchemaRuleIndexTotalNumberLimit:
+		payload, err = json.Marshal(NumberTypeRulePayload{
+			Number: 5,
+		})
+	case SchemaRuleCharsetAllowlist:
+		payload, err = json.Marshal(StringArrayTypeRulePayload{
+			List: []string{"utf8mb4", "UTF8"},
+		})
+	case SchemaRuleCollationAllowlist:
+		payload, err = json.Marshal(StringArrayTypeRulePayload{
+			List: []string{"utf8mb4_0900_ai_ci"},
+		})
+	case SchemaRuleCommentLength:
+		payload, err = json.Marshal(CommentConventionRulePayload{
+			Required:  true,
+			MaxLength: 20,
+		})
+	default:
+		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)
+	}
+
+	if err != nil {
+		return "", err
+	}
+	return string(payload), nil
 }

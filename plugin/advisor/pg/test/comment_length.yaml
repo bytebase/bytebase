@@ -19,7 +19,7 @@
       title: OK
       content: ""
       line: 0
-- statement: comment on table public is 'is a  to long table name'
+- statement: comment on table public is 'is a  to long table name long long long long long long long'
   want:
     - status: WARN
       code: 1301

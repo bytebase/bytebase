@@ -1,20 +1,20 @@
 - statement: CREATE TABLE "techBook"(id int, name varchar(255))
   want:
-    - status: ERROR
+    - status: WARN
       code: 301
       title: naming.table
       content: '"techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
 - statement: CREATE TABLE "rlcmidzlevbivwvcntihenpoibtiutqeb"(id int, name varchar(255))
   want:
-    - status: ERROR
-      code: 301
-      title: naming.table
-      content: '"rlcmidzlevbivwvcntihenpoibtiutqeb" mismatches table naming convention, its length should be within 32 characters'
-      line: 1
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
 - statement: CREATE TABLE _techBook(id int, name varchar(255))
   want:
-    - status: ERROR
+    - status: WARN
       code: 301
       title: naming.table
       content: '"_techbook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
@@ -35,7 +35,7 @@
       line: 0
 - statement: ALTER TABLE tech_book RENAME TO "TechBook"
   want:
-    - status: ERROR
+    - status: WARN
       code: 301
       title: naming.table
       content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
@@ -51,12 +51,12 @@
     CREATE TABLE _techBook(id int, name varchar(255));
                 ALTER TABLE tech_book RENAME TO "TechBook";
   want:
-    - status: ERROR
+    - status: WARN
       code: 301
       title: naming.table
       content: '"_techbook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
-    - status: ERROR
+    - status: WARN
       code: 301
       title: naming.table
       content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'

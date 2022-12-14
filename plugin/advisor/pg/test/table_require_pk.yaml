@@ -14,14 +14,14 @@
       line: 0
 - statement: CREATE TABLE t(id INT)
   want:
-    - status: ERROR
+    - status: WARN
       code: 601
       title: table.require-pk
       content: 'Table "public"."t" requires PRIMARY KEY, related statement: "CREATE TABLE t(id INT)"'
       line: 1
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_pk"
   want:
-    - status: ERROR
+    - status: WARN
       code: 601
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP CONSTRAINT \"old_pk\""'
@@ -42,7 +42,7 @@
       line: 0
 - statement: ALTER TABLE "tech_book" DROP COLUMN id
   want:
-    - status: ERROR
+    - status: WARN
       code: 601
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP COLUMN id"'

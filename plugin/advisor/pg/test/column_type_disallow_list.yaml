@@ -5,29 +5,19 @@
       title: OK
       content: ""
       line: 0
-- statement: CREATE TABLE t(a int, b bigint, c real);
+- statement: CREATE TABLE t(a int, b JSON);
   want:
     - status: WARN
       code: 411
       title: column.type-disallow-list
-      content: Disallow column type INT but column "t"."a" is
+      content: Disallow column type JSON but column "t"."b" is
       line: 1
-    - status: WARN
-      code: 411
-      title: column.type-disallow-list
-      content: Disallow column type BIGINT but column "t"."b" is
-      line: 1
-    - status: WARN
-      code: 411
-      title: column.type-disallow-list
-      content: Disallow column type REAL but column "t"."c" is
-      line: 1
-- statement: |4-
-            CREATE TABLE t(d char(5));
-            ALTER TABLE t add COLUMN a int;
+- statement: |-
+    CREATE TABLE t(d char(5));
+    ALTER TABLE t add COLUMN a JSON;
   want:
     - status: WARN
       code: 411
       title: column.type-disallow-list
-      content: Disallow column type INT but column "t"."a" is
-      line: 3
+      content: Disallow column type JSON but column "t"."a" is
+      line: 2
