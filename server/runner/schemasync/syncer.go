@@ -489,6 +489,7 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 				RowCount:      table.RowCount,
 				DataSize:      table.DataSize,
 				DataFree:      table.DataFree,
+				IndexSize:     table.IndexSize,
 				CreateOptions: table.CreateOptions,
 				Comment:       table.Comment,
 			}
@@ -563,6 +564,7 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 	for _, extension := range schema.ExtensionList {
 		databaseMetadata.Extensions = append(databaseMetadata.Extensions, &storepb.ExtensionMetadata{
 			Name:        extension.Name,
+			Schema:      extension.Schema,
 			Version:     extension.Version,
 			Description: extension.Description,
 		})

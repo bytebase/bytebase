@@ -147,9 +147,12 @@ message ExtensionMetadata {
   // The name is the name of an extension.
   string name = 1;
 
+  // The schema is the extension that is installed to. But the extension usage is not limited to the schema.
+  string schema = 2;
+
   // The version is the version of an extension.
-  string version = 2;
+  string version = 3;
 
   // The description is the description of an extension.
-  string description = 3;
+  string description = 4;
 }
