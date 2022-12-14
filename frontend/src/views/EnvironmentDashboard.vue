@@ -328,7 +328,6 @@ const doReorder = () => {
 };
 
 const doArchive = (/* environment: Environment */) => {
-  debugger;
   if (environmentList.value.length > 0) {
     selectEnvironment(0);
   }
