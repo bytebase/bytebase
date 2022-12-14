@@ -1455,7 +1455,8 @@
     "confirm-to-close": {
       "title": "确定关闭？",
       "description": "关闭后更改将会丢失。"
-    }
+    },
+    "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。"
   },
   "label": {
     "empty-label-value": "<空值>",
