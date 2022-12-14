@@ -45,7 +45,7 @@ type PGRoleAttribute struct {
 // PGRole is the API message for role.
 type PGRole struct {
 	Name            string           `json:"name"`
-	Instance        string           `json:"instance"`
+	InstanceID      int              `json:"instanceId"`
 	ConnectionLimit int              `json:"connectionLimit"`
 	ValidUntil      *string          `json:"validUntil"`
 	Attribute       *PGRoleAttribute `json:"attribute"`
@@ -60,8 +60,8 @@ type PGRoleUpsert struct {
 	Attribute       *PGRoleAttribute `json:"attribute"`
 }
 
-// ToStatement returns the statemnt to create the role.
-func (r *PGRoleUpsert) ToStatement() string {
+// ToAttributeStatement returns the attribute statemnt to create or update the role.
+func (r *PGRoleUpsert) ToAttributeStatement() string {
 	attributeList := []string{}
 
 	if r.Attribute != nil {
@@ -70,6 +70,9 @@ func (r *PGRoleUpsert) ToStatement() string {
 		}
 		if r.Attribute.NoInherit {
 			attributeList = append(attributeList, NOINHERIT.ToString())
+		}
+		if r.Attribute.CanLogin {
+			attributeList = append(attributeList, LOGIN.ToString())
 		}
 		if r.Attribute.CreateRole {
 			attributeList = append(attributeList, CREATEROLE.ToString())
@@ -102,5 +105,5 @@ func (r *PGRoleUpsert) ToStatement() string {
 		attribute = fmt.Sprintf("WITH %s", strings.Join(attributeList, " "))
 	}
 
-	return fmt.Sprintf(`CREATE ROLE "%s" %s;`, r.Name, attribute)
+	return attribute
 }
