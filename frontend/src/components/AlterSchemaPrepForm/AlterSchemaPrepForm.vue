@@ -147,7 +147,6 @@
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
     :database-id-list="schemaEditorContext.databaseIdList"
-    :tenant-mode="schemaEditorContext.tenantMode"
     @close="state.showSchemaEditorModal = false"
   />
 </template>
@@ -223,10 +222,8 @@ const repositoryStore = useRepositoryStore();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const schemaEditorContext = ref<{
   databaseIdList: DatabaseId[];
-  tenantMode: boolean;
 }>({
   databaseIdList: [],
-  tenantMode: false,
 });
 
 useEventListener(window, "keydown", (e) => {
@@ -433,7 +430,6 @@ const generateTenant = async () => {
         schemaEditorContext.value.databaseIdList = databaseList.map(
           (database) => database.id
         );
-        schemaEditorContext.value.tenantMode = true;
         state.showSchemaEditorModal = true;
         return;
       }
@@ -453,7 +449,6 @@ const generateTenant = async () => {
         schemaEditorContext.value.databaseIdList = Array.from(
           state.selectedDatabaseIdListForTenantMode.values()
         );
-        schemaEditorContext.value.tenantMode = true;
         state.showSchemaEditorModal = true;
         return;
       }

@@ -85,17 +85,30 @@
         />
       </div>
     </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
-      <button type="button" class="btn-normal" @click="dismissModal">
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        class="btn-primary"
-        :disabled="!allowPreviewIssue"
-        @click="handlePreviewIssue"
-      >
-        {{ $t("schema-editor.preview-issue") }}
-      </button>
+    <div
+      class="w-full flex flex-row justify-between items-center mt-2 pr-1 pb-1"
+    >
+      <div class="">
+        <div
+          v-if="isTenantProject"
+          class="flex flex-row items-center text-sm text-gray-500"
+        >
+          <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
+          {{ $t("schema-editor.tenant-mode-tips") }}
+        </div>
+      </div>
+      <div class="flex justify-end items-center space-x-3">
+        <button type="button" class="btn-normal" @click="dismissModal">
+          {{ $t("common.cancel") }}
+        </button>
+        <button
+          class="btn-primary whitespace-nowrap"
+          :disabled="!allowPreviewIssue"
+          @click="handlePreviewIssue"
+        >
+          {{ $t("schema-editor.preview-issue") }}
+        </button>
+      </div>
     </div>
   </BBModal>
 
@@ -129,6 +142,7 @@ import { allowGhostMigration } from "@/utils";
 import {
   useDatabaseStore,
   useNotificationStore,
+  useProjectStore,
   useSchemaEditorStore,
 } from "@/store";
 import { diffTableList } from "@/utils/schemaEditor/diffTable";
@@ -152,10 +166,6 @@ const props = defineProps({
   databaseIdList: {
     type: Array as PropType<DatabaseId[]>,
     required: true,
-  },
-  tenantMode: {
-    type: Boolean,
-    default: false,
   },
 });
 
@@ -206,9 +216,17 @@ const databaseEngineType = databaseList.reduce(
   },
   ""
 );
+const project = useProjectStore().getProjectById(
+  head(databaseList)?.projectId || UNKNOWN_ID
+);
+const isTenantProject = project.tenantMode === "TENANT";
 
 onMounted(() => {
-  if (databaseList.length === 0 || databaseEngineType === "unknown") {
+  if (
+    databaseList.length === 0 ||
+    project.id === UNKNOWN_ID ||
+    databaseEngineType === "unknown"
+  ) {
     emit("close");
     return;
   }
@@ -363,23 +381,17 @@ const handleUploadFile = (e: Event) => {
 };
 
 const handlePreviewIssue = async () => {
-  const projectId = head(databaseList)?.projectId || UNKNOWN_ID;
-  if (projectId === UNKNOWN_ID) {
-    console.error("project unknown");
-    return;
-  }
-
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: projectId,
-    mode: props.tenantMode ? "tenant" : "normal",
+    project: project.id,
+    mode: isTenantProject ? "tenant" : "normal",
     databaseList: props.databaseIdList.join(","),
   };
 
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
 
-    if (!props.tenantMode) {
+    if (!isTenantProject) {
       // We should show select ghost mode dialog only for altering table statment not create/drop table.
       // TODO(steven): parse the sql check if there only alter table statement.
       const actionResult = await isUsingGhostMigration(databaseList);
@@ -417,7 +429,7 @@ const handlePreviewIssue = async () => {
       return;
     }
 
-    if (!props.tenantMode && hasOnlyAlterTableChanges) {
+    if (!isTenantProject && hasOnlyAlterTableChanges) {
       const actionResult = await isUsingGhostMigration(databaseList);
       if (actionResult === false) {
         return;
@@ -431,7 +443,7 @@ const handlePreviewIssue = async () => {
     }
     const databaseIdList = Array.from(statementMap.keys());
     const statmentList = Array.from(statementMap.values());
-    if (props.tenantMode) {
+    if (isTenantProject) {
       query.sql = statmentList.join("\n");
       query.name = generateIssueName(
         databaseList.map((db) => db.name),
