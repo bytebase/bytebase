@@ -165,8 +165,8 @@ message ForeignKeyMetadata {
   // The name is the name of a foreign key.
   string name = 1;
   
-  // The referencing_columns are the ordered referencing columns of a foreign key.
-  repeated string referencing_columns = 2;
+  // The columns are the ordered referencing columns of a foreign key.
+  repeated string columns = 2;
   
   // The referenced_schema is the referenced schema name of a foreign key.
   // It is an empty string for databases without such concept such as MySQL.
