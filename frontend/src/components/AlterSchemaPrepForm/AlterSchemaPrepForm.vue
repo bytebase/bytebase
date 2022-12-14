@@ -43,7 +43,7 @@
                 <BBTableSearch
                   v-if="state.alterType === 'MULTI_DB'"
                   class="m-px"
-                  :placeholder="$t('database.search-database-name')"
+                  :placeholder="$t('database.search-database')"
                   @change-text="(text: string) => (state.searchText = text)"
                 />
               </template>
@@ -62,7 +62,7 @@
                 <div class="flex items-center justify-end my-2">
                   <BBTableSearch
                     class="m-px"
-                    :placeholder="$t('database.search-database-name')"
+                    :placeholder="$t('database.search-database')"
                     @change-text="(text: string) => (state.searchText = text)"
                   />
                 </div>
@@ -74,7 +74,7 @@
           <aside class="flex justify-end mb-4">
             <BBTableSearch
               class="m-px"
-              :placeholder="$t('database.search-database-name')"
+              :placeholder="$t('database.search-database')"
               @change-text="(text: string) => (state.searchText = text)"
             />
           </aside>
@@ -171,6 +171,7 @@ import {
 import {
   allowGhostMigration,
   allowUsingSchemaEditor,
+  filterDatabaseByKeyword,
   sortDatabaseList,
 } from "@/utils";
 import {
@@ -272,9 +273,14 @@ const databaseList = computed(() => {
   }
 
   const keyword = state.searchText.trim();
-  if (keyword) {
-    list = list.filter((db) => db.name.toLowerCase().includes(keyword));
-  }
+  list = list.filter((db) =>
+    filterDatabaseByKeyword(db, keyword, [
+      "name",
+      "environment",
+      "instance",
+      "project",
+    ])
+  );
 
   return sortDatabaseList(cloneDeep(list), environmentList.value);
 });
