@@ -246,7 +246,6 @@ export default defineComponent({
     const dbExtensionStore = useDBExtensionStore();
 
     const databaseEngine = props.database.instance.engine as EngineType;
-    const isPostgres = computed(() => databaseEngine === "POSTGRES");
 
     const prepareTableList = () => {
       tableStore.fetchTableListByDatabaseId(props.database.id);
@@ -396,7 +395,6 @@ export default defineComponent({
       saveEditDataSource,
       configInstance,
       databaseEngine,
-      isPostgres,
     };
   },
 });
