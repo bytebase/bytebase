@@ -158,7 +158,6 @@ func TestTenant(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseName:  databaseName,
 				Statement:     migrationStatement,
 			},
 		},
@@ -645,7 +644,6 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		DetailList: []*api.MigrationDetail{
 			{
 				MigrationType: db.Migrate,
-				DatabaseName:  baseDatabaseName,
 				Statement:     migrationStatement,
 			},
 		},
