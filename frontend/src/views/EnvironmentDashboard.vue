@@ -82,6 +82,7 @@ import type {
   Policy,
   PolicyUpsert,
   BackupPlanPolicyPayload,
+  EnvironmentTierPolicyPayload,
 } from "../types";
 import {
   DefaultApprovalPolicy,
@@ -245,7 +246,7 @@ const doCreate = (
   environmentStore
     .createEnvironment(newEnvironment)
     .then((environment: Environment) => {
-      Promise.all([
+      const requests = [
         policyStore.upsertPolicyByEnvironmentAndType({
           environmentId: environment.id,
           type: "bb.policy.pipeline-approval",
@@ -261,10 +262,32 @@ const doCreate = (
           type: "bb.policy.environment-tier",
           policyUpsert: { payload: environmentTierPolicy.payload },
         }),
-      ]).then(() => {
-        state.showCreateModal = false;
-        selectEnvironment(environmentList.value.length - 1);
-      });
+      ];
+      // Also upsert the environment's access-control policy
+      const environmentTierPayload =
+        environmentTierPolicy.payload as EnvironmentTierPolicyPayload;
+      const disallowed = environmentTierPayload.environmentTier === "PROTECTED";
+      requests.push(
+        policyStore.upsertPolicyByEnvironmentAndType({
+          environmentId: environment.id,
+          type: "bb.policy.access-control",
+          policyUpsert: {
+            inheritFromParent: false,
+            payload: {
+              disallowRuleList: [
+                {
+                  fullDatabase: disallowed,
+                },
+              ],
+            },
+          },
+        })
+      );
+      return Promise.all(requests);
+    })
+    .then(() => {
+      state.showCreateModal = false;
+      selectEnvironment(environmentList.value.length - 1);
     });
 };
 
