@@ -160,6 +160,7 @@ message ExtensionMetadata {
   string description = 4;
 }
 
+// ForeignKeyMetadata is the metadata for foreign keys.
 message ForeignKeyMetadata {
   // The name is the name of a foreign key.
   string name = 1;

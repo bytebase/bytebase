@@ -691,6 +691,7 @@ func (x *ExtensionMetadata) GetDescription() string {
 	return ""
 }
 
+// ForeignKeyMetadata is the metadata for foreign keys.
 type ForeignKeyMetadata struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
