@@ -803,6 +803,31 @@ func (ctl *controller) getDatabases(databaseFind api.DatabaseFind) ([]*api.Datab
 	return databases, nil
 }
 
+// DatabaseEditResult is a subset struct of api.DatabaseEditResult for testing,
+// because of jsonapi doesn't support to unmarshal struct pointer slice.
+type DatabaseEditResult struct {
+	Statement string `jsonapi:"attr,statement"`
+}
+
+// postDatabaseEdit posts the database edit.
+func (ctl *controller) postDatabaseEdit(databaseEdit api.DatabaseEdit) (*DatabaseEditResult, error) {
+	buf, err := json.Marshal(&databaseEdit)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal databaseEdit")
+	}
+
+	res, err := ctl.post(fmt.Sprintf("/database/%v/edit", databaseEdit.DatabaseID), strings.NewReader(string(buf)))
+	if err != nil {
+		return nil, err
+	}
+
+	databaseEditResult := new(DatabaseEditResult)
+	if err = jsonapi.UnmarshalPayload(res, databaseEditResult); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal post database edit response")
+	}
+	return databaseEditResult, nil
+}
+
 func (ctl *controller) setLicense() error {
 	// Switch plan to increase instance limit.
 	license, err := fs.ReadFile(fakeFS, "fake/license")
@@ -826,6 +851,29 @@ func (ctl *controller) removeLicense() error {
 		return errors.Wrap(err, "failed to switch plan")
 	}
 	return nil
+}
+
+func (ctl *controller) getSubscription() (*enterpriseAPI.Subscription, error) {
+	body, err := ctl.get("/subscription", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	subscription := new(enterpriseAPI.Subscription)
+	if err = jsonapi.UnmarshalPayload(body, subscription); err != nil {
+		return nil, errors.Wrap(err, "fail to unmarshal get subscription response")
+	}
+	return subscription, nil
+}
+
+func (ctl *controller) trialPlan(trial *api.TrialPlanCreate) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, trial); err != nil {
+		return errors.Wrap(err, "failed to marshal subscription patch")
+	}
+
+	_, err := ctl.post("/subscription/trial", buf)
+	return err
 }
 
 func (ctl *controller) switchPlan(patch *enterpriseAPI.SubscriptionPatch) error {
@@ -1797,22 +1845,22 @@ func (ctl *controller) patchSetting(settingPatch api.SettingPatch) error {
 }
 
 // upsertPolicy upserts the policy.
-func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
+func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) (*api.Policy, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &policyUpsert); err != nil {
-		return errors.Wrap(err, "failed to marshal policyUpsert")
+		return nil, errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
 	body, err := ctl.patch(fmt.Sprintf("/policy/%s/%d?type=%s", strings.ToLower(string(policyUpsert.ResourceType)), policyUpsert.ResourceID, policyUpsert.Type), buf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	policy := new(api.Policy)
 	if err = jsonapi.UnmarshalPayload(body, policy); err != nil {
-		return errors.Wrap(err, "fail to unmarshal policy response")
+		return nil, errors.Wrap(err, "fail to unmarshal policy response")
 	}
-	return nil
+	return policy, nil
 }
 
 // deletePolicy deletes the archived policy.

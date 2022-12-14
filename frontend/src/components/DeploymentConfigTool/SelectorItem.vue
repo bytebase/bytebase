@@ -36,7 +36,12 @@
 
 import { computed, defineComponent, PropType, watch } from "vue";
 import { Database, LabelSelectorRequirement, OperatorType } from "../../types";
-import { getLabelValuesFromDatabaseList, hidePrefix } from "../../utils";
+import {
+  getLabelValuesFromDatabaseList,
+  hidePrefix,
+  PRESET_LABEL_KEYS,
+  RESERVED_LABEL_KEYS,
+} from "../../utils";
 import LabelSelect from "./LabelSelect.vue";
 import { lowerCase, uniq } from "lodash-es";
 
@@ -62,10 +67,11 @@ export default defineComponent({
   emits: ["remove"],
   setup(props) {
     const keys = computed(() => {
+      const availableList = [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
       const allKeys = props.databaseList.flatMap((db) =>
         db.labels.map((label) => label.key)
       );
-      return uniq(allKeys);
+      return uniq(allKeys).filter((key) => availableList.includes(key));
     });
     const values = computed(() => {
       if (!props.selector.key) return [];

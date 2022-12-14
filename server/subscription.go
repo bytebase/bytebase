@@ -116,10 +116,9 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 				// Case 1: Users just have the SettingEnterpriseTrial, don't upload their license in SettingEnterpriseLicense.
 				// Case 2: Users have the SettingEnterpriseLicense with team plan and trialing status.
 				// In both cases, we can override the SettingEnterpriseLicense with an empty value to get the valid free trial.
-				if _, err := s.store.PatchSetting(ctx, &api.SettingPatch{
+				if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
 					UpdaterID: principalID,
-					Name:      api.SettingEnterpriseLicense,
-					Value:     "",
+					License:   "",
 				}); err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove license").SetInternal(err)
 				}
@@ -135,6 +134,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			}
 		}
 
+		s.licenseService.RefreshCache(ctx)
 		subscription = s.licenseService.LoadSubscription(ctx)
 		currentPlan := subscription.Plan
 		if s.MetricReporter != nil {

@@ -235,7 +235,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 
 	connected := false
 	var remainingStmts []string
-	totalRowsEffected := int64(0)
+	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
 		// We will execute the statement directly before "\\connect" statement.
@@ -285,11 +285,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				if err != nil {
 					return err
 				}
-				rowsEffected, err := sqlResult.RowsAffected()
+				rowsAffected, err := sqlResult.RowsAffected()
 				if err != nil {
-					return err
+					// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+					log.Debug("rowsAffected returns error", zap.Error(err))
+				} else {
+					totalRowsAffected += rowsAffected
 				}
-				totalRowsEffected += rowsEffected
 			}
 		} else {
 			if isSuperuserStatement(stmt) {
@@ -336,13 +338,14 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
-	rowsEffected, err := sqlResult.RowsAffected()
+	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
-		return 0, err
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		log.Debug("rowsAffected returns error", zap.Error(err))
+	} else {
+		totalRowsAffected += rowsAffected
 	}
-	totalRowsEffected += rowsEffected
-
-	return totalRowsEffected, nil
+	return totalRowsAffected, nil
 }
 
 func isSuperuserStatement(stmt string) bool {

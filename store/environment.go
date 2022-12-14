@@ -139,7 +139,7 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environmen
 		return nil, errors.Wrapf(err, "failed to get environment with ID %d", id)
 	}
 	if envRaw == nil {
-		return nil, nil
+		return nil, common.Errorf(common.NotFound, "environment %d not found", id)
 	}
 
 	env, err := s.composeEnvironment(ctx, envRaw)
@@ -249,11 +249,8 @@ func (s *Store) upsertEnvironmentPolicy(
 		return nil, err
 	}
 
-	// Cache environment tier policy as it is used widely.
-	if policyUpsert.Type == api.PolicyTypeEnvironmentTier {
-		if err := s.cache.UpsertCache(tierPolicyCacheNamespace, policyUpsert.ResourceID, policyRaw); err != nil {
-			return nil, err
-		}
+	if err := s.upsertPolicyCache(policyUpsert.Type, policyUpsert.ResourceID, policyRaw.Payload); err != nil {
+		return nil, err
 	}
 
 	return policyRaw, nil

@@ -122,8 +122,8 @@
             <div class="ml-1">
               <BBCheckbox
                 title="DNS SRV Record"
-                :value="state.instance.useDNSSRVRecord"
-                @toggle="handleToggleDNSSRVRecord"
+                :value="state.instance.srv"
+                @toggle="handleToggleSRV"
               />
             </div></div
         ></template>
@@ -253,8 +253,7 @@
               :disabled="
                 !allowCreate ||
                 state.isCreatingInstance ||
-                state.isPingingInstance ||
-                state.instance.engine == 'MONGODB'
+                state.isPingingInstance
               "
               @click.prevent="tryCreate"
             >
@@ -350,7 +349,7 @@ const state = reactive<LocalState>({
     // In release mode, Bytebase is likely run inside docker and access the local network via host.docker.internal.
     host: isDev() ? "127.0.0.1" : "host.docker.internal",
     username: "",
-    useDNSSRVRecord: false,
+    srv: false,
   },
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
@@ -476,8 +475,8 @@ const handleInstanceDatabaseInput = (event: Event) => {
   updateInstance("database", (event.target as HTMLInputElement).value);
 };
 
-const handleToggleDNSSRVRecord = (on: boolean) => {
-  updateInstance("useDNSSRVRecord", on);
+const handleToggleSRV = (on: boolean) => {
+  updateInstance("srv", on);
 };
 
 const updateInstance = (field: string, value: string | boolean) => {
@@ -544,7 +543,7 @@ const tryCreate = () => {
     useEmptyPassword: false,
     host: instance.host,
     port: instance.port,
-    srv: instance.useDNSSRVRecord,
+    srv: instance.srv,
   };
 
   if (showSSL.value) {
@@ -552,6 +551,12 @@ const tryCreate = () => {
     connectionInfo.sslCa = instance.sslCa ?? "";
     connectionInfo.sslKey = instance.sslKey ?? "";
     connectionInfo.sslCert = instance.sslCert ?? "";
+  }
+
+  // MongoDB can use auth database.
+  // https://www.mongodb.com/docs/manual/tutorial/authenticate-a-user/#std-label-authentication-auth-as-user
+  if (instance.engine === "MONGODB") {
+    connectionInfo.database = instance.database;
   }
 
   state.isPingingInstance = true;
@@ -580,7 +585,10 @@ const tryCreate = () => {
 const doCreate = () => {
   state.isCreatingInstance = true;
 
-  if (state.instance.engine !== "POSTGRES") {
+  if (
+    state.instance.engine !== "POSTGRES" &&
+    state.instance.engine !== "MONGODB"
+  ) {
     // Clear the `database` field if not needed.
     state.instance.database = "";
   }
@@ -622,7 +630,7 @@ const testConnection = () => {
         : undefined,
     useEmptyPassword: false,
     instanceId: undefined,
-    srv: instance.useDNSSRVRecord,
+    srv: instance.srv,
   };
 
   if (showSSL.value) {

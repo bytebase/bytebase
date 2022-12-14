@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 const (
@@ -40,6 +41,32 @@ const (
 	RO DataSourceType = "RO"
 )
 
+// DataSourceOptions is the options for a data source.
+type DataSourceOptions struct {
+	// SRV is used for MongoDB only.
+	SRV bool `json:"srv" jsonapi:"attr,srv"`
+}
+
+// getDefaultDataSourceOptions returns the default data source options.
+func getDefaultDataSourceOptions() DataSourceOptions {
+	return DataSourceOptions{
+		SRV: false,
+	}
+}
+
+// Scan implements database/sql Scanner interface, converts JSONB to DataSourceOptions struct.
+func (d *DataSourceOptions) Scan(src interface{}) error {
+	if bs, ok := src.([]byte); ok {
+		if string(bs) == "{}" {
+			// handle '{}', return default values
+			*d = getDefaultDataSourceOptions()
+			return nil
+		}
+		return json.Unmarshal(bs, d)
+	}
+	return errors.New("failed to scan data source options")
+}
+
 // DataSource is the API message for a data source.
 type DataSource struct {
 	ID int `jsonapi:"primary,dataSource"`
@@ -67,8 +94,9 @@ type DataSource struct {
 	SslCert  string
 	SslKey   string
 	// HostOverride and PortOverride are only used for read-only data sources for user's read-replica instances.
-	HostOverride string `jsonapi:"attr,hostOverride"`
-	PortOverride string `jsonapi:"attr,portOverride"`
+	HostOverride string            `jsonapi:"attr,hostOverride"`
+	PortOverride string            `jsonapi:"attr,portOverride"`
+	Options      DataSourceOptions `jsonapi:"attr,options"`
 }
 
 // DataSourceCreate is the API message for creating a data source.
@@ -82,15 +110,16 @@ type DataSourceCreate struct {
 	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name         string         `jsonapi:"attr,name"`
-	Type         DataSourceType `jsonapi:"attr,type"`
-	Username     string         `jsonapi:"attr,username"`
-	Password     string         `jsonapi:"attr,password"`
-	SslCa        string         `jsonapi:"attr,sslCa"`
-	SslCert      string         `jsonapi:"attr,sslCert"`
-	SslKey       string         `jsonapi:"attr,sslKey"`
-	HostOverride string         `jsonapi:"attr,hostOverride"`
-	PortOverride string         `jsonapi:"attr,portOverride"`
+	Name         string            `jsonapi:"attr,name"`
+	Type         DataSourceType    `jsonapi:"attr,type"`
+	Username     string            `jsonapi:"attr,username"`
+	Password     string            `jsonapi:"attr,password"`
+	SslCa        string            `jsonapi:"attr,sslCa"`
+	SslCert      string            `jsonapi:"attr,sslCert"`
+	SslKey       string            `jsonapi:"attr,sslKey"`
+	HostOverride string            `jsonapi:"attr,hostOverride"`
+	PortOverride string            `jsonapi:"attr,portOverride"`
+	Options      DataSourceOptions `jsonapi:"attr,options"`
 }
 
 // DataSourceFind is the API message for finding data sources.
@@ -122,14 +151,15 @@ type DataSourcePatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Username         *string `jsonapi:"attr,username"`
-	Password         *string `jsonapi:"attr,password"`
-	UseEmptyPassword *bool   `jsonapi:"attr,useEmptyPassword"`
-	SslCa            *string `jsonapi:"attr,sslCa"`
-	SslCert          *string `jsonapi:"attr,sslCert"`
-	SslKey           *string `jsonapi:"attr,sslKey"`
-	HostOverride     *string `jsonapi:"attr,hostOverride"`
-	PortOverride     *string `jsonapi:"attr,portOverride"`
+	Username         *string            `jsonapi:"attr,username"`
+	Password         *string            `jsonapi:"attr,password"`
+	UseEmptyPassword *bool              `jsonapi:"attr,useEmptyPassword"`
+	SslCa            *string            `jsonapi:"attr,sslCa"`
+	SslCert          *string            `jsonapi:"attr,sslCert"`
+	SslKey           *string            `jsonapi:"attr,sslKey"`
+	HostOverride     *string            `jsonapi:"attr,hostOverride"`
+	PortOverride     *string            `jsonapi:"attr,portOverride"`
+	Options          *DataSourceOptions `jsonapi:"attr,options"`
 }
 
 // DataSourceDelete is the API message for deleting data sources.

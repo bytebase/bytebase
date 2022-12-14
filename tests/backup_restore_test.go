@@ -426,7 +426,7 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 	buf, err := json.Marshal(policy)
 	a.NoError(err)
 	str := string(buf)
-	err = ctl.upsertPolicy(api.PolicyUpsert{
+	_, err = ctl.upsertPolicy(api.PolicyUpsert{
 		ResourceType: api.PolicyResourceTypeEnvironment,
 		ResourceID:   prodEnvironment.ID,
 		Type:         api.PolicyTypeBackupPlan,

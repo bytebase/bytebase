@@ -37,6 +37,7 @@ type dataSourceRaw struct {
 	SslKey       string
 	HostOverride string
 	PortOverride string
+	Options      api.DataSourceOptions
 }
 
 // toDataSource creates an instance of DataSource based on the dataSourceRaw.
@@ -65,6 +66,7 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 		SslKey:       raw.SslKey,
 		HostOverride: raw.HostOverride,
 		PortOverride: raw.PortOverride,
+		Options:      raw.Options,
 	}
 }
 
@@ -282,7 +284,68 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 }
 
 // createDataSourceImpl creates a new dataSource.
-func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
+func (s *Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
+	if s.db.mode == common.ReleaseModeProd {
+		// Insert row into dataSource.
+		query := `
+	INSERT INTO data_source (
+		creator_id,
+		updater_id,
+		instance_id,
+		database_id,
+		name,
+		type,
+		username,
+		password,
+		ssl_key,
+		ssl_cert,
+		ssl_ca,
+		host_override,
+		port_override
+	)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override
+`
+		var dataSourceRaw dataSourceRaw
+		if err := tx.QueryRowContext(ctx, query,
+			create.CreatorID,
+			create.CreatorID,
+			create.InstanceID,
+			create.DatabaseID,
+			create.Name,
+			create.Type,
+			create.Username,
+			create.Password,
+			create.SslKey,
+			create.SslCert,
+			create.SslCa,
+			create.HostOverride,
+			create.PortOverride,
+		).Scan(
+			&dataSourceRaw.ID,
+			&dataSourceRaw.CreatorID,
+			&dataSourceRaw.CreatedTs,
+			&dataSourceRaw.UpdaterID,
+			&dataSourceRaw.UpdatedTs,
+			&dataSourceRaw.InstanceID,
+			&dataSourceRaw.DatabaseID,
+			&dataSourceRaw.Name,
+			&dataSourceRaw.Type,
+			&dataSourceRaw.Username,
+			&dataSourceRaw.Password,
+			&dataSourceRaw.SslKey,
+			&dataSourceRaw.SslCert,
+			&dataSourceRaw.SslCa,
+			&dataSourceRaw.HostOverride,
+			&dataSourceRaw.PortOverride,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return nil, FormatError(err)
+		}
+		return &dataSourceRaw, nil
+	}
 	// Insert row into dataSource.
 	query := `
 		INSERT INTO data_source (
@@ -298,10 +361,11 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 			ssl_cert,
 			ssl_ca,
 			host_override,
-			port_override
+			port_override,
+			options
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override, options
 	`
 	var dataSourceRaw dataSourceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -318,6 +382,7 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		create.SslCa,
 		create.HostOverride,
 		create.PortOverride,
+		create.Options,
 	).Scan(
 		&dataSourceRaw.ID,
 		&dataSourceRaw.CreatorID,
@@ -335,6 +400,7 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		&dataSourceRaw.SslCa,
 		&dataSourceRaw.HostOverride,
 		&dataSourceRaw.PortOverride,
+		&dataSourceRaw.Options,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -344,7 +410,7 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 	return &dataSourceRaw, nil
 }
 
-func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
+func (s *Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -358,6 +424,68 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, api.DataSourceType(*v))
+	}
+
+	if s.db.mode == common.ReleaseModeProd {
+		rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			instance_id,
+			database_id,
+			name,
+			type,
+			username,
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca,
+			host_override,
+			port_override
+		FROM data_source
+		WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into dataSourceRawList.
+		var dataSourceRawList []*dataSourceRaw
+		for rows.Next() {
+			var dataSourceRaw dataSourceRaw
+			if err := rows.Scan(
+				&dataSourceRaw.ID,
+				&dataSourceRaw.CreatorID,
+				&dataSourceRaw.CreatedTs,
+				&dataSourceRaw.UpdaterID,
+				&dataSourceRaw.UpdatedTs,
+				&dataSourceRaw.InstanceID,
+				&dataSourceRaw.DatabaseID,
+				&dataSourceRaw.Name,
+				&dataSourceRaw.Type,
+				&dataSourceRaw.Username,
+				&dataSourceRaw.Password,
+				&dataSourceRaw.SslKey,
+				&dataSourceRaw.SslCert,
+				&dataSourceRaw.SslCa,
+				&dataSourceRaw.HostOverride,
+				&dataSourceRaw.PortOverride,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+
+			dataSourceRawList = append(dataSourceRawList, &dataSourceRaw)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return dataSourceRawList, nil
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -377,7 +505,8 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 			ssl_cert,
 			ssl_ca,
 			host_override,
-			port_override
+			port_override,
+			options
 		FROM data_source
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -408,6 +537,7 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 			&dataSourceRaw.SslCa,
 			&dataSourceRaw.HostOverride,
 			&dataSourceRaw.PortOverride,
+			&dataSourceRaw.Options,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -422,7 +552,7 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 }
 
 // patchDataSourceImpl updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
+func (s *Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {
@@ -446,15 +576,52 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 	if v := patch.PortOverride; v != nil {
 		set, args = append(set, fmt.Sprintf("port_override= $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Options; v != nil {
+		set, args = append(set, fmt.Sprintf("options= $%d", len(args)+1)), append(args, *v)
+	}
 	args = append(args, patch.ID)
 
 	var dataSourceRaw dataSourceRaw
+	if s.db.mode == common.ReleaseModeProd {
+		// Execute update query with RETURNING.
+		if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+			UPDATE data_source
+			SET `+strings.Join(set, ", ")+`
+			WHERE id = $%d
+			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override
+		`, len(args)),
+			args...,
+		).Scan(
+			&dataSourceRaw.ID,
+			&dataSourceRaw.CreatorID,
+			&dataSourceRaw.CreatedTs,
+			&dataSourceRaw.UpdaterID,
+			&dataSourceRaw.UpdatedTs,
+			&dataSourceRaw.InstanceID,
+			&dataSourceRaw.DatabaseID,
+			&dataSourceRaw.Name,
+			&dataSourceRaw.Type,
+			&dataSourceRaw.Username,
+			&dataSourceRaw.Password,
+			&dataSourceRaw.SslKey,
+			&dataSourceRaw.SslCert,
+			&dataSourceRaw.SslCa,
+			&dataSourceRaw.HostOverride,
+			&dataSourceRaw.PortOverride,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("DataSource not found with ID %d", patch.ID)}
+			}
+			return nil, FormatError(err)
+		}
+		return &dataSourceRaw, nil
+	}
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE data_source
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override
+			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override, options
 		`, len(args)),
 		args...,
 	).Scan(
@@ -474,6 +641,7 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 		&dataSourceRaw.SslCa,
 		&dataSourceRaw.HostOverride,
 		&dataSourceRaw.PortOverride,
+		&dataSourceRaw.Options,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("DataSource not found with ID %d", patch.ID)}

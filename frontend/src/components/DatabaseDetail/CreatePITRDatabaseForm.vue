@@ -107,6 +107,7 @@
 
   <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
   <DatabaseLabelForm
+    v-if="isTenantProject"
     :project="project"
     :label-list="state.context.labelList"
     filter="optional"
