@@ -1,12 +1,22 @@
 <template>
-  <div
+  <NDropdown
     v-if="allowMarkTaskAsDone"
-    class="textinfolabel hover:text-accent cursor-pointer"
-    v-bind="$attrs"
-    @click="state.showModal = true"
+    trigger="click"
+    placement="bottom-end"
+    :options="options"
+    @select="handleSelect"
   >
-    {{ $t("task.mark-as-done") }}
-  </div>
+    <button
+      id="user-menu"
+      type="button"
+      class="text-control-light p-0.5 rounded hover:bg-control-bg-hover"
+      aria-label="User menu"
+      aria-haspopup="true"
+      v-bind="$attrs"
+    >
+      <heroicons-solid:dots-vertical class="w-4 h-4" />
+    </button>
+  </NDropdown>
 
   <BBModal
     v-if="state.showModal"
@@ -36,6 +46,7 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { DropdownOption, NDropdown } from "naive-ui";
 
 import type { Issue, Task, TaskStatus } from "@/types";
 import { useCurrentUser } from "@/store";
@@ -104,6 +115,23 @@ const allowMarkTaskAsDone = computed(() => {
 
   return false;
 });
+
+const options = computed(() => {
+  const list: DropdownOption[] = [];
+  if (allowMarkTaskAsDone.value) {
+    list.push({
+      key: "mark-task-as-done",
+      label: t("task.mark-as-done"),
+    });
+  }
+  return list;
+});
+
+const handleSelect = (key: string) => {
+  if (key === "mark-task-as-done") {
+    state.showModal = true;
+  }
+};
 
 const confirmButtonText = computed(() => t("task.mark-as-done"));
 
