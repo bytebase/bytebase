@@ -388,7 +388,10 @@ const hasDiffBetweenCharactorSets = computed(() => {
     state.targetDatabaseInfo.databaseId as number
   );
 
-  return baseDatabase?.characterSet !== targetDatabase?.characterSet;
+  return (
+    baseDatabase.instance.engine === targetDatabase.instance.engine &&
+    baseDatabase.characterSet !== targetDatabase.characterSet
+  );
 });
 
 const databaseMigrationHistoryList = (databaseId: DatabaseId) => {
