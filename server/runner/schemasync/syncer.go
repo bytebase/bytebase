@@ -9,10 +9,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -431,17 +433,32 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 	}
 
 	databaseMetadata := convertDBSchema(schema)
-	bytes, err := protojson.Marshal(databaseMetadata)
-	if err != nil {
-		return err
+	var oldDatabaseMetadata *storepb.DatabaseMetadata
+	if dbSchema != nil {
+		var m storepb.DatabaseMetadata
+		if err := protojson.Unmarshal([]byte(dbSchema.Metadata), &m); err != nil {
+			return err
+		}
+		oldDatabaseMetadata = &m
 	}
-	metadataString := string(bytes)
-	if dbSchema == nil || dbSchema.Metadata != metadataString {
+
+	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
+		bytes, err := protojson.Marshal(databaseMetadata)
+		if err != nil {
+			return err
+		}
+		metadata := string(bytes)
+		// TODO(d): avoid updating dump everytime if possible.
+		rawDump := ""
+		if dbSchema != nil {
+			rawDump = dbSchema.RawDump
+		}
+
 		if _, err := store.UpsertDBSchema(ctx, api.DBSchemaUpsert{
 			UpdatorID:  api.SystemBotID,
 			DatabaseID: database.ID,
-			Metadata:   metadataString,
-			RawDump:    "",
+			Metadata:   metadata,
+			RawDump:    rawDump,
 		}); err != nil {
 			return err
 		}
@@ -450,7 +467,6 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 }
 
 func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
-	// TODO(d): add unit test.
 	databaseMetadata := &storepb.DatabaseMetadata{
 		Name:         schema.Name,
 		CharacterSet: schema.CharacterSet,
@@ -570,4 +586,10 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 		})
 	}
 	return databaseMetadata
+}
+
+func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {
+	return cmp.Equal(x, y, protocmp.Transform(),
+		protocmp.IgnoreFields(&storepb.TableMetadata{}, "row_count", "data_size", "index_size", "data_free"),
+	)
 }
