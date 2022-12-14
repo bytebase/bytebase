@@ -1454,7 +1454,8 @@
     "confirm-to-close": {
       "title": "Confirm to close",
       "description": "Are you sure you want to close the panel? Your changes will be lost."
-    }
+    },
+    "tenant-mode-tips": "Changes will be applied to all selected tenant databases after clicking \"Preview issue\"."
   },
   "label": {
     "empty-label-value": "<Empty Value>",
