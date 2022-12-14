@@ -144,7 +144,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if database == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
 			}
-			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database.Instance, database.Name); err != nil {
+			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database.Instance, database.Name, true /* force */); err != nil {
 				resultSet.Error = err.Error()
 			}
 		}
