@@ -167,7 +167,7 @@ DROP SCHEMA "schema_a";
 	newDatabase := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
-	newDatabaseSchema, err := ctl.getLatestSchemaOfDatabaseID(newDatabase.ID)
+	newDatabaseSchema, err := ctl.getLatestSchemaDump(newDatabase.ID)
 	a.NoError(err)
 
 	diff, err := ctl.getSchemaDiff(schemaDiffRequest{
