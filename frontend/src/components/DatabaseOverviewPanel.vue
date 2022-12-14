@@ -68,24 +68,6 @@
           {{ humanizeTs(database.lastSuccessfulSyncTs) }}
         </dd>
       </div>
-
-      <div v-if="!isPostgres" class="col-span-1 col-start-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.created-at") }}
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          {{ humanizeTs(database.createdTs) }}
-        </dd>
-      </div>
-
-      <div v-if="!isPostgres" class="col-span-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("common.updated-at") }}
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          {{ humanizeTs(database.updatedTs) }}
-        </dd>
-      </div>
     </dl>
 
     <div class="pt-6">
@@ -264,7 +246,6 @@ export default defineComponent({
     const dbExtensionStore = useDBExtensionStore();
 
     const databaseEngine = props.database.instance.engine as EngineType;
-    const isPostgres = computed(() => databaseEngine === "POSTGRES");
 
     const prepareTableList = () => {
       tableStore.fetchTableListByDatabaseId(props.database.id);
@@ -414,7 +395,6 @@ export default defineComponent({
       saveEditDataSource,
       configInstance,
       databaseEngine,
-      isPostgres,
     };
   },
 });
