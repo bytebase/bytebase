@@ -338,6 +338,8 @@ CREATE INDEX idx_db_instance_id ON db(instance_id);
 
 CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON db(instance_id, name);
 
+CREATE INDEX idx_db_project_id ON db(project_id);
+
 ALTER SEQUENCE db_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_db_updated_ts
