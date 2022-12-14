@@ -38,7 +38,7 @@
           </i18n-t>
         </div>
         <template v-else>
-          <div class="flex justify-end items-center py-0.5">
+          <div class="flex justify-end items-center pb-2">
             <YAxisRadioGroup v-model:label="label" class="text-sm" />
           </div>
 
