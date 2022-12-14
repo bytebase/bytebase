@@ -67,7 +67,7 @@
 </template>
 
 <script lang="ts">
-import { uniq } from "lodash-es";
+import { PRESET_LABEL_KEYS, RESERVED_LABEL_KEYS } from "@/utils";
 import { computed, defineComponent, PropType } from "vue";
 import { Database, Deployment, LabelSelectorRequirement } from "../../types";
 import SelectorItem from "./SelectorItem.vue";
@@ -108,10 +108,7 @@ export default defineComponent({
   emits: ["remove", "prev", "next"],
   setup(props) {
     const keys = computed(() => {
-      const allKeys = props.databaseList.flatMap((db) =>
-        db.labels.map((label) => label.key)
-      );
-      return uniq(allKeys);
+      return [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
     });
 
     const removeSelector = (selector: LabelSelectorRequirement) => {
