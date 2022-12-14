@@ -1012,7 +1012,6 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
-				DatabaseName:  dbName,
 				Statement:     sdl,
 			},
 		)
@@ -1060,7 +1059,6 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 			return []*api.MigrationDetail{
 				{
 					MigrationType: fileInfo.migrationInfo.Type,
-					DatabaseName:  fileInfo.migrationInfo.Database,
 					Statement:     content,
 					SchemaVersion: fileInfo.migrationInfo.Version,
 				},
