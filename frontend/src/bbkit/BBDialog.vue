@@ -11,6 +11,7 @@
 
     <div class="pt-4 border-t border-block-border flex justify-end space-x-3">
       <button
+        v-if="needNegativeBtn"
         type="button"
         class="btn-normal py-2 px-4"
         @click.prevent="onNegativeClick"
@@ -45,6 +46,10 @@ const props = defineProps({
   closable: {
     type: Boolean,
     default: false,
+  },
+  needNegativeBtn: {
+    type: Boolean,
+    default: true,
   },
   negativeText: {
     type: String,

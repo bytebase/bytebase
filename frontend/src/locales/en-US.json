@@ -337,7 +337,8 @@
       "labels": "Labels",
       "debug-log": "Debug Log",
       "sensitive-data": "Sensitive Data",
-      "access-control": "Access Control"
+      "access-control": "Access Control",
+      "audit-log": "Audit Log"
     },
     "profile": {
       "email": "Email",
@@ -1680,6 +1681,29 @@
         "copied": "Copied!",
         "export": "Export"
       }
+    }
+  },
+  "audit-log": {
+    "no-logs": "No audit logs",
+    "audit-log-detail": "Audit Log Details",
+    "table": {
+      "created-ts": "Time",
+      "created-time": "Created Time",
+      "updated-time": "Updated Time",
+      "creator": "Creator",
+      "type": "Audit Type",
+      "level": "Audit Level",
+      "comment": "Comment",
+      "payload": "Payload",
+      "empty": "<Empty>",
+      "view-details": "View Details"
+    },
+    "type": {
+      "member-create": "Create Member",
+      "member-role-update": "Update Member Role",
+      "member-activate": "Activate Member",
+      "member-deactivate": "Deactivate Member",
+      "database-transfer": "Transfer Database"
     }
   },
   "onboarding-guide": {
