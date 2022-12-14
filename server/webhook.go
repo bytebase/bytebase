@@ -655,18 +655,12 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repositoryList []*api.Repository
 		filePathTemplate := path.Join(repository.BaseDirectory, repository.FilePathTemplate)
 		allowOmitDatabaseName := false
 		if repository.Project.TenantMode == api.TenantModeTenant {
+			allowOmitDatabaseName = true
 			// If the committed file is a YAML file, then the user may have opted-in
 			// advanced mode, we need to alter the FilePathTemplate to match ".yml" instead
 			// of ".sql".
 			if fileItem.IsYAML {
 				filePathTemplate = strings.Replace(filePathTemplate, ".sql", ".yml", 1)
-
-				// We do not care database name in the file path with a YAML file.
-				allowOmitDatabaseName = true
-			} else if repository.Project.DBNameTemplate == "" {
-				// Empty DBNameTemplate represents wildcard matching of all databases, thus the
-				// database name can be omitted.
-				allowOmitDatabaseName = true
 			}
 		}
 

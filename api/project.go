@@ -164,17 +164,16 @@ var (
 		EnvironmentToken:  false,
 		"{{DESCRIPTION}}": false,
 	}
-	tenantWildcardRepositoryFilePathTemplateTokens = map[string]bool{
+	tenantRepositoryFilePathTemplateTokens = map[string]bool{
 		"{{VERSION}}":     true,
-		DBNameToken:       false,
 		"{{TYPE}}":        true,
-		EnvironmentToken:  false,
 		"{{DESCRIPTION}}": false,
 	}
 	schemaPathTemplateTokens = map[string]bool{
 		DBNameToken:      true,
 		EnvironmentToken: false,
 	}
+	tenantSchemaPathTemplateTokens     = map[string]bool{}
 	allowedProjectDBNameTemplateTokens = map[string]bool{
 		DBNameToken:   true,
 		LocationToken: true,
@@ -183,22 +182,16 @@ var (
 )
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
-func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode, dbNameTemplate string) error {
+func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
 	tokens, _ := common.ParseTemplateTokens(filePathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
 	}
-	if tenantMode == TenantModeTenant {
-		if _, ok := tokenMap[EnvironmentToken]; ok {
-			return &common.Error{Code: common.Invalid, Err: errors.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
-		}
-	}
 
 	filePathTemplateTokens := repositoryFilePathTemplateTokens
-	// Skip checking {{DB_NAME}} if it's a tenant project with empty database name template (i.e .wildcard).
-	if tenantMode == TenantModeTenant && dbNameTemplate == "" {
-		filePathTemplateTokens = tenantWildcardRepositoryFilePathTemplateTokens
+	if tenantMode == TenantModeTenant {
+		filePathTemplateTokens = tenantRepositoryFilePathTemplateTokens
 	}
 	for token, required := range filePathTemplateTokens {
 		// Skip checking tokens that are not required
@@ -228,21 +221,22 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 	for _, token := range tokens {
 		tokenMap[token] = true
 	}
+
+	allowedTokens := schemaPathTemplateTokens
 	if tenantMode == TenantModeTenant {
-		if _, ok := tokenMap[EnvironmentToken]; ok {
-			return &common.Error{Code: common.Invalid, Err: errors.Errorf("%q is not allowed in the template for projects in tenant mode", EnvironmentToken)}
-		}
+		allowedTokens = tenantSchemaPathTemplateTokens
 	}
 
-	for token, required := range schemaPathTemplateTokens {
+	for token, required := range allowedTokens {
 		if required {
 			if _, ok := tokenMap[token]; !ok {
 				return errors.Errorf("missing %s in schema path template", token)
 			}
 		}
 	}
+
 	for token := range tokenMap {
-		if _, ok := schemaPathTemplateTokens[token]; !ok {
+		if _, ok := allowedTokens[token]; !ok {
 			return errors.Errorf("unknown token %s in schema path template", token)
 		}
 	}
@@ -302,42 +296,4 @@ func formatTemplateRegexp(template string, tokens map[string]string) (string, er
 		}
 	}
 	return template, nil
-}
-
-// GetBaseDatabaseName will return the base database name given the database name, dbNameTemplate, labelsJSON.
-func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (string, error) {
-	// There is no need to check database name if the template is empty or a wildcard.
-	if dbNameTemplate == "" {
-		return databaseName, nil
-	}
-	var labels []*DatabaseLabel
-	if labelsJSON != "" {
-		if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-			return "", err
-		}
-	}
-	labelMap := map[string]string{}
-	for _, label := range labels {
-		switch label.Key {
-		case LocationLabelKey:
-			labelMap[LocationToken] = label.Value
-		case TenantLabelKey:
-			labelMap[TenantToken] = label.Value
-		}
-	}
-	labelMap["{{DB_NAME}}"] = "(?P<NAME>.+)"
-
-	expr, err := formatTemplateRegexp(dbNameTemplate, labelMap)
-	if err != nil {
-		return "", errors.Wrapf(err, "FormatTemplate(%q, %+v) failed", dbNameTemplate, labelMap)
-	}
-	re, err := regexp.Compile(expr)
-	if err != nil {
-		return "", errors.Wrapf(err, "regexp %q compiled failure", expr)
-	}
-	names := re.FindStringSubmatch(databaseName)
-	if len(names) != 2 || names[1] == "" {
-		return "", errors.Errorf("database name %q doesn't follow database name template %q", databaseName, dbNameTemplate)
-	}
-	return names[1], nil
 }

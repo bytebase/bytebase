@@ -328,13 +328,12 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 	)
 
 	if writeBack {
-		dbName, err := api.GetBaseDatabaseName(mi.Database, project.DBNameTemplate, task.Database.Labels)
 		if err != nil {
 			return true, nil, errors.Wrapf(err, "failed to get BaseDatabaseName for instance %q, database %q", task.Instance.Name, task.Database.Name)
 		}
 		latestSchemaFile := filepath.Join(repo.BaseDirectory, repo.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
-		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", dbName)
+		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
 		vcs, err := store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
@@ -381,7 +380,7 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
 					mi.Version,
-					dbName,
+					mi.Database,
 				),
 				Payload: string(payload),
 			}
