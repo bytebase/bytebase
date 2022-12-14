@@ -15,6 +15,7 @@
                 params: {
                   projectSlug: DEFAULT_PROJECT_ID,
                 },
+                hash: '#databases',
               }"
               class="normal-link text-sm"
             >
