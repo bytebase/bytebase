@@ -1865,18 +1865,19 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 
 func TestGetLatestSchema(t *testing.T) {
 	tests := []struct {
-		name         string
-		dbType       db.Type
-		databaseName string
-		ddl          string
-		want         string
+		name               string
+		dbType             db.Type
+		databaseName       string
+		ddl                string
+		wantSchema         string
+		wantSchemaMetadata string
 	}{
 		{
 			name:         "PostgreSQL",
 			dbType:       db.Postgres,
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
-			want: `SET statement_timeout = 0;
+			wantSchema: `SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -1897,6 +1898,7 @@ CREATE TABLE public.book (
 );
 
 `,
+			wantSchemaMetadata: `{"name": "latestSchema", "schemas": [{"name": "public", "tables": [{"name": "book", "columns": [{"Type": "integer", "name": "id", "nullable": true, "position": 1, "hasDefault": true}, {"Type": "text", "name": "name", "nullable": true, "position": 2, "hasDefault": true}], "dataSize": "8192"}]}], "collation": "en_US.UTF-8", "characterSet": "UTF8"}`,
 		},
 	}
 	a := require.New(t)
@@ -1985,9 +1987,12 @@ CREATE TABLE public.book (
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
-			latestSchema, err := ctl.getLatestSchemaOfDatabaseID(database.ID)
+			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
 			a.NoError(err)
-			a.Equal(test.want, latestSchema)
+			a.Equal(test.wantSchema, latestSchemaDump)
+			latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(database.ID)
+			a.NoError(err)
+			a.Equal(test.wantSchemaMetadata, latestSchemaMetadata)
 		})
 	}
 }

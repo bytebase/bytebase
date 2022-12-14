@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -379,6 +378,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
+	// When query metadata is present, we will return the schema metadata. Otherwise, we will return the raw dump.
 	g.GET("/database/:databaseID/schema", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("databaseID"))
@@ -394,19 +394,36 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
+		queryDump := c.QueryParam("metadata") == ""
+		dbSchema, err := s.store.GetDBSchema(ctx, id)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database ID %v", id)).SetInternal(err)
 		}
-		defer driver.Close(ctx)
-		var schemaBuf bytes.Buffer
-		if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /*schemaOnly*/); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to dump database schema").SetInternal(err)
+		if dbSchema == nil {
+			// TODO(d): make SyncDatabaseSchema return the updated database schema.
+			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database.Instance, database.Name, true /* force */); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database schema for database ID %v", id)).SetInternal(err)
+			}
+			newDBSchema, err := s.store.GetDBSchema(ctx, id)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database ID %v", id)).SetInternal(err)
+			}
+			if newDBSchema == nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("New dbSchema not found for database ID %v", id)).SetInternal(err)
+			}
+			dbSchema = newDBSchema
 		}
 
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
-		if _, err := c.Response().Write(schemaBuf.Bytes()); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
+		if queryDump {
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+			if _, err := c.Response().Write([]byte(dbSchema.RawDump)); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
+			}
+		} else {
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+			if _, err := c.Response().Write([]byte(dbSchema.Metadata)); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
+			}
 		}
 		return nil
 	})
