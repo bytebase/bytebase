@@ -748,7 +748,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if len(c.DetailList) == 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "migration detail list should not be empty")
 	}
-	databaseNameCount, databaseIDCount := 0, 0
+	emptyDatabaseIDCount, databaseIDCount := 0, 0
 	for _, detail := range c.DetailList {
 		if detail.MigrationType != db.Baseline && detail.MigrationType != db.Migrate && detail.MigrationType != db.MigrateSDL && detail.MigrationType != db.Data {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "support migrate, migrateSDL and data type migration only")
@@ -758,15 +758,14 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 		if detail.DatabaseID > 0 {
 			databaseIDCount++
-		}
-		if detail.DatabaseName != "" {
-			databaseNameCount++
+		} else {
+			emptyDatabaseIDCount++
 		}
 	}
-	if databaseNameCount > 0 && databaseIDCount > 0 {
+	if emptyDatabaseIDCount > 0 && databaseIDCount > 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Migration detail should set either database name or database ID.")
 	}
-	if databaseNameCount > 1 {
+	if emptyDatabaseIDCount > 1 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with database name.")
 	}
 	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
