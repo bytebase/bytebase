@@ -48,14 +48,6 @@ export const validateDeploymentSpec = (
   return undefined;
 };
 
-export const parseDatabaseNameByTemplate = (name: string, template: string) => {
-  const regex = buildDatabaseNameRegExpByTemplate(template);
-  const match = name.match(regex);
-
-  // fallback to name it self when failed
-  return match?.groups?.DB_NAME || name;
-};
-
 export const buildDatabaseNameRegExpByTemplate = (template: string): RegExp => {
   let regexpString = template;
 
