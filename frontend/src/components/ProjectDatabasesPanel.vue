@@ -13,7 +13,7 @@
       </div>
     </div>
 
-    <template v-if="filteredDatabaseList.length > 0">
+    <template v-if="databaseList.length > 0">
       <DatabaseTable mode="PROJECT" :database-list="filteredDatabaseList" />
     </template>
     <div v-else class="text-center textinfolabel">
