@@ -5,12 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -73,11 +71,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	var schemaVersion string
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	if project.TenantMode == api.TenantModeTenant {
-		baseDatabaseName, err := api.GetBaseDatabaseName(payload.DatabaseName, project.DBNameTemplate, payload.Labels)
-		if err != nil {
-			return true, nil, errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", payload.DatabaseName, project.DBNameTemplate, payload.Labels)
-		}
-		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project, project.ID, baseDatabaseName)
+		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project)
 		if err != nil {
 			return true, nil, err
 		}
@@ -245,61 +239,29 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, instance *api.Instance, project *api.Project, projectID int, baseDatabaseName string) (string, string, error) {
+func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, instance *api.Instance, project *api.Project) (string, string, error) {
 	// Find all databases in the project.
 	dbList, err := store.FindDatabase(ctx, &api.DatabaseFind{
-		ProjectID: &projectID,
+		ProjectID: &project.ID,
 	})
 	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
+		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.ID)
 	}
 
-	deployConfig, err := store.GetDeploymentConfigByProjectID(ctx, projectID)
+	deployConfig, err := store.GetDeploymentConfigByProjectID(ctx, project.ID)
 	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
+		return "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.ID)
 	}
 	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
 	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
+		return "", "", errors.Errorf("Failed to get deployment schedule")
 	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, dbList)
 	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "Failed to create deployment pipeline").SetInternal(err)
+		return "", "", errors.Errorf("Failed to create deployment pipeline")
 	}
 	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
-
-	// When there is no existing tenant, we will look at all existing databases in the tenant mode project.
-	// If there are existing databases with the same name, we will disallow the database creation.
-	// Otherwise, we will create a blank new database.
 	if similarDB == nil {
-		// Ignore the database name conflict if the template is empty.
-		if project.DBNameTemplate == "" {
-			return "", "", nil
-		}
-
-		found := false
-		for _, db := range dbList {
-			var labelList []*api.DatabaseLabel
-			if err := json.Unmarshal([]byte(db.Labels), &labelList); err != nil {
-				return "", "", errors.Wrapf(err, "failed to unmarshal labels for database ID %v name %q", db.ID, db.Name)
-			}
-			labelMap := map[string]string{}
-			for _, label := range labelList {
-				labelMap[label.Key] = label.Value
-			}
-			dbName, err := utils.FormatDatabaseName(baseDatabaseName, project.DBNameTemplate, labelMap)
-			if err != nil {
-				return "", "", errors.Wrapf(err, "failed to format database name formatDatabaseName(%q, %q, %+v)", baseDatabaseName, project.DBNameTemplate, labelMap)
-			}
-			if db.Name == dbName {
-				found = true
-				break
-			}
-		}
-		if found {
-			err := errors.Errorf("conflicting database name, project has existing base database named %q, but it's not from the selected peer tenants", baseDatabaseName)
-			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
 		return "", "", nil
 	}
 
