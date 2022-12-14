@@ -16,10 +16,16 @@
     <template v-else>
       <div class="flex justify-end items-center py-0.5 space-x-2">
         <YAxisRadioGroup v-model:label="state.label" class="text-sm" />
+        <BBTableSearch
+          v-if="showSearchBox"
+          class="w-60"
+          :placeholder="$t('database.search-database')"
+          @change-text="(text: string) => (state.keyword = text)"
+        />
       </div>
 
       <DeployDatabaseTable
-        :database-list="databaseList"
+        :database-list="filteredDatabaseList"
         :label="state.label"
         :environment-list="environmentList"
         :deployment="deployment"
@@ -29,7 +35,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { computed, reactive } from "vue";
 import {
   Project,
   DeploymentConfig,
@@ -38,15 +44,34 @@ import {
   LabelKeyType,
 } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
+import { filterDatabaseByKeyword } from "@/utils";
 
-defineProps<{
-  project: Project;
-  deployment: DeploymentConfig;
-  environmentList: Environment[];
-  databaseList: Database[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    project: Project;
+    deployment: DeploymentConfig;
+    environmentList: Environment[];
+    databaseList: Database[];
+    showSearchBox: boolean;
+  }>(),
+  {
+    showSearchBox: false,
+  }
+);
 
 const state = reactive({
   label: "bb.environment" as LabelKeyType,
+  keyword: "",
+});
+
+const filteredDatabaseList = computed(() => {
+  return props.databaseList.filter((db) => {
+    return filterDatabaseByKeyword(db, state.keyword, [
+      "name",
+      "environment",
+      "instance",
+      "tenant",
+    ]);
+  });
 });
 </script>

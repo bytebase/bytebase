@@ -3,10 +3,17 @@
     <div
       class="text-lg font-medium leading-7 text-main flex items-center justify-between"
     >
-      {{ $t("common.database") }}
+      <h3>{{ $t("common.database") }}</h3>
+      <div>
+        <BBTableSearch
+          class="w-60"
+          :placeholder="$t('database.search-database')"
+          @change-text="(text: string) => (state.keyword = text)"
+        />
+      </div>
     </div>
 
-    <template v-if="filteredDatabaseList.length > 0">
+    <template v-if="databaseList.length > 0">
       <DatabaseTable mode="PROJECT" :database-list="filteredDatabaseList" />
     </template>
     <div v-else class="text-center textinfolabel">
