@@ -36,10 +36,11 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	if err != nil {
 		return nil, err
 	}
-	userList, err := driver.getUserList(ctx)
+	userList, err := driver.getUserMetaList(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	return &db.InstanceMeta{
 		Version:  version,
 		UserList: userList,
@@ -66,8 +67,8 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	return version.(string), nil
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
-	// Get all users and their roles.
+// getUserList returns the list of users.
+func (driver *Driver) getUserMetaList(ctx context.Context) ([]db.User, error) {
 	database := driver.client.Database(migrationHistoryDefaultDatabase)
 	command := bson.D{{
 		Key: "usersInfo",
