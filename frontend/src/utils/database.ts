@@ -1,4 +1,3 @@
-import { groupBy } from "lodash-es";
 import { Database, DataSourceType, Environment, Principal } from "../types";
 import { hasWorkspacePermission } from "./role";
 import { isDev, semverCompare } from "./util";
@@ -62,17 +61,17 @@ export function sortDatabaseList(
 const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
 
 export function allowGhostMigration(databaseList: Database[]): boolean {
-  const groupByEnvironment = groupBy(
-    databaseList,
-    (db) => db.instance.environment.id
-  );
-  // Multiple tasks in one stage is not supported by gh-ost now.
-  for (const environmentId in groupByEnvironment) {
-    const databaseListInStage = groupByEnvironment[environmentId];
-    if (databaseListInStage.length > 1) {
-      return false;
-    }
-  }
+  // const groupByEnvironment = groupBy(
+  //   databaseList,
+  //   (db) => db.instance.environment.id
+  // );
+  // // Multiple tasks in one stage is not supported by gh-ost now.
+  // for (const environmentId in groupByEnvironment) {
+  //   const databaseListInStage = groupByEnvironment[environmentId];
+  //   if (databaseListInStage.length > 1) {
+  //     return false;
+  //   }
+  // }
 
   return databaseList.every((db) => {
     return (

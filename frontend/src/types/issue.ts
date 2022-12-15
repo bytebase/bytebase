@@ -47,8 +47,7 @@ export type CreateDatabaseContext = {
 
 export type MigrationDetail = {
   migrationType: MigrationType;
-  databaseId: DatabaseId;
-  databaseName: string;
+  databaseId?: DatabaseId;
   statement: string;
   earliestAllowedTs: number;
 };
@@ -60,10 +59,6 @@ export type UpdateSchemaGhostDetail = MigrationDetail & {
 
 export type MigrationContext = {
   detailList: MigrationDetail[];
-};
-
-export type UpdateSchemaGhostContext = {
-  detailList: UpdateSchemaGhostDetail[];
 };
 
 export type PITRContext = {
@@ -86,7 +81,6 @@ export type EmptyContext = {};
 export type IssueCreateContext =
   | CreateDatabaseContext
   | MigrationContext
-  | UpdateSchemaGhostContext
   | PITRContext
   | RollbackContext
   | EmptyContext;

@@ -68,14 +68,14 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
 const buildNewIssue = async (
   context: BuildNewIssueContext
 ): Promise<IssueCreate> => {
-  const tenant = await maybeBuildTenantDeployIssue(context);
-  if (tenant) {
-    return tenant;
-  }
-
   const ghost = await maybeBuildGhostIssue(context);
   if (ghost) {
     return ghost;
+  }
+
+  const tenant = await maybeBuildTenantDeployIssue(context);
+  if (tenant) {
+    return tenant;
   }
 
   return buildNewStandardIssue(context);
