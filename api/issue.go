@@ -189,10 +189,8 @@ type MigrationFileYAML struct {
 // UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.
 type UpdateSchemaGhostDetail struct {
 	// DatabaseID is the ID of a database.
+	// This should be unset when a project is in tenant mode. The ProjectID is derived from IssueCreate.
 	DatabaseID int `json:"databaseId"`
-	// DatabaseName is the name of databases, mutually exclusive to DatabaseID.
-	// This should be set when a project is in tenant mode, and ProjectID is derived from IssueCreate.
-	DatabaseName string `json:"databaseName"`
 	// Statement is the statement to update database schema.
 	Statement string `json:"statement"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.

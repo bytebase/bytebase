@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
 )
@@ -259,7 +260,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			"twoDifferentKeys",
 			&api.DeploymentSchedule{
 				Deployments: []*api.Deployment{
-
 					{
 						Spec: &api.DeploymentSpec{
 							Selector: &api.LabelSelector{
@@ -300,7 +300,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			"differentDatabaseNames",
 			&api.DeploymentSchedule{
 				Deployments: []*api.Deployment{
-
 					{
 						Spec: &api.DeploymentSpec{
 							Selector: &api.LabelSelector{
@@ -327,7 +326,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			"useDatabaseNameTemplate",
 			&api.DeploymentSchedule{
 				Deployments: []*api.Deployment{
-
 					{
 						Spec: &api.DeploymentSpec{
 							Selector: &api.LabelSelector{
@@ -355,5 +353,109 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	for _, test := range tests {
 		matrix, _ := GetDatabaseMatrixFromDeploymentSchedule(test.schedule, test.databaseList)
 		assert.Equal(t, matrix, test.want, test.name)
+	}
+}
+
+func TestMergeTaskCreateLists(t *testing.T) {
+	tests := []struct {
+		name               string
+		taskCreateLists    [][]api.TaskCreate
+		taskIndexDAGLists  [][]api.TaskIndexDAG
+		wantTaskCreateList []api.TaskCreate
+		wantTaskDAGList    []api.TaskIndexDAG
+	}{
+		{
+			name: "simple, len=1",
+			taskCreateLists: [][]api.TaskCreate{
+				{
+					{}, {},
+				},
+			},
+			taskIndexDAGLists: [][]api.TaskIndexDAG{
+				{
+					{FromIndex: 0, ToIndex: 1},
+				},
+			},
+			wantTaskCreateList: []api.TaskCreate{
+				{}, {},
+			},
+			wantTaskDAGList: []api.TaskIndexDAG{
+				{FromIndex: 0, ToIndex: 1},
+			},
+		},
+		{
+			name: "len=2",
+			taskCreateLists: [][]api.TaskCreate{
+				{
+					{}, {}, {}, {},
+				},
+				{
+					{}, {}, {}, {},
+				},
+			},
+			taskIndexDAGLists: [][]api.TaskIndexDAG{
+				{
+					{FromIndex: 0, ToIndex: 1},
+					{FromIndex: 1, ToIndex: 3},
+				},
+				{
+					{FromIndex: 1, ToIndex: 2},
+				},
+			},
+			wantTaskCreateList: []api.TaskCreate{
+				{}, {}, {}, {}, {}, {}, {}, {},
+			},
+			wantTaskDAGList: []api.TaskIndexDAG{
+				{FromIndex: 0, ToIndex: 1},
+				{FromIndex: 1, ToIndex: 3},
+				{FromIndex: 5, ToIndex: 6},
+			},
+		},
+		{
+			name: "len=3",
+			taskCreateLists: [][]api.TaskCreate{
+				{
+					{}, {}, {}, {},
+				},
+				{
+					{}, {}, {}, {},
+				},
+				{
+					{}, {}, {}, {},
+				},
+			},
+			taskIndexDAGLists: [][]api.TaskIndexDAG{
+				{
+					{FromIndex: 0, ToIndex: 1},
+					{FromIndex: 1, ToIndex: 3},
+				},
+				{
+					{FromIndex: 1, ToIndex: 2},
+				},
+				{
+					{FromIndex: 1, ToIndex: 2},
+				},
+			},
+			wantTaskCreateList: []api.TaskCreate{
+				{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+			},
+			wantTaskDAGList: []api.TaskIndexDAG{
+				{FromIndex: 0, ToIndex: 1},
+				{FromIndex: 1, ToIndex: 3},
+				{FromIndex: 5, ToIndex: 6},
+				{FromIndex: 9, ToIndex: 10},
+			},
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+		t.Run(test.name, func(t *testing.T) {
+			a := require.New(t)
+			taskCreateList, taskIndexDAGList, err := MergeTaskCreateLists(test.taskCreateLists, test.taskIndexDAGLists)
+			a.NoError(err)
+			a.Equal(test.wantTaskCreateList, taskCreateList)
+			a.Equal(test.wantTaskDAGList, taskIndexDAGList)
+		})
 	}
 }

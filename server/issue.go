@@ -726,10 +726,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	}
-	create := &api.PipelineCreate{
-		Name:      "Change database pipeline",
-		CreatorID: issueCreate.CreatorID,
-	}
 
 	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 	if err != nil {
@@ -766,7 +762,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Migration detail should set either database name or database ID.")
 	}
 	if emptyDatabaseIDCount > 1 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with database name.")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with empty database ID.")
 	}
 	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -822,6 +818,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 	}
 
+	create := &api.PipelineCreate{
+		Name:      "Change database pipeline",
+		CreatorID: issueCreate.CreatorID,
+	}
 	for i, databaseList := range aggregatedMatrix {
 		// Skip the stage if the stage includes no database.
 		if len(databaseList) == 0 {
@@ -882,40 +882,137 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
-	if project.TenantMode == api.TenantModeTenant {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "not implemented yet")
+	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
+		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+	}
+	deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, project.ID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", project.ID)).SetInternal(err)
+	}
+	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get deployment schedule").SetInternal(err)
+	}
+
+	if len(c.DetailList) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "migration detail list should not be empty")
+	}
+
+	emptyDatabaseIDCount, databaseIDCount := 0, 0
+	for _, detail := range c.DetailList {
+		if detail.Statement == "" {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+		}
+		if detail.DatabaseID > 0 {
+			databaseIDCount++
+		} else {
+			emptyDatabaseIDCount++
+		}
+	}
+	if emptyDatabaseIDCount > 0 && databaseIDCount > 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Migration detail should set either database name or database ID.")
+	}
+	if emptyDatabaseIDCount > 1 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with empty database ID.")
+	}
+	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
+		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+	}
+	maximumTaskLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumTask)
+	if int64(databaseIDCount) > maximumTaskLimit {
+		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can update up to %d databases, got %d.", maximumTaskLimit, databaseIDCount))
+	}
+
+	// aggregatedMatrix is the aggregated matrix by deployments.
+	// databaseToMigrationList is the mapping from database ID to migration detail.
+	aggregatedMatrix := make([][]*api.Database, len(deploySchedule.Deployments))
+	databaseToMigrationList := make(map[int][]*api.UpdateSchemaGhostDetail)
+
+	dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+		ProjectID: &issueCreate.ProjectID,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+	}
+
+	if databaseIDCount == 0 {
+		// Deploy to all tenant databases.
+		migrationDetail := c.DetailList[0]
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, dbList)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
+		}
+		aggregatedMatrix = matrix
+		for _, databaseList := range matrix {
+			for _, database := range databaseList {
+				// There should be only one migration per database for tenant mode deployment.
+				databaseToMigrationList[database.ID] = []*api.UpdateSchemaGhostDetail{migrationDetail}
+			}
+		}
+	} else {
+		databaseMap := make(map[int]*api.Database)
+		for _, db := range dbList {
+			databaseMap[db.ID] = db
+		}
+		for _, d := range c.DetailList {
+			database, ok := databaseMap[d.DatabaseID]
+			if !ok {
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID %d not found in project %d", d.DatabaseID, issueCreate.ProjectID))
+			}
+			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, []*api.Database{database})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
+			}
+			for i, databaseList := range matrix {
+				aggregatedMatrix[i] = append(aggregatedMatrix[i], databaseList...)
+			}
+			databaseToMigrationList[database.ID] = append(databaseToMigrationList[database.ID], d)
+		}
 	}
 
 	create := &api.PipelineCreate{
 		Name:      "Update database schema (gh-ost) pipeline",
 		CreatorID: issueCreate.CreatorID,
 	}
-	schemaVersion := common.DefaultMigrationVersion()
-	for _, detail := range c.DetailList {
-		if detail.Statement == "" {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "failed to create issue, sql statement missing")
+
+	for i, databaseList := range aggregatedMatrix {
+		// Skip the stage if the stage includes no database.
+		if len(databaseList) == 0 {
+			continue
+		}
+		var environmentID int
+		var taskCreateLists [][]api.TaskCreate
+		var taskIndexDAGLists [][]api.TaskIndexDAG
+		for _, database := range databaseList {
+			if environmentID > 0 && environmentID != database.Instance.EnvironmentID {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
+			}
+			environmentID = database.Instance.EnvironmentID
+
+			schemaVersion := common.DefaultMigrationVersion()
+			migrationDetailList := databaseToMigrationList[database.ID]
+			for _, migrationDetail := range migrationDetailList {
+				taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, c.VCSPushEvent, migrationDetail, schemaVersion)
+				if err != nil {
+					return nil, err
+				}
+				taskCreateLists = append(taskCreateLists, taskCreateList)
+				taskIndexDAGLists = append(taskIndexDAGLists, taskIndexDAGList)
+			}
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &detail.DatabaseID})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch database ID: %v", detail.DatabaseID)).SetInternal(err)
-		}
-		if database == nil {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("database ID not found: %d", detail.DatabaseID))
-		}
-
-		taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, c.VCSPushEvent, detail, schemaVersion)
+		taskCreateList, taskIndexDAGList, err := utils.MergeTaskCreateLists(taskCreateLists, taskIndexDAGLists)
 		if err != nil {
 			return nil, err
 		}
-
 		create.StageList = append(create.StageList, api.StageCreate{
-			Name:             fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
-			EnvironmentID:    database.Instance.Environment.ID,
+			Name:             deploySchedule.Deployments[i].Name,
+			EnvironmentID:    environmentID,
 			TaskList:         taskCreateList,
 			TaskIndexDAGList: taskIndexDAGList,
 		})
 	}
+
 	return create, nil
 }
 
