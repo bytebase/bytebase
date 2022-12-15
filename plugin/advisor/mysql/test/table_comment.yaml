@@ -1,0 +1,21 @@
+- statement: CREATE TABLE t(a int) COMMENT 'some comments'
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+- statement: CREATE TABLE t(a int)
+  want:
+    - status: WARN
+      code: 605
+      title: table.comment
+      content: Table `t` requires comments
+      line: 1
+- statement: CREATE TABLE t(a int) COMMENT 'sdlfkjalkseblkjduafelbnlsdfkljayue'
+  want:
+    - status: WARN
+      code: 606
+      title: table.comment
+      content: The length of table `t` comment should be within 20 characters
+      line: 1
