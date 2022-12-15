@@ -7,11 +7,11 @@ type DBSchema struct {
 	// Standard fields
 
 	// Related fields
-	DatabaseID int `json:"databaseId"`
+	DatabaseID int
 
 	// Domain specific fields
-	Metadata string `json:"metadata"`
-	RawDump  string `json:"rawDump"`
+	Metadata string
+	RawDump  string
 }
 
 // DBSchemaUpsert is the API message for creating a database schema.
