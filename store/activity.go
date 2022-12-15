@@ -344,7 +344,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.TypePrefixList; v != nil {
+	if v := find.TypePrefixList; len(v) > 0 {
 		var queryValues []string
 		// Iterate over the typePrefix list and join each one with an OR condition.
 		for _, str := range v {
@@ -352,7 +352,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 		}
 		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
 	}
-	if v := find.LevelList; v != nil {
+	if v := find.LevelList; len(v) > 0 {
 		var queryValues []string
 		for _, level := range v {
 			queryValues, args = append(queryValues, fmt.Sprintf("level = $%d", len(args)+1)), append(args, level)
