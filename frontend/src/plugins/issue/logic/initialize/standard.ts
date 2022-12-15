@@ -34,7 +34,6 @@ export const buildNewStandardIssue = async (
       return {
         migrationType: migrationType,
         databaseId: db.id,
-        databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement,
       };
     }),

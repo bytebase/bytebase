@@ -48,7 +48,6 @@ export type CreateDatabaseContext = {
 export type MigrationDetail = {
   migrationType: MigrationType;
   databaseId: DatabaseId;
-  databaseName: string;
   statement: string;
   earliestAllowedTs: number;
 };
