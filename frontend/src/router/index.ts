@@ -443,6 +443,16 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "audit-log",
+                name: "setting.workspace.audit-log",
+                meta: {
+                  title: () => t("settings.sidebar.audit-log"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceAuditLog.vue"),
+                props: true,
+              },
+              {
                 path: "debug-log",
                 name: "setting.workspace.debug-log",
                 meta: {
@@ -1048,9 +1058,27 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  if (to.name?.toString().startsWith("setting.workspace.audit-log")) {
+    if (
+      !hasWorkspacePermission(
+        "bb.permission.workspace.audit-log",
+        currentUser.role
+      )
+    ) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
   if (to.name?.toString().startsWith("setting.workspace.debug-log")) {
     if (
-      !hasWorkspacePermission("bb.permission.workspace.debug", currentUser.role)
+      !hasWorkspacePermission(
+        "bb.permission.workspace.debug-log",
+        currentUser.role
+      )
     ) {
       next({
         name: "error.403",
