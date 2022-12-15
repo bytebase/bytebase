@@ -8,7 +8,7 @@
         <p class="whitespace-pre-wrap">
           <i18n-t keypath="settings.release.new-version-content">
             <template #tag>
-              <strong>{{ actuatorStore.releaseInfo.lastest?.tag_name }}</strong>
+              <strong>{{ actuatorStore.releaseInfo.latest?.tag_name }}</strong>
             </template>
           </i18n-t>
         </p>
@@ -35,7 +35,7 @@
           class="btn-primary"
           target="_blank"
           @click="$emit('cancel')"
-          :href="actuatorStore.releaseInfo.lastest?.html_url"
+          :href="actuatorStore.releaseInfo.latest?.html_url"
         >
           {{ $t("common.learn-more") }}
         </a>

@@ -42,9 +42,9 @@ export const useActuatorStore = defineStore("actuator", {
     hasNewRelease: (state) => {
       return (
         (state.serverInfo?.version === "development" &&
-          !!state.releaseInfo.lastest?.tag_name) ||
+          !!state.releaseInfo.latest?.tag_name) ||
         semverCompare(
-          state.releaseInfo.lastest?.tag_name ?? "",
+          state.releaseInfo.latest?.tag_name ?? "",
           state.serverInfo?.version ?? ""
         )
       );
@@ -63,17 +63,17 @@ export const useActuatorStore = defineStore("actuator", {
       return serverInfo;
     },
     async tryToRemindRelease(): Promise<boolean> {
-      if (!this.releaseInfo.lastest) {
-        const relase = await this.fetchLastestRelease();
-        this.releaseInfo.lastest = relase;
+      if (!this.releaseInfo.latest) {
+        const relase = await this.fetchLatestRelease();
+        this.releaseInfo.latest = relase;
       }
-      if (!this.releaseInfo.lastest) {
+      if (!this.releaseInfo.latest) {
         return false;
       }
 
       // It's time to fetch the release
       if (new Date().getTime() >= this.releaseInfo.nextCheckTs) {
-        const relase = await this.fetchLastestRelease();
+        const relase = await this.fetchLatestRelease();
         if (!relase) {
           return false;
         }
@@ -82,11 +82,11 @@ export const useActuatorStore = defineStore("actuator", {
         this.releaseInfo.nextCheckTs =
           new Date().getTime() + 24 * 60 * 60 * 1000;
 
-        if (semverCompare(relase.tag_name, this.releaseInfo.lastest.tag_name)) {
+        if (semverCompare(relase.tag_name, this.releaseInfo.latest.tag_name)) {
           this.releaseInfo.ignoreRemindModalTillNextRelease = false;
         }
 
-        this.releaseInfo.lastest = relase;
+        this.releaseInfo.latest = relase;
       }
 
       if (this.releaseInfo.ignoreRemindModalTillNextRelease) {
@@ -95,7 +95,7 @@ export const useActuatorStore = defineStore("actuator", {
 
       return this.hasNewRelease;
     },
-    async fetchLastestRelease(): Promise<Release | undefined> {
+    async fetchLatestRelease(): Promise<Release | undefined> {
       try {
         const { data: releaseList } = await axios.get<Release[]>(
           `${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`

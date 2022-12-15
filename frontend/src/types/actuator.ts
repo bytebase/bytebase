@@ -20,7 +20,7 @@ export type Release = {
 };
 
 export type ReleaseInfo = {
-  lastest?: Release;
+  latest?: Release;
   ignoreRemindModalTillNextRelease: boolean;
   // The next check timestamp in milliseconds.
   nextCheckTs: number;

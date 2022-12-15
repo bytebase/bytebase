@@ -427,7 +427,7 @@
     },
     "release": {
       "new-version-available": "New version available!",
-      "new-version-content": "The new version {tag} is available now! Please go to the GitHub to check the lastest release.",
+      "new-version-content": "The new version {tag} is available now! Please go to the GitHub to check the latest release.",
       "not-show-till-next-release": "Don't show this till next version"
     }
   },
