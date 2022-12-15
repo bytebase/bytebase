@@ -352,8 +352,12 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 		}
 		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
 	}
-	if v := find.Level; v != nil {
-		where, args = append(where, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
+	if v := find.LevelList; v != nil {
+		var queryValues []string
+		for _, level := range v {
+			queryValues, args = append(queryValues, fmt.Sprintf("level = $%d", len(args)+1)), append(args, level)
+		}
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
 	}
 
 	var query = `
