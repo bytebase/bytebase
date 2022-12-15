@@ -80,11 +80,9 @@ func (r *PGRoleUpsert) ToAttributeStatement() string {
 		if r.Attribute.CreateDB {
 			attributeList = append(attributeList, CREATEDB.ToString())
 		}
-		// TODO(ed): we may need to check the PG version for feature support.
 		if r.Attribute.Replication {
 			attributeList = append(attributeList, REPLICATION.ToString())
 		}
-		// TODO(ed): we may need to check the PG version for feature support.
 		if r.Attribute.ByPassRLS {
 			attributeList = append(attributeList, BYPASSRLS.ToString())
 		}
