@@ -52,7 +52,7 @@
               {{ $t(currentPlan) }}
             </div>
             <div
-              class="text-sm flex ml-auto tooltip-wrapper"
+              class="text-sm flex items-center gap-x-1 ml-auto tooltip-wrapper"
               :class="
                 canUpgrade
                   ? 'text-success cursor-pointer'
@@ -60,10 +60,7 @@
               "
               @click="state.showReleaseModal = canUpgrade"
             >
-              <heroicons-outline:lightning-bolt
-                v-if="canUpgrade"
-                class="h-6 w-6"
-              />
+              <heroicons-outline:volume-up v-if="canUpgrade" class="h-4 w-4" />
               {{ version }}
               <span v-if="gitCommit" class="tooltip"
                 >Git hash {{ gitCommit }}</span
@@ -118,7 +115,7 @@
             {{ $t(currentPlan) }}
           </div>
           <div
-            class="text-sm flex ml-auto tooltip-wrapper whitespace-nowrap truncate"
+            class="text-xs flex items-center gap-x-1 ml-auto tooltip-wrapper whitespace-nowrap"
             :class="
               canUpgrade
                 ? 'text-success cursor-pointer'
@@ -126,14 +123,14 @@
             "
             @click="state.showReleaseModal = canUpgrade"
           >
-            <heroicons-outline:lightning-bolt
-              v-if="canUpgrade"
-              class="h-6 w-6"
-            />
+            <heroicons-outline:volume-up v-if="canUpgrade" class="h-4 w-4" />
             {{ version }}
-            <span v-if="gitCommit" class="tooltip"
-              >Git hash {{ gitCommit }}</span
-            >
+            <span v-if="canUpgrade" class="tooltip whitespace-nowrap">
+              {{ $t("settings.release.new-version-available") }}
+            </span>
+            <span v-else-if="gitCommit" class="tooltip">
+              Git hash {{ gitCommit }}
+            </span>
           </div>
         </div>
       </div>

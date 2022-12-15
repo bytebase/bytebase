@@ -426,7 +426,7 @@
       "remove-policy-tips": "Remove this rule?"
     },
     "release": {
-      "new-version-available": "New version available!",
+      "new-version-available": "New version is available",
       "new-version-content": "The new version {tag} is available now! Please check our docs for installation.",
       "not-show-till-next-release": "Don't show this till next version"
     }
