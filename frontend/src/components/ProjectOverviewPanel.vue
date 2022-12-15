@@ -145,24 +145,15 @@ export default defineComponent({
     const prepareActivityList = () => {
       state.isFetchingActivityList = true;
       state.activityList = [];
-      const requests = [
-        activityStore.fetchActivityListForDatabaseByProjectId({
+      activityStore
+        .fetchActivityListForProject({
           projectId: props.project.id,
           limit: ACTIVITY_LIMIT,
-        }),
-        activityStore.fetchActivityListForProject({
-          projectId: props.project.id,
-          limit: ACTIVITY_LIMIT,
-        }),
-      ];
-
-      Promise.all(requests).then((lists) => {
-        const flattenList = lists.flatMap((list) => list);
-        flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
-        state.activityList = flattenList.slice(0, ACTIVITY_LIMIT);
-
-        state.isFetchingActivityList = false;
-      });
+        })
+        .then((list) => {
+          state.activityList = list.slice(0, ACTIVITY_LIMIT);
+          state.isFetchingActivityList = false;
+        });
     };
 
     const isTenantProject = computed((): boolean => {
