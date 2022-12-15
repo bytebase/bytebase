@@ -262,6 +262,9 @@ const (
 
 	// PostgreSQLColumnTypeDisallowList is an advisor type for Postgresql column type disallow list.
 	PostgreSQLColumnTypeDisallowList Type = "bb.plugin.advisor.postgresql.column.type-disallow-list"
+
+	// PostgreSQLColumnDisallowChangingType is an advisor type for PostgreSQL disallow changing column type.
+	PostgreSQLColumnDisallowChangingType Type = "bb.plugin.advisor.postgresql.column.disallow-changing-type"
 )
 
 // Advice is the result of an advisor.
