@@ -858,6 +858,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				TaskIndexDAGList: taskIndexDAGList,
 			})
 		}
+		return create, nil
 	} else {
 		create := &api.PipelineCreate{
 			Name:      "Change database pipeline",
