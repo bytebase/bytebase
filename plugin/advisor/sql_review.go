@@ -742,6 +742,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLColumnTypeRestriction, nil
+		case db.Postgres:
+			return PostgreSQLColumnTypeDisallowList, nil
 		}
 	case SchemaRuleColumnDisallowSetCharset:
 		switch engine {
@@ -815,11 +817,15 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexNoDuplicateColumn, nil
+		case db.Postgres:
+			return PostgreSQLIndexNoDuplicateColumn, nil
 		}
 	case SchemaRuleIndexKeyNumberLimit:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexKeyNumberLimit, nil
+		case db.Postgres:
+			return PostgreSQLIndexKeyNumberLimit, nil
 		}
 	case SchemaRuleIndexTotalNumberLimit:
 		switch engine {
@@ -893,6 +899,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLStatementDMLDryRun, nil
+		}
+	case SchemaRuleCommentLength:
+		if engine == db.Postgres {
+			return PostgreSQLCommentConvention, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
