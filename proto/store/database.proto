@@ -95,7 +95,7 @@ message ColumnMetadata {
   bool nullable = 5;
 
   // The type is the type of a column.
-  string Type = 6;
+  string type = 6;
 
   // The character_set is the character_set of a column.
   string character_set = 7;
