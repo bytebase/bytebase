@@ -221,6 +221,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		if defaultStr.Valid {
 			column.Default = &defaultStr.String
 		}
+		// TODO(d): use convertBoolFromYesNo() if possible.
+		if nullable == "YES" {
+			column.Nullable = true
+		}
 
 		key := fmt.Sprintf("%s/%s", dbName, tableName)
 		if tableList, ok := columnMap[key]; ok {
