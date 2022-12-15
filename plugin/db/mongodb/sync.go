@@ -11,10 +11,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
+// UserInfo is the subset of the mongodb command result of "usersInfo".
 type UsersInfo struct {
 	Users []User `bson:"users"`
 }
 
+// User is the subset of the `users` field in the `User`..
 type User struct {
 	Id       string `json:"_id" bson:"_id"`
 	UserName string `json:"user" bson:"user"`
@@ -22,12 +24,10 @@ type User struct {
 	Roles    []Role `json:"roles" bson:"roles"`
 }
 
+// Role is the subset of the `roles` field in the `User`.
 type Role struct {
 	RoleName string `json:"role" bson:"role"`
 	DB       string `json:"db" bson:"db"`
-}
-
-type UserInfo struct {
 }
 
 // SyncInstance syncs the instance meta.
@@ -40,10 +40,18 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	if err != nil {
 		return nil, err
 	}
+	var databaseMetaList []db.DatabaseMeta
+	dbList, err := driver.getDatabaseList(ctx)
+	for _, databaseName := range dbList {
+		databaseMetaList = append(databaseMetaList, db.DatabaseMeta{
+			Name: databaseName,
+		})
+	}
 
 	return &db.InstanceMeta{
-		Version:  version,
-		UserList: userList,
+		Version:      version,
+		UserList:     userList,
+		DatabaseList: databaseMetaList,
 	}, nil
 }
 
@@ -93,4 +101,9 @@ func (driver *Driver) getUserMetaList(ctx context.Context) ([]db.User, error) {
 		dbUserList = append(dbUserList, dbUser)
 	}
 	return dbUserList, nil
+}
+
+// getDatabaseList returns the list of databases.
+func (driver *Driver) getDatabaseList(ctx context.Context) ([]string, error) {
+	return driver.client.ListDatabaseNames(ctx, bson.M{})
 }

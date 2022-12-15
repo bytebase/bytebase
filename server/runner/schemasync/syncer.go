@@ -329,6 +329,10 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 
 // SyncDatabaseSchema will sync the schema for a database.
 func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string, force bool) error {
+	// TODO(zp): Support Sync Database Schema for MongoDB later.
+	if instance.Engine == db.MongoDB {
+		return nil
+	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return err
