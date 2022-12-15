@@ -399,7 +399,7 @@ func GetTaskStatement(task *api.Task) (string, error) {
 // The index of returned taskIndexDAG list is set regarding the merged taskCreate.
 func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists [][]api.TaskIndexDAG) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	if len(taskCreateLists) != len(taskIndexDAGLists) {
-		return nil, nil, errors.New("TBD")
+		return nil, nil, errors.Errorf("expect taskCreateLists and taskIndexDAGLists to have the same length, get %d, %d respectively", len(taskCreatelists), len(taskIndexDAGLists))
 	}
 	var resTaskCreateList []api.TaskCreate
 	var resTaskIndexDAGList []api.TaskIndexDAG
