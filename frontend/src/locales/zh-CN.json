@@ -734,7 +734,7 @@
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
     "create": "创建环境",
     "restore": "恢复此环境",
-    "successfully-updated-environment": "环境'{0}'更新成功",
+    "successfully-updated-environment": "环境'{name}'更新成功",
     "protected": "受保护的",
     "disable-auto-backup": {
       "self": "禁用数据库自动备份",
