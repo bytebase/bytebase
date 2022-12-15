@@ -56,7 +56,6 @@ const buildNewTenantSchemaUpdateIssue = async (
         return {
           migrationType: migrationType,
           databaseId: db.id,
-          databaseName: "",
           statement: VALIDATE_ONLY_SQL,
         };
       }),
