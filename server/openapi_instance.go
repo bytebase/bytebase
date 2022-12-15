@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -209,7 +210,18 @@ func (s *Server) getPGRole(c echo.Context) error {
 }
 
 func (s *Server) createPGRole(c echo.Context) error {
-	role, err := s.upsertPGRole(c, false /* true means CREATE the role */)
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+
+	upsert := &openAPIV1.PGRoleUpsert{}
+	if err := json.Unmarshal(body, upsert); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
+	}
+
+	statement := fmt.Sprintf(`CREATE ROLE "%s" %s;`, upsert.Name, upsert.ToAttributeStatement())
+	role, err := s.upsertPGRole(c, statement, upsert.Name)
 	if err != nil {
 		return err
 	}
@@ -246,7 +258,30 @@ func (s *Server) deletePGRole(c echo.Context) error {
 }
 
 func (s *Server) updatePGRole(c echo.Context) error {
-	role, err := s.upsertPGRole(c, true /* true means ALTER the role */)
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+
+	upsert := &openAPIV1.PGRoleUpsert{}
+	if err := json.Unmarshal(body, upsert); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
+	}
+
+	rawName := c.Param("roleName")
+	statement := []string{}
+	if rawName != upsert.Name {
+		statement = append(statement, fmt.Sprintf(`ALTER ROLE "%s" RENAME TO "%s";`, rawName, upsert.Name))
+	}
+	if upsert.ToAttributeStatement() != "" {
+		statement = append(statement, fmt.Sprintf(`ALTER ROLE "%s" %s;`, upsert.Name, upsert.ToAttributeStatement()))
+	}
+
+	if len(statement) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid upsert for role")
+	}
+
+	role, err := s.upsertPGRole(c, strings.Join(statement, "\n"), upsert.Name)
 	if err != nil {
 		return err
 	}
@@ -323,29 +358,13 @@ func (s *Server) findPGRoleByName(ctx context.Context, instance *api.Instance, r
 	return role, nil
 }
 
-func (s *Server) upsertPGRole(c echo.Context, isUpdate bool) (*openAPIV1.PGRole, error) {
-	prefix := "CREATE"
-	if isUpdate {
-		prefix = "ALTER"
-	}
-
+func (s *Server) upsertPGRole(c echo.Context, statement string, roleName string) (*openAPIV1.PGRole, error) {
 	ctx := c.Request().Context()
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
-	}
-
-	create := &openAPIV1.PGRoleUpsert{}
-	if err := json.Unmarshal(body, create); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
-	}
-
 	instance, err := s.validateInstance(ctx, c)
 	if err != nil {
 		return nil, err
 	}
 
-	statement := fmt.Sprintf("%s ROLE %s %s;", prefix, create.Name, create.ToAttributeStatement())
 	if err := func() error {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
@@ -362,7 +381,7 @@ func (s *Server) upsertPGRole(c echo.Context, isUpdate bool) (*openAPIV1.PGRole,
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to exec the statement: %v", statement)).SetInternal(err)
 	}
 
-	return s.findPGRoleByName(ctx, instance, create.Name)
+	return s.findPGRoleByName(ctx, instance, roleName)
 }
 
 func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
