@@ -21,7 +21,7 @@
       line: 1
 - statement: |-
     CREATE TABLE t(id INT);
-    						DROP TABLE t
+                DROP TABLE t
   want:
     - status: SUCCESS
       code: 0
@@ -30,7 +30,7 @@
       line: 0
 - statement: |-
     CREATE TABLE t(id INT);
-    						ALTER TABLE t ADD CONSTRAINT PRIMARY KEY (id)
+                ALTER TABLE t ADD CONSTRAINT PRIMARY KEY (id)
   want:
     - status: SUCCESS
       code: 0
@@ -39,7 +39,7 @@
       line: 0
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
-    						ALTER TABLE t DROP PRIMARY KEY
+                ALTER TABLE t DROP PRIMARY KEY
   want:
     - status: ERROR
       code: 601
@@ -57,7 +57,7 @@
       line: 2
 - statement: |-
     CREATE TABLE t(id INT);
-    						ALTER TABLE t ADD COLUMN name varchar(30) PRIMARY KEY
+                ALTER TABLE t ADD COLUMN name varchar(30) PRIMARY KEY
   want:
     - status: SUCCESS
       code: 0
@@ -66,7 +66,7 @@
       line: 0
 - statement: |-
     CREATE TABLE t(id INT);
-    						ALTER TABLE t CHANGE COLUMN id id INT PRIMARY KEY
+                ALTER TABLE t CHANGE COLUMN id id INT PRIMARY KEY
   want:
     - status: SUCCESS
       code: 0
@@ -82,7 +82,7 @@
       line: 0
 - statement: |-
     CREATE TABLE t(id INT);
-    						ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY
+                ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY
   want:
     - status: SUCCESS
       code: 0
@@ -98,7 +98,7 @@
       line: 0
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), PRIMARY KEY(id, name));
-    						ALTER TABLE t DROP COLUMN id
+                ALTER TABLE t DROP COLUMN id
   want:
     - status: SUCCESS
       code: 0
@@ -107,7 +107,7 @@
       line: 0
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), comment varchar(255), PRIMARY KEY(id, name));
-    						ALTER TABLE t DROP COLUMN id, DROP COLUMN name
+                ALTER TABLE t DROP COLUMN id, DROP COLUMN name
   want:
     - status: ERROR
       code: 601
@@ -130,7 +130,7 @@
       line: 0
 - statement: |-
     ALTER TABLE tech_book CHANGE COLUMN id uid int;
-    						ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name
+                ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name
   want:
     - status: ERROR
       code: 601

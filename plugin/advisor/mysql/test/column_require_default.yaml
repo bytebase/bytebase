@@ -6,10 +6,10 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE t(
-    					a int,
-    					b int default 1
-    				)
+            CREATE TABLE t(
+              a int,
+              b int default 1
+            )
   want:
     - status: WARN
       code: 420
@@ -17,10 +17,10 @@
       content: Column `t`.`a` doesn't have DEFAULT.
       line: 3
 - statement: |4-
-    				ALTER TABLE tech_book ADD COLUMN a BLOB;
-    				ALTER TABLE tech_book ADD COLUMN b timestamp;
-    				ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
-    				
+            ALTER TABLE tech_book ADD COLUMN a BLOB;
+            ALTER TABLE tech_book ADD COLUMN b timestamp;
+            ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
+
   want:
     - status: WARN
       code: 420

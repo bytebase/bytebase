@@ -6,9 +6,9 @@
       content: ""
       line: 0
 - statement: |4-
-    				ALTER TABLE tech_book ADD COLUMN a int;
-    				ALTER TABLE tech_book ADD COLUMN b int;
-    				
+            ALTER TABLE tech_book ADD COLUMN a int;
+            ALTER TABLE tech_book ADD COLUMN b int;
+
   want:
     - status: WARN
       code: 207
@@ -16,11 +16,11 @@
       content: There are 2 statements to modify table `tech_book`
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE tech_book ADD COLUMN a int;
-    				ALTER TABLE t ADD COLUMN b int;
-    				ALTER TABLE tech_book ADD COLUMN b int;
-    				
+            CREATE TABLE t(a int);
+            ALTER TABLE tech_book ADD COLUMN a int;
+            ALTER TABLE t ADD COLUMN b int;
+            ALTER TABLE tech_book ADD COLUMN b int;
+
   want:
     - status: WARN
       code: 207
@@ -33,11 +33,11 @@
       content: There are 2 statements to modify table `tech_book`
       line: 5
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE tech_book ADD COLUMN a int;
-    				ALTER TABLE tech_book ADD COLUMN b int;
-    				ALTER TABLE t ADD COLUMN b int;
-    				
+            CREATE TABLE t(a int);
+            ALTER TABLE tech_book ADD COLUMN a int;
+            ALTER TABLE tech_book ADD COLUMN b int;
+            ALTER TABLE t ADD COLUMN b int;
+
   want:
     - status: WARN
       code: 207

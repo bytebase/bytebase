@@ -13,8 +13,8 @@
       content: Auto-increment column `t`.`a` requires integer type
       line: 1
 - statement: |4-
-    				CREATE TABLE t(b int);
-    				ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT
+            CREATE TABLE t(b int);
+            ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT
   want:
     - status: WARN
       code: 410
@@ -22,8 +22,8 @@
       content: Auto-increment column `t`.`a` requires integer type
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t MODIFY COLUMN a varchar(255) AUTO_INCREMENT
+            CREATE TABLE t(a int);
+            ALTER TABLE t MODIFY COLUMN a varchar(255) AUTO_INCREMENT
   want:
     - status: WARN
       code: 410
@@ -31,8 +31,8 @@
       content: Auto-increment column `t`.`a` requires integer type
       line: 3
 - statement: |4-
-    				CREATE TABLE t(b int);
-    				ALTER TABLE t CHANGE COLUMN b a varchar(255) AUTO_INCREMENT
+            CREATE TABLE t(b int);
+            ALTER TABLE t CHANGE COLUMN b a varchar(255) AUTO_INCREMENT
   want:
     - status: WARN
       code: 410

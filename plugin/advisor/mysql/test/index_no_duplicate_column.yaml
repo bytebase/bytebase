@@ -7,8 +7,8 @@
       line: 0
 - statement: |-
     CREATE TABLE t (
-    				a int,
-    				INDEX idx_a (a, a))
+            a int,
+            INDEX idx_a (a, a))
   want:
     - status: WARN
       code: 812
@@ -16,8 +16,8 @@
       content: INDEX `idx_a` has duplicate column `t`.`a`
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				CREATE INDEX idx_a on t(a, a)
+            CREATE TABLE t(a int);
+            CREATE INDEX idx_a on t(a, a)
   want:
     - status: WARN
       code: 812
@@ -25,8 +25,8 @@
       content: INDEX `idx_a` has duplicate column `t`.`a`
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD INDEX idx_a (a, a)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD INDEX idx_a (a, a)
   want:
     - status: WARN
       code: 812
@@ -34,8 +34,8 @@
       content: INDEX `idx_a` has duplicate column `t`.`a`
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD PRIMARY KEY pk_a (a, a)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD PRIMARY KEY pk_a (a, a)
   want:
     - status: WARN
       code: 812
@@ -43,8 +43,8 @@
       content: PRIMARY KEY `pk_a` has duplicate column `t`.`a`
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD UNIQUE KEY uk_a (a, a)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD UNIQUE KEY uk_a (a, a)
   want:
     - status: WARN
       code: 812
@@ -52,8 +52,8 @@
       content: UNIQUE KEY `uk_a` has duplicate column `t`.`a`
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD FOREIGN KEY fk_a (a, a) REFERENCES t1(a, b)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD FOREIGN KEY fk_a (a, a) REFERENCES t1(a, b)
   want:
     - status: WARN
       code: 812

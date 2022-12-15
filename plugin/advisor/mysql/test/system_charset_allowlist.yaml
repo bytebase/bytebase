@@ -20,8 +20,8 @@
       content: '"CREATE TABLE t(a int) CHARSET ascii" used disabled charset ''ascii'''
       line: 1
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t CHARSET ascii
+            CREATE TABLE t(a int);
+            ALTER TABLE t CHARSET ascii
   want:
     - status: WARN
       code: 1001
@@ -43,8 +43,8 @@
       content: '"CREATE TABLE t(a varchar(255) CHARSET ascii)" used disabled charset ''ascii'''
       line: 1
 - statement: |4-
-    				CREATE TABLE t(b int);
-    				ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii
+            CREATE TABLE t(b int);
+            ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii
   want:
     - status: WARN
       code: 1001
@@ -52,8 +52,8 @@
       content: '"ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii
+            CREATE TABLE t(a int);
+            ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii
   want:
     - status: WARN
       code: 1001
@@ -61,8 +61,8 @@
       content: '"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii
+            CREATE TABLE t(a int);
+            ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii
   want:
     - status: WARN
       code: 1001

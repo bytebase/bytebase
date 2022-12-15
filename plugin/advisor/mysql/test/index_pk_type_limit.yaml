@@ -46,8 +46,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN id VARCHAR(5) PRIMARY KEY
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN id VARCHAR(5) PRIMARY KEY
   want:
     - status: WARN
       code: 803
@@ -55,8 +55,8 @@
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN id INT PRIMARY KEY
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN id INT PRIMARY KEY
   want:
     - status: SUCCESS
       code: 0
@@ -64,8 +64,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN id VARCHAR(5), ADD PRIMARY KEY (id)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN id VARCHAR(5), ADD PRIMARY KEY (id)
   want:
     - status: WARN
       code: 803
@@ -73,8 +73,8 @@
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 VARCHAR(5), ADD COLUMN id3 VARCHAR(5), ADD PRIMARY KEY (id, id2, id3)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 VARCHAR(5), ADD COLUMN id3 VARCHAR(5), ADD PRIMARY KEY (id, id2, id3)
   want:
     - status: WARN
       code: 803
@@ -87,8 +87,8 @@
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 BIGINT, ADD PRIMARY KEY (id, id2)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 BIGINT, ADD PRIMARY KEY (id, id2)
   want:
     - status: SUCCESS
       code: 0
@@ -96,8 +96,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN id BIGINT, ADD PRIMARY KEY (id)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN id BIGINT, ADD PRIMARY KEY (id)
   want:
     - status: SUCCESS
       code: 0
@@ -106,8 +106,8 @@
       line: 0
 - statement: |-
     CREATE TABLE t(id VARCHAR(5));
-    				ALTER TABLE t ADD PRIMARY KEY(id);
-    			
+            ALTER TABLE t ADD PRIMARY KEY(id);
+
   want:
     - status: WARN
       code: 803
@@ -116,8 +116,8 @@
       line: 2
 - statement: |-
     CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5));
-    				ALTER TABLE t ADD PRIMARY KEY(id, id2, id3);
-    			
+            ALTER TABLE t ADD PRIMARY KEY(id, id2, id3);
+
   want:
     - status: WARN
       code: 803
@@ -131,8 +131,8 @@
       line: 2
 - statement: |-
     CREATE TABLE t(id INT, id2 BIGINT);
-    				ALTER TABLE t ADD PRIMARY KEY(id, id2);
-    			
+            ALTER TABLE t ADD PRIMARY KEY(id, id2);
+
   want:
     - status: SUCCESS
       code: 0
@@ -141,8 +141,8 @@
       line: 0
 - statement: |-
     CREATE TABLE t(id BIGINT);
-    			ALTER TABLE t ADD PRIMARY KEY(id);
-    			
+          ALTER TABLE t ADD PRIMARY KEY(id);
+
   want:
     - status: SUCCESS
       code: 0
@@ -150,8 +150,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE t(id int);
-    				ALTER TABLE t MODIFY COLUMN id VARCHAR(5) PRIMARY KEY;
+            CREATE TABLE t(id int);
+            ALTER TABLE t MODIFY COLUMN id VARCHAR(5) PRIMARY KEY;
   want:
     - status: WARN
       code: 803
@@ -159,8 +159,8 @@
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       line: 3
 - statement: |4-
-    				CREATE TABLE t(id int);
-    				ALTER TABLE t MODIFY COLUMN id INT(5) PRIMARY KEY;
+            CREATE TABLE t(id int);
+            ALTER TABLE t MODIFY COLUMN id INT(5) PRIMARY KEY;
   want:
     - status: SUCCESS
       code: 0
@@ -168,8 +168,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE t(id int);
-    				ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY
+            CREATE TABLE t(id int);
+            ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY
   want:
     - status: WARN
       code: 803
@@ -177,8 +177,8 @@
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
       line: 3
 - statement: |4-
-    				CREATE TABLE t(id int);
-    				ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY
+            CREATE TABLE t(id int);
+            ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY
   want:
     - status: SUCCESS
       code: 0

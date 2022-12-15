@@ -1,7 +1,7 @@
 - statement: |-
     CREATE TABLE book(
-    				id int PRIMARY KEY DEFAULT 0
-    			)
+            id int PRIMARY KEY DEFAULT 0
+          )
   want:
     - status: SUCCESS
       code: 0
@@ -10,8 +10,8 @@
       line: 0
 - statement: |-
     CREATE TABLE book(
-    				id int PRIMARY KEY
-    			)
+            id int PRIMARY KEY
+          )
   want:
     - status: SUCCESS
       code: 0
@@ -20,8 +20,8 @@
       line: 0
 - statement: |-
     CREATE TABLE book(
-    				id int NOT NULL
-    			)
+            id int NOT NULL
+          )
   want:
     - status: WARN
       code: 404
@@ -30,9 +30,9 @@
       line: 2
 - statement: |-
     CREATE TABLE book(
-    				id int,
-    				PRIMARY KEY (id)
-    			)
+            id int,
+            PRIMARY KEY (id)
+          )
   want:
     - status: WARN
       code: 404
@@ -40,8 +40,8 @@
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       line: 2
 - statement: |4-
-    				CREATE TABLE book(a int);
-    				ALTER TABLE book ADD COLUMN id int PRIMARY KEY
+            CREATE TABLE book(a int);
+            ALTER TABLE book ADD COLUMN id int PRIMARY KEY
   want:
     - status: SUCCESS
       code: 0
@@ -49,8 +49,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE book(a int);
-    				ALTER TABLE book ADD COLUMN id int NOT NULL
+            CREATE TABLE book(a int);
+            ALTER TABLE book ADD COLUMN id int NOT NULL
   want:
     - status: WARN
       code: 404
@@ -58,8 +58,8 @@
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       line: 3
 - statement: |4-
-    				CREATE TABLE book(id int);
-    				ALTER TABLE book MODIFY COLUMN id int NOT NULL
+            CREATE TABLE book(id int);
+            ALTER TABLE book MODIFY COLUMN id int NOT NULL
   want:
     - status: WARN
       code: 404
@@ -67,8 +67,8 @@
       content: Column `book`.`id` is NOT NULL but doesn't have DEFAULT
       line: 3
 - statement: |4-
-    				CREATE TABLE book(id int);
-    				ALTER TABLE book MODIFY COLUMN id int PRIMARY KEY
+            CREATE TABLE book(id int);
+            ALTER TABLE book MODIFY COLUMN id int PRIMARY KEY
   want:
     - status: SUCCESS
       code: 0
@@ -76,8 +76,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE book(uid int);
-    				ALTER TABLE book CHANGE COLUMN uid id int PRIMARY KEY
+            CREATE TABLE book(uid int);
+            ALTER TABLE book CHANGE COLUMN uid id int PRIMARY KEY
   want:
     - status: SUCCESS
       code: 0
@@ -85,8 +85,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE book(uid int);
-    				ALTER TABLE book CHANGE COLUMN uid id int NOT NULL
+            CREATE TABLE book(uid int);
+            ALTER TABLE book CHANGE COLUMN uid id int NOT NULL
   want:
     - status: WARN
       code: 404

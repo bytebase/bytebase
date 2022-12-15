@@ -23,8 +23,8 @@
       content: Disallow column type TEXT but column `t`.`c` is
       line: 1
 - statement: |4-
-    				CREATE TABLE t(d int);
-    				ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT)
+            CREATE TABLE t(d int);
+            ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT)
   want:
     - status: WARN
       code: 411
@@ -42,8 +42,8 @@
       content: Disallow column type TEXT but column `t`.`c` is
       line: 3
 - statement: |4-
-    				CREATE TABLE t(c int, b int);
-    				ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB
+            CREATE TABLE t(c int, b int);
+            ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB
   want:
     - status: WARN
       code: 411

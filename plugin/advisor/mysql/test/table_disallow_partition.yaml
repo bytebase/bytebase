@@ -7,31 +7,31 @@
       line: 0
 - statement: |-
     CREATE TABLE t(a int) PARTITION BY RANGE (a) (
-    				PARTITION p0 VALUES LESS THAN (6),
-    				PARTITION p1 VALUES LESS THAN (11)
-    			)
+            PARTITION p0 VALUES LESS THAN (6),
+            PARTITION p1 VALUES LESS THAN (11)
+          )
   want:
     - status: WARN
       code: 608
       title: table.disallow-partition
       content: |-
         Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
-        				PARTITION p0 VALUES LESS THAN (6),
-        				PARTITION p1 VALUES LESS THAN (11)
-        			)" creates
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              )" creates
       line: 4
 - statement: |-
     ALTER TABLE tech_book PARTITION BY RANGE (a) (
-    				PARTITION p0 VALUES LESS THAN (6),
-    				PARTITION p1 VALUES LESS THAN (11)
-    			)
+            PARTITION p0 VALUES LESS THAN (6),
+            PARTITION p1 VALUES LESS THAN (11)
+          )
   want:
     - status: WARN
       code: 608
       title: table.disallow-partition
       content: |-
         Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
-        				PARTITION p0 VALUES LESS THAN (6),
-        				PARTITION p1 VALUES LESS THAN (11)
-        			)" creates
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              )" creates
       line: 4

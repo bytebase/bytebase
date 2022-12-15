@@ -10,7 +10,7 @@
     - status: WARN
       code: 302
       title: naming.column
-      content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
+      content: "`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters"
       line: 1
 - statement: CREATE TABLE book(id int, creator_id int)
   want:
@@ -21,7 +21,7 @@
       line: 0
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
-    						ALTER TABLE book RENAME COLUMN creator_id TO creatorId
+                ALTER TABLE book RENAME COLUMN creator_id TO creatorId
   want:
     - status: WARN
       code: 302
@@ -37,12 +37,12 @@
       line: 0
 - statement: |-
     CREATE TABLE book(
-    							id int,
-    							creator_id int,
-    							created_ts timestamp,
-    							updater_id int,
-    							updated_ts timestamp);
-    						ALTER TABLE book CHANGE COLUMN creator_id creatorId int;
+                  id int,
+                  creator_id int,
+                  created_ts timestamp,
+                  updater_id int,
+                  updated_ts timestamp);
+                ALTER TABLE book CHANGE COLUMN creator_id creatorId int;
   want:
     - status: WARN
       code: 302
@@ -65,11 +65,11 @@
       line: 0
 - statement: |-
     CREATE TABLE book(
-    							id int,
-    							creator_id int,
-    							created_ts timestamp,
-    							updated_ts timestamp);
-    						ALTER TABLE book ADD COLUMN contentString varchar(255);
+                  id int,
+                  creator_id int,
+                  created_ts timestamp,
+                  updated_ts timestamp);
+                ALTER TABLE book ADD COLUMN contentString varchar(255);
   want:
     - status: WARN
       code: 302
@@ -78,14 +78,14 @@
       line: 6
 - statement: |-
     CREATE TABLE book(
-    							id int,
-    							createdTs timestamp,
-    							updaterId int,
-    							updated_ts timestamp);
-    						CREATE TABLE student(
-    							id int,
-    							createdTs timestamp,
-    							updatedTs timestamp);
+                  id int,
+                  createdTs timestamp,
+                  updaterId int,
+                  updated_ts timestamp);
+                CREATE TABLE student(
+                  id int,
+                  createdTs timestamp,
+                  updatedTs timestamp);
   want:
     - status: WARN
       code: 302

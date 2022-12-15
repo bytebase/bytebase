@@ -64,8 +64,8 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id)
   want:
     - status: WARN
       code: 804
@@ -73,27 +73,8 @@
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD UNIQUE INDEX(b(1), mb(2), lb(3), id)
-  want:
-    - status: WARN
-      code: 804
-      title: index.type-no-blob
-      content: Columns in index must not be BLOB but `t`.`b` is blob
-      line: 3
-    - status: WARN
-      code: 804
-      title: index.type-no-blob
-      content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
-      line: 3
-    - status: WARN
-      code: 804
-      title: index.type-no-blob
-      content: Columns in index must not be BLOB but `t`.`lb` is longblob
-      line: 3
-- statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(b(1), mb(2), lb(3), id)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD UNIQUE INDEX(b(1), mb(2), lb(3), id)
   want:
     - status: WARN
       code: 804
@@ -111,8 +92,27 @@
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       line: 3
 - statement: |4-
-    				CREATE TABLE t(a int);
-    				ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id)
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(b(1), mb(2), lb(3), id)
+  want:
+    - status: WARN
+      code: 804
+      title: index.type-no-blob
+      content: Columns in index must not be BLOB but `t`.`b` is blob
+      line: 3
+    - status: WARN
+      code: 804
+      title: index.type-no-blob
+      content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
+      line: 3
+    - status: WARN
+      code: 804
+      title: index.type-no-blob
+      content: Columns in index must not be BLOB but `t`.`lb` is longblob
+      line: 3
+- statement: |4-
+            CREATE TABLE t(a int);
+            ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id)
   want:
     - status: SUCCESS
       code: 0
@@ -121,11 +121,11 @@
       line: 0
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
-    				CREATE INDEX idx_b ON t(b(5));
-    				CREATE INDEX idx_mb ON t(mb(5));
-    				CREATE INDEX idx_lb ON t(lb(5));
-    				CREATE INDEX idx_id ON t(id);
-    			
+            CREATE INDEX idx_b ON t(b(5));
+            CREATE INDEX idx_mb ON t(mb(5));
+            CREATE INDEX idx_lb ON t(lb(5));
+            CREATE INDEX idx_id ON t(id);
+
   want:
     - status: WARN
       code: 804
@@ -144,8 +144,8 @@
       line: 4
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
-    				CREATE INDEX idx_id ON t(id);
-    			
+            CREATE INDEX idx_id ON t(id);
+
   want:
     - status: SUCCESS
       code: 0

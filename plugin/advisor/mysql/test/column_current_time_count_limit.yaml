@@ -6,11 +6,11 @@
       content: ""
       line: 0
 - statement: |4-
-    				CREATE TABLE t(
-    					a timestamp default now(),
-    					b timestamp default current_timestamp(),
-    					c timestamp default localtime
-    				)
+            CREATE TABLE t(
+              a timestamp default now(),
+              b timestamp default current_timestamp(),
+              c timestamp default localtime
+            )
   want:
     - status: WARN
       code: 418
@@ -18,10 +18,10 @@
       content: Table `t` has 3 DEFAULT CURRENT_TIMESTAMP() columns. The count greater than 2.
       line: 6
 - statement: |4-
-    				CREATE TABLE t(
-    					a timestamp default now() on update localtime,
-    					b timestamp default current_timestamp() on update localtimestamp()
-    				)
+            CREATE TABLE t(
+              a timestamp default now() on update localtime,
+              b timestamp default current_timestamp() on update localtimestamp()
+            )
   want:
     - status: WARN
       code: 419
@@ -29,9 +29,9 @@
       content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
       line: 5
 - statement: |4-
-    					ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
-    					ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
-    					
+              ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
+              ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
+
   want:
     - status: WARN
       code: 419
