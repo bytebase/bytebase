@@ -178,8 +178,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	createContext, err = json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
-				DatabaseID: database.ID,
-				Statement:  mysqlGhostMigrationStatement,
+				MigrationType: db.Migrate,
+				DatabaseID:    database.ID,
+				Statement:     mysqlGhostMigrationStatement,
 			},
 		},
 	})
@@ -385,8 +386,9 @@ func TestGhostTenant(t *testing.T) {
 	createContext, err = json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
-				DatabaseID: 0,
-				Statement:  mysqlGhostMigrationStatement,
+				MigrationType: db.Migrate,
+				DatabaseID:    0,
+				Statement:     mysqlGhostMigrationStatement,
 			},
 		},
 	})
