@@ -35,6 +35,8 @@ type Profile struct {
 	Demo bool
 	// DemoDataDir points to where to populate the initial data.
 	DemoDataDir string
+	// AppRunnerInterval is the interval for application runner.
+	AppRunnerInterval time.Duration
 	// BackupRunnerInterval is the interval for backup runner.
 	BackupRunnerInterval time.Duration
 	// BackupStorageBackend is the backup storage backend.
