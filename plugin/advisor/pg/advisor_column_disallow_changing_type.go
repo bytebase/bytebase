@@ -67,8 +67,7 @@ type columnDisallowChangingTypeChecker struct {
 // Visit implements ast.Visitor interface.
 func (checker *columnDisallowChangingTypeChecker) Visit(in ast.Node) ast.Visitor {
 	code := advisor.Ok
-	switch in.(type) {
-	case *ast.AlterColumnTypeStmt:
+	if _, ok := in.(*ast.AlterColumnTypeStmt); ok {
 		code = advisor.ChangeColumnType
 	}
 
