@@ -68,9 +68,12 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		if typePrefixList := c.QueryParams()["typePrefix"]; typePrefixList != nil {
 			activityFind.TypePrefixList = typePrefixList
 		}
-		if levelStr := c.QueryParams().Get("level"); levelStr != "" {
-			activityLevel := api.ActivityLevel(levelStr)
-			activityFind.Level = &activityLevel
+		if levelList := c.QueryParams()["level"]; levelList != nil {
+			list := make([]api.ActivityLevel, len(levelList))
+			for i, level := range levelList {
+				list[i] = api.ActivityLevel(level)
+			}
+			activityFind.LevelList = list
 		}
 		if containerIDStr := c.QueryParams().Get("container"); containerIDStr != "" {
 			containerID, err := strconv.Atoi(containerIDStr)
