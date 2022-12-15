@@ -424,6 +424,11 @@
       "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。",
       "add-rule": "添加规则",
       "remove-policy-tips": "删除这条规则？"
+    },
+    "release": {
+      "new-version-available": "有新版本可更新",
+      "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。",
+      "not-show-till-next-release": "在下次更新前不要提醒我"
     }
   },
   "activity": {
@@ -734,7 +739,7 @@
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
     "create": "创建环境",
     "restore": "恢复此环境",
-    "successfully-updated-environment": "环境'{0}'更新成功",
+    "successfully-updated-environment": "环境'{name}'更新成功",
     "protected": "受保护的",
     "disable-auto-backup": {
       "self": "禁用数据库自动备份",

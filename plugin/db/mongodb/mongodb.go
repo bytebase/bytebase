@@ -78,16 +78,6 @@ func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interfa
 	panic("not implemented")
 }
 
-// SyncInstance syncs the instance meta.
-func (*Driver) SyncInstance(_ context.Context) (*db.InstanceMeta, error) {
-	panic("not implemented")
-}
-
-// SyncDBSchema syncs the database schema.
-func (*Driver) SyncDBSchema(_ context.Context, _ string) (*db.Schema, error) {
-	panic("not implemented")
-}
-
 // Dump dumps the database.
 func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
 	panic("not implemented")

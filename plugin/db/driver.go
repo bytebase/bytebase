@@ -143,9 +143,9 @@ type InstanceMeta struct {
 // DatabaseMeta is the metadata for a database.
 type DatabaseMeta struct {
 	Name string
-	// CharacterSet isn't supported for ClickHouse, Snowflake.
+	// CharacterSet isn't supported for ClickHouse, Snowflake, MongoDB.
 	CharacterSet string
-	// Collation isn't supported for ClickHouse, Snowflake.
+	// Collation isn't supported for ClickHouse, Snowflake, MongoDB.
 	Collation string
 }
 

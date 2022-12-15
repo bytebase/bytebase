@@ -58,7 +58,6 @@ export default defineComponent({
         const db = databaseStore.getDatabaseById(syncTask.databaseId!);
 
         detail.databaseId = syncTask.databaseId!;
-        detail.databaseName = syncTask.databaseName!;
         detail.statement = maybeFormatStatementOnSave(syncTask.statement, db);
         detail.earliestAllowedTs = syncTask.earliestAllowedTs;
       });

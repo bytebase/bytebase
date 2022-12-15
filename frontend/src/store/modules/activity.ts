@@ -88,12 +88,14 @@ export const useActivityStore = defineStore("activity", {
       return activityList;
     },
     async fetchActivityList(params: {
-      typePrefix: string;
+      typePrefix: string | string[];
       container: number | string;
       order: "ASC" | "DESC";
       limit?: number;
     }) {
-      const url = `/api/activity?${stringify(params)}`;
+      const url = `/api/activity?${stringify(params, {
+        arrayFormat: "repeat",
+      })}`;
       const response = (await axios.get(url)).data;
       const activityList: Activity[] = response.data.map(
         (activity: ResourceObject) => {
@@ -103,35 +105,17 @@ export const useActivityStore = defineStore("activity", {
       return activityList;
     },
     async fetchActivityListForIssue(issue: Issue) {
-      const requestListForIssue = this.fetchActivityList({
-        typePrefix: "bb.issue.",
+      const activityList = await this.fetchActivityList({
+        typePrefix: ["bb.issue.", "bb.pipeline."],
         container: issue.id,
         order: "ASC",
-      });
-      const requestListForPipeline = this.fetchActivityList({
-        typePrefix: "bb.pipeline.",
-        container: issue.pipeline.id,
-        order: "ASC",
-      });
-      const [listForIssue, listForPipeline] = await Promise.all([
-        requestListForIssue,
-        requestListForPipeline,
-      ]);
-
-      const mergedList = [...listForIssue, ...listForPipeline];
-      mergedList.sort((a, b) => {
-        if (a.createdTs !== b.createdTs) {
-          return a.createdTs - b.createdTs;
-        }
-
-        return a.id - b.id;
       });
 
       this.setActivityListForIssue({
         issueId: issue.id,
-        activityList: mergedList,
+        activityList,
       });
-      return mergedList;
+      return activityList;
     },
     async fetchActivityListByIssueId(issueId: IssueId) {
       const issue = useIssueStore().getIssueById(issueId);
@@ -148,21 +132,12 @@ export const useActivityStore = defineStore("activity", {
       projectId: ProjectId;
       limit?: number;
     }) {
-      const queryList = [
-        "typePrefix=bb.project.",
-        `container=${projectId}`,
-        `order=DESC`,
-      ];
-      if (limit) {
-        queryList.push(`limit=${limit}`);
-      }
-      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
-        .data;
-      const activityList: Activity[] = data.data.map(
-        (activity: ResourceObject) => {
-          return convert(activity, data.included);
-        }
-      );
+      const activityList = await this.fetchActivityList({
+        typePrefix: ["bb.project.", "bb.database."],
+        container: projectId,
+        order: "DESC",
+        limit,
+      });
 
       return activityList;
     },
@@ -197,31 +172,6 @@ export const useActivityStore = defineStore("activity", {
 
       // return the first `limit` rows
       return mixedList.slice(0, limit);
-    },
-    async fetchActivityListForDatabaseByProjectId({
-      projectId,
-      limit,
-    }: {
-      projectId: ProjectId;
-      limit?: number;
-    }) {
-      const queryList = [
-        "typePrefix=bb.database.",
-        `container=${projectId}`,
-        `order=DESC`,
-      ];
-      if (limit) {
-        queryList.push(`limit=${limit}`);
-      }
-      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
-        .data;
-      const activityList: Activity[] = data.data.map(
-        (activity: ResourceObject) => {
-          return convert(activity, data.included);
-        }
-      );
-
-      return activityList;
     },
     async createActivity(newActivity: ActivityCreate) {
       const data = (

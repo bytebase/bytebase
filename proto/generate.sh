@@ -1,4 +1,7 @@
-# https://developers.google.com/protocol-buffers/docs/gotutorial
+#!/bin/sh
 
-# store package belongs to storage related proto's.
-protoc --proto_path=store --go_out=. store/database.proto
+cd "$(dirname "$0")/../"
+
+sh ./proto/generate_go.sh
+
+sh ./proto/generate_ts.sh
