@@ -167,10 +167,6 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 
 // SyncInstance syncs the schema for all databases in an instance.
 func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
-	// TODO(zp): support sync schema for mongodb.
-	if instance.Engine == db.MongoDB {
-		return nil, nil
-	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return nil, err
