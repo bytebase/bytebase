@@ -202,34 +202,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 	}
 }
 
-// RunSQLReviewRuleTests helps to test the SQL review rule.
-func RunSQLReviewRuleTests(
-	t *testing.T,
-	tests []TestCase,
-	adv Advisor,
-	rule *SQLReviewRule,
-	database *catalog.Database,
-) {
-	ctx := Context{
-		Charset:   "",
-		Collation: "",
-		Rule:      rule,
-		Driver:    nil,
-		Context:   context.Background(),
-	}
-	for _, tc := range tests {
-		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true})
-		if database.DbType == db.MySQL || database.DbType == db.TiDB {
-			err := finder.WalkThrough(tc.Statement)
-			require.NoError(t, err, tc.Statement)
-		}
-		ctx.Catalog = finder
-		adviceList, err := adv.Check(ctx, tc.Statement)
-		require.NoError(t, err)
-		require.Equal(t, tc.Want, adviceList, tc.Statement)
-	}
-}
-
 // RandomString returns random string with specific length.
 func RandomString(length int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyz")

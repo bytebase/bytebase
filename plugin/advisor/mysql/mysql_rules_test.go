@@ -5,6 +5,9 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+
+	// Register pingcap parser driver.
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestMySQLRules(t *testing.T) {
