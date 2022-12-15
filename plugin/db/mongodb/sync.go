@@ -30,6 +30,14 @@ type Role struct {
 	DB       string `json:"db" bson:"db"`
 }
 
+var (
+	systemDatabases = map[string]bool{
+		"admin":  true,
+		"config": true,
+		"local":  true,
+	}
+)
+
 // SyncInstance syncs the instance meta.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	version, err := driver.getVersion(ctx)
@@ -106,7 +114,20 @@ func (driver *Driver) getUserMetaList(ctx context.Context) ([]db.User, error) {
 	return dbUserList, nil
 }
 
+func flattenSystemDatabase() []string {
+	var systemDatabaseList []string
+	for databaseName := range systemDatabases {
+		systemDatabaseList = append(systemDatabaseList, databaseName)
+	}
+	return systemDatabaseList
+}
+
 // getDatabaseList returns the list of databases.
 func (driver *Driver) getDatabaseList(ctx context.Context) ([]string, error) {
-	return driver.client.ListDatabaseNames(ctx, bson.M{})
+	filter := bson.M{
+		"name": bson.M{
+			"$nin": append(flattenSystemDatabase(), "bytebase"),
+		},
+	}
+	return driver.client.ListDatabaseNames(ctx, filter)
 }
