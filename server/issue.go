@@ -859,51 +859,49 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			})
 		}
 		return create, nil
-	} else {
-		create := &api.PipelineCreate{
-			Name:      "Change database pipeline",
-			CreatorID: issueCreate.CreatorID,
-		}
-		for i, databaseList := range aggregatedMatrix {
-			// Skip the stage if the stage includes no database.
-			if len(databaseList) == 0 {
-				continue
-			}
-			var environmentID int
-			var taskCreateList []api.TaskCreate
-			var taskIndexDAGList []api.TaskIndexDAG
-			for _, database := range databaseList {
-				if environmentID > 0 && environmentID != database.Instance.EnvironmentID {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
-				}
-				environmentID = database.Instance.EnvironmentID
-
-				migrationDetailList := databaseToMigrationList[database.ID]
-				sort.Slice(migrationDetailList, func(i, j int) bool {
-					return migrationDetailList[i].SchemaVersion < migrationDetailList[j].SchemaVersion
-				})
-				for i := 0; i < len(migrationDetailList)-1; i++ {
-					taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
-				}
-				for _, migrationDetail := range migrationDetailList {
-					taskCreate, err := getUpdateTask(database, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
-					if err != nil {
-						return nil, err
-					}
-					taskCreateList = append(taskCreateList, taskCreate)
-				}
-			}
-
-			create.StageList = append(create.StageList, api.StageCreate{
-				Name:             deploySchedule.Deployments[i].Name,
-				EnvironmentID:    environmentID,
-				TaskList:         taskCreateList,
-				TaskIndexDAGList: taskIndexDAGList,
-			})
-		}
-		return create, nil
 	}
-	return nil, errors.Errorf("unexpected IssueType %s", issueCreate.Type)
+	create := &api.PipelineCreate{
+		Name:      "Change database pipeline",
+		CreatorID: issueCreate.CreatorID,
+	}
+	for i, databaseList := range aggregatedMatrix {
+		// Skip the stage if the stage includes no database.
+		if len(databaseList) == 0 {
+			continue
+		}
+		var environmentID int
+		var taskCreateList []api.TaskCreate
+		var taskIndexDAGList []api.TaskIndexDAG
+		for _, database := range databaseList {
+			if environmentID > 0 && environmentID != database.Instance.EnvironmentID {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
+			}
+			environmentID = database.Instance.EnvironmentID
+
+			migrationDetailList := databaseToMigrationList[database.ID]
+			sort.Slice(migrationDetailList, func(i, j int) bool {
+				return migrationDetailList[i].SchemaVersion < migrationDetailList[j].SchemaVersion
+			})
+			for i := 0; i < len(migrationDetailList)-1; i++ {
+				taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
+			}
+			for _, migrationDetail := range migrationDetailList {
+				taskCreate, err := getUpdateTask(database, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
+				if err != nil {
+					return nil, err
+				}
+				taskCreateList = append(taskCreateList, taskCreate)
+			}
+		}
+
+		create.StageList = append(create.StageList, api.StageCreate{
+			Name:             deploySchedule.Deployments[i].Name,
+			EnvironmentID:    environmentID,
+			TaskList:         taskCreateList,
+			TaskIndexDAGList: taskIndexDAGList,
+		})
+	}
+	return create, nil
 }
 
 func getOrDefaultSchemaVersion(detail *api.MigrationDetail) string {
