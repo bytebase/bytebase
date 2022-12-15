@@ -16,7 +16,7 @@ type UsersInfo struct {
 	Users []User `bson:"users"`
 }
 
-// User is the subset of the `users` field in the `User`..
+// User is the subset of the `users` field in the `User`.
 type User struct {
 	ID       string `json:"_id" bson:"_id"`
 	UserName string `json:"user" bson:"user"`
