@@ -28,9 +28,9 @@
     >
       <template
         v-if="
-          database.instance.engine != 'CLICKHOUSE' &&
-          database.instance.engine != 'SNOWFLAKE' &&
-          database.instance.engine != 'MONGODB'
+          database.instance.engine !== 'CLICKHOUSE' &&
+          database.instance.engine !== 'SNOWFLAKE' &&
+          database.instance.engine !== 'MONGODB'
         "
       >
         <div class="col-span-1 col-start-1">
