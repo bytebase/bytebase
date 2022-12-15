@@ -66,7 +66,6 @@ const buildNewTenantSchemaUpdateIssue = async (
       detailList: [
         {
           migrationType: migrationType,
-          databaseName: route.query.databaseName,
           statement: VALIDATE_ONLY_SQL,
         },
       ],

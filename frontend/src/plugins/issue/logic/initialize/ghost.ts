@@ -34,8 +34,8 @@ const buildNewGhostIssue = async (
   const createContext: UpdateSchemaGhostContext = {
     detailList: databaseList.map((db) => {
       return {
+        migrationType: "MIGRATE",
         databaseId: db.id,
-        databaseName: db.name,
         statement: VALIDATE_ONLY_SQL,
         earliestAllowedTs: 0,
       };
