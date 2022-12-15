@@ -20,10 +20,6 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-const (
-	runnerInterval = time.Duration(60) * time.Second
-)
-
 // NewRunner returns a runner.
 func NewRunner(store *store.Store, activityManager *activity.Manager, feishuProvider *feishu.Provider, profile config.Profile) *Runner {
 	return &Runner{
@@ -44,10 +40,10 @@ type Runner struct {
 
 // Run runs the ApplicationRunner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(runnerInterval)
+	ticker := time.NewTicker(r.profile.AppRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug(fmt.Sprintf("Application runner started and will run every %v", runnerInterval))
+	log.Debug(fmt.Sprintf("Application runner started and will run every %v", r.profile.AppRunnerInterval))
 	// Try to update approval definition if external approval is enabled, because our approval definition may have changed.
 	if err := r.tryUpdateApprovalDefinition(ctx); err != nil {
 		log.Error("failed to update approval definition on application runner start", zap.Error(err))
