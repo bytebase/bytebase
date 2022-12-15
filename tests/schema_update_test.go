@@ -1408,9 +1408,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Status: advisor.Warn,
 					Content: []string{
 						fmt.Sprintf(
-							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"naming.index.pk\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Primary key in table \"book\" mismatches the naming convention, expect \"^pk_book_id$\" but found \"\".\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#306\n</failure>\n</testcase>\n<testcase name=\"column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
-							filePath,
-							filePath,
+							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite name=\"%s\">\n<testcase name=\"column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nYou can check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
 							filePath,
 							filePath,
 							filePath,
@@ -1443,10 +1441,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 				return &api.VCSSQLReviewResult{
 					Status: advisor.Warn,
 					Content: []string{
-						fmt.Sprintf(
-							"::warning file=%s,line=1,col=1,endColumn=2,title=naming.index.pk (306)::Primary key in table \"book\" mismatches the naming convention, expect \"^pk_book_id$\" but found \"\"%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#306",
-							filePath,
-						),
 						fmt.Sprintf(
 							"::warning file=%s,line=1,col=1,endColumn=2,title=column.required (401)::Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#401",
 							filePath,
@@ -1865,18 +1859,19 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 
 func TestGetLatestSchema(t *testing.T) {
 	tests := []struct {
-		name         string
-		dbType       db.Type
-		databaseName string
-		ddl          string
-		want         string
+		name               string
+		dbType             db.Type
+		databaseName       string
+		ddl                string
+		wantSchema         string
+		wantSchemaMetadata string
 	}{
 		{
 			name:         "PostgreSQL",
 			dbType:       db.Postgres,
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
-			want: `SET statement_timeout = 0;
+			wantSchema: `SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -1897,6 +1892,7 @@ CREATE TABLE public.book (
 );
 
 `,
+			wantSchemaMetadata: `{"name": "latestSchema", "schemas": [{"name": "public", "tables": [{"name": "book", "columns": [{"Type": "integer", "name": "id", "nullable": true, "position": 1, "hasDefault": true}, {"Type": "text", "name": "name", "nullable": true, "position": 2, "hasDefault": true}], "dataSize": "8192"}]}], "collation": "en_US.UTF-8", "characterSet": "UTF8"}`,
 		},
 	}
 	a := require.New(t)
@@ -1985,9 +1981,12 @@ CREATE TABLE public.book (
 			status, err := ctl.waitIssuePipeline(issue.ID)
 			a.NoError(err)
 			a.Equal(api.TaskDone, status)
-			latestSchema, err := ctl.getLatestSchemaOfDatabaseID(database.ID)
+			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
 			a.NoError(err)
-			a.Equal(test.want, latestSchema)
+			a.Equal(test.wantSchema, latestSchemaDump)
+			latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(database.ID)
+			a.NoError(err)
+			a.Equal(test.wantSchemaMetadata, latestSchemaMetadata)
 		})
 	}
 }

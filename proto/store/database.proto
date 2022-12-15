@@ -70,6 +70,9 @@ message TableMetadata {
 
   // The comment is the comment of a table.
   string comment = 11;
+  
+  // The foreign_keys is the list of foreign keys in a table.
+  repeated ForeignKeyMetadata foreign_keys = 12;
 }
 
 // ColumnMetadata is the metadata for columns.
@@ -147,9 +150,42 @@ message ExtensionMetadata {
   // The name is the name of an extension.
   string name = 1;
 
+  // The schema is the extension that is installed to. But the extension usage is not limited to the schema.
+  string schema = 2;
+
   // The version is the version of an extension.
-  string version = 2;
+  string version = 3;
 
   // The description is the description of an extension.
-  string description = 3;
+  string description = 4;
+}
+
+// ForeignKeyMetadata is the metadata for foreign keys.
+message ForeignKeyMetadata {
+  // The name is the name of a foreign key.
+  string name = 1;
+  
+  // The columns are the ordered referencing columns of a foreign key.
+  repeated string columns = 2;
+  
+  // The referenced_schema is the referenced schema name of a foreign key.
+  // It is an empty string for databases without such concept such as MySQL.
+  string referenced_schema = 3;
+  
+  // The referenced_table is the referenced table name of a foreign key.
+  string referenced_table = 4;
+  
+  // The referenced_columns are the ordered referenced columns of a foreign key.
+  repeated string referenced_columns = 5;
+  
+  // The on_delete is the on delete action of a foreign key.
+  string on_delete = 6;
+
+  // The on_update is the on update action of a foreign key.
+  string on_update = 7;
+  
+  // The match_type is the match type of a foreign key.
+  // The match_type is the PostgreSQL specific field.
+  // It's empty string for other databases.
+  string match_type = 8;
 }

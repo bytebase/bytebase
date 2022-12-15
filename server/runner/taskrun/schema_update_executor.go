@@ -49,7 +49,7 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (
 
 	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, task.Instance, task.Database.Name); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, task.Instance, task.Database.Name, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Instance.Name),
 			zap.String("databaseName", task.Database.Name),

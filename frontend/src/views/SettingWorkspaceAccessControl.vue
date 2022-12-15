@@ -175,10 +175,9 @@ const databaseOfPolicy = (policy: Policy) => {
 const prepareList = async () => {
   state.isLoading = true;
 
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  const policyList = await policyStore.fetchPolicyListByType(
-    "bb.policy.access-control"
+  const policyList = await policyStore.fetchPolicyListByTypeAndResourceType(
+    "bb.policy.access-control",
+    "DATABASE"
   );
 
   const databaseIdList = uniq(

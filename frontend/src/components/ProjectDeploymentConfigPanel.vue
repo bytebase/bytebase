@@ -10,6 +10,7 @@
         :deployment="state.deployment"
         :database-list="databaseList"
         :environment-list="environmentList"
+        show-search-box
       />
     </div>
 

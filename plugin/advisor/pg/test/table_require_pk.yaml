@@ -1,0 +1,56 @@
+- statement: CREATE TABLE t(id INT PRIMARY KEY)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+- statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+- statement: CREATE TABLE t(id INT)
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: 'Table "public"."t" requires PRIMARY KEY, related statement: "CREATE TABLE t(id INT)"'
+      line: 1
+- statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_pk"
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP CONSTRAINT \"old_pk\""'
+      line: 1
+- statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_index"
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+- statement: ALTER TABLE "tech_book" DROP CONSTRAINT constraint_not_in_catalog
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+- statement: ALTER TABLE "tech_book" DROP COLUMN id
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP COLUMN id"'
+      line: 1
+- statement: ALTER TABLE "tech_book" DROP COLUMN column_not_in_pk
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0

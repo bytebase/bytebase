@@ -233,7 +233,7 @@
           class="mt-4"
           @next="doTransfer"
         >
-          <template #buttons="{ next, valid }">
+          <template #buttons="{ next }">
             <div
               class="w-full pt-4 mt-6 flex justify-end border-t border-block-border"
             >
@@ -251,9 +251,7 @@
               <button
                 type="button"
                 class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-                :disabled="
-                  !valid || state.editingProjectId == database.project.id
-                "
+                :disabled="state.editingProjectId == database.project.id"
                 @click.prevent="next"
               >
                 {{ $t("common.transfer") }}

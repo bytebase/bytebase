@@ -1,0 +1,23 @@
+- statement: CREATE TABLE t(a char(5));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+- statement: CREATE TABLE t(a int, b JSON);
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column "t"."b" is
+      line: 1
+- statement: |-
+    CREATE TABLE t(d char(5));
+    ALTER TABLE t add COLUMN a JSON;
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column "t"."a" is
+      line: 2

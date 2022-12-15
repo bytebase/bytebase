@@ -337,7 +337,8 @@
       "labels": "标签",
       "debug-log": "Debug 日志",
       "sensitive-data": "敏感数据",
-      "access-control": "访问控制"
+      "access-control": "访问控制",
+      "audit-log": "审计日志"
     },
     "profile": {
       "email": "邮箱",
@@ -733,7 +734,7 @@
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
     "create": "创建环境",
     "restore": "恢复此环境",
-    "successfully-updated-environment": "环境'{0}'更新成功",
+    "successfully-updated-environment": "环境'{name}'更新成功",
     "protected": "受保护的",
     "disable-auto-backup": {
       "self": "禁用数据库自动备份",
@@ -1455,7 +1456,8 @@
     "confirm-to-close": {
       "title": "确定关闭？",
       "description": "关闭后更改将会丢失。"
-    }
+    },
+    "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。"
   },
   "label": {
     "empty-label-value": "<空值>",
@@ -1477,7 +1479,7 @@
     "setting": {
       "description": "标签是一组可用于标识数据库租户的键值对。{link}。"
     },
-    "db-name-template-tips": "如果您的租户数据库名字遵循命名模版，您可以在这里指定。有着相同 {placeholder} 的数据库会分在一组。如果您不想分组，就让它为空。{link}。",
+    "db-name-template-tips": "如果您的租户数据库名字遵循命名模版，您可以在这里指定。否则就让它为空。{link}。",
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。"
@@ -1681,6 +1683,29 @@
         "copied": "已拷贝",
         "export": "导出"
       }
+    }
+  },
+  "audit-log": {
+    "no-logs": "暂无审计日志",
+    "audit-log-detail": "审计详情",
+    "table": {
+      "created-ts": "时间",
+      "created-time": "创建时间",
+      "updated-time": "更新时间",
+      "creator": "操作者",
+      "type": "事件类型",
+      "level": "事件等级",
+      "comment": "评论",
+      "payload": "Payload",
+      "empty": "<空>",
+      "view-details": "查看详情"
+    },
+    "type": {
+      "member-create": "增加成员",
+      "member-role-update": "更新角色",
+      "member-activate": "激活成员",
+      "member-deactivate": "禁用成员",
+      "database-transfer": "转移数据库"
     }
   },
   "onboarding-guide": {

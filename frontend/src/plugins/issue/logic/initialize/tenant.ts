@@ -56,7 +56,6 @@ const buildNewTenantSchemaUpdateIssue = async (
         return {
           migrationType: migrationType,
           databaseId: db.id,
-          databaseName: "",
           statement: VALIDATE_ONLY_SQL,
         };
       }),
@@ -66,7 +65,6 @@ const buildNewTenantSchemaUpdateIssue = async (
       detailList: [
         {
           migrationType: migrationType,
-          databaseName: route.query.databaseName,
           statement: VALIDATE_ONLY_SQL,
         },
       ],

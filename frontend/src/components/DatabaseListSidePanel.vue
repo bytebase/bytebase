@@ -9,18 +9,13 @@
 
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
-import { cloneDeep, groupBy, uniqBy } from "lodash-es";
+import { cloneDeep, uniqBy } from "lodash-es";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import type { BBOutlineItem } from "@/bbkit/types";
 import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "@/types";
-import {
-  databaseSlug,
-  environmentName,
-  parseDatabaseNameByTemplate,
-  projectSlug,
-} from "@/utils";
+import { databaseSlug, environmentName, projectSlug } from "@/utils";
 import { useEnvironmentList, useCurrentUser, useDatabaseStore } from "@/store";
 
 export default defineComponent({
@@ -111,44 +106,14 @@ export default defineComponent({
       // Map groups to `BBOutlineItem[]`
       const itemList = databaseListGroupByProject.map(
         ({ project, databaseList }) => {
-          const databaseListGroupByName = groupBy(databaseList, (db) => {
-            if (project.dbNameTemplate) {
-              // parse db name from template if possible
-              return parseDatabaseNameByTemplate(
-                db.name,
-                project.dbNameTemplate
-              );
-            } else {
-              // use raw db.name otherwise
-              return db.name;
-            }
-          });
-          const databaseListGroupByNameAndCount = Object.keys(
-            databaseListGroupByName
-          ).map((name) => {
-            return {
-              name,
-              count: databaseListGroupByName[name].length,
-            };
-          });
           return {
             id: `bb.project.${project.id}.databases`,
             name: project.name,
-            childList: databaseListGroupByNameAndCount.map<BBOutlineItem>(
-              ({ name, count }) => {
-                const label = [name];
-                if (count > 1) {
-                  // Add a number beside the name when there are more than 1
-                  // databases in single group.
-                  label.push(`(${count})`);
-                }
-                return {
-                  id: `bb.project.${project.id}.database.${name}`,
-                  name: label.join(" "),
-                  link: `/project/${projectSlug(project)}#databases`,
-                };
-              }
-            ),
+            childList: databaseList.map<BBOutlineItem>((db) => ({
+              id: `bb.project.${project.id}.database.${db.name}`,
+              name: db.name,
+              link: `/project/${projectSlug(project)}#databases`,
+            })),
             childCollapse: true,
           } as BBOutlineItem;
         }

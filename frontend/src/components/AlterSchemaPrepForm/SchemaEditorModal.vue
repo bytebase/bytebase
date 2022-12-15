@@ -85,17 +85,30 @@
         />
       </div>
     </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
-      <button type="button" class="btn-normal" @click="dismissModal">
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        class="btn-primary"
-        :disabled="!allowPreviewIssue"
-        @click="handlePreviewIssue"
-      >
-        {{ $t("schema-editor.preview-issue") }}
-      </button>
+    <div
+      class="w-full flex flex-row justify-between items-center mt-2 pr-1 pb-1"
+    >
+      <div class="">
+        <div
+          v-if="isTenantProject"
+          class="flex flex-row items-center text-sm text-gray-500"
+        >
+          <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
+          {{ $t("schema-editor.tenant-mode-tips") }}
+        </div>
+      </div>
+      <div class="flex justify-end items-center space-x-3">
+        <button type="button" class="btn-normal" @click="dismissModal">
+          {{ $t("common.cancel") }}
+        </button>
+        <button
+          class="btn-primary whitespace-nowrap"
+          :disabled="!allowPreviewIssue"
+          @click="handlePreviewIssue"
+        >
+          {{ $t("schema-editor.preview-issue") }}
+        </button>
+      </div>
     </div>
   </BBModal>
 
@@ -129,6 +142,7 @@ import { allowGhostMigration } from "@/utils";
 import {
   useDatabaseStore,
   useNotificationStore,
+  useProjectStore,
   useSchemaEditorStore,
 } from "@/store";
 import { diffTableList } from "@/utils/schemaEditor/diffTable";
@@ -152,10 +166,6 @@ const props = defineProps({
   databaseIdList: {
     type: Array as PropType<DatabaseId[]>,
     required: true,
-  },
-  tenantMode: {
-    type: Boolean,
-    default: false,
   },
 });
 
@@ -206,9 +216,17 @@ const databaseEngineType = databaseList.reduce(
   },
   ""
 );
+const project = useProjectStore().getProjectById(
+  head(databaseList)?.projectId || UNKNOWN_ID
+);
+const isTenantProject = project.tenantMode === "TENANT";
 
 onMounted(() => {
-  if (databaseList.length === 0 || databaseEngineType === "unknown") {
+  if (
+    databaseList.length === 0 ||
+    project.id === UNKNOWN_ID ||
+    databaseEngineType === "unknown"
+  ) {
     emit("close");
     return;
   }
@@ -258,7 +276,7 @@ const handleSyncSQLFromSchemaEditor = async () => {
     return;
   }
 
-  const databaseEditMap = await fetchDatabaseEditMapWithSchemaEditor();
+  const databaseEditMap = await fetchDatabaseEditStatementMapWithSchemaEditor();
   if (!databaseEditMap) {
     return;
   }
@@ -291,7 +309,7 @@ const getDatabaseEditListWithSchemaEditor = () => {
   return databaseEditList;
 };
 
-const fetchDatabaseEditMapWithSchemaEditor = async () => {
+const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
   const databaseEditList = getDatabaseEditListWithSchemaEditor();
   const databaseEditMap: Map<DatabaseId, string> = new Map();
   if (databaseEditList.length > 0) {
@@ -348,7 +366,7 @@ const handleUploadFile = (e: Event) => {
     const sql = fr.result as string;
     state.editStatement = sql;
   };
-  fr.onerror = (e) => {
+  fr.onerror = () => {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "WARN",
@@ -363,47 +381,41 @@ const handleUploadFile = (e: Event) => {
 };
 
 const handlePreviewIssue = async () => {
-  const projectId = head(databaseList)?.projectId || UNKNOWN_ID;
-  if (projectId === UNKNOWN_ID) {
-    console.error("project unknown");
-    return;
-  }
-
-  let issueMode = "normal";
-
-  if (props.tenantMode) {
-    issueMode = "tenant";
-  } else {
-    const actionResult = await isUsingGhostMigration(databaseList);
-    if (actionResult === false) {
-      return;
-    }
-    issueMode = actionResult;
-  }
-
-  const isGhostMode = issueMode === "online";
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    name: generateIssueName(
-      databaseList.map((db) => db.name),
-      isGhostMode
-    ),
-    project: projectId,
-    mode: issueMode,
+    project: project.id,
+    mode: isTenantProject ? "tenant" : "normal",
     databaseList: props.databaseIdList.join(","),
   };
-  if (isGhostMode) {
-    query.ghost = 1;
-  }
 
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
+
+    if (!isTenantProject) {
+      // We should show select ghost mode dialog only for altering table statment not create/drop table.
+      // TODO(steven): parse the sql check if there only alter table statement.
+      const actionResult = await isUsingGhostMigration(databaseList);
+      if (actionResult === false) {
+        return;
+      }
+      query.mode = actionResult;
+      query.name = generateIssueName(
+        databaseList.map((db) => db.name),
+        query.mode === "online"
+      );
+    }
   } else {
     const databaseEditList = getDatabaseEditListWithSchemaEditor();
-    // Validate databaseEditList in frontend.
     const validateResultList = [];
+    let hasOnlyAlterTableChanges = true;
     for (const databaseEdit of databaseEditList) {
       validateResultList.push(...validateDatabaseEdit(databaseEdit));
+      if (
+        databaseEdit.createTableList.length > 0 ||
+        databaseEdit.dropTableList.length > 0
+      ) {
+        hasOnlyAlterTableChanges = false;
+      }
     }
     if (validateResultList.length > 0) {
       notificationStore.pushNotification({
@@ -417,28 +429,39 @@ const handlePreviewIssue = async () => {
       return;
     }
 
-    const databaseEditMap = await fetchDatabaseEditMapWithSchemaEditor();
-    if (!databaseEditMap) {
+    if (!isTenantProject && hasOnlyAlterTableChanges) {
+      const actionResult = await isUsingGhostMigration(databaseList);
+      if (actionResult === false) {
+        return;
+      }
+      query.mode = actionResult;
+    }
+
+    const statementMap = await fetchDatabaseEditStatementMapWithSchemaEditor();
+    if (!statementMap) {
       return;
     }
-    const databaseIdList = Array.from(databaseEditMap.keys());
-    if (databaseIdList.length > 0) {
-      const statmentList = Array.from(databaseEditMap.values());
-      if (props.tenantMode) {
-        query.sql = statmentList.join("\n");
-      } else {
-        query.databaseList = databaseIdList.join(",");
-        query.sqlList = JSON.stringify(statmentList);
-        query.name = generateIssueName(
-          databaseList
-            .filter((database) => databaseIdList.includes(database.id))
-            .map((db) => db.name),
-          isGhostMode
-        );
-      }
+    const databaseIdList = Array.from(statementMap.keys());
+    const statmentList = Array.from(statementMap.values());
+    if (isTenantProject) {
+      query.sql = statmentList.join("\n");
+      query.name = generateIssueName(
+        databaseList.map((db) => db.name),
+        query.mode === "online"
+      );
+    } else {
+      query.databaseList = databaseIdList.join(",");
+      query.sqlList = JSON.stringify(statmentList);
+      const databaseNameList = databaseList
+        .filter((database) => databaseIdList.includes(database.id))
+        .map((db) => db.name);
+      query.name = generateIssueName(databaseNameList, query.mode === "online");
     }
   }
 
+  if (query.mode === "online") {
+    query.ghost = 1;
+  }
   router.push({
     name: "workspace.issue.detail",
     params: {

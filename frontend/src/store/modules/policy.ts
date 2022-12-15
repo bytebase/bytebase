@@ -8,6 +8,7 @@ import {
   PolicyState,
   ResourceIdentifier,
   ResourceObject,
+  ResourceType,
   unknown,
   UNKNOWN_ID,
 } from "@/types";
@@ -127,6 +128,18 @@ export const usePolicyStore = defineStore("policy", {
     async fetchPolicyListByType(type: PolicyType): Promise<Policy[]> {
       const data: { data: ResourceObject[]; included: ResourceObject[] } = (
         await axios.get(`/api/policy?type=${type}`)
+      ).data;
+
+      return data.data.map((d) => convert(d, data.included));
+    },
+    async fetchPolicyListByTypeAndResourceType(
+      type: PolicyType,
+      resourceType: ResourceType
+    ): Promise<Policy[]> {
+      const data: { data: ResourceObject[]; included: ResourceObject[] } = (
+        await axios.get(
+          `/api/policy?type=${type}&resourceType=${resourceType.toLowerCase()}`
+        )
       ).data;
 
       return data.data.map((d) => convert(d, data.included));
