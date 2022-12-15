@@ -29,6 +29,7 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       }
 
       const tableList: TableMetadata[] = [];
+      // TODO(steven): get table list with schema name for PG.
       for (const schema of databaseMetadata.schemas) {
         tableList.push(...schema.tables);
       }
