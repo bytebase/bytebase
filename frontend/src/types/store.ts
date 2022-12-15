@@ -48,11 +48,14 @@ import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom } from "./sqlEditor";
+import { ReleaseInfo } from "./actuator";
 import type { DebugLog } from "@/types/debug";
 import type { AuditLog } from "@/types/auditLog";
+import { RemovableRef } from "@vueuse/core";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
+  releaseInfo: RemovableRef<ReleaseInfo>;
 }
 
 export interface AuthState {
