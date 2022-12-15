@@ -1,31 +1,29 @@
 <template>
-  <BBTable
+  <BBGrid
     :column-list="columnList"
     :data-source="instanceList"
-    :show-header="true"
-    :left-bordered="false"
-    :right-bordered="false"
+    class="mt-2 border-y"
     @click-row="clickInstance"
   >
-    <template #body="{ rowData: instance }">
-      <BBTableCell :left-padding="4" class="w-4">
+    <template #item="{ item: instance }">
+      <div class="bb-grid-cell justify-center !px-2">
         <InstanceEngineIcon :instance="instance" />
-      </BBTableCell>
-      <BBTableCell class="w-32">
+      </div>
+      <div class="bb-grid-cell">
         {{ instanceName(instance) }}
-      </BBTableCell>
-      <BBTableCell class="w-16">
+      </div>
+      <div class="bb-grid-cell">
         <div class="flex items-center gap-x-1">
           {{ environmentNameFromId(instance.environment.id) }}
           <ProtectedEnvironmentIcon :environment="instance.environment" />
         </div>
-      </BBTableCell>
-      <BBTableCell class="w-48">
+      </div>
+      <div class="bb-grid-cell">
         <template v-if="instance.port"
           >{{ instance.host }}:{{ instance.port }}</template
         ><template v-else>{{ instance.host }}</template>
-      </BBTableCell>
-      <BBTableCell class="w-4">
+      </div>
+      <div class="bb-grid-cell hidden sm:flex">
         <button
           v-if="instance.externalLink?.trim().length != 0"
           class="btn-icon"
@@ -33,12 +31,12 @@
         >
           <heroicons-outline:external-link class="w-4 h-4" />
         </button>
-      </BBTableCell>
-      <BBTableCell class="w-16">
+      </div>
+      <div class="bb-grid-cell">
         {{ humanizeTs(instance.createdTs) }}
-      </BBTableCell>
+      </div>
     </template>
-  </BBTable>
+  </BBGrid>
 </template>
 
 <script lang="ts">
@@ -50,6 +48,7 @@ import { EnvironmentId, Instance } from "@/types";
 import { useEnvironmentStore } from "@/store";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import ProtectedEnvironmentIcon from "./Environment/ProtectedEnvironmentIcon.vue";
+import { BBGridColumn } from "@/bbkit";
 
 export default defineComponent({
   name: "InstanceTable",
@@ -65,31 +64,42 @@ export default defineComponent({
 
     const router = useRouter();
 
-    const columnList = computed(() => {
+    const columnList = computed((): BBGridColumn[] => {
       return [
         {
           title: "",
+          width: "minmax(auto, 4rem)",
         },
         {
           title: t("common.name"),
+          width: "minmax(auto, 3fr)",
         },
         {
           title: t("common.environment"),
+          width: "minmax(auto, 1fr)",
         },
         {
           title: t("common.Address"),
+          width: "minmax(auto, 2fr)",
         },
         {
           title: t("instance.external-link"),
+          width: { sm: "1fr" },
+          class: "hidden sm:flex",
         },
         {
           title: t("common.created-at"),
+          width: "minmax(auto, 8rem)",
         },
       ];
     });
 
-    const clickInstance = (section: number, row: number, e: MouseEvent) => {
-      const instance = props.instanceList[row];
+    const clickInstance = (
+      instance: Instance,
+      section: number,
+      row: number,
+      e: MouseEvent
+    ) => {
       const url = `/instance/${instanceSlug(instance)}`;
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
