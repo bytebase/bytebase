@@ -7,14 +7,14 @@
       line: 0
 - statement: DROP TABLE IF EXISTS foo
   want:
-    - status: ERROR
+    - status: WARN
       code: 603
       title: table.drop-naming-convention
       content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
       line: 1
 - statement: DROP TABLE IF EXISTS foo_delete, bar
   want:
-    - status: ERROR
+    - status: WARN
       code: 603
       title: table.drop-naming-convention
       content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'

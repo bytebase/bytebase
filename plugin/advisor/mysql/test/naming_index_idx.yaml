@@ -7,19 +7,19 @@
       line: 0
 - statement: CREATE INDEX tech_book_id_name ON tech_book(id, name)
   want:
-    - status: ERROR
+    - status: WARN
       code: 303
       title: naming.index.idx
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `tech_book_id_name`
       line: 1
 - statement: CREATE INDEX afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw ON tech_book(id, name)
   want:
-    - status: ERROR
+    - status: WARN
       code: 303
       title: naming.index.idx
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw`
       line: 1
-    - status: ERROR
+    - status: WARN
       code: 303
       title: naming.index.idx
       content: Index `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
@@ -33,7 +33,7 @@
       line: 0
 - statement: ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book
   want:
-    - status: ERROR
+    - status: WARN
       code: 303
       title: naming.index.idx
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `idx_tech_book`
@@ -47,7 +47,7 @@
       line: 0
 - statement: ALTER TABLE tech_book ADD INDEX tech_book_id_name (id, name)
   want:
-    - status: ERROR
+    - status: WARN
       code: 303
       title: naming.index.idx
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `tech_book_id_name`

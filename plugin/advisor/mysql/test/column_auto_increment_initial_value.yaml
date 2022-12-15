@@ -5,7 +5,7 @@
       title: OK
       content: ""
       line: 0
-- statement: CREATE TABLE t(a int auto_increment) auto_increment = 1
+- statement: CREATE TABLE t(a int auto_increment) auto_increment = 20
   want:
     - status: SUCCESS
       code: 0
@@ -17,5 +17,5 @@
     - status: WARN
       code: 416
       title: column.auto-increment-initial-value
-      content: The initial auto-increment value in table `t` is 2, which doesn't equal 1
+      content: The initial auto-increment value in table `t` is 2, which doesn't equal 20
       line: 1

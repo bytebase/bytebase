@@ -10,7 +10,7 @@
     - status: WARN
       code: 302
       title: naming.column
-      content: "`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters"
+      content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
       line: 1
 - statement: CREATE TABLE book(id int, creator_id int)
   want:

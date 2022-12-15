@@ -3,7 +3,7 @@
     - status: WARN
       code: 401
       title: column.required
-      content: "Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id"
+      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
       line: 1
 - statement: |-
     CREATE TABLE book(
@@ -30,7 +30,7 @@
     - status: WARN
       code: 401
       title: column.required
-      content: "Table `book` requires columns: creator_id"
+      content: 'Table `book` requires columns: creator_id'
       line: 7
 - statement: |-
     CREATE TABLE book(
@@ -58,7 +58,7 @@
     - status: WARN
       code: 401
       title: column.required
-      content: "Table `book` requires columns: creator_id"
+      content: 'Table `book` requires columns: creator_id'
       line: 7
 - statement: |-
     CREATE TABLE book(
@@ -86,7 +86,7 @@
     - status: WARN
       code: 401
       title: column.required
-      content: "Table `book` requires columns: creator_id"
+      content: 'Table `book` requires columns: creator_id'
       line: 7
 - statement: |-
     CREATE TABLE book(
@@ -114,7 +114,7 @@
     - status: WARN
       code: 401
       title: column.required
-      content: "Table `book` requires columns: updater_id"
+      content: 'Table `book` requires columns: updater_id'
       line: 5
 - statement: |-
     CREATE TABLE book(
@@ -140,17 +140,16 @@
                   id int,
                   created_ts timestamp,
                   updated_ts timestamp)
-
   want:
     - status: WARN
       code: 401
       title: column.required
-      content: "Table `book` requires columns: creator_id"
+      content: 'Table `book` requires columns: creator_id'
       line: 5
     - status: WARN
       code: 401
       title: column.required
-      content: "Table `student` requires columns: creator_id, updater_id"
+      content: 'Table `student` requires columns: creator_id, updater_id'
       line: 9
 - statement: |-
     CREATE TABLE book(

@@ -7,19 +7,19 @@
       line: 0
 - statement: CREATE UNIQUE INDEX tech_book_id_name ON tech_book(id, name)
   want:
-    - status: ERROR
+    - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
       line: 1
 - statement: CREATE UNIQUE INDEX qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy ON tech_book(id, name)
   want:
-    - status: ERROR
+    - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy`
       line: 1
-    - status: ERROR
+    - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
@@ -33,7 +33,7 @@
       line: 0
 - statement: ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name)
   want:
-    - status: ERROR
+    - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
@@ -47,7 +47,7 @@
       line: 0
 - statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book
   want:
-    - status: ERROR
+    - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `uk_tech_book`

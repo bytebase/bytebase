@@ -1,31 +1,29 @@
-- statement: |4-
-          START TRANSACTION;
-          CREATE TABLE techBook(id int, name varchar(255));
-          COMMIT;
-
+- statement: |-
+    START TRANSACTION;
+    CREATE TABLE techBook(id int, name varchar(255));
+    COMMIT;
   want:
     - status: WARN
       code: 206
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
-      line: 4
-- statement: |4-
-          START TRANSACTION;
-          CREATE TABLE techBook(id int, name varchar(255));
-          COMMIT;
+      line: 3
+- statement: |-
+    START TRANSACTION;
+    CREATE TABLE techBook(id int, name varchar(255));
+    COMMIT;
 
-          START TRANSACTION;
-          INSERT INTO techBook(id, name) VALUES(1, "book");
-          COMMIT;
-
+    START TRANSACTION;
+    INSERT INTO techBook(id, name) VALUES(1, "book");
+    COMMIT;
   want:
     - status: WARN
       code: 206
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
-      line: 4
+      line: 3
     - status: WARN
       code: 206
       title: statement.disallow-commit
       content: 'Commit is not allowed, related statement: "COMMIT;"'
-      line: 8
+      line: 7
