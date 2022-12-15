@@ -1,6 +1,6 @@
-import { Table } from "@/types";
+import { TableMetadata } from "@/types/proto/database";
 
-export function isGhostTable(table: Table): boolean {
+export function isGhostTable(table: TableMetadata): boolean {
   const { name } = table;
   // for future name support with timestamp, e.g. ~table_1234567890_del or _table_1234567890_del
   if (name.match(/^(_|~)(.+?)_(\d+)_(ghc|gho|del)$/)) {
