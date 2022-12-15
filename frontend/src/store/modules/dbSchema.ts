@@ -15,11 +15,10 @@ export const useDBSchemaStore = defineStore("dbSchema", {
         return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
       }
 
-      const databaseMetadata = (
-        await axios.get<DatabaseMetadata>(
-          `/api/database/${databaseId}/schema?metadata=true`
-        )
-      ).data;
+      const res = await axios.get<DatabaseMetadata>(
+        `/api/database/${databaseId}/schema?metadata=true`
+      );
+      const databaseMetadata = DatabaseMetadata.fromJSON(res.data);
       this.databaseMetadataById.set(databaseId, databaseMetadata);
       return databaseMetadata;
     },
