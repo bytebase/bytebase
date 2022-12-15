@@ -34,8 +34,8 @@
           type="button"
           class="btn-primary"
           target="_blank"
-          @click="$emit('cancel')"
           :href="actuatorStore.releaseInfo.latest?.html_url"
+          @click="$emit('cancel')"
         >
           {{ $t("common.learn-more") }}
         </a>

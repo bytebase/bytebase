@@ -61,8 +61,8 @@
               @click="state.showReleaseModal = canUpgrade"
             >
               <heroicons-outline:lightning-bolt
-                class="h-6 w-6"
                 v-if="canUpgrade"
+                class="h-6 w-6"
               />
               {{ version }}
               <span v-if="gitCommit" class="tooltip"
@@ -127,8 +127,8 @@
             @click="state.showReleaseModal = canUpgrade"
           >
             <heroicons-outline:lightning-bolt
-              class="h-6 w-6"
               v-if="canUpgrade"
+              class="h-6 w-6"
             />
             {{ version }}
             <span v-if="gitCommit" class="tooltip"
