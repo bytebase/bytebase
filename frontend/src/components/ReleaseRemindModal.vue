@@ -8,7 +8,13 @@
         <p class="whitespace-pre-wrap">
           <i18n-t keypath="settings.release.new-version-content">
             <template #tag>
-              <strong>{{ actuatorStore.releaseInfo.latest?.tag_name }}</strong>
+              <a
+                class="font-bold underline"
+                target="_blank"
+                :href="actuatorStore.releaseInfo.latest?.html_url"
+              >
+                {{ actuatorStore.releaseInfo.latest?.tag_name }}
+              </a>
             </template>
           </i18n-t>
         </p>
@@ -34,7 +40,7 @@
           type="button"
           class="btn-primary"
           target="_blank"
-          :href="actuatorStore.releaseInfo.latest?.html_url"
+          href="https://www.bytebase.com/docs/get-started/install/overview"
           @click="$emit('cancel')"
         >
           {{ $t("common.learn-more") }}

@@ -427,7 +427,7 @@
     },
     "release": {
       "new-version-available": "更新提醒",
-      "new-version-content": "新版本 {tag} 正式发布！请到 GitHub 查看最新的 release 信息。",
+      "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。",
       "not-show-till-next-release": "在下次更新前不要提醒我"
     }
   },
