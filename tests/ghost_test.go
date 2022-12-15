@@ -175,8 +175,8 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(mysqlBookSchema1, result)
 
-	createContext, err = json.Marshal(&api.UpdateSchemaGhostContext{
-		DetailList: []*api.UpdateSchemaGhostDetail{
+	createContext, err = json.Marshal(&api.MigrationContext{
+		DetailList: []*api.MigrationDetail{
 			{
 				DatabaseID: database.ID,
 				Statement:  mysqlGhostMigrationStatement,
@@ -382,8 +382,8 @@ func TestGhostTenant(t *testing.T) {
 	}
 
 	// Create an issue that updates database schema using gh-ost.
-	createContext, err = json.Marshal(&api.UpdateSchemaGhostContext{
-		DetailList: []*api.UpdateSchemaGhostDetail{
+	createContext, err = json.Marshal(&api.MigrationContext{
+		DetailList: []*api.MigrationDetail{
 			{
 				DatabaseID: 0,
 				Statement:  mysqlGhostMigrationStatement,

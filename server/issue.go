@@ -866,7 +866,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 	if !s.licenseService.IsFeatureEnabled(api.FeatureOnlineMigration) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureOnlineMigration.AccessErrorMessage())
 	}
-	c := api.UpdateSchemaGhostContext{}
+	c := api.MigrationContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
 	}
@@ -926,7 +926,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 	// aggregatedMatrix is the aggregated matrix by deployments.
 	// databaseToMigrationList is the mapping from database ID to migration detail.
 	aggregatedMatrix := make([][]*api.Database, len(deploySchedule.Deployments))
-	databaseToMigrationList := make(map[int][]*api.UpdateSchemaGhostDetail)
+	databaseToMigrationList := make(map[int][]*api.MigrationDetail)
 
 	dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
 		ProjectID: &issueCreate.ProjectID,
@@ -946,7 +946,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 		for _, databaseList := range matrix {
 			for _, database := range databaseList {
 				// There should be only one migration per database for tenant mode deployment.
-				databaseToMigrationList[database.ID] = []*api.UpdateSchemaGhostDetail{migrationDetail}
+				databaseToMigrationList[database.ID] = []*api.MigrationDetail{migrationDetail}
 			}
 		}
 	} else {
@@ -1286,7 +1286,7 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 }
 
 // creates gh-ost TaskCreate list and dependency.
-func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.UpdateSchemaGhostDetail, schemaVersion string) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.MigrationDetail, schemaVersion string) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	// task "sync"
 	payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
