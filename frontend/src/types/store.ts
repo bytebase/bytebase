@@ -50,6 +50,7 @@ import { Label } from "./label";
 import { ConnectionAtom } from "./sqlEditor";
 import type { DebugLog } from "@/types/debug";
 import type { AuditLog } from "@/types/auditLog";
+import { DatabaseMetadata } from "./proto/database";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -151,6 +152,10 @@ export interface DatabaseState {
   // Used exclusively for project panel, we do this to avoid interference from databaseListByInstanceId
   // where updating databaseListByInstanceId will cause reloading project related UI due to reactivity
   databaseListByProjectId: Map<ProjectId, Database[]>;
+}
+
+export interface DBSchemaState {
+  databaseMetadataById: Map<DatabaseId, DatabaseMetadata>;
 }
 
 export interface TableState {

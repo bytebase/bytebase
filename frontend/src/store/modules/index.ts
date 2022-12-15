@@ -44,3 +44,4 @@ export * from "./dbExtension";
 export * from "./sqlReview";
 export * from "./onboardingGuide";
 export * from "./schemaEditor";
+export * from "./dbSchema";
