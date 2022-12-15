@@ -8,7 +8,7 @@ const INTRO_MODULE = "ui.intro";
 // default to true
 const issueFormatStatementOnSave = useLocalStorage(
   "ui.state.issue.format-statement-on-save",
-  true
+  false
 );
 
 export interface UIState {
