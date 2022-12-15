@@ -52,6 +52,7 @@ type PGRole struct {
 }
 
 // PGRoleUpsert is the API message for upserting a new role.
+// TODO(ed): we may need to support IN ROLE role_name, ROLE role_name[,...] and ADMIN role_name[,...] statement.
 type PGRoleUpsert struct {
 	Name            string           `json:"name"`
 	Password        *string          `json:"password"`
