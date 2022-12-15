@@ -3,7 +3,7 @@
     <div>
       <BBTableSearch
         class="w-60"
-        :placeholder="$t('database.search-database-name')"
+        :placeholder="$t('database.search-database')"
         @change-text="(text: string) => (state.searchText = text)"
       />
     </div>
@@ -87,6 +87,7 @@ import { computed, PropType, reactive } from "vue";
 import type { Database, DatabaseId, Policy } from "@/types";
 import { DEFAULT_PROJECT_ID } from "@/types";
 import { useDatabaseStore } from "@/store";
+import { filterDatabaseByKeyword } from "@/utils";
 
 type LocalState = {
   isLoading: boolean;
@@ -140,9 +141,14 @@ const databaseList = computed(() => {
   );
 
   const keyword = state.searchText.trim();
-  if (keyword) {
-    list = list.filter((db) => db.name.toLowerCase().includes(keyword));
-  }
+  list = list.filter((db) =>
+    filterDatabaseByKeyword(db, keyword, [
+      "name",
+      "project",
+      "instance",
+      "environment",
+    ])
+  );
   return list;
 });
 

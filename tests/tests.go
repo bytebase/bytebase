@@ -1385,8 +1385,20 @@ func (ctl *controller) createSQLReviewCI(projectID, repositoryID int) (*api.SQLR
 	return sqlReviewCISetup, nil
 }
 
-func (ctl *controller) getLatestSchemaOfDatabaseID(databaseID int) (string, error) {
+func (ctl *controller) getLatestSchemaDump(databaseID int) (string, error) {
 	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), nil)
+	if err != nil {
+		return "", err
+	}
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+	return string(bs), nil
+}
+
+func (ctl *controller) getLatestSchemaMetadata(databaseID int) (string, error) {
+	body, err := ctl.get(fmt.Sprintf("/database/%d/schema", databaseID), map[string]string{"metadata": "true"})
 	if err != nil {
 		return "", err
 	}

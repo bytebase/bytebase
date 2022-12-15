@@ -42,62 +42,53 @@ func TestGetTemplateTokens(t *testing.T) {
 
 func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 	tests := []struct {
-		name           string
-		template       string
-		tenantMode     ProjectTenantMode
-		dbNameTemplate string
-		errPart        string
+		name       string
+		template   string
+		tenantMode ProjectTenantMode
+		errPart    string
 	}{
 		{
 			"OK",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}.sql",
 			TenantModeDisabled,
 			"",
-			"",
 		}, {
 			"OK with optional tokens",
 			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{DESCRIPTION}}.sql",
 			TenantModeDisabled,
 			"",
-			"",
 		}, {
 			"Missing {{VERSION}}",
 			"{{DB_NAME}}_{{TYPE}}.sql",
 			TenantModeDisabled,
-			"",
 			"missing {{VERSION}}",
 		}, {
 			"UnknownToken",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNOWN}}.sql",
 			TenantModeDisabled,
-			"",
 			"unknown token {{UNKNOWN}}",
 		}, {
 			"UnknownToken",
 			"{{DB_NAME}}_{{TYPE}}_{{VERSION}}_{{UNKNOWN}}.sql",
 			TenantModeDisabled,
-			"",
 			"unknown token {{UNKNOWN}}",
 		},
-
 		{
 			"Tenant mode {{ENV_NAME}}",
-			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}.sql",
+			"{{ENV_NAME}}/{{VERSION}}_{{TYPE}}.sql",
 			TenantModeTenant,
-			"",
-			"not allowed in the template",
+			"in file path template",
+		},
+		{
+			"Tenant mode {{DB_NAME}}",
+			"{{DB_NAME}}_{{VERSION}}_{{TYPE}}.sql",
+			TenantModeTenant,
+			"in file path template",
 		}, {
-			"Tenant mode no database name template",
+			"Tenant mode okay",
 			"{{VERSION}}_{{TYPE}}.sql",
 			TenantModeTenant,
 			"",
-			"",
-		}, {
-			"Tenant mode has database name template",
-			"{{VERSION}}_{{TYPE}}.sql",
-			TenantModeTenant,
-			"{{DB_NAME}}_{{TENANT}}",
-			"missing {{DB_NAME}}",
 		},
 	}
 
@@ -105,11 +96,11 @@ func TestValidateRepositoryFilePathTemplate(t *testing.T) {
 		// Fix the problem that closure in a for loop will always use the last element.
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			err := ValidateRepositoryFilePathTemplate(test.template, test.tenantMode, test.dbNameTemplate)
+			err := ValidateRepositoryFilePathTemplate(test.template, test.tenantMode)
 			if test.errPart == "" {
 				require.NoError(t, err)
 			} else {
-				require.ErrorContains(t, err, test.errPart)
+				require.ErrorContains(t, err, test.errPart, test.name)
 			}
 		})
 	}
@@ -139,9 +130,14 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 			"unknown token {{TYPE}}",
 		}, {
 			"Tenant mode {{ENV_NAME}}",
-			"{{ENV_NAME}}/{{DB_NAME}}_{{TYPE}}.sql",
+			"{{ENV_NAME}}/LATEST.sql",
 			TenantModeTenant,
-			"not allowed in the template",
+			"in schema path template",
+		}, {
+			"Tenant mode {{DB_NAME}}",
+			"{{DB_NAME}}_LATEST.sql",
+			TenantModeTenant,
+			"in schema path template",
 		},
 	}
 
@@ -150,7 +146,7 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {
-			require.Contains(t, err.Error(), test.errPart)
+			require.ErrorContains(t, err, test.errPart, test.name)
 		}
 	}
 }
@@ -281,84 +277,6 @@ func TestBuildTemplateExpr(t *testing.T) {
 
 	for _, test := range tests {
 		got, err := formatTemplateRegexp(test.template, test.tokens)
-		if test.errPart == "" {
-			require.NoError(t, err)
-		} else {
-			require.Contains(t, err.Error(), test.errPart)
-		}
-		require.Equal(t, got, test.want)
-	}
-}
-
-func TestGetBaseDatabaseName(t *testing.T) {
-	tests := []struct {
-		name         string
-		databaseName string
-		template     string
-		labelsJSON   string
-		want         string
-		errPart      string
-	}{
-		{
-			"no_template_success",
-			"db1",
-			"",
-			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
-			"db1",
-			"",
-		},
-		{
-			"only_database_name_success",
-			"db1",
-			"{{DB_NAME}}",
-			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
-			"db1",
-			"",
-		},
-		{
-			"only_database_name_no_label_success",
-			"db1",
-			"{{DB_NAME}}",
-			"",
-			"db1",
-			"",
-		},
-		{
-			"tenant_label_success",
-			"db1_tenant123",
-			"{{DB_NAME}}_{{TENANT}}",
-			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
-			"db1",
-			"",
-		},
-		{
-			"tenant_label_inculde_meta_success",
-			"db1$tenant123",
-			"{{DB_NAME}}${{TENANT}}",
-			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
-			"db1",
-			"",
-		},
-		{
-			"tenant_location_label_success",
-			"us-central1...db你好_tenant123",
-			"{{LOCATION}}...{{DB_NAME}}_{{TENANT}}",
-			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
-			"db你好",
-			"",
-		},
-		{
-			"tenant_label_fail",
-			"db1_tenant123",
-			"{{DB_NAME}}_{{LOCATION}}",
-			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
-			"",
-			"doesn't follow database name template",
-		},
-	}
-
-	for _, test := range tests {
-		got, err := GetBaseDatabaseName(test.databaseName, test.template, test.labelsJSON)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {

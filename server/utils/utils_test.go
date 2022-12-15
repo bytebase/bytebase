@@ -168,12 +168,10 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                 string
-		schedule             *api.DeploymentSchedule
-		baseDatabaseName     string
-		databaseNameTemplate string
-		databaseList         []*api.Database
-		want                 [][]*api.Database
+		name         string
+		schedule     *api.DeploymentSchedule
+		databaseList []*api.Database
+		want         [][]*api.Database
 		// Notice relevant position is preserved from databaseList to want.
 		// e.g. in simpleDeployments the result is [db[0], db[1]] instead of [db[1], db[0]] in the first stage.
 	}{
@@ -209,8 +207,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			"hello",
-			"{{DB_NAME}}",
 			[]*api.Database{
 				dbs[0], dbs[1],
 			},
@@ -251,8 +247,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			"hello",
-			"{{DB_NAME}}",
 			[]*api.Database{
 				dbs[0], dbs[1], dbs[2],
 			},
@@ -294,8 +288,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			"hello",
-			"{{DB_NAME}}",
 			[]*api.Database{
 				dbs[0], dbs[2], dbs[3],
 			},
@@ -324,13 +316,11 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			"world",
-			"{{DB_NAME}}",
 			[]*api.Database{
 				dbs[3], dbs[4],
 			},
 			[][]*api.Database{
-				{dbs[4]},
+				{dbs[3], dbs[4]},
 			},
 		},
 		{
@@ -353,8 +343,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			"db1",
-			"{{DB_NAME}}_{{LOCATION}}",
 			[]*api.Database{
 				dbs[5], dbs[6],
 			},
@@ -365,7 +353,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		matrix, _ := GetDatabaseMatrixFromDeploymentSchedule(test.schedule, test.baseDatabaseName, test.databaseNameTemplate, test.databaseList)
+		matrix, _ := GetDatabaseMatrixFromDeploymentSchedule(test.schedule, test.databaseList)
 		assert.Equal(t, matrix, test.want, test.name)
 	}
 }

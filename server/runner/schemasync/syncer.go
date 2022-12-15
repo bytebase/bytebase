@@ -2,6 +2,7 @@
 package schemasync
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,10 +10,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -152,7 +155,8 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 					zap.Int64("lastSuccessfulSyncTs", database.LastSuccessfulSyncTs),
 				)
 				// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-				if err := s.SyncDatabaseSchema(ctx, instance, database.Name); err != nil {
+				// We don't force dump database schema because it's rarely changed till the metadata is changed.
+				if err := s.SyncDatabaseSchema(ctx, instance, database.Name, false /* force */); err != nil {
 					log.Debug("Failed to sync database schema",
 						zap.Int("instanceID", instance.ID),
 						zap.String("instanceName", instance.Name),
@@ -328,8 +332,8 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string, force bool) error {
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return err
 	}
@@ -399,7 +403,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 	// Sync database schema
 	if s.profile.Mode == common.ReleaseModeDev {
-		if err := syncDBSchema(ctx, s.store, database, schema); err != nil {
+		if err := syncDBSchema(ctx, s.store, database, schema, driver, force); err != nil {
 			return err
 		}
 	}
@@ -424,24 +428,47 @@ func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *ap
 	return store.SetDBExtensionList(ctx, schema, database.ID)
 }
 
-func syncDBSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
+func syncDBSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema, driver db.Driver, force bool) error {
 	dbSchema, err := store.GetDBSchema(ctx, database.ID)
 	if err != nil {
 		return err
 	}
 
 	databaseMetadata := convertDBSchema(schema)
-	bytes, err := protojson.Marshal(databaseMetadata)
-	if err != nil {
-		return err
+	var oldDatabaseMetadata *storepb.DatabaseMetadata
+	if dbSchema != nil {
+		var m storepb.DatabaseMetadata
+		if err := protojson.Unmarshal([]byte(dbSchema.Metadata), &m); err != nil {
+			return err
+		}
+		oldDatabaseMetadata = &m
 	}
-	metadataString := string(bytes)
-	if dbSchema == nil || dbSchema.Metadata != metadataString {
+
+	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
+		metadataBytes, err := protojson.Marshal(databaseMetadata)
+		if err != nil {
+			return err
+		}
+		metadata := string(metadataBytes)
+		rawDump := ""
+		if dbSchema != nil {
+			rawDump = dbSchema.RawDump
+		}
+		// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
+		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
+		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
+			var schemaBuf bytes.Buffer
+			if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+				return err
+			}
+			rawDump = schemaBuf.String()
+		}
+
 		if _, err := store.UpsertDBSchema(ctx, api.DBSchemaUpsert{
 			UpdatorID:  api.SystemBotID,
 			DatabaseID: database.ID,
-			Metadata:   metadataString,
-			RawDump:    "",
+			Metadata:   metadata,
+			RawDump:    rawDump,
 		}); err != nil {
 			return err
 		}
@@ -450,7 +477,6 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 }
 
 func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
-	// TODO(d): add unit test.
 	databaseMetadata := &storepb.DatabaseMetadata{
 		Name:         schema.Name,
 		CharacterSet: schema.CharacterSet,
@@ -489,6 +515,7 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 				RowCount:      table.RowCount,
 				DataSize:      table.DataSize,
 				DataFree:      table.DataFree,
+				IndexSize:     table.IndexSize,
 				CreateOptions: table.CreateOptions,
 				Comment:       table.Comment,
 			}
@@ -563,9 +590,16 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 	for _, extension := range schema.ExtensionList {
 		databaseMetadata.Extensions = append(databaseMetadata.Extensions, &storepb.ExtensionMetadata{
 			Name:        extension.Name,
+			Schema:      extension.Schema,
 			Version:     extension.Version,
 			Description: extension.Description,
 		})
 	}
 	return databaseMetadata
+}
+
+func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {
+	return cmp.Equal(x, y, protocmp.Transform(),
+		protocmp.IgnoreFields(&storepb.TableMetadata{}, "row_count", "data_size", "index_size", "data_free"),
+	)
 }

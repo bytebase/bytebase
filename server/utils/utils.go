@@ -312,7 +312,7 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 
 // GetDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The matrix will include the stage even if the stage has no database.
-func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, baseDatabaseName, dbNameTemplate string, databaseList []*api.Database) ([][]*api.Database, error) {
+func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*api.Database) ([][]*api.Database, error) {
 	var matrix [][]*api.Database
 
 	// idToLabels maps databaseID -> label.Key -> label.Value
@@ -341,24 +341,12 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 		var matchedDatabaseList []int
 		// Loop over databaseList instead of idToLabels to get determinant results.
 		for _, database := range databaseList {
-			labels := idToLabels[database.ID]
-
-			if dbNameTemplate != "" {
-				// The tenant database should match the database name if the template is not empty.
-				name, err := FormatDatabaseName(baseDatabaseName, dbNameTemplate, labels)
-				if err != nil {
-					continue
-				}
-				if database.Name != name {
-					continue
-				}
-			}
-
 			// Skip if the database is already in a stage.
 			if _, ok := idsSeen[database.ID]; ok {
 				continue
 			}
 
+			labels := idToLabels[database.ID]
 			if isMatchExpressions(labels, deployment.Spec.Selector.MatchExpressions) {
 				matchedDatabaseList = append(matchedDatabaseList, database.ID)
 				idsSeen[database.ID] = true
@@ -380,24 +368,6 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, b
 	}
 
 	return matrix, nil
-}
-
-// FormatDatabaseName will return the full database name given the dbNameTemplate, base database name, and labels.
-func FormatDatabaseName(baseDatabaseName, dbNameTemplate string, labels map[string]string) (string, error) {
-	if dbNameTemplate == "" {
-		return baseDatabaseName, nil
-	}
-	tokens := make(map[string]string)
-	tokens[api.DBNameToken] = baseDatabaseName
-	for k, v := range labels {
-		switch k {
-		case api.LocationLabelKey:
-			tokens[api.LocationToken] = v
-		case api.TenantLabelKey:
-			tokens[api.TenantToken] = v
-		}
-	}
-	return api.FormatTemplate(dbNameTemplate, tokens)
 }
 
 // RefreshToken is a token refresher that stores the latest access token configuration to repository.

@@ -28,6 +28,10 @@
 
 ## What is Bytebase?
 
+<p align="center" >
+<img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/architecture1.webp" />
+</p>
+
 Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included in the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase). The Bytebase family consists of these tools:
 
 - [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
@@ -73,6 +77,7 @@ to prepare those instances ready for application use.
 - [x] Data Anonymization
 - [x] Role-based access control (RBAC)
 - [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
+- [x] External approval integration for Feishu(飞书)
 
 <figcaption align = "center">Fig.1 - Dashboard</figcaption>
 

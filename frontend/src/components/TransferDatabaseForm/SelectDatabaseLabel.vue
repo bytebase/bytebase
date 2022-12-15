@@ -1,54 +1,40 @@
 <template>
-  <template v-if="!dbNameMatchesTemplate">
-    <div class="textinfolabel" v-bind="$attrs">
-      <i18n-t keypath="label.cannot-transfer-template-not-match">
-        <template #name>{{ database.name }}</template>
-        <template #template>
-          <code class="text-sm font-mono bg-control-bg">
-            {{ targetProject.dbNameTemplate }}
-          </code>
-        </template>
-      </i18n-t>
-    </div>
-  </template>
-  <template v-else>
-    <div
-      v-if="targetProject.tenantMode === 'TENANT'"
-      class="space-y-4 flex flex-col justify-center items-center"
-      v-bind="$attrs"
-    >
-      <div v-for="label in PRESET_LABEL_KEYS" :key="label" class="w-64">
-        <label class="textlabel capitalize">
-          {{ hidePrefix(label) }}
-          <span v-if="isRequiredLabel(label)" style="color: red">*</span>
-        </label>
+  <div
+    v-if="targetProject.tenantMode === 'TENANT'"
+    class="space-y-4 flex flex-col justify-center items-center"
+    v-bind="$attrs"
+  >
+    <div v-for="label in PRESET_LABEL_KEYS" :key="label" class="w-64">
+      <label class="textlabel capitalize">
+        {{ hidePrefix(label) }}
+        <span v-if="isRequiredLabel(label)" style="color: red">*</span>
+      </label>
 
-        <div class="flex flex-col space-y-1 w-64 mt-1">
-          <BBTextField
-            :value="getLabelValue(label)"
-            :placeholder="getLabelPlaceholder(label)"
-            class="textfield"
-            @input="
-              setLabelValue(label, ($event.target as HTMLInputElement).value)
-            "
-          />
-        </div>
+      <div class="flex flex-col space-y-1 w-64 mt-1">
+        <BBTextField
+          :value="getLabelValue(label)"
+          :placeholder="getLabelPlaceholder(label)"
+          class="textfield"
+          @input="
+            setLabelValue(label, ($event.target as HTMLInputElement).value)
+          "
+        />
+      </div>
 
-        <div v-if="isParsedLabel(label)" class="mt-2 textinfolabel">
-          <i18n-t keypath="label.parsed-from-template">
-            <template #name>{{ database.name }}</template>
-            <template #template>
-              <code class="text-xs font-mono bg-control-bg">
-                {{ targetProject.dbNameTemplate }}
-              </code>
-            </template>
-          </i18n-t>
-        </div>
+      <div v-if="isParsedLabel(label)" class="mt-2 textinfolabel">
+        <i18n-t keypath="label.parsed-from-template">
+          <template #name>{{ database.name }}</template>
+          <template #template>
+            <code class="text-xs font-mono bg-control-bg">
+              {{ targetProject.dbNameTemplate }}
+            </code>
+          </template>
+        </i18n-t>
       </div>
     </div>
-  </template>
+  </div>
 
-  <slot name="buttons" :next="next" :valid="allowNext"></slot>
+  <slot name="buttons" :next="next"></slot>
 </template>
 
 <script lang="ts">
@@ -154,15 +140,6 @@ const labelListParsedFromTemplate = computed((): DatabaseLabel[] => {
 watch(labelListParsedFromTemplate, (list) => {
   list.forEach((label) => {
     setLabelValue(label.key, label.value);
-  });
-});
-
-const allowNext = computed(() => {
-  if (!dbNameMatchesTemplate.value) return false;
-
-  // every required label must be filled
-  return requiredLabelList.value.every((key) => {
-    return !!getLabelValue(key);
   });
 });
 

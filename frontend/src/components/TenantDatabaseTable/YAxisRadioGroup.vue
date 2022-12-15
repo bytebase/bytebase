@@ -4,7 +4,7 @@
       <span class="textlabel mr-1">Group by</span>
     </slot>
 
-    <select class="btn-select py-[0.3rem]" :value="label" @change="onChange">
+    <select class="btn-select py-[0.5rem]" :value="label" @change="onChange">
       <option
         v-for="key in labelKeyList"
         :key="key"

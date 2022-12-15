@@ -15,6 +15,7 @@
                 params: {
                   projectSlug: DEFAULT_PROJECT_ID,
                 },
+                hash: '#databases',
               }"
               class="normal-link text-sm"
             >
@@ -28,8 +29,8 @@
         </NTooltip>
         <BBTableSearch
           ref="searchField"
-          :placeholder="$t('database.search-database-name')"
-          @change-text="(text) => changeSearchText(text)"
+          :placeholder="$t('database.search-database')"
+          @change-text="(text: string) => changeSearchText(text)"
         />
       </div>
     </div>
@@ -64,7 +65,7 @@ import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
 } from "../types";
-import { sortDatabaseList } from "../utils";
+import { filterDatabaseByKeyword, sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
   useCurrentUser,
@@ -158,20 +159,22 @@ export default defineComponent({
     };
 
     const filteredList = computed(() => {
-      if (!state.selectedEnvironment && !state.searchText) {
-        // Select "All"
-        return state.databaseList;
-      }
-      return state.databaseList.filter((database) => {
-        return (
-          (!state.selectedEnvironment ||
-            database.instance.environment.id == state.selectedEnvironment.id) &&
-          (!state.searchText ||
-            database.name
-              .toLowerCase()
-              .includes(state.searchText.toLowerCase()))
+      const { databaseList, selectedEnvironment, searchText } = state;
+      let list = [...databaseList];
+      if (selectedEnvironment) {
+        list = list.filter(
+          (db) => db.instance.environment.id === selectedEnvironment.id
         );
-      });
+      }
+      list = list.filter((db) =>
+        filterDatabaseByKeyword(db, searchText, [
+          "name",
+          "environment",
+          "instance",
+          "project",
+        ])
+      );
+      return list;
     });
 
     return {

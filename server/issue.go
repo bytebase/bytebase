@@ -748,7 +748,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if len(c.DetailList) == 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "migration detail list should not be empty")
 	}
-	databaseNameCount, databaseIDCount := 0, 0
+	emptyDatabaseIDCount, databaseIDCount := 0, 0
 	for _, detail := range c.DetailList {
 		if detail.MigrationType != db.Baseline && detail.MigrationType != db.Migrate && detail.MigrationType != db.MigrateSDL && detail.MigrationType != db.Data {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "support migrate, migrateSDL and data type migration only")
@@ -758,15 +758,14 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 		if detail.DatabaseID > 0 {
 			databaseIDCount++
-		}
-		if detail.DatabaseName != "" {
-			databaseNameCount++
+		} else {
+			emptyDatabaseIDCount++
 		}
 	}
-	if databaseNameCount > 0 && databaseIDCount > 0 {
+	if emptyDatabaseIDCount > 0 && databaseIDCount > 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Migration detail should set either database name or database ID.")
 	}
-	if databaseNameCount > 1 {
+	if emptyDatabaseIDCount > 1 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "There should be at most one migration detail with database name.")
 	}
 	if project.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
@@ -791,8 +790,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if databaseIDCount == 0 {
 		// Deploy to all tenant databases.
 		migrationDetail := c.DetailList[0]
-		baseDatabaseName := migrationDetail.DatabaseName
-		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, baseDatabaseName, project.DBNameTemplate, dbList)
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, dbList)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
 		}
@@ -813,7 +811,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if !ok {
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID %d not found in project %d", d.DatabaseID, issueCreate.ProjectID))
 			}
-			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, "" /* baseDatabaseName */, "" /* databaseNameTemplate */, []*api.Database{database})
+			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, []*api.Database{database})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
 			}
@@ -1025,9 +1023,6 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	if project.TenantMode == api.TenantModeTenant {
 		if !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-		}
-		if _, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels); err != nil {
-			return nil, errors.Wrapf(err, "api.GetBaseDatabaseName(%q, %q, %q) failed", c.DatabaseName, project.DBNameTemplate, c.Labels)
 		}
 	}
 

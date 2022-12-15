@@ -168,24 +168,6 @@
                 </dd>
               </div>
             </template>
-
-            <div class="col-span-1 col-start-1">
-              <dt class="text-sm font-medium text-control-light">
-                {{ $t("common.updated-at") }}
-              </dt>
-              <dd class="mt-1 text-sm text-main">
-                {{ humanizeTs(table.updatedTs) }}
-              </dd>
-            </div>
-
-            <div class="col-span-1">
-              <dt class="text-sm font-medium text-control-light">
-                {{ $t("common.created-at") }}
-              </dt>
-              <dd class="mt-1 text-sm text-main">
-                {{ humanizeTs(table.createdTs) }}
-              </dd>
-            </div>
           </dl>
         </div>
       </div>
