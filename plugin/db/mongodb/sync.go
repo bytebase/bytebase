@@ -42,6 +42,9 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}
 	var databaseMetaList []db.DatabaseMeta
 	dbList, err := driver.getDatabaseList(ctx)
+	if err != nil {
+		return nil, err
+	}
 	for _, databaseName := range dbList {
 		databaseMetaList = append(databaseMetaList, db.DatabaseMeta{
 			Name: databaseName,
