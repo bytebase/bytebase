@@ -11,14 +11,14 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
-// UserInfo is the subset of the mongodb command result of "usersInfo".
+// UsersInfo is the subset of the mongodb command result of "usersInfo".
 type UsersInfo struct {
 	Users []User `bson:"users"`
 }
 
 // User is the subset of the `users` field in the `User`..
 type User struct {
-	Id       string `json:"_id" bson:"_id"`
+	ID       string `json:"_id" bson:"_id"`
 	UserName string `json:"user" bson:"user"`
 	DB       string `json:"db" bson:"db"`
 	Roles    []Role `json:"roles" bson:"roles"`
