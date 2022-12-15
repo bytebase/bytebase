@@ -29,6 +29,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleCharsetAllowlist,
 		advisor.SchemaRuleTableNoFK,
 		advisor.SchemaRuleTableRequirePK,
+		advisor.SchemaRuleColumnDisallowChangeType,
 	}
 
 	for _, rule := range pgRules {
