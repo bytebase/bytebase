@@ -51,7 +51,16 @@
               <heroicons-solid:sparkles class="w-5 h-5" />
               {{ $t(currentPlan) }}
             </div>
-            <div class="text-sm ml-auto text-control-light tooltip-wrapper">
+            <div
+              class="text-sm flex items-center gap-x-1 ml-auto tooltip-wrapper"
+              :class="
+                canUpgrade
+                  ? 'text-success cursor-pointer'
+                  : 'text-control-light cursor-default'
+              "
+              @click="state.showReleaseModal = canUpgrade"
+            >
+              <heroicons-outline:volume-up v-if="canUpgrade" class="h-4 w-4" />
               {{ version }}
               <span v-if="gitCommit" class="tooltip"
                 >Git hash {{ gitCommit }}</span
@@ -106,12 +115,22 @@
             {{ $t(currentPlan) }}
           </div>
           <div
-            class="text-sm ml-auto text-control-light tooltip-wrapper whitespace-nowrap truncate"
+            class="text-xs flex items-center gap-x-1 ml-auto tooltip-wrapper whitespace-nowrap"
+            :class="
+              canUpgrade
+                ? 'text-success cursor-pointer'
+                : 'text-control-light cursor-default'
+            "
+            @click="state.showReleaseModal = canUpgrade"
           >
+            <heroicons-outline:volume-up v-if="canUpgrade" class="h-4 w-4" />
             {{ version }}
-            <span v-if="gitCommit" class="tooltip"
-              >Git hash {{ gitCommit }}</span
-            >
+            <span v-if="canUpgrade" class="tooltip whitespace-nowrap">
+              {{ $t("settings.release.new-version-available") }}
+            </span>
+            <span v-else-if="gitCommit" class="tooltip">
+              Git hash {{ gitCommit }}
+            </span>
           </div>
         </div>
       </div>
@@ -166,6 +185,10 @@
     v-if="state.showTrialModal"
     @cancel="state.showTrialModal = false"
   />
+  <ReleaseRemindModal
+    v-if="state.showReleaseModal"
+    @cancel="state.showReleaseModal = false"
+  />
 </template>
 
 <script lang="ts">
@@ -187,6 +210,7 @@ import {
 interface LocalState {
   showMobileOverlay: boolean;
   showTrialModal: boolean;
+  showReleaseModal: boolean;
 }
 
 export default defineComponent({
@@ -205,6 +229,15 @@ export default defineComponent({
     const state = reactive<LocalState>({
       showMobileOverlay: false,
       showTrialModal: false,
+      showReleaseModal: false,
+    });
+
+    actuatorStore.tryToRemindRelease().then((openRemindModal) => {
+      state.showReleaseModal = openRemindModal;
+    });
+
+    const canUpgrade = computed(() => {
+      return actuatorStore.hasNewRelease;
     });
 
     const currentUser = useCurrentUser();
@@ -302,6 +335,7 @@ export default defineComponent({
       gitCommit,
       currentPlan,
       isFreePlan,
+      canUpgrade,
     };
   },
 });

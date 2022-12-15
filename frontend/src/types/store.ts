@@ -1,3 +1,4 @@
+import { RemovableRef } from "@vueuse/core";
 import {
   AuthProvider,
   DeploymentConfig,
@@ -48,12 +49,14 @@ import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom } from "./sqlEditor";
+import { ReleaseInfo } from "./actuator";
 import type { DebugLog } from "@/types/debug";
 import type { AuditLog } from "@/types/auditLog";
 import { DatabaseMetadata } from "./proto/database";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
+  releaseInfo: RemovableRef<ReleaseInfo>;
 }
 
 export interface AuthState {
