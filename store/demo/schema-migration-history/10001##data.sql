@@ -17,10 +17,10 @@ INSERT INTO "public"."environment" ("id", "row_status", "creator_id", "created_t
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Test', 0),
 (102, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Prod', 1);
 
-INSERT INTO "public"."policy" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "environment_id", "type", "payload") VALUES
-(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_NEVER"}'),
-(102, 'NORMAL', 1, 1657272778, 1, 1657272778, 102, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_ALWAYS"}'),
-(103, 'NORMAL', 1, 1657272778, 1, 1657272778, 102, 'bb.policy.backup-plan', '{"schedule": "WEEKLY"}');
+INSERT INTO "public"."policy" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "resource_type", "resource_id", "type", "payload") VALUES
+(101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'ENVIRONMENT', 101, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_NEVER"}'),
+(102, 'NORMAL', 1, 1657272778, 1, 1657272778, 'ENVIRONMENT', 102, 'bb.policy.pipeline-approval', '{"value": "MANUAL_APPROVAL_ALWAYS"}'),
+(103, 'NORMAL', 1, 1657272778, 1, 1657272778, 'ENVIRONMENT', 102, 'bb.policy.backup-plan', '{"schedule": "WEEKLY"}');
 
 INSERT INTO "public"."instance" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "environment_id", "name", "engine", "engine_version", "host", "port", "external_link") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 101, 'Sample Test instance', 'POSTGRES', '14.3', 'host.docker.internal', '5432', ''),
