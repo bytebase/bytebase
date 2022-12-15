@@ -2,7 +2,7 @@ package api
 
 // DBSchema is the API message for database schema.
 type DBSchema struct {
-	ID int `jsonapi:"primary,dbSchema"`
+	ID int
 
 	// Standard fields
 
@@ -10,8 +10,8 @@ type DBSchema struct {
 	DatabaseID int
 
 	// Domain specific fields
-	Metadata string `jsonapi:"attr,metadata"`
-	RawDump  string `jsonapi:"attr,rawDump"`
+	Metadata string
+	RawDump  string
 }
 
 // DBSchemaUpsert is the API message for creating a database schema.
