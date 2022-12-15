@@ -19,7 +19,7 @@ type User struct {
 	Id       string `json:"_id" bson:"_id"`
 	UserName string `json:"user" bson:"user"`
 	DB       string `json:"db" bson:"db"`
-	Roles    []Role `json:"roles"bson:"roles"`
+	Roles    []Role `json:"roles "bson:"roles"`
 }
 
 type Role struct {
