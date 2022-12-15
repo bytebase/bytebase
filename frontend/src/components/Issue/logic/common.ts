@@ -189,7 +189,6 @@ export const useCommonLogic = () => {
       return {
         migrationType: getMigrationTypeFromTask(task),
         databaseId: task.databaseId!,
-        databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement: maybeFormatStatementOnSave(task.statement, db),
         earliestAllowedTs: task.earliestAllowedTs,
       };

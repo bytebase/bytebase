@@ -26,9 +26,12 @@ import {
   BBTableHeaderCell,
   BBTableSearch,
 } from "./BBTable";
+import { BBGrid } from "./BBGrid";
 import BBTabPanel from "./BBTabPanel.vue";
 import BBTextField from "./BBTextField.vue";
 import BBBetaBadge from "./BBBetaBadge.vue";
+
+export * from "./types";
 
 export {
   BBAlert,
@@ -58,6 +61,7 @@ export {
   BBTableCell,
   BBTableHeaderCell,
   BBTableSearch,
+  BBGrid,
   BBTextField,
   BBBetaBadge,
 };

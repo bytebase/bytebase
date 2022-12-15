@@ -337,7 +337,8 @@
       "labels": "标签",
       "debug-log": "Debug 日志",
       "sensitive-data": "敏感数据",
-      "access-control": "访问控制"
+      "access-control": "访问控制",
+      "audit-log": "审计日志"
     },
     "profile": {
       "email": "邮箱",
@@ -733,7 +734,7 @@
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
     "create": "创建环境",
     "restore": "恢复此环境",
-    "successfully-updated-environment": "环境'{0}'更新成功",
+    "successfully-updated-environment": "环境'{name}'更新成功",
     "protected": "受保护的",
     "disable-auto-backup": {
       "self": "禁用数据库自动备份",
@@ -1682,6 +1683,29 @@
         "copied": "已拷贝",
         "export": "导出"
       }
+    }
+  },
+  "audit-log": {
+    "no-logs": "暂无审计日志",
+    "audit-log-detail": "审计详情",
+    "table": {
+      "created-ts": "时间",
+      "created-time": "创建时间",
+      "updated-time": "更新时间",
+      "creator": "操作者",
+      "type": "事件类型",
+      "level": "事件等级",
+      "comment": "评论",
+      "payload": "Payload",
+      "empty": "<空>",
+      "view-details": "查看详情"
+    },
+    "type": {
+      "member-create": "增加成员",
+      "member-role-update": "更新角色",
+      "member-activate": "激活成员",
+      "member-deactivate": "禁用成员",
+      "database-transfer": "转移数据库"
     }
   },
   "onboarding-guide": {

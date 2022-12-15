@@ -97,7 +97,13 @@
             >{{ $t("settings.sidebar.subscription") }}</router-link
           >
           <router-link
-            v-if="showDebugItem"
+            v-if="showAuditLogItem"
+            to="/setting/audit-log"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.audit-log") }}</router-link
+          >
+          <router-link
+            v-if="showDebugLogItem"
             to="/setting/debug-log"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.debug-log") }}</router-link
@@ -125,15 +131,7 @@ import { useCurrentUser, useRouterStore } from "@/store";
 
 const routerStore = useRouterStore();
 const router = useRouter();
-
 const currentUser = useCurrentUser();
-
-const showDebugItem = computed((): boolean => {
-  return hasWorkspacePermission(
-    "bb.permission.workspace.debug",
-    currentUser.value.role
-  );
-});
 
 const showProjectItem = computed((): boolean => {
   return hasWorkspacePermission(
@@ -166,6 +164,20 @@ const showIMIntegrationItem = computed((): boolean => {
 const showVCSItem = computed((): boolean => {
   return hasWorkspacePermission(
     "bb.permission.workspace.manage-vcs-provider",
+    currentUser.value.role
+  );
+});
+
+const showDebugLogItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.debug-log",
+    currentUser.value.role
+  );
+});
+
+const showAuditLogItem = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.audit-log",
     currentUser.value.role
   );
 });

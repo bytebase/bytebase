@@ -49,6 +49,7 @@ import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom } from "./sqlEditor";
 import type { DebugLog } from "@/types/debug";
+import type { AuditLog } from "@/types/auditLog";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -57,6 +58,10 @@ export interface ActuatorState {
 export interface AuthState {
   authProviderList: AuthProvider[];
   currentUser: Principal;
+}
+
+export interface AuditLogState {
+  auditLogList: AuditLog[];
 }
 
 export interface SettingState {

@@ -264,7 +264,8 @@ func getTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL 
 		PgUser:               "bbtest",
 		DataDir:              dataDir,
 		ResourceDirOverride:  resourceDirOverride,
-		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		DemoDataDir:          fmt.Sprintf("demo/%s", testReleaseMode),
+		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
 		FeishuAPIURL:         feishuAPIURL,
@@ -281,7 +282,8 @@ func getTestProfileWithExternalPg(dataDir, resourceDirOverride string, port int,
 		PgUser:               pgUser,
 		DataDir:              dataDir,
 		ResourceDirOverride:  resourceDirOverride,
-		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		DemoDataDir:          fmt.Sprintf("demo/%s", testReleaseMode),
+		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
 		FeishuAPIURL:         feishuAPIURL,
@@ -1948,129 +1950,6 @@ func (ctl *controller) GetSQLReviewResult(id int) ([]api.TaskCheckResult, error)
 	return nil, nil
 }
 
-// setDefaultSQLReviewRulePayload sets the default payload for this rule.
-func setDefaultSQLReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, error) {
-	var payload []byte
-	var err error
-	switch ruleTp {
-	case advisor.SchemaRuleMySQLEngine,
-		advisor.SchemaRuleStatementNoSelectAll,
-		advisor.SchemaRuleStatementRequireWhere,
-		advisor.SchemaRuleStatementNoLeadingWildcardLike,
-		advisor.SchemaRuleStatementDisallowCommit,
-		advisor.SchemaRuleStatementDisallowLimit,
-		advisor.SchemaRuleStatementDisallowOrderBy,
-		advisor.SchemaRuleStatementMergeAlterTable,
-		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
-		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
-		advisor.SchemaRuleStatementDMLDryRun,
-		advisor.SchemaRuleTableRequirePK,
-		advisor.SchemaRuleTableNoFK,
-		advisor.SchemaRuleTableDisallowPartition,
-		advisor.SchemaRuleColumnNotNull,
-		advisor.SchemaRuleColumnDisallowChangeType,
-		advisor.SchemaRuleColumnSetDefaultForNotNull,
-		advisor.SchemaRuleColumnDisallowChange,
-		advisor.SchemaRuleColumnDisallowChangingOrder,
-		advisor.SchemaRuleColumnAutoIncrementMustInteger,
-		advisor.SchemaRuleColumnDisallowSetCharset,
-		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
-		advisor.SchemaRuleCurrentTimeColumnCountLimit,
-		advisor.SchemaRuleColumnRequireDefault,
-		advisor.SchemaRuleSchemaBackwardCompatibility,
-		advisor.SchemaRuleDropEmptyDatabase,
-		advisor.SchemaRuleIndexNoDuplicateColumn,
-		advisor.SchemaRuleIndexPKTypeLimit,
-		advisor.SchemaRuleIndexTypeNoBlob:
-	case advisor.SchemaRuleTableDropNamingConvention:
-		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format: "_delete$",
-		})
-	case advisor.SchemaRuleTableNaming:
-		fallthrough
-	case advisor.SchemaRuleColumnNaming:
-		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format:    "^[a-z]+(_[a-z]+)*$",
-			MaxLength: 64,
-		})
-	case advisor.SchemaRuleIDXNaming:
-		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format:    "^idx_{{table}}_{{column_list}}$",
-			MaxLength: 64,
-		})
-	case advisor.SchemaRulePKNaming:
-		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format:    "^pk_{{table}}_{{column_list}}$",
-			MaxLength: 64,
-		})
-	case advisor.SchemaRuleUKNaming:
-		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format:    "^uk_{{table}}_{{column_list}}$",
-			MaxLength: 64,
-		})
-	case advisor.SchemaRuleFKNaming:
-		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format:    "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
-			MaxLength: 64,
-		})
-	case advisor.SchemaRuleAutoIncrementColumnNaming:
-		payload, err = json.Marshal(advisor.NamingRulePayload{
-			Format:    "^id$",
-			MaxLength: 64,
-		})
-	case advisor.SchemaRuleStatementInsertRowLimit, advisor.SchemaRuleStatementAffectedRowLimit:
-		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
-			Number: 5,
-		})
-	case advisor.SchemaRuleTableCommentConvention, advisor.SchemaRuleColumnCommentConvention:
-		payload, err = json.Marshal(advisor.CommentConventionRulePayload{
-			Required:  true,
-			MaxLength: 10,
-		})
-	case advisor.SchemaRuleRequiredColumn:
-		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
-			List: []string{
-				"id",
-				"created_ts",
-				"updated_ts",
-				"creator_id",
-				"updater_id",
-			},
-		})
-	case advisor.SchemaRuleColumnTypeDisallowList:
-		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
-			List: []string{"JSON"},
-		})
-	case advisor.SchemaRuleColumnMaximumCharacterLength:
-		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
-			Number: 20,
-		})
-	case advisor.SchemaRuleColumnAutoIncrementInitialValue:
-		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
-			Number: 20,
-		})
-	case advisor.SchemaRuleIndexKeyNumberLimit, advisor.SchemaRuleIndexTotalNumberLimit:
-		payload, err = json.Marshal(advisor.NumberTypeRulePayload{
-			Number: 5,
-		})
-	case advisor.SchemaRuleCharsetAllowlist:
-		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
-			List: []string{"utf8mb4"},
-		})
-	case advisor.SchemaRuleCollationAllowlist:
-		payload, err = json.Marshal(advisor.StringArrayTypeRulePayload{
-			List: []string{"utf8mb4_0900_ai_ci"},
-		})
-	default:
-		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)
-	}
-
-	if err != nil {
-		return "", err
-	}
-	return string(payload), nil
-}
-
 // prodTemplateSQLReviewPolicy returns the default SQL review policy.
 func prodTemplateSQLReviewPolicy() (string, error) {
 	policy := advisor.SQLReviewPolicy{
@@ -2285,7 +2164,7 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 	}
 
 	for _, rule := range policy.RuleList {
-		payload, err := setDefaultSQLReviewRulePayload(rule.Type)
+		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule.Type)
 		if err != nil {
 			return "", err
 		}
