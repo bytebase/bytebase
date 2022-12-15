@@ -5,10 +5,10 @@ import { useLocalStorage } from "@vueuse/core";
 const COLLAPSE_MODULE = "ui.list.collapse";
 const INTRO_MODULE = "ui.intro";
 
-// default to true
+// default to false
 const issueFormatStatementOnSave = useLocalStorage(
   "ui.state.issue.format-statement-on-save",
-  true
+  false
 );
 
 export interface UIState {
