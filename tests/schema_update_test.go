@@ -1892,7 +1892,7 @@ CREATE TABLE public.book (
 );
 
 `,
-			wantDatabaseMetadata: `{"name": "latestSchema", "schemas": [{"name": "public", "tables": [{"name": "book", "columns": [{"Type": "integer", "name": "id", "nullable": true, "position": 1, "hasDefault": true}, {"Type": "text", "name": "name", "nullable": true, "position": 2, "hasDefault": true}], "dataSize": "8192"}]}], "collation": "en_US.UTF-8", "characterSet": "UTF8"}`,
+			wantDatabaseMetadata: `{"name": "latestSchema", "schemas": [{"name": "public", "tables": [{"name": "book", "columns": [{"type": "integer", "name": "id", "nullable": true, "position": 1, "hasDefault": true}, {"type": "text", "name": "name", "nullable": true, "position": 2, "hasDefault": true}], "dataSize": "8192"}]}], "collation": "en_US.UTF-8", "characterSet": "UTF8"}`,
 		},
 	}
 	a := require.New(t)
