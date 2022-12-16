@@ -520,7 +520,7 @@ const makeUnknown = (type: ResourceType) => {
     ruleList: [],
   };
 
-  // TODO(steven): remove it
+  // TODO(steven): remove UNKNOWN_COLUMN
   const UNKNOWN_COLUMN: Column = {
     id: UNKNOWN_ID,
     databaseId: UNKNOWN_DATABASE.id,
