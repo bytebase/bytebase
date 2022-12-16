@@ -116,7 +116,7 @@
               <input
                 v-model="column.default"
                 :disabled="disableAlterColumn(column)"
-                :placeholder="column.default === null ? 'NULL' : ''"
+                :placeholder="column.hasDefault === false ? 'NULL' : ''"
                 class="column-field-input !pr-8"
                 type="text"
               />
@@ -212,18 +212,15 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDebounceFn } from "@vueuse/core";
-import {
-  useDatabaseStore,
-  useNotificationStore,
-  useSchemaEditorStore,
-} from "@/store/modules";
-import { TableTabContext, unknown } from "@/types";
-import { BBCheckbox, BBSpin } from "@/bbkit";
+import { useNotificationStore, useSchemaEditorStore } from "@/store/modules";
+import { TableTabContext } from "@/types";
+import { ColumnMetadata } from "@/types/proto/database";
 import { DatabaseEdit } from "@/types/schemaEditor";
 import { Column, Table } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
 import { diffTableList } from "@/utils/schemaEditor/diffTable";
 import { transformColumnDataToColumn } from "@/utils/schemaEditor/transform";
+import { BBCheckbox, BBSpin } from "@/bbkit";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 
 type TabType = "column-list" | "raw-sql";
@@ -237,9 +234,9 @@ interface LocalState {
 
 const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
-const databaseStore = useDatabaseStore();
 const notificationStore = useNotificationStore();
 const currentTab = editorStore.currentTab as TableTabContext;
+const databaseState = editorStore.databaseStateById.get(currentTab.databaseId)!;
 const state = reactive<LocalState>({
   selectedTab: "column-list",
   isFetchingDDL: false,
@@ -260,10 +257,8 @@ const allowResetTable = computed(() => {
     return false;
   }
 
-  const originTable = editorStore.originTableList.find(
-    (item) =>
-      item.databaseId === state.tableCache.databaseId &&
-      item.oldName === state.tableCache.oldName
+  const originTable = databaseState.originTableList.find(
+    (item) => item.oldName === state.tableCache.oldName
   );
   return !isEqual(originTable, state.tableCache) || isDroppedTable.value;
 });
@@ -294,7 +289,7 @@ const columnHeaderList = computed(() => {
 });
 
 const dataTypeOptions = computed(() => {
-  const database = databaseStore.getDatabaseById(state.tableCache.databaseId);
+  const database = databaseState.database;
   return getDataTypeSuggestionList(database.instance.engine).map((dataType) => {
     return {
       label: dataType,
@@ -334,17 +329,15 @@ watch(
   () => state.selectedTab,
   async () => {
     if (state.selectedTab === "raw-sql") {
-      const originTable = editorStore.originTableList.find(
-        (item) =>
-          item.databaseId === state.tableCache.databaseId &&
-          item.oldName === state.tableCache.oldName
+      const originTable = databaseState.originTableList.find(
+        (item) => item.oldName === state.tableCache.oldName
       );
       const diffTableListResult = diffTableList(
         originTable ? [originTable] : [],
         [state.tableCache]
       );
       const databaseEdit: DatabaseEdit = {
-        databaseId: state.tableCache.databaseId,
+        databaseId: currentTab.databaseId,
         ...diffTableListResult,
       };
       state.isFetchingDDL = true;
@@ -387,7 +380,7 @@ const handleSaveChanges = useDebounceFn(async () => {
 }, 500);
 
 const handleAddColumn = () => {
-  const column = transformColumnDataToColumn(unknown("COLUMN"));
+  const column = transformColumnDataToColumn(ColumnMetadata.fromPartial({}));
   column.status = "created";
   state.tableCache.columnList.push(column);
 };
@@ -397,7 +390,8 @@ const handleColumnDefaultFieldChange = (
   defaultString: string
 ) => {
   if (defaultString === "NULL") {
-    column.default = null;
+    column.hasDefault = false;
+    column.default = "";
   }
 };
 
