@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -21,6 +23,10 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID", s.getInstanceByID)
 	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
 	g.DELETE("/instance/:instanceID", s.deleteInstanceByOpenAPI)
+	g.POST("/instance/:instanceID/role", s.createPGRole)
+	g.GET("/instance/:instanceID/role/:roleName", s.getPGRole)
+	g.PATCH("/instance/:instanceID/role/:roleName", s.updatePGRole)
+	g.DELETE("/instance/:instanceID/role/:roleName", s.deletePGRole)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
@@ -182,6 +188,165 @@ func (s *Server) getInstanceByID(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, convertToOpenAPIInstance(instance))
+}
+
+func (s *Server) getPGRole(c echo.Context) error {
+	ctx := c.Request().Context()
+	roleName := c.Param("roleName")
+
+	instance, err := s.validateInstance(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	role, err := s.findPGRoleByName(ctx, instance, roleName)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, role)
+}
+
+func (s *Server) createPGRole(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+
+	upsert := &db.RoleUpsert{}
+	if err := json.Unmarshal(body, upsert); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
+	}
+
+	instance, err := s.validateInstance(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	role, err := func() (*db.Role, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		role, err := driver.CreateRole(ctx, upsert)
+		if err != nil {
+			return nil, err
+		}
+
+		return role, nil
+	}()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+	}
+
+	return c.JSON(http.StatusOK, role)
+}
+
+func (s *Server) deletePGRole(c echo.Context) error {
+	ctx := c.Request().Context()
+	roleName := c.Param("roleName")
+
+	instance, err := s.validateInstance(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	if err := func() error {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return err
+		}
+		defer driver.Close(ctx)
+
+		return driver.DeleteRole(ctx, roleName)
+	}(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to drop the role %s", roleName)).SetInternal(err)
+	}
+
+	return c.String(http.StatusOK, "ok")
+}
+
+func (s *Server) updatePGRole(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+
+	upsert := &db.RoleUpsert{}
+	if err := json.Unmarshal(body, upsert); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
+	}
+
+	instance, err := s.validateInstance(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	rawName := c.Param("roleName")
+	role, err := func() (*db.Role, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		role, err := driver.UpdateRole(ctx, rawName, upsert)
+		if err != nil {
+			return nil, err
+		}
+
+		return role, nil
+	}()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+	}
+
+	return c.JSON(http.StatusOK, role)
+}
+
+func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Instance, error) {
+	instanceID, err := strconv.Atoi(c.Param("instanceID"))
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
+	}
+
+	instance, err := s.store.GetInstanceByID(ctx, instanceID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", instanceID)).SetInternal(err)
+	}
+	if instance == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", instanceID))
+	}
+
+	return instance, nil
+}
+
+func (s *Server) findPGRoleByName(ctx context.Context, instance *api.Instance, roleName string) (*db.Role, error) {
+	role, err := func() (*db.Role, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		role, err := driver.FindRole(ctx, roleName)
+		if err != nil {
+			return nil, err
+		}
+
+		return role, nil
+	}()
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+	}
+
+	return role, nil
 }
 
 func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
