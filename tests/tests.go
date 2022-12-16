@@ -270,7 +270,7 @@ func getTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL 
 	// Using flags.port + 1 as our datastore port
 	datastorePort := port + 1
 	return componentConfig.Profile{
-		Mode:                 common.ReleaseModeDev,
+		Mode:                 testReleaseMode,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		DatastorePort:        datastorePort,
 		PgUser:               "bbtest",
@@ -288,7 +288,7 @@ func getTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL 
 // pgURL for connect to Postgres.
 func getTestProfileWithExternalPg(dataDir, resourceDirOverride string, port int, pgUser string, pgURL string, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
-		Mode:                 common.ReleaseModeDev,
+		Mode:                 testReleaseMode,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		PgUser:               pgUser,
 		DataDir:              dataDir,
