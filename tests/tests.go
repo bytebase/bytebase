@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
@@ -853,18 +852,11 @@ func (ctl *controller) postDatabaseEdit(databaseEdit api.DatabaseEdit) (*Databas
 }
 
 func (ctl *controller) setLicense() error {
-	// Switch plan to increase instance limit.
-	license, err := fs.ReadFile(fakeFS, "fake/license")
-	if err != nil {
-		return errors.Wrap(err, "failed to read fake license")
-	}
-	err = ctl.switchPlan(&enterpriseAPI.SubscriptionPatch{
-		License: string(license),
+	return ctl.trialPlan(&api.TrialPlanCreate{
+		InstanceCount: 100,
+		Type:          api.ENTERPRISE,
+		Days:          1,
 	})
-	if err != nil {
-		return errors.Wrap(err, "failed to switch plan")
-	}
-	return nil
 }
 
 func (ctl *controller) removeLicense() error {
