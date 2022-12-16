@@ -17,6 +17,8 @@ import (
 )
 
 var (
+	collectionType = "collection"
+
 	_ db.Driver = (*Driver)(nil)
 )
 
@@ -80,7 +82,7 @@ func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interfa
 
 // Dump dumps the database.
 func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
-	panic("not implemented")
+	return "", nil
 }
 
 // Restore restores the backup read from src.
@@ -91,23 +93,29 @@ func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 // getMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
-	connectionURL := "mongodb://"
+	connectionURI := "mongodb://"
 	if connConfig.SRV {
-		connectionURL = "mongodb+srv://"
+		connectionURI = "mongodb+srv://"
 	}
 	if connConfig.Username != "" {
 		percentEncodingUsername := replaceCharacterWithPercentEncoding(connConfig.Username)
 		percentEncodingPassword := replaceCharacterWithPercentEncoding(connConfig.Password)
-		connectionURL = fmt.Sprintf("%s%s:%s@", connectionURL, percentEncodingUsername, percentEncodingPassword)
+		connectionURI = fmt.Sprintf("%s%s:%s@", connectionURI, percentEncodingUsername, percentEncodingPassword)
 	}
-	connectionURL = fmt.Sprintf("%s%s", connectionURL, connConfig.Host)
+	connectionURI = fmt.Sprintf("%s%s", connectionURI, connConfig.Host)
 	if connConfig.Port != "" {
-		connectionURL = fmt.Sprintf("%s:%s", connectionURL, connConfig.Port)
+		connectionURI = fmt.Sprintf("%s:%s", connectionURI, connConfig.Port)
 	}
 	if connConfig.Database != "" {
-		connectionURL = fmt.Sprintf("%s/%s", connectionURL, connConfig.Database)
+		connectionURI = fmt.Sprintf("%s/%s", connectionURI, connConfig.Database)
 	}
-	return connectionURL
+	if connConfig.AuthSource != "" {
+		if connConfig.Database == "" {
+			connectionURI = fmt.Sprintf("%s/", connectionURI)
+		}
+		connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, connConfig.AuthSource)
+	}
+	return connectionURI
 }
 
 func replaceCharacterWithPercentEncoding(s string) string {

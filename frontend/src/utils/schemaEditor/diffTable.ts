@@ -33,9 +33,7 @@ export const diffTableList = (originTableList: Table[], tableList: Table[]) => {
   );
   for (const table of changedTableList) {
     const originTable = originTableList.find(
-      (originTable) =>
-        originTable.databaseId === table.databaseId &&
-        originTable.oldName === table.oldName
+      (originTable) => originTable.oldName === table.oldName
     );
     if (isUndefined(originTable)) {
       continue;

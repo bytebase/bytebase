@@ -6,14 +6,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 type testData struct {
-	origin    *Database
+	origin    *storepb.DatabaseMetadata
 	statement string
-	want      *Database
+	want      *storepb.DatabaseMetadata
 	err       error
 }
 
@@ -24,9 +26,8 @@ var (
 func TestWalkThrough(t *testing.T) {
 	tests := []testData{
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a TEXT);
@@ -39,9 +40,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a TEXT DEFAULT '1')
@@ -53,9 +53,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a INT NOT NULL);
@@ -68,9 +67,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a INT NOT NULL DEFAULT NULL)
@@ -82,9 +80,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int ON UPDATE NOW())
@@ -96,9 +93,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int auto_increment, b int auto_increment);
@@ -110,9 +106,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t as select * from t1;
@@ -124,9 +119,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int, b int); 
@@ -139,9 +133,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int, b int); 
@@ -154,9 +147,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int, b int); 
@@ -169,9 +161,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int, b int); 
@@ -184,9 +175,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int, b int); 
@@ -200,9 +190,8 @@ func TestWalkThrough(t *testing.T) {
 		},
 
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int, b int); 
@@ -215,9 +204,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int, b int); 
@@ -230,26 +218,23 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				ALTER DATABASE CHARACTER SET = utf8mb4;
 				ALTER DATABASE test COLLATE utf8mb4_polish_ci;
 			`,
-			want: &Database{
+			want: &storepb.DatabaseMetadata{
 				Name:         "test",
-				DbType:       db.MySQL,
 				CharacterSet: "utf8mb4",
 				Collation:    "utf8mb4_polish_ci",
-				SchemaList:   []*Schema{{}},
+				Schemas:      []*storepb.SchemaMetadata{{}},
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(
@@ -264,113 +249,114 @@ func TestWalkThrough(t *testing.T) {
 				);
 				CREATE TABLE t_copy like t;
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						TableList: []*Table{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "t_copy",
-								ColumnList: []*Column{
+								Columns: []*storepb.ColumnMetadata{
 									{
-										Name:     "a",
-										Position: 1,
-										Default:  &one,
-										Nullable: false,
-										Type:     "int(11)",
+										Name:       "a",
+										Position:   1,
+										HasDefault: true,
+										Default:    one,
+										Nullable:   false,
+										Type:       "int(11)",
 									},
 									{
 										Name:         "b",
 										Position:     2,
-										Default:      nil,
+										HasDefault:   false,
 										Nullable:     false,
 										Type:         "varchar(200)",
 										CharacterSet: "utf8mb4",
 									},
 									{
-										Name:     "c",
-										Position: 3,
-										Default:  nil,
-										Nullable: true,
-										Type:     "int(11)",
-										Comment:  "This is a comment",
+										Name:       "c",
+										Position:   3,
+										HasDefault: false,
+										Nullable:   true,
+										Type:       "int(11)",
+										Comment:    "This is a comment",
 									},
 									{
-										Name:      "d",
-										Position:  4,
-										Default:   nil,
-										Nullable:  true,
-										Type:      "varchar(10)",
-										Collation: "utf8mb4_polish_ci",
+										Name:       "d",
+										Position:   4,
+										HasDefault: false,
+										Nullable:   true,
+										Type:       "varchar(10)",
+										Collation:  "utf8mb4_polish_ci",
 									},
 								},
-								IndexList: []*Index{
+								Indexes: []*storepb.IndexMetadata{
 									{
-										Name:           "PRIMARY",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        true,
-										Visible:        true,
+										Name:        "PRIMARY",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     true,
+										Visible:     true,
 									},
 									{
-										Name:           "b",
-										ExpressionList: []string{"b"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b",
+										Expressions: []string{"b"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "idx_a",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "idx_a",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_2",
-										ExpressionList: []string{"b", "a"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b_2",
+										Expressions: []string{"b", "a"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_3",
-										ExpressionList: []string{"b", "c", "d"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b_3",
+										Expressions: []string{"b", "c", "d"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_4",
-										ExpressionList: []string{"b", "d"},
-										Type:           "FULLTEXT",
-										Unique:         false,
-										Primary:        false,
-										Visible:        false,
+										Name:        "b_4",
+										Expressions: []string{"b", "d"},
+										Type:        "FULLTEXT",
+										Unique:      false,
+										Primary:     false,
+										Visible:     false,
 									},
 								},
 							},
 							{
 								Name: "t",
-								ColumnList: []*Column{
+								Columns: []*storepb.ColumnMetadata{
 									{
-										Name:     "a",
-										Position: 1,
-										Default:  &one,
-										Nullable: false,
-										Type:     "int(11)",
+										Name:       "a",
+										Position:   1,
+										HasDefault: true,
+										Default:    one,
+										Nullable:   false,
+										Type:       "int(11)",
 									},
 									{
 										Name:         "b",
 										Position:     2,
-										Default:      nil,
 										Nullable:     false,
 										Type:         "varchar(200)",
 										CharacterSet: "utf8mb4",
@@ -378,7 +364,6 @@ func TestWalkThrough(t *testing.T) {
 									{
 										Name:     "c",
 										Position: 3,
-										Default:  nil,
 										Nullable: true,
 										Type:     "int(11)",
 										Comment:  "This is a comment",
@@ -386,60 +371,59 @@ func TestWalkThrough(t *testing.T) {
 									{
 										Name:      "d",
 										Position:  4,
-										Default:   nil,
 										Nullable:  true,
 										Type:      "varchar(10)",
 										Collation: "utf8mb4_polish_ci",
 									},
 								},
-								IndexList: []*Index{
+								Indexes: []*storepb.IndexMetadata{
 									{
-										Name:           "PRIMARY",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        true,
-										Visible:        true,
+										Name:        "PRIMARY",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     true,
+										Visible:     true,
 									},
 									{
-										Name:           "b",
-										ExpressionList: []string{"b"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b",
+										Expressions: []string{"b"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "idx_a",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "idx_a",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_2",
-										ExpressionList: []string{"b", "a"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b_2",
+										Expressions: []string{"b", "a"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_3",
-										ExpressionList: []string{"b", "c", "d"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b_3",
+										Expressions: []string{"b", "c", "d"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_4",
-										ExpressionList: []string{"b", "d"},
-										Type:           "FULLTEXT",
-										Unique:         false,
-										Primary:        false,
-										Visible:        false,
+										Name:        "b_4",
+										Expressions: []string{"b", "d"},
+										Type:        "FULLTEXT",
+										Unique:      false,
+										Primary:     false,
+										Visible:     false,
 									},
 								},
 							},
@@ -449,9 +433,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(
@@ -465,27 +448,27 @@ func TestWalkThrough(t *testing.T) {
 					FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
 				)
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						TableList: []*Table{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "t",
-								ColumnList: []*Column{
+								Columns: []*storepb.ColumnMetadata{
 									{
-										Name:     "a",
-										Position: 1,
-										Default:  &one,
-										Nullable: false,
-										Type:     "int(11)",
+										Name:       "a",
+										Position:   1,
+										HasDefault: true,
+										Default:    one,
+										Nullable:   false,
+										Type:       "int(11)",
 									},
 									{
 										Name:         "b",
 										Position:     2,
-										Default:      nil,
 										Nullable:     false,
 										Type:         "varchar(200)",
 										CharacterSet: "utf8mb4",
@@ -493,7 +476,6 @@ func TestWalkThrough(t *testing.T) {
 									{
 										Name:     "c",
 										Position: 3,
-										Default:  nil,
 										Nullable: true,
 										Type:     "int(11)",
 										Comment:  "This is a comment",
@@ -501,60 +483,59 @@ func TestWalkThrough(t *testing.T) {
 									{
 										Name:      "d",
 										Position:  4,
-										Default:   nil,
 										Nullable:  true,
 										Type:      "varchar(10)",
 										Collation: "utf8mb4_polish_ci",
 									},
 								},
-								IndexList: []*Index{
+								Indexes: []*storepb.IndexMetadata{
 									{
-										Name:           "PRIMARY",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        true,
-										Visible:        true,
+										Name:        "PRIMARY",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     true,
+										Visible:     true,
 									},
 									{
-										Name:           "b",
-										ExpressionList: []string{"b"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b",
+										Expressions: []string{"b"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "idx_a",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "idx_a",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_2",
-										ExpressionList: []string{"b", "a"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b_2",
+										Expressions: []string{"b", "a"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_3",
-										ExpressionList: []string{"b", "c", "d"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b_3",
+										Expressions: []string{"b", "c", "d"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_4",
-										ExpressionList: []string{"b", "d"},
-										Type:           "FULLTEXT",
-										Unique:         false,
-										Primary:        false,
-										Visible:        false,
+										Name:        "b_4",
+										Expressions: []string{"b", "d"},
+										Type:        "FULLTEXT",
+										Unique:      false,
+										Primary:     false,
+										Visible:     false,
 									},
 								},
 							},
@@ -564,9 +545,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(
@@ -575,16 +555,16 @@ func TestWalkThrough(t *testing.T) {
 					PRIMARY KEY (a, b)
 				)
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						TableList: []*Table{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "t",
-								ColumnList: []*Column{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name:     "a",
 										Position: 1,
@@ -598,14 +578,14 @@ func TestWalkThrough(t *testing.T) {
 										Nullable: false,
 									},
 								},
-								IndexList: []*Index{
+								Indexes: []*storepb.IndexMetadata{
 									{
-										Name:           "PRIMARY",
-										ExpressionList: []string{"a", "b"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        true,
-										Visible:        true,
+										Name:        "PRIMARY",
+										Expressions: []string{"a", "b"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     true,
+										Visible:     true,
 									},
 								},
 							},
@@ -615,31 +595,28 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t1(a int, b int, c int);
 				CREATE TABLE t2(a int);
 				DROP TABLE t1, t2
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{
-						TableList:     []*Table{},
-						ViewList:      []*View{},
-						ExtensionList: []*Extension{},
+						Tables: []*storepb.TableMetadata{},
+						Views:  []*storepb.ViewMetadata{},
 					},
 				},
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				DROP TABLE t1, t2
@@ -651,45 +628,42 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int);
 				RENAME TABLE t to other_db.t1
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{},
 				},
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(a int);
 				RENAME TABLE t to test.t1
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						TableList: []*Table{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "t1",
-								ColumnList: []*Column{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name:     "a",
 										Position: 1,
-										Default:  nil,
 										Nullable: true,
 										Type:     "int(11)",
 									},
@@ -701,9 +675,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `-- this is comment
 				DROP DATABASE test;
@@ -716,9 +689,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(
@@ -746,37 +718,34 @@ func TestWalkThrough(t *testing.T) {
 				ALTER TABLE t_copy RENAME INDEX b TO idx_b;
 				ALTER TABLE t_copy ALTER INDEX b_3 INVISIBLE;
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						TableList: []*Table{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name:      "t_copy",
 								Collation: "utf8mb4_0900_ai_ci",
 								Engine:    "INNODB",
 								Comment:   "This is a table comment",
-								ColumnList: []*Column{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name:     "b",
 										Position: 1,
-										Default:  nil,
 										Nullable: true,
 										Type:     "varchar(20)",
 									},
 									{
 										Name:     "a_copy",
 										Position: 2,
-										Default:  nil,
 										Nullable: false,
 										Type:     "int(11)",
 									},
 									{
 										Name:     "a1",
 										Position: 3,
-										Default:  nil,
 										Nullable: true,
 										Type:     "int(11)",
 									},
@@ -784,7 +753,6 @@ func TestWalkThrough(t *testing.T) {
 									{
 										Name:      "d_copy",
 										Position:  4,
-										Default:   nil,
 										Nullable:  true,
 										Type:      "varchar(10)",
 										Collation: "utf8mb4_polish_ci",
@@ -792,51 +760,50 @@ func TestWalkThrough(t *testing.T) {
 									{
 										Name:     "e",
 										Position: 5,
-										Default:  nil,
 										Nullable: true,
 										Type:     "int(11)",
 									},
 								},
-								IndexList: []*Index{
+								Indexes: []*storepb.IndexMetadata{
 									{
-										Name:           "idx_b",
-										ExpressionList: []string{"b"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "idx_b",
+										Expressions: []string{"b"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "idx_a",
-										ExpressionList: []string{"a_copy"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "idx_a",
+										Expressions: []string{"a_copy"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_3",
-										ExpressionList: []string{"b", "d_copy"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        false,
+										Name:        "b_3",
+										Expressions: []string{"b", "d_copy"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     false,
 									},
 									{
-										Name:           "b_4",
-										ExpressionList: []string{"b", "d_copy"},
-										Type:           "FULLTEXT",
-										Unique:         false,
-										Primary:        false,
-										Visible:        false,
+										Name:        "b_4",
+										Expressions: []string{"b", "d_copy"},
+										Type:        "FULLTEXT",
+										Unique:      false,
+										Primary:     false,
+										Visible:     false,
 									},
 									{
-										Name:           "idx_a_b",
-										ExpressionList: []string{"a_copy", "b"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "idx_a_b",
+										Expressions: []string{"a_copy", "b"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 								},
 							},
@@ -846,9 +813,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(
@@ -862,27 +828,27 @@ func TestWalkThrough(t *testing.T) {
 				CREATE UNIQUE INDEX b_3 on t(b, c, d);
 				CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						TableList: []*Table{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "t",
-								ColumnList: []*Column{
+								Columns: []*storepb.ColumnMetadata{
 									{
-										Name:     "a",
-										Position: 1,
-										Default:  &one,
-										Nullable: false,
-										Type:     "int(11)",
+										Name:       "a",
+										Position:   1,
+										HasDefault: true,
+										Default:    one,
+										Nullable:   false,
+										Type:       "int(11)",
 									},
 									{
 										Name:         "b",
 										Position:     2,
-										Default:      nil,
 										Nullable:     false,
 										Type:         "varchar(200)",
 										CharacterSet: "utf8mb4",
@@ -890,7 +856,6 @@ func TestWalkThrough(t *testing.T) {
 									{
 										Name:     "c",
 										Position: 3,
-										Default:  nil,
 										Nullable: true,
 										Type:     "int(11)",
 										Comment:  "This is a comment",
@@ -898,60 +863,59 @@ func TestWalkThrough(t *testing.T) {
 									{
 										Name:      "d",
 										Position:  4,
-										Default:   nil,
 										Nullable:  true,
 										Type:      "varchar(10)",
 										Collation: "utf8mb4_polish_ci",
 									},
 								},
-								IndexList: []*Index{
+								Indexes: []*storepb.IndexMetadata{
 									{
-										Name:           "PRIMARY",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        true,
-										Visible:        true,
+										Name:        "PRIMARY",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     true,
+										Visible:     true,
 									},
 									{
-										Name:           "b",
-										ExpressionList: []string{"b"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b",
+										Expressions: []string{"b"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "idx_a",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "idx_a",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_2",
-										ExpressionList: []string{"b", "a"},
-										Type:           "BTREE",
-										Unique:         false,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b_2",
+										Expressions: []string{"b", "a"},
+										Type:        "BTREE",
+										Unique:      false,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_3",
-										ExpressionList: []string{"b", "c", "d"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        false,
-										Visible:        true,
+										Name:        "b_3",
+										Expressions: []string{"b", "c", "d"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     false,
+										Visible:     true,
 									},
 									{
-										Name:           "b_4",
-										ExpressionList: []string{"b", "d"},
-										Type:           "FULLTEXT",
-										Unique:         false,
-										Primary:        false,
-										Visible:        false,
+										Name:        "b_4",
+										Expressions: []string{"b", "d"},
+										Type:        "FULLTEXT",
+										Unique:      false,
+										Primary:     false,
+										Visible:     false,
 									},
 								},
 							},
@@ -961,9 +925,8 @@ func TestWalkThrough(t *testing.T) {
 			},
 		},
 		{
-			origin: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
+			origin: &storepb.DatabaseMetadata{
+				Name: "test",
 			},
 			statement: `
 				CREATE TABLE t(
@@ -972,40 +935,40 @@ func TestWalkThrough(t *testing.T) {
 				);
 				DROP INDEX b on t;
 			`,
-			want: &Database{
-				Name:   "test",
-				DbType: db.MySQL,
-				SchemaList: []*Schema{
+			want: &storepb.DatabaseMetadata{
+				Name: "test",
+
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						TableList: []*Table{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "t",
-								ColumnList: []*Column{
+								Columns: []*storepb.ColumnMetadata{
 									{
-										Name:     "a",
-										Position: 1,
-										Default:  &one,
-										Nullable: false,
-										Type:     "int(11)",
+										Name:       "a",
+										Position:   1,
+										HasDefault: true,
+										Default:    one,
+										Nullable:   false,
+										Type:       "int(11)",
 									},
 									{
 										Name:         "b",
 										Position:     2,
-										Default:      nil,
 										Nullable:     false,
 										Type:         "varchar(200)",
 										CharacterSet: "utf8mb4",
 									},
 								},
-								IndexList: []*Index{
+								Indexes: []*storepb.IndexMetadata{
 									{
-										Name:           "PRIMARY",
-										ExpressionList: []string{"a"},
-										Type:           "BTREE",
-										Unique:         true,
-										Primary:        true,
-										Visible:        true,
+										Name:        "PRIMARY",
+										Expressions: []string{"a"},
+										Type:        "BTREE",
+										Unique:      true,
+										Primary:     true,
+										Visible:     true,
 									},
 								},
 							},
@@ -1017,14 +980,14 @@ func TestWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		state := newDatabaseState(test.origin, &FinderContext{CheckIntegrity: true})
+		state := newDatabaseState(test.origin, &FinderContext{CheckIntegrity: true, EngineType: db.MySQL})
 		err := state.WalkThrough(test.statement)
 		if test.err != nil {
 			require.Equal(t, err, test.err)
 			continue
 		}
 		require.NoError(t, err)
-		want := newDatabaseState(test.want, &FinderContext{CheckIntegrity: true})
+		want := newDatabaseState(test.want, &FinderContext{CheckIntegrity: true, EngineType: db.MySQL})
 		require.Equal(t, want, state, test.statement)
 	}
 }
@@ -1052,7 +1015,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 						tableSet: tableStateMap{
 							"t": {
 								name:      "t",
-								tableType: nil,
 								engine:    nil,
 								collation: nil,
 								comment:   nil,
@@ -1070,8 +1032,7 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								},
 							},
 						},
-						viewSet:      viewStateMap{},
-						extensionSet: extensionStateMap{},
+						viewSet: viewStateMap{},
 					},
 				},
 			},
@@ -1091,7 +1052,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 						tableSet: tableStateMap{
 							"t": {
 								name:      "t",
-								tableType: nil,
 								engine:    nil,
 								collation: nil,
 								comment:   nil,
@@ -1103,8 +1063,7 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								indexSet: indexStateMap{},
 							},
 						},
-						viewSet:      viewStateMap{},
-						extensionSet: extensionStateMap{},
+						viewSet: viewStateMap{},
 					},
 				},
 			},
@@ -1124,7 +1083,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 						tableSet: tableStateMap{
 							"t1": {
 								name:      "t1",
-								tableType: nil,
 								engine:    nil,
 								collation: nil,
 								comment:   nil,
@@ -1132,8 +1090,7 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								indexSet:  indexStateMap{},
 							},
 						},
-						viewSet:      viewStateMap{},
-						extensionSet: extensionStateMap{},
+						viewSet: viewStateMap{},
 					},
 				},
 			},
@@ -1160,7 +1117,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 						tableSet: tableStateMap{
 							"t": {
 								name:      "t",
-								tableType: nil,
 								engine:    nil,
 								collation: nil,
 								comment:   nil,
@@ -1223,8 +1179,7 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								},
 							},
 						},
-						viewSet:      viewStateMap{},
-						extensionSet: extensionStateMap{},
+						viewSet: viewStateMap{},
 					},
 				},
 			},
@@ -1255,7 +1210,6 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 						tableSet: tableStateMap{
 							"t": {
 								name:      "t",
-								tableType: newEmptyStringPointer(),
 								engine:    newEmptyStringPointer(),
 								collation: newEmptyStringPointer(),
 								comment:   newEmptyStringPointer(),
@@ -1359,8 +1313,7 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 								},
 							},
 						},
-						viewSet:      viewStateMap{},
-						extensionSet: extensionStateMap{},
+						viewSet: viewStateMap{},
 					},
 				},
 			},
@@ -1375,11 +1328,10 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						ctx:          &FinderContext{CheckIntegrity: false},
-						name:         "",
-						tableSet:     tableStateMap{},
-						viewSet:      viewStateMap{},
-						extensionSet: extensionStateMap{},
+						ctx:      &FinderContext{CheckIntegrity: false},
+						name:     "",
+						tableSet: tableStateMap{},
+						viewSet:  viewStateMap{},
 					},
 				},
 			},
@@ -1394,18 +1346,17 @@ func TestWalkThroughForIncompleteOriginalCatalog(t *testing.T) {
 				dbType:       db.MySQL,
 				schemaSet: schemaStateMap{
 					"": {
-						ctx:          &FinderContext{CheckIntegrity: false},
-						name:         "",
-						tableSet:     tableStateMap{},
-						viewSet:      viewStateMap{},
-						extensionSet: extensionStateMap{},
+						ctx:      &FinderContext{CheckIntegrity: false},
+						name:     "",
+						tableSet: tableStateMap{},
+						viewSet:  viewStateMap{},
 					},
 				},
 			},
 		},
 	}
 	for _, test := range tests {
-		finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false}, db.MySQL)
+		finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: db.MySQL})
 		err := finder.WalkThrough(test.statement)
 		if test.err != nil {
 			require.Equal(t, err, test.err)

@@ -62,6 +62,8 @@ type InstanceCreate struct {
 
 	// SRV record is used for MongoDB only.
 	SRV bool `jsonapi:"attr,srv"`
+	// AuthSource is used for MongoDB only.
+	AuthSource string `jsonapi:"attr,authSource"`
 }
 
 // InstanceFind is the API message for finding instances.
@@ -106,6 +108,8 @@ type InstancePatch struct {
 	Database      *string `jsonapi:"attr,database"`
 	// SRV record is used for MongoDB only.
 	SRV bool `jsonapi:"attr,srv"`
+	// AuthSource is used for MongoDB only.
+	AuthSource string `json:"authSource" jsonapi:"attr,authSource"`
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from a instance.

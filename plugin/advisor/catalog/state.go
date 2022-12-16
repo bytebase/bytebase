@@ -8,50 +8,46 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func newDatabaseState(d *Database, context *FinderContext) *DatabaseState {
+func newDatabaseState(d *storepb.DatabaseMetadata, context *FinderContext) *DatabaseState {
 	database := &DatabaseState{
 		ctx:          context.Copy(),
 		name:         d.Name,
 		characterSet: d.CharacterSet,
 		collation:    d.Collation,
-		dbType:       d.DbType,
+		dbType:       context.EngineType,
 		schemaSet:    make(schemaStateMap),
 	}
 
-	for _, schema := range d.SchemaList {
+	for _, schema := range d.Schemas {
 		database.schemaSet[schema.Name] = newSchemaState(schema, database.ctx)
 	}
 
 	return database
 }
 
-func newSchemaState(s *Schema, context *FinderContext) *SchemaState {
+func newSchemaState(s *storepb.SchemaMetadata, context *FinderContext) *SchemaState {
 	schema := &SchemaState{
-		ctx:          context.Copy(),
-		name:         s.Name,
-		tableSet:     make(tableStateMap),
-		viewSet:      make(viewStateMap),
-		extensionSet: make(extensionStateMap),
+		ctx:      context.Copy(),
+		name:     s.Name,
+		tableSet: make(tableStateMap),
+		viewSet:  make(viewStateMap),
 	}
 
-	for _, table := range s.TableList {
+	for _, table := range s.Tables {
 		schema.tableSet[table.Name] = newTableState(table)
 	}
 
-	for _, view := range s.ViewList {
+	for _, view := range s.Views {
 		schema.viewSet[view.Name] = newViewState(view)
-	}
-
-	for _, extension := range s.ExtensionList {
-		schema.extensionSet[extension.Name] = newExtensionState(extension)
 	}
 
 	return schema
 }
 
-func newViewState(v *View) *ViewState {
+func newViewState(v *storepb.ViewMetadata) *ViewState {
 	return &ViewState{
 		name:       v.Name,
 		definition: newStringPointer(v.Definition),
@@ -59,18 +55,9 @@ func newViewState(v *View) *ViewState {
 	}
 }
 
-func newExtensionState(e *Extension) *ExtensionState {
-	return &ExtensionState{
-		name:        e.Name,
-		version:     newStringPointer(e.Version),
-		description: newStringPointer(e.Description),
-	}
-}
-
-func newTableState(t *Table) *TableState {
+func newTableState(t *storepb.TableMetadata) *TableState {
 	table := &TableState{
 		name:      t.Name,
-		tableType: newStringPointer(t.Type),
 		engine:    newStringPointer(t.Engine),
 		collation: newStringPointer(t.Collation),
 		comment:   newStringPointer(t.Comment),
@@ -78,22 +65,26 @@ func newTableState(t *Table) *TableState {
 		indexSet:  make(indexStateMap),
 	}
 
-	for _, column := range t.ColumnList {
-		table.columnSet[column.Name] = newColumnState(column)
+	for i, column := range t.Columns {
+		table.columnSet[column.Name] = newColumnState(column, i+1)
 	}
 
-	for _, index := range t.IndexList {
+	for _, index := range t.Indexes {
 		table.indexSet[index.Name] = newIndexState(index)
 	}
 
 	return table
 }
 
-func newColumnState(c *Column) *ColumnState {
+func newColumnState(c *storepb.ColumnMetadata, position int) *ColumnState {
+	defaultValue := (*string)(nil)
+	if c.HasDefault {
+		defaultValue = copyStringPointer(&c.Default)
+	}
 	return &ColumnState{
 		name:         c.Name,
-		position:     newIntPointer(c.Position),
-		defaultValue: copyStringPointer(c.Default),
+		position:     newIntPointer(position),
+		defaultValue: defaultValue,
 		nullable:     newBoolPointer(c.Nullable),
 		columnType:   newStringPointer(c.Type),
 		characterSet: newStringPointer(c.CharacterSet),
@@ -102,7 +93,7 @@ func newColumnState(c *Column) *ColumnState {
 	}
 }
 
-func newIndexState(i *Index) *IndexState {
+func newIndexState(i *storepb.IndexMetadata) *IndexState {
 	index := &IndexState{
 		name:           i.Name,
 		indextype:      newStringPointer(i.Type),
@@ -110,7 +101,7 @@ func newIndexState(i *Index) *IndexState {
 		primary:        newBoolPointer(i.Primary),
 		visible:        newBoolPointer(i.Visible),
 		comment:        newStringPointer(i.Comment),
-		expressionList: copyStringSlice(i.ExpressionList),
+		expressionList: copyStringSlice(i.Expressions),
 	}
 	return index
 }
@@ -286,18 +277,16 @@ func (d *DatabaseState) FindTable(find *TableFind) *TableState {
 
 // SchemaState is the state for walk-through.
 type SchemaState struct {
-	ctx          *FinderContext
-	name         string
-	tableSet     tableStateMap
-	viewSet      viewStateMap
-	extensionSet extensionStateMap
+	ctx      *FinderContext
+	name     string
+	tableSet tableStateMap
+	viewSet  viewStateMap
 }
 type schemaStateMap map[string]*SchemaState
 
 // TableState is the state for walk-through.
 type TableState struct {
-	name      string
-	tableType *string
+	name string
 	// engine isn't supported for Postgres, Snowflake, SQLite.
 	engine *string
 	// collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
@@ -317,7 +306,6 @@ func (table *TableState) CountIndex() int {
 func (table *TableState) copy() *TableState {
 	return &TableState{
 		name:      table.name,
-		tableType: copyStringPointer(table.tableType),
 		engine:    copyStringPointer(table.engine),
 		collation: copyStringPointer(table.collation),
 		comment:   copyStringPointer(table.comment),
@@ -445,14 +433,6 @@ type ViewState struct {
 	comment    *string
 }
 type viewStateMap map[string]*ViewState
-
-// ExtensionState is the state for walk-through.
-type ExtensionState struct {
-	name        string
-	version     *string
-	description *string
-}
-type extensionStateMap map[string]*ExtensionState
 
 func copyStringPointer(p *string) *string {
 	if p != nil {

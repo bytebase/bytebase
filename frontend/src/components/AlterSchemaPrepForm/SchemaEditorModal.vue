@@ -286,12 +286,13 @@ const handleSyncSQLFromSchemaEditor = async () => {
 const getDatabaseEditListWithSchemaEditor = () => {
   const databaseEditList: DatabaseEdit[] = [];
   for (const database of editorStore.databaseList) {
-    const originTableList = editorStore.originTableList.filter(
-      (table) => table.databaseId === database.id
-    );
-    const tableList = editorStore.tableList.filter(
-      (table) => table.databaseId === database.id
-    );
+    const databaseState = editorStore.databaseStateById.get(database.id);
+    if (!databaseState) {
+      continue;
+    }
+
+    const originTableList = databaseState.originTableList;
+    const tableList = databaseState.tableList;
     const diffTableListResult = diffTableList(originTableList, tableList);
     if (
       diffTableListResult.createTableList.length > 0 ||

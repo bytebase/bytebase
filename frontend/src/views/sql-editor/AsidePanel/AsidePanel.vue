@@ -21,27 +21,27 @@
 </template>
 
 <script lang="ts" setup>
+import { isUndefined } from "lodash-es";
 import { computed } from "vue";
-import { useSQLEditorStore } from "@/store";
+import { useConnectionTreeStore } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import TableSchema from "./TableSchema.vue";
 import { Splitpanes, Pane } from "splitpanes";
-import { unknown, UNKNOWN_ID } from "@/types";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
 
-const sqlEditorStore = useSQLEditorStore();
+const connectionTreeStore = useConnectionTreeStore();
 const databasePaneSize = computed(() => {
-  if (sqlEditorStore.selectedTable.id !== UNKNOWN_ID) {
+  if (!isUndefined(connectionTreeStore.selectedTableAtom)) {
     return DATABASE_PANE_SIZE;
   }
   return FULL_HEIGHT;
 });
 
 const handleCloseTableSchemaPane = () => {
-  sqlEditorStore.selectedTable = unknown("TABLE");
+  connectionTreeStore.selectedTableAtom = undefined;
 };
 </script>
 

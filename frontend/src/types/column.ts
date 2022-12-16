@@ -1,12 +1,13 @@
-import { ColumnId, DatabaseId, TableId } from "./id";
+import { ColumnId, DatabaseId, IdType } from "./id";
 
+// TODO(steven): remove it.
 // Column
 export type Column = {
   id: ColumnId;
 
   // Related fields
   databaseId: DatabaseId;
-  tableId: TableId;
+  tableId: IdType;
 
   // Standard fields
   creatorId: number;
