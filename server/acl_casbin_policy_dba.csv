@@ -45,6 +45,10 @@ p, DBA, /instance/{instanceID}/migration, POST
 p, DBA, /instance/{instanceID}/migration/status, GET
 p, DBA, /instance/{instanceID}/migration/history, GET
 p, DBA, /instance/{instanceID}/migration/history/{historyID}, GET
+p, DBA, /instance/{instanceID}/role, POST
+p, DBA, /instance/{instanceID}/role/{roleName}, GET
+p, DBA, /instance/{instanceID}/role/{roleName}, PATCH
+p, DBA, /instance/{instanceID}/role/{roleName}, DELETE
 p, DBA, /database, GET
 p, DBA, /database/{databaseID}, GET
 p, DBA, /database/{databaseID}, PATCH
