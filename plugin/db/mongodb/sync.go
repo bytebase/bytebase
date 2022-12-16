@@ -98,6 +98,7 @@ func (driver *Driver) syncAllCollectionSchema(ctx context.Context, databaseName 
 	return tableList, nil
 }
 
+// syncCollectionSchema returns the collection schema.
 func (driver *Driver) syncCollectionSchema(ctx context.Context, databaseName string, collectionName string) (db.Table, error) {
 	var table db.Table
 	table.Name = collectionName
@@ -121,9 +122,71 @@ func (driver *Driver) syncCollectionSchema(ctx context.Context, databaseName str
 	table.DataSize = int64(dataSize)
 	table.IndexSize = int64(totalIndexSize)
 
-	// TODO(zp): sync Column and Index schema
+	// Get collection index schema.
+	indexList, err := driver.syncAllIndexSchema(ctx, databaseName, collectionName)
+	if err != nil {
+		return table, errors.Wrapf(err, "failed to get index schema of collection %s", collectionName)
+	}
+	table.IndexList = indexList
+
+	// TODO(zp): sync Column schema
 
 	return table, nil
+}
+
+// syncAllIndexSchema returns all indexes schema of a collection.
+func (driver *Driver) syncAllIndexSchema(ctx context.Context, databaseName, collectionName string) ([]db.Index, error) {
+	database := driver.client.Database(databaseName)
+	collection := database.Collection(collectionName)
+	indexCursor, err := collection.Indexes().List(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list indexes")
+	}
+
+	var indexList []db.Index
+	for indexCursor.Next(ctx) {
+		var indexInfo bson.M
+		if err := indexCursor.Decode(&indexInfo); err != nil {
+			return nil, errors.Wrap(err, "failed to decode index info")
+		}
+		index, err := getIndexSchema(ctx, indexInfo)
+		if err != nil {
+			return nil, err
+		}
+		indexList = append(indexList, index)
+	}
+
+	return indexList, nil
+}
+
+// getIndexSchema returns the index schema.
+// https://www.mongodb.com/docs/manual/reference/command/listIndexes/#output
+func getIndexSchema(ctx context.Context, indexInfo bson.M) (db.Index, error) {
+	var index db.Index
+	indexName, ok := indexInfo["name"]
+	if !ok {
+		return index, errors.New("cannot get index name from index info")
+	}
+	index.Name = indexName.(string)
+
+	key, ok := indexInfo["key"]
+	if !ok {
+		return index, errors.New("cannot get index key from index info")
+	}
+	keystr, err := json.Marshal(key)
+	if err != nil {
+		return index, errors.Wrap(err, "cannot marshal index key to json")
+	}
+	index.Expression = string(keystr)
+
+	unique, ok := indexInfo["unique"]
+	if !ok {
+		// If the unique field is not set, the index is not unique.
+		unique = false
+	}
+	index.Unique = unique.(bool)
+
+	return index, nil
 }
 
 // getCollectionDataSizeAndIndexSizeInByte returns the collection data size and total index size in bytes.
