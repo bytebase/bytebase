@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 	database "github.com/bytebase/bytebase/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -42,15 +43,14 @@ var (
 	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
 	// MockMySQLDatabase is the mock MySQL database for test.
-	MockMySQLDatabase = &catalog.Database{
-		Name:   "test",
-		DbType: db.MySQL,
-		SchemaList: []*catalog.Schema{
+	MockMySQLDatabase = &storepb.DatabaseMetadata{
+		Name: "test",
+		Schemas: []*storepb.SchemaMetadata{
 			{
-				TableList: []*catalog.Table{
+				Tables: []*storepb.TableMetadata{
 					{
 						Name: MockTableName,
-						ColumnList: []*catalog.Column{
+						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "id",
 								Type: "int",
@@ -60,21 +60,21 @@ var (
 								Type: "varchar(255)",
 							},
 						},
-						IndexList: []*catalog.Index{
+						Indexes: []*storepb.IndexMetadata{
 							{
-								Name:           MockOldMySQLPKName,
-								ExpressionList: []string{"id", "name"},
-								Unique:         true,
-								Primary:        true,
+								Name:        MockOldMySQLPKName,
+								Expressions: []string{"id", "name"},
+								Unique:      true,
+								Primary:     true,
 							},
 							{
-								Name:           MockOldUKName,
-								ExpressionList: []string{"id", "name"},
-								Unique:         true,
+								Name:        MockOldUKName,
+								Expressions: []string{"id", "name"},
+								Unique:      true,
 							},
 							{
-								Name:           MockOldIndexName,
-								ExpressionList: []string{"id", "name"},
+								Name:        MockOldIndexName,
+								Expressions: []string{"id", "name"},
 							},
 						},
 					},
@@ -83,34 +83,33 @@ var (
 		},
 	}
 	// MockPostgreSQLDatabase is the mock PostgreSQL database for test.
-	MockPostgreSQLDatabase = &catalog.Database{
-		Name:   "test",
-		DbType: db.Postgres,
-		SchemaList: []*catalog.Schema{
+	MockPostgreSQLDatabase = &storepb.DatabaseMetadata{
+		Name: "test",
+		Schemas: []*storepb.SchemaMetadata{
 			{
 				Name: "public",
-				TableList: []*catalog.Table{
+				Tables: []*storepb.TableMetadata{
 					{
 						Name: MockTableName,
-						ColumnList: []*catalog.Column{
+						Columns: []*storepb.ColumnMetadata{
 							{Name: "id"},
 							{Name: "name"},
 						},
-						IndexList: []*catalog.Index{
+						Indexes: []*storepb.IndexMetadata{
 							{
-								Name:           MockOldPostgreSQLPKName,
-								ExpressionList: []string{"id", "name"},
-								Unique:         true,
-								Primary:        true,
+								Name:        MockOldPostgreSQLPKName,
+								Expressions: []string{"id", "name"},
+								Unique:      true,
+								Primary:     true,
 							},
 							{
-								Name:           MockOldUKName,
-								ExpressionList: []string{"id", "name"},
-								Unique:         true,
+								Name:        MockOldUKName,
+								Expressions: []string{"id", "name"},
+								Unique:      true,
 							},
 							{
-								Name:           MockOldIndexName,
-								ExpressionList: []string{"id", "name"},
+								Name:        MockOldIndexName,
+								Expressions: []string{"id", "name"},
 							},
 						},
 					},
@@ -161,7 +160,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 		if dbType == db.Postgres {
 			database = MockPostgreSQLDatabase
 		}
-		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true})
+		finder := catalog.NewFinder(database, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
 
 		payload, err := SetDefaultSQLReviewRulePayload(rule)
 		require.NoError(t, err)
