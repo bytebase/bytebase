@@ -14,6 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -25,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	"github.com/bytebase/bytebase/server/component/activity"
 )
 
@@ -743,41 +745,37 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 			}] = data.Type
 		}
 
-		tableList, err := s.store.FindTable(ctx, &api.TableFind{
-			DatabaseID: &database.ID,
-		})
+		dbSchema, err := s.store.GetDBSchema(ctx, database.ID)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
+		}
+		var m storepb.DatabaseMetadata
+		if err := protojson.Unmarshal([]byte(dbSchema.Metadata), &m); err != nil {
+			return nil, err
 		}
 
 		databaseSchema := db.DatabaseSchema{
 			Name:      databaseName,
 			TableList: []db.TableSchema{},
 		}
-		for _, table := range tableList {
-			tableSchema := db.TableSchema{
-				Name:       table.Name,
-				ColumnList: []db.ColumnInfo{},
+		for _, schema := range m.Schemas {
+			for _, table := range schema.Tables {
+				tableSchema := db.TableSchema{
+					Name:       table.Name,
+					ColumnList: []db.ColumnInfo{},
+				}
+				for _, column := range tableSchema.ColumnList {
+					_, sensitive := columnMap[api.SensitiveData{
+						Table:  table.Name,
+						Column: column.Name,
+					}]
+					tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
+						Name:      column.Name,
+						Sensitive: sensitive,
+					})
+				}
+				databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
 			}
-			columnList, err := s.store.FindColumn(ctx, &api.ColumnFind{
-				DatabaseID: &database.ID,
-				TableID:    &table.ID,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find column list for table %q.%q", databaseName, table.Name))
-			}
-
-			for _, column := range columnList {
-				_, sensitive := columnMap[api.SensitiveData{
-					Table:  table.Name,
-					Column: column.Name,
-				}]
-				tableSchema.ColumnList = append(tableSchema.ColumnList, db.ColumnInfo{
-					Name:      column.Name,
-					Sensitive: sensitive,
-				})
-			}
-			databaseSchema.TableList = append(databaseSchema.TableList, tableSchema)
 		}
 		if len(databaseSchema.TableList) > 0 {
 			isEmpty = false
