@@ -1582,7 +1582,6 @@ statement: |
 				},
 			)
 			require.NoError(t, err)
-			require.Len(t, issues, 2)
 			status, err = ctl.waitIssuePipeline(issues[0].ID)
 			require.NoError(t, err)
 			require.Equal(t, api.TaskDone, status)
