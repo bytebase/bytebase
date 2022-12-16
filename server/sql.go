@@ -764,7 +764,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 					Name:       table.Name,
 					ColumnList: []db.ColumnInfo{},
 				}
-				for _, column := range tableSchema.ColumnList {
+				for _, column := range table.Columns {
 					_, sensitive := columnMap[api.SensitiveData{
 						Table:  table.Name,
 						Column: column.Name,
