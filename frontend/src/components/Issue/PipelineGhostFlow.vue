@@ -6,67 +6,74 @@
       </template>
     </PipelineStageList>
 
-    <div
-      class="task-list p-2 lg:flex lg:items-center relative space-y-2 lg:space-y-0"
-    >
-      <template v-for="(task, i) in taskList" :key="i">
-        <div
-          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center"
-          :class="taskClass(task)"
-          @click="onClickTask(task, i)"
-        >
-          <div class="flex-1">
-            <div class="flex items-center pb-1">
-              <div class="flex flex-1 items-center">
-                <TaskStatusIcon
-                  :create="create"
-                  :active="isActiveTask(task)"
-                  :status="task.status"
-                  class="transform scale-75"
-                />
-                <heroicons-solid:arrow-narrow-right
-                  v-if="isActiveTask(task)"
-                  class="name w-5 h-5"
-                />
-                <div class="name">{{ databaseOfTask(task).name }}</div>
+    <div class="relative">
+      <div
+        ref="taskBar"
+        class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 4xl:grid-cols-6 max-h-48 overflow-y-auto"
+        :class="{
+          'more-bottom': taskBarScrollState.bottom,
+          'more-top': taskBarScrollState.top,
+        }"
+      >
+        <template v-for="(task, i) in taskList" :key="i">
+          <div
+            class="task relative px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center"
+            :class="taskClass(task)"
+            @click="onClickTask(task, i)"
+          >
+            <div class="flex-1">
+              <div class="flex items-center pb-1">
+                <div class="flex flex-1 items-center">
+                  <TaskStatusIcon
+                    :create="create"
+                    :active="isActiveTask(task)"
+                    :status="task.status"
+                    class="transform scale-75"
+                  />
+                  <heroicons-solid:arrow-narrow-right
+                    v-if="isActiveTask(task)"
+                    class="name w-5 h-5"
+                  />
+                  <div class="name">{{ databaseOfTask(task).name }}</div>
+                </div>
+
+                <TaskExtraActionsButton :task="(task as Task)" />
               </div>
 
-              <TaskExtraActionsButton :task="(task as Task)" />
+              <div class="flex items-center justify-between px-1 py-1">
+                <div
+                  class="flex flex-1 items-center whitespace-pre-wrap break-all"
+                >
+                  {{ taskNameOfTask(task) }}
+                </div>
+              </div>
             </div>
 
-            <div class="flex items-center justify-between px-1 py-1">
-              <div
-                class="flex flex-1 items-center whitespace-pre-wrap break-all"
-              >
-                {{ taskNameOfTask(task) }}
-              </div>
+            <TaskProgressPie
+              v-if="
+                !create &&
+                task.type === 'bb.task.database.schema.update.ghost.sync'
+              "
+              :task="(task as Task)"
+              unit-key="row"
+            />
+
+            <div
+              v-if="task.type === 'bb.task.database.schema.update.ghost.sync'"
+              class="hidden md:flex items-center justify-center w-4 h-2 overflow-visible absolute -right-[13px]"
+            >
+              <!-- show an arrow indicator between tasks -->
+              <heroicons-outline:chevron-right class="w-4 h-4" />
             </div>
           </div>
-
-          <TaskProgressPie
-            v-if="
-              !create &&
-              task.type === 'bb.task.database.schema.update.ghost.sync'
-            "
-            :task="(task as Task)"
-            unit-key="row"
-          />
-        </div>
-
-        <div
-          v-if="i < taskList.length - 1"
-          class="hidden lg:flex items-center justify-center w-4 h-2 overflow-visible relative"
-        >
-          <!-- show an arrow indicator between tasks -->
-          <heroicons-outline:chevron-right class="w-4 h-4" />
-        </div>
-      </template>
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type {
   Pipeline,
@@ -83,12 +90,15 @@ import PipelineStageList from "./PipelineStageList.vue";
 import TaskProgressPie from "./TaskProgressPie.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 import { useIssueLogic } from "./logic";
+import { useVerticalScrollState } from "@/composables/useScrollState";
 
 const { t } = useI18n();
 const databaseStore = useDatabaseStore();
 
 const { create, issue, selectedStage, selectedTask, selectStageOrTask } =
   useIssueLogic();
+const taskBar = ref<HTMLDivElement>();
+const taskBarScrollState = useVerticalScrollState(taskBar, 192);
 
 const pipeline = computed(() => issue.value.pipeline!);
 
@@ -187,5 +197,22 @@ const onClickTask = (task: Task | TaskCreate, index: number) => {
 }
 .task.status_failed .name {
   @apply text-red-500;
+}
+
+.task-list::before {
+  @apply absolute top-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  content: "";
+  box-shadow: none;
+}
+.task-list::after {
+  @apply absolute bottom-0 h-4 w-full -ml-2 z-10 pointer-events-none transition-shadow;
+  content: "";
+  box-shadow: none;
+}
+.task-list.more-top::before {
+  box-shadow: inset 0 0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
+}
+.task-list.more-bottom::after {
+  box-shadow: inset 0 -0.5rem 0.25rem -0.25rem rgb(0 0 0 / 10%);
 }
 </style>

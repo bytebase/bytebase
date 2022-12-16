@@ -167,6 +167,10 @@ const props = defineProps({
     type: Array as PropType<DatabaseId[]>,
     required: true,
   },
+  alterType: {
+    type: String as PropType<"TENANT" | "MULTI_DB" | "SINGLE_DB">,
+    required: true,
+  },
 });
 
 const emit = defineEmits<{
@@ -252,11 +256,6 @@ const dismissModal = () => {
 // 'online' -> online migration
 // false -> user clicked cancel button
 const isUsingGhostMigration = async (databaseList: Database[]) => {
-  // Gh-ost is not available for tenant mode yet.
-  if (databaseList.some((db) => db.project.tenantMode === "TENANT")) {
-    return "normal";
-  }
-
   // check if all selected databases supports gh-ost
   if (allowGhostMigration(databaseList)) {
     // open the dialog to ask the user
@@ -384,26 +383,33 @@ const handlePreviewIssue = async () => {
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     project: project.id,
-    mode: isTenantProject ? "tenant" : "normal",
-    databaseList: props.databaseIdList.join(","),
+    mode: "normal",
+    ghost: undefined,
   };
-
+  if (isTenantProject && props.databaseIdList.length > 1) {
+    query.mode = "tenant";
+  }
+  if (props.alterType !== "TENANT") {
+    // If we are not using tenant deployment config pipeline
+    // we need to pass the databaseIdList explicitly.
+    query.databaseList = props.databaseIdList.join(",");
+  }
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
 
-    if (!isTenantProject) {
-      // We should show select ghost mode dialog only for altering table statment not create/drop table.
-      // TODO(steven): parse the sql check if there only alter table statement.
-      const actionResult = await isUsingGhostMigration(databaseList);
-      if (actionResult === false) {
-        return;
-      }
-      query.mode = actionResult;
-      query.name = generateIssueName(
-        databaseList.map((db) => db.name),
-        query.mode === "online"
-      );
+    // We should show select ghost mode dialog only for altering table statement not create/drop table.
+    // TODO(steven): parse the sql check if there only alter table statement.
+    const actionResult = await isUsingGhostMigration(databaseList);
+    if (actionResult === false) {
+      return;
     }
+    if (actionResult === "online") {
+      query.ghost = 1;
+    }
+    query.name = generateIssueName(
+      databaseList.map((db) => db.name),
+      !!query.ghost
+    );
   } else {
     const databaseEditList = getDatabaseEditListWithSchemaEditor();
     const validateResultList = [];
@@ -429,12 +435,14 @@ const handlePreviewIssue = async () => {
       return;
     }
 
-    if (!isTenantProject && hasOnlyAlterTableChanges) {
+    if (hasOnlyAlterTableChanges) {
       const actionResult = await isUsingGhostMigration(databaseList);
       if (actionResult === false) {
         return;
       }
-      query.mode = actionResult;
+      if (actionResult === "online") {
+        query.ghost = 1;
+      }
     }
 
     const statementMap = await fetchDatabaseEditStatementMapWithSchemaEditor();
@@ -442,26 +450,23 @@ const handlePreviewIssue = async () => {
       return;
     }
     const databaseIdList = Array.from(statementMap.keys());
-    const statmentList = Array.from(statementMap.values());
+    const statementList = Array.from(statementMap.values());
     if (isTenantProject) {
-      query.sql = statmentList.join("\n");
+      query.sql = statementList.join("\n");
       query.name = generateIssueName(
         databaseList.map((db) => db.name),
-        query.mode === "online"
+        !!query.ghost
       );
     } else {
       query.databaseList = databaseIdList.join(",");
-      query.sqlList = JSON.stringify(statmentList);
+      query.sqlList = JSON.stringify(statementList);
       const databaseNameList = databaseList
         .filter((database) => databaseIdList.includes(database.id))
         .map((db) => db.name);
-      query.name = generateIssueName(databaseNameList, query.mode === "online");
+      query.name = generateIssueName(databaseNameList, !!query.ghost);
     }
   }
 
-  if (query.mode === "online") {
-    query.ghost = 1;
-  }
   router.push({
     name: "workspace.issue.detail",
     params: {

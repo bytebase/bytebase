@@ -186,28 +186,6 @@ type MigrationFileYAML struct {
 	Statement string                      `yaml:"statement"` // The SQL statement to be executed to specified list of databases
 }
 
-// UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost.
-type UpdateSchemaGhostDetail struct {
-	// DatabaseID is the ID of a database.
-	DatabaseID int `json:"databaseId"`
-	// DatabaseName is the name of databases, mutually exclusive to DatabaseID.
-	// This should be set when a project is in tenant mode, and ProjectID is derived from IssueCreate.
-	DatabaseName string `json:"databaseName"`
-	// Statement is the statement to update database schema.
-	Statement string `json:"statement"`
-	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
-	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
-}
-
-// UpdateSchemaGhostContext is the issue create context for updating database schema using gh-ost.
-type UpdateSchemaGhostContext struct {
-	// DetailList is the details of schema update.
-	// When a project is in tenant mode, there should be one item in the list.
-	DetailList []*UpdateSchemaGhostDetail `json:"detailList"`
-	// VCSPushEvent is the event information for VCS push.
-	VCSPushEvent *vcs.PushEvent
-}
-
 // PITRContext is the issue create context for performing a PITR in a database.
 type PITRContext struct {
 	DatabaseID int `json:"databaseId"`

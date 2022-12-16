@@ -394,3 +394,28 @@ func GetTaskStatement(task *api.Task) (string, error) {
 	}
 	return taskStatement.Statement, nil
 }
+
+// MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
+// The index of returned taskIndexDAG list is set regarding the merged taskCreate.
+func MergeTaskCreateLists(taskCreateLists [][]api.TaskCreate, taskIndexDAGLists [][]api.TaskIndexDAG) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	if len(taskCreateLists) != len(taskIndexDAGLists) {
+		return nil, nil, errors.Errorf("expect taskCreateLists and taskIndexDAGLists to have the same length, get %d, %d respectively", len(taskCreateLists), len(taskIndexDAGLists))
+	}
+	var resTaskCreateList []api.TaskCreate
+	var resTaskIndexDAGList []api.TaskIndexDAG
+	offset := 0
+	for i := range taskCreateLists {
+		taskCreateList := taskCreateLists[i]
+		taskIndexDAGList := taskIndexDAGLists[i]
+
+		resTaskCreateList = append(resTaskCreateList, taskCreateList...)
+		for _, dag := range taskIndexDAGList {
+			resTaskIndexDAGList = append(resTaskIndexDAGList, api.TaskIndexDAG{
+				FromIndex: dag.FromIndex + offset,
+				ToIndex:   dag.ToIndex + offset,
+			})
+		}
+		offset += len(taskCreateList)
+	}
+	return resTaskCreateList, resTaskIndexDAGList, nil
+}
