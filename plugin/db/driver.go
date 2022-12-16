@@ -73,14 +73,16 @@ type Index struct {
 	Name string
 	// This could refer to a column or an expression.
 	Expression string
-	Position   int
-	// Type isn't supported for SQLite.
-	Type    string
-	Unique  bool
+	// Position isn't supported for MongoDB.
+	Position int
+	// Type isn't supported for SQLite, MongoDB.
+	Type   string
+	Unique bool
+	// Primary isn't supported for MongoDB.
 	Primary bool
-	// Visible isn't supported for Postgres, SQLite.
+	// Visible isn't supported for Postgres, SQLite, MongoDB.
 	Visible bool
-	// Comment isn't supported for SQLite.
+	// Comment isn't supported for SQLite, MongoDB.
 	Comment string
 }
 
@@ -127,7 +129,8 @@ type Table struct {
 	// CreateOptions isn't supported for Postgres, ClickHouse, Snowflake, SQLite, MongoDB.
 	CreateOptions string
 	// Comment isn't supported for SQLite, MongoDB.
-	Comment    string
+	Comment string
+	// Columnlist isn't supported for MongoDB.
 	ColumnList []Column
 	// IndexList isn't supported for ClickHouse, Snowflake.
 	IndexList []Index
