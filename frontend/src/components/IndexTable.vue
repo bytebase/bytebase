@@ -11,20 +11,28 @@
         class="w-16"
         :title="columnList[0].title"
       />
-      <BBTableHeaderCell class="w-4" :title="columnList[1].title" />
+      <BBTableHeaderCell
+        v-if="showPositionColumn"
+        class="w-4"
+        :title="columnList[1].title"
+      />
       <BBTableHeaderCell class="w-4" :title="columnList[2].title" />
       <BBTableHeaderCell
         v-if="showVisibleColumn"
         class="w-4"
         :title="columnList[3].title"
       />
-      <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
+      <BBTableHeaderCell
+        v-if="showCommentColumn"
+        class="w-16"
+        :title="columnList[4].title"
+      />
     </template>
     <template #body="{ rowData: index }">
       <BBTableCell :left-padding="4">
         {{ index.expressions.join(",") }}
       </BBTableCell>
-      <BBTableCell>
+      <BBTableCell v-if="showPositionColumn">
         {{ index.position }}
       </BBTableCell>
       <BBTableCell>
@@ -63,7 +71,16 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const showVisibleColumn = computed(() => {
-      return props.database.instance.engine !== "POSTGRES";
+      return (
+        props.database.instance.engine !== "POSTGRES" &&
+        props.database.instance.engine !== "MONGODB"
+      );
+    });
+    const showPositionColumn = computed(() => {
+      return props.database.instance.engine !== "MONGODB";
+    });
+    const showCommentColumn = computed(() => {
+      return props.database.instance.engine !== "MONGODB";
     });
     const columnList = computed(() => [
       {
@@ -104,6 +121,8 @@ export default defineComponent({
       columnList,
       sectionList,
       showVisibleColumn,
+      showPositionColumn,
+      showCommentColumn,
     };
   },
 });
