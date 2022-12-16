@@ -91,7 +91,7 @@ func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string
 
 // FindMigrationHistoryList finds the migration history list.
 func (*Driver) FindMigrationHistoryList(_ context.Context, _ *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
-	//TODO(zp): implement
+	// TODO(zp): implement
 	return []*db.MigrationHistory{
 		{
 			Version: "0000.0000.0000-FAKEIMPLEMENT",

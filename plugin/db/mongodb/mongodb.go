@@ -18,7 +18,6 @@ import (
 
 var (
 	colelctionType = "collection"
-	viewType       = "view"
 
 	_ db.Driver = (*Driver)(nil)
 )

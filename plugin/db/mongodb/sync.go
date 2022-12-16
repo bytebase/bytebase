@@ -76,7 +76,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	}
 	schema.TableList = tableList
 
-	//TODO(zp): sync View schema
+	// TODO(zp): sync View schema
 	return &schema, nil
 }
 
@@ -121,7 +121,7 @@ func (driver *Driver) syncCollectionSchema(ctx context.Context, databaseName str
 	table.DataSize = int64(dataSize)
 	table.IndexSize = int64(totalIndexSize)
 
-	//TODO(zp): sync Column and Index schema
+	// TODO(zp): sync Column and Index schema
 
 	return table, nil
 }
