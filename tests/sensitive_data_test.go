@@ -11,12 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
 func TestSensitiveData(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
 	const (
 		databaseName = "sensitive_data"
 		tableName    = "tech_book"
@@ -48,8 +52,6 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()

@@ -27,8 +27,6 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	err = ctl.setLicense()
 	a.NoError(err)
@@ -185,8 +183,6 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	err = ctl.setLicense()
 	a.NoError(err)

@@ -405,8 +405,6 @@ func setUpForPITRTest(ctx context.Context, t *testing.T, ctl *controller) (*api.
 		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
-	err = ctl.Login()
-	a.NoError(err)
 	err = ctl.setLicense()
 	a.NoError(err)
 

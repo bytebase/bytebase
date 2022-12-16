@@ -54,11 +54,6 @@ func TestSheetVCS(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			vcs, err := ctl.createVCS(
 				api.VCSCreate{

@@ -31,8 +31,6 @@ func TestDatabaseEdit(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
@@ -64,9 +62,6 @@ func TestDatabaseEdit(t *testing.T) {
 	environments, err := ctl.getEnvironments()
 	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
-	a.NoError(err)
-
-	err = ctl.setLicense()
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
