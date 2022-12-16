@@ -19,6 +19,7 @@ export type ConnectionInfo = {
   sslCert?: string;
   sslKey?: string;
   srv: boolean;
+  authSource: string;
 };
 
 export type QueryInfo = {

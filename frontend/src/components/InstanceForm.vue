@@ -255,6 +255,26 @@
           />
         </div>
 
+        <template v-if="showAuthSource">
+          <div class="sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-row items-center space-x-2">
+              <label for="authSource" class="textlabel block">
+                Auth Source
+              </label>
+            </div>
+            <input
+              id="authSource"
+              name="authSource"
+              type="text"
+              class="textfield mt-1 w-full"
+              autocomplete="off"
+              placeholder="Auth Source"
+              :value="currentDataSource.options.authSource"
+              @input="handleInstanceAuthSourceInput"
+            />
+          </div>
+        </template>
+
         <template v-if="state.instance.engine == 'MONGODB'">
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
             <div class="lex flex-row items-center space-x-2">
@@ -567,6 +587,10 @@ const showSSL = computed((): boolean => {
   return state.instance.engine === "CLICKHOUSE";
 });
 
+const showAuthSource = computed((): boolean => {
+  return state.instance.engine === "MONGODB";
+});
+
 const handleInstanceNameInput = (event: Event) => {
   updateInstance("name", (event.target as HTMLInputElement).value);
 };
@@ -605,6 +629,12 @@ const handleToggleUseEmptyPassword = (on: boolean) => {
 const handleCurrentDataSourcePasswordInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.updatedPassword = str;
+  updateInstanceDataSource();
+};
+
+const handleInstanceAuthSourceInput = (event: Event) => {
+  const str = (event.target as HTMLInputElement).value.trim();
+  currentDataSource.value.options.authSource = str;
   updateInstanceDataSource();
 };
 
@@ -915,6 +945,7 @@ const testConnection = () => {
     database: instance.database,
     instanceId: instance.id,
     srv: dataSource.options.srv,
+    authSource: dataSource.options.authSource,
   };
 
   if (typeof dataSource.sslCa !== "undefined") {
