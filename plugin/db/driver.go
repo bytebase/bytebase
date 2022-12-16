@@ -164,6 +164,35 @@ type Schema struct {
 	ExtensionList []Extension
 }
 
+// RoleAttribute is the attribute for role.
+type RoleAttribute struct {
+	SuperUser   bool `json:"superUser"`
+	NoInherit   bool `json:"noInherit"`
+	CreateRole  bool `json:"createRole"`
+	CreateDB    bool `json:"createDB"`
+	CanLogin    bool `json:"canLogin"`
+	Replication bool `json:"replication"`
+	ByPassRLS   bool `json:"byPassRLS"`
+}
+
+// Role is the API message for role.
+type Role struct {
+	Name            string         `json:"name"`
+	ConnectionLimit int            `json:"connectionLimit"`
+	ValidUntil      *string        `json:"validUntil"`
+	Attribute       *RoleAttribute `json:"attribute"`
+}
+
+// RoleUpsert is the API message for upserting a new role.
+// TODO(ed): we may need to support IN ROLE role_name, ROLE role_name[,...] and ADMIN role_name[,...] statement.
+type RoleUpsert struct {
+	Name            string         `json:"name"`
+	Password        *string        `json:"password"`
+	ConnectionLimit *int           `json:"connectionLimit"`
+	ValidUntil      *string        `json:"validUntil"`
+	Attribute       *RoleAttribute `json:"attribute"`
+}
+
 var (
 	driversMu sync.RWMutex
 	drivers   = make(map[Type]driverFunc)
@@ -498,6 +527,16 @@ type Driver interface {
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// SyncDBSchema syncs a single database schema.
 	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
+
+	// Role
+	// CreateRole creates the role.
+	CreateRole(ctx context.Context, upsert *RoleUpsert) (*Role, error)
+	// UpdateRole updates the role.
+	UpdateRole(ctx context.Context, roleName string, upsert *RoleUpsert) (*Role, error)
+	// FindRole finds the role by name.
+	FindRole(ctx context.Context, roleName string) (*Role, error)
+	// DeleteRole deletes the role by name.
+	DeleteRole(ctx context.Context, roleName string) error
 
 	// Migration related
 	// Check whether we need to setup migration (e.g. creating/upgrading the migration related tables)
