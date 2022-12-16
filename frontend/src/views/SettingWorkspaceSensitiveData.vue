@@ -7,6 +7,7 @@
     <BBGrid
       :column-list="COLUMN_LIST"
       :data-source="state.sensitiveColumnList"
+      :row-clickable="false"
       class="border"
     >
       <template #item="{ item }: { item: SensitiveColumn }">
