@@ -3,7 +3,7 @@ package mysql
 import (
 	"context"
 
-	"github.com/pingcap/errors"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/db"
 )
