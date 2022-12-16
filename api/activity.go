@@ -251,11 +251,11 @@ type ActivityFind struct {
 	ID *int
 
 	// Domain specific fields
-	CreatorID      *int
-	TypePrefixList []string
-	LevelList      []ActivityLevel
-	ContainerID    *int
-	Limit          *int
+	CreatorID   *int
+	TypePrefix  *string
+	Level       *ActivityLevel
+	ContainerID *int
+	Limit       *int
 	// If specified, sorts the returned list by created_ts in <<ORDER>>
 	// Different use cases want different orders.
 	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
