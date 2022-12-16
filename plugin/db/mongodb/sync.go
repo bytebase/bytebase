@@ -161,7 +161,7 @@ func (driver *Driver) syncAllIndexSchema(ctx context.Context, databaseName, coll
 
 // getIndexSchema returns the index schema.
 // https://www.mongodb.com/docs/manual/reference/command/listIndexes/#output
-func getIndexSchema(ctx context.Context, indexInfo bson.M) (db.Index, error) {
+func getIndexSchema(indexInfo bson.M) (db.Index, error) {
 	var index db.Index
 	indexName, ok := indexInfo["name"]
 	if !ok {
