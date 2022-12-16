@@ -253,7 +253,7 @@ type ActivityFind struct {
 	// Domain specific fields
 	CreatorID      *int
 	TypePrefixList []string
-	LevelList      []ActivityLevel
+	Level          *ActivityLevel
 	ContainerID    *int
 	Limit          *int
 	// If specified, sorts the returned list by created_ts in <<ORDER>>
