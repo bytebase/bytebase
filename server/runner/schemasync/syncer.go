@@ -191,12 +191,11 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 	// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
 	// to avoid changing the updated_ts.
 	if instanceMeta.Version != instance.EngineVersion {
-		_, err := s.store.PatchInstance(ctx, &store.InstancePatch{
+		if _, err := s.store.PatchInstance(ctx, &store.InstancePatch{
 			ID:            instance.ID,
 			UpdaterID:     api.SystemBotID,
 			EngineVersion: &instanceMeta.Version,
-		})
-		if err != nil {
+		}); err != nil {
 			return nil, err
 		}
 		instance.EngineVersion = instanceMeta.Version
@@ -215,8 +214,7 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 			Name:       user.Name,
 			Grant:      user.Grant,
 		}
-		_, err := s.store.UpsertInstanceUser(ctx, userUpsert)
-		if err != nil {
+		if _, err := s.store.UpsertInstanceUser(ctx, userUpsert); err != nil {
 			return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to upsert user", instance.Name)
 		}
 	}
@@ -235,8 +233,7 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 			userDelete := &api.InstanceUserDelete{
 				ID: user.ID,
 			}
-			err := s.store.DeleteInstanceUser(ctx, userDelete)
-			if err != nil {
+			if err := s.store.DeleteInstanceUser(ctx, userDelete); err != nil {
 				return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to delete user: %s", instance.Name, user.Name)
 			}
 		}
@@ -406,14 +403,18 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		if err := syncDBSchema(ctx, s.store, database, schema, driver, force); err != nil {
 			return err
 		}
+	} else {
+		if err := syncTableSchema(ctx, s.store, database, schema); err != nil {
+			return err
+		}
+		if err := syncViewSchema(ctx, s.store, database, schema); err != nil {
+			return err
+		}
+		if err := syncDBExtensionSchema(ctx, s.store, database, schema); err != nil {
+			return err
+		}
 	}
-	if err := syncTableSchema(ctx, s.store, database, schema); err != nil {
-		return err
-	}
-	if err := syncViewSchema(ctx, s.store, database, schema); err != nil {
-		return err
-	}
-	return syncDBExtensionSchema(ctx, s.store, database, schema)
+	return nil
 }
 
 func syncTableSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
