@@ -934,7 +934,6 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 
 	table := &TableState{
 		name:      node.Table.Name.O,
-		tableType: newEmptyStringPointer(),
 		engine:    newEmptyStringPointer(),
 		collation: newEmptyStringPointer(),
 		comment:   newEmptyStringPointer(),

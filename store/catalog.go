@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -19,20 +21,22 @@ var (
 
 // Catalog is the database catalog.
 type Catalog struct {
-	Database *catalog.Database
-	Finder   *catalog.Finder
+	Finder *catalog.Finder
 }
 
 // NewCatalog creates a new database catalog.
 func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Type) (catalog.Catalog, error) {
-	database, err := s.GetDatabase(ctx, &api.DatabaseFind{
-		ID: &databaseID,
-	})
+	databaseMeta, err := s.GetDBSchema(ctx, databaseID)
 	if err != nil {
 		return nil, err
 	}
-	if database == nil {
+	if databaseMeta == nil {
 		return nil, nil
+	}
+
+	var databaseSchema storepb.DatabaseMetadata
+	if err := protojson.Unmarshal([]byte(databaseMeta.Metadata), &databaseSchema); err != nil {
+		return nil, err
 	}
 
 	dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
@@ -40,18 +44,8 @@ func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Ty
 		return nil, err
 	}
 
-	databaseData := &catalog.Database{
-		Name:         database.Name,
-		CharacterSet: database.CharacterSet,
-		Collation:    database.Collation,
-		DbType:       dbType,
-	}
-
-	if databaseData.SchemaList, err = s.getSchemaList(ctx, databaseID, engineType); err != nil {
-		return nil, err
-	}
-	c := &Catalog{Database: databaseData}
-	c.Finder = catalog.NewFinder(c.Database, &catalog.FinderContext{CheckIntegrity: true})
+	c := &Catalog{}
+	c.Finder = catalog.NewFinder(&databaseSchema, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
 	return c, nil
 }
 
