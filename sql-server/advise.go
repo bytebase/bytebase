@@ -29,7 +29,7 @@ type catalogService struct {
 
 func newCatalogService(dbType advisorDB.Type) *catalogService {
 	return &catalogService{
-		finder: catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false}, dbType),
+		finder: catalog.NewEmptyFinder(&catalog.FinderContext{CheckIntegrity: false, EngineType: dbType}),
 	}
 }
 
