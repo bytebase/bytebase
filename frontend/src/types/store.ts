@@ -206,12 +206,6 @@ export interface LabelState {
   labelList: Label[];
 }
 
-export enum ConnectionTreeState {
-  UNSET,
-  LOADING,
-  LOADED,
-}
-
 export interface SQLEditorState {
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
