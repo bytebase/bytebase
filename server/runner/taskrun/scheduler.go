@@ -960,7 +960,7 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		}
 	}
 
-	//Every task in the stage completed means we are moving into a new stage. We need to
+	// Every task in the stage completed means we are moving into a new stage. We need to
 	// 1. cancel external approval.
 	if taskPatched.Status == api.TaskDone && issue != nil {
 		foundStage := false
