@@ -17,6 +17,8 @@ import (
 )
 
 var (
+	collectionType = "collection"
+
 	_ db.Driver = (*Driver)(nil)
 )
 
@@ -80,7 +82,7 @@ func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interfa
 
 // Dump dumps the database.
 func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
-	panic("not implemented")
+	return "", nil
 }
 
 // Restore restores the backup read from src.

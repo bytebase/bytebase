@@ -108,25 +108,25 @@ type Table struct {
 	ShortName string
 	// Schema is the schema name for a table. It should be supported only for Postgres and Snowflake.
 	Schema string
-	// CreatedTs isn't supported for ClickHouse, SQLite.
+	// CreatedTs isn't supported for ClickHouse, SQLite, MongoDB.
 	CreatedTs int64
-	// UpdatedTs isn't supported for SQLite.
+	// UpdatedTs isn't supported for SQLite, MongoDB.
 	UpdatedTs int64
 	Type      string
-	// Engine isn't supported for Postgres, Snowflake, SQLite.
+	// Engine isn't supported for Postgres, Snowflake, SQLite, MongoDB.
 	Engine string
-	// Collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
+	// Collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite, MongoDB.
 	Collation string
 	RowCount  int64
 	// DataSize isn't supported for SQLite.
 	DataSize int64
 	// IndexSize isn't supported for ClickHouse, Snowflake, SQLite.
 	IndexSize int64
-	// DataFree isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
+	// DataFree isn't supported for Postgres, ClickHouse, Snowflake, SQLite, MongoDB.
 	DataFree int64
-	// CreateOptions isn't supported for Postgres, ClickHouse, Snowflake, SQLite.
+	// CreateOptions isn't supported for Postgres, ClickHouse, Snowflake, SQLite, MongoDB.
 	CreateOptions string
-	// Comment isn't supported for SQLite.
+	// Comment isn't supported for SQLite, MongoDB.
 	Comment    string
 	ColumnList []Column
 	// IndexList isn't supported for ClickHouse, Snowflake.
@@ -152,9 +152,9 @@ type DatabaseMeta struct {
 // Schema is the database schema.
 type Schema struct {
 	Name string
-	// CharacterSet isn't supported for ClickHouse, Snowflake.
+	// CharacterSet isn't supported for ClickHouse, Snowflake, MongoDB.
 	CharacterSet string
-	// Collation isn't supported for ClickHouse, Snowflake.
+	// Collation isn't supported for ClickHouse, Snowflake, MongoDB.
 	Collation     string
 	TableList     []Table
 	ViewList      []View
