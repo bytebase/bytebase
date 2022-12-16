@@ -107,11 +107,11 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.Database != "" {
 		connectionURI = fmt.Sprintf("%s/%s", connectionURI, connConfig.Database)
 	}
-	if connConfig.AuthDatabase != "" {
+	if connConfig.AuthSource != "" {
 		if connConfig.Database == "" {
 			connectionURI = fmt.Sprintf("%s/", connectionURI)
 		}
-		connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, connConfig.AuthDatabase)
+		connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, connConfig.AuthSource)
 	}
 	return connectionURI
 }
