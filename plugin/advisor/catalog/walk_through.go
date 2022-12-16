@@ -934,7 +934,6 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 
 	table := &TableState{
 		name:      node.Table.Name.O,
-		tableType: newEmptyStringPointer(),
 		engine:    newEmptyStringPointer(),
 		collation: newEmptyStringPointer(),
 		comment:   newEmptyStringPointer(),
@@ -1242,11 +1241,10 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 
 func (d *DatabaseState) createSchema(name string) *SchemaState {
 	schema := &SchemaState{
-		ctx:          d.ctx.Copy(),
-		name:         name,
-		tableSet:     make(tableStateMap),
-		viewSet:      make(viewStateMap),
-		extensionSet: make(extensionStateMap),
+		ctx:      d.ctx.Copy(),
+		name:     name,
+		tableSet: make(tableStateMap),
+		viewSet:  make(viewStateMap),
 	}
 
 	d.schemaSet[name] = schema
