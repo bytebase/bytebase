@@ -30,7 +30,7 @@ func (*SchemaEditor) ValidateDatabaseEdit(databaseEdit *api.DatabaseEdit) ([]*ap
 				Message: fmt.Sprintf("invalid column type `%s`", addColumnContext.Type),
 			})
 		}
-		if addColumnContext.Default != nil {
+		if addColumnContext.HasDefault {
 			// TEXT will be regarded as mysql.TypeBlob in the TiDB parser.
 			if columnType.GetType() == mysql.TypeBlob || columnType.GetType() == mysql.TypeGeometry || columnType.GetType() == mysql.TypeJSON {
 				validateResultList = append(validateResultList, &api.ValidateResult{
@@ -49,7 +49,7 @@ func (*SchemaEditor) ValidateDatabaseEdit(databaseEdit *api.DatabaseEdit) ([]*ap
 				Message: fmt.Sprintf("invalid column type `%s`", changeColumnContext.Type),
 			})
 		}
-		if changeColumnContext.Default != nil {
+		if changeColumnContext.HasDefault {
 			if columnType.GetType() == mysql.TypeBlob || columnType.GetType() == mysql.TypeGeometry || columnType.GetType() == mysql.TypeJSON {
 				validateResultList = append(validateResultList, &api.ValidateResult{
 					Type:    api.ValidateErrorResult,

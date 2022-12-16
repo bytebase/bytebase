@@ -32,7 +32,7 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseId, UNKNOWN_ID, SchemaEditorTabType, unknown } from "@/types";
+import { DatabaseId, UNKNOWN_ID, SchemaEditorTabType } from "@/types";
 import { TableTabContext } from "@/types/schemaEditor";
 import {
   useSchemaEditorStore,
@@ -43,6 +43,7 @@ import {
   transformColumnDataToColumn,
   transformTableDataToTable,
 } from "@/utils/schemaEditor/transform";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/database";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -105,21 +106,21 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (isCreatingTable.value) {
-    const unknownTable = unknown("TABLE");
-    const unknownColumn = unknown("COLUMN");
-    unknownColumn.name = "id";
-    unknownColumn.type = "int";
-    unknownColumn.comment = "ID";
-
-    const table = transformTableDataToTable(unknownTable);
-    table.databaseId = databaseId;
+    const table = transformTableDataToTable(TableMetadata.fromPartial({}));
     table.oldName = state.tableName;
     table.newName = state.tableName;
     table.status = "created";
-    const column = transformColumnDataToColumn(unknownColumn);
+
+    const column = transformColumnDataToColumn(ColumnMetadata.fromPartial({}));
+    column.oldName = "id";
+    column.newName = "id";
+    column.type = "int";
+    column.comment = "ID";
     column.status = "created";
     table.columnList.push(column);
-    editorStore.tableList.push(table);
+
+    const tableList = editorStore.databaseStateById.get(databaseId)!.tableList;
+    tableList.push(table);
     editorStore.addTab({
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForTable,
@@ -128,13 +129,12 @@ const handleConfirmButtonClick = async () => {
     });
     dismissModal();
   } else {
-    const table = editorStore.tableList.find(
-      (table) =>
-        table.databaseId === databaseId && table.newName === props.tableName
-    );
+    const table = editorStore.databaseStateById
+      .get(databaseId)!
+      .tableList.find((table) => table.newName === props.tableName);
     if (table) {
       const tab = editorStore.findTab(
-        table.databaseId,
+        databaseId,
         table.newName
       ) as TableTabContext;
       table.newName = state.tableName;
