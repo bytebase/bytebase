@@ -73,7 +73,10 @@
 
     <div class="pt-6">
       <div class="text-lg leading-6 font-medium text-main mb-4">
-        {{ $t("db.tables") }}
+        <span v-if="databaseEngine === 'MONGODB'">{{
+          $t("db.collections")
+        }}</span>
+        <span v-else>{{ $t("db.tables") }}</span>
       </div>
       <TableTable :database="database" :table-list="tableList" />
 
