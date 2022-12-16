@@ -158,6 +158,8 @@ type MigrationDetail struct {
 	DatabaseID int `json:"databaseId"`
 	// Statement is the statement to update database schema.
 	Statement string `json:"statement"`
+	// SheetID is the ID of a sheet. Statement and sheet ID is mutually exclusive.
+	SheetID int `json:"sheetId"`
 	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
 	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
 	// SchemaVersion is parsed from VCS file name.
