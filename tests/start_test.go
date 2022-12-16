@@ -27,14 +27,12 @@ func TestServiceRestart(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.Login()
-	a.NoError(err)
-
 	projects, err := ctl.getProjects()
 	a.NoError(err)
 
-	// Test seed should have more than one project.
-	a.Greater(len(projects), 1)
+	// Default project.
+	a.Equal(1, len(projects))
+	a.Equal("Default", projects[0].Name)
 
 	// Restart the server.
 	err = ctl.Close(ctx)
@@ -46,9 +44,6 @@ func TestServiceRestart(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-
-	err = ctl.Login()
-	a.NoError(err)
 }
 
 var (

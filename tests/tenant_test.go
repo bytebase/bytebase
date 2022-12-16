@@ -18,10 +18,10 @@ import (
 )
 
 var (
-	stagingTenantNumber = 1
-	prodTenantNumber    = 3
-	stagingInstanceName = "testInstanceStaging"
-	prodInstanceName    = "testInstanceProd"
+	testTenantNumber = 1
+	prodTenantNumber = 3
+	testInstanceName = "testInstanceTest"
+	prodInstanceName = "testInstanceProd"
 )
 
 const baseDirectory = "bbtest"
@@ -38,8 +38,6 @@ func TestTenant(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 	err = ctl.setLicense()
 	a.NoError(err)
 
@@ -54,12 +52,12 @@ func TestTenant(t *testing.T) {
 	// Provision instances.
 	instanceRootDir := t.TempDir()
 
-	var stagingInstanceDirs []string
+	var testInstanceDirs []string
 	var prodInstanceDirs []string
-	for i := 0; i < stagingTenantNumber; i++ {
-		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+	for i := 0; i < testTenantNumber; i++ {
+		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", testInstanceName, i))
 		a.NoError(err)
-		stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
+		testInstanceDirs = append(testInstanceDirs, instanceDir)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
@@ -68,23 +66,23 @@ func TestTenant(t *testing.T) {
 	}
 	environments, err := ctl.getEnvironments()
 	a.NoError(err)
-	stagingEnvironment, err := findEnvironment(environments, "Staging")
+	testEnvironment, err := findEnvironment(environments, "Test")
 	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
 	// Add the provisioned instances.
-	var stagingInstances []*api.Instance
+	var testInstances []*api.Instance
 	var prodInstances []*api.Instance
-	for i, stagingInstanceDir := range stagingInstanceDirs {
+	for i, testInstanceDir := range testInstanceDirs {
 		instance, err := ctl.addInstance(api.InstanceCreate{
-			EnvironmentID: stagingEnvironment.ID,
-			Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
+			EnvironmentID: testEnvironment.ID,
+			Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 			Engine:        db.SQLite,
-			Host:          stagingInstanceDir,
+			Host:          testInstanceDir,
 		})
 		a.NoError(err)
-		stagingInstances = append(stagingInstances, instance)
+		testInstances = append(testInstances, instance)
 	}
 	for i, prodInstanceDir := range prodInstanceDirs {
 		instance, err := ctl.addInstance(api.InstanceCreate{
@@ -98,7 +96,7 @@ func TestTenant(t *testing.T) {
 	}
 
 	// Set up label values for tenants.
-	// Prod and staging are using the same tenant values. Use prodInstancesNumber because it's larger than stagingInstancesNumber.
+	// Prod and test are using the same tenant values. Use prodInstancesNumber because it's larger than testInstancesNumber.
 	var tenants []string
 	for i := 0; i < prodTenantNumber; i++ {
 		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
@@ -117,8 +115,8 @@ func TestTenant(t *testing.T) {
 
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
-	for i, stagingInstance := range stagingInstances {
-		err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+	for i, testInstance := range testInstances {
+		err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
@@ -132,12 +130,12 @@ func TestTenant(t *testing.T) {
 	})
 	a.NoError(err)
 
-	var stagingDatabases []*api.Database
+	var testDatabases []*api.Database
 	var prodDatabases []*api.Database
-	for _, stagingInstance := range stagingInstances {
+	for _, testInstance := range testInstances {
 		for _, database := range databases {
-			if database.Instance.ID == stagingInstance.ID {
-				stagingDatabases = append(stagingDatabases, database)
+			if database.Instance.ID == testInstance.ID {
+				testDatabases = append(testDatabases, database)
 				break
 			}
 		}
@@ -150,7 +148,7 @@ func TestTenant(t *testing.T) {
 			}
 		}
 	}
-	a.Equal(stagingTenantNumber, len(stagingDatabases))
+	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
 	// Create an issue that updates database schema.
@@ -178,8 +176,8 @@ func TestTenant(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query schema.
-	for _, stagingInstance := range stagingInstances {
-		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
+	for _, testInstance := range testInstances {
+		result, err := ctl.query(testInstance, databaseName, bookTableQuery)
 		a.NoError(err)
 		a.Equal(bookSchemaSQLResult, result)
 	}
@@ -191,7 +189,7 @@ func TestTenant(t *testing.T) {
 
 	// Query migration history
 	var instances []*api.Instance
-	instances = append(instances, stagingInstances...)
+	instances = append(instances, testInstances...)
 	instances = append(instances, prodInstances...)
 	hm1 := map[string]bool{}
 	hm2 := map[string]bool{}
@@ -297,8 +295,6 @@ func TestTenantVCS(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -353,12 +349,12 @@ func TestTenantVCS(t *testing.T) {
 			// Provision instances.
 			instanceRootDir := t.TempDir()
 
-			var stagingInstanceDirs []string
+			var testInstanceDirs []string
 			var prodInstanceDirs []string
-			for i := 0; i < stagingTenantNumber; i++ {
-				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+			for i := 0; i < testTenantNumber; i++ {
+				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", testInstanceName, i))
 				a.NoError(err)
-				stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
+				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
 			for i := 0; i < prodTenantNumber; i++ {
 				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
@@ -367,25 +363,25 @@ func TestTenantVCS(t *testing.T) {
 			}
 			environments, err := ctl.getEnvironments()
 			a.NoError(err)
-			stagingEnvironment, err := findEnvironment(environments, "Staging")
+			testEnvironment, err := findEnvironment(environments, "Test")
 			a.NoError(err)
 			prodEnvironment, err := findEnvironment(environments, "Prod")
 			a.NoError(err)
 
 			// Add the provisioned instances.
-			var stagingInstances []*api.Instance
+			var testInstances []*api.Instance
 			var prodInstances []*api.Instance
-			for i, stagingInstanceDir := range stagingInstanceDirs {
+			for i, testInstanceDir := range testInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
-						EnvironmentID: stagingEnvironment.ID,
-						Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
+						EnvironmentID: testEnvironment.ID,
+						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
-						Host:          stagingInstanceDir,
+						Host:          testInstanceDir,
 					},
 				)
 				a.NoError(err)
-				stagingInstances = append(stagingInstances, instance)
+				testInstances = append(testInstances, instance)
 			}
 			for i, prodInstanceDir := range prodInstanceDirs {
 				instance, err := ctl.addInstance(
@@ -401,7 +397,7 @@ func TestTenantVCS(t *testing.T) {
 			}
 
 			// Set up label values for tenants.
-			// Prod and staging are using the same tenant values. Use prodInstancesNumber because it's larger than stagingInstancesNumber.
+			// Prod and test are using the same tenant values. Use prodInstancesNumber because it's larger than testInstancesNumber.
 			var tenants []string
 			for i := 0; i < prodTenantNumber; i++ {
 				tenants = append(tenants, fmt.Sprintf("tenant%d", i))
@@ -420,8 +416,8 @@ func TestTenantVCS(t *testing.T) {
 
 			// Create issues that create databases.
 			databaseName := "testTenantVCSSchemaUpdate"
-			for i, stagingInstance := range stagingInstances {
-				err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+			for i, testInstance := range testInstances {
+				err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
@@ -433,12 +429,12 @@ func TestTenantVCS(t *testing.T) {
 			databases, err := ctl.getDatabases(api.DatabaseFind{ProjectID: &project.ID})
 			a.NoError(err)
 
-			var stagingDatabases []*api.Database
+			var testDatabases []*api.Database
 			var prodDatabases []*api.Database
-			for _, stagingInstance := range stagingInstances {
+			for _, testInstance := range testInstances {
 				for _, database := range databases {
-					if database.Instance.ID == stagingInstance.ID {
-						stagingDatabases = append(stagingDatabases, database)
+					if database.Instance.ID == testInstance.ID {
+						testDatabases = append(testDatabases, database)
 						break
 					}
 				}
@@ -451,7 +447,7 @@ func TestTenantVCS(t *testing.T) {
 					}
 				}
 			}
-			a.Equal(len(stagingDatabases), stagingTenantNumber)
+			a.Equal(len(testDatabases), testTenantNumber)
 			a.Equal(len(prodDatabases), prodTenantNumber)
 
 			// Simulate Git commits.
@@ -485,8 +481,8 @@ func TestTenantVCS(t *testing.T) {
 			a.Equal(api.TaskDone, status)
 
 			// Query schema.
-			for _, stagingInstance := range stagingInstances {
-				result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
+			for _, testInstance := range testInstances {
+				result, err := ctl.query(testInstance, databaseName, bookTableQuery)
 				a.NoError(err)
 				a.Equal(bookSchemaSQLResult, result)
 			}
@@ -498,7 +494,7 @@ func TestTenantVCS(t *testing.T) {
 
 			// Query migration history
 			var instances []*api.Instance
-			instances = append(instances, stagingInstances...)
+			instances = append(instances, testInstances...)
 			instances = append(instances, prodInstances...)
 			hm1 := map[string]bool{}
 			hm2 := map[string]bool{}
@@ -535,8 +531,6 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 	err = ctl.setLicense()
 	a.NoError(err)
 
@@ -551,24 +545,24 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	// Provision instances.
 	instanceRootDir := t.TempDir()
-	stagingInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, stagingInstanceName)
+	testInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, testInstanceName)
 	a.NoError(err)
 	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, prodInstanceName)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
 	a.NoError(err)
-	stagingEnvironment, err := findEnvironment(environments, "Staging")
+	testEnvironment, err := findEnvironment(environments, "Test")
 	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
 	// Add the provisioned instances.
-	stagingInstance, err := ctl.addInstance(api.InstanceCreate{
-		EnvironmentID: stagingEnvironment.ID,
-		Name:          stagingInstanceName,
+	testInstance, err := ctl.addInstance(api.InstanceCreate{
+		EnvironmentID: testEnvironment.ID,
+		Name:          testInstanceName,
 		Engine:        db.SQLite,
-		Host:          stagingInstanceDir,
+		Host:          testInstanceDir,
 	})
 	a.NoError(err)
 	prodInstance, err := ctl.addInstance(api.InstanceCreate{
@@ -580,7 +574,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.NoError(err)
 
 	// Set up label values for tenants.
-	// Prod and staging are using the same tenant values. Use prodTenantNumber because it's larger than stagingInstancesNumber.
+	// Prod and test are using the same tenant values. Use prodTenantNumber because it's larger than testInstancesNumber.
 	var tenants []string
 	for i := 0; i < prodTenantNumber; i++ {
 		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
@@ -599,9 +593,9 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	// Create issues that create databases.
 	baseDatabaseName := "testTenant"
-	for i := 0; i < stagingTenantNumber; i++ {
+	for i := 0; i < testTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+		err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
@@ -616,13 +610,13 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	var stagingDatabases []*api.Database
+	var testDatabases []*api.Database
 	var prodDatabases []*api.Database
-	for i := 0; i < stagingTenantNumber; i++ {
+	for i := 0; i < testTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
 		for _, database := range databases {
-			if database.Instance.ID == stagingInstance.ID && database.Name == databaseName {
-				stagingDatabases = append(stagingDatabases, database)
+			if database.Instance.ID == testInstance.ID && database.Name == databaseName {
+				testDatabases = append(testDatabases, database)
 				break
 			}
 		}
@@ -636,7 +630,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 			}
 		}
 	}
-	a.Equal(len(stagingDatabases), stagingTenantNumber)
+	a.Equal(len(testDatabases), testTenantNumber)
 	a.Equal(len(prodDatabases), prodTenantNumber)
 
 	// Create an issue that updates database schema.
@@ -664,9 +658,9 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query schema.
-	for i := 0; i < stagingTenantNumber; i++ {
+	for i := 0; i < testTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
-		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
+		result, err := ctl.query(testInstance, databaseName, bookTableQuery)
 		a.NoError(err)
 		a.Equal(bookSchemaSQLResult, result)
 	}
@@ -766,8 +760,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -823,12 +815,12 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			// Provision instances.
 			instanceRootDir := t.TempDir()
 
-			var stagingInstanceDirs []string
+			var testInstanceDirs []string
 			var prodInstanceDirs []string
-			for i := 0; i < stagingTenantNumber; i++ {
-				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+			for i := 0; i < testTenantNumber; i++ {
+				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", testInstanceName, i))
 				a.NoError(err)
-				stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
+				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
 			for i := 0; i < prodTenantNumber; i++ {
 				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
@@ -837,25 +829,25 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			}
 			environments, err := ctl.getEnvironments()
 			a.NoError(err)
-			stagingEnvironment, err := findEnvironment(environments, "Staging")
+			testEnvironment, err := findEnvironment(environments, "Test")
 			a.NoError(err)
 			prodEnvironment, err := findEnvironment(environments, "Prod")
 			a.NoError(err)
 
 			// Add the provisioned instances.
-			var stagingInstances []*api.Instance
+			var testInstances []*api.Instance
 			var prodInstances []*api.Instance
-			for i, stagingInstanceDir := range stagingInstanceDirs {
+			for i, testInstanceDir := range testInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
-						EnvironmentID: stagingEnvironment.ID,
-						Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
+						EnvironmentID: testEnvironment.ID,
+						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
-						Host:          stagingInstanceDir,
+						Host:          testInstanceDir,
 					},
 				)
 				a.NoError(err)
-				stagingInstances = append(stagingInstances, instance)
+				testInstances = append(testInstances, instance)
 			}
 			for i, prodInstanceDir := range prodInstanceDirs {
 				instance, err := ctl.addInstance(
@@ -871,7 +863,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			}
 
 			// Set up label values for tenants.
-			// Prod and staging are using the same tenant values. Use prodInstancesNumber because it's larger than stagingInstancesNumber.
+			// Prod and test are using the same tenant values. Use prodInstancesNumber because it's larger than testInstancesNumber.
 			var tenants []string
 			for i := 0; i < prodTenantNumber; i++ {
 				tenants = append(tenants, fmt.Sprintf("tenant%d", i))
@@ -891,10 +883,10 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			// Create issues that create databases.
 			baseDatabaseName := "testTenantVCSSchemaUpdate"
 
-			for i, stagingInstance := range stagingInstances {
+			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
+				err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: tenant})
 				a.NoError(err)
 			}
 			for i, prodInstance := range prodInstances {
@@ -908,12 +900,12 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			databases, err := ctl.getDatabases(api.DatabaseFind{ProjectID: &project.ID})
 			a.NoError(err)
 
-			var stagingDatabases []*api.Database
+			var testDatabases []*api.Database
 			var prodDatabases []*api.Database
-			for _, stagingInstance := range stagingInstances {
+			for _, testInstance := range testInstances {
 				for _, database := range databases {
-					if database.Instance.ID == stagingInstance.ID {
-						stagingDatabases = append(stagingDatabases, database)
+					if database.Instance.ID == testInstance.ID {
+						testDatabases = append(testDatabases, database)
 						break
 					}
 				}
@@ -926,7 +918,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 					}
 				}
 			}
-			a.Equal(stagingTenantNumber, len(stagingDatabases))
+			a.Equal(testTenantNumber, len(testDatabases))
 			a.Equal(prodTenantNumber, len(prodDatabases))
 
 			// Simulate Git commits.
@@ -958,10 +950,10 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			a.Equal(api.TaskDone, status)
 
 			// Query schema.
-			for i, stagingInstance := range stagingInstances {
+			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
+				result, err := ctl.query(testInstance, databaseName, bookTableQuery)
 				a.NoError(err)
 				a.Equal(bookSchemaSQLResult, result)
 			}
@@ -976,7 +968,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			// Query migration history
 			hm1 := map[string]bool{}
 			hm2 := map[string]bool{}
-			for i, instance := range stagingInstances {
+			for i, instance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				histories, err := ctl.getInstanceMigrationHistory(
@@ -1110,8 +1102,6 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -1166,31 +1156,31 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			// Provision instances.
 			instanceRootDir := t.TempDir()
 
-			const stagingTenantNumber = 2 // We need more than one tenant to test wildcard
-			var stagingInstanceDirs []string
-			for i := 0; i < stagingTenantNumber; i++ {
-				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+			const testTenantNumber = 2 // We need more than one tenant to test wildcard
+			var testInstanceDirs []string
+			for i := 0; i < testTenantNumber; i++ {
+				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", testInstanceName, i))
 				a.NoError(err)
-				stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
+				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
 			environments, err := ctl.getEnvironments()
 			a.NoError(err)
-			stagingEnvironment, err := findEnvironment(environments, "Staging")
+			testEnvironment, err := findEnvironment(environments, "Test")
 			a.NoError(err)
 
 			// Add the provisioned instances.
-			var stagingInstances []*api.Instance
-			for i, stagingInstanceDir := range stagingInstanceDirs {
+			var testInstances []*api.Instance
+			for i, testInstanceDir := range testInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
-						EnvironmentID: stagingEnvironment.ID,
-						Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
+						EnvironmentID: testEnvironment.ID,
+						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
-						Host:          stagingInstanceDir,
+						Host:          testInstanceDir,
 					},
 				)
 				a.NoError(err)
-				stagingInstances = append(stagingInstances, instance)
+				testInstances = append(testInstances, instance)
 			}
 
 			// Create deployment configuration.
@@ -1201,14 +1191,14 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				api.DeploymentSchedule{
 					Deployments: []*api.Deployment{
 						{
-							Name: "Staging stage",
+							Name: "Test stage",
 							Spec: &api.DeploymentSpec{
 								Selector: &api.LabelSelector{
 									MatchExpressions: []*api.LabelSelectorRequirement{
 										{
 											Key:      api.EnvironmentKeyName,
 											Operator: api.InOperatorType,
-											Values:   []string{"Staging"},
+											Values:   []string{"Test"},
 										},
 									},
 								},
@@ -1221,10 +1211,10 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 
 			// Create issues that create databases.
 			const baseDatabaseName = "TestTenantVCSDatabaseNameTemplate_Empty"
-			for i, stagingInstance := range stagingInstances {
+			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, stagingInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabase(project, testInstance, databaseName, "", nil /* labelMap */)
 				a.NoError(err)
 			}
 
@@ -1236,16 +1226,16 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			)
 			a.NoError(err)
 
-			var stagingDatabases []*api.Database
-			for _, stagingInstance := range stagingInstances {
+			var testDatabases []*api.Database
+			for _, testInstance := range testInstances {
 				for _, database := range databases {
-					if database.Instance.ID == stagingInstance.ID {
-						stagingDatabases = append(stagingDatabases, database)
+					if database.Instance.ID == testInstance.ID {
+						testDatabases = append(testDatabases, database)
 						break
 					}
 				}
 			}
-			a.Equal(stagingTenantNumber, len(stagingDatabases))
+			a.Equal(testTenantNumber, len(testDatabases))
 
 			// Simulate Git commits for schema update.
 			gitFile := baseDirectory + "/ver1##migrate##create_a_test_table.sql"
@@ -1276,17 +1266,17 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 			a.Equal(api.TaskDone, status)
 
 			// Query schema.
-			for i, stagingInstance := range stagingInstances {
+			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
+				result, err := ctl.query(testInstance, databaseName, bookTableQuery)
 				a.NoError(err)
 				a.Equal(bookSchemaSQLResult, result)
 			}
 
 			// Query migration history
 			hm := map[string]bool{}
-			for i, instance := range stagingInstances {
+			for i, instance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				histories, err := ctl.getInstanceMigrationHistory(
@@ -1396,8 +1386,6 @@ func TestTenantVCS_YAML(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			require.NoError(t, err)
 			err = ctl.setLicense()
 			require.NoError(t, err)
 
@@ -1452,31 +1440,31 @@ func TestTenantVCS_YAML(t *testing.T) {
 			// Provision instances.
 			instanceRootDir := t.TempDir()
 
-			const stagingTenantNumber = 2 // We need more than one tenant to test database selection
-			var stagingInstanceDirs []string
-			for i := 0; i < stagingTenantNumber; i++ {
-				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+			const testTenantNumber = 2 // We need more than one tenant to test database selection
+			var testInstanceDirs []string
+			for i := 0; i < testTenantNumber; i++ {
+				instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", testInstanceName, i))
 				require.NoError(t, err)
-				stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
+				testInstanceDirs = append(testInstanceDirs, instanceDir)
 			}
 			environments, err := ctl.getEnvironments()
 			require.NoError(t, err)
-			stagingEnvironment, err := findEnvironment(environments, "Staging")
+			testEnvironment, err := findEnvironment(environments, "Test")
 			require.NoError(t, err)
 
 			// Add the provisioned instances.
-			var stagingInstances []*api.Instance
-			for i, stagingInstanceDir := range stagingInstanceDirs {
+			var testInstances []*api.Instance
+			for i, testInstanceDir := range testInstanceDirs {
 				instance, err := ctl.addInstance(
 					api.InstanceCreate{
-						EnvironmentID: stagingEnvironment.ID,
-						Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
+						EnvironmentID: testEnvironment.ID,
+						Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 						Engine:        db.SQLite,
-						Host:          stagingInstanceDir,
+						Host:          testInstanceDir,
 					},
 				)
 				require.NoError(t, err)
-				stagingInstances = append(stagingInstances, instance)
+				testInstances = append(testInstances, instance)
 			}
 
 			// Create deployment configuration.
@@ -1487,14 +1475,14 @@ func TestTenantVCS_YAML(t *testing.T) {
 				api.DeploymentSchedule{
 					Deployments: []*api.Deployment{
 						{
-							Name: "Staging stage",
+							Name: "Test stage",
 							Spec: &api.DeploymentSpec{
 								Selector: &api.LabelSelector{
 									MatchExpressions: []*api.LabelSelectorRequirement{
 										{
 											Key:      api.EnvironmentKeyName,
 											Operator: api.InOperatorType,
-											Values:   []string{"Staging"},
+											Values:   []string{"Test"},
 										},
 									},
 								},
@@ -1507,10 +1495,10 @@ func TestTenantVCS_YAML(t *testing.T) {
 
 			// Create issues that create databases.
 			const baseDatabaseName = "TestTenantVCS_YAML"
-			for i, stagingInstance := range stagingInstances {
+			for i, testInstance := range testInstances {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
-				err := ctl.createDatabase(project, stagingInstance, databaseName, "", nil /* labelMap */)
+				err := ctl.createDatabase(project, testInstance, databaseName, "", nil /* labelMap */)
 				require.NoError(t, err)
 			}
 
@@ -1522,16 +1510,16 @@ func TestTenantVCS_YAML(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			var stagingDatabases []*api.Database
-			for _, stagingInstance := range stagingInstances {
+			var testDatabases []*api.Database
+			for _, testInstance := range testInstances {
 				for _, database := range databases {
-					if database.Instance.ID == stagingInstance.ID {
-						stagingDatabases = append(stagingDatabases, database)
+					if database.Instance.ID == testInstance.ID {
+						testDatabases = append(testDatabases, database)
 						break
 					}
 				}
 			}
-			require.Equal(t, stagingTenantNumber, len(stagingDatabases))
+			require.Equal(t, testTenantNumber, len(testDatabases))
 
 			// Simulate Git commits for schema update.
 			gitFile1 := baseDirectory + "/ver1##migrate##create_a_test_table.sql"
@@ -1602,7 +1590,7 @@ statement: |
 			// Query migration history, only the database of the first tenant should be touched
 			histories, err := ctl.getInstanceMigrationHistory(
 				db.MigrationHistoryFind{
-					ID:       &stagingInstances[0].ID,
+					ID:       &testInstances[0].ID,
 					Database: &databases[0].Name,
 				},
 			)
@@ -1612,7 +1600,7 @@ statement: |
 
 			histories, err = ctl.getInstanceMigrationHistory(
 				db.MigrationHistoryFind{
-					ID:       &stagingInstances[1].ID,
+					ID:       &testInstances[1].ID,
 					Database: &databases[1].Name,
 				},
 			)

@@ -31,8 +31,6 @@ func TestDatabaseEdit(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()

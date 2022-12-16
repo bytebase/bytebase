@@ -49,8 +49,6 @@ DROP SCHEMA "schema_a";
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()

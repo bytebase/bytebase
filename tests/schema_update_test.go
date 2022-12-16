@@ -40,8 +40,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	err = ctl.setLicense()
 	a.NoError(err)
@@ -367,8 +365,6 @@ func TestVCS(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -748,8 +744,6 @@ func TestVCS_SDL(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -1251,8 +1245,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -1473,8 +1465,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -1754,8 +1744,6 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -1906,8 +1894,6 @@ CREATE TABLE public.book (
 	defer func() {
 		_ = ctl.Close(ctx)
 	}()
-	err = ctl.Login()
-	a.NoError(err)
 	err = ctl.setLicense()
 	a.NoError(err)
 	environmentName := t.Name()

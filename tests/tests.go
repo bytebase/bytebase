@@ -101,14 +101,14 @@ CREATE TABLE book3 (
 	deploymentSchedule = api.DeploymentSchedule{
 		Deployments: []*api.Deployment{
 			{
-				Name: "Staging stage",
+				Name: "Test stage",
 				Spec: &api.DeploymentSpec{
 					Selector: &api.LabelSelector{
 						MatchExpressions: []*api.LabelSelectorRequirement{
 							{
 								Key:      api.EnvironmentKeyName,
 								Operator: api.InOperatorType,
-								Values:   []string{"Staging"},
+								Values:   []string{"Test"},
 							},
 							{
 								Key:      api.TenantLabelKey,
@@ -231,7 +231,13 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	ctl.server = server
 	ctl.profile = profile
 
-	return ctl.start(ctx, serverPort)
+	if err := ctl.start(ctx, serverPort); err != nil {
+		return err
+	}
+	if err := ctl.Signup(); err != nil {
+		return err
+	}
+	return ctl.Login()
 }
 
 // StartServer starts the main server with embed Postgres.
@@ -249,7 +255,13 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	ctl.server = server
 	ctl.profile = profile
 
-	return ctl.start(ctx, serverPort)
+	if err := ctl.start(ctx, serverPort); err != nil {
+		return err
+	}
+	if err := ctl.Signup(); err != nil {
+		return err
+	}
+	return ctl.Login()
 }
 
 // GetTestProfile will return a profile for testing.
@@ -264,7 +276,6 @@ func getTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL 
 		PgUser:               "bbtest",
 		DataDir:              dataDir,
 		ResourceDirOverride:  resourceDirOverride,
-		DemoDataDir:          fmt.Sprintf("demo/%s", testReleaseMode),
 		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
@@ -282,7 +293,6 @@ func getTestProfileWithExternalPg(dataDir, resourceDirOverride string, port int,
 		PgUser:               pgUser,
 		DataDir:              dataDir,
 		ResourceDirOverride:  resourceDirOverride,
-		DemoDataDir:          fmt.Sprintf("demo/%s", testReleaseMode),
 		AppRunnerInterval:    1 * time.Second,
 		BackupRunnerInterval: 10 * time.Second,
 		BackupStorageBackend: api.BackupStorageBackendLocal,
@@ -480,6 +490,18 @@ func (ctl *controller) Close(ctx context.Context) error {
 		}
 	}
 	return e
+}
+
+// Signup will signup user demo@example.com and caches its cookie.
+func (ctl *controller) Signup() error {
+	if _, err := ctl.client.Post(
+		fmt.Sprintf("%s/auth/signup", ctl.apiURL),
+		"",
+		strings.NewReader(`{"data":{"type":"signupInfo","attributes":{"email":"demo@example.com","password":"1024","name":"demo"}}}`),
+	); err != nil {
+		return errors.Wrap(err, "fail to post login request")
+	}
+	return nil
 }
 
 // Login will login as user demo@example.com and caches its cookie.
