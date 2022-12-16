@@ -24,12 +24,18 @@ import {
   useTabStore,
   useSQLEditorStore,
   useDatabaseStore,
-  useTableStore,
   useSheetStore,
   useInstanceById,
+  useDBSchemaStore,
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import type { ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
+import type {
+  Database,
+  ExecuteConfig,
+  ExecuteOption,
+  SQLDialect,
+} from "@/types";
+import { TableMetadata } from "@/types/proto/database";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
@@ -44,7 +50,7 @@ const emit = defineEmits<{
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
-const tableStore = useTableStore();
+const dbSchemaStore = useDBSchemaStore();
 const sqlEditorStore = useSQLEditorStore();
 const sheetStore = useSheetStore();
 
@@ -152,16 +158,19 @@ const handleEditorReady = async () => {
     },
   });
 
-  watchEffect(() => {
+  watchEffect(async () => {
     if (selectedInstance.value) {
+      const databaseMap: Map<Database, TableMetadata[]> = new Map();
       const databaseList = databaseStore.getDatabaseListByInstanceId(
         selectedInstance.value.id
       );
-      const tableList = databaseList
-        .map((item) => tableStore.getTableListByDatabaseId(item.id))
-        .flat();
-
-      editorRef.value?.setEditorAutoCompletionContext(databaseList, tableList);
+      for (const database of databaseList) {
+        const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
+          database.id
+        );
+        databaseMap.set(database, tableList);
+      }
+      editorRef.value?.setEditorAutoCompletionContext(databaseMap);
     }
   });
 };

@@ -45,8 +45,6 @@ export type DataSourceId = IdType;
 
 export type DatabaseId = IdType;
 
-export type TableId = IdType;
-
 export type ViewId = IdType;
 
 export type DBExtensionId = IdType;

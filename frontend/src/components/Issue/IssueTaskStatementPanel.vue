@@ -184,14 +184,22 @@ import { useI18n } from "vue-i18n";
 
 import {
   pushNotification,
+  useDBSchemaStore,
   useRepositoryStore,
-  useTableStore,
   useUIStateStore,
 } from "@/store";
 import { useIssueLogic } from "./logic";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
-import type { Issue, Repository, SQLDialect, Task, TaskId } from "@/types";
+import type {
+  Database,
+  Issue,
+  Repository,
+  SQLDialect,
+  Task,
+  TaskId,
+} from "@/types";
 import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
+import { TableMetadata } from "@/types/proto/database";
 import IssueRollbackButton from "./IssueRollbackButton.vue";
 
 interface LocalState {
@@ -232,8 +240,9 @@ export default defineComponent({
       applyStatementToOtherTasks,
     } = useIssueLogic();
 
-    const uiStateStore = useUIStateStore();
     const { t } = useI18n();
+    const uiStateStore = useUIStateStore();
+    const dbSchemaStore = useDBSchemaStore();
 
     const state = reactive<LocalState>({
       editing: false,
@@ -283,20 +292,24 @@ export default defineComponent({
       state.editStatement = cur;
     });
 
-    const handleMonacoEditorReady = () => {
-      editorRef.value?.setEditorAutoCompletionContext(
-        databaseList.value,
-        tableList.value
-      );
+    const handleUpdateEditorAutoCompletionContext = async () => {
+      const databaseMap: Map<Database, TableMetadata[]> = new Map();
+      for (const database of databaseList.value) {
+        const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
+          database.id
+        );
+        databaseMap.set(database, tableList);
+      }
+      editorRef.value?.setEditorAutoCompletionContext(databaseMap);
+    };
 
+    const handleMonacoEditorReady = () => {
+      handleUpdateEditorAutoCompletionContext();
       updateEditorHeight();
     };
 
     watch([databaseList, tableList], () => {
-      editorRef.value?.setEditorAutoCompletionContext(
-        databaseList.value,
-        tableList.value
-      );
+      handleUpdateEditorAutoCompletionContext();
     });
 
     const updateEditorHeight = () => {
@@ -455,7 +468,7 @@ export default defineComponent({
 
 const useDatabaseAndTableList = () => {
   const { selectedDatabase } = useIssueLogic();
-  const tableStore = useTableStore();
+  const dbSchemaStore = useDBSchemaStore();
 
   const databaseList = computed(() => {
     if (selectedDatabase.value) return [selectedDatabase.value];
@@ -465,14 +478,14 @@ const useDatabaseAndTableList = () => {
   watch(
     databaseList,
     (list) => {
-      list.forEach((db) => tableStore.getOrFetchTableListByDatabaseId(db.id));
+      list.forEach((db) => dbSchemaStore.getOrFetchDatabaseMetadataById(db.id));
     },
     { immediate: true }
   );
 
   const tableList = computed(() => {
     return databaseList.value
-      .map((item) => tableStore.getTableListByDatabaseId(item.id))
+      .map((item) => dbSchemaStore.getTableListByDatabaseId(item.id))
       .flat();
   });
 

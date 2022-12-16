@@ -64,9 +64,9 @@ import {
   useConnectionTreeStore,
   useCurrentUser,
   useDatabaseStore,
+  useDBSchemaStore,
   useInstanceStore,
   useIsLoggedIn,
-  useTableStore,
   useTabStore,
 } from "@/store";
 import {
@@ -98,7 +98,7 @@ const { t } = useI18n();
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const connectionTreeStore = useConnectionTreeStore();
-const tableStore = useTableStore();
+const dbSchemaStore = useDBSchemaStore();
 const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUser = useCurrentUser();
@@ -202,14 +202,9 @@ const setConnection = (
       const databaseId = option.parentId;
       const databaseInfo = databaseStore.getDatabaseById(databaseId);
       const instanceId = databaseInfo.instance.id;
-      const tableId = option.id;
       conn.instanceId = instanceId;
       conn.databaseId = databaseId;
-      tableStore
-        .getOrFetchTableByDatabaseIdAndTableId(databaseId, tableId)
-        .then((table) => {
-          connectionTreeStore.selectedTable = table;
-        });
+      connectionTreeStore.selectedTableAtom = option;
     }
 
     connect();
@@ -225,7 +220,7 @@ const renderLabel = ({ option }: { option: ConnectionAtom }) => {
   };
 
   if (option.type === "table") {
-    if (option.id === connectionTreeStore.selectedTable.id) {
+    if (option === connectionTreeStore.selectedTableAtom) {
       emphasize();
     }
   }
@@ -300,7 +295,9 @@ const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
 
 const loadSubTree = async (item: ConnectionAtom): Promise<void> => {
   if (item.type === "database") {
-    const tableList = await useTableStore().fetchTableListByDatabaseId(item.id);
+    const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
+      item.id as DatabaseId
+    );
 
     const mapper = mapConnectionAtom("table", item.id);
     item.children = tableList.map((table) => generateTableItem(mapper(table)));

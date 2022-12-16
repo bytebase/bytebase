@@ -11,7 +11,7 @@ import {
   DatabaseEdit,
   ResourceObject,
 } from "@/types";
-import { DatabaseEditResult, DatabaseState } from "@/types/schemaEditor";
+import { DatabaseEditResult } from "@/types/schemaEditor";
 import { Table } from "@/types/schemaEditor/atomType";
 import { useDatabaseStore, useDBSchemaStore } from ".";
 import { transformTableDataToTable } from "@/utils/schemaEditor/transform";
@@ -26,7 +26,7 @@ const getDefaultSchemaEditorState = (): SchemaEditorState => {
       tabMap: new Map<string, TabContext>(),
       currentTabId: "",
     },
-    databaseStateById: new Map<DatabaseId, DatabaseState>(),
+    databaseStateById: new Map(),
   };
 };
 
@@ -177,8 +177,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
         });
       }
 
-      return (this.databaseStateById.get(databaseId) as DatabaseState)
-        .tableList;
+      return this.databaseStateById.get(databaseId)!.tableList;
     },
     getTableWithTableTab(tab: TableTabContext) {
       return this.databaseStateById
@@ -188,9 +187,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
     dropTable(databaseId: DatabaseId, table: Table) {
       // Remove table record and close tab for created table.
       if (table.status === "created") {
-        const tableList = (
-          this.databaseStateById.get(databaseId) as DatabaseState
-        ).tableList;
+        const tableList = this.databaseStateById.get(databaseId)!.tableList;
         const index = tableList.findIndex(
           (item) => item.newName === table.newName
         );
