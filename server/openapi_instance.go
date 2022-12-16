@@ -7,11 +7,9 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
@@ -210,20 +208,39 @@ func (s *Server) getPGRole(c echo.Context) error {
 }
 
 func (s *Server) createPGRole(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	upsert := &openAPIV1.PGRoleUpsert{}
+	upsert := &db.RoleUpsert{}
 	if err := json.Unmarshal(body, upsert); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
 	}
 
-	statement := fmt.Sprintf(`CREATE ROLE "%s" %s;`, upsert.Name, upsert.ToAttributeStatement())
-	role, err := s.upsertPGRole(c, statement, upsert.Name)
+	instance, err := s.validateInstance(ctx, c)
 	if err != nil {
 		return err
+	}
+
+	role, err := func() (*db.Role, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		role, err := driver.CreateRole(ctx, upsert)
+		if err != nil {
+			return nil, err
+		}
+
+		return role, nil
+	}()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, role)
@@ -245,11 +262,7 @@ func (s *Server) deletePGRole(c echo.Context) error {
 		}
 		defer driver.Close(ctx)
 
-		if _, err := driver.Execute(ctx, fmt.Sprintf(`DROP ROLE IF EXISTS "%s"`, roleName), false); err != nil {
-			return err
-		}
-
-		return nil
+		return driver.DeleteRole(ctx, roleName)
 	}(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to drop the role %s", roleName)).SetInternal(err)
 	}
@@ -258,32 +271,40 @@ func (s *Server) deletePGRole(c echo.Context) error {
 }
 
 func (s *Server) updatePGRole(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	upsert := &openAPIV1.PGRoleUpsert{}
+	upsert := &db.RoleUpsert{}
 	if err := json.Unmarshal(body, upsert); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
 	}
 
-	rawName := c.Param("roleName")
-	statement := []string{}
-	if rawName != upsert.Name {
-		statement = append(statement, fmt.Sprintf(`ALTER ROLE "%s" RENAME TO "%s";`, rawName, upsert.Name))
-	}
-	if upsert.ToAttributeStatement() != "" {
-		statement = append(statement, fmt.Sprintf(`ALTER ROLE "%s" %s;`, upsert.Name, upsert.ToAttributeStatement()))
-	}
-
-	if len(statement) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid upsert for role")
-	}
-
-	role, err := s.upsertPGRole(c, strings.Join(statement, "\n"), upsert.Name)
+	instance, err := s.validateInstance(ctx, c)
 	if err != nil {
 		return err
+	}
+
+	rawName := c.Param("roleName")
+	role, err := func() (*db.Role, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		role, err := driver.UpdateRole(ctx, rawName, upsert)
+		if err != nil {
+			return nil, err
+		}
+
+		return role, nil
+	}()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, role)
@@ -302,86 +323,30 @@ func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Ins
 	if instance == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", instanceID))
 	}
-	if instance.Engine != db.Postgres {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Only PostgreSQL supports create the role")
-	}
 
 	return instance, nil
 }
 
-func (s *Server) findPGRoleByName(ctx context.Context, instance *api.Instance, roleName string) (*openAPIV1.PGRole, error) {
-	rows, err := func() ([]interface{}, error) {
+func (s *Server) findPGRoleByName(ctx context.Context, instance *api.Instance, roleName string) (*db.Role, error) {
+	role, err := func() (*db.Role, error) {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
 		}
 		defer driver.Close(ctx)
 
-		rowSet, err := driver.Query(ctx, fmt.Sprintf("SELECT * FROM pg_catalog.pg_roles WHERE rolname = '%s'", roleName), &db.QueryContext{
-			ReadOnly: true,
-		})
+		role, err := driver.FindRole(ctx, roleName)
 		if err != nil {
 			return nil, err
 		}
 
-		return rowSet, nil
+		return role, nil
 	}()
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
-	if len(rows) != 3 {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Invalid query result length")
-	}
-
-	columnList, ok := rows[0].([]string)
-	if !ok {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get the column")
-	}
-	dataList, ok := rows[2].([]interface{})
-	if !ok {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get the data list")
-	}
-	if len(dataList) != 1 {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Invalid data list length")
-	}
-	data, ok := dataList[0].([]interface{})
-	if !ok {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get the data")
-	}
-
-	role, err := convertToPGRole(instance.ID, columnList, data)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert the role").SetInternal(err)
-	}
-
 	return role, nil
-}
-
-func (s *Server) upsertPGRole(c echo.Context, statement string, roleName string) (*openAPIV1.PGRole, error) {
-	ctx := c.Request().Context()
-	instance, err := s.validateInstance(ctx, c)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := func() error {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
-		if err != nil {
-			return err
-		}
-		defer driver.Close(ctx)
-
-		if _, err := driver.Execute(ctx, statement, false); err != nil {
-			return err
-		}
-
-		return nil
-	}(); err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to exec the statement: %v", statement)).SetInternal(err)
-	}
-
-	return s.findPGRoleByName(ctx, instance, roleName)
 }
 
 func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
@@ -456,51 +421,4 @@ func convertToAPIDataSouceList(dataSourceList []*openAPIV1.DataSourceCreate) ([]
 	}
 
 	return res, nil
-}
-
-func convertToPGRole(instanceID int, columnList []string, raw []interface{}) (*openAPIV1.PGRole, error) {
-	if len(columnList) != len(raw) {
-		return nil, errors.Errorf("invalid raw data")
-	}
-
-	role := &openAPIV1.PGRole{
-		InstanceID: instanceID,
-		Attribute:  &openAPIV1.PGRoleAttribute{},
-	}
-
-	for i, column := range columnList {
-		switch column {
-		case "rolname":
-			role.Name = raw[i].(string)
-		case "rolsuper":
-			role.Attribute.SuperUser = raw[i].(bool)
-		case "rolinherit":
-			inherit := raw[i].(bool)
-			role.Attribute.NoInherit = !inherit
-		case "rolcreaterole":
-			role.Attribute.CreateRole = raw[i].(bool)
-		case "rolcreatedb":
-			role.Attribute.CreateDB = raw[i].(bool)
-		case "rolcanlogin":
-			role.Attribute.CanLogin = raw[i].(bool)
-		case "rolreplication":
-			role.Attribute.Replication = raw[i].(bool)
-		case "rolconnlimit":
-			limit := raw[i].(string)
-			count, err := strconv.Atoi(limit)
-			if err != nil {
-				return nil, err
-			}
-			role.ConnectionLimit = count
-		case "rolvaliduntil":
-			until, ok := raw[i].(string)
-			if ok {
-				role.ValidUntil = &until
-			}
-		case "rolbypassrls":
-			role.Attribute.ByPassRLS = raw[i].(bool)
-		}
-	}
-
-	return role, nil
 }

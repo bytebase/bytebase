@@ -318,6 +318,26 @@ func (*MockDriver) Restore(_ context.Context, _ io.Reader) error {
 	return nil
 }
 
+// CreateRole creates the role.
+func (*MockDriver) CreateRole(_ context.Context, _ *database.RoleUpsert) (*database.Role, error) {
+	return nil, nil
+}
+
+// UpdateRole updates the role.
+func (*MockDriver) UpdateRole(_ context.Context, _ string, _ *database.RoleUpsert) (*database.Role, error) {
+	return nil, nil
+}
+
+// FindRole finds the role by name.
+func (*MockDriver) FindRole(_ context.Context, _ string) (*database.Role, error) {
+	return nil, nil
+}
+
+// DeleteRole deletes the role by name.
+func (*MockDriver) DeleteRole(_ context.Context, _ string) error {
+	return nil
+}
+
 // SetDefaultSQLReviewRulePayload sets the default payload for this rule.
 func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 	var payload []byte
