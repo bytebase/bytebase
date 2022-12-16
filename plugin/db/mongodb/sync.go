@@ -30,14 +30,6 @@ type Role struct {
 	DB       string `json:"db" bson:"db"`
 }
 
-var (
-	systemDatabases = map[string]bool{
-		"admin":  true,
-		"config": true,
-		"local":  true,
-	}
-)
-
 // SyncInstance syncs the instance meta.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	version, err := driver.getVersion(ctx)
@@ -49,7 +41,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 	var databaseMetaList []db.DatabaseMeta
-	dbList, err := driver.getDatabaseList(ctx)
+	dbList, err := driver.getNonSystemDatabaseList(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -210,20 +202,12 @@ func (driver *Driver) isDatabaseExist(ctx context.Context, databaseName string) 
 	return len(databaseList) == 1, nil
 }
 
-// getDatabaseList returns the list of databases.
-func (driver *Driver) getDatabaseList(ctx context.Context) ([]string, error) {
+// getNonSystemDatabaseList returns the list of non system databases.
+func (driver *Driver) getNonSystemDatabaseList(ctx context.Context) ([]string, error) {
 	filter := bson.M{
 		"name": bson.M{
-			"$nin": append(flattenSystemDatabase(), "bytebase"),
+			"$nin": []string{"admin", "config", "local", "bytebase"},
 		},
 	}
 	return driver.client.ListDatabaseNames(ctx, filter)
-}
-
-func flattenSystemDatabase() []string {
-	var systemDatabaseList []string
-	for databaseName := range systemDatabases {
-		systemDatabaseList = append(systemDatabaseList, databaseName)
-	}
-	return systemDatabaseList
 }
