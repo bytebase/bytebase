@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	colelctionType = "collection"
+	collectionType = "collection"
 
 	_ db.Driver = (*Driver)(nil)
 )
