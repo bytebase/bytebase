@@ -1,4 +1,4 @@
-import { IssueCreate, IssueType, UpdateSchemaGhostContext } from "@/types";
+import { IssueCreate, IssueType, MigrationContext } from "@/types";
 import {
   findDatabaseListByQuery,
   BuildNewIssueContext,
@@ -31,17 +31,29 @@ const buildNewGhostIssue = async (
   helper.issueCreate!.type = "bb.issue.database.schema.update.ghost";
 
   const databaseList = findDatabaseListByQuery(context);
-  const createContext: UpdateSchemaGhostContext = {
-    detailList: databaseList.map((db) => {
+  const createContext: MigrationContext = {
+    detailList: [],
+  };
+  if (databaseList.length > 0) {
+    // For multi-selection pipeline, pass databaseId accordingly.
+    createContext.detailList = databaseList.map((db) => {
       return {
         migrationType: "MIGRATE",
         databaseId: db.id,
         statement: VALIDATE_ONLY_SQL,
         earliestAllowedTs: 0,
       };
-    }),
-  };
-
+    });
+  } else {
+    // For tenant deployment config pipeline, omit databaseId
+    createContext.detailList = [
+      {
+        migrationType: "MIGRATE",
+        statement: VALIDATE_ONLY_SQL,
+        earliestAllowedTs: 0,
+      },
+    ];
+  }
   helper.issueCreate!.createContext = createContext;
 
   await helper.validate();

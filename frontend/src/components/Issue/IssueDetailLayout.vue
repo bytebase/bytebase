@@ -24,11 +24,11 @@
 
       <!-- Stage Flow Bar -->
       <template v-if="showPipelineFlowBar">
-        <template v-if="isTenantMode">
-          <PipelineTenantFlow v-if="project" class="border-t border-b" />
-        </template>
-        <template v-else-if="isGhostMode">
+        <template v-if="isGhostMode">
           <PipelineGhostFlow v-if="project" class="border-t border-b" />
+        </template>
+        <template v-else-if="isTenantMode">
+          <PipelineTenantFlow v-if="project" class="border-t border-b" />
         </template>
         <template v-else-if="isPITRMode">
           <PipelinePITRFlow v-if="project" class="border-t border-b" />
@@ -190,14 +190,17 @@ const {
   isValidStage,
   allowApplyIssueStatusTransition,
   allowApplyTaskStatusTransition,
+  selectedStatement,
+  allowApplyStatementToOtherTasks,
+  applyStatementToOtherTasks,
 } = useBaseIssueLogic({ issue, create });
 
 const issueLogic = ref<IssueLogic>();
 
 // Determine which type of IssueLogicProvider should be used
 const logicProviderType = computed(() => {
-  if (isTenantMode.value) return TenantModeProvider;
   if (isGhostMode.value) return GhostModeProvider;
+  if (isTenantMode.value) return TenantModeProvider;
   return StandardModeProvider;
 });
 
@@ -384,6 +387,9 @@ provideIssueLogic(
     createIssue,
     allowApplyIssueStatusTransition,
     allowApplyTaskStatusTransition,
+    selectedStatement,
+    allowApplyStatementToOtherTasks,
+    applyStatementToOtherTasks,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.
