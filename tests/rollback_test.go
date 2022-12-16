@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
@@ -91,6 +92,9 @@ func TestRollback(t *testing.T) {
 }
 
 func TestCreateRollbackIssueMySQL(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
 	t.Parallel()
 
 	a := require.New(t)
