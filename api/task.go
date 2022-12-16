@@ -106,6 +106,7 @@ type TaskDatabaseSchemaBaselinePayload struct {
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
+	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
@@ -113,6 +114,7 @@ type TaskDatabaseSchemaUpdatePayload struct {
 // TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
 type TaskDatabaseSchemaUpdateSDLPayload struct {
 	Statement     string         `json:"statement,omitempty"`
+	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
@@ -120,6 +122,7 @@ type TaskDatabaseSchemaUpdateSDLPayload struct {
 // TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
 type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 	Statement     string         `json:"statement,omitempty"`
+	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 	// SocketFileName is the socket file that gh-ost listens on.
@@ -134,6 +137,7 @@ type TaskDatabaseSchemaUpdateGhostCutoverPayload struct{}
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
+	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 

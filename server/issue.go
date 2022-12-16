@@ -751,9 +751,10 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		if detail.MigrationType != db.Baseline && detail.MigrationType != db.Migrate && detail.MigrationType != db.MigrateSDL && detail.MigrationType != db.Data {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "support migrate, migrateSDL and data type migration only")
 		}
-		if detail.Statement == "" {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+		if detail.MigrationType != db.Baseline && (detail.Statement == "" && detail.SheetID == 0) {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "require sql statement or sheet ID to create an issue")
 		}
+		// TODO(d): validate sheet ID.
 		if detail.DatabaseID > 0 {
 			databaseIDCount++
 		} else {
@@ -925,7 +926,6 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		taskName = fmt.Sprintf("Establish baseline for database %q", database.Name)
 		taskType = api.TaskDatabaseSchemaBaseline
 		payload := api.TaskDatabaseSchemaBaselinePayload{
-			Statement:     d.Statement,
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
 		}
@@ -939,6 +939,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		taskType = api.TaskDatabaseSchemaUpdate
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			Statement:     d.Statement,
+			SheetID:       d.SheetID,
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
 		}
@@ -952,6 +953,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		taskType = api.TaskDatabaseSchemaUpdateSDL
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			Statement:     d.Statement,
+			SheetID:       d.SheetID,
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
 		}
@@ -965,6 +967,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		taskType = api.TaskDatabaseDataUpdate
 		payload := api.TaskDatabaseDataUpdatePayload{
 			Statement:     d.Statement,
+			SheetID:       d.SheetID,
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
 		}
