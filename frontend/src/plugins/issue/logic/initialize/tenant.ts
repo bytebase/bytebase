@@ -50,22 +50,26 @@ const buildNewTenantSchemaUpdateIssue = async (
   }
 
   const databaseList = findDatabaseListByQuery(context);
-  if (databaseList.length !== 0) {
+  if (databaseList.length > 0) {
+    // For multi-selection pipeline, pass databaseId accordingly.
     helper.issueCreate!.createContext = {
       detailList: databaseList.map((db) => {
         return {
           migrationType: migrationType,
           databaseId: db.id,
           statement: VALIDATE_ONLY_SQL,
+          earliestAllowedTs: 0,
         };
       }),
     };
   } else {
+    // For tenant deployment config pipeline, omit databaseId
     helper.issueCreate!.createContext = {
       detailList: [
         {
           migrationType: migrationType,
           statement: VALIDATE_ONLY_SQL,
+          earliestAllowedTs: 0,
         },
       ],
     };

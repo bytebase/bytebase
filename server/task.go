@@ -42,6 +42,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		var taskPatchedList []*api.Task
 		for _, stage := range issue.Pipeline.StageList {
 			for _, task := range stage.TaskList {
+				// Skip gh-ost cutover task as this task has no statement.
+				if task.Type == api.TaskDatabaseSchemaUpdateGhostCutover {
+					continue
+				}
 				taskPatch := *taskPatch
 				taskPatch.ID = task.ID
 				taskPatched, httpErr := s.TaskScheduler.PatchTaskStatement(ctx, task, &taskPatch, issue)
