@@ -30,11 +30,10 @@ func newDatabaseState(d *storepb.DatabaseMetadata, context *FinderContext) *Data
 
 func newSchemaState(s *storepb.SchemaMetadata, context *FinderContext) *SchemaState {
 	schema := &SchemaState{
-		ctx:          context.Copy(),
-		name:         s.Name,
-		tableSet:     make(tableStateMap),
-		viewSet:      make(viewStateMap),
-		extensionSet: make(extensionStateMap),
+		ctx:      context.Copy(),
+		name:     s.Name,
+		tableSet: make(tableStateMap),
+		viewSet:  make(viewStateMap),
 	}
 
 	for _, table := range s.Tables {
@@ -278,11 +277,10 @@ func (d *DatabaseState) FindTable(find *TableFind) *TableState {
 
 // SchemaState is the state for walk-through.
 type SchemaState struct {
-	ctx          *FinderContext
-	name         string
-	tableSet     tableStateMap
-	viewSet      viewStateMap
-	extensionSet extensionStateMap
+	ctx      *FinderContext
+	name     string
+	tableSet tableStateMap
+	viewSet  viewStateMap
 }
 type schemaStateMap map[string]*SchemaState
 
@@ -435,14 +433,6 @@ type ViewState struct {
 	comment    *string
 }
 type viewStateMap map[string]*ViewState
-
-// ExtensionState is the state for walk-through.
-type ExtensionState struct {
-	name        string
-	version     *string
-	description *string
-}
-type extensionStateMap map[string]*ExtensionState
 
 func copyStringPointer(p *string) *string {
 	if p != nil {

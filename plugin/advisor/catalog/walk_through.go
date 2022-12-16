@@ -1241,11 +1241,10 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 
 func (d *DatabaseState) createSchema(name string) *SchemaState {
 	schema := &SchemaState{
-		ctx:          d.ctx.Copy(),
-		name:         name,
-		tableSet:     make(tableStateMap),
-		viewSet:      make(viewStateMap),
-		extensionSet: make(extensionStateMap),
+		ctx:      d.ctx.Copy(),
+		name:     name,
+		tableSet: make(tableStateMap),
+		viewSet:  make(viewStateMap),
 	}
 
 	d.schemaSet[name] = schema
