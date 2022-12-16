@@ -17,6 +17,9 @@ import (
 )
 
 var (
+	colelctionType = "collection"
+	viewType       = "view"
+
 	_ db.Driver = (*Driver)(nil)
 )
 
@@ -80,7 +83,7 @@ func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interfa
 
 // Dump dumps the database.
 func (*Driver) Dump(_ context.Context, _ string, _ io.Writer, _ bool) (string, error) {
-	panic("not implemented")
+	return "", nil
 }
 
 // Restore restores the backup read from src.
@@ -105,7 +108,7 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		connectionURL = fmt.Sprintf("%s:%s", connectionURL, connConfig.Port)
 	}
 	if connConfig.Database != "" {
-		connectionURL = fmt.Sprintf("%s/%s", connectionURL, connConfig.Database)
+		connectionURL = fmt.Sprintf(`%s/?authSource=%s`, connectionURL, connConfig.Database)
 	}
 	return connectionURL
 }
