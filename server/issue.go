@@ -332,6 +332,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.Issue, error) {
+	if issueCreate.ProjectID == api.DefaultProjectID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create a new issue in the default project")
+	}
+
 	// Run pre-condition check first to make sure all tasks are valid, otherwise we will create partial pipelines
 	// since we are not creating pipeline/stage list/task list in a single transaction.
 	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
