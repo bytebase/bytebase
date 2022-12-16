@@ -70,17 +70,16 @@
 </template>
 
 <script lang="ts">
+import { cloneDeep } from "lodash-es";
 import { computed, defineComponent, PropType, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   Column,
   Database,
-  EngineType,
   SensitiveData,
   SensitiveDataPolicyPayload,
-  Table,
-} from "../types";
-import { useI18n } from "vue-i18n";
-import { cloneDeep } from "lodash-es";
+} from "@/types";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/database";
 import { featureToRef, useCurrentUser, usePolicyStore } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import { BBTableColumn } from "@/bbkit/types";
@@ -98,15 +97,11 @@ export default defineComponent({
     },
     table: {
       required: true,
-      type: Object as PropType<Table>,
+      type: Object as PropType<TableMetadata>,
     },
     columnList: {
       required: true,
-      type: Object as PropType<Column[]>,
-    },
-    engine: {
-      required: true,
-      type: String as PropType<EngineType>,
+      type: Object as PropType<ColumnMetadata[]>,
     },
     sensitiveDataList: {
       required: true,
@@ -118,10 +113,13 @@ export default defineComponent({
     const state = reactive<LocalState>({
       showFeatureModal: false,
     });
+    const engine = computed(() => {
+      return props.database.instance.engine;
+    });
 
     const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
     const showSensitiveColumn = computed(() => {
-      return hasSensitiveDataFeature.value && props.engine === "MYSQL";
+      return hasSensitiveDataFeature.value && engine.value === "MYSQL";
     });
 
     const currentUser = useCurrentUser();
@@ -213,7 +211,7 @@ export default defineComponent({
     ]);
 
     const columnNameList = computed(() => {
-      switch (props.engine) {
+      switch (engine.value) {
         case "POSTGRES":
           return POSTGRES_COLUMN_LIST.value;
         case "CLICKHOUSE":
@@ -276,6 +274,7 @@ export default defineComponent({
     };
 
     return {
+      engine,
       state,
       columnNameList,
       showSensitiveColumn,

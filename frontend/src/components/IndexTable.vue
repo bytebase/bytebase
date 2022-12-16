@@ -22,7 +22,7 @@
     </template>
     <template #body="{ rowData: index }">
       <BBTableCell :left-padding="4">
-        {{ index.expression }}
+        {{ index.expressions.join(",") }}
       </BBTableCell>
       <BBTableCell>
         {{ index.position }}
@@ -42,21 +42,22 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { BBTableSectionDataSource } from "../bbkit/types";
-import { Database, TableIndex } from "../types";
 import { useI18n } from "vue-i18n";
+import { Database } from "@/types";
+import { IndexMetadata } from "@/types/proto/database";
+import { BBTableSectionDataSource } from "@/bbkit/types";
 
 export default defineComponent({
   name: "IndexTable",
   components: {},
   props: {
-    indexList: {
-      required: true,
-      type: Object as PropType<TableIndex[]>,
-    },
     database: {
       required: true,
       type: Object as PropType<Database>,
+    },
+    indexList: {
+      required: true,
+      type: Object as PropType<IndexMetadata[]>,
     },
   },
   setup(props) {
@@ -82,7 +83,7 @@ export default defineComponent({
       },
     ]);
     const sectionList = computed(() => {
-      const sectionList: BBTableSectionDataSource<TableIndex>[] = [];
+      const sectionList: BBTableSectionDataSource<IndexMetadata>[] = [];
 
       for (const index of props.indexList) {
         const item = sectionList.find((item) => item.title == index.name);
