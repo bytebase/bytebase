@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="sqlEditorStore.connectionTree.state === ConnectionTreeState.LOADED"
+    v-if="connectionTreeStore.tree.state === ConnectionTreeState.LOADED"
     class="databases-tree p-2 space-y-2 h-full"
   >
     <div class="databases-tree--input">
@@ -19,7 +19,7 @@
         :data="treeData"
         :pattern="searchPattern"
         :selected-keys="selectedKeys"
-        :expanded-keys="sqlEditorStore.expandedTreeNodeKeys"
+        :expanded-keys="connectionTreeStore.expandedTreeNodeKeys"
         :render-label="renderLabel"
         :render-prefix="renderPrefix"
         :render-suffix="renderSuffix"
@@ -61,11 +61,11 @@ import type {
 } from "@/types";
 import { ConnectionTreeState, TabMode, UNKNOWN_ID } from "@/types";
 import {
+  useConnectionTreeStore,
   useCurrentUser,
   useDatabaseStore,
   useInstanceStore,
   useIsLoggedIn,
-  useSQLEditorStore,
   useTableStore,
   useTabStore,
 } from "@/store";
@@ -97,7 +97,7 @@ const { t } = useI18n();
 
 const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
-const sqlEditorStore = useSQLEditorStore();
+const connectionTreeStore = useConnectionTreeStore();
 const tableStore = useTableStore();
 const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
@@ -164,7 +164,7 @@ const allowAdmin = computed(() =>
   )
 );
 
-const treeData = computed(() => sqlEditorStore.connectionTree.data);
+const treeData = computed(() => connectionTreeStore.tree.data);
 
 const setConnection = (
   option: ConnectionAtom,
@@ -208,7 +208,7 @@ const setConnection = (
       tableStore
         .getOrFetchTableByDatabaseIdAndTableId(databaseId, tableId)
         .then((table) => {
-          sqlEditorStore.selectedTable = table;
+          connectionTreeStore.selectedTable = table;
         });
     }
 
@@ -225,7 +225,7 @@ const renderLabel = ({ option }: { option: ConnectionAtom }) => {
   };
 
   if (option.type === "table") {
-    if (option.id === sqlEditorStore.selectedTable.id) {
+    if (option.id === connectionTreeStore.selectedTable.id) {
       emphasize();
     }
   }
@@ -380,7 +380,7 @@ const nodeProps = ({ option }: { option: ConnectionAtom }) => {
 };
 
 const updateExpandedKeys = (keys: string[]) => {
-  sqlEditorStore.expandedTreeNodeKeys = keys;
+  connectionTreeStore.expandedTreeNodeKeys = keys;
 };
 
 // When switching tabs, scroll the matched node into view if needed.
@@ -415,12 +415,12 @@ watch(
   ([isLoggedIn, instanceId, databaseId]) => {
     if (!isLoggedIn) {
       // Don't go further and cleanup the state if we signed out.
-      sqlEditorStore.expandedTreeNodeKeys = [];
+      connectionTreeStore.expandedTreeNodeKeys = [];
       return;
     }
 
     const maybeExpandKey = (key: string) => {
-      const keys = sqlEditorStore.expandedTreeNodeKeys;
+      const keys = connectionTreeStore.expandedTreeNodeKeys;
       if (!keys.includes(key)) {
         keys.push(key);
       }

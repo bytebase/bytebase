@@ -69,14 +69,14 @@ import { stringify } from "qs";
 
 import type { Repository } from "@/types";
 import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
-import { useRepositoryStore, useSQLEditorStore } from "@/store";
+import { useConnectionTreeStore, useRepositoryStore } from "@/store";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;
 }>();
 
-const sqlEditorStore = useSQLEditorStore();
-const table = computed(() => sqlEditorStore.selectedTable);
+const connectionTreeStore = useConnectionTreeStore();
+const table = computed(() => connectionTreeStore.selectedTable);
 
 const gotoAlterSchema = () => {
   if (table.value.id === UNKNOWN_ID) {

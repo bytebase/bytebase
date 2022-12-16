@@ -48,7 +48,6 @@ import { Setting, SettingName } from "./setting";
 import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
-import { ConnectionAtom } from "./sqlEditor";
 import { ReleaseInfo } from "./actuator";
 import type { DebugLog } from "@/types/debug";
 import type { AuditLog } from "@/types/auditLog";
@@ -207,20 +206,7 @@ export interface LabelState {
   labelList: Label[];
 }
 
-export enum ConnectionTreeState {
-  UNSET,
-  LOADING,
-  LOADED,
-}
-
 export interface SQLEditorState {
-  accessControlPolicyList: Policy[];
-  connectionTree: {
-    data: ConnectionAtom[];
-    state: ConnectionTreeState;
-  };
-  expandedTreeNodeKeys: string[];
-  selectedTable: Table;
   shouldFormatContent: boolean;
   queryHistoryList: QueryHistory[];
   isFetchingQueryHistory: boolean;
