@@ -149,7 +149,7 @@ func (driver *Driver) syncAllIndexSchema(ctx context.Context, databaseName, coll
 		if err := indexCursor.Decode(&indexInfo); err != nil {
 			return nil, errors.Wrap(err, "failed to decode index info")
 		}
-		index, err := getIndexSchema(ctx, indexInfo)
+		index, err := getIndexSchema(indexInfo)
 		if err != nil {
 			return nil, err
 		}
