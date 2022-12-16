@@ -89,9 +89,11 @@ export const useActivityStore = defineStore("activity", {
     },
     async fetchActivityList(params: {
       typePrefix: string | string[];
-      container: number | string;
+      container?: number | string;
       order: "ASC" | "DESC";
+      user?: number;
       limit?: number;
+      level?: string | string[];
     }) {
       const url = `/api/activity?${stringify(params, {
         arrayFormat: "repeat",
@@ -143,35 +145,16 @@ export const useActivityStore = defineStore("activity", {
     },
     async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
       const { currentUser } = useAuthStore();
-      const fetchQueryList = async (level: string) => {
-        const queryList = [
-          "typePrefix=bb.sql-editor.query",
-          `user=${currentUser.id}`,
-          `order=DESC`,
-          `limit=${limit}`,
-          // only fetch the successful query history
-          `level=${level}`,
-        ];
-        const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
-          .data;
-        const activityList: Activity[] = data.data.map(
-          (activity: ResourceObject) => {
-            return convert(activity, data.included);
-          }
-        );
-        return activityList;
-      };
-      const [successful, withWarning] = await Promise.all([
-        fetchQueryList("INFO"),
-        fetchQueryList("WARN"),
-      ]);
-      const mixedList = [...successful, ...withWarning];
-
-      // ORDER BY `id` DESC
-      mixedList.sort((a, b) => b.id - a.id);
+      const activityList = await this.fetchActivityList({
+        typePrefix: "bb.sql-editor.query",
+        user: currentUser.id,
+        order: "DESC",
+        limit,
+        level: ["INFO", "WARN"],
+      });
 
       // return the first `limit` rows
-      return mixedList.slice(0, limit);
+      return activityList.slice(0, limit);
     },
     async createActivity(newActivity: ActivityCreate) {
       const data = (

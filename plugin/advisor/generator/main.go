@@ -15,11 +15,11 @@ import (
 )
 
 const (
-	typeFile          = "../advisor.go"
-	mysqlTemplate     = "./mysql.template"
-	mysqlTestTemplate = "./mysql_test.template"
-	lowerMySQL        = "mysql"
-	lowerPostgreSQL   = "postgresql"
+	typeFile           = "../advisor.go"
+	mysqlTemplate      = "./mysql.template"
+	postgresqlTemplate = "./postgresql.template"
+	lowerMySQL         = "mysql"
+	lowerPostgreSQL    = "postgresql"
 )
 
 var (
@@ -34,6 +34,7 @@ var (
 			// Get AdvisorComment, AdvisorName, CheckerName, FileName and TestName
 			var advisorComment, advisorName, checkerName, fileName, testName string
 			var fileNameTokenList, advisorNameTokenList []string
+			var engineType string
 			file, err := os.Open(typeFile)
 			if err != nil {
 				fmt.Printf("cannot open %q: %s\n", typeFile, err.Error())
@@ -52,9 +53,10 @@ var (
 						switch strings.ToLower(word) {
 						case lowerMySQL:
 							advisorComment = strings.Join(wordList[i+1:], " ")
+							engineType = lowerMySQL
 						case lowerPostgreSQL:
-							fmt.Printf("not support PostgreSQL")
-							return
+							advisorComment = strings.Join(wordList[i+1:], " ")
+							engineType = lowerPostgreSQL
 						}
 						if advisorComment != "" {
 							break
@@ -70,11 +72,8 @@ var (
 							continue
 						}
 						switch token {
-						case lowerMySQL:
+						case lowerMySQL, lowerPostgreSQL:
 							needed = true
-						case lowerPostgreSQL:
-							fmt.Printf("not support PostgreSQL")
-							return
 						}
 					}
 					break
@@ -94,13 +93,16 @@ var (
 			fmt.Printf("Advisor name is %s\n", advisorName)
 			fmt.Printf("This rule checks for %s\n", advisorComment)
 			fmt.Printf("Checker name is %s\n", checkerName)
-			fmt.Printf("Test name is %s\n", testName)
 
 			// generator code
-			if err := generateFile(fmt.Sprintf("%s.go", fileName), mysqlTemplate, flags.rule, advisorName, advisorComment, checkerName, testName); err != nil {
-				fmt.Printf("%s\n", err.Error())
+			templateFile := mysqlTemplate
+			dir := mysqlTemplate
+			if engineType == lowerPostgreSQL {
+				templateFile = postgresqlTemplate
+				dir = "pg"
 			}
-			if err := generateFile(fmt.Sprintf("%s_test.go", fileName), mysqlTestTemplate, flags.rule, advisorName, advisorComment, checkerName, testName); err != nil {
+
+			if err := generateFile(path.Join(dir, fmt.Sprintf("%s.go", fileName)), templateFile, flags.rule, advisorName, advisorComment, checkerName, testName); err != nil {
 				fmt.Printf("%s\n", err.Error())
 			}
 		},
@@ -113,7 +115,7 @@ func generateFile(filePath, tempelatePath, advisorType, advisorName, advisorComm
 		return errors.Wrapf(err, "failed to open template file %s", tempelatePath)
 	}
 	defer templateFile.Close()
-	goFile, err := os.Create(path.Join("..", "mysql", filePath))
+	goFile, err := os.Create(path.Join("..", filePath))
 	if err != nil {
 		return errors.Wrapf(err, "failed to create %s", filePath)
 	}

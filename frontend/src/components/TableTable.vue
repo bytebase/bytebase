@@ -56,7 +56,8 @@
 import { computed, defineComponent, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Table } from "@/types";
+import { Database } from "@/types";
+import { TableMetadata } from "@/types/proto/database";
 import { bytesToString, databaseSlug, isGhostTable } from "@/utils";
 import EllipsisText from "@/components/EllipsisText.vue";
 
@@ -68,24 +69,26 @@ export default defineComponent({
   name: "TableTable",
   components: { EllipsisText },
   props: {
-    databaseEngine: {
-      type: String,
-      default: "MYSQL",
+    database: {
+      required: true,
+      type: Object as PropType<Database>,
     },
     tableList: {
       required: true,
-      type: Object as PropType<Table[]>,
+      type: Object as PropType<TableMetadata[]>,
     },
   },
   setup(props) {
     const router = useRouter();
     const { t } = useI18n();
 
-    const isPostgres = computed(() => props.databaseEngine === "POSTGRES");
-
     const state = reactive<LocalState>({
       showReservedTableList: false,
     });
+
+    const isPostgres = computed(
+      () => props.database.instance.engine === "POSTGRES"
+    );
 
     const columnList = computed(() => {
       if (isPostgres.value) {
@@ -145,7 +148,7 @@ export default defineComponent({
 
     const clickTable = (section: number, row: number, e: MouseEvent) => {
       const table = mixedTableList.value[row];
-      const url = `/db/${databaseSlug(table.database)}/table/${table.name}`;
+      const url = `/db/${databaseSlug(props.database)}/table/${table.name}`;
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {

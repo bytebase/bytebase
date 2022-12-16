@@ -4,69 +4,59 @@
       {{ $t("settings.sensitive-data.description") }}
     </div>
 
-    <BBTable
+    <BBGrid
       :column-list="COLUMN_LIST"
       :data-source="state.sensitiveColumnList"
-      :show-header="true"
-      :left-bordered="true"
-      :right-bordered="true"
       :row-clickable="false"
+      class="border"
     >
-      <template #body="{ rowData: item }: { rowData: SensitiveColumn }">
-        <BBTableCell :left-padding="4" class="w-[15%]">
+      <template #item="{ item }: { item: SensitiveColumn }">
+        <div class="bb-grid-cell">
           {{ item.column }}
-        </BBTableCell>
-        <BBTableCell class="w-[15%]">
+        </div>
+        <div class="bb-grid-cell">
           {{ item.table }}
-        </BBTableCell>
-        <BBTableCell class="w-[15%]">
-          <div class="flex items-center space-x-2">
-            <span>{{ item.database.name }}</span>
-          </div>
-        </BBTableCell>
-        <BBTableCell class="w-[15%]">
-          <div class="flex flex-row items-center space-x-1">
-            <InstanceEngineIcon :instance="item.database.instance" />
-            <span class="flex-1 whitespace-pre-wrap">
-              {{ instanceName(item.database.instance) }}
-            </span>
-          </div>
-        </BBTableCell>
-        <BBTableCell class="w-[10%]">
-          <div class="flex items-center">
-            {{ environmentName(item.database.instance.environment) }}
-            <ProtectedEnvironmentIcon
-              class="ml-1"
-              :environment="item.database.instance.environment"
-            />
-          </div>
-        </BBTableCell>
-        <BBTableCell class="w-[15%]">
+        </div>
+        <div class="bb-grid-cell">
+          {{ item.database.name }}
+        </div>
+        <div class="bb-grid-cell gap-x-1">
+          <InstanceEngineIcon :instance="item.database.instance" />
+          <span class="flex-1 whitespace-pre-wrap">
+            {{ instanceName(item.database.instance) }}
+          </span>
+        </div>
+        <div class="bb-grid-cell">
+          {{ environmentName(item.database.instance.environment) }}
+          <ProtectedEnvironmentIcon
+            class="ml-1 w-4 h-4"
+            :environment="item.database.instance.environment"
+          />
+        </div>
+        <div class="bb-grid-cell">
           {{ projectName(item.database.project) }}
-        </BBTableCell>
-        <BBTableCell>
+        </div>
+        <div class="bb-grid-cell hidden md:flex">
           {{ humanizeTs(item.policy.updatedTs) }}
-        </BBTableCell>
-        <BBTableCell>
-          <div class="flex items-center justify-center">
-            <NPopconfirm @positive-click="removeSensitiveColumn(item)">
-              <template #trigger>
-                <button
-                  :disabled="!allowAdmin"
-                  class="w-5 h-5 p-0.5 bg-white hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                >
-                  <heroicons-outline:trash />
-                </button>
-              </template>
+        </div>
+        <div class="bb-grid-cell justify-center !px-2">
+          <NPopconfirm @positive-click="removeSensitiveColumn(item)">
+            <template #trigger>
+              <button
+                :disabled="!allowAdmin"
+                class="w-5 h-5 p-0.5 bg-white hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+              >
+                <heroicons-outline:trash />
+              </button>
+            </template>
 
-              <div class="whitespace-nowrap">
-                {{ $t("settings.sensitive-data.remove-sensitive-column-tips") }}
-              </div>
-            </NPopconfirm>
-          </div>
-        </BBTableCell>
+            <div class="whitespace-nowrap">
+              {{ $t("settings.sensitive-data.remove-sensitive-column-tips") }}
+            </div>
+          </NPopconfirm>
+        </div>
       </template>
-    </BBTable>
+    </BBGrid>
   </div>
 
   <FeatureModal
@@ -89,8 +79,9 @@ import {
   usePolicyStore,
 } from "@/store";
 import { Database, Policy, SensitiveDataPolicyPayload } from "@/types";
-import { BBTableColumn } from "@/bbkit/types";
+import { BBGridColumn } from "@/bbkit/types";
 import { hasWorkspacePermission } from "@/utils";
+import { BBGrid } from "@/bbkit";
 
 type SensitiveColumn = {
   database: Database;
@@ -182,33 +173,40 @@ const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
   updateList();
 };
 
-const COLUMN_LIST = computed((): BBTableColumn[] => [
+const COLUMN_LIST = computed((): BBGridColumn[] => [
   {
     title: t("database.column"),
+    width: "minmax(auto, 1fr)",
   },
   {
     title: t("common.table"),
+    width: "minmax(auto, 1fr)",
   },
   {
     title: t("common.database"),
+    width: "minmax(auto, 1fr)",
   },
   {
     title: t("common.instance"),
+    width: "minmax(auto, 1fr)",
   },
   {
     title: t("common.environment"),
+    width: "minmax(auto, 1fr)",
   },
   {
     title: t("common.project"),
+    width: "minmax(auto, 1fr)",
   },
   {
     title: t("common.updated-at"),
-    nowrap: true,
+    width: { md: "minmax(auto, 6rem)" },
+    class: "hidden md:flex",
   },
   {
     title: t("common.operation"),
-    center: true,
-    nowrap: true,
+    width: "minmax(auto, 6rem)",
+    class: "justify-center !px-2",
   },
 ]);
 </script>

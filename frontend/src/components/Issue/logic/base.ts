@@ -22,7 +22,11 @@ import {
   taskSlug,
 } from "@/utils";
 import { useDatabaseStore, useIssueStore, useProjectStore } from "@/store";
-import { flattenTaskList, TaskTypeWithStatement } from "./common";
+import {
+  flattenTaskList,
+  statementOfTask,
+  TaskTypeWithStatement,
+} from "./common";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;
@@ -158,17 +162,21 @@ export const useBaseIssueLogic = (params: {
     return (selectedTask.value as Task).database;
   });
 
+  const isGhostMode = computed((): boolean => {
+    return issue.value.type === "bb.issue.database.schema.update.ghost";
+  });
+
   const isTenantMode = computed((): boolean => {
     if (project.value.tenantMode !== "TENANT") return false;
 
     // We support single database migration in tenant mode projects.
     // So a pipeline should be tenant mode when it contains more
     // than one tasks.
-    return flattenTaskList(issue.value).length > 1;
-  });
-
-  const isGhostMode = computed((): boolean => {
-    return issue.value.type === "bb.issue.database.schema.update.ghost";
+    return (
+      flattenTaskList(issue.value).filter((task) =>
+        TaskTypeWithStatement.includes(task.type)
+      ).length > 1
+    );
   });
 
   const isPITRMode = computed((): boolean => {
@@ -202,6 +210,29 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
+  const selectedStatement = computed((): string => {
+    const task = selectedTask.value;
+    if (create.value) {
+      return (task as TaskCreate).statement;
+    }
+
+    // Extract statement from different types of payloads
+    return statementOfTask(task as Task) || "";
+  });
+
+  const allowApplyStatementToOtherTasks = computed(() => {
+    if (!create.value) {
+      return false;
+    }
+    const taskList = flattenTaskList<TaskCreate>(issue.value);
+    // Allowed when more than one tasks need SQL statement.
+    const count = taskList.filter((task) =>
+      TaskTypeWithStatement.includes(task.type)
+    ).length;
+
+    return count > 1;
+  });
+
   const allowApplyIssueStatusTransition = () => {
     // no extra logic by default
     return true;
@@ -218,6 +249,16 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
+  const applyStatementToOtherTasks = (statement: string) => {
+    const taskList = flattenTaskList<TaskCreate>(issue.value);
+
+    for (const task of taskList) {
+      if (TaskTypeWithStatement.includes(task.type)) {
+        task.statement = statement;
+      }
+    }
+  };
+
   return {
     project,
     isTenantMode,
@@ -231,6 +272,9 @@ export const useBaseIssueLogic = (params: {
     selectTask,
     taskStatusOfStage,
     isValidStage,
+    selectedStatement,
+    allowApplyStatementToOtherTasks,
+    applyStatementToOtherTasks,
     allowApplyIssueStatusTransition,
     allowApplyTaskStatusTransition,
   };

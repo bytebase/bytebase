@@ -296,6 +296,7 @@
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
     :database-id-list="[database.id]"
+    alter-type="SINGLE_DB"
     @close="state.showSchemaEditorModal = false"
   />
 </template>

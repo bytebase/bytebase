@@ -86,7 +86,9 @@ export const useCommonLogic = () => {
 
   const initialTaskListStatement = () => {
     if (create.value) {
-      const taskList = flattenTaskList<TaskCreate>(issue.value);
+      const taskList = flattenTaskList<TaskCreate>(issue.value).filter((task) =>
+        TaskTypeWithStatement.includes(task.type)
+      );
       const databaseStatementMap = new Map<DatabaseId, string>();
       // route.query.databaseList is comma-splitted databaseId list
       // e.g. databaseList=7002,7006,7014
@@ -156,16 +158,6 @@ export const useCommonLogic = () => {
     return isTaskEditable(selectedTask.value as Task);
   });
 
-  const selectedStatement = computed((): string => {
-    const task = selectedTask.value;
-    if (create.value) {
-      return (task as TaskCreate).statement;
-    }
-
-    // Extract statement from different types of payloads
-    return statementOfTask(task as Task) || "";
-  });
-
   const updateStatement = (
     newStatement: string,
     postUpdated?: (updatedTask: Task) => void
@@ -186,29 +178,6 @@ export const useCommonLogic = () => {
       );
     }
   };
-
-  const applyStatementToOtherTasks = (statement: string) => {
-    const taskList = flattenTaskList<TaskCreate>(issue.value);
-
-    for (const task of taskList) {
-      if (TaskTypeWithStatement.includes(task.type)) {
-        task.statement = statement;
-      }
-    }
-  };
-
-  const allowApplyStatementToOtherTasks = computed(() => {
-    if (!create.value) {
-      return false;
-    }
-    const taskList = flattenTaskList<TaskCreate>(issue.value);
-    // Allowed when more than one tasks need SQL statement.
-    const count = taskList.filter((task) =>
-      TaskTypeWithStatement.includes(task.type)
-    ).length;
-
-    return count > 1;
-  });
 
   const doCreate = () => {
     const issueCreate = cloneDeep(issue.value as IssueCreate);
@@ -236,11 +205,8 @@ export const useCommonLogic = () => {
     patchIssue,
     patchTask,
     allowEditStatement,
-    selectedStatement,
     initialTaskListStatement,
     updateStatement,
-    allowApplyStatementToOtherTasks,
-    applyStatementToOtherTasks,
     doCreate,
   };
 };
@@ -315,7 +281,7 @@ export const errorAssertion = () => {
   }
 };
 
-const statementOfTask = (task: Task) => {
+export const statementOfTask = (task: Task) => {
   switch (task.type) {
     case "bb.task.general":
       return ((task as Task).payload as TaskGeneralPayload).statement || "";

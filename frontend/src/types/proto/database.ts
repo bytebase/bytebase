@@ -78,7 +78,7 @@ export interface ColumnMetadata {
   /** The nullable is the nullable of a column. */
   nullable: boolean;
   /** The type is the type of a column. */
-  Type: string;
+  type: string;
   /** The character_set is the character_set of a column. */
   characterSet: string;
   /** The collation is the collation of a column. */
@@ -509,7 +509,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     hasDefault: false,
     default: "",
     nullable: false,
-    Type: "",
+    type: "",
     characterSet: "",
     collation: "",
     comment: "",
@@ -533,8 +533,8 @@ export const ColumnMetadata = {
     if (message.nullable === true) {
       writer.uint32(40).bool(message.nullable);
     }
-    if (message.Type !== "") {
-      writer.uint32(50).string(message.Type);
+    if (message.type !== "") {
+      writer.uint32(50).string(message.type);
     }
     if (message.characterSet !== "") {
       writer.uint32(58).string(message.characterSet);
@@ -571,7 +571,7 @@ export const ColumnMetadata = {
           message.nullable = reader.bool();
           break;
         case 6:
-          message.Type = reader.string();
+          message.type = reader.string();
           break;
         case 7:
           message.characterSet = reader.string();
@@ -597,7 +597,7 @@ export const ColumnMetadata = {
       hasDefault: isSet(object.hasDefault) ? Boolean(object.hasDefault) : false,
       default: isSet(object.default) ? String(object.default) : "",
       nullable: isSet(object.nullable) ? Boolean(object.nullable) : false,
-      Type: isSet(object.Type) ? String(object.Type) : "",
+      type: isSet(object.type) ? String(object.type) : "",
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
       collation: isSet(object.collation) ? String(object.collation) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
@@ -611,7 +611,7 @@ export const ColumnMetadata = {
     message.hasDefault !== undefined && (obj.hasDefault = message.hasDefault);
     message.default !== undefined && (obj.default = message.default);
     message.nullable !== undefined && (obj.nullable = message.nullable);
-    message.Type !== undefined && (obj.Type = message.Type);
+    message.type !== undefined && (obj.type = message.type);
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
     message.collation !== undefined && (obj.collation = message.collation);
     message.comment !== undefined && (obj.comment = message.comment);
@@ -625,7 +625,7 @@ export const ColumnMetadata = {
     message.hasDefault = object.hasDefault ?? false;
     message.default = object.default ?? "";
     message.nullable = object.nullable ?? false;
-    message.Type = object.Type ?? "";
+    message.type = object.type ?? "";
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";

@@ -451,6 +451,8 @@ type ConnectionConfig struct {
 	StrictUseDb bool
 	// SRV is only supported for MongoDB now.
 	SRV bool
+	// AuthSource is only supported for MongoDB now.
+	AuthSource string
 }
 
 // ConnectionContext is the context for connection.

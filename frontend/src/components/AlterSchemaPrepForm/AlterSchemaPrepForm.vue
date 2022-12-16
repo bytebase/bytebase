@@ -147,6 +147,7 @@
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
     :database-id-list="schemaEditorContext.databaseIdList"
+    :alter-type="state.alterType"
     @close="state.showSchemaEditorModal = false"
   />
 </template>

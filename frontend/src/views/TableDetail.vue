@@ -179,8 +179,7 @@
         <ColumnTable
           :database="database"
           :table="table"
-          :column-list="table.columnList"
-          :engine="database.instance.engine"
+          :column-list="table.columns"
           :sensitive-data-list="sensitiveDataList"
         />
       </div>
@@ -189,7 +188,7 @@
         <div class="text-lg leading-6 font-medium text-main mb-4">
           {{ $t("database.indexes") }}
         </div>
-        <IndexTable :index-list="table.indexList" :database="database" />
+        <IndexTable :database="database" :index-list="table.indexes" />
       </div>
     </main>
   </div>
@@ -197,17 +196,22 @@
 
 <script lang="ts">
 import { computed, defineComponent } from "vue";
-import ColumnTable from "../components/ColumnTable.vue";
-import IndexTable from "../components/IndexTable.vue";
-import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import {
   bytesToString,
   connectionSlug,
   idFromSlug,
   isGhostTable,
-} from "../utils";
-import { usePolicyByDatabaseAndType, useTableStore } from "@/store";
-import { SensitiveData, SensitiveDataPolicyPayload, Table } from "@/types";
+} from "@/utils";
+import {
+  useDatabaseStore,
+  useDBSchemaStore,
+  usePolicyByDatabaseAndType,
+} from "@/store";
+import { SensitiveData, SensitiveDataPolicyPayload } from "@/types";
+import { TableMetadata } from "@/types/proto/database";
+import ColumnTable from "../components/ColumnTable.vue";
+import IndexTable from "../components/IndexTable.vue";
+import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 
 export default defineComponent({
   name: "TableDetail",
@@ -223,17 +227,18 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const tableStore = useTableStore();
-
-    const table = computed(() => {
-      return tableStore.getTableListByDatabaseIdAndTableName(
-        idFromSlug(props.databaseSlug),
-        props.tableName
-      ) as Table;
-    });
+    const databaseStore = useDatabaseStore();
+    const databaseId = idFromSlug(props.databaseSlug);
+    const dbSchemaStore = useDBSchemaStore();
 
     const database = computed(() => {
-      return table.value.database;
+      return databaseStore.getDatabaseById(databaseId);
+    });
+    const table = computed(() => {
+      return dbSchemaStore.getTableByDatabaseIdAndTableName(
+        databaseId,
+        props.tableName
+      ) as TableMetadata;
     });
 
     const gotoSQLEditor = () => {

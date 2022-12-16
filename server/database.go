@@ -413,7 +413,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return nil
 		}
 
-		queryDump := c.QueryParam("metadata") == ""
 		dbSchema, err := s.store.GetDBSchema(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database ID %v", id)).SetInternal(err)
@@ -433,7 +432,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dbSchema = newDBSchema
 		}
 
-		if queryDump {
+		isQueryRawDump := c.QueryParam("metadata") == ""
+		if isQueryRawDump {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
 			if _, err := c.Response().Write([]byte(dbSchema.RawDump)); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
