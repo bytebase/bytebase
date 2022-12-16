@@ -36,7 +36,6 @@ export * from "./webTerminal";
 export * from "./connectionTree";
 export * from "./subscription";
 export * from "./tab";
-export * from "./table";
 export * from "./task";
 export * from "./uistate";
 export * from "./vcs";

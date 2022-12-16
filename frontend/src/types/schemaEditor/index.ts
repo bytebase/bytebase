@@ -25,7 +25,7 @@ export type TabContext = DatabaseTabContext | TableTabContext;
 
 type TabId = string;
 
-export interface DatabaseState {
+interface DatabaseState {
   database: Database;
   originTableList: Table[];
   tableList: Table[];

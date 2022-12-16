@@ -38,11 +38,12 @@ import {
   useTabStore,
   useSQLEditorStore,
   useDatabaseStore,
-  useTableStore,
+  useDBSchemaStore,
   useInstanceById,
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import { ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
+import { Database, ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
+import { TableMetadata } from "@/types/proto/database";
 
 const props = defineProps({
   sql: {
@@ -71,7 +72,7 @@ const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
-const tableStore = useTableStore();
+const dbSchemaStore = useDBSchemaStore();
 const sqlEditorStore = useSQLEditorStore();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
@@ -228,16 +229,19 @@ const handleEditorReady = async () => {
     "endsWithSemicolon && cursorAtLast"
   );
 
-  watchEffect(() => {
+  watchEffect(async () => {
     if (selectedInstance.value) {
+      const databaseMap: Map<Database, TableMetadata[]> = new Map();
       const databaseList = databaseStore.getDatabaseListByInstanceId(
         selectedInstance.value.id
       );
-      const tableList = databaseList
-        .map((item) => tableStore.getTableListByDatabaseId(item.id))
-        .flat();
-
-      editorRef.value?.setEditorAutoCompletionContext(databaseList, tableList);
+      for (const database of databaseList) {
+        const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
+          database.id
+        );
+        databaseMap.set(database, tableList);
+      }
+      editorRef.value?.setEditorAutoCompletionContext(databaseMap);
     }
   });
 
