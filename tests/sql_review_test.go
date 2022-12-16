@@ -305,9 +305,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	err = ctl.setLicense()
-	a.NoError(err)
-
 	policy, err := ctl.upsertPolicy(api.PolicyUpsert{
 		ResourceType: api.PolicyResourceTypeEnvironment,
 		ResourceID:   prodEnvironment.ID,
@@ -1035,9 +1032,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		Type:         api.PolicyTypeSQLReview,
 		Payload:      &policyPayload,
 	})
-	a.NoError(err)
-
-	err = ctl.setLicense()
 	a.NoError(err)
 
 	policy, err := ctl.upsertPolicy(api.PolicyUpsert{

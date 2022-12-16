@@ -76,8 +76,6 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	mysqlPort := getTestPort()
 	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)

@@ -106,9 +106,6 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		_ = ctl.Close(ctx)
 	}()
 
-	err = ctl.setLicense()
-	a.NoError(err)
-
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
 	stopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)

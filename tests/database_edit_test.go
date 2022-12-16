@@ -64,9 +64,6 @@ func TestDatabaseEdit(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	err = ctl.setLicense()
-	a.NoError(err)
-
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
 		Name:          "mysqlSchemaEditorInstance",

@@ -41,9 +41,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	err = ctl.setLicense()
-	a.NoError(err)
-
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
 		Name: "Test Project",
@@ -364,9 +361,6 @@ func TestVCS(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-
-			err = ctl.setLicense()
-			a.NoError(err)
 
 			// Create a VCS.
 			apiVCS, err := ctl.createVCS(
@@ -743,9 +737,6 @@ func TestVCS_SDL(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-
-			err = ctl.setLicense()
-			a.NoError(err)
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
@@ -1743,9 +1734,6 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-
-			err = ctl.setLicense()
-			a.NoError(err)
 
 			// Create a VCS.
 			apiVCS, err := ctl.createVCS(
