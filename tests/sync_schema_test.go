@@ -49,8 +49,6 @@ DROP SCHEMA "schema_a";
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
@@ -83,9 +81,6 @@ DROP SCHEMA "schema_a";
 	environments, err := ctl.getEnvironments()
 	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
-	a.NoError(err)
-
-	err = ctl.setLicense()
 	a.NoError(err)
 
 	instance, err := ctl.addInstance(api.InstanceCreate{

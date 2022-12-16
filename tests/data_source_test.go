@@ -25,10 +25,6 @@ func TestDataSource(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/tests/fake"
@@ -45,6 +46,9 @@ func TestGhostParser(t *testing.T) {
 }
 
 func TestGhostSchemaUpdate(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
 	const (
 		databaseName            = "testGhostSchemaUpdate"
 		mysqlMigrationStatement = `
@@ -76,10 +80,6 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	mysqlPort := getTestPort()
 	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
@@ -205,6 +205,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 }
 
 func TestGhostTenant(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
 	var (
 		databaseName            = "testGhostSchemaUpdate"
 		mysqlMigrationStatement = `
@@ -235,8 +238,6 @@ func TestGhostTenant(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 	err = ctl.setLicense()
 	a.NoError(err)
 
@@ -250,21 +251,21 @@ func TestGhostTenant(t *testing.T) {
 
 	environments, err := ctl.getEnvironments()
 	a.NoError(err)
-	stagingEnvironment, err := findEnvironment(environments, "Staging")
+	testEnvironment, err := findEnvironment(environments, "Test")
 	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
 	// Provision instances.
-	var stagingInstances []*api.Instance
+	var testInstances []*api.Instance
 	var prodInstances []*api.Instance
-	for i := 0; i < stagingTenantNumber; i++ {
+	for i := 0; i < testTenantNumber; i++ {
 		port, err := getMySQLInstanceForGhostTest(t)
 		a.NoError(err)
 		// Add the provisioned instances.
 		instance, err := ctl.addInstance((api.InstanceCreate{
-			EnvironmentID: stagingEnvironment.ID,
-			Name:          fmt.Sprintf("%s-%d", stagingInstanceName, i),
+			EnvironmentID: testEnvironment.ID,
+			Name:          fmt.Sprintf("%s-%d", testInstanceName, i),
 			Engine:        db.MySQL,
 			Host:          "127.0.0.1",
 			Port:          strconv.Itoa(port),
@@ -272,7 +273,7 @@ func TestGhostTenant(t *testing.T) {
 			Password:      "bytebase",
 		}))
 		a.NoError(err)
-		stagingInstances = append(stagingInstances, instance)
+		testInstances = append(testInstances, instance)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		port, err := getMySQLInstanceForGhostTest(t)
@@ -292,7 +293,7 @@ func TestGhostTenant(t *testing.T) {
 	}
 
 	// Set up label values for tenants.
-	// Prod and staging are using the same tenant values. Use prodInstancesNumber because it's larger than stagingInstancesNumber.
+	// Prod and test are using the same tenant values. Use prodInstancesNumber because it's larger than testInstancesNumber.
 	var tenants []string
 	for i := 0; i < prodTenantNumber; i++ {
 		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
@@ -310,8 +311,8 @@ func TestGhostTenant(t *testing.T) {
 	a.NoError(err)
 
 	// Create issues that create databases.
-	for i, stagingInstance := range stagingInstances {
-		err := ctl.createDatabase(project, stagingInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+	for i, testInstance := range testInstances {
+		err := ctl.createDatabase(project, testInstance, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
 		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
@@ -325,12 +326,12 @@ func TestGhostTenant(t *testing.T) {
 	})
 	a.NoError(err)
 
-	var stagingDatabases []*api.Database
+	var testDatabases []*api.Database
 	var prodDatabases []*api.Database
-	for _, stagingInstance := range stagingInstances {
+	for _, testInstance := range testInstances {
 		for _, database := range databases {
-			if database.Instance.ID == stagingInstance.ID {
-				stagingDatabases = append(stagingDatabases, database)
+			if database.Instance.ID == testInstance.ID {
+				testDatabases = append(testDatabases, database)
 				break
 			}
 		}
@@ -343,7 +344,7 @@ func TestGhostTenant(t *testing.T) {
 			}
 		}
 	}
-	a.Equal(stagingTenantNumber, len(stagingDatabases))
+	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
 	// Create an issue that updates database schema.
@@ -371,8 +372,8 @@ func TestGhostTenant(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query schema.
-	for _, stagingInstance := range stagingInstances {
-		result, err := ctl.query(stagingInstance, databaseName, mysqlQueryBookTable)
+	for _, testInstance := range testInstances {
+		result, err := ctl.query(testInstance, databaseName, mysqlQueryBookTable)
 		a.NoError(err)
 		a.Equal(mysqlBookSchema1, result)
 	}
@@ -408,8 +409,8 @@ func TestGhostTenant(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Query schema.
-	for _, stagingInstance := range stagingInstances {
-		result, err := ctl.query(stagingInstance, databaseName, mysqlQueryBookTable)
+	for _, testInstance := range testInstances {
+		result, err := ctl.query(testInstance, databaseName, mysqlQueryBookTable)
 		a.NoError(err)
 		a.Equal(mysqlBookSchema2, result)
 	}
