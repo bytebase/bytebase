@@ -18,17 +18,13 @@
           {{ item.table }}
         </div>
         <div class="bb-grid-cell">
-          <div class="flex items-center space-x-2">
-            <span>{{ item.database.name }}</span>
-          </div>
+          {{ item.database.name }}
         </div>
-        <div class="bb-grid-cell">
-          <div class="flex flex-row items-center space-x-1">
-            <InstanceEngineIcon :instance="item.database.instance" />
-            <span class="flex-1 whitespace-pre-wrap">
-              {{ instanceName(item.database.instance) }}
-            </span>
-          </div>
+        <div class="bb-grid-cell gap-x-1">
+          <InstanceEngineIcon :instance="item.database.instance" />
+          <span class="flex-1 whitespace-pre-wrap">
+            {{ instanceName(item.database.instance) }}
+          </span>
         </div>
         <div class="bb-grid-cell">
           {{ environmentName(item.database.instance.environment) }}
