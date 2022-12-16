@@ -1,4 +1,4 @@
-import { InstanceId, DatabaseId, TableId, ViewId } from "../types";
+import { InstanceId, DatabaseId, ViewId } from "../types";
 
 export type ConnectionAtomType = "instance" | "database" | "table" | "view";
 
@@ -9,8 +9,8 @@ export enum ConnectionTreeState {
 }
 
 export interface ConnectionAtom {
-  parentId: InstanceId | DatabaseId | TableId | ViewId;
-  id: InstanceId | DatabaseId | TableId | ViewId;
+  parentId: InstanceId | DatabaseId | ViewId;
+  id: InstanceId | DatabaseId | ViewId;
   key: string;
   label: string;
   type?: ConnectionAtomType;
