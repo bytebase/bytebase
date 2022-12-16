@@ -960,9 +960,8 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		}
 	}
 
-	// If every task in the stage completes, it means that we are moving into a new stage. We need
+	// Every task in the stage completed means we are moving into a new stage. We need to
 	// 1. cancel external approval.
-	// 2. for UI workflow, set issue.AssigneeNeedAttention to false.
 	if taskPatched.Status == api.TaskDone && issue != nil {
 		foundStage := false
 		stageTaskAllDone := true
@@ -984,17 +983,32 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 			if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonNoTaskPendingApproval); err != nil {
 				log.Error("failed to cancel external approval on stage tasks completion", zap.Int("issue_id", issue.ID), zap.Error(err))
 			}
+		}
+	}
 
-			if issue.Project.WorkflowType == api.UIWorkflow {
-				needAttention := false
-				patch := &api.IssuePatch{
-					ID:                    issue.ID,
-					UpdaterID:             api.SystemBotID,
-					AssigneeNeedAttention: &needAttention,
+	// If there isn't a pendingApproval task, then we need to set issue.AssigneeNeedAttention to false for UI workflow.
+	if taskPatched.Status == api.TaskPending && issue != nil && issue.Project.WorkflowType == api.UIWorkflow {
+		foundPendingApprovalTask := false
+		for _, stage := range issue.Pipeline.StageList {
+			if stage.ID == taskPatched.StageID {
+				for _, task := range stage.TaskList {
+					if task.Status == api.TaskPendingApproval {
+						foundPendingApprovalTask = true
+						break
+					}
 				}
-				if _, err := s.store.PatchIssue(ctx, patch); err != nil {
-					return nil, errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after completing the whole stage, issuePatch: %+v", patch)
-				}
+				break
+			}
+		}
+		if foundPendingApprovalTask {
+			needAttention := false
+			patch := &api.IssuePatch{
+				ID:                    issue.ID,
+				UpdaterID:             api.SystemBotID,
+				AssigneeNeedAttention: &needAttention,
+			}
+			if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+				return nil, errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage, issuePatch: %+v", patch)
 			}
 		}
 	}
