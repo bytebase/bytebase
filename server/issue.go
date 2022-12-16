@@ -751,7 +751,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		if detail.MigrationType != db.Baseline && detail.MigrationType != db.Migrate && detail.MigrationType != db.MigrateSDL && detail.MigrationType != db.Data {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "support migrate, migrateSDL and data type migration only")
 		}
-		if detail.MigrationType != db.Baseline && (detail.Statement == "" || detail.SheetID == 0) {
+		if detail.MigrationType != db.Baseline && (detail.Statement == "" && detail.SheetID == 0) {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "require sql statement or sheet ID to create an issue")
 		}
 		// TODO(d): validate sheet ID.
