@@ -42,6 +42,7 @@ export * from "./db_extension";
 export * from "./label";
 export * from "./deployment";
 export * from "./sqlEditor";
+export * from "./connectionTree";
 export * from "./webTerminal";
 export * from "./tab";
 export * from "./subscription";

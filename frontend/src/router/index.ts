@@ -37,7 +37,6 @@ import {
   useSQLReviewStore,
   useProjectStore,
   useTableStore,
-  useSQLEditorStore,
   useSheetStore,
   useAuthStore,
   useDatabaseStore,
@@ -47,6 +46,7 @@ import {
   usePrincipalStore,
   useRouterStore,
   useDBSchemaStore,
+  useConnectionTreeStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -1426,13 +1426,13 @@ router.beforeEach((to, from, next) => {
     const databaseId = idFromSlug(databaseSlug);
     if (Number.isNaN(databaseId)) {
       // Connected to instance
-      useSQLEditorStore()
+      useConnectionTreeStore()
         .fetchConnectionByInstanceId(instanceId)
         .then(() => next())
         .catch(() => next());
     } else {
       // Connected to db
-      useSQLEditorStore()
+      useConnectionTreeStore()
         .fetchConnectionByInstanceIdAndDatabaseId(instanceId, databaseId)
         .then(() => next())
         .catch(() => next());

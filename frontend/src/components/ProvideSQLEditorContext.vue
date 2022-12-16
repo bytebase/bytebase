@@ -16,6 +16,7 @@ import {
   useInstanceStore,
   pushNotification,
   usePolicyStore,
+  useConnectionTreeStore,
 } from "@/store";
 import type { Instance, Database, Connection, ConnectionAtom } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
@@ -51,11 +52,12 @@ const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const policyStore = usePolicyStore();
 const sqlEditorStore = useSQLEditorStore();
+const connectionTreeStore = useConnectionTreeStore();
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
 
 const prepareAccessControlPolicy = async () => {
-  sqlEditorStore.accessControlPolicyList =
+  connectionTreeStore.accessControlPolicyList =
     await policyStore.fetchPolicyListByResourceTypeAndPolicyType(
       "database",
       "bb.policy.access-control"
@@ -80,7 +82,7 @@ const prepareAccessibleConnectionByProject = async () => {
     .filter((db) =>
       isDatabaseAccessible(
         db,
-        sqlEditorStore.accessControlPolicyList,
+        connectionTreeStore.accessControlPolicyList,
         currentUser.value
       )
     );
@@ -113,7 +115,7 @@ const prepareSQLEditorContext = async () => {
         const node = databaseMapper(db);
         node.disabled = !isDatabaseAccessible(
           db,
-          sqlEditorStore.accessControlPolicyList,
+          connectionTreeStore.accessControlPolicyList,
           currentUser.value
         );
         if (node.disabled) {
@@ -124,7 +126,7 @@ const prepareSQLEditorContext = async () => {
         return node;
       });
 
-    sqlEditorStore.connectionTree.data = connectionTree;
+    connectionTreeStore.tree.data = connectionTree;
   }
 
   // Won't fetch tableList for every database here.
@@ -216,7 +218,7 @@ const prepareConnectionSlug = async () => {
 
   if (Number.isNaN(databaseId)) {
     // connected to instance
-    const connection = await sqlEditorStore.fetchConnectionByInstanceId(
+    const connection = await connectionTreeStore.fetchConnectionByInstanceId(
       instanceId
     );
     maybeOpenNewTab(connection);
@@ -224,7 +226,7 @@ const prepareConnectionSlug = async () => {
   } else {
     // connected to db
     const connection =
-      await sqlEditorStore.fetchConnectionByInstanceIdAndDatabaseId(
+      await connectionTreeStore.fetchConnectionByInstanceIdAndDatabaseId(
         instanceId,
         databaseId
       );
@@ -315,19 +317,19 @@ const syncURLWithConnection = () => {
 };
 
 onMounted(async () => {
-  if (sqlEditorStore.connectionTree.state === ConnectionTreeState.UNSET) {
-    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADING;
+  if (connectionTreeStore.tree.state === ConnectionTreeState.UNSET) {
+    connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
     await prepareAccessControlPolicy();
     await prepareAccessibleConnectionByProject();
     await prepareSQLEditorContext();
-    sqlEditorStore.connectionTree.state = ConnectionTreeState.LOADED;
+    connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
   }
 
   watch(currentUser, (user) => {
     if (user.id === UNKNOWN_ID) {
       // Cleanup when user signed out
-      sqlEditorStore.connectionTree.data = [];
-      sqlEditorStore.connectionTree.state = ConnectionTreeState.UNSET;
+      connectionTreeStore.tree.data = [];
+      connectionTreeStore.tree.state = ConnectionTreeState.UNSET;
 
       tabStore.reset();
     }
