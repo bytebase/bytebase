@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,9 +36,6 @@ import (
 	componentConfig "github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/tests/fake"
 )
-
-//go:embed fake
-var fakeFS embed.FS
 
 var (
 	migrationStatement = `
