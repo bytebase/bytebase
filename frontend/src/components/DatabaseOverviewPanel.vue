@@ -75,7 +75,7 @@
       <div class="text-lg leading-6 font-medium text-main mb-4">
         {{ $t("db.tables") }}
       </div>
-      <TableTable :database-engine="databaseEngine" :table-list="tableList" />
+      <TableTable :database="database" :table-list="tableList" />
 
       <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
         {{ $t("db.views") }}
@@ -210,10 +210,10 @@ import {
   featureToRef,
   useCurrentUser,
   useDataSourceStore,
-  useTableStore,
   useViewStore,
   useDBExtensionStore,
   useAnomalyList,
+  useDBSchemaStore,
 } from "@/store";
 
 interface LocalState {
@@ -242,17 +242,17 @@ export default defineComponent({
     const state = reactive<LocalState>({});
 
     const currentUser = useCurrentUser();
-    const tableStore = useTableStore();
+    const dbSchemaStore = useDBSchemaStore();
     const viewStore = useViewStore();
     const dbExtensionStore = useDBExtensionStore();
 
     const databaseEngine = props.database.instance.engine as EngineType;
 
-    const prepareTableList = () => {
-      tableStore.fetchTableListByDatabaseId(props.database.id);
+    const prepareDatabaseMetadata = () => {
+      dbSchemaStore.getOrFetchDatabaseMetadataById(props.database.id);
     };
 
-    watchEffect(prepareTableList);
+    watchEffect(prepareDatabaseMetadata);
 
     const prepareViewList = () => {
       viewStore.fetchViewListByDatabaseId(props.database.id);
@@ -286,7 +286,7 @@ export default defineComponent({
     const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
     const tableList = computed(() => {
-      return tableStore.getTableListByDatabaseId(props.database.id);
+      return dbSchemaStore.getTableListByDatabaseId(props.database.id);
     });
 
     const viewList = computed(() => {

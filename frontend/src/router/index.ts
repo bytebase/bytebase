@@ -14,15 +14,6 @@ import SQLEditorLayout from "../layouts/SQLEditorLayout.vue";
 import SheetDashboardLayout from "../layouts/SheetDashboardLayout.vue";
 import { t } from "../plugins/i18n";
 import {
-  useAuthStore,
-  useDatabaseStore,
-  useEnvironmentStore,
-  useInstanceStore,
-  useIssueStore,
-  usePrincipalStore,
-  useRouterStore,
-} from "../store";
-import {
   Database,
   DEFAULT_PROJECT_ID,
   QuickActionType,
@@ -48,6 +39,14 @@ import {
   useTableStore,
   useSQLEditorStore,
   useSheetStore,
+  useAuthStore,
+  useDatabaseStore,
+  useEnvironmentStore,
+  useInstanceStore,
+  useIssueStore,
+  usePrincipalStore,
+  useRouterStore,
+  useDBSchemaStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -947,6 +946,7 @@ router.beforeEach((to, from, next) => {
 
   const authStore = useAuthStore();
   const databaseStore = useDatabaseStore();
+  const dbSchemaStore = useDBSchemaStore();
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
   const issueStore = useIssueStore();
@@ -1299,57 +1299,59 @@ router.beforeEach((to, from, next) => {
     databaseStore
       .fetchDatabaseById(idFromSlug(databaseSlug))
       .then((database: Database) => {
-        if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
-          next();
-        } else if (tableName) {
-          useTableStore()
-            .fetchTableByDatabaseIdAndTableName({
-              databaseId: database.id,
-              tableName,
-            })
-            .then(() => {
-              next();
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
+        dbSchemaStore.getOrFetchDatabaseMetadataById(database.id).then(() => {
+          if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
+            next();
+          } else if (tableName) {
+            useTableStore()
+              .fetchTableByDatabaseIdAndTableName({
+                databaseId: database.id,
+                tableName,
+              })
+              .then(() => {
+                next();
+              })
+              .catch((error) => {
+                next({
+                  name: "error.404",
+                  replace: false,
+                });
+                throw error;
               });
-              throw error;
-            });
-        } else if (dataSourceSlug) {
-          useDataSourceStore()
-            .fetchDataSourceById({
-              dataSourceId: idFromSlug(dataSourceSlug),
-              databaseId: database.id,
-            })
-            .then(() => {
-              next();
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
+          } else if (dataSourceSlug) {
+            useDataSourceStore()
+              .fetchDataSourceById({
+                dataSourceId: idFromSlug(dataSourceSlug),
+                databaseId: database.id,
+              })
+              .then(() => {
+                next();
+              })
+              .catch((error) => {
+                next({
+                  name: "error.404",
+                  replace: false,
+                });
+                throw error;
               });
-              throw error;
-            });
-        } else if (migrationHistorySlug) {
-          instanceStore
-            .fetchMigrationHistoryById({
-              instanceId: database.instance.id,
-              migrationHistoryId: idFromSlug(migrationHistorySlug),
-            })
-            .then(() => {
-              next();
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
+          } else if (migrationHistorySlug) {
+            instanceStore
+              .fetchMigrationHistoryById({
+                instanceId: database.instance.id,
+                migrationHistoryId: idFromSlug(migrationHistorySlug),
+              })
+              .then(() => {
+                next();
+              })
+              .catch((error) => {
+                next({
+                  name: "error.404",
+                  replace: false,
+                });
+                throw error;
               });
-              throw error;
-            });
-        }
+          }
+        });
       })
       .catch((error) => {
         next({
