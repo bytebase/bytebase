@@ -24,7 +24,6 @@ import {
   hasWorkspacePermission,
   idFromSlug,
 } from "../utils";
-// import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
@@ -36,7 +35,6 @@ import {
   useDataSourceStore,
   useSQLReviewStore,
   useProjectStore,
-  useTableStore,
   useSheetStore,
   useAuthStore,
   useDatabaseStore,
@@ -1157,7 +1155,6 @@ router.beforeEach((to, from, next) => {
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
-  const tableName = routerSlug.tableName;
   const dataSourceSlug = routerSlug.dataSourceSlug;
   const migrationHistorySlug = routerSlug.migrationHistorySlug;
   const vcsSlug = routerSlug.vcsSlug;
@@ -1300,24 +1297,8 @@ router.beforeEach((to, from, next) => {
       .fetchDatabaseById(idFromSlug(databaseSlug))
       .then((database: Database) => {
         dbSchemaStore.getOrFetchDatabaseMetadataById(database.id).then(() => {
-          if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
+          if (!dataSourceSlug && !migrationHistorySlug) {
             next();
-          } else if (tableName) {
-            useTableStore()
-              .fetchTableByDatabaseIdAndTableName({
-                databaseId: database.id,
-                tableName,
-              })
-              .then(() => {
-                next();
-              })
-              .catch((error) => {
-                next({
-                  name: "error.404",
-                  replace: false,
-                });
-                throw error;
-              });
           } else if (dataSourceSlug) {
             useDataSourceStore()
               .fetchDataSourceById({

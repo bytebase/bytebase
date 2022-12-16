@@ -26,7 +26,6 @@ import { DeploymentConfig } from "./deployment";
 import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
-import { Table } from "./table";
 import { Column } from "./column";
 
 // System bot id
@@ -161,7 +160,6 @@ interface ResourceMaker {
   (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
-  (type: "TABLE"): Table;
   (type: "COLUMN"): Column;
 }
 
@@ -522,31 +520,11 @@ const makeUnknown = (type: ResourceType) => {
     ruleList: [],
   };
 
-  const UNKNOWN_TABLE: Table = {
-    id: UNKNOWN_ID,
-    database: UNKNOWN_DATABASE,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    name: "<<Unknown table>>",
-    type: "BASE TABLE",
-    engine: "InnoDB",
-    collation: "",
-    rowCount: 0,
-    dataSize: 0,
-    indexList: [],
-    indexSize: 0,
-    dataFree: 0,
-    createOptions: "",
-    comment: "",
-    columnList: [],
-  };
-
+  // TODO(steven): remove it
   const UNKNOWN_COLUMN: Column = {
     id: UNKNOWN_ID,
     databaseId: UNKNOWN_DATABASE.id,
-    tableId: UNKNOWN_TABLE.id,
+    tableId: UNKNOWN_ID,
     creatorId: UNKNOWN_PRINCIPAL.id,
     createdTs: 0,
     updaterId: UNKNOWN_PRINCIPAL.id,
@@ -611,8 +589,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_SHEET;
     case "SQL_REVIEW":
       return UNKNOWN_SQL_REVIEW_POLICY;
-    case "TABLE":
-      return UNKNOWN_TABLE;
     case "COLUMN":
       return UNKNOWN_COLUMN;
   }
@@ -972,27 +948,6 @@ const makeEmpty = (type: ResourceType) => {
     environment: EMPTY_ENVIRONMENT,
     name: "",
     ruleList: [],
-  };
-
-  const EMPTY_TABLE: Table = {
-    id: EMPTY_ID,
-    database: EMPTY_DATABASE,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
-    name: "",
-    type: "BASE TABLE",
-    engine: "InnoDB",
-    collation: "",
-    rowCount: 0,
-    dataSize: 0,
-    indexList: [],
-    indexSize: 0,
-    dataFree: 0,
-    createOptions: "",
-    comment: "",
-    columnList: [],
   };
 
   switch (type) {

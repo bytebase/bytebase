@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { reactive, ref } from "vue";
 import {
   DatabaseId,
   InstanceId,
@@ -6,12 +7,11 @@ import {
   Policy,
   ConnectionAtom,
 } from "@/types";
-import { ConnectionTreeState, UNKNOWN_ID, unknown } from "@/types";
+import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
-import { useTableStore } from "./table";
 import { emptyConnection } from "@/utils";
-import { reactive, ref } from "vue";
+import { useDBSchemaStore } from "./dbSchema";
 
 export const useConnectionTreeStore = defineStore("connectionTree", () => {
   // states
@@ -21,7 +21,7 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     state: ConnectionTreeState.UNSET,
   });
   const expandedTreeNodeKeys = ref<string[]>([]);
-  const selectedTable = unknown("TABLE");
+  const selectedTableAtom = ref<ConnectionAtom>();
 
   // actions
   const fetchConnectionByInstanceIdAndDatabaseId = async (
@@ -32,7 +32,7 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
       await Promise.all([
         useDatabaseStore().getOrFetchDatabaseById(databaseId),
         useInstanceStore().getOrFetchInstanceById(instanceId),
-        useTableStore().getOrFetchTableListByDatabaseId(databaseId),
+        useDBSchemaStore().getOrFetchTableListByDatabaseId(databaseId),
       ]);
 
       return {
@@ -52,10 +52,10 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
         useDatabaseStore().getDatabaseListByInstanceId(instanceId),
         useInstanceStore().getOrFetchInstanceById(instanceId),
       ]);
-      const tableStore = useTableStore();
+      const dbSchemaStore = useDBSchemaStore();
       await Promise.all(
         databaseList.map((db) =>
-          tableStore.getOrFetchTableListByDatabaseId(db.id)
+          dbSchemaStore.getOrFetchTableListByDatabaseId(db.id)
         )
       );
 
@@ -73,7 +73,7 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     accessControlPolicyList,
     tree,
     expandedTreeNodeKeys,
-    selectedTable,
+    selectedTableAtom,
     fetchConnectionByInstanceIdAndDatabaseId,
     fetchConnectionByInstanceId,
   };

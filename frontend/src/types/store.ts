@@ -45,7 +45,6 @@ import { Project } from "./project";
 import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { Setting, SettingName } from "./setting";
-import { Table } from "./table";
 import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ReleaseInfo } from "./actuator";
@@ -158,10 +157,6 @@ export interface DatabaseState {
 
 export interface DBSchemaState {
   databaseMetadataById: Map<DatabaseId, DatabaseMetadata>;
-}
-
-export interface TableState {
-  tableListByDatabaseId: Map<DatabaseId, Table[]>;
 }
 
 export interface ViewState {
