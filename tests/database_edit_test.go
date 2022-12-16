@@ -56,8 +56,8 @@ func TestDatabaseEdit(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Sensitive Data Project",
-		Key:  "TestSensitiveData",
+		Name: "Test Schema Editor Data Project",
+		Key:  "TestSchemaEditor",
 	})
 	a.NoError(err)
 
@@ -71,7 +71,7 @@ func TestDatabaseEdit(t *testing.T) {
 
 	instance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
-		Name:          "mysqlSensitiveDataInstance",
+		Name:          "mysqlSchemaEditorInstance",
 		Engine:        db.MySQL,
 		Host:          "127.0.0.1",
 		Port:          strconv.Itoa(mysqlPort),
