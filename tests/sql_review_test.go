@@ -42,6 +42,9 @@ type test struct {
 }
 
 func TestSQLReviewForPostgreSQL(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
 	var (
 		statements = []string{
 			`CREATE TABLE "user"(
@@ -260,8 +263,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
@@ -305,9 +306,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 		Type:         api.PolicyTypeSQLReview,
 		Payload:      &policyPayload,
 	})
-	a.NoError(err)
-
-	err = ctl.setLicense()
 	a.NoError(err)
 
 	policy, err := ctl.upsertPolicy(api.PolicyUpsert{
@@ -380,6 +378,9 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 }
 
 func TestSQLReviewForMySQL(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
 	var (
 		databaseName = "testsqlreview"
 		statements   = []string{
@@ -995,8 +996,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
@@ -1039,9 +1038,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		Type:         api.PolicyTypeSQLReview,
 		Payload:      &policyPayload,
 	})
-	a.NoError(err)
-
-	err = ctl.setLicense()
 	a.NoError(err)
 
 	policy, err := ctl.upsertPolicy(api.PolicyUpsert{

@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -40,11 +41,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
-
-	err = ctl.setLicense()
-	a.NoError(err)
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
@@ -367,11 +363,6 @@ func TestVCS(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
@@ -659,6 +650,9 @@ func TestVCS(t *testing.T) {
 }
 
 func TestVCS_SDL(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -747,11 +741,6 @@ func TestVCS_SDL(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-
-			err = ctl.Login()
-			a.NoError(err)
-			err = ctl.setLicense()
-			a.NoError(err)
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
@@ -1251,8 +1240,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -1374,6 +1361,9 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 }
 
 func TestVCS_SQL_Review(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
 	tests := []struct {
 		name                    string
 		vcsProviderCreator      fake.VCSProviderCreator
@@ -1473,8 +1463,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
 			err = ctl.setLicense()
 			a.NoError(err)
 
@@ -1754,11 +1742,6 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
-			err = ctl.Login()
-			a.NoError(err)
-			err = ctl.setLicense()
-			a.NoError(err)
-
 			// Create a VCS.
 			apiVCS, err := ctl.createVCS(
 				api.VCSCreate{
@@ -1858,6 +1841,10 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 }
 
 func TestGetLatestSchema(t *testing.T) {
+	if testReleaseMode == common.ReleaseModeProd {
+		t.Skip()
+	}
+
 	tests := []struct {
 		name                 string
 		dbType               db.Type
@@ -1906,8 +1893,6 @@ CREATE TABLE public.book (
 	defer func() {
 		_ = ctl.Close(ctx)
 	}()
-	err = ctl.Login()
-	a.NoError(err)
 	err = ctl.setLicense()
 	a.NoError(err)
 	environmentName := t.Name()

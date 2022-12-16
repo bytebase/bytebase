@@ -32,8 +32,6 @@ func TestSubscription(t *testing.T) {
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	err = ctl.Login()
-	a.NoError(err)
 
 	subscription, err := ctl.getSubscription()
 	a.NoError(err)
