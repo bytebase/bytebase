@@ -634,6 +634,7 @@
     "select-instance-first": "Select instance first",
     "select-environment-first": "Select environment first",
     "tables": "Tables",
+    "collections": "Collections",
     "views": "Views",
     "extensions": "Extensions",
     "parent": "Parent",

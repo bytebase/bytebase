@@ -30,14 +30,6 @@ type Role struct {
 	DB       string `json:"db" bson:"db"`
 }
 
-var (
-	systemDatabases = map[string]bool{
-		"admin":  true,
-		"config": true,
-		"local":  true,
-	}
-)
-
 // SyncInstance syncs the instance meta.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	version, err := driver.getVersion(ctx)
@@ -49,7 +41,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 	var databaseMetaList []db.DatabaseMeta
-	dbList, err := driver.getDatabaseList(ctx)
+	dbList, err := driver.getNonSystemDatabaseList(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +59,94 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs the database schema.
-func (*Driver) SyncDBSchema(_ context.Context, _ string) (*db.Schema, error) {
-	panic("not implemented")
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+	exist, err := driver.isDatabaseExist(ctx, databaseName)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.Errorf("database %s does not exist", databaseName)
+	}
+	schema := db.Schema{}
+	schema.Name = databaseName
+
+	tableList, err := driver.syncAllCollectionSchema(ctx, databaseName)
+	if err != nil {
+		return nil, err
+	}
+	schema.TableList = tableList
+
+	// TODO(zp): sync View schema
+	return &schema, nil
+}
+
+func (driver *Driver) syncAllCollectionSchema(ctx context.Context, databaseName string) ([]db.Table, error) {
+	database := driver.client.Database(databaseName)
+	collectionFilter := bson.M{"type": collectionType}
+	collectionList, err := database.ListCollectionNames(ctx, collectionFilter)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list collection names")
+	}
+	var tableList []db.Table
+	for _, collectionName := range collectionList {
+		table, err := driver.syncCollectionSchema(ctx, databaseName, collectionName)
+		if err != nil {
+			return nil, err
+		}
+		tableList = append(tableList, table)
+	}
+	return tableList, nil
+}
+
+func (driver *Driver) syncCollectionSchema(ctx context.Context, databaseName string, collectionName string) (db.Table, error) {
+	var table db.Table
+	table.Name = collectionName
+	table.ShortName = collectionName
+	table.Type = collectionType
+
+	// Get estimated document count.
+	database := driver.client.Database(databaseName)
+	collection := database.Collection(collectionName)
+	count, err := collection.EstimatedDocumentCount(ctx)
+	if err != nil {
+		return table, errors.Wrap(err, "failed to get estimated document count")
+	}
+	table.RowCount = count
+
+	// Get collection data size and total index size in byte.
+	dataSize, totalIndexSize, err := driver.getCollectionDataSizeAndIndexSizeInByte(ctx, databaseName, collectionName)
+	if err != nil {
+		return table, errors.Wrapf(err, "failed to get collection size and index size in byte of collection %s", collectionName)
+	}
+	table.DataSize = int64(dataSize)
+	table.IndexSize = int64(totalIndexSize)
+
+	// TODO(zp): sync Column and Index schema
+
+	return table, nil
+}
+
+// getCollectionDataSizeAndIndexSizeInByte returns the collection data size and total index size in bytes.
+func (driver *Driver) getCollectionDataSizeAndIndexSizeInByte(ctx context.Context, databaseName string, collectionName string) (int32, int32, error) {
+	database := driver.client.Database(databaseName)
+	command := bson.D{{
+		Key:   "collStats",
+		Value: collectionName,
+	}}
+	var commandResult bson.M
+	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
+		return 0, 0, errors.Wrap(err, "cannot run collStats command")
+	}
+	size, ok := commandResult["size"]
+	if !ok {
+		return 0, 0, errors.New("cannot get size from collStats command result")
+	}
+
+	totalIndexSize, ok := commandResult["totalIndexSize"]
+	if !ok {
+		return 0, 0, errors.New("cannot get totalIndexSize from collStats command result")
+	}
+	return size.(int32), totalIndexSize.(int32), nil
 }
 
 // getVersion returns the version of mongod or mongos instance.
@@ -114,19 +192,21 @@ func (driver *Driver) getUserMetaList(ctx context.Context) ([]db.User, error) {
 	return dbUserList, nil
 }
 
-func flattenSystemDatabase() []string {
-	var systemDatabaseList []string
-	for databaseName := range systemDatabases {
-		systemDatabaseList = append(systemDatabaseList, databaseName)
+// isDatabaseExist returns true if the database exists.
+func (driver *Driver) isDatabaseExist(ctx context.Context, databaseName string) (bool, error) {
+	filter := bson.M{"name": databaseName}
+	databaseList, err := driver.client.ListDatabaseNames(ctx, filter)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to list database names")
 	}
-	return systemDatabaseList
+	return len(databaseList) == 1, nil
 }
 
-// getDatabaseList returns the list of databases.
-func (driver *Driver) getDatabaseList(ctx context.Context) ([]string, error) {
+// getNonSystemDatabaseList returns the list of non system databases.
+func (driver *Driver) getNonSystemDatabaseList(ctx context.Context) ([]string, error) {
 	filter := bson.M{
 		"name": bson.M{
-			"$nin": append(flattenSystemDatabase(), "bytebase"),
+			"$nin": []string{"admin", "config", "local", "bytebase"},
 		},
 	}
 	return driver.client.ListDatabaseNames(ctx, filter)
