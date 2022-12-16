@@ -233,10 +233,10 @@ func transformAddColumnContext(addColumnContext *api.AddColumnContext) (*tidbast
 			StrValue: addColumnContext.Collation,
 		})
 	}
-	if addColumnContext.Default != nil {
+	if addColumnContext.HasDefault {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:   tidbast.ColumnOptionDefaultValue,
-			Expr: tidbast.NewValueExpr(interface{}(*addColumnContext.Default), addColumnContext.CharacterSet, addColumnContext.Collation),
+			Expr: tidbast.NewValueExpr(interface{}(addColumnContext.Default), addColumnContext.CharacterSet, addColumnContext.Collation),
 		})
 	}
 	if !addColumnContext.Nullable {
@@ -281,10 +281,10 @@ func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) 
 			Tp: tidbast.ColumnOptionNotNull,
 		})
 	}
-	if changeColumnContext.Default != nil {
+	if changeColumnContext.HasDefault {
 		columnOptionList = append(columnOptionList, &tidbast.ColumnOption{
 			Tp:   tidbast.ColumnOptionDefaultValue,
-			Expr: tidbast.NewValueExpr(interface{}(*changeColumnContext.Default), changeColumnContext.CharacterSet, changeColumnContext.Collation),
+			Expr: tidbast.NewValueExpr(interface{}(changeColumnContext.Default), changeColumnContext.CharacterSet, changeColumnContext.Collation),
 		})
 	}
 	columnDef.Options = columnOptionList

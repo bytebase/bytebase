@@ -128,7 +128,11 @@ const treeDataRef = ref<TreeNode[]>([]);
 const databaseDataLoadedSet = ref<Set<DatabaseId>>(new Set());
 
 const databaseList = computed(() => editorStore.databaseList);
-const tableList = computed(() => editorStore.tableList);
+const tableList = computed(() =>
+  Array.from(editorStore.databaseStateById.values())
+    .map((databaseState) => databaseState.tableList)
+    .flat()
+);
 const contextMenuOptions = computed(() => {
   const treeNode = contextMenu.treeNode;
   if (isUndefined(treeNode)) {
@@ -143,11 +147,9 @@ const contextMenuOptions = computed(() => {
     });
     return options;
   } else if (treeNode.type === "table") {
-    const table = editorStore.tableList.find(
-      (table) =>
-        table.databaseId === treeNode.databaseId &&
-        table.newName === treeNode.tableName
-    );
+    const table = editorStore.databaseStateById
+      .get(treeNode.databaseId)
+      ?.tableList.find((table) => table.newName === treeNode.tableName);
     if (!table) {
       return [];
     }
@@ -227,55 +229,57 @@ onMounted(async () => {
   }
 });
 
-watch([tableList.value, databaseDataLoadedSet.value], () => {
-  const databaseTreeNodeList: TreeNodeForDatabase[] = [];
-  for (const treeNode of treeDataRef.value) {
-    if (treeNode.type === "instance") {
-      databaseTreeNodeList.push(
-        ...(treeNode.children as TreeNodeForDatabase[])
-      );
-    }
-  }
-
-  for (const database of databaseList.value) {
-    if (!databaseDataLoadedSet.value.has(database.id)) {
-      continue;
-    }
-    const databaseTreeNode = databaseTreeNodeList.find(
-      (treeNode) =>
-        treeNode.databaseId === database.id &&
-        databaseDataLoadedSet.value.has(treeNode.databaseId)
-    );
-    if (isUndefined(databaseTreeNode)) {
-      continue;
-    }
-
-    const databaseTableList: Table[] = [];
-    for (const table of tableList.value) {
-      if (table.databaseId === database.id) {
-        databaseTableList.push(table);
+watch(
+  [() => tableList.value, () => databaseDataLoadedSet.value],
+  () => {
+    const databaseTreeNodeList: TreeNodeForDatabase[] = [];
+    for (const treeNode of treeDataRef.value) {
+      if (treeNode.type === "instance") {
+        databaseTreeNodeList.push(
+          ...(treeNode.children as TreeNodeForDatabase[])
+        );
       }
     }
-    if (databaseTableList.length === 0) {
-      databaseTreeNode.isLeaf = true;
-      databaseTreeNode.children = [];
-    } else {
-      databaseTreeNode.isLeaf = false;
-      databaseTreeNode.children = databaseTableList.map((table) => {
-        return {
-          type: "table",
-          key: `t-${table.databaseId}-${table.newName}`,
-          label: table.newName,
-          children: [],
-          isLeaf: true,
-          instanceId: database.instance.id,
-          databaseId: database.id,
-          tableName: table.newName,
-        };
-      });
+
+    for (const database of databaseList.value) {
+      if (!databaseDataLoadedSet.value.has(database.id)) {
+        continue;
+      }
+      const databaseTreeNode = databaseTreeNodeList.find(
+        (treeNode) =>
+          treeNode.databaseId === database.id &&
+          databaseDataLoadedSet.value.has(treeNode.databaseId)
+      );
+      if (isUndefined(databaseTreeNode)) {
+        continue;
+      }
+
+      const databaseTableList: Table[] =
+        editorStore.databaseStateById.get(database.id)?.tableList || [];
+      if (databaseTableList.length === 0) {
+        databaseTreeNode.isLeaf = true;
+        databaseTreeNode.children = [];
+      } else {
+        databaseTreeNode.isLeaf = false;
+        databaseTreeNode.children = databaseTableList.map((table) => {
+          return {
+            type: "table",
+            key: `t-${database.id}-${table.newName}`,
+            label: table.newName,
+            children: [],
+            isLeaf: true,
+            instanceId: database.instance.id,
+            databaseId: database.id,
+            tableName: table.newName,
+          };
+        });
+      }
     }
+  },
+  {
+    deep: true,
   }
-});
+);
 
 watch(
   () => editorStore.currentTab,
@@ -358,21 +362,20 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
   const additionalClassList: string[] = ["select-none"];
 
   if (treeNode.type === "table") {
-    const table = editorStore.tableList.find(
-      (table) =>
-        table.databaseId === treeNode.databaseId &&
-        table.newName === treeNode.tableName
-    ) as Table;
+    const table = editorStore.databaseStateById
+      .get(treeNode.databaseId)
+      ?.tableList.find(
+        (table) => table.newName === treeNode.tableName
+      ) as Table;
 
     if (table.status === "created") {
       additionalClassList.push("text-green-700");
     } else if (table.status === "dropped") {
       additionalClassList.push("text-red-700 line-through");
     } else {
-      const originTable = editorStore.originTableList.find(
-        (item) =>
-          item.databaseId === table.databaseId && item.oldName === table.oldName
-      );
+      const originTable = editorStore.databaseStateById
+        .get(treeNode.databaseId)
+        ?.originTableList.find((table) => table.newName === treeNode.tableName);
       if (!isEqual(originTable, table)) {
         additionalClassList.push("text-yellow-700");
       }
@@ -525,11 +528,11 @@ const handleContextMenuDropdownSelect = async (key: string) => {
       };
     }
   } else if (treeNode?.type === "table") {
-    const table = editorStore.tableList.find(
-      (table) =>
-        table.databaseId === treeNode.databaseId &&
-        table.newName === treeNode.tableName
-    ) as Table;
+    const table = editorStore.databaseStateById
+      .get(treeNode.databaseId)
+      ?.tableList.find(
+        (table) => table.newName === treeNode.tableName
+      ) as Table;
 
     if (key === "rename") {
       state.tableNameModalContext = {
@@ -537,7 +540,7 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         tableName: table.newName,
       };
     } else if (key === "drop") {
-      editorStore.dropTable(table);
+      editorStore.dropTable(treeNode.databaseId, table);
     } else if (key === "restore") {
       editorStore.restoreTable(table);
     }

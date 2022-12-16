@@ -22,6 +22,14 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       this.databaseMetadataById.set(databaseId, databaseMetadata);
       return databaseMetadata;
     },
+    async getOrFetchTableListByDatabaseId(
+      databaseId: DatabaseId
+    ): Promise<TableMetadata[]> {
+      if (!this.databaseMetadataById.has(databaseId)) {
+        await this.getOrFetchDatabaseMetadataById(databaseId);
+      }
+      return this.getTableListByDatabaseId(databaseId);
+    },
     getTableListByDatabaseId(databaseId: DatabaseId): TableMetadata[] {
       const databaseMetadata = this.databaseMetadataById.get(databaseId);
       if (!databaseMetadata) {

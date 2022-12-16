@@ -158,7 +158,6 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
-  useDatabaseStore,
   useNotificationStore,
   useSchemaEditorStore,
 } from "@/store";
@@ -183,7 +182,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
-const databaseStore = useDatabaseStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   selectedTab: "table-list",
@@ -191,13 +189,10 @@ const state = reactive<LocalState>({
   statement: "",
 });
 const currentTab = editorStore.currentTab as DatabaseTabContext;
-const database = databaseStore.getDatabaseById(currentTab.databaseId);
+const databaseState = editorStore.databaseStateById.get(currentTab.databaseId)!;
+const database = databaseState.database;
+const tableList = databaseState.tableList;
 
-const tableList = computed(() => {
-  return editorStore.tableList.filter(
-    (table) => table.databaseId === currentTab.databaseId
-  );
-});
 const tableHeaderList = computed(() => {
   return [
     {
@@ -232,9 +227,7 @@ watch(
   async () => {
     if (state.selectedTab === "raw-sql") {
       state.isFetchingDDL = true;
-      const originTableList = editorStore.originTableList.filter(
-        (table) => table.databaseId === database.id
-      );
+      const originTableList = databaseState.originTableList;
       const updatedTableList =
         await editorStore.getOrFetchTableListByDatabaseId(database.id);
       const diffTableListResult = diffTableList(
@@ -298,7 +291,7 @@ const handleTableItemClick = (table: Table) => {
 };
 
 const handleDropTable = (table: Table) => {
-  editorStore.dropTable(table);
+  editorStore.dropTable(database.id, table);
 };
 
 const handleRestoreTable = (table: Table) => {
