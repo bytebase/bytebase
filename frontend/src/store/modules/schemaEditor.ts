@@ -11,9 +11,9 @@ import {
   DatabaseEdit,
   ResourceObject,
 } from "@/types";
-import { DatabaseEditResult } from "@/types/schemaEditor";
+import { DatabaseEditResult, DatabaseState } from "@/types/schemaEditor";
 import { Table } from "@/types/schemaEditor/atomType";
-import { useDatabaseStore, useTableStore } from ".";
+import { useDatabaseStore, useDBSchemaStore } from ".";
 import { transformTableDataToTable } from "@/utils/schemaEditor/transform";
 
 export const generateUniqueTabId = () => {
@@ -26,9 +26,7 @@ const getDefaultSchemaEditorState = (): SchemaEditorState => {
       tabMap: new Map<string, TabContext>(),
       currentTabId: "",
     },
-    databaseList: [],
-    originTableList: [],
-    tableList: [],
+    databaseStateById: new Map<DatabaseId, DatabaseState>(),
   };
 };
 
@@ -45,14 +43,19 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
     return getDefaultSchemaEditorState();
   },
   getters: {
-    currentTab(state) {
-      if (isUndefined(state.tabState.currentTabId)) {
+    currentTab(): TabContext | undefined {
+      if (isUndefined(this.tabState.currentTabId)) {
         return undefined;
       }
-      return state.tabState.tabMap.get(state.tabState.currentTabId);
+      return this.tabState.tabMap.get(this.tabState.currentTabId);
     },
-    tabList(state) {
-      return Array.from(state.tabState.tabMap.values());
+    tabList(): TabContext[] {
+      return Array.from(this.tabState.tabMap.values());
+    },
+    databaseList(): Database[] {
+      return Array.from(this.databaseStateById.values()).map(
+        (databaseMetadata) => databaseMetadata.database
+      );
     },
   },
   actions: {
@@ -147,44 +150,52 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
           await useDatabaseStore().getOrFetchDatabaseById(id)
         );
         databaseList.push(database);
+        this.databaseStateById.set(database.id, {
+          database: database,
+          originTableList: [],
+          tableList: [],
+        });
       }
-      this.databaseList = databaseList;
       return databaseList;
     },
     async getOrFetchTableListByDatabaseId(databaseId: DatabaseId) {
-      const tableList: Table[] = [];
-      for (const table of this.tableList) {
-        if (table.databaseId === databaseId) {
-          tableList.push(table);
-        }
+      const databaseMetadata = this.databaseStateById.get(databaseId);
+      if (
+        isUndefined(databaseMetadata) ||
+        databaseMetadata.tableList.length === 0
+      ) {
+        const database = useDatabaseStore().getDatabaseById(databaseId);
+        const tableMetadataList =
+          await useDBSchemaStore().getOrFetchTableListByDatabaseId(databaseId);
+        const tableList = tableMetadataList.map((tableMetadata) =>
+          transformTableDataToTable(tableMetadata)
+        );
+        this.databaseStateById.set(databaseId, {
+          database: database,
+          originTableList: tableList,
+          tableList: cloneDeep(tableList),
+        });
       }
 
-      if (tableList.length === 0) {
-        const tableDataList = await useTableStore().fetchTableListByDatabaseId(
-          databaseId
-        );
-        const transformTableList = tableDataList.map((tableData) =>
-          transformTableDataToTable(tableData)
-        );
-
-        tableList.push(...transformTableList);
-        this.originTableList.push(...transformTableList);
-        this.tableList.push(...cloneDeep(transformTableList));
-      }
-      return tableList;
+      return (this.databaseStateById.get(databaseId) as DatabaseState)
+        .tableList;
     },
     getTableWithTableTab(tab: TableTabContext) {
-      return this.tableList.find(
-        (table) =>
-          table.databaseId === tab.databaseId && table.newName === tab.tableName
-      );
+      return this.databaseStateById
+        .get(tab.databaseId)
+        ?.tableList.find((table) => table.newName === tab.tableName);
     },
-    dropTable(table: Table) {
+    dropTable(databaseId: DatabaseId, table: Table) {
       // Remove table record and close tab for created table.
       if (table.status === "created") {
-        const index = this.tableList.findIndex((item) => item === table);
-        this.tableList.splice(index, 1);
-        const tab = this.findTab(table.databaseId, table.newName);
+        const tableList = (
+          this.databaseStateById.get(databaseId) as DatabaseState
+        ).tableList;
+        const index = tableList.findIndex(
+          (item) => item.newName === table.newName
+        );
+        tableList.splice(index, 1);
+        const tab = this.findTab(databaseId, table.newName);
         if (tab) {
           this.closeTab(tab.id);
         }

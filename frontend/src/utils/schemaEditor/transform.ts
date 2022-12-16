@@ -3,41 +3,42 @@ import {
   AddColumnContext,
   CreateTableContext,
   ChangeColumnContext,
-  Column as ColumnData,
-  Table as TableData,
 } from "@/types";
 import { Column, Table } from "@/types/schemaEditor/atomType";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/database";
 
-export const transformTableDataToTable = (tableData: TableData): Table => {
-  const columnList = tableData.columnList.map((columnData) =>
-    transformColumnDataToColumn(columnData)
+export const transformTableDataToTable = (
+  tableMetadata: TableMetadata
+): Table => {
+  const columnList = tableMetadata.columns.map((column) =>
+    transformColumnDataToColumn(column)
   );
 
   return {
-    databaseId: tableData.database.id,
-    oldName: tableData.name,
-    newName: tableData.name,
-    type: tableData.type,
-    engine: tableData.engine,
-    collation: tableData.collation,
-    rowCount: tableData.rowCount,
-    dataSize: tableData.dataSize,
-    comment: tableData.comment,
+    oldName: tableMetadata.name,
+    newName: tableMetadata.name,
+    engine: tableMetadata.engine,
+    collation: tableMetadata.collation,
+    rowCount: tableMetadata.rowCount,
+    dataSize: tableMetadata.dataSize,
+    comment: tableMetadata.comment,
     originColumnList: columnList,
     columnList: cloneDeep(columnList),
     status: "normal",
   };
 };
 
-export const transformColumnDataToColumn = (columnData: ColumnData): Column => {
+export const transformColumnDataToColumn = (
+  columnMetadata: ColumnMetadata
+): Column => {
   return {
-    databaseId: columnData.databaseId,
-    oldName: columnData.name,
-    newName: columnData.name,
-    type: columnData.type,
-    nullable: columnData.nullable,
-    comment: columnData.comment,
-    default: columnData.default || null,
+    oldName: columnMetadata.name,
+    newName: columnMetadata.name,
+    type: columnMetadata.type,
+    nullable: columnMetadata.nullable,
+    comment: columnMetadata.comment,
+    hasDefault: columnMetadata.hasDefault,
+    default: columnMetadata.default,
     status: "normal",
   };
 };
@@ -50,7 +51,8 @@ export const transformColumnToAddColumnContext = (
     type: defaultTo(column.type, ""),
     comment: defaultTo(column.comment, ""),
     nullable: defaultTo(column.nullable, false),
-    default: defaultTo(column.default, undefined),
+    hasDefault: defaultTo(column.hasDefault, false),
+    default: defaultTo(column.default, ""),
     characterSet: "",
     collation: "",
   };
@@ -66,7 +68,8 @@ export const transformColumnToChangeColumnContext = (
     type: defaultTo(column.type, ""),
     comment: defaultTo(column.comment, ""),
     nullable: defaultTo(column.nullable, false),
-    default: defaultTo(column.default, undefined),
+    hasDefault: defaultTo(column.hasDefault, false),
+    default: defaultTo(column.default, ""),
     characterSet: "",
     collation: "",
   };
@@ -77,7 +80,6 @@ export const transformTableToCreateTableContext = (
 ): CreateTableContext => {
   return {
     name: defaultTo(table.newName, ""),
-    type: defaultTo(table.type, ""),
     engine: defaultTo(table.engine, ""),
     collation: defaultTo(table.collation, ""),
     comment: defaultTo(table.comment, ""),

@@ -25,14 +25,18 @@ export type TabContext = DatabaseTabContext | TableTabContext;
 
 type TabId = string;
 
+export interface DatabaseState {
+  database: Database;
+  originTableList: Table[];
+  tableList: Table[];
+}
+
 export interface SchemaEditorState {
   tabState: {
     tabMap: Map<TabId, TabContext>;
     currentTabId?: TabId;
   };
-  databaseList: Database[];
-  originTableList: Table[];
-  tableList: Table[];
+  databaseStateById: Map<DatabaseId, DatabaseState>;
 }
 
 /**
@@ -49,7 +53,6 @@ export interface DatabaseEdit {
 
 export interface CreateTableContext {
   name: string;
-  type: string;
   engine: string;
   characterSet: string;
   collation: string;
@@ -82,7 +85,8 @@ export interface AddColumnContext {
   collation: string;
   comment: string;
   nullable: boolean;
-  default?: string;
+  hasDefault: boolean;
+  default: string;
 }
 
 export interface ChangeColumnContext {
@@ -93,7 +97,8 @@ export interface ChangeColumnContext {
   collation: string;
   comment: string;
   nullable: boolean;
-  default?: string;
+  hasDefault: boolean;
+  default: string;
 }
 
 export interface DropColumnContext {
