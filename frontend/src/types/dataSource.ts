@@ -16,6 +16,7 @@ export type DataSourceType = "ADMIN" | "RW" | "RO";
 // DataSourceOptions is the options for a data source.
 export type DataSourceOptions = {
   srv: boolean;
+  authDatabase: string;
 };
 
 export type DataSource = {

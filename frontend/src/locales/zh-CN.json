@@ -41,6 +41,7 @@
     "visit-default-project": "@:common.visit@:common.default-project",
     "help": "帮助",
     "database": "数据库",
+    "authDatabase": "认证数据库",
     "databases": "数据库",
     "description": "描述",
     "instance": "实例",

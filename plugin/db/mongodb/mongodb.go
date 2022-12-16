@@ -91,23 +91,29 @@ func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 // getMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
-	connectionURL := "mongodb://"
+	connectionURI := "mongodb://"
 	if connConfig.SRV {
-		connectionURL = "mongodb+srv://"
+		connectionURI = "mongodb+srv://"
 	}
 	if connConfig.Username != "" {
 		percentEncodingUsername := replaceCharacterWithPercentEncoding(connConfig.Username)
 		percentEncodingPassword := replaceCharacterWithPercentEncoding(connConfig.Password)
-		connectionURL = fmt.Sprintf("%s%s:%s@", connectionURL, percentEncodingUsername, percentEncodingPassword)
+		connectionURI = fmt.Sprintf("%s%s:%s@", connectionURI, percentEncodingUsername, percentEncodingPassword)
 	}
-	connectionURL = fmt.Sprintf("%s%s", connectionURL, connConfig.Host)
+	connectionURI = fmt.Sprintf("%s%s", connectionURI, connConfig.Host)
 	if connConfig.Port != "" {
-		connectionURL = fmt.Sprintf("%s:%s", connectionURL, connConfig.Port)
+		connectionURI = fmt.Sprintf("%s:%s", connectionURI, connConfig.Port)
 	}
 	if connConfig.Database != "" {
-		connectionURL = fmt.Sprintf("%s/%s", connectionURL, connConfig.Database)
+		connectionURI = fmt.Sprintf("%s/%s", connectionURI, connConfig.Database)
 	}
-	return connectionURL
+	if connConfig.AuthDatabase != "" {
+		if connConfig.Database == "" {
+			connectionURI = fmt.Sprintf("%s/", connectionURI)
+		}
+		connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, connConfig.AuthDatabase)
+	}
+	return connectionURI
 }
 
 func replaceCharacterWithPercentEncoding(s string) string {

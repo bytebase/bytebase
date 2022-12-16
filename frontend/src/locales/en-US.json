@@ -41,6 +41,7 @@
     "visit-default-project": "@:common.visit @:common.default-project",
     "help": "Help",
     "database": "Database",
+    "authDatabase": "Auth Database",
     "databases": "Databases",
     "description": "Description",
     "instance": "Instance",

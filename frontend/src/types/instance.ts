@@ -87,6 +87,7 @@ export type Instance = {
   host: string;
   port?: string;
   srv: boolean;
+  authDatabase: string;
 };
 
 export type InstanceCreate = {
@@ -108,6 +109,8 @@ export type InstanceCreate = {
   sslKey?: string;
   // DNS SRV record is only used for MongoDB.
   srv: boolean;
+  // For MongoDB, the auth database is used to authenticate the user.
+  authDatabase: string;
 };
 
 export type InstancePatch = {

@@ -45,12 +45,15 @@ const (
 type DataSourceOptions struct {
 	// SRV is used for MongoDB only.
 	SRV bool `json:"srv" jsonapi:"attr,srv"`
+	// AuthDatabase is used for MongoDB only.
+	AuthDatabase string `json:"authDatabase" jsonapi:"attr,authDatabase"`
 }
 
 // getDefaultDataSourceOptions returns the default data source options.
 func getDefaultDataSourceOptions() DataSourceOptions {
 	return DataSourceOptions{
-		SRV: false,
+		SRV:          false,
+		AuthDatabase: "",
 	}
 }
 

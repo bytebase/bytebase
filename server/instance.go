@@ -51,7 +51,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					SslCert:  instanceCreate.SslCert,
 					SslKey:   instanceCreate.SslKey,
 					Options: api.DataSourceOptions{
-						SRV: instanceCreate.SRV,
+						SRV:          instanceCreate.SRV,
+						AuthDatabase: instanceCreate.AuthDatabase,
 					},
 				},
 			},
