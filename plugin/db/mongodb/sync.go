@@ -82,7 +82,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 
 func (driver *Driver) syncAllCollectionSchema(ctx context.Context, databaseName string) ([]db.Table, error) {
 	database := driver.client.Database(databaseName)
-	collectionFilter := bson.M{"type": colelctionType}
+	collectionFilter := bson.M{"type": collectionType}
 	collectionList, err := database.ListCollectionNames(ctx, collectionFilter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list collection names")
@@ -102,7 +102,7 @@ func (driver *Driver) syncCollectionSchema(ctx context.Context, databaseName str
 	var table db.Table
 	table.Name = collectionName
 	table.ShortName = collectionName
-	table.Type = colelctionType
+	table.Type = collectionType
 
 	// Get estimated document count.
 	database := driver.client.Database(databaseName)
