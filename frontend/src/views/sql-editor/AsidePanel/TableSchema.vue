@@ -1,5 +1,5 @@
 <template>
-  <div v-if="table.id !== UNKNOWN_ID" class="table-schema">
+  <div v-if="table !== undefined" class="table-schema">
     <div class="table-schema--header">
       <div class="table-schema--header-title mr-1 flex items-center">
         <heroicons-outline:table class="h-4 w-4 mr-1" />
@@ -45,7 +45,7 @@
     </div>
     <div class="table-schema--content text-sm text-gray-400 overflow-y-auto">
       <div
-        v-for="(column, index) in table.columnList"
+        v-for="(column, index) in table.columns"
         :key="index"
         class="flex justify-between items-center w-full p-1 hover:bg-link-hover"
       >
@@ -64,26 +64,42 @@
 </template>
 
 <script lang="ts" setup>
+import { isUndefined } from "lodash-es";
 import { computed } from "vue";
 import { stringify } from "qs";
-
 import type { Repository } from "@/types";
-import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
-import { useConnectionTreeStore, useRepositoryStore } from "@/store";
+import { baseDirectoryWebUrl } from "@/types";
+import {
+  useConnectionTreeStore,
+  useDatabaseStore,
+  useDBSchemaStore,
+  useRepositoryStore,
+} from "@/store";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;
 }>();
 
 const connectionTreeStore = useConnectionTreeStore();
-const table = computed(() => connectionTreeStore.selectedTable);
+const databaseStore = useDatabaseStore();
+const dbSchemaStore = useDBSchemaStore();
+const tableAtom = computed(() => connectionTreeStore.selectedTableAtom);
+const table = computed(() => {
+  if (isUndefined(tableAtom.value)) {
+    return undefined;
+  }
+  return dbSchemaStore.getTableByDatabaseIdAndTableName(
+    tableAtom.value.parentId,
+    tableAtom.value.label
+  );
+});
 
 const gotoAlterSchema = () => {
-  if (table.value.id === UNKNOWN_ID) {
+  if (isUndefined(tableAtom.value) || isUndefined(table.value)) {
     return;
   }
 
-  const { database } = table.value;
+  const database = databaseStore.getDatabaseById(tableAtom.value.parentId);
   const { project } = database;
   if (project.workflowType === "VCS") {
     useRepositoryStore()

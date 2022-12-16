@@ -18,7 +18,8 @@ import {
   onBeforeUnmount,
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
-import { Database, SQLDialect, Table } from "@/types";
+import { Database, SQLDialect } from "@/types";
+import { TableMetadata } from "@/types/proto/database";
 import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
 import type { useLanguageClient } from "@sql-lsp/client";
@@ -282,22 +283,23 @@ const formatEditorContent = () => {
 };
 
 const setEditorAutoCompletionContext = (
-  databases: Database[],
-  tables: Table[]
+  databaseMap: Map<Database, TableMetadata[]>
 ) => {
-  languageClientRef.value?.changeSchema({
-    databases: databases.map((db) => ({
-      name: db.name,
-      tables: tables
-        .filter((table) => table.database.id === db.id)
-        .map((table) => ({
-          database: db.name,
-          name: table.name,
-          columns: table.columnList.map((col) => ({
-            name: col.name,
-          })),
+  const databases = [];
+  for (const [database, tableList] of databaseMap) {
+    databases.push({
+      name: database.name,
+      tables: tableList.map((table) => ({
+        database: database.name,
+        name: table.name,
+        columns: table.columns.map((column) => ({
+          name: column.name,
         })),
-    })),
+      })),
+    });
+  }
+  languageClientRef.value?.changeSchema({
+    databases: databases,
   });
 };
 

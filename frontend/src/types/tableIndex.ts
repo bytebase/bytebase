@@ -1,12 +1,13 @@
-import { DatabaseId, TableId, TableIndexId } from "./id";
+import { DatabaseId, IdType, TableIndexId } from "./id";
 
+// TODO(steven): remove it.
 // Index
 export type TableIndex = {
   id: TableIndexId;
 
   // Related fields
   databaseId: DatabaseId;
-  tableId: TableId;
+  tableId: IdType;
 
   // Standard fields
   creatorId: number;
