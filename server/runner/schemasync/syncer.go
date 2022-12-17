@@ -399,8 +399,8 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	return syncDBSchema(ctx, s.store, database, schema, driver, force)
 }
 
-func syncDBSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema, driver db.Driver, force bool) error {
-	dbSchema, err := store.GetDBSchema(ctx, database.ID)
+func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Database, schema *db.Schema, driver db.Driver, force bool) error {
+	dbSchema, err := stores.GetDBSchema(ctx, database.ID)
 	if err != nil {
 		return err
 	}
@@ -435,7 +435,7 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 			rawDump = schemaBuf.String()
 		}
 
-		if _, err := store.UpsertDBSchema(ctx, api.DBSchemaUpsert{
+		if err := stores.UpsertDBSchema(ctx, store.DBSchemaUpsert{
 			UpdatorID:  api.SystemBotID,
 			DatabaseID: database.ID,
 			Metadata:   metadata,
