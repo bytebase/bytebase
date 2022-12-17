@@ -15,8 +15,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -24,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
 )
@@ -1840,7 +1844,7 @@ func TestGetLatestSchema(t *testing.T) {
 		databaseName         string
 		ddl                  string
 		wantRawSchema        string
-		wantDatabaseMetadata string
+		wantDatabaseMetadata *storepb.DatabaseMetadata
 	}{
 		{
 			name:         "PostgreSQL",
@@ -1868,7 +1872,26 @@ CREATE TABLE public.book (
 );
 
 `,
-			wantDatabaseMetadata: `{"name": "latestSchema", "schemas": [{"name": "public", "tables": [{"name": "book", "columns": [{"name": "id", "type": "integer", "nullable": true, "position": 1, "hasDefault": true}, {"name": "name", "type": "text", "nullable": true, "position": 2, "hasDefault": true}], "dataSize": "8192"}]}], "collation": "en_US.UTF-8", "characterSet": "UTF8"}`,
+			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+				Name:         "latestSchema",
+				CharacterSet: "UTF8",
+				Collation:    "en_US.UTF-8",
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name:     "book",
+								DataSize: 8192,
+								Columns: []*storepb.ColumnMetadata{
+									{Name: "id", Position: 1, HasDefault: true, Nullable: true, Type: "integer"},
+									{Name: "name", Position: 2, HasDefault: true, Nullable: true, Type: "text"},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 	a := require.New(t)
@@ -1958,9 +1981,13 @@ CREATE TABLE public.book (
 			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
 			a.NoError(err)
 			a.Equal(test.wantRawSchema, latestSchemaDump)
-			latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(database.ID)
+			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(database.ID)
 			a.NoError(err)
-			a.Equal(test.wantDatabaseMetadata, latestSchemaMetadata)
+			var latestSchemaMetadata storepb.DatabaseMetadata
+			err = protojson.Unmarshal([]byte(latestSchemaMetadataString), &latestSchemaMetadata)
+			a.NoError(err)
+			diff := cmp.Diff(test.wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
+			a.Equal("", diff)
 		})
 	}
 }

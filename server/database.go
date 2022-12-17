@@ -10,6 +10,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -277,7 +278,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 		} else {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-			if _, err := c.Response().Write([]byte(dbSchema.Metadata)); err != nil {
+			metadataBytes, err := protojson.Marshal(dbSchema.Metadata)
+			if err != nil {
+				return err
+			}
+			if _, err := c.Response().Write(metadataBytes); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
 			}
 		}
