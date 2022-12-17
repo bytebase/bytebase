@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/server/component/state"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -247,7 +248,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID 
 	}
 	createList = append(createList, create...)
 
-	statement, err := s.getStatement(task)
+	statement, err := utils.GetTaskStatement(task)
 	if err != nil {
 		return nil, err
 	}
@@ -292,37 +293,6 @@ func (s *Scheduler) ScheduleCheck(ctx context.Context, task *api.Task, creatorID
 	}
 	task.TaskCheckRunList = taskCheckRunList
 	return task, err
-}
-
-func (*Scheduler) getStatement(task *api.Task) (string, error) {
-	switch task.Type {
-	case api.TaskDatabaseSchemaUpdate:
-		taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdatePayload")
-		}
-		return taskPayload.Statement, nil
-	case api.TaskDatabaseSchemaUpdateSDL:
-		taskPayload := &api.TaskDatabaseSchemaUpdateSDLPayload{}
-		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdateSDLPayload")
-		}
-		return taskPayload.Statement, nil
-	case api.TaskDatabaseDataUpdate:
-		taskPayload := &api.TaskDatabaseDataUpdatePayload{}
-		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return "", errors.Wrap(err, "invalid TaskDatabaseDataUpdatePayload")
-		}
-		return taskPayload.Statement, nil
-	case api.TaskDatabaseSchemaUpdateGhostSync:
-		taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-		if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
-			return "", errors.Wrap(err, "invalid TaskDatabaseSchemaUpdateGhostSyncPayload")
-		}
-		return taskPayload.Statement, nil
-	default:
-		return "", errors.Errorf("invalid task type %s", task.Type)
-	}
 }
 
 func (*Scheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {

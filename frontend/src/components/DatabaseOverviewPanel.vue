@@ -213,8 +213,6 @@ import {
   featureToRef,
   useCurrentUser,
   useDataSourceStore,
-  useViewStore,
-  useDBExtensionStore,
   useAnomalyList,
   useDBSchemaStore,
 } from "@/store";
@@ -246,8 +244,6 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
     const dbSchemaStore = useDBSchemaStore();
-    const viewStore = useViewStore();
-    const dbExtensionStore = useDBExtensionStore();
 
     const databaseEngine = props.database.instance.engine as EngineType;
 
@@ -256,18 +252,6 @@ export default defineComponent({
     };
 
     watchEffect(prepareDatabaseMetadata);
-
-    const prepareViewList = () => {
-      viewStore.fetchViewListByDatabaseId(props.database.id);
-    };
-
-    watchEffect(prepareViewList);
-
-    const prepareDBExtensionList = () => {
-      dbExtensionStore.fetchdbExtensionListByDatabaseId(props.database.id);
-    };
-
-    watchEffect(prepareDBExtensionList);
 
     const anomalyList = useAnomalyList(
       computed(() => ({ databaseId: props.database.id }))
@@ -293,11 +277,11 @@ export default defineComponent({
     });
 
     const viewList = computed(() => {
-      return viewStore.getViewListByDatabaseId(props.database.id);
+      return dbSchemaStore.getViewListByDatabaseId(props.database.id);
     });
 
     const dbExtensionList = computed(() => {
-      return dbExtensionStore.getDBExtensionListByDatabaseId(props.database.id);
+      return dbSchemaStore.getExtensionListByDatabaseId(props.database.id);
     });
 
     const allowConfigInstance = computed(() => {

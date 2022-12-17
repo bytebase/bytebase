@@ -97,10 +97,7 @@ type TaskDatabaseCreatePayload struct {
 
 // TaskDatabaseSchemaBaselinePayload is the task payload for database schema baseline.
 type TaskDatabaseSchemaBaselinePayload struct {
-	Statement     string `json:"statement,omitempty"`
 	SchemaVersion string `json:"schemaVersion,omitempty"`
-	// TODO(d): remove this vcs pushevent since it should not be passed in from frontend.
-	VCSPushEvent *vcs.PushEvent `json:"pushEvent,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).

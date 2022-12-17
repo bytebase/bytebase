@@ -26,7 +26,6 @@ import { DeploymentConfig } from "./deployment";
 import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
-import { Column } from "./column";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -130,9 +129,7 @@ export type ResourceType =
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
   | "SHEET"
-  | "SQL_REVIEW"
-  | "TABLE"
-  | "COLUMN";
+  | "SQL_REVIEW";
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
@@ -160,7 +157,6 @@ interface ResourceMaker {
   (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
-  (type: "COLUMN"): Column;
 }
 
 const makeUnknown = (type: ResourceType) => {
@@ -520,24 +516,6 @@ const makeUnknown = (type: ResourceType) => {
     ruleList: [],
   };
 
-  // TODO(steven): remove UNKNOWN_COLUMN
-  const UNKNOWN_COLUMN: Column = {
-    id: UNKNOWN_ID,
-    databaseId: UNKNOWN_DATABASE.id,
-    tableId: UNKNOWN_ID,
-    creatorId: UNKNOWN_PRINCIPAL.id,
-    createdTs: 0,
-    updaterId: UNKNOWN_PRINCIPAL.id,
-    updatedTs: 0,
-    name: "",
-    position: 0,
-    nullable: true,
-    type: "",
-    characterSet: "",
-    collation: "",
-    comment: "",
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -589,8 +567,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_SHEET;
     case "SQL_REVIEW":
       return UNKNOWN_SQL_REVIEW_POLICY;
-    case "COLUMN":
-      return UNKNOWN_COLUMN;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -1001,8 +977,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_SHEET;
     case "SQL_REVIEW":
       return EMPTY_SQL_REVIEW_POLICY;
-    case "TABLE":
-      return EMPTY_TABLE;
   }
 };
 export const empty = makeEmpty as ResourceMaker;
