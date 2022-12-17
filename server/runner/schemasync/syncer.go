@@ -14,7 +14,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/api"
@@ -399,28 +398,19 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	return syncDBSchema(ctx, s.store, database, schema, driver, force)
 }
 
-func syncDBSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema, driver db.Driver, force bool) error {
-	dbSchema, err := store.GetDBSchema(ctx, database.ID)
+func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Database, schema *db.Schema, driver db.Driver, force bool) error {
+	dbSchema, err := stores.GetDBSchema(ctx, database.ID)
 	if err != nil {
 		return err
 	}
-
-	databaseMetadata := convertDBSchema(schema)
 	var oldDatabaseMetadata *storepb.DatabaseMetadata
 	if dbSchema != nil {
-		var m storepb.DatabaseMetadata
-		if err := protojson.Unmarshal([]byte(dbSchema.Metadata), &m); err != nil {
-			return err
-		}
-		oldDatabaseMetadata = &m
+		oldDatabaseMetadata = dbSchema.Metadata
 	}
 
+	databaseMetadata := convertDBSchema(schema)
+
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
-		metadataBytes, err := protojson.Marshal(databaseMetadata)
-		if err != nil {
-			return err
-		}
-		metadata := string(metadataBytes)
 		rawDump := ""
 		if dbSchema != nil {
 			rawDump = dbSchema.RawDump
@@ -435,10 +425,10 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 			rawDump = schemaBuf.String()
 		}
 
-		if _, err := store.UpsertDBSchema(ctx, api.DBSchemaUpsert{
+		if err := stores.UpsertDBSchema(ctx, store.DBSchemaUpsert{
 			UpdatorID:  api.SystemBotID,
 			DatabaseID: database.ID,
-			Metadata:   metadata,
+			Metadata:   databaseMetadata,
 			RawDump:    rawDump,
 		}); err != nil {
 			return err
