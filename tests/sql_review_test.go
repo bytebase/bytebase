@@ -42,9 +42,6 @@ type test struct {
 }
 
 func TestSQLReviewForPostgreSQL(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	var (
 		statements = []string{
 			`CREATE TABLE "user"(
@@ -378,9 +375,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 }
 
 func TestSQLReviewForMySQL(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	var (
 		databaseName = "testsqlreview"
 		statements   = []string{

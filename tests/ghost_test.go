@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/tests/fake"
@@ -46,9 +45,6 @@ func TestGhostParser(t *testing.T) {
 }
 
 func TestGhostSchemaUpdate(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	const (
 		databaseName            = "testGhostSchemaUpdate"
 		mysqlMigrationStatement = `
@@ -205,9 +201,6 @@ func TestGhostSchemaUpdate(t *testing.T) {
 }
 
 func TestGhostTenant(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	var (
 		databaseName            = "testGhostSchemaUpdate"
 		mysqlMigrationStatement = `
