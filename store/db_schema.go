@@ -6,46 +6,52 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// dbSchemaRaw is the store model for a database schema.
-// Fields have exactly the same meaning as DBSchema.
-type dbSchemaRaw struct {
-	ID int
+// DBSchema is the API message for database schema.
+type DBSchema struct {
+	Metadata *storepb.DatabaseMetadata
+	RawDump  string
+}
 
+// DBSchemaUpsert is the API message for creating a database schema.
+type DBSchemaUpsert struct {
 	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdatorID int
 
 	// Related fields
 	DatabaseID int
 
 	// Domain specific fields
+	Metadata *storepb.DatabaseMetadata
+	RawDump  string
+}
+
+type dbSchemaRaw struct {
 	Metadata string
 	RawDump  string
 }
 
-func (raw *dbSchemaRaw) toDBSchema() *api.DBSchema {
-	return &api.DBSchema{
-		ID: raw.ID,
-
-		// Standard fields
-
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Metadata: raw.Metadata,
-		RawDump:  raw.RawDump,
+func (raw *dbSchemaRaw) toDBSchema() (*DBSchema, error) {
+	var databaseSchema storepb.DatabaseMetadata
+	if err := protojson.Unmarshal([]byte(raw.Metadata), &databaseSchema); err != nil {
+		return nil, err
 	}
+	return &DBSchema{
+		Metadata: &databaseSchema,
+		RawDump:  raw.RawDump,
+	}, nil
 }
 
 // GetDBSchema gets the schema for a database.
-func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*api.DBSchema, error) {
-	cachedDBSchema := &api.DBSchema{}
-	ok, err := s.cache.FindCache(principalCacheNamespace, databaseID, cachedDBSchema)
+func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, error) {
+	cachedDBSchema := &DBSchema{}
+	ok, err := s.cache.FindCache(schemaCacheNamespace, databaseID, cachedDBSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -57,45 +63,37 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*api.DBSchema,
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, databaseID)
 
-	rows, err := s.db.db.QueryContext(ctx, `
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var raw dbSchemaRaw
+	if err := tx.QueryRowContext(ctx, `
 		SELECT
-			id,
-			database_id,
 			metadata,
 			raw_dump
 		FROM db_schema
 		WHERE `+strings.Join(where, " AND "),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var list []*dbSchemaRaw
-	for rows.Next() {
-		var raw dbSchemaRaw
-		if err := rows.Scan(
-			&raw.ID,
-			&raw.DatabaseID,
-			&raw.Metadata,
-			&raw.RawDump,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&raw.Metadata,
+		&raw.RawDump,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
 		}
-		list = append(list, &raw)
+		return nil, FormatError(err)
 	}
-	if err := rows.Err(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d database schema for database %d, expect 1", len(list), databaseID)}
+	dbSchema, err := raw.toDBSchema()
+	if err != nil {
+		return nil, err
 	}
-
-	dbSchema := list[0].toDBSchema()
 	if err := s.cache.UpsertCache(schemaCacheNamespace, databaseID, dbSchema); err != nil {
 		return nil, err
 	}
@@ -103,7 +101,12 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*api.DBSchema,
 }
 
 // UpsertDBSchema upserts a database schema.
-func (s *Store) UpsertDBSchema(ctx context.Context, upsert api.DBSchemaUpsert) (*api.DBSchema, error) {
+func (s *Store) UpsertDBSchema(ctx context.Context, upsert DBSchemaUpsert) error {
+	metadataBytes, err := protojson.Marshal(upsert.Metadata)
+	if err != nil {
+		return err
+	}
+
 	query := `
 		INSERT INTO db_schema (
 			creator_id,
@@ -116,39 +119,37 @@ func (s *Store) UpsertDBSchema(ctx context.Context, upsert api.DBSchemaUpsert) (
 		ON CONFLICT(database_id) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump
-		RETURNING id, database_id, metadata, raw_dump
+		RETURNING metadata, raw_dump
 	`
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
 	var raw dbSchemaRaw
-	if err := s.db.db.QueryRowContext(ctx, query,
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.UpdatorID,
 		upsert.UpdatorID,
 		upsert.DatabaseID,
-		upsert.Metadata,
+		metadataBytes,
 		upsert.RawDump,
 	).Scan(
-		&raw.ID,
-		&raw.DatabaseID,
 		&raw.Metadata,
 		&raw.RawDump,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+			return common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, FormatError(err)
+		return FormatError(err)
 	}
-	dbSchema := raw.toDBSchema()
-	if err := s.cache.UpsertCache(schemaCacheNamespace, upsert.DatabaseID, dbSchema); err != nil {
-		return nil, err
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
 	}
-	return dbSchema, nil
-}
 
-// DeleteDBSchema deletes the schema for a database.
-func (s *Store) DeleteDBSchema(ctx context.Context, databaseID int) (*api.DBSchema, error) {
-	if _, err := s.db.db.ExecContext(ctx, "DELETE FROM db_schema WHERE database_id = $1", databaseID); err != nil {
-		return nil, FormatError(err)
+	dbSchema, err := raw.toDBSchema()
+	if err != nil {
+		return err
 	}
-	// Invalidate cache.
-	s.cache.DeleteCache(schemaCacheNamespace, databaseID)
-	return nil, nil
+	return s.cache.UpsertCache(schemaCacheNamespace, upsert.DatabaseID, dbSchema)
 }

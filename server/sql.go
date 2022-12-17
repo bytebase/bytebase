@@ -14,7 +14,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -26,7 +25,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	"github.com/bytebase/bytebase/server/component/activity"
 )
 
@@ -749,16 +747,12 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
 		}
-		var m storepb.DatabaseMetadata
-		if err := protojson.Unmarshal([]byte(dbSchema.Metadata), &m); err != nil {
-			return nil, err
-		}
 
 		databaseSchema := db.DatabaseSchema{
 			Name:      databaseName,
 			TableList: []db.TableSchema{},
 		}
-		for _, schema := range m.Schemas {
+		for _, schema := range dbSchema.Metadata.Schemas {
 			for _, table := range schema.Tables {
 				tableSchema := db.TableSchema{
 					Name:       table.Name,
