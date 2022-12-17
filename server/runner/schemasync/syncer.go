@@ -404,16 +404,12 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 	if err != nil {
 		return err
 	}
-
-	databaseMetadata := convertDBSchema(schema)
 	var oldDatabaseMetadata *storepb.DatabaseMetadata
 	if dbSchema != nil {
-		var m storepb.DatabaseMetadata
-		if err := protojson.Unmarshal([]byte(dbSchema.Metadata), &m); err != nil {
-			return err
-		}
-		oldDatabaseMetadata = &m
+		oldDatabaseMetadata = dbSchema.Metadata
 	}
+
+	databaseMetadata := convertDBSchema(schema)
 
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
 		metadataBytes, err := protojson.Marshal(databaseMetadata)
