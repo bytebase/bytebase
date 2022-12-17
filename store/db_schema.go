@@ -51,7 +51,7 @@ func (raw *dbSchemaRaw) toDBSchema() (*DBSchema, error) {
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, error) {
 	cachedDBSchema := &DBSchema{}
-	ok, err := s.cache.FindCache(principalCacheNamespace, databaseID, cachedDBSchema)
+	ok, err := s.cache.FindCache(schemaCacheNamespace, databaseID, cachedDBSchema)
 	if err != nil {
 		return nil, err
 	}
