@@ -81,7 +81,7 @@ The rough sequence:
 
 At the Bytebase core, there is an execution engine consisting of `Pipeline`, `Stage`, `Task` and `Task Run`.
 
-![Data Model](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
+![Data Model](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/data-model-v1.webp)
 
 A pipeline contains multiple stages, and each stage contain multiple tasks. This is how Bytebase creates a Pipeline:
 
