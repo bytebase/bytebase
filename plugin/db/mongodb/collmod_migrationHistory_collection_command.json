@@ -7,11 +7,15 @@
         "_id",
         "created_by",
         "created_ts",
+        "updated_by",
+        "updated_ts",
         "release_version",
         "namespace",
         "sequence",
         "source",
+        "type",
         "status",
+        "version",
         "description",
         "statement",
         "executon_duration_ns",
@@ -28,6 +32,12 @@
         "created_ts": {
           "bsonType": "long"
         },
+        "updated_by": {
+          "bsonType": "string"
+        },
+        "updated_ts": {
+          "bsonType": "long"
+        },
         "release_version": {
           "bsonType": "string"
         },
@@ -41,7 +51,13 @@
         "source": {
           "bsonType": "string"
         },
+        "type": {
+          "bsonType": "string"
+        },
         "status": {
+          "bsonType": "string"
+        },
+        "version": {
           "bsonType": "string"
         },
         "description": {
