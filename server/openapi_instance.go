@@ -23,10 +23,10 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID", s.getInstanceByID)
 	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
 	g.DELETE("/instance/:instanceID", s.deleteInstanceByOpenAPI)
-	g.POST("/instance/:instanceID/role", s.createPGRole)
-	g.GET("/instance/:instanceID/role/:roleName", s.getPGRole)
-	g.PATCH("/instance/:instanceID/role/:roleName", s.updatePGRole)
-	g.DELETE("/instance/:instanceID/role/:roleName", s.deletePGRole)
+	g.POST("/instance/:instanceID/role", s.createDatabaseRole)
+	g.GET("/instance/:instanceID/role/:roleName", s.getDatabaseRole)
+	g.PATCH("/instance/:instanceID/role/:roleName", s.updateDatabaseRole)
+	g.DELETE("/instance/:instanceID/role/:roleName", s.deleteDatabaseRole)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
@@ -190,7 +190,7 @@ func (s *Server) getInstanceByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, convertToOpenAPIInstance(instance))
 }
 
-func (s *Server) getPGRole(c echo.Context) error {
+func (s *Server) getDatabaseRole(c echo.Context) error {
 	ctx := c.Request().Context()
 	roleName := c.Param("roleName")
 
@@ -199,15 +199,28 @@ func (s *Server) getPGRole(c echo.Context) error {
 		return err
 	}
 
-	role, err := s.findPGRoleByName(ctx, instance, roleName)
+	role, err := func() (*db.Role, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		role, err := driver.FindRole(ctx, roleName)
+		if err != nil {
+			return nil, err
+		}
+
+		return role, nil
+	}()
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, role)
+	return c.JSON(http.StatusOK, convertToOpenAPIDatabaseRole(role, instance.ID))
 }
 
-func (s *Server) createPGRole(c echo.Context) error {
+func (s *Server) createDatabaseRole(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	body, err := io.ReadAll(c.Request().Body)
@@ -243,10 +256,10 @@ func (s *Server) createPGRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, role)
+	return c.JSON(http.StatusOK, convertToOpenAPIDatabaseRole(role, instance.ID))
 }
 
-func (s *Server) deletePGRole(c echo.Context) error {
+func (s *Server) deleteDatabaseRole(c echo.Context) error {
 	ctx := c.Request().Context()
 	roleName := c.Param("roleName")
 
@@ -270,7 +283,7 @@ func (s *Server) deletePGRole(c echo.Context) error {
 	return c.String(http.StatusOK, "ok")
 }
 
-func (s *Server) updatePGRole(c echo.Context) error {
+func (s *Server) updateDatabaseRole(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	body, err := io.ReadAll(c.Request().Body)
@@ -307,7 +320,7 @@ func (s *Server) updatePGRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, role)
+	return c.JSON(http.StatusOK, convertToOpenAPIDatabaseRole(role, instance.ID))
 }
 
 func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Instance, error) {
@@ -327,26 +340,14 @@ func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Ins
 	return instance, nil
 }
 
-func (s *Server) findPGRoleByName(ctx context.Context, instance *api.Instance, roleName string) (*db.Role, error) {
-	role, err := func() (*db.Role, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
-
-		role, err := driver.FindRole(ctx, roleName)
-		if err != nil {
-			return nil, err
-		}
-
-		return role, nil
-	}()
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+func convertToOpenAPIDatabaseRole(role *db.Role, instanceID int) *openAPIV1.DatabaseRole {
+	return &openAPIV1.DatabaseRole{
+		Name:            role.Name,
+		InstanceID:      instanceID,
+		ConnectionLimit: role.ConnectionLimit,
+		ValidUntil:      role.ValidUntil,
+		Attribute:       role.Attribute,
 	}
-
-	return role, nil
 }
 
 func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
