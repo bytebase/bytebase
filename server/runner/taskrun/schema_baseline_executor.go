@@ -47,7 +47,7 @@ func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, task *api.Task)
 		return true, nil, errors.Wrap(err, "invalid database schema baseline payload")
 	}
 
-	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Baseline, payload.Statement, payload.SchemaVersion, nil /* vcsPushEvent */)
+	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Baseline, "" /* statement */, payload.SchemaVersion, nil /* vcsPushEvent */)
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, task.Instance, task.Database.Name, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
