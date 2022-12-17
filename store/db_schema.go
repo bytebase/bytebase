@@ -114,7 +114,7 @@ func (s *Store) UpsertDBSchema(ctx context.Context, upsert DBSchemaUpsert) error
 		ON CONFLICT(database_id) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump
-			RETURNING metadata, raw_dump
+		RETURNING metadata, raw_dump
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
