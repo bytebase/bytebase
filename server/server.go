@@ -231,9 +231,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoDataDir, profile.Mode)
 	}
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot create MetadataDB instance")
-	}
 
 	// New store.DB instance that represents the db connection.
 	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
