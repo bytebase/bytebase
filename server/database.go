@@ -278,7 +278,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 		} else {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-			metadataBytes, err := protojson.Marshal(dbSchema.Metadata)
+			metadataBytes, err := protojson.MarshalOptions{Indent: ""}.Marshal(dbSchema.Metadata)
 			if err != nil {
 				return err
 			}

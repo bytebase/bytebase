@@ -1868,7 +1868,7 @@ CREATE TABLE public.book (
 );
 
 `,
-			wantDatabaseMetadata: `{"name":"latestSchema","schemas":[{"name":"public","tables":[{"name":"book","columns":[{"name":"id","position":1,"hasDefault":true,"nullable":true,"type":"integer"},{"name":"name","position":2,"hasDefault":true,"nullable":true,"type":"text"}],"dataSize":"8192"}]}],"characterSet":"UTF8","collation":"en_US.UTF-8"}`,
+			wantDatabaseMetadata: `{"name":"latestSchema", "schemas":[{"name":"public", "tables":[{"name":"book", "columns":[{"name":"id", "position":1, "hasDefault":true, "nullable":true, "type":"integer"}, {"name":"name", "position":2, "hasDefault":true, "nullable":true, "type":"text"}], "dataSize":"8192"}]}], "characterSet":"UTF8", "collation":"en_US.UTF-8"}`,
 		},
 	}
 	a := require.New(t)
