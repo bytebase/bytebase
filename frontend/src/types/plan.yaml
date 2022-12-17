@@ -26,6 +26,7 @@ categoryList:
   - type: admin-and-security
     featureList:
       - activity-log
+      - terraform-provider
       - rbac
       - 3rd-party-auth
       - sync-members-from-vcs
@@ -76,6 +77,7 @@ planList:
         tooltip: im-integration-basic-tooltip
       - type: inbox-notification
       - type: activity-log
+      - type: terraform-provider
     mainFeatureList:
       - community-support
       - review-workflow
@@ -124,6 +126,7 @@ planList:
         tooltip: im-integration-basic-tooltip
       - type: inbox-notification
       - type: activity-log
+      - type: terraform-provider
       - type: rbac
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
@@ -180,6 +183,7 @@ planList:
         tooltip: im-integration-advanced-tooltip
       - type: inbox-notification
       - type: activity-log
+      - type: terraform-provider
       - type: rbac
       - type: 3rd-party-auth
       - type: sync-members-from-vcs
