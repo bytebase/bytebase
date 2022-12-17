@@ -14,7 +14,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/api"
@@ -412,11 +411,6 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 	databaseMetadata := convertDBSchema(schema)
 
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
-		metadataBytes, err := protojson.Marshal(databaseMetadata)
-		if err != nil {
-			return err
-		}
-		metadata := string(metadataBytes)
 		rawDump := ""
 		if dbSchema != nil {
 			rawDump = dbSchema.RawDump
@@ -434,7 +428,7 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 		if err := stores.UpsertDBSchema(ctx, store.DBSchemaUpsert{
 			UpdatorID:  api.SystemBotID,
 			DatabaseID: database.ID,
-			Metadata:   metadata,
+			Metadata:   databaseMetadata,
 			RawDump:    rawDump,
 		}); err != nil {
 			return err

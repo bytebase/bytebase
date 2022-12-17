@@ -28,7 +28,7 @@ type DBSchemaUpsert struct {
 	DatabaseID int
 
 	// Domain specific fields
-	Metadata string
+	Metadata *storepb.DatabaseMetadata
 	RawDump  string
 }
 
@@ -102,6 +102,11 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 
 // UpsertDBSchema upserts a database schema.
 func (s *Store) UpsertDBSchema(ctx context.Context, upsert DBSchemaUpsert) error {
+	metadataBytes, err := protojson.Marshal(upsert.Metadata)
+	if err != nil {
+		return err
+	}
+
 	query := `
 		INSERT INTO db_schema (
 			creator_id,
@@ -127,7 +132,7 @@ func (s *Store) UpsertDBSchema(ctx context.Context, upsert DBSchemaUpsert) error
 		upsert.UpdatorID,
 		upsert.UpdatorID,
 		upsert.DatabaseID,
-		upsert.Metadata,
+		metadataBytes,
 		upsert.RawDump,
 	).Scan(
 		&raw.Metadata,
