@@ -45,14 +45,6 @@ export type DataSourceId = IdType;
 
 export type DatabaseId = IdType;
 
-export type ViewId = IdType;
-
-export type DBExtensionId = IdType;
-
-export type ColumnId = IdType;
-
-export type TableIndexId = IdType;
-
 export type VCSId = IdType;
 
 export type RepositoryId = IdType;

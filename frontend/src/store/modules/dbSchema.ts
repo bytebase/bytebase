@@ -1,7 +1,12 @@
 import axios from "axios";
 import { defineStore } from "pinia";
 import { DatabaseId, DBSchemaState } from "@/types";
-import { DatabaseMetadata, TableMetadata } from "@/types/proto/database";
+import {
+  DatabaseMetadata,
+  ExtensionMetadata,
+  TableMetadata,
+  ViewMetadata,
+} from "@/types/proto/database";
 
 export const useDBSchemaStore = defineStore("dbSchema", {
   state: (): DBSchemaState => ({
@@ -54,6 +59,43 @@ export const useDBSchemaStore = defineStore("dbSchema", {
 
       const tableList = this.getTableListByDatabaseId(databaseId);
       return tableList.find((table) => table.name === tableName);
+    },
+    async getOrFetchViewListByDatabaseId(
+      databaseId: DatabaseId
+    ): Promise<ViewMetadata[]> {
+      if (!this.databaseMetadataById.has(databaseId)) {
+        await this.getOrFetchDatabaseMetadataById(databaseId);
+      }
+      return this.getViewListByDatabaseId(databaseId);
+    },
+    getViewListByDatabaseId(databaseId: DatabaseId): ViewMetadata[] {
+      const databaseMetadata = this.databaseMetadataById.get(databaseId);
+      if (!databaseMetadata) {
+        return [];
+      }
+
+      const viewList: ViewMetadata[] = [];
+      // TODO(steven): get view list with schema name for PG.
+      for (const schema of databaseMetadata.schemas) {
+        viewList.push(...schema.views);
+      }
+      return viewList;
+    },
+    async getOrFetchExtensionListByDatabaseId(
+      databaseId: DatabaseId
+    ): Promise<ExtensionMetadata[]> {
+      if (!this.databaseMetadataById.has(databaseId)) {
+        await this.getOrFetchDatabaseMetadataById(databaseId);
+      }
+      return this.getExtensionListByDatabaseId(databaseId);
+    },
+    getExtensionListByDatabaseId(databaseId: DatabaseId): ExtensionMetadata[] {
+      const databaseMetadata = this.databaseMetadataById.get(databaseId);
+      if (!databaseMetadata) {
+        return [];
+      }
+
+      return databaseMetadata.extensions;
     },
   },
 });

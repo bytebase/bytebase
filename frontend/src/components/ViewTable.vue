@@ -17,9 +17,6 @@
       <BBTableCell class="w-8">
         {{ view.comment }}
       </BBTableCell>
-      <BBTableCell class="w-8">
-        {{ humanizeTs(view.createdTs) }}
-      </BBTableCell>
     </template>
   </BBTable>
 </template>
@@ -27,7 +24,7 @@
 <script lang="ts">
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { View } from "@/types";
+import { ViewMetadata } from "@/types/proto/database";
 
 export default {
   name: "ViewTable",
@@ -35,7 +32,7 @@ export default {
   props: {
     viewList: {
       required: true,
-      type: Object as PropType<View[]>,
+      type: Object as PropType<ViewMetadata[]>,
     },
   },
   setup() {
@@ -49,9 +46,6 @@ export default {
       },
       {
         title: t("database.comment"),
-      },
-      {
-        title: t("common.created-at"),
       },
     ]);
 
