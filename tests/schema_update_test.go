@@ -650,9 +650,6 @@ func TestVCS(t *testing.T) {
 }
 
 func TestVCS_SDL(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -1841,10 +1838,6 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 }
 
 func TestGetLatestSchema(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
-
 	tests := []struct {
 		name                 string
 		dbType               db.Type

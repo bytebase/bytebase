@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -393,24 +392,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
-		}
-
-		if s.profile.Mode == common.ReleaseModeProd {
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
-			}
-			defer driver.Close(ctx)
-			var schemaBuf bytes.Buffer
-			if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /*schemaOnly*/); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to dump database schema").SetInternal(err)
-			}
-
-			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
-			if _, err := c.Response().Write(schemaBuf.Bytes()); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
-			}
-			return nil
 		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, id)

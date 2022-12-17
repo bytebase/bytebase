@@ -395,20 +395,8 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		database = createdDatabase
 	}
 	// Sync database schema
-	if s.profile.Mode == common.ReleaseModeDev {
-		if err := syncDBSchema(ctx, s.store, database, schema, driver, force); err != nil {
-			return err
-		}
-	} else {
-		if err := syncTableSchema(ctx, s.store, database, schema); err != nil {
-			return err
-		}
-		if err := syncViewSchema(ctx, s.store, database, schema); err != nil {
-			return err
-		}
-		if err := syncDBExtensionSchema(ctx, s.store, database, schema); err != nil {
-			return err
-		}
+	if err := syncDBSchema(ctx, s.store, database, schema, driver, force); err != nil {
+		return err
 	}
 	return nil
 }
