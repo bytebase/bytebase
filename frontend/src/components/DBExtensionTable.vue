@@ -26,8 +26,8 @@
 
 <script lang="ts">
 import { computed, PropType } from "vue";
-import { DBExtension } from "../types";
 import { useI18n } from "vue-i18n";
+import { ExtensionMetadata } from "@/types/proto/database";
 
 export default {
   name: "DbExtensionTable",
@@ -35,7 +35,7 @@ export default {
   props: {
     dbExtensionList: {
       required: true,
-      type: Object as PropType<DBExtension[]>,
+      type: Object as PropType<ExtensionMetadata[]>,
     },
   },
   setup() {
