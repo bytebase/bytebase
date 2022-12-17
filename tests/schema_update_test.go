@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -650,9 +649,6 @@ func TestVCS(t *testing.T) {
 }
 
 func TestVCS_SDL(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -1361,9 +1357,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 }
 
 func TestVCS_SQL_Review(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
 	tests := []struct {
 		name                    string
 		vcsProviderCreator      fake.VCSProviderCreator
@@ -1841,10 +1834,6 @@ func postVCSSQLReview(ctl *controller, repo *api.Repository, request *api.VCSSQL
 }
 
 func TestGetLatestSchema(t *testing.T) {
-	if testReleaseMode == common.ReleaseModeProd {
-		t.Skip()
-	}
-
 	tests := []struct {
 		name                 string
 		dbType               db.Type

@@ -179,8 +179,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			token := c.Request().Header.Get("X-SQL-Review-Token")
-			if token == s.workspaceID && s.profile.Mode == common.ReleaseModeDev {
-				// We will use workspace id as token in integration test.
+			// We will use workspace id as token in integration test for skipping the check.
+			if token == s.workspaceID {
 				return true, nil
 			}
 
