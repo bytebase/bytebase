@@ -3,12 +3,9 @@ package store
 import (
 	"context"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
 	"github.com/bytebase/bytebase/plugin/db"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -30,18 +27,13 @@ func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType db.Ty
 		return nil, nil
 	}
 
-	var databaseSchema storepb.DatabaseMetadata
-	if err := protojson.Unmarshal([]byte(databaseMeta.Metadata), &databaseSchema); err != nil {
-		return nil, err
-	}
-
 	dbType, err := advisorDB.ConvertToAdvisorDBType(string(engineType))
 	if err != nil {
 		return nil, err
 	}
 
 	c := &Catalog{}
-	c.Finder = catalog.NewFinder(&databaseSchema, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
+	c.Finder = catalog.NewFinder(databaseMeta.Metadata, &catalog.FinderContext{CheckIntegrity: true, EngineType: dbType})
 	return c, nil
 }
 

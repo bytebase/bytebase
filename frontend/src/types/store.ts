@@ -7,8 +7,6 @@ import {
   Policy,
   PolicyType,
   QueryHistory,
-  View,
-  DBExtension,
   Sheet,
   OnboardingGuideType,
   PolicyResourceType,
@@ -157,14 +155,6 @@ export interface DatabaseState {
 
 export interface DBSchemaState {
   databaseMetadataById: Map<DatabaseId, DatabaseMetadata>;
-}
-
-export interface ViewState {
-  viewListByDatabaseId: Map<DatabaseId, View[]>;
-}
-
-export interface DBExtensionState {
-  dbExtensionListByDatabaseId: Map<DatabaseId, DBExtension[]>;
 }
 
 export interface BackupState {

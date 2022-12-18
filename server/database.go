@@ -10,6 +10,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -234,150 +235,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/database/:databaseID/table", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("databaseID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
-		}
-
-		tableFind := &api.TableFind{
-			DatabaseID: &id,
-		}
-		tableList, err := s.store.FindTable(ctx, tableFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table list for database id: %d", id)).SetInternal(err)
-		}
-
-		for _, table := range tableList {
-			columnFind := &api.ColumnFind{
-				DatabaseID: &id,
-				TableID:    &table.ID,
-			}
-			columnList, err := s.store.FindColumn(ctx, columnFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch column list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
-			}
-			table.ColumnList = columnList
-
-			indexFind := &api.IndexFind{
-				DatabaseID: &id,
-				TableID:    &table.ID,
-			}
-			indexList, err := s.store.FindIndex(ctx, indexFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
-			}
-			table.IndexList = indexList
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, tableList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch table list response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/database/:databaseID/table/:tableName", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("databaseID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
-		}
-
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
-		}
-		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
-		}
-
-		tableName := c.Param("tableName")
-		tableFind := &api.TableFind{
-			DatabaseID: &id,
-			Name:       &tableName,
-		}
-		table, err := s.store.GetTable(ctx, tableFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table for database id: %d, table name: %s", id, tableName)).SetInternal(err)
-		}
-		if table == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("table %q not found from database %v", tableName, id)).SetInternal(err)
-		}
-		table.Database = database
-
-		columnFind := &api.ColumnFind{
-			DatabaseID: &id,
-			TableID:    &table.ID,
-		}
-		columnList, err := s.store.FindColumn(ctx, columnFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch column list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
-		}
-		table.ColumnList = columnList
-
-		indexFind := &api.IndexFind{
-			DatabaseID: &id,
-			TableID:    &table.ID,
-		}
-		indexList, err := s.store.FindIndex(ctx, indexFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
-		}
-		table.IndexList = indexList
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, table); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch table response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/database/:databaseID/view", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("databaseID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
-		}
-
-		viewFind := &api.ViewFind{
-			DatabaseID: &id,
-		}
-		viewList, err := s.store.FindView(ctx, viewFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch view list for database ID: %d", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, viewList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch view list response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.GET("/database/:databaseID/extension", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("databaseID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
-		}
-
-		dbExtensionFind := &api.DBExtensionFind{
-			DatabaseID: &id,
-		}
-		dbExtensionList, err := s.store.FindDBExtension(ctx, dbExtensionFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch dbExtension list for database ID: %d", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, dbExtensionList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch dbExtension list response: %v", id)).SetInternal(err)
-		}
-		return nil
-	})
-
 	// When query metadata is present, we will return the schema metadata. Otherwise, we will return the raw dump.
 	g.GET("/database/:databaseID/schema", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -421,7 +278,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 		} else {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-			if _, err := c.Response().Write([]byte(dbSchema.Metadata)); err != nil {
+			metadataBytes, err := protojson.Marshal(dbSchema.Metadata)
+			if err != nil {
+				return err
+			}
+			if _, err := c.Response().Write(metadataBytes); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
 			}
 		}

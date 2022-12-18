@@ -927,7 +927,6 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		taskType = api.TaskDatabaseSchemaBaseline
 		payload := api.TaskDatabaseSchemaBaselinePayload{
 			SchemaVersion: schemaVersion,
-			VCSPushEvent:  vcsPushEvent,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
