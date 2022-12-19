@@ -986,7 +986,10 @@
       "preview-issue": "Preview issue"
     },
     "sensitive": "Sensitive",
-    "access-denied": "You don't have the permission to access this database."
+    "access-denied": "You don't have the permission to access this database.",
+    "schema": {
+      "select": "Select schema"
+    }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
