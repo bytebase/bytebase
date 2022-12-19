@@ -144,10 +144,10 @@ func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*v1pb.Datab
 		&role.Attribute.SuperUser,
 		&inherit,
 		&role.Attribute.CreateRole,
-		&role.Attribute.CreateDB,
+		&role.Attribute.CreateDb,
 		&role.Attribute.CanLogin,
 		&role.Attribute.Replication,
-		&role.Attribute.ByPassRLS,
+		&role.Attribute.BypassRls,
 		&role.ValidUntil,
 		&role.ConnectionLimit,
 	); err != nil {
@@ -208,13 +208,13 @@ func convertToAttributeStatement(r *v1pb.DatabaseRoleUpsert) string {
 		if r.Attribute.CreateRole {
 			attributeList = append(attributeList, CREATEROLE.ToString())
 		}
-		if r.Attribute.CreateDB {
+		if r.Attribute.CreateDb {
 			attributeList = append(attributeList, CREATEDB.ToString())
 		}
 		if r.Attribute.Replication {
 			attributeList = append(attributeList, REPLICATION.ToString())
 		}
-		if r.Attribute.ByPassRLS {
+		if r.Attribute.BypassRls {
 			attributeList = append(attributeList, BYPASSRLS.ToString())
 		}
 	}

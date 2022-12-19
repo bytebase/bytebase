@@ -6,25 +6,25 @@ option go_package = "generated-go/v1";
 // RoleAttribute is the attribute for role. Docs: https://www.postgresql.org/docs/current/role-attributes.html
 message DatabaseRoleAttribute {
   // A database superuser bypasses all permission checks, except the right to log in.
-  bool superUser = 1;
+  bool super_user = 1;
 
   // A role is given permission to inherit the privileges of roles it is a member of. To create a role without the permission, use "noInherit = true"
-  bool noInherit = 2;
+  bool no_inherit = 2;
 
   // A role must be explicitly given permission to create more roles (except for superusers, since those bypass all permission checks).
-  bool createRole = 3;
+  bool create_role = 3;
 
   // A role must be explicitly given permission to create databases (except for superusers, since those bypass all permission checks).
-  bool createDB = 4;
+  bool create_db = 4;
 
   // Only roles that have the LOGIN attribute can be used as the initial role name for a database connection.
-  bool canLogin = 5;
+  bool can_login = 5;
 
   // A role must explicitly be given permission to initiate streaming replication (except for superusers, since those bypass all permission checks).
   bool replication = 6;
 
   // A role must be explicitly given permission to bypass every row-level security (RLS) policy (except for superusers, since those bypass all permission checks).
-  bool byPassRLS = 7;
+  bool bypass_rls = 7;
 }
 
 // DatabaseRole is the API message for database role.
@@ -33,13 +33,13 @@ message DatabaseRole {
   string name = 1;
 
   // The Bytebase instance id for this role.
-  int32 instanceId = 2;
+  int32 instance_id = 2;
 
   // The connection count limit for this role.
-  int32 connectionLimit = 3;
+  int32 connection_limit = 3;
 
   // The expiration for the role's password.
-  optional string validUntil = 4;
+  optional string valid_until = 4;
 
   // The role attribute.
   DatabaseRoleAttribute attribute = 5;
@@ -54,10 +54,10 @@ message DatabaseRoleUpsert {
   optional string password = 2;
 
   // Connection limit can specify how many concurrent connections a role can make. -1 (the default) means no limit.
-  optional int32 connectionLimit = 3;
+  optional int32 connection_limit = 3;
 
   // The VALID UNTIL clause sets a date and time after which the role's password is no longer valid. If this clause is omitted the password will be valid for all time.
-  optional string validUntil = 4;
+  optional string valid_until = 4;
 
   // The role attribute.
   optional DatabaseRoleAttribute attribute = 5;
