@@ -42,5 +42,16 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (te
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
-	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	statement := payload.Statement
+	if payload.SheetID > 0 {
+		sheet, err := exec.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+		if err != nil {
+			return true, nil, err
+		}
+		if sheet == nil {
+			return true, nil, errors.Errorf("sheet ID %v not found", payload.SheetID)
+		}
+		statement = sheet.Statement
+	}
+	return runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Data, statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
