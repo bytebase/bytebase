@@ -12,7 +12,7 @@
     <template #body="{ rowData: table }">
       <BBTableCell :left-padding="4">
         <div class="flex items-center space-x-2">
-          <EllipsisText>{{ table.name }}</EllipsisText>
+          <EllipsisText>{{ getTableName(table.name) }}</EllipsisText>
           <BBBadge
             v-if="isGhostTable(table)"
             text="gh-ost"
@@ -73,6 +73,10 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Database>,
     },
+    schemaName: {
+      type: String,
+      default: "",
+    },
     tableList: {
       required: true,
       type: Object as PropType<TableMetadata[]>,
@@ -89,6 +93,13 @@ export default defineComponent({
     const isPostgres = computed(
       () => props.database.instance.engine === "POSTGRES"
     );
+
+    const getTableName = (tableName: string) => {
+      if (isPostgres.value) {
+        return `"${props.schemaName}"."${tableName}"`;
+      }
+      return tableName;
+    };
 
     const columnList = computed(() => {
       if (isPostgres.value) {
@@ -146,9 +157,12 @@ export default defineComponent({
       return tableList;
     });
 
-    const clickTable = (section: number, row: number, e: MouseEvent) => {
+    const clickTable = (_: number, row: number, e: MouseEvent) => {
       const table = mixedTableList.value[row];
-      const url = `/db/${databaseSlug(props.database)}/table/${table.name}`;
+      let url = `/db/${databaseSlug(props.database)}/table/${table.name}`;
+      if (props.schemaName !== "") {
+        url = url + `?schema=${props.schemaName}`;
+      }
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {
@@ -165,6 +179,7 @@ export default defineComponent({
       hasReservedTables,
       mixedTableList,
       isGhostTable,
+      getTableName,
     };
   },
 });
