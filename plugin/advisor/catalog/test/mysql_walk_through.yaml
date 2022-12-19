@@ -1,6 +1,6 @@
 - statement: |4-
-        CREATE TABLE t(a TEXT);
-        ALTER TABLE t ALTER COLUMN a SET DEFAULT '1';
+      CREATE TABLE t(a TEXT);
+      ALTER TABLE t ALTER COLUMN a SET DEFAULT '1';
   want: null
   err:
     type: 407
@@ -13,8 +13,8 @@
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
     line: 1
 - statement: |4-
-        CREATE TABLE t(a INT NOT NULL);
-        ALTER TABLE t ALTER COLUMN a SET DEFAULT NULL;
+      CREATE TABLE t(a INT NOT NULL);
+      ALTER TABLE t ALTER COLUMN a SET DEFAULT NULL;
   want: null
   err:
     type: 406
@@ -87,8 +87,8 @@
     content: Column `c` does not exist in table `t`
     line: 3
 - statement: |4-
-        ALTER DATABASE CHARACTER SET = utf8mb4;
-        ALTER DATABASE test COLLATE utf8mb4_polish_ci;
+      ALTER DATABASE CHARACTER SET = utf8mb4;
+      ALTER DATABASE test COLLATE utf8mb4_polish_ci;
   want:
     name: test
     schemas:
@@ -100,17 +100,17 @@
     extensions: []
   err: null
 - statement: |4-
-        CREATE TABLE t(
-          a int PRIMARY KEY DEFAULT 1,
-          b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
-          c int auto_increment NULL COMMENT 'This is a comment' DEFAULT NULL,
-          d varchar(10) COLLATE utf8mb4_polish_ci,
-          KEY idx_a (a),
-          INDEX (b, a),
-          UNIQUE (b, c, d),
-          FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
-        );
-        CREATE TABLE t_copy like t;
+      CREATE TABLE t(
+        a int PRIMARY KEY DEFAULT 1,
+        b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+        c int auto_increment NULL COMMENT 'This is a comment' DEFAULT NULL,
+        d varchar(10) COLLATE utf8mb4_polish_ci,
+        KEY idx_a (a),
+        INDEX (b, a),
+        UNIQUE (b, c, d),
+        FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+      );
+      CREATE TABLE t_copy like t;
   want:
     name: test
     schemas:
@@ -322,16 +322,16 @@
     extensions: []
   err: null
 - statement: |4-
-        CREATE TABLE t(
-          a int PRIMARY KEY DEFAULT 1,
-          b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
-          c int auto_increment NULL COMMENT 'This is a comment',
-          d varchar(10) COLLATE utf8mb4_polish_ci,
-          KEY idx_a (a),
-          INDEX (b, a),
-          UNIQUE (b, c, d),
-          FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
-        )
+      CREATE TABLE t(
+        a int PRIMARY KEY DEFAULT 1,
+        b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+        c int auto_increment NULL COMMENT 'This is a comment',
+        d varchar(10) COLLATE utf8mb4_polish_ci,
+        KEY idx_a (a),
+        INDEX (b, a),
+        UNIQUE (b, c, d),
+        FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+      )
   want:
     name: test
     schemas:
@@ -443,11 +443,11 @@
     extensions: []
   err: null
 - statement: |4-
-        CREATE TABLE t(
-          a int,
-          b int,
-          PRIMARY KEY (a, b)
-        )
+      CREATE TABLE t(
+        a int,
+        b int,
+        PRIMARY KEY (a, b)
+      )
   want:
     name: test
     schemas:
@@ -498,9 +498,9 @@
     extensions: []
   err: null
 - statement: |4-
-        CREATE TABLE t1(a int, b int, c int);
-        CREATE TABLE t2(a int);
-        DROP TABLE t1, t2
+      CREATE TABLE t1(a int, b int, c int);
+      CREATE TABLE t2(a int);
+      DROP TABLE t1, t2
   want:
     name: test
     schemas:
@@ -518,8 +518,8 @@
     content: Table `t1` does not exist
     line: 1
 - statement: |4-
-        CREATE TABLE t(a int);
-        RENAME TABLE t to other_db.t1
+      CREATE TABLE t(a int);
+      RENAME TABLE t to other_db.t1
   want:
     name: test
     schemas:
@@ -531,8 +531,8 @@
     extensions: []
   err: null
 - statement: |4-
-        CREATE TABLE t(a int);
-        RENAME TABLE t to test.t1
+      CREATE TABLE t(a int);
+      RENAME TABLE t to test.t1
   want:
     name: test
     schemas:
@@ -574,30 +574,30 @@
     content: Database `test` is deleted
     line: 3
 - statement: |4-
-        CREATE TABLE t(
-          a int PRIMARY KEY DEFAULT 1,
-          b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
-          c int auto_increment NULL COMMENT 'This is a comment',
-          d varchar(10) COLLATE utf8mb4_polish_ci,
-          e int,
-          KEY idx_a (a),
-          INDEX (b, a),
-          UNIQUE (b, c, d),
-          FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
-        );
-        ALTER TABLE t COLLATE utf8mb4_0900_ai_ci, ENGINE = INNODB, COMMENT 'This is a table comment';
-        ALTER TABLE t ADD COLUMN a1 int AFTER a;
-        ALTER TABLE t ADD INDEX idx_a_b (a, b);
-        ALTER TABLE t DROP COLUMN c;
-        ALTER TABLE t DROP PRIMARY KEY;
-        ALTER TABLE t DROP INDEX b_2;
-        ALTER TABLE t MODIFY COLUMN b varchar(20) FIRST;
-        ALTER TABLE t CHANGE COLUMN d d_copy varchar(10) COLLATE utf8mb4_polish_ci;
-        ALTER TABLE t RENAME COLUMN a to a_copy;
-        ALTER TABLE t RENAME TO t_copy;
-        ALTER TABLE t_copy ALTER COLUMN a_copy DROP DEFAULT;
-        ALTER TABLE t_copy RENAME INDEX b TO idx_b;
-        ALTER TABLE t_copy ALTER INDEX b_3 INVISIBLE;
+      CREATE TABLE t(
+        a int PRIMARY KEY DEFAULT 1,
+        b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+        c int auto_increment NULL COMMENT 'This is a comment',
+        d varchar(10) COLLATE utf8mb4_polish_ci,
+        e int,
+        KEY idx_a (a),
+        INDEX (b, a),
+        UNIQUE (b, c, d),
+        FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+      );
+      ALTER TABLE t COLLATE utf8mb4_0900_ai_ci, ENGINE = INNODB, COMMENT 'This is a table comment';
+      ALTER TABLE t ADD COLUMN a1 int AFTER a;
+      ALTER TABLE t ADD INDEX idx_a_b (a, b);
+      ALTER TABLE t DROP COLUMN c;
+      ALTER TABLE t DROP PRIMARY KEY;
+      ALTER TABLE t DROP INDEX b_2;
+      ALTER TABLE t MODIFY COLUMN b varchar(20) FIRST;
+      ALTER TABLE t CHANGE COLUMN d d_copy varchar(10) COLLATE utf8mb4_polish_ci;
+      ALTER TABLE t RENAME COLUMN a to a_copy;
+      ALTER TABLE t RENAME TO t_copy;
+      ALTER TABLE t_copy ALTER COLUMN a_copy DROP DEFAULT;
+      ALTER TABLE t_copy RENAME INDEX b TO idx_b;
+      ALTER TABLE t_copy ALTER INDEX b_3 INVISIBLE;
   want:
     name: test
     schemas:
@@ -709,16 +709,16 @@
     extensions: []
   err: null
 - statement: |4-
-        CREATE TABLE t(
-          a int PRIMARY KEY DEFAULT 1,
-          b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
-          c int auto_increment NULL COMMENT 'This is a comment',
-          d varchar(10) COLLATE utf8mb4_polish_ci
-        );
-        CREATE INDEX idx_a on t(a);
-        CREATE INDEX b_2 on t(b, a);
-        CREATE UNIQUE INDEX b_3 on t(b, c, d);
-        CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
+      CREATE TABLE t(
+        a int PRIMARY KEY DEFAULT 1,
+        b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+        c int auto_increment NULL COMMENT 'This is a comment',
+        d varchar(10) COLLATE utf8mb4_polish_ci
+      );
+      CREATE INDEX idx_a on t(a);
+      CREATE INDEX b_2 on t(b, a);
+      CREATE UNIQUE INDEX b_3 on t(b, c, d);
+      CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
   want:
     name: test
     schemas:
@@ -830,11 +830,11 @@
     extensions: []
   err: null
 - statement: |4-
-        CREATE TABLE t(
-          a int PRIMARY KEY DEFAULT 1,
-          b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE
-        );
-        DROP INDEX b on t;
+      CREATE TABLE t(
+        a int PRIMARY KEY DEFAULT 1,
+        b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE
+      );
+      DROP INDEX b on t;
   want:
     name: test
     schemas:
