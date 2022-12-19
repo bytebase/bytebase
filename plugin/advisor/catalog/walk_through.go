@@ -1203,7 +1203,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 	index := &IndexState{
 		name:           name,
 		expressionList: keyList,
-		indextype:      &tp,
+		indexType:      &tp,
 		unique:         &unique,
 		primary:        newFalsePointer(),
 		visible:        newTruePointer(),
@@ -1229,7 +1229,7 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 	pk := &IndexState{
 		name:           PrimaryKeyName,
 		expressionList: keys,
-		indextype:      &tp,
+		indexType:      &tp,
 		unique:         newTruePointer(),
 		primary:        newTruePointer(),
 		visible:        newTruePointer(),

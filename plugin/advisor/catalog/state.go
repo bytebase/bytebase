@@ -96,7 +96,7 @@ func newColumnState(c *storepb.ColumnMetadata, position int) *ColumnState {
 func newIndexState(i *storepb.IndexMetadata) *IndexState {
 	index := &IndexState{
 		name:           i.Name,
-		indextype:      newStringPointer(i.Type),
+		indexType:      newStringPointer(i.Type),
 		unique:         newBoolPointer(i.Unique),
 		primary:        newBoolPointer(i.Primary),
 		visible:        newBoolPointer(i.Visible),
@@ -322,7 +322,7 @@ type IndexState struct {
 	// This could refer to a column or an expression.
 	expressionList []string
 	// Type isn't supported for SQLite.
-	indextype *string
+	indexType *string
 	unique    *bool
 	primary   *bool
 	// Visible isn't supported for Postgres, SQLite.
@@ -335,7 +335,7 @@ func (idx *IndexState) copy() *IndexState {
 	return &IndexState{
 		name:           idx.name,
 		expressionList: copyStringSlice(idx.expressionList),
-		indextype:      copyStringPointer(idx.indextype),
+		indexType:      copyStringPointer(idx.indexType),
 		unique:         copyBoolPointer(idx.unique),
 		primary:        copyBoolPointer(idx.primary),
 		visible:        copyBoolPointer(idx.visible),
@@ -351,7 +351,7 @@ func (idx *IndexState) Unique() bool {
 	return false
 }
 
-// Primary returns the priamry for the index.
+// Primary returns the primary for the index.
 func (idx *IndexState) Primary() bool {
 	if idx.primary != nil {
 		return *idx.primary
