@@ -35,20 +35,13 @@ export default defineComponent({
     const activityStore = useActivityStore();
 
     const prepareActivityList = () => {
-      const requests = [
-        activityStore.fetchActivityListForDatabaseByProjectId({
+      activityStore
+        .fetchActivityListForProject({
           projectId: props.project.id,
-        }),
-        activityStore.fetchActivityListForProject({
-          projectId: props.project.id,
-        }),
-      ];
-
-      Promise.all(requests).then((lists) => {
-        const flattenList = lists.flatMap((list) => list);
-        flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
-        state.activityList = flattenList;
-      });
+        })
+        .then((list) => {
+          state.activityList = list;
+        });
     };
 
     onBeforeMount(prepareActivityList);
