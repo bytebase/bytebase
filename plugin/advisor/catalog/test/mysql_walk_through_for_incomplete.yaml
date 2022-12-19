@@ -1,5 +1,4 @@
 - statement: CREATE INDEX idx_a on t(a)
-  err: null
   want:
     name: ""
     schemas:
@@ -29,8 +28,8 @@
     characterset: ""
     collation: ""
     extensions: []
-- statement: ALTER TABLE t RENAME COLUMN a TO a_copy
   err: null
+- statement: ALTER TABLE t RENAME COLUMN a TO a_copy
   want:
     name: ""
     schemas:
@@ -61,8 +60,8 @@
     characterset: ""
     collation: ""
     extensions: []
-- statement: ALTER TABLE t RENAME TO t1
   err: null
+- statement: ALTER TABLE t RENAME TO t1
   want:
     name: ""
     schemas:
@@ -84,14 +83,14 @@
     characterset: ""
     collation: ""
     extensions: []
-- statement: |4-
-          ALTER TABLE t ADD PRIMARY KEY (a);
-          ALTER TABLE t ADD UNIQUE (b);
-          CREATE INDEX idx_a on t(a);
-          CREATE INDEX b_2 on t(b, a);
-          CREATE UNIQUE INDEX b_3 on t(b, c, d);
-          CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
   err: null
+- statement: |4-
+        ALTER TABLE t ADD PRIMARY KEY (a);
+        ALTER TABLE t ADD UNIQUE (b);
+        CREATE INDEX idx_a on t(a);
+        CREATE INDEX b_2 on t(b, a);
+        CREATE UNIQUE INDEX b_3 on t(b, c, d);
+        CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
   want:
     name: ""
     schemas:
@@ -165,18 +164,18 @@
     characterset: ""
     collation: ""
     extensions: []
-- statement: |4-
-          CREATE TABLE t(
-            a int PRIMARY KEY DEFAULT 1,
-            b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
-            c int auto_increment NULL COMMENT 'This is a comment',
-            d varchar(10) COLLATE utf8mb4_polish_ci,
-            KEY idx_a (a),
-            INDEX (b, a),
-            UNIQUE (b, c, d),
-            FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
-          )
   err: null
+- statement: |4-
+        CREATE TABLE t(
+          a int PRIMARY KEY DEFAULT 1,
+          b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+          c int auto_increment NULL COMMENT 'This is a comment',
+          d varchar(10) COLLATE utf8mb4_polish_ci,
+          KEY idx_a (a),
+          INDEX (b, a),
+          UNIQUE (b, c, d),
+          FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+        )
   want:
     name: ""
     schemas:
@@ -286,8 +285,8 @@
     characterset: ""
     collation: ""
     extensions: []
+  err: null
 - statement: DROP TABLE t1, t2
-  err: null
   want:
     name: ""
     schemas:
@@ -297,8 +296,8 @@
     characterset: ""
     collation: ""
     extensions: []
+  err: null
 - statement: INSERT INTO test values (1)
-  err: null
   want:
     name: ""
     schemas:
@@ -308,3 +307,4 @@
     characterset: ""
     collation: ""
     extensions: []
+  err: null
