@@ -1,0 +1,312 @@
+- statement: CREATE INDEX idx_a on t(a)
+  err: null
+  want:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns: []
+              indexes:
+                - name: idx_a
+                  expressions:
+                    - a
+                  type: BTREE
+                  unique: false
+                  primary: false
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+    characterset: ""
+    collation: ""
+    extensions: []
+- statement: ALTER TABLE t RENAME COLUMN a TO a_copy
+  err: null
+  want:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a_copy
+                  position: 0
+                  hasdefault: false
+                  default: ""
+                  nullable: false
+                  type: ""
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+    characterset: ""
+    collation: ""
+    extensions: []
+- statement: ALTER TABLE t RENAME TO t1
+  err: null
+  want:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t1
+              columns: []
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+    characterset: ""
+    collation: ""
+    extensions: []
+- statement: |4-
+    				ALTER TABLE t ADD PRIMARY KEY (a);
+    				ALTER TABLE t ADD UNIQUE (b);
+    				CREATE INDEX idx_a on t(a);
+    				CREATE INDEX b_2 on t(b, a);
+    				CREATE UNIQUE INDEX b_3 on t(b, c, d);
+    				CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
+    			
+  err: null
+  want:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns: []
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                  type: BTREE
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+                - name: b
+                  expressions:
+                    - b
+                  type: BTREE
+                  unique: true
+                  primary: false
+                  visible: true
+                  comment: ""
+                - name: b_2
+                  expressions:
+                    - b
+                    - a
+                  type: BTREE
+                  unique: false
+                  primary: false
+                  visible: true
+                  comment: ""
+                - name: b_3
+                  expressions:
+                    - b
+                    - c
+                    - d
+                  type: BTREE
+                  unique: true
+                  primary: false
+                  visible: true
+                  comment: ""
+                - name: b_4
+                  expressions:
+                    - b
+                    - d
+                  type: FULLTEXT
+                  unique: false
+                  primary: false
+                  visible: false
+                  comment: ""
+                - name: idx_a
+                  expressions:
+                    - a
+                  type: BTREE
+                  unique: false
+                  primary: false
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+    characterset: ""
+    collation: ""
+    extensions: []
+- statement: |4-
+    				CREATE TABLE t(
+    					a int PRIMARY KEY DEFAULT 1,
+    					b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+    					c int auto_increment NULL COMMENT 'This is a comment',
+    					d varchar(10) COLLATE utf8mb4_polish_ci,
+    					KEY idx_a (a),
+    					INDEX (b, a),
+    					UNIQUE (b, c, d),
+    					FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+    				)
+    			
+  err: null
+  want:
+    name: ""
+    schemas:
+        - name: ""
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 1
+                  hasdefault: true
+                  default: "1"
+                  nullable: false
+                  type: int(11)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                - name: b
+                  position: 2
+                  hasdefault: false
+                  default: ""
+                  nullable: false
+                  type: varchar(200)
+                  characterset: utf8mb4
+                  collation: ""
+                  comment: ""
+                - name: c
+                  position: 3
+                  hasdefault: false
+                  default: ""
+                  nullable: true
+                  type: int(11)
+                  characterset: ""
+                  collation: ""
+                  comment: This is a comment
+                - name: d
+                  position: 4
+                  hasdefault: false
+                  default: ""
+                  nullable: true
+                  type: varchar(10)
+                  characterset: ""
+                  collation: utf8mb4_polish_ci
+                  comment: ""
+              indexes:
+                - name: PRIMARY
+                  expressions:
+                    - a
+                  type: BTREE
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+                - name: b
+                  expressions:
+                    - b
+                  type: BTREE
+                  unique: true
+                  primary: false
+                  visible: true
+                  comment: ""
+                - name: b_2
+                  expressions:
+                    - b
+                    - a
+                  type: BTREE
+                  unique: false
+                  primary: false
+                  visible: true
+                  comment: ""
+                - name: b_3
+                  expressions:
+                    - b
+                    - c
+                    - d
+                  type: BTREE
+                  unique: true
+                  primary: false
+                  visible: true
+                  comment: ""
+                - name: b_4
+                  expressions:
+                    - b
+                    - d
+                  type: FULLTEXT
+                  unique: false
+                  primary: false
+                  visible: false
+                  comment: ""
+                - name: idx_a
+                  expressions:
+                    - a
+                  type: BTREE
+                  unique: false
+                  primary: false
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              foreignkeys: []
+          views: []
+    characterset: ""
+    collation: ""
+    extensions: []
+- statement: DROP TABLE t1, t2
+  err: null
+  want:
+    name: ""
+    schemas:
+        - name: ""
+          tables: []
+          views: []
+    characterset: ""
+    collation: ""
+    extensions: []
+- statement: INSERT INTO test values (1)
+  err: null
+  want:
+    name: ""
+    schemas:
+        - name: ""
+          tables: []
+          views: []
+    characterset: ""
+    collation: ""
+    extensions: []
