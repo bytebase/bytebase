@@ -90,19 +90,20 @@ export default defineComponent({
       showReservedTableList: false,
     });
 
-    const isPostgres = computed(
-      () => props.database.instance.engine === "POSTGRES"
-    );
+    const isPostgres = props.database.instance.engine === "POSTGRES";
+
+    const hasSchemaProperty =
+      isPostgres || props.database.instance.engine === "SNOWFLAKE";
 
     const getTableName = (tableName: string) => {
-      if (isPostgres.value) {
+      if (hasSchemaProperty) {
         return `"${props.schemaName}"."${tableName}"`;
       }
       return tableName;
     };
 
     const columnList = computed(() => {
-      if (isPostgres.value) {
+      if (isPostgres) {
         return [
           {
             title: t("common.name"),

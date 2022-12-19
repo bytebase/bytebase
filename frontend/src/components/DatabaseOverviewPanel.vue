@@ -107,7 +107,11 @@
       <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
         {{ $t("db.views") }}
       </div>
-      <ViewTable :view-list="viewList" />
+      <ViewTable
+        :database="database"
+        :schema-name="state.selectedSchemaName"
+        :view-list="viewList"
+      />
 
       <template v-if="database.instance.engine == 'POSTGRES'">
         <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
