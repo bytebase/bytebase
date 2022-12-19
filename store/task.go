@@ -422,7 +422,10 @@ func (s *Store) patchTaskRaw(ctx context.Context, patch *api.TaskPatch) (*taskRa
 // patchTaskRawStatus updates existing task statuses and the corresponding task run statuses atomically.
 // Returns ENOTFOUND if tasks do not exist.
 func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPatch) ([]*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	// Without using serializable isolation transaction, we will get race condition and have multiple task runs inserted because
+	// we do a read and write on task, without guaranteed consistency on task runs.
+	// Once we have multiple task runs, the task will get to unrecoverable state because find task run will fail with two active runs.
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return nil, FormatError(err)
 	}
