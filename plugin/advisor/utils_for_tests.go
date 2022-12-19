@@ -318,17 +318,17 @@ func (*MockDriver) Restore(_ context.Context, _ io.Reader) error {
 }
 
 // CreateRole creates the role.
-func (*MockDriver) CreateRole(_ context.Context, _ *database.RoleUpsert) (*database.Role, error) {
+func (*MockDriver) CreateRole(_ context.Context, _ *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error) {
 	return nil, nil
 }
 
 // UpdateRole updates the role.
-func (*MockDriver) UpdateRole(_ context.Context, _ string, _ *database.RoleUpsert) (*database.Role, error) {
+func (*MockDriver) UpdateRole(_ context.Context, _ string, _ *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error) {
 	return nil, nil
 }
 
 // FindRole finds the role by name.
-func (*MockDriver) FindRole(_ context.Context, _ string) (*database.Role, error) {
+func (*MockDriver) FindRole(_ context.Context, _ string) (*storepb.DatabaseRole, error) {
 	return nil, nil
 }
 

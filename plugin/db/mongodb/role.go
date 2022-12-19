@@ -5,21 +5,21 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // CreateRole creates the role.
-func (*Driver) CreateRole(_ context.Context, _ *db.RoleUpsert) (*db.Role, error) {
+func (*Driver) CreateRole(_ context.Context, _ *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error) {
 	return nil, errors.Errorf("create role for MongoDB is not implemented yet")
 }
 
 // UpdateRole updates the role.
-func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.RoleUpsert) (*db.Role, error) {
+func (*Driver) UpdateRole(_ context.Context, _ string, _ *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error) {
 	return nil, errors.Errorf("update role for MongoDB is not implemented yet")
 }
 
 // FindRole finds the role by name.
-func (*Driver) FindRole(_ context.Context, _ string) (*db.Role, error) {
+func (*Driver) FindRole(_ context.Context, _ string) (*storepb.DatabaseRole, error) {
 	return nil, errors.Errorf("find role for MongoDB is not implemented yet")
 }
 

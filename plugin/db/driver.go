@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Type is the type of a database.
@@ -162,35 +163,6 @@ type Schema struct {
 	TableList     []Table
 	ViewList      []View
 	ExtensionList []Extension
-}
-
-// RoleAttribute is the attribute for role.
-type RoleAttribute struct {
-	SuperUser   bool `json:"superUser"`
-	NoInherit   bool `json:"noInherit"`
-	CreateRole  bool `json:"createRole"`
-	CreateDB    bool `json:"createDB"`
-	CanLogin    bool `json:"canLogin"`
-	Replication bool `json:"replication"`
-	ByPassRLS   bool `json:"byPassRLS"`
-}
-
-// Role is the API message for role.
-type Role struct {
-	Name            string
-	ConnectionLimit int
-	ValidUntil      *string
-	Attribute       *RoleAttribute
-}
-
-// RoleUpsert is the API message for upserting a new role.
-// TODO(ed): we may need to support IN ROLE role_name, ROLE role_name[,...] and ADMIN role_name[,...] statement.
-type RoleUpsert struct {
-	Name            string         `json:"name"`
-	Password        *string        `json:"password"`
-	ConnectionLimit *int           `json:"connectionLimit"`
-	ValidUntil      *string        `json:"validUntil"`
-	Attribute       *RoleAttribute `json:"attribute"`
 }
 
 var (
@@ -530,11 +502,11 @@ type Driver interface {
 
 	// Role
 	// CreateRole creates the role.
-	CreateRole(ctx context.Context, upsert *RoleUpsert) (*Role, error)
+	CreateRole(ctx context.Context, upsert *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error)
 	// UpdateRole updates the role.
-	UpdateRole(ctx context.Context, roleName string, upsert *RoleUpsert) (*Role, error)
+	UpdateRole(ctx context.Context, roleName string, upsert *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error)
 	// FindRole finds the role by name.
-	FindRole(ctx context.Context, roleName string) (*Role, error)
+	FindRole(ctx context.Context, roleName string) (*storepb.DatabaseRole, error)
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 

@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // RoleAttribute is the attribute string for role.
@@ -38,7 +38,7 @@ func (a RoleAttribute) ToString() string {
 }
 
 // CreateRole will create the PG role.
-func (driver *Driver) CreateRole(ctx context.Context, upsert *db.RoleUpsert) (*db.Role, error) {
+func (driver *Driver) CreateRole(ctx context.Context, upsert *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (driver *Driver) CreateRole(ctx context.Context, upsert *db.RoleUpsert) (*d
 }
 
 // UpdateRole will alter the PG role.
-func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *db.RoleUpsert) (*db.Role, error) {
+func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *d
 }
 
 // FindRole will find the PG role by name.
-func (driver *Driver) FindRole(ctx context.Context, roleName string) (*db.Role, error) {
+func (driver *Driver) FindRole(ctx context.Context, roleName string) (*storepb.DatabaseRole, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (driver *Driver) DeleteRole(ctx context.Context, roleName string) error {
 	return nil
 }
 
-func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*db.Role, error) {
+func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*storepb.DatabaseRole, error) {
 	statement := fmt.Sprintf(`
 		SELECT
 			r.rolname,
@@ -132,9 +132,9 @@ func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*db.Role, e
 		WHERE r.rolname = '%s';
 	`, roleName)
 
-	role := &db.Role{
+	role := &storepb.DatabaseRole{
 		Name:      roleName,
-		Attribute: &db.RoleAttribute{},
+		Attribute: &storepb.DatabaseRoleAttribute{},
 	}
 
 	inherit := false
@@ -152,7 +152,7 @@ func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*db.Role, e
 		&role.ConnectionLimit,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(statement)
+			return nil, common.Errorf(common.NotFound, fmt.Sprintf("query %q returned empty row", statement))
 		}
 		return nil, util.FormatErrorWithQuery(err, statement)
 	}
@@ -162,7 +162,7 @@ func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*db.Role, e
 	return role, nil
 }
 
-func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *db.RoleUpsert) error {
+func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *storepb.DatabaseRoleUpsert) error {
 	statement := fmt.Sprintf(`CREATE ROLE "%s" %s;`, upsert.Name, convertToAttributeStatement(upsert))
 	if _, err := txn.ExecContext(ctx, statement); err != nil {
 		return util.FormatErrorWithQuery(err, statement)
@@ -171,7 +171,7 @@ func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *db.RoleUpsert) err
 	return nil
 }
 
-func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *db.RoleUpsert) error {
+func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *storepb.DatabaseRoleUpsert) error {
 	if roleName != upsert.Name {
 		renameStatement := fmt.Sprintf(`ALTER ROLE "%s" RENAME TO "%s";`, roleName, upsert.Name)
 		if _, err := txn.ExecContext(ctx, renameStatement); err != nil {
@@ -192,7 +192,7 @@ func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *db
 	return nil
 }
 
-func convertToAttributeStatement(r *db.RoleUpsert) string {
+func convertToAttributeStatement(r *storepb.DatabaseRoleUpsert) string {
 	attributeList := []string{}
 
 	if r.Attribute != nil {
