@@ -779,7 +779,12 @@ const routes: Array<RouteRecordRaw> = [
                 name: "workspace.database.table.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
-                    return `${t("db.tables")} - ${route.params.tableName}`;
+                    const schemaName = route.query.schema?.toString() || "";
+                    let tableName = route.params.tableName;
+                    if (schemaName) {
+                      tableName = `"${schemaName}"."${tableName}"`;
+                    }
+                    return `${t("db.tables")} - ${tableName}`;
                   },
                   allowBookmark: true,
                 },

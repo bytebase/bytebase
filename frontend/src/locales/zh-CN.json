@@ -986,7 +986,10 @@
       "preview-issue": "预览工单"
     },
     "sensitive": "敏感",
-    "access-denied": "你没有访问该数据库的权限"
+    "access-denied": "你没有访问该数据库的权限",
+    "schema": {
+      "select": "选择 schema"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

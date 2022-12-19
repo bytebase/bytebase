@@ -4,6 +4,7 @@ import { DatabaseId, DBSchemaState } from "@/types";
 import {
   DatabaseMetadata,
   ExtensionMetadata,
+  SchemaMetadata,
   TableMetadata,
   ViewMetadata,
 } from "@/types/proto/database";
@@ -26,6 +27,22 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       const databaseMetadata = DatabaseMetadata.fromJSON(res.data);
       this.databaseMetadataById.set(databaseId, databaseMetadata);
       return databaseMetadata;
+    },
+    async getOrFetchSchemaListByDatabaseId(
+      databaseId: DatabaseId
+    ): Promise<SchemaMetadata[]> {
+      if (!this.databaseMetadataById.has(databaseId)) {
+        await this.getOrFetchDatabaseMetadataById(databaseId);
+      }
+      return this.getSchemaListByDatabaseId(databaseId);
+    },
+    getSchemaListByDatabaseId(databaseId: DatabaseId): SchemaMetadata[] {
+      const databaseMetadata = this.databaseMetadataById.get(databaseId);
+      if (!databaseMetadata) {
+        return [];
+      }
+
+      return databaseMetadata.schemas;
     },
     async getOrFetchTableListByDatabaseId(
       databaseId: DatabaseId

@@ -1,5 +1,9 @@
 <template>
-  <div class="flex-1 overflow-auto focus:outline-none" tabindex="0">
+  <div
+    v-if="table"
+    class="flex-1 overflow-auto focus:outline-none"
+    tabindex="0"
+  >
     <main class="flex-1 relative pb-8 overflow-y-auto">
       <!-- Highlight Panel -->
       <div
@@ -13,8 +17,7 @@
                 <h1
                   class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
-                  {{ table.name }}
-
+                  {{ getTableName(table.name) }}
                   <BBBadge
                     v-if="isGhostTable(table)"
                     text="gh-ost"
@@ -195,7 +198,8 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent } from "vue";
+import { computed, defineComponent, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   bytesToString,
   connectionSlug,
@@ -227,18 +231,40 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const route = useRoute();
+    const router = useRouter();
     const databaseStore = useDatabaseStore();
-    const databaseId = idFromSlug(props.databaseSlug);
     const dbSchemaStore = useDBSchemaStore();
+    const table = ref<TableMetadata>();
+    const databaseId = idFromSlug(props.databaseSlug);
+    const schemaName = (route.query.schema as string) || "";
 
     const database = computed(() => {
       return databaseStore.getDatabaseById(databaseId);
     });
-    const table = computed(() => {
-      return dbSchemaStore.getTableByDatabaseIdAndTableName(
-        databaseId,
-        props.tableName
-      ) as TableMetadata;
+    const hasSchemaProperty = computed(
+      () => database.value.instance.engine === "POSTGRES"
+    );
+    const getTableName = (tableName: string) => {
+      if (hasSchemaProperty.value) {
+        return `"${schemaName}"."${tableName}"`;
+      }
+      return tableName;
+    };
+
+    onMounted(() => {
+      const schemaList = dbSchemaStore.getSchemaListByDatabaseId(databaseId);
+      const schema = schemaList.find((schema) => schema.name === schemaName);
+      if (schema) {
+        table.value = schema.tables.find(
+          (table) => table.name === props.tableName
+        );
+      }
+      if (!table.value) {
+        router.replace({
+          name: "error.404",
+        });
+      }
     });
 
     const gotoSQLEditor = () => {
@@ -268,6 +294,7 @@ export default defineComponent({
     return {
       table,
       database,
+      getTableName,
       gotoSQLEditor,
       bytesToString,
       isGhostTable,
