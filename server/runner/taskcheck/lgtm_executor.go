@@ -54,8 +54,8 @@ func (e *LGTMExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.T
 
 	activityType := string(api.ActivityIssueCommentCreate)
 	activityList, err := e.store.FindActivity(ctx, &api.ActivityFind{
-		TypePrefix:  &activityType,
-		ContainerID: &issue.ID,
+		TypePrefixList: []string{activityType},
+		ContainerID:    &issue.ID,
 	})
 	if err != nil {
 		return nil, common.Wrap(err, common.Internal)
