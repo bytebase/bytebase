@@ -1,3 +1,4 @@
+import { Ref } from "vue";
 import { IssueTemplate } from "@/plugins";
 import {
   Database,
@@ -7,6 +8,7 @@ import {
   IssueStatus,
   Pipeline,
   Project,
+  SheetId,
   Stage,
   StageCreate,
   Task,
@@ -15,7 +17,6 @@ import {
   TaskPatch,
   TaskStatus,
 } from "@/types";
-import { Ref } from "vue";
 
 type IssueLogic = {
   // base params
@@ -59,6 +60,10 @@ type IssueLogic = {
   selectedStatement: Ref<string>;
   updateStatement: (
     newStatement: string,
+    postUpdated?: (updatedTask: Task) => void
+  ) => any;
+  updateSheetId: (
+    sheetId: SheetId | undefined,
     postUpdated?: (updatedTask: Task) => void
   ) => any;
   allowApplyStatementToOtherTasks: Ref<boolean>;

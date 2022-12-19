@@ -8,6 +8,7 @@ import {
   TaskCreate,
   TaskDatabaseSchemaUpdatePayload,
   MigrationContext,
+  SheetId,
 } from "@/types";
 import {
   errorAssertion,
@@ -83,6 +84,40 @@ export default defineComponent({
       }
     };
 
+    const updateSheetId = (
+      sheetId: SheetId | undefined,
+      postUpdated?: (updatedTask: Task) => void
+    ) => {
+      if (create.value) {
+        // For tenant deploy mode, we apply the statement to all stages and all tasks
+        const allTaskList = flattenTaskList<TaskCreate>(issue.value);
+        allTaskList.forEach((task) => {
+          task.sheetId = sheetId;
+        });
+
+        const issueCreate = issue.value as IssueCreate;
+        const context = issueCreate.createContext as MigrationContext;
+        // We also apply it back to the CreateContext
+        context.detailList.forEach((detail) => (detail.sheetId = sheetId));
+      } else {
+        const issueEntity = issue.value as Issue;
+        taskStore
+          .patchAllTasksInIssue({
+            issueId: issueEntity.id,
+            pipelineId: issueEntity.pipeline.id,
+            taskPatch: {
+              sheetId: sheetId,
+            },
+          })
+          .then(() => {
+            onStatusChanged(true);
+            if (postUpdated) {
+              postUpdated(issueEntity.pipeline.stageList[0].taskList[0]);
+            }
+          });
+      }
+    };
+
     // We are never allowed to "apply statement to other stages" in tenant mode.
     const allowApplyStatementToOtherTasks = computed(() => false);
 
@@ -106,6 +141,7 @@ export default defineComponent({
       allowEditStatement,
       selectedStatement,
       updateStatement,
+      updateSheetId,
       allowApplyStatementToOtherTasks,
       applyStatementToOtherTasks: errorAssertion,
       doCreate,
