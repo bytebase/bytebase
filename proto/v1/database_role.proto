@@ -45,6 +45,11 @@ message DatabaseRole {
   DatabaseRoleAttribute attribute = 5;
 }
 
+// DatabaseRoleList is the API message for role list.
+message DatabaseRoleList {
+  repeated DatabaseRole role_list = 1;
+}
+
 // DatabaseRoleUpsert is the API message for upserting a database role.
 message DatabaseRoleUpsert {
   // The role unique name.

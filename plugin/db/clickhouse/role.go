@@ -23,6 +23,11 @@ func (*Driver) FindRole(_ context.Context, _ string) (*v1pb.DatabaseRole, error)
 	return nil, errors.Errorf("find role for ClickHouse is not implemented yet")
 }
 
+// ListRole lists the role.
+func (*Driver) ListRole(_ context.Context) ([]*v1pb.DatabaseRole, error) {
+	return nil, errors.Errorf("list role for ClickHouse is not implemented yet")
+}
+
 // DeleteRole deletes the role by name.
 func (*Driver) DeleteRole(_ context.Context, _ string) error {
 	return errors.Errorf("delete role for ClickHouse is not implemented yet")
