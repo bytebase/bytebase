@@ -5,21 +5,21 @@ import (
 
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // CreateRole creates the role.
-func (*Driver) CreateRole(_ context.Context, _ *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error) {
+func (*Driver) CreateRole(_ context.Context, _ *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
 	return nil, errors.Errorf("create role for MySQL is not implemented yet")
 }
 
 // UpdateRole updates the role.
-func (*Driver) UpdateRole(_ context.Context, _ string, _ *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error) {
+func (*Driver) UpdateRole(_ context.Context, _ string, _ *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
 	return nil, errors.Errorf("update role for MySQL is not implemented yet")
 }
 
 // FindRole finds the role by name.
-func (*Driver) FindRole(_ context.Context, _ string) (*storepb.DatabaseRole, error) {
+func (*Driver) FindRole(_ context.Context, _ string) (*v1pb.DatabaseRole, error) {
 	return nil, errors.Errorf("find role for MySQL is not implemented yet")
 }
 

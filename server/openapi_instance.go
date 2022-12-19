@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 	"github.com/bytebase/bytebase/common"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/store"
 )
@@ -202,7 +202,7 @@ func (s *Server) getDatabaseRole(c echo.Context) error {
 		return err
 	}
 
-	role, err := func() (*storepb.DatabaseRole, error) {
+	role, err := func() (*v1pb.DatabaseRole, error) {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
@@ -234,7 +234,7 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	var upsert storepb.DatabaseRoleUpsert
+	var upsert v1pb.DatabaseRoleUpsert
 	if err := protojson.Unmarshal(body, &upsert); err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return err
 	}
 
-	role, err := func() (*storepb.DatabaseRole, error) {
+	role, err := func() (*v1pb.DatabaseRole, error) {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
@@ -297,7 +297,7 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	var upsert storepb.DatabaseRoleUpsert
+	var upsert v1pb.DatabaseRoleUpsert
 	if err := protojson.Unmarshal(body, &upsert); err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 	}
 
 	rawName := c.Param("roleName")
-	role, err := func() (*storepb.DatabaseRole, error) {
+	role, err := func() (*v1pb.DatabaseRole, error) {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
@@ -346,9 +346,9 @@ func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Ins
 	return instance, nil
 }
 
-func marshalDatabaseRoleResponse(c echo.Context, role *storepb.DatabaseRole, instanceID int) error {
+func marshalDatabaseRoleResponse(c echo.Context, role *v1pb.DatabaseRole, instanceID int) error {
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-	metadataBytes, err := protojson.Marshal(&storepb.DatabaseRole{
+	metadataBytes, err := protojson.Marshal(&v1pb.DatabaseRole{
 		Name:            role.Name,
 		InstanceId:      int32(instanceID),
 		ConnectionLimit: role.ConnectionLimit,

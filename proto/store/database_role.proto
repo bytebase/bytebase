@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package bytebase.store;
-option go_package = "generated-go/store";
+package bytebase.v1;
+option go_package = "generated-go/v1";
 
 // RoleAttribute is the attribute for role. Docs: https://www.postgresql.org/docs/current/role-attributes.html
 message DatabaseRoleAttribute {

@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // Type is the type of a database.
@@ -502,11 +502,11 @@ type Driver interface {
 
 	// Role
 	// CreateRole creates the role.
-	CreateRole(ctx context.Context, upsert *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error)
+	CreateRole(ctx context.Context, upsert *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error)
 	// UpdateRole updates the role.
-	UpdateRole(ctx context.Context, roleName string, upsert *storepb.DatabaseRoleUpsert) (*storepb.DatabaseRole, error)
+	UpdateRole(ctx context.Context, roleName string, upsert *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error)
 	// FindRole finds the role by name.
-	FindRole(ctx context.Context, roleName string) (*storepb.DatabaseRole, error)
+	FindRole(ctx context.Context, roleName string) (*v1pb.DatabaseRole, error)
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 
