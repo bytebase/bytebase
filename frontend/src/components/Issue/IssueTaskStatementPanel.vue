@@ -532,6 +532,7 @@ const handleUploadLocalFileAsSheet = async (event: Event) => {
       payload: {},
     });
 
+    // TODO(steven): maybe return the sliced statement from backend?
     const statementSlice = statement.slice(0, 40 * 1024);
     updateSheetId(sheet.id);
     updateStatement(statementSlice);
