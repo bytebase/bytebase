@@ -16,7 +16,7 @@
     >
       {{ table.name }}
     </h3>
-    <table class="w-full text-sm">
+    <table class="w-full text-sm table-fixed">
       <tr
         v-for="(column, i) in table.columns"
         :key="i"
@@ -29,9 +29,17 @@
             class="w-3 h-3 mx-auto text-amber-500"
           />
         </td>
-        <td class="w-auto text-xs py-1.5">{{ column.name }}</td>
-        <td class="w-16 text-xs text-gray-400 text-right px-2 py-1.5">
-          {{ column.type }}
+        <td class="w-auto text-xs py-1.5">
+          <div class="whitespace-pre-wrap break-words">
+            {{ column.name }}
+          </div>
+        </td>
+        <td class="w-20 text-xs text-gray-400 py-1.5">
+          <div class="flex items-center w-full overflow-hidden pr-2">
+            <EllipsisText class="w-full text-right">
+              {{ column.type }}
+            </EllipsisText>
+          </div>
         </td>
       </tr>
     </table>
