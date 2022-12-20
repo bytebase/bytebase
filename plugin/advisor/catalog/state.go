@@ -78,8 +78,8 @@ func newTableState(t *storepb.TableMetadata) *TableState {
 
 func newColumnState(c *storepb.ColumnMetadata, position int) *ColumnState {
 	defaultValue := (*string)(nil)
-	if c.HasDefault {
-		defaultValue = copyStringPointer(&c.Default)
+	if c.Default != nil {
+		defaultValue = copyStringPointer(&c.Default.Value)
 	}
 	return &ColumnState{
 		name:         c.Name,
