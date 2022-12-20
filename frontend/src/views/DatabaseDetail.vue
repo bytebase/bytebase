@@ -108,6 +108,7 @@
               <heroicons-solid:terminal class="w-5 h-5" />
             </dd>
             <dd
+              v-if="isDev"
               class="flex items-center text-sm md:mr-4 textlabel cursor-pointer hover:text-accent"
               @click.prevent="state.showSchemaDiagram = true"
             >
