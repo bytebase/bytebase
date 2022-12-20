@@ -359,6 +359,9 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 		}
 		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
 	}
+	if v := find.SinceID; v != nil {
+		where, args = append(where, fmt.Sprintf("id <= $%d", len(args)+1)), append(args, *v)
+	}
 
 	var query = `
 		SELECT
@@ -375,7 +378,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 		FROM activity
 		WHERE ` + strings.Join(where, " AND ")
 	if v := find.Order; v != nil {
-		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
+		query += fmt.Sprintf(" ORDER BY id %s", *v)
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
