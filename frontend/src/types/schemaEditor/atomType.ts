@@ -6,8 +6,7 @@ export interface Column {
   type: string;
   nullable: boolean;
   comment: string;
-  hasDefault: boolean;
-  default: string;
+  default?: string;
 
   status: TableOrColumnStatus;
 }
