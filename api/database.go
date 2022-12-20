@@ -178,8 +178,7 @@ type AddColumnContext struct {
 	Collation    string `json:"collation"`
 	Comment      string `json:"comment"`
 	Nullable     bool   `json:"nullable"`
-	HasDefault   bool   `json:"hasDefault"`
-	Default      string `json:"default"`
+	Default      *string `json:"default"`
 }
 
 // ChangeColumnContext is the alter table context to change a column.
@@ -191,8 +190,7 @@ type ChangeColumnContext struct {
 	Collation    string `json:"collation"`
 	Comment      string `json:"comment"`
 	Nullable     bool   `json:"nullable"`
-	HasDefault   bool   `json:"hasDefault"`
-	Default      string `json:"default"`
+	Default      *string `json:"default"`
 }
 
 // DropColumnContext is the alter table context to drop a column.
