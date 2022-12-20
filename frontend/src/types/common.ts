@@ -26,6 +26,7 @@ import { DeploymentConfig } from "./deployment";
 import { Policy, DefaultApprovalPolicy } from "./policy";
 import { Sheet } from "./sheet";
 import { SQLReviewPolicy } from "./sqlReview";
+import { AuditLog, AuditActivityType, AuditActivityLevel } from "./auditLog";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -129,7 +130,8 @@ export type ResourceType =
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
   | "SHEET"
-  | "SQL_REVIEW";
+  | "SQL_REVIEW"
+  | "AUDIT_LOG";
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
@@ -157,6 +159,7 @@ interface ResourceMaker {
   (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
+  (type: "AUDIT_LOG"): AuditLog;
 }
 
 const makeUnknown = (type: ResourceType) => {
@@ -926,6 +929,15 @@ const makeEmpty = (type: ResourceType) => {
     ruleList: [],
   };
 
+  const EMPTY_AUDIT_LOG: AuditLog = {
+    createdTs: 0,
+    creator: EMPTY_PRINCIPAL.email,
+    type: AuditActivityType.MemberCreate,
+    level: AuditActivityLevel.INFO,
+    comment: "",
+    payload: "",
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -977,6 +989,8 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_SHEET;
     case "SQL_REVIEW":
       return EMPTY_SQL_REVIEW_POLICY;
+    case "AUDIT_LOG":
+      return EMPTY_AUDIT_LOG;
   }
 };
 export const empty = makeEmpty as ResourceMaker;
