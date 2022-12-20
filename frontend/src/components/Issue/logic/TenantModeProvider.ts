@@ -89,7 +89,7 @@ export default defineComponent({
         return;
       }
 
-      // For tenant deploy mode, we apply the statement to all stages and all tasks
+      // For tenant deploy mode, we apply the sheetId to all stages and all tasks
       const allTaskList = flattenTaskList<TaskCreate>(issue.value);
       allTaskList.forEach((task) => {
         task.sheetId = sheetId;
