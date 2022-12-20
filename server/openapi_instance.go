@@ -26,6 +26,7 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID", s.getInstanceByID)
 	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
 	g.DELETE("/instance/:instanceID", s.deleteInstanceByOpenAPI)
+	g.GET("/instance/:instanceID/role", s.listDatabaseRole)
 	g.POST("/instance/:instanceID/role", s.createDatabaseRole)
 	g.GET("/instance/:instanceID/role/:roleName", s.getDatabaseRole)
 	g.PATCH("/instance/:instanceID/role/:roleName", s.updateDatabaseRole)
@@ -193,6 +194,55 @@ func (s *Server) getInstanceByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, convertToOpenAPIInstance(instance))
 }
 
+func (s *Server) listDatabaseRole(c echo.Context) error {
+	ctx := c.Request().Context()
+	instance, err := s.validateInstance(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	roleList, err := func() ([]*v1pb.DatabaseRole, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		roleList, err := driver.ListRole(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return roleList, nil
+	}()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+	}
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+
+	response := &v1pb.DatabaseRoleList{}
+	for _, role := range roleList {
+		response.RoleList = append(response.RoleList, &v1pb.DatabaseRole{
+			Name:            role.Name,
+			InstanceId:      int32(instance.ID),
+			ConnectionLimit: role.ConnectionLimit,
+			ValidUntil:      role.ValidUntil,
+			Attribute:       role.Attribute,
+		})
+	}
+
+	metadataBytes, err := protojson.Marshal(response)
+	if err != nil {
+		return err
+	}
+	if _, err := c.Response().Write(metadataBytes); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to write schema response for role list").SetInternal(err)
+	}
+
+	return nil
+}
+
 func (s *Server) getDatabaseRole(c echo.Context) error {
 	ctx := c.Request().Context()
 	roleName := c.Param("roleName")
@@ -323,6 +373,9 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		return role, nil
 	}()
 	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the role %s in instance %d", rawName, instance.ID))
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
