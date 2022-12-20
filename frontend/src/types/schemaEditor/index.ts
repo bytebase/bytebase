@@ -85,8 +85,7 @@ export interface AddColumnContext {
   collation: string;
   comment: string;
   nullable: boolean;
-  hasDefault: boolean;
-  default: string;
+  default?: string;
 }
 
 export interface ChangeColumnContext {
@@ -97,8 +96,7 @@ export interface ChangeColumnContext {
   collation: string;
   comment: string;
   nullable: boolean;
-  hasDefault: boolean;
-  default: string;
+  default?: string;
 }
 
 export interface DropColumnContext {

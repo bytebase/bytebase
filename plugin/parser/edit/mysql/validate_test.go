@@ -79,9 +79,8 @@ func TestValidateDatabaseEditColumnTypeAndDefault(t *testing.T) {
 						Type: "BASE TABLE",
 						AddColumnList: []*api.AddColumnContext{
 							{
-								Name:       "id",
-								Type:       "TEXT",
-								HasDefault: false,
+								Name: "id",
+								Type: "TEXT",
 							},
 						},
 					},
@@ -98,10 +97,9 @@ func TestValidateDatabaseEditColumnTypeAndDefault(t *testing.T) {
 						Type: "BASE TABLE",
 						AddColumnList: []*api.AddColumnContext{
 							{
-								Name:       "id",
-								Type:       "TEXT",
-								HasDefault: true,
-								Default:    defaultValue,
+								Name:    "id",
+								Type:    "TEXT",
+								Default: &defaultValue,
 							},
 						},
 					},
