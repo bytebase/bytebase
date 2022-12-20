@@ -559,7 +559,7 @@
     "edit-sql-statement": "编辑 SQL 语句",
     "upload-sql": "上传 SQL",
     "upload-sql-as-sheet": "上传 SQL 至工作表",
-    "statement-from-sheet-warning": "当前 SQL 语句只读，只显示部分语句",
+    "statement-from-sheet-warning": "当前的 SQL 语句来自一个工作表。它是只读的且只显示了部分内容。",
     "override-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
     "waiting-earliest-allowed-time": "将于 {time} 之后执行",

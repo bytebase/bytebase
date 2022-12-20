@@ -111,9 +111,9 @@
         v-if="!create && (issue as Issue).project.workflowType === 'VCS'"
       >
         <!--
-            Show a virtual pencil icon in VCS workflow which opens a guide
-            when clicked.
-          -->
+          Show a virtual pencil icon in VCS workflow which opens a guide
+          when clicked.
+        -->
         <button
           type="button"
           class="btn-icon"
