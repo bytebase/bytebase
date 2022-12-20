@@ -54,9 +54,18 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 
 	instance := task.Instance
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
-	if err != nil {
-		return true, nil, err
+	var driver db.Driver
+	if instance.Engine == db.MongoDB {
+		// For mongodb, we pass the database name, and execute create collection statement instead.
+		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, payload.DatabaseName)
+		if err != nil {
+			return true, nil, err
+		}
+	} else {
+		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
+		if err != nil {
+			return true, nil, err
+		}
 	}
 	defer driver.Close(ctx)
 

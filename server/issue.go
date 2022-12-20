@@ -600,6 +600,11 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	if instance == nil {
 		return nil, errors.Errorf("instance ID not found %v", c.InstanceID)
 	}
+
+	if instance.Engine == db.MongoDB && c.TableName == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, colleciton name missing for MongoDB")
+	}
+
 	// Find project.
 	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 	if err != nil {
@@ -1003,6 +1008,9 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		// Snowflake needs to use upper case of DatabaseName.
 		c.DatabaseName = strings.ToUpper(c.DatabaseName)
 	}
+	if instance.Engine == db.MongoDB && c.TableName == "" {
+		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB"))
+	}
 	// Validate the labels. Labels are set upon task completion.
 	if c.Labels != "" {
 		if err := utils.SetDatabaseLabels(ctx, s.store, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
@@ -1032,12 +1040,13 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		return nil, err
 	}
 	payload := api.TaskDatabaseCreatePayload{
-		ProjectID:    project.ID,
-		CharacterSet: c.CharacterSet,
-		Collation:    c.Collation,
-		Labels:       c.Labels,
-		DatabaseName: databaseName,
-		Statement:    statement,
+		ProjectID:      project.ID,
+		CharacterSet:   c.CharacterSet,
+		CollectionName: c.TableName,
+		Collation:      c.Collation,
+		Labels:         c.Labels,
+		DatabaseName:   databaseName,
+		Statement:      statement,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
@@ -1175,6 +1184,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 	case db.SQLite:
 		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
 		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
+	case db.MongoDB:
+		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }
@@ -1249,7 +1260,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		if owner == "" {
 			return errors.Errorf("database owner is required for PostgreSQL")
 		}
-	case db.SQLite:
+	case db.SQLite, db.MongoDB:
 		// no-op.
 	default:
 		if characterSet == "" {

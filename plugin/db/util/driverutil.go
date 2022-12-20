@@ -149,8 +149,8 @@ type MigrationExecutor interface {
 // Returns the created migration history id and the updated schema on success.
 func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
-	// Don't record schema if the database hasn't exist yet.
-	if !m.CreateDatabase {
+	// Don't record schema if the database hasn't exist yet or the instance is MongoDB.
+	if !m.CreateDatabase && executor.GetType() != db.MongoDB {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
 		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
@@ -252,16 +252,20 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	sqldb, err := executor.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return -1, err
+	var tx *sql.Tx
+	if executor.GetType() != db.MongoDB {
+		// We use transaction here for the RDBMS.
+		sqldb, err := executor.GetDBConnection(ctx, databaseName)
+		if err != nil {
+			return -1, err
+		}
+		// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
+		tx, err = sqldb.BeginTx(ctx, nil)
+		if err != nil {
+			return -1, err
+		}
+		defer tx.Rollback()
 	}
-	// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
-	tx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return -1, err
-	}
-	defer tx.Rollback()
 
 	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
 	if err != nil {
@@ -284,8 +288,10 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		return -1, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return -1, err
+	if executor.GetType() != db.MongoDB {
+		if err := tx.Commit(); err != nil {
+			return -1, err
+		}
 	}
 
 	return insertedID, nil
@@ -295,15 +301,18 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
-	sqldb, err := executor.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return err
+	var tx *sql.Tx
+	if executor.GetType() != db.MongoDB {
+		sqldb, err := executor.GetDBConnection(ctx, databaseName)
+		if err != nil {
+			return err
+		}
+		tx, err = sqldb.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
 	}
-	tx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 
 	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
@@ -316,8 +325,10 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 	if err != nil {
 		return err
 	}
-
-	return tx.Commit()
+	if executor.GetType() != db.MongoDB {
+		return tx.Commit()
+	}
+	return nil
 }
 
 // Query will execute a readonly / SELECT query.

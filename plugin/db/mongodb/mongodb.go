@@ -2,10 +2,13 @@
 package mongodb
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/resources/mongoutil"
 )
 
 var (
@@ -28,12 +32,14 @@ func init() {
 
 // Driver is the MongoDB driver.
 type Driver struct {
+	dbBinDir      string
 	connectionCtx db.ConnectionContext
+	connCfg       db.ConnectionConfig
 	client        *mongo.Client
 }
 
-func newDriver(_ db.DriverConfig) db.Driver {
-	return &Driver{}
+func newDriver(dc db.DriverConfig) db.Driver {
+	return &Driver{dbBinDir: dc.DbBinDir}
 }
 
 // Open opens a MongoDB driver.
@@ -46,6 +52,7 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.Connection
 	}
 	driver.client = client
 	driver.connectionCtx = connCtx
+	driver.connCfg = connCfg
 	return driver, nil
 }
 
@@ -65,14 +72,56 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return nil
 }
 
-// GetDBConnection returns a database connection.
-func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	panic("not implemented")
+// GetType returns the database type.
+func (*Driver) GetType() db.Type {
+	return db.MongoDB
 }
 
-// Execute executes a statement.
-func (*Driver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
-	panic("not implemented")
+// GetDBConnection returns a database connection.
+func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
+	return nil, nil
+}
+
+// Execute executes a statement, always returns 0 as the number of rows affected.
+func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
+	connectionURI := getMongoDBConnectionURI(driver.connCfg)
+	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
+	// There are some ways to execute the statement in mongosh:
+	// 1. Use the --eval option to execute the statement.
+	// 2. Use the --file option to execute the statement from a file.
+	// We choose the second way with the following reasons:
+	// 1. The statement may too long to be executed in the command line.
+	// 2. We cannot catch the error from the --eval option.
+
+	// First, we create a temporary file to store the statement.
+	tempDir := os.TempDir()
+	tempFile, err := os.CreateTemp(tempDir, "mongodb-statement")
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to create temporary file")
+	}
+	defer os.Remove(tempFile.Name())
+	if _, err := tempFile.WriteString(statement); err != nil {
+		return 0, errors.Wrap(err, "failed to write statement to temporary file")
+	}
+	if err := tempFile.Close(); err != nil {
+		return 0, errors.Wrap(err, "failed to close temporary file")
+	}
+
+	// Then, we execute the statement in mongosh.
+	mongoshArgs := []string{
+		connectionURI,
+		"--quiet",
+		"--file",
+		tempFile.Name(),
+	}
+	// We don't use the CommandContext here because the statement may take a long time to execute.
+	mongoshCmd := exec.Command(mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
+	var errContent bytes.Buffer
+	mongoshCmd.Stderr = &errContent
+	if err := mongoshCmd.Run(); err != nil {
+		return 0, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
+	}
+	return 0, nil
 }
 
 // Query queries a statement.

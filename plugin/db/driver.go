@@ -200,7 +200,7 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL).
+	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL, mongosh for MongoDB).
 	DbBinDir string
 
 	// NOTE, introducing db specific fields is the last resort.
@@ -515,6 +515,7 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
+	GetType() Type
 	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.

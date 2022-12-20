@@ -133,6 +133,8 @@ type CreateDatabaseContext struct {
 	InstanceID int `json:"instanceId"`
 	// DatabaseName is the name of the database.
 	DatabaseName string `json:"databaseName"`
+	// TableName is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+	TableName string `json:"tableName"`
 	// CharacterSet is the character set of the database.
 	CharacterSet string `json:"characterSet"`
 	// Collation is the collation of the database.
