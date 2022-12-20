@@ -107,6 +107,13 @@
               <span class="mr-1">{{ $t("sql-editor.self") }}</span>
               <heroicons-solid:terminal class="w-5 h-5" />
             </dd>
+            <dd
+              class="flex items-center text-sm md:mr-4 textlabel cursor-pointer hover:text-accent"
+              @click.prevent="state.showSchemaDiagram = true"
+            >
+              <span class="mr-1">{{ $t("schema-diagram.self") }}</span>
+              <heroicons-solid:table-cells class="w-4 h-4" />
+            </dd>
             <DatabaseLabelProps
               :label-list="database.labels"
               :database="database"
@@ -293,6 +300,19 @@
 
   <GhostDialog ref="ghostDialog" />
 
+  <BBModal
+    v-if="state.showSchemaDiagram"
+    :title="$t('schema-diagram.self')"
+    @close="state.showSchemaDiagram = false"
+  >
+    <div class="w-[80vw] h-[70vh]">
+      <SchemaDiagram
+        :database="database"
+        :table-list="dbSchemaStore.getTableListByDatabaseId(database.id)"
+      />
+    </div>
+  </BBModal>
+
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
     :database-id-list="[database.id]"
@@ -336,10 +356,12 @@ import {
 import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
+import SchemaDiagram from "@/components/SchemaDiagram";
 import {
   pushNotification,
   useCurrentUser,
   useDatabaseStore,
+  useDBSchemaStore,
   usePolicyByDatabaseAndType,
   useRepositoryStore,
   useSQLStore,
@@ -362,6 +384,7 @@ interface LocalState {
   editingProjectId: ProjectId;
   selectedIndex: number;
   syncingSchema: boolean;
+  showSchemaDiagram: boolean;
 }
 
 const props = defineProps({
@@ -373,6 +396,7 @@ const props = defineProps({
 
 const databaseStore = useDatabaseStore();
 const repositoryStore = useRepositoryStore();
+const dbSchemaStore = useDBSchemaStore();
 const sqlStore = useSQLStore();
 const router = useRouter();
 const { t } = useI18n();
@@ -391,6 +415,7 @@ const state = reactive<LocalState>({
   editingProjectId: UNKNOWN_ID,
   selectedIndex: OVERVIEW_TAB,
   syncingSchema: false,
+  showSchemaDiagram: false,
 });
 
 const currentUser = useCurrentUser();
