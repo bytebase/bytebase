@@ -14,22 +14,22 @@
         'background-color': tableColor,
       }"
     >
-      {{ table.newName }}
+      {{ table.name }}
     </h3>
     <table class="w-full text-sm">
       <tr
-        v-for="(column, i) in table.columnList"
+        v-for="(column, i) in table.columns"
         :key="i"
-        :bb-column-name="column.newName"
+        :bb-column-name="column.name"
       >
         <td class="w-5 py-1.5">
           <!-- TODO: remove this -->
           <heroicons-outline:key
-            v-if="column.newName === 'emp_no' || column.newName === 'dept_no'"
+            v-if="column.name === 'emp_no' || column.name === 'dept_no'"
             class="w-3 h-3 mx-auto text-amber-500"
           />
         </td>
-        <td class="w-auto text-xs py-1.5">{{ column.newName }}</td>
+        <td class="w-auto text-xs py-1.5">{{ column.name }}</td>
         <td class="w-16 text-xs text-gray-400 text-right px-2 py-1.5">
           {{ column.type }}
         </td>
@@ -42,12 +42,12 @@
 import { computed } from "vue";
 
 import { hashCode } from "@/bbkit/BBUtil";
-import { Table } from "@/types/schemaEditor/atomType";
+import { TableMetadata } from "@/types/proto/database";
 import { useSchemaDiagramContext } from "../common";
 
 const props = withDefaults(
   defineProps<{
-    table: Table;
+    table: TableMetadata;
   }>(),
   {}
 );
@@ -73,7 +73,7 @@ const COLOR_LIST = [
 ];
 
 const tableColor = computed(() => {
-  const index = (hashCode(props.table.newName) & 0xfffffff) % COLOR_LIST.length;
+  const index = (hashCode(props.table.name) & 0xfffffff) % COLOR_LIST.length;
   return COLOR_LIST[index];
 });
 

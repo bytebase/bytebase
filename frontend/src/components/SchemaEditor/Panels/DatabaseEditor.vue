@@ -144,7 +144,7 @@
       <SchemaDiagram
         :key="currentTab.databaseId"
         :database="database"
-        :table-list="tableList"
+        :table-list="dbSchemaStore.getTableListByDatabaseId(database.id)"
       />
     </template>
   </div>
@@ -163,6 +163,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
+  useDBSchemaStore,
   useNotificationStore,
   useSchemaEditorStore,
 } from "@/store";
@@ -188,6 +189,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
+const dbSchemaStore = useDBSchemaStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   selectedTab: "table-list",

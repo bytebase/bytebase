@@ -12,7 +12,7 @@ import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
 
 import { Database } from "@/types";
-import { Table } from "@/types/schemaEditor/atomType";
+import { TableMetadata } from "@/types/proto/database";
 import { Position, Rect, Size, SchemaDiagramContext } from "./types";
 import Canvas from "./Canvas";
 import { TableNode, autoLayout } from "./ER";
@@ -21,7 +21,7 @@ import { provideSchemaDiagramContext } from "./common";
 const props = withDefaults(
   defineProps<{
     database: Database;
-    tableList: Table[];
+    tableList: TableMetadata[];
   }>(),
   {}
 );
@@ -36,48 +36,50 @@ const render = () => {
 };
 const events: SchemaDiagramContext["events"] = new Emittery();
 
-const tableIds = ref(new WeakMap<Table, string>());
+const tableIds = ref(new WeakMap<TableMetadata, string>());
 const rectsByTableId = ref(new Map<string, Rect>());
 
-const idOfTable = (table: Table): string => {
+const idOfTable = (table: TableMetadata): string => {
   const ids = tableIds.value;
   if (ids.has(table)) return ids.get(table)!;
-  const id = `table-${table.newName}-${uniqueId()}`;
+  const id = `table-${table.name}-${uniqueId()}`;
   ids.set(table, id);
   return id;
 };
 
-const rectOfTable = (table: Table): Rect => {
+const rectOfTable = (table: TableMetadata): Rect => {
   const id = idOfTable(table);
   return rectsByTableId.value.get(id) ?? { x: 0, y: 0, width: 0, height: 0 };
 };
 
 const layout = () => {
-  const nodeList = props.tableList
-    .map((table) => {
-      const id = idOfTable(table);
-      const elem = document.querySelector(`[bb-node-id="${id}"]`)!;
-      return {
-        table,
-        id,
-        elem,
-      };
-    })
-    .filter((item) => !!item.elem)
-    .map((item) => {
-      const size: Size = {
-        width: item.elem.clientWidth,
-        height: item.elem.clientHeight,
-      };
-      return {
-        ...item,
-        size,
-      };
-    });
-  const layout = autoLayout(nodeList, []);
-  for (const [id, rect] of layout) {
-    rectsByTableId.value.set(id, rect);
-  }
+  nextTick(() => {
+    const nodeList = props.tableList
+      .map((table) => {
+        const id = idOfTable(table);
+        const elem = document.querySelector(`[bb-node-id="${id}"]`)!;
+        return {
+          table,
+          id,
+          elem,
+        };
+      })
+      .filter((item) => !!item.elem)
+      .map((item) => {
+        const size: Size = {
+          width: item.elem.clientWidth,
+          height: item.elem.clientHeight,
+        };
+        return {
+          ...item,
+          size,
+        };
+      });
+    const layout = autoLayout(nodeList, []);
+    for (const [id, rect] of layout) {
+      rectsByTableId.value.set(id, rect);
+    }
+  });
 
   render();
 };
