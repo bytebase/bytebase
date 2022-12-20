@@ -144,11 +144,7 @@
       <SchemaDiagram
         :key="currentTab.databaseId"
         :database="database"
-        :table-list="
-          tableList.filter(
-            (t) => t.newName !== 'article' && t.newName !== 'another_student'
-          )
-        "
+        :table-list="tableList"
       />
     </template>
   </div>
