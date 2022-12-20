@@ -154,7 +154,7 @@ import GhostDialog from "./GhostDialog.vue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
-type TabType = "raw-sql" | "schema-editor";
+type TabType = "raw-sql" | "schema-editor" | "schema-diagram";
 
 interface LocalState {
   selectedTab: TabType;

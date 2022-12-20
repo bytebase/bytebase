@@ -1,5 +1,5 @@
 <template>
-  <div class="grid auto-rows-auto w-full h-full overflow-y-auto">
+  <div class="flex flex-col w-full h-full overflow-y-auto">
     <div
       class="pt-3 pl-1 w-full flex justify-start items-center border-b border-b-gray-300"
     >
@@ -13,15 +13,6 @@
         >{{ $t("schema-editor.table-list") }}</span
       >
       <span
-        class="hidden -mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
-        :class="
-          state.selectedTab === 'er-diagram' &&
-          'bg-white border-gray-300 text-gray-800'
-        "
-        @click="handleChangeTab('er-diagram')"
-        >ER Diagram</span
-      >
-      <span
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
           state.selectedTab === 'raw-sql' &&
@@ -29,6 +20,15 @@
         "
         @click="handleChangeTab('raw-sql')"
         >{{ $t("schema-editor.raw-sql") }}</span
+      >
+      <span
+        class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
+        :class="
+          state.selectedTab === 'schema-diagram' &&
+          'bg-white border-gray-300 text-gray-800'
+        "
+        @click="handleChangeTab('schema-diagram')"
+        >{{ $t("schema-diagram.self") }}</span
       >
     </div>
 
@@ -117,9 +117,6 @@
         </div>
       </div>
     </template>
-    <template v-else-if="state.selectedTab === 'er-diagram'">
-      <!-- TODO: ER diagram placeholder -->
-    </template>
     <div
       v-else-if="state.selectedTab === 'raw-sql'"
       class="w-full h-full overflow-y-auto"
@@ -142,6 +139,17 @@
         </div>
       </template>
     </div>
+    <template v-else-if="state.selectedTab === 'schema-diagram'">
+      <SchemaDiagram
+        :key="currentTab.databaseId"
+        :database="database"
+        :table-list="
+          tableList.filter(
+            (t) => t.newName !== 'article' && t.newName !== 'another_student'
+          )
+        "
+      />
+    </template>
   </div>
 
   <TableNameModal
@@ -167,8 +175,9 @@ import { bytesToString } from "@/utils";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { diffTableList } from "@/utils/schemaEditor/diffTable";
+import SchemaDiagram from "@/components/SchemaDiagram";
 
-type TabType = "table-list" | "er-diagram" | "raw-sql";
+type TabType = "table-list" | "schema-diagram" | "raw-sql";
 
 interface LocalState {
   selectedTab: TabType;

@@ -1737,5 +1737,8 @@
         "keep-going-with-bytebase": "继续使用 Bytebase！"
       }
     }
+  },
+  "schema-diagram": {
+    "self": "Schema 图表"
   }
 }
