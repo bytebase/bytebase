@@ -6,6 +6,7 @@ import {
   InstanceId,
   IssueId,
   ProjectId,
+  SheetId,
   TaskId,
   TaskRunId,
 } from "../id";
@@ -47,6 +48,7 @@ export type TaskEarliestAllowedTimePayload = {
 export type TaskDatabaseCreatePayload = {
   projectId: ProjectId;
   statement: string;
+  sheetId: SheetId;
   databaseName: string;
   characterSet: string;
   collation: string;
@@ -60,16 +62,19 @@ export type TaskDatabaseSchemaBaselinePayload = {
 
 export type TaskDatabaseSchemaUpdatePayload = {
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateSDLPayload = {
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateGhostSyncPayload = {
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
@@ -97,6 +102,7 @@ export type TaskDatabasePITRDeletePayload = {
 
 export type TaskDatabaseDataUpdatePayload = {
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
   rollbackStatement: string;
   rollbackFromIssueId: IssueId;
@@ -174,6 +180,8 @@ export type TaskCreate = {
   instanceId: InstanceId;
   databaseId?: DatabaseId;
   statement: string;
+  // statement and sheet ID should be mutually exclusive.
+  sheetId?: SheetId;
   databaseName?: string;
   characterSet?: string;
   collation?: string;

@@ -5,6 +5,7 @@ import {
   IssueId,
   PrincipalId,
   ProjectId,
+  SheetId,
   TaskId,
 } from "./id";
 import { Pipeline, PipelineCreate } from "./pipeline";
@@ -47,9 +48,10 @@ export type CreateDatabaseContext = {
 
 export type MigrationDetail = {
   migrationType: MigrationType;
-  databaseId?: DatabaseId;
   statement: string;
+  sheetId?: SheetId;
   earliestAllowedTs: number;
+  databaseId?: DatabaseId;
 };
 
 export type UpdateSchemaGhostDetail = MigrationDetail & {
