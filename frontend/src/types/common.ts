@@ -502,6 +502,7 @@ const makeUnknown = (type: ResourceType) => {
     type: "SQL",
     starred: false,
     pinned: false,
+    payload: {},
   };
 
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
