@@ -83,8 +83,6 @@
         class="btn-icon"
         @click.prevent="beginEdit"
       >
-        <!-- Heroicon name: solid/pencil -->
-        <!-- Use h-5 to avoid flickering when show/hide icon -->
         <heroicons-solid:pencil class="h-5 w-5" />
       </button>
       <template v-else-if="!create">
