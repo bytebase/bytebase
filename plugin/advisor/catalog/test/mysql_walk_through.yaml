@@ -120,8 +120,8 @@
               columns:
                 - name: a
                   position: 1
-                  hasdefault: true
-                  default: "1"
+                  default:
+                    value: "1"
                   nullable: false
                   type: int(11)
                   characterset: ""
@@ -129,8 +129,7 @@
                   comment: ""
                 - name: b
                   position: 2
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: false
                   type: varchar(200)
                   characterset: utf8mb4
@@ -138,8 +137,7 @@
                   comment: ""
                 - name: c
                   position: 3
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: int(11)
                   characterset: ""
@@ -147,8 +145,7 @@
                   comment: This is a comment
                 - name: d
                   position: 4
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: varchar(10)
                   characterset: ""
@@ -220,8 +217,8 @@
               columns:
                 - name: a
                   position: 1
-                  hasdefault: true
-                  default: "1"
+                  default:
+                    value: "1"
                   nullable: false
                   type: int(11)
                   characterset: ""
@@ -229,8 +226,7 @@
                   comment: ""
                 - name: b
                   position: 2
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: false
                   type: varchar(200)
                   characterset: utf8mb4
@@ -238,8 +234,7 @@
                   comment: ""
                 - name: c
                   position: 3
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: int(11)
                   characterset: ""
@@ -247,8 +242,7 @@
                   comment: This is a comment
                 - name: d
                   position: 4
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: varchar(10)
                   characterset: ""
@@ -341,8 +335,8 @@
               columns:
                 - name: a
                   position: 1
-                  hasdefault: true
-                  default: "1"
+                  default:
+                    value: "1"
                   nullable: false
                   type: int(11)
                   characterset: ""
@@ -350,8 +344,7 @@
                   comment: ""
                 - name: b
                   position: 2
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: false
                   type: varchar(200)
                   characterset: utf8mb4
@@ -359,8 +352,7 @@
                   comment: ""
                 - name: c
                   position: 3
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: int(11)
                   characterset: ""
@@ -368,8 +360,7 @@
                   comment: This is a comment
                 - name: d
                   position: 4
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: varchar(10)
                   characterset: ""
@@ -457,8 +448,7 @@
               columns:
                 - name: a
                   position: 1
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: false
                   type: int(11)
                   characterset: ""
@@ -466,8 +456,7 @@
                   comment: ""
                 - name: b
                   position: 2
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: false
                   type: int(11)
                   characterset: ""
@@ -542,8 +531,7 @@
               columns:
                 - name: a
                   position: 1
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: int(11)
                   characterset: ""
@@ -607,8 +595,7 @@
               columns:
                 - name: b
                   position: 1
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: varchar(20)
                   characterset: ""
@@ -616,8 +603,7 @@
                   comment: ""
                 - name: a_copy
                   position: 2
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: false
                   type: int(11)
                   characterset: ""
@@ -625,8 +611,7 @@
                   comment: ""
                 - name: a1
                   position: 3
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: int(11)
                   characterset: ""
@@ -634,8 +619,7 @@
                   comment: ""
                 - name: d_copy
                   position: 4
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: varchar(10)
                   characterset: ""
@@ -643,8 +627,7 @@
                   comment: ""
                 - name: e
                   position: 5
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: int(11)
                   characterset: ""
@@ -728,8 +711,8 @@
               columns:
                 - name: a
                   position: 1
-                  hasdefault: true
-                  default: "1"
+                  default:
+                    value: "1"
                   nullable: false
                   type: int(11)
                   characterset: ""
@@ -737,8 +720,7 @@
                   comment: ""
                 - name: b
                   position: 2
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: false
                   type: varchar(200)
                   characterset: utf8mb4
@@ -746,8 +728,7 @@
                   comment: ""
                 - name: c
                   position: 3
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: int(11)
                   characterset: ""
@@ -755,8 +736,7 @@
                   comment: This is a comment
                 - name: d
                   position: 4
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: true
                   type: varchar(10)
                   characterset: ""
@@ -844,8 +824,8 @@
               columns:
                 - name: a
                   position: 1
-                  hasdefault: true
-                  default: "1"
+                  default:
+                    value: "1"
                   nullable: false
                   type: int(11)
                   characterset: ""
@@ -853,8 +833,7 @@
                   comment: ""
                 - name: b
                   position: 2
-                  hasdefault: false
-                  default: ""
+                  default: null
                   nullable: false
                   type: varchar(200)
                   characterset: utf8mb4
