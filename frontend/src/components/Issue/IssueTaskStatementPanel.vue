@@ -78,7 +78,7 @@
       </template>
 
       <button
-        v-if="allowEditStatement && !state.editing && !isTaskHasSheetId"
+        v-if="shouldShowStatementEditButton"
         type="button"
         class="btn-icon"
         @click.prevent="beginEdit"
@@ -372,6 +372,21 @@ const isTaskHasSheetId = computed(() => {
     return !isUndefined((task as TaskCreate).sheetId);
   }
   return !isUndefined(sheetIdOfTask(task as Task));
+});
+
+const shouldShowStatementEditButton = computed(() => {
+  if (create.value) {
+    return false;
+  }
+  // For those task with sheet, it's readonly.
+  if (isTaskHasSheetId.value) {
+    return false;
+  }
+  if (state.editing) {
+    return false;
+  }
+
+  return allowEditStatement;
 });
 
 onMounted(() => {
