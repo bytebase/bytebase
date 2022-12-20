@@ -172,24 +172,24 @@ type DropTableContext struct {
 
 // AddColumnContext is the create/alter table context to add a column.
 type AddColumnContext struct {
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	CharacterSet string `json:"characterSet"`
-	Collation    string `json:"collation"`
-	Comment      string `json:"comment"`
-	Nullable     bool   `json:"nullable"`
+	Name         string  `json:"name"`
+	Type         string  `json:"type"`
+	CharacterSet string  `json:"characterSet"`
+	Collation    string  `json:"collation"`
+	Comment      string  `json:"comment"`
+	Nullable     bool    `json:"nullable"`
 	Default      *string `json:"default"`
 }
 
 // ChangeColumnContext is the alter table context to change a column.
 type ChangeColumnContext struct {
-	OldName      string `json:"oldName"`
-	NewName      string `json:"newName"`
-	Type         string `json:"type"`
-	CharacterSet string `json:"characterSet"`
-	Collation    string `json:"collation"`
-	Comment      string `json:"comment"`
-	Nullable     bool   `json:"nullable"`
+	OldName      string  `json:"oldName"`
+	NewName      string  `json:"newName"`
+	Type         string  `json:"type"`
+	CharacterSet string  `json:"characterSet"`
+	Collation    string  `json:"collation"`
+	Comment      string  `json:"comment"`
+	Nullable     bool    `json:"nullable"`
 	Default      *string `json:"default"`
 }
 
