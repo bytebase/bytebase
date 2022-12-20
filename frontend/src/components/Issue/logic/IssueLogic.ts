@@ -62,10 +62,7 @@ type IssueLogic = {
     newStatement: string,
     postUpdated?: (updatedTask: Task) => void
   ) => any;
-  updateSheetId: (
-    sheetId: SheetId | undefined,
-    postUpdated?: (updatedTask: Task) => void
-  ) => any;
+  updateSheetId: (sheetId: SheetId) => void;
   allowApplyStatementToOtherTasks: Ref<boolean>;
   applyStatementToOtherTasks: (statement: string) => any;
   doCreate(): any;

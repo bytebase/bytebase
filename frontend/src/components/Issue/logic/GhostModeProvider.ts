@@ -152,57 +152,27 @@ export default defineComponent({
       }
     };
 
-    const updateSheetId = (
-      sheetId: SheetId | undefined,
-      postUpdated?: (updatedTask: Task) => void
-    ) => {
-      if (isTenantMode.value) {
-        if (create.value) {
-          // For tenant deploy mode, we apply the statement to all stages and all tasks
-          const allTaskList = flattenTaskList<TaskCreate>(issue.value);
-          allTaskList.forEach((task) => {
-            if (TaskTypeWithSheetId.includes(task.type)) {
-              task.sheetId = sheetId;
-            }
-          });
+    const updateSheetId = (sheetId: SheetId) => {
+      if (!create.value) {
+        return;
+      }
 
-          const issueCreate = issue.value as IssueCreate;
-          const context = issueCreate.createContext as MigrationContext;
-          // We also apply it back to the CreateContext
-          context.detailList.forEach((detail) => (detail.sheetId = sheetId));
-        } else {
-          const issueEntity = issue.value as Issue;
-          taskStore
-            .patchAllTasksInIssue({
-              issueId: issueEntity.id,
-              pipelineId: issueEntity.pipeline.id,
-              taskPatch: {
-                sheetId: sheetId,
-              },
-            })
-            .then(() => {
-              onStatusChanged(true);
-              if (postUpdated) {
-                postUpdated(issueEntity.pipeline.stageList[0].taskList[0]);
-              }
-            });
-        }
+      if (isTenantMode.value) {
+        // For tenant deploy mode, we apply the statement to all stages and all tasks
+        const allTaskList = flattenTaskList<TaskCreate>(issue.value);
+        allTaskList.forEach((task) => {
+          if (TaskTypeWithSheetId.includes(task.type)) {
+            task.sheetId = sheetId;
+          }
+        });
+
+        const issueCreate = issue.value as IssueCreate;
+        const context = issueCreate.createContext as MigrationContext;
+        // We also apply it back to the CreateContext
+        context.detailList.forEach((detail) => (detail.sheetId = sheetId));
       } else {
-        if (create.value) {
-          const task = selectedTask.value as TaskCreate;
-          task.sheetId = sheetId;
-        } else {
-          // otherwise, patch the task
-          const task = selectedTask.value as Task;
-          patchTask(
-            task.id,
-            {
-              sheetId: sheetId,
-              updatedTs: task.updatedTs,
-            },
-            postUpdated
-          );
-        }
+        const task = selectedTask.value as TaskCreate;
+        task.sheetId = sheetId;
       }
     };
 

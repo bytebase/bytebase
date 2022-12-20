@@ -78,7 +78,7 @@
       </template>
 
       <button
-        v-if="allowEditStatement && !state.editing"
+        v-if="allowEditStatement && !state.editing && !isTaskHasSheetId"
         type="button"
         class="btn-icon"
         @click.prevent="beginEdit"
@@ -502,12 +502,10 @@ const handleUploadLocalFile = async (event: Event) => {
       },
       onPositiveClick: () => {
         updateStatement(statement);
-        updateSheetId(undefined);
       },
     });
   } else {
     updateStatement(statement);
-    updateSheetId(undefined);
   }
 };
 

@@ -239,7 +239,6 @@ type TaskCreate struct {
 	Payload           string
 	EarliestAllowedTs int64  `jsonapi:"attr,earliestAllowedTs"`
 	Statement         string `jsonapi:"attr,statement"`
-	SheetID           int    `jsonapi:"attr,sheetId"`
 	DatabaseName      string `jsonapi:"attr,databaseName"`
 	CharacterSet      string `jsonapi:"attr,characterSet"`
 	Collation         string `jsonapi:"attr,collation"`
@@ -286,7 +285,6 @@ type TaskPatch struct {
 	// Statement/SchemaVersion and Payload cannot be set at the same time.
 	Statement         *string `jsonapi:"attr,statement"`
 	SchemaVersion     *string
-	SheetID           *int `jsonapi:"attr,sheetId"`
 	Payload           *string
 	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
 }

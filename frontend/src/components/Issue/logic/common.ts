@@ -181,25 +181,13 @@ export const useCommonLogic = () => {
     }
   };
 
-  const updateSheetId = (
-    sheetId: SheetId | undefined,
-    postUpdated?: (updatedTask: Task) => void
-  ) => {
-    if (create.value) {
-      const task = selectedTask.value as TaskCreate;
-      task.sheetId = sheetId;
-    } else {
-      // otherwise, patch the task
-      const task = selectedTask.value as Task;
-      patchTask(
-        task.id,
-        {
-          sheetId: sheetId,
-          updatedTs: task.updatedTs,
-        },
-        postUpdated
-      );
+  const updateSheetId = (sheetId: SheetId) => {
+    if (!create.value) {
+      return;
     }
+
+    const task = selectedTask.value as TaskCreate;
+    task.sheetId = sheetId;
   };
 
   const doCreate = () => {
