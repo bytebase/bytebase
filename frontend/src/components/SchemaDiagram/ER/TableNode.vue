@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="elem"
     class="absolute rounded-md shadow-lg border-b border-gray-200 bg-white w-[14rem] divide-y z-[10]"
     bb-node-type="table"
     :bb-node-id="idOfTable(table)"
@@ -39,11 +38,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import { hashCode } from "@/bbkit/BBUtil";
 import { Table } from "@/types/schemaEditor/atomType";
-import { useSchemaDiagramContext, useDraggable } from "../common";
+import { useSchemaDiagramContext } from "../common";
 
 const props = withDefaults(
   defineProps<{
@@ -51,8 +50,7 @@ const props = withDefaults(
   }>(),
   {}
 );
-const elem = ref<Element>();
-const { zoom, idOfTable, rectOfTable, moveTable } = useSchemaDiagramContext();
+const { idOfTable, rectOfTable } = useSchemaDiagramContext();
 
 const COLOR_LIST = [
   "#64748B",
@@ -79,13 +77,4 @@ const tableColor = computed(() => {
 });
 
 const position = computed(() => rectOfTable(props.table));
-
-const handlePan = (dx: number, dy: number) => {
-  moveTable(props.table, dx / zoom.value, dy / zoom.value);
-};
-
-useDraggable(elem, {
-  exact: false,
-  onPan: handlePan,
-});
 </script>

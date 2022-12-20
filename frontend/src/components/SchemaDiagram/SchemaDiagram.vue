@@ -52,20 +52,12 @@ const rectOfTable = (table: Table): Rect => {
   return rectsByTableId.value.get(id) ?? { x: 0, y: 0, width: 0, height: 0 };
 };
 
-const moveTable = (table: Table, dx: number, dy: number) => {
-  const rect = rectOfTable(table);
-  rect.x += dx;
-  rect.y += dy;
-  render();
-};
-
 provideSchemaDiagramContext({
   tableList: computed(() => props.tableList),
   zoom,
   position,
   idOfTable,
   rectOfTable,
-  moveTable,
   render,
   events,
 });
@@ -101,7 +93,6 @@ watch(
       }
 
       render();
-      events.emit("fit-view");
     });
   },
   { immediate: true }

@@ -17,7 +17,6 @@ export type SchemaDiagramContext = {
   // Methods
   idOfTable: (table: Table) => string;
   rectOfTable: (table: Table) => Rect;
-  moveTable: (table: Table, dx: number, dy: number) => void;
   // tell the components to re-calculate positions if needed
   render: () => void;
 
