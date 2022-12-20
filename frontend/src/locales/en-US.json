@@ -558,6 +558,8 @@
     "edit-sql-statement-in-vcs": "This project has enabled VCS based version control. Please modify the SQL file in the corresponding Git repository, and commit it to create a new issue.",
     "edit-sql-statement": "Edit SQL statement",
     "upload-sql": "Upload SQL",
+    "upload-sql-as-sheet": "Upload SQL as Sheet",
+    "statement-from-sheet-warning": "The current SQL statement comes from a sheet. It is read-only and only part of it is displayed.",
     "override-current-statement": "Override current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "waiting-earliest-allowed-time": "Will run after {time}",

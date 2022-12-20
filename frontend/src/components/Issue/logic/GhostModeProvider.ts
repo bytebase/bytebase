@@ -4,6 +4,7 @@ import { provideIssueLogic, useIssueLogic } from "./index";
 import {
   flattenTaskList,
   maybeFormatStatementOnSave,
+  TaskTypeWithSheetId,
   TaskTypeWithStatement,
   useCommonLogic,
 } from "./common";
@@ -17,6 +18,7 @@ import {
   MigrationContext,
   TaskId,
   TaskPatch,
+  SheetId,
 } from "@/types";
 import { useDatabaseStore, useTaskStore } from "@/store";
 
@@ -150,6 +152,30 @@ export default defineComponent({
       }
     };
 
+    const updateSheetId = (sheetId: SheetId) => {
+      if (!create.value) {
+        return;
+      }
+
+      if (isTenantMode.value) {
+        // For tenant deploy mode, we apply the sheetId to all stages and all tasks
+        const allTaskList = flattenTaskList<TaskCreate>(issue.value);
+        allTaskList.forEach((task) => {
+          if (TaskTypeWithSheetId.includes(task.type)) {
+            task.sheetId = sheetId;
+          }
+        });
+
+        const issueCreate = issue.value as IssueCreate;
+        const context = issueCreate.createContext as MigrationContext;
+        // We also apply it back to the CreateContext
+        context.detailList.forEach((detail) => (detail.sheetId = sheetId));
+      } else {
+        const task = selectedTask.value as TaskCreate;
+        task.sheetId = sheetId;
+      }
+    };
+
     const doCreate = () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
 
@@ -230,6 +256,7 @@ export default defineComponent({
       allowApplyStatementToOtherTasks,
       applyStatementToOtherTasks,
       updateStatement,
+      updateSheetId,
     };
     provideIssueLogic(logic);
     return logic;
