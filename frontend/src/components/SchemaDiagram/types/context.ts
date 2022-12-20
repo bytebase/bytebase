@@ -19,9 +19,12 @@ export type SchemaDiagramContext = {
   rectOfTable: (table: Table) => Rect;
   // tell the components to re-calculate positions if needed
   render: () => void;
+  // auto-layout all components
+  layout: () => void;
 
   // Events
   events: Emittery<{
     render: undefined;
+    layout: undefined;
   }>;
 };

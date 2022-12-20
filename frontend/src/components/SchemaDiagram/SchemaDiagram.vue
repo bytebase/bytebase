@@ -7,7 +7,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
 
@@ -52,6 +52,38 @@ const rectOfTable = (table: Table): Rect => {
   return rectsByTableId.value.get(id) ?? { x: 0, y: 0, width: 0, height: 0 };
 };
 
+const layout = () => {
+  const nodeList = props.tableList
+    .map((table) => {
+      const id = idOfTable(table);
+      const elem = document.querySelector(`[bb-node-id="${id}"]`)!;
+      return {
+        table,
+        id,
+        elem,
+      };
+    })
+    .filter((item) => !!item.elem)
+    .map((item) => {
+      const size: Size = {
+        width: item.elem.clientWidth,
+        height: item.elem.clientHeight,
+      };
+      return {
+        ...item,
+        size,
+      };
+    });
+  const layout = autoLayout(nodeList, []);
+  for (const [id, rect] of layout) {
+    rectsByTableId.value.set(id, rect);
+  }
+
+  render();
+};
+
+events.on("layout", layout);
+
 provideSchemaDiagramContext({
   tableList: computed(() => props.tableList),
   zoom,
@@ -59,42 +91,10 @@ provideSchemaDiagramContext({
   idOfTable,
   rectOfTable,
   render,
+  layout,
   events,
 });
 
-watch(
-  () => props.tableList,
-  (tableList) => {
-    nextTick(() => {
-      const nodeList = tableList
-        .map((table) => {
-          const id = idOfTable(table);
-          const elem = document.querySelector(`[bb-node-id="${id}"]`)!;
-          return {
-            table,
-            id,
-            elem,
-          };
-        })
-        .filter((item) => !!item.elem)
-        .map((item) => {
-          const size: Size = {
-            width: item.elem.clientWidth,
-            height: item.elem.clientHeight,
-          };
-          return {
-            ...item,
-            size,
-          };
-        });
-      const layout = autoLayout(nodeList, []);
-      for (const [id, rect] of layout) {
-        rectsByTableId.value.set(id, rect);
-      }
-
-      render();
-    });
-  },
-  { immediate: true }
-);
+// autoLayout at the first time the diagram is mounted.
+onMounted(layout);
 </script>
