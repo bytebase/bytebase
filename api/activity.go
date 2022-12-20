@@ -262,7 +262,7 @@ type ActivityFind struct {
 	LevelList      []ActivityLevel
 	ContainerID    *int
 	Limit          *int
-	// If specified, only find activities whose ID is smaller that SinceID.
+	// If specified, only find activities whose ID is smaller than SinceID.
 	SinceID *int
 	// If specified, sorts the returned list by created_ts in <<ORDER>>
 	// Different use cases want different orders.
