@@ -191,7 +191,6 @@ export type TaskCreate = {
 
 export type TaskPatch = {
   statement?: string;
-  sheetId?: SheetId;
   earliestAllowedTs?: number;
 
   updatedTs?: number;
