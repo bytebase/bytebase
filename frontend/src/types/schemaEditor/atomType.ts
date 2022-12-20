@@ -45,7 +45,7 @@ export interface ForeignKey {
 }
 
 export interface Schema {
-  // It should be a empty string for MySQL/TiDB.
+  // It should be an empty string for MySQL/TiDB.
   name: string;
   tableList: Table[];
   primaryKeyList: PrimaryKey[];
