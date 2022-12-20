@@ -23,6 +23,7 @@
         :bb-column-name="column.newName"
       >
         <td class="w-5 py-1.5">
+          <!-- TODO: remove this -->
           <heroicons-outline:key
             v-if="column.newName === 'emp_no' || column.newName === 'dept_no'"
             class="w-3 h-3 mx-auto text-amber-500"
