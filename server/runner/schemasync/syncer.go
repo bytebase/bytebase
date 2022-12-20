@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -495,8 +496,7 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 					Comment:      column.Comment,
 				}
 				if column.Default != nil {
-					columnMetadata.HasDefault = true
-					columnMetadata.Default = *column.Default
+					columnMetadata.Default = &wrapperspb.StringValue{Value: *column.Default}
 				}
 				tableMetadata.Columns = append(tableMetadata.Columns, columnMetadata)
 			}
