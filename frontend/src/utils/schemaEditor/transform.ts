@@ -37,8 +37,8 @@ export const transformColumnDataToColumn = (
     type: columnMetadata.type,
     nullable: columnMetadata.nullable,
     comment: columnMetadata.comment,
-    hasDefault: columnMetadata.hasDefault,
-    default: columnMetadata.default,
+    hasDefault: columnMetadata.default !== undefined,
+    default: columnMetadata.default === undefined ? "" : columnMetadata.default,
     status: "normal",
   };
 };

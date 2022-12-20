@@ -3,6 +3,8 @@ syntax = "proto3";
 package bytebase.store;
 option go_package = "generated-go/store";
 
+import "google/protobuf/wrappers.proto";
+
 // DatabaseMetadata is the metadata for databases.
 message DatabaseMetadata {
   string name = 1;
@@ -83,28 +85,23 @@ message ColumnMetadata {
   // The position is the position in columns.
   int32 position = 2;
 
-  // The has_default is whether a column has a default.
-  // In proto3, we cannot distinguish between an empty string default value or no default.
-  // We have to introduce a boolean field to indicate the existance of a default.
-  bool has_default = 3;
-
-  // The default is the default of a column.
-  string default = 4;
+  // The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default.
+  google.protobuf.StringValue default = 3;
 
   // The nullable is the nullable of a column.
-  bool nullable = 5;
+  bool nullable = 4;
 
   // The type is the type of a column.
-  string type = 6;
+  string type = 5;
 
   // The character_set is the character_set of a column.
-  string character_set = 7;
+  string character_set = 6;
 
   // The collation is the collation of a column.
-  string collation = 8;
+  string collation = 7;
 
   // The comment is the comment of a column.
-  string comment = 9;
+  string comment = 8;
 }
 
 // ViewMetadata is the metadata for views.
