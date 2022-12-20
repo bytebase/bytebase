@@ -22,6 +22,7 @@
         >{{ $t("schema-editor.raw-sql") }}</span
       >
       <span
+        v-if="isDev"
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
           state.selectedTab === 'schema-diagram' &&
