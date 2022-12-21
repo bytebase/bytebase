@@ -26,6 +26,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	g.GET("/database", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		databaseFind := new(api.DatabaseFind)
+		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
+			rowStatus := api.RowStatus(rowStatusStr)
+			databaseFind.RowStatus = &rowStatus
+		}
 		if instanceIDStr := c.QueryParam("instance"); instanceIDStr != "" {
 			instanceID, err := strconv.Atoi(instanceIDStr)
 			if err != nil {
