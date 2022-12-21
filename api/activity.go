@@ -60,6 +60,7 @@ const (
 	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
 
 	// Database related.
+
 	// ActivityDatabaseArchive is the type for archiving database.
 	ActivityDatabaseArchive ActivityType = "bb.database.archive"
 
