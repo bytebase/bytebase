@@ -973,9 +973,6 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
 		}
-		if d.SheetID != 0 {
-			payload.Statement = ""
-		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
 			return api.TaskCreate{}, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database data update payload").SetInternal(err)
