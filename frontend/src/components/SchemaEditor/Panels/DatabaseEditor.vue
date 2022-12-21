@@ -152,6 +152,7 @@
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
     :database-id="state.tableNameModalContext.databaseId"
+    :schema-name="state.tableNameModalContext.schemaName"
     :table-name="state.tableNameModalContext.tableName"
     @close="state.tableNameModalContext = undefined"
   />
@@ -167,7 +168,12 @@ import {
   useNotificationStore,
   useSchemaEditorStore,
 } from "@/store";
-import { DatabaseId, DatabaseTabContext, SchemaEditorTabType } from "@/types";
+import {
+  DatabaseId,
+  DatabaseTabContext,
+  DatabaseSchema,
+  SchemaEditorTabType,
+} from "@/types";
 import { Table } from "@/types/schemaEditor/atomType";
 import { bytesToString } from "@/utils";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
@@ -179,10 +185,12 @@ type TabType = "table-list" | "schema-diagram" | "raw-sql";
 
 interface LocalState {
   selectedTab: TabType;
+  selectedSchema: string;
   isFetchingDDL: boolean;
   statement: string;
   tableNameModalContext?: {
     databaseId: DatabaseId;
+    schemaName: string;
     tableName: string | undefined;
   };
 }
@@ -193,13 +201,22 @@ const dbSchemaStore = useDBSchemaStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   selectedTab: "table-list",
+  selectedSchema: "",
   isFetchingDDL: false,
   statement: "",
 });
 const currentTab = editorStore.currentTab as DatabaseTabContext;
-const databaseState = editorStore.databaseStateById.get(currentTab.databaseId)!;
-const database = databaseState.database;
-const tableList = databaseState.tableList;
+const databaseSchema = editorStore.databaseSchemaById.get(
+  currentTab.databaseId
+) as DatabaseSchema;
+const database = databaseSchema.database;
+const schemaList = databaseSchema.schemaList;
+const tableList = computed(() => {
+  return (
+    schemaList.find((schema) => schema.name === state.selectedSchema)
+      ?.tableList ?? []
+  );
+});
 
 const tableHeaderList = computed(() => {
   return [
@@ -235,9 +252,12 @@ watch(
   async () => {
     if (state.selectedTab === "raw-sql") {
       state.isFetchingDDL = true;
-      const originTableList = databaseState.originTableList;
-      const updatedTableList =
-        await editorStore.getOrFetchTableListByDatabaseId(database.id);
+      const originTableList = databaseSchema.originSchemaList
+        .map((schema) => schema.tableList)
+        .flat();
+      const updatedTableList = schemaList
+        .map((schema) => schema.tableList)
+        .flat();
       const diffTableListResult = diffTableList(
         originTableList,
         updatedTableList
@@ -285,6 +305,7 @@ const handleChangeTab = (tab: TabType) => {
 const handleCreateNewTable = () => {
   state.tableNameModalContext = {
     databaseId: database.id,
+    schemaName: state.selectedSchema,
     tableName: undefined,
   };
 };
@@ -294,12 +315,13 @@ const handleTableItemClick = (table: Table) => {
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
     databaseId: database.id,
+    schemaName: state.selectedSchema,
     tableName: table.newName,
   });
 };
 
 const handleDropTable = (table: Table) => {
-  editorStore.dropTable(database.id, table);
+  editorStore.dropTable(database.id, state.selectedSchema, table);
 };
 
 const handleRestoreTable = (table: Table) => {
