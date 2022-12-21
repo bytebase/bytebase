@@ -1,5 +1,10 @@
 <template>
-  <div role="table" class="bb-grid border-block-border" :class="gridClass">
+  <div
+    role="table"
+    class="bb-grid border-block-border"
+    :class="gridClass"
+    v-bind="$attrs"
+  >
     <template v-if="customHeader">
       <slot name="header" />
     </template>
@@ -27,9 +32,9 @@
     >
       <slot name="item" :item="item" :row="row" />
     </div>
-
-    <slot name="footer" />
   </div>
+
+  <slot name="footer" />
 </template>
 
 <script lang="ts" setup>
