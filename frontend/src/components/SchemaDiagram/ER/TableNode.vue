@@ -23,10 +23,13 @@
         :bb-column-name="column.name"
       >
         <td class="w-5 py-1.5">
-          <!-- TODO: remove this -->
           <heroicons-outline:key
-            v-if="column.name === 'emp_no' || column.name === 'dept_no'"
+            v-if="isPrimaryKey(table, column)"
             class="w-3 h-3 mx-auto text-amber-500"
+          />
+          <tabler:diamonds
+            v-else-if="isIndex(table, column)"
+            class="w-3 h-3 mx-auto text-gray-500"
           />
         </td>
         <td class="w-auto text-xs py-1.5">
@@ -51,7 +54,7 @@ import { computed } from "vue";
 
 import { hashCode } from "@/bbkit/BBUtil";
 import { TableMetadata } from "@/types/proto/database";
-import { useSchemaDiagramContext } from "../common";
+import { useSchemaDiagramContext, isPrimaryKey, isIndex } from "../common";
 
 const props = withDefaults(
   defineProps<{
