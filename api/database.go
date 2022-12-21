@@ -30,6 +30,7 @@ type Database struct {
 	ID int `jsonapi:"primary,database"`
 
 	// Standard fields
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorID int
 	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
@@ -85,6 +86,9 @@ type DatabaseCreate struct {
 type DatabaseFind struct {
 	ID *int
 
+	// Standard fields
+	RowStatus *RowStatus
+
 	// Related fields
 	ProjectID  *int
 	InstanceID *int
@@ -108,6 +112,7 @@ type DatabasePatch struct {
 	ID int
 
 	// Standard fields
+	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 

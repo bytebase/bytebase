@@ -21,6 +21,7 @@ type databaseRaw struct {
 	ID int
 
 	// Standard fields
+	RowStatus api.RowStatus
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
@@ -47,6 +48,7 @@ func (raw *databaseRaw) toDatabase() *api.Database {
 		ID: raw.ID,
 
 		// Standard fields
+		RowStatus: raw.RowStatus,
 		CreatorID: raw.CreatorID,
 		CreatedTs: raw.CreatedTs,
 		UpdaterID: raw.UpdaterID,
@@ -442,6 +444,7 @@ func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.Databa
 		VALUES ($1, $2, $3, $4, $5, $6, $7, 'OK', $8, $9)
 		RETURNING
 			id,
+			row_status,
 			creator_id,
 			created_ts,
 			updater_id,
@@ -468,6 +471,7 @@ func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.Databa
 		create.SchemaVersion,
 	).Scan(
 		&databaseRaw.ID,
+		&databaseRaw.RowStatus,
 		&databaseRaw.CreatorID,
 		&databaseRaw.CreatedTs,
 		&databaseRaw.UpdaterID,
@@ -495,6 +499,9 @@ func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFi
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.RowStatus; v != nil {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -514,6 +521,7 @@ func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFi
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
+			row_status,
 			creator_id,
 			created_ts,
 			updater_id,
@@ -543,6 +551,7 @@ func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFi
 		var nullSourceBackupID sql.NullInt64
 		if err := rows.Scan(
 			&databaseRaw.ID,
+			&databaseRaw.RowStatus,
 			&databaseRaw.CreatorID,
 			&databaseRaw.CreatedTs,
 			&databaseRaw.UpdaterID,
@@ -579,6 +588,9 @@ func (*Store) patchDatabaseImpl(ctx context.Context, tx *Tx, patch *api.Database
 	if v := patch.ProjectID; v != nil {
 		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
+	}
 	if v := patch.SourceBackupID; v != nil {
 		set, args = append(set, fmt.Sprintf("source_backup_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -603,6 +615,7 @@ func (*Store) patchDatabaseImpl(ctx context.Context, tx *Tx, patch *api.Database
 		WHERE id = $%d
 		RETURNING
 			id,
+			row_status,
 			creator_id,
 			created_ts,
 			updater_id,
@@ -620,6 +633,7 @@ func (*Store) patchDatabaseImpl(ctx context.Context, tx *Tx, patch *api.Database
 		args...,
 	).Scan(
 		&databaseRaw.ID,
+		&databaseRaw.RowStatus,
 		&databaseRaw.CreatorID,
 		&databaseRaw.CreatedTs,
 		&databaseRaw.UpdaterID,

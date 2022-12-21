@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -169,12 +170,67 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 		}
 
+		// Verify before archiving the database:
+		// 1. the database has no related open-status issues.
+		// 2. the database has no related saved sheets.
+		if v := dbPatch.RowStatus; v != nil && *v == string(api.Archived) {
+			exists, err := s.hasRelatedOpenStatusIssue(ctx, database.ProjectID, database.ID)
+			if err != nil {
+				return err
+			}
+			if exists {
+				return echo.NewHTTPError(http.StatusBadRequest, "Please cancel all open status issues related to the database before archiving the database.")
+			}
+
+			normalStatus := api.Normal
+			sheetFind := &api.SheetFind{
+				RowStatus:  &normalStatus,
+				DatabaseID: &database.ID,
+			}
+			sheetList, err := s.store.FindSheet(ctx, sheetFind, currentPrincipalID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets related to the database with ID %d", database.ID))
+			}
+			if len(sheetList) > 0 {
+				return echo.NewHTTPError(http.StatusBadRequest, "Please remove all saved sheets related to the database before archiving the database.")
+			}
+		}
 		dbPatched, err := s.store.PatchDatabase(ctx, dbPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
+		}
+
+		// Create archiving database activity.
+		if v := dbPatch.RowStatus; v != nil && *v == string(api.Archived) {
+			bytes, err := json.Marshal(api.ActivityDatabaseArchivePayload{
+				InstanceID: database.InstanceID,
+				DatabaseID: database.ID,
+			})
+			if err != nil {
+				log.Warn("Failed to construct archiving database activity payload",
+					zap.Error(err),
+				)
+			} else {
+				activityCreate := &api.ActivityCreate{
+					CreatorID:   currentPrincipalID,
+					ContainerID: database.ProjectID,
+					Type:        api.ActivityDatabaseArchive,
+					Level:       api.ActivityInfo,
+					Comment:     fmt.Sprintf("Archive database %q in instance %q.", database.Name, database.Instance.Name),
+					Payload:     string(bytes),
+				}
+				_, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
+				if err != nil {
+					log.Warn("Failed to create project activity after archiving database",
+						zap.Int("database_id", dbPatched.ID),
+						zap.String("database_name", dbPatched.Name),
+						zap.Int("instance_id", database.InstanceID),
+						zap.Error(err))
+				}
+			}
 		}
 
 		// Create transferring database project activity.
@@ -714,4 +770,26 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) hasRelatedOpenStatusIssue(ctx context.Context, projectID int, databaseID int) (bool, error) {
+	issueFind := &api.IssueFind{
+		ProjectID:  &projectID,
+		StatusList: []api.IssueStatus{api.IssueOpen},
+	}
+	issueList, err := s.store.FindIssue(ctx, issueFind)
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find issues related to the database with ID: %d", databaseID)).SetInternal(err)
+	}
+	for _, issue := range issueList {
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				if task.DatabaseID != nil && *task.DatabaseID == databaseID {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
 }

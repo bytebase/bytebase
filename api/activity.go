@@ -60,6 +60,8 @@ const (
 	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
 
 	// Database related.
+	// ActivityDatabaseArchive is the type for archiving database.
+	ActivityDatabaseArchive ActivityType = "bb.database.archive"
 
 	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
 	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
@@ -206,6 +208,12 @@ type ActivitySQLEditorQueryPayload struct {
 	DatabaseName           string           `json:"databaseName"`
 	Error                  string           `json:"error"`
 	AdviceList             []advisor.Advice `json:"adviceList"`
+}
+
+// ActivityDatabaseArchivePayload is the API message payloads for archiving database.
+type ActivityDatabaseArchivePayload struct {
+	InstanceID int `json:"instanceId"`
+	DatabaseID int `json:"databaseId"`
 }
 
 // Activity is the API message for an activity.
