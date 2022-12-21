@@ -797,7 +797,7 @@ func passCheck(taskCheckRunList []*api.TaskCheckRun, checkType api.TaskCheckType
 		}
 	}
 
-	if lastRun == nil || lastRun.Status == api.TaskCheckRunFailed {
+	if lastRun == nil || lastRun.Status != api.TaskCheckRunDone {
 		return false, nil
 	}
 	checkResult := &api.TaskCheckRunResultPayload{}
