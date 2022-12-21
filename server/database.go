@@ -226,13 +226,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					Comment:     fmt.Sprintf("Archive database %q in instance %q.", database.Name, database.Instance.Name),
 					Payload:     string(bytes),
 				}
-				_, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
-				if err != nil {
+				if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 					log.Warn("Failed to create project activity after archiving database",
 						zap.Int("database_id", dbPatched.ID),
 						zap.String("database_name", dbPatched.Name),
 						zap.Int("instance_id", database.InstanceID),
-						zap.Error(err))
+						zap.Error(err),
+					)
 				}
 			}
 		}
