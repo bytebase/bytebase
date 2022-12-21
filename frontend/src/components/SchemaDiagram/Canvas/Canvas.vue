@@ -14,6 +14,19 @@
     <div class="!absolute right-2 bottom-2 flex items-center gap-x-2">
       <slot name="controls" />
 
+      <NButtonGroup size="tiny" class="bg-white rounded">
+        <NTooltip>
+          <template #trigger>
+            <NButton tooltip>
+              <Square2x2 @click="handleFitView" />
+            </NButton>
+          </template>
+          <div class="whitespace-nowrap">
+            {{ $t("schema-diagram.fit-content-with-view") }}
+          </div>
+        </NTooltip>
+      </NButtonGroup>
+
       <ZoomButton
         :min="ZOOM_RANGE.min"
         :max="ZOOM_RANGE.max"
@@ -30,21 +43,42 @@
 import { ref } from "vue";
 import { useEventListener } from "@vueuse/core";
 import normalizeWheel from "normalize-wheel";
+import { NButtonGroup, NButton } from "naive-ui";
+import Square2x2 from "~icons/heroicons-outline/squares-2x2";
 
 import { Position } from "../types";
 import { useDraggable, minmax, useSchemaDiagramContext } from "../common";
 import ZoomButton from "./ZoomButton.vue";
+import { fitView } from "./libs/fitView";
 
 const canvas = ref<Element>();
 const desktop = ref<Element>();
 
-const { zoom, position } = useSchemaDiagramContext();
+const { tableList, rectOfTable, zoom, position, events } =
+  useSchemaDiagramContext();
 
 const zoomCenter = ref<Position>({ x: 0.5, y: 0.5 });
 const ZOOM_RANGE = {
   max: 2, // 200%
   min: 0.05, // 5%
 };
+
+const handleFitView = () => {
+  if (!canvas.value) return;
+  const rects = tableList.value.map(rectOfTable);
+  const layout = fitView(
+    canvas.value,
+    rects,
+    [10, 20, 40, 20] /* paddings [T,R,B,L] */,
+    [ZOOM_RANGE.min, 1.0] /* [zoomMin, zoomMax] */
+  );
+  zoom.value = layout.zoom;
+  position.value = {
+    x: layout.rect.x,
+    y: layout.rect.y,
+  };
+};
+events.on("fit-view", handleFitView);
 
 const handleZoom = (delta: number, center: Position = { x: 0.5, y: 0.5 }) => {
   if (!canvas.value) return "";
