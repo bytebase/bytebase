@@ -10,7 +10,8 @@
 
     <DatabaseTable
       mode="ALL_TINY"
-      :bordered="true"
+      class="max-h-[55vh] overflow-y-auto"
+      table-class="border"
       :custom-click="true"
       :database-list="databaseList"
       :show-selection-column="true"

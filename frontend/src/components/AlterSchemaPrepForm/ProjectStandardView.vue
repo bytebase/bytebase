@@ -8,7 +8,7 @@
       {{ $t("alter-schema.alter-multiple-db-info") }}
     </div>
     <slot name="header"></slot>
-    <div class="space-y-4">
+    <div class="space-y-4 max-h-[55vh] overflow-y-auto">
       <div
         v-for="{
           environment,
@@ -53,7 +53,7 @@
                   : 'cursor-not-allowed'
               "
             >
-              <div class="radio text-sm">
+              <div class="radio text-sm flex justify-start">
                 <input
                   type="checkbox"
                   class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
@@ -66,12 +66,8 @@
                   @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.id, e.target.checked)"
                 />
                 <span
-                  class="font-medium"
-                  :class="
-                    database.syncStatus == 'OK'
-                      ? 'ml-2 text-main'
-                      : 'ml-6 text-control-light'
-                  "
+                  class="font-medium ml-2 text-main"
+                  :class="database.syncStatus !== 'OK' && 'opacity-40'"
                   >{{ database.name }}</span
                 >
               </div>
@@ -99,7 +95,7 @@
     <slot name="header"></slot>
     <DatabaseTable
       mode="PROJECT_SHORT"
-      :bordered="true"
+      table-class="border"
       :custom-click="true"
       :database-list="databaseList"
       @select-database="selectDatabase"
