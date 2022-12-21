@@ -1,9 +1,5 @@
 <template>
-  <slot
-    name="table"
-    :activity-list="state.activityList"
-    :loading="state.loading"
-  />
+  <slot name="table" :list="state.auditLogList" :loading="state.loading" />
 
   <div
     v-if="state.loading"
@@ -31,14 +27,14 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive, watch } from "vue";
 
-import { useIsLoggedIn, useActivityStore } from "@/store";
-import { Activity, ActivityFind } from "@/types";
+import { useIsLoggedIn, useAuditLogStore } from "@/store";
+import { ActivityFind, AuditLog } from "@/types";
 import { useSessionStorage } from "@vueuse/core";
 import { stringify } from "qs";
 
 type LocalState = {
   loading: boolean;
-  activityList: Activity[];
+  auditLogList: AuditLog[];
   paginationToken: string;
   hasMore: boolean;
 };
@@ -85,20 +81,20 @@ const props = defineProps({
 
 const state = reactive<LocalState>({
   loading: false,
-  activityList: [],
+  auditLogList: [],
   paginationToken: "",
   hasMore: true,
 });
 
 const sessionState = useSessionStorage<SessionState>(
-  `bb.page-activity-table.${props.sessionKey}`,
+  `bb.page-audit-log-table.${props.sessionKey}`,
   {
     page: 1,
     updatedTs: 0,
   }
 );
 
-const activityStore = useActivityStore();
+const auditLogStore = useAuditLogStore();
 const isLoggedIn = useIsLoggedIn();
 
 const limit = computed(() => {
@@ -126,20 +122,20 @@ const fetchData = (refresh = false) => {
     : // Always load one page if NOT the first fetch
       limit.value;
 
-  activityStore
-    .fetchPagedActivityList({
+  auditLogStore
+    .fetchPagedAuditLogList({
       ...props.activityFind,
       limit: expectedRowCount,
       token: state.paginationToken,
     })
-    .then(({ nextToken, activityList }) => {
+    .then(({ nextToken, auditLogList }) => {
       if (refresh) {
-        state.activityList = activityList;
+        state.auditLogList = auditLogList;
       } else {
-        state.activityList.push(...activityList);
+        state.auditLogList.push(...auditLogList);
       }
 
-      if (activityList.length < expectedRowCount) {
+      if (auditLogList.length < expectedRowCount) {
         state.hasMore = false;
       } else if (!isFirstFetch) {
         // If we didn't reach the end, memorize we've clicked the "load more" button.
