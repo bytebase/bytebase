@@ -13,7 +13,11 @@ import {
   ProjectId,
   ResourceObject,
   UNKNOWN_ID,
+  isPagedResponse,
+  ResourceIdentifier,
+  empty,
 } from "@/types";
+import { convertEntityList } from "./utils";
 import { useAuthStore } from "./auth";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useIssueStore } from "./issue";
@@ -38,6 +42,27 @@ function convert(
     id: parseInt(activity.id),
     payload,
   };
+}
+
+function getActivityFromIncludedList(
+  data:
+    | ResourceIdentifier<ResourceObject>
+    | ResourceIdentifier<ResourceObject>[]
+    | undefined,
+  includedList: ResourceObject[]
+): Activity {
+  if (data == null) {
+    return empty("ACTIVITY");
+  }
+  for (const item of includedList || []) {
+    if (item.type !== "activity") {
+      continue;
+    }
+    if (item.id == (data as ResourceIdentifier).id) {
+      return convert(item, includedList);
+    }
+  }
+  return empty("ACTIVITY");
 }
 
 export const useActivityStore = defineStore("activity", {
@@ -87,6 +112,33 @@ export const useActivityStore = defineStore("activity", {
       this.setActivityListForUser({ userId, activityList });
       return activityList;
     },
+    async fetchPagedActivityList(params: {
+      typePrefix: string | string[];
+      container?: number | string;
+      order: "ASC" | "DESC";
+      user?: number;
+      limit?: number;
+      level?: string | string[];
+      token?: string;
+    }) {
+      const url = `/api/activity?${stringify(params, {
+        arrayFormat: "repeat",
+      })}`;
+      const responseData = (await axios.get(url)).data;
+      const activityList = convertEntityList(
+        responseData,
+        "activityList",
+        convert,
+        getActivityFromIncludedList
+      );
+      const nextToken = isPagedResponse(responseData, "activityList")
+        ? responseData.data.attributes.nextToken
+        : "";
+      return {
+        nextToken,
+        activityList,
+      };
+    },
     async fetchActivityList(params: {
       typePrefix: string | string[];
       container?: number | string;
@@ -94,17 +146,10 @@ export const useActivityStore = defineStore("activity", {
       user?: number;
       limit?: number;
       level?: string | string[];
+      token?: string;
     }) {
-      const url = `/api/activity?${stringify(params, {
-        arrayFormat: "repeat",
-      })}`;
-      const response = (await axios.get(url)).data;
-      const activityList: Activity[] = response.data.map(
-        (activity: ResourceObject) => {
-          return convert(activity, response.included);
-        }
-      );
-      return activityList;
+      const result = await this.fetchPagedActivityList(params);
+      return result.activityList;
     },
     async fetchActivityListForIssue(issue: Issue) {
       const activityList = await this.fetchActivityList({
