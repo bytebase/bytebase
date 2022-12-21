@@ -25,9 +25,6 @@ import { useProjectStore } from "./project";
 import { useTabStore } from "./tab";
 import { getDefaultSheetPayloadWithSource, isSheetWritable } from "@/utils";
 
-// Incomplete sheet statement size(byte). Same as backend.
-const INCOMPLETE_SHEET_SIZE = 10240;
-
 function convertSheetPayload(
   resourceObj: ResourceObject,
   includedList: ResourceObject[]
@@ -265,9 +262,7 @@ export const useSheetStore = defineStore("sheet", {
       if (
         storedSheet &&
         storedSheet.id !== UNKNOWN_ID &&
-        // TODO(steven): needs a status field to show whether it is complete.
-        // if sheet size is equal to INCOMPLETE_SHEET_SIZE, we still think it's incomplete.
-        storedSheet.size !== INCOMPLETE_SHEET_SIZE
+        storedSheet.size === storedSheet.statement.length
       ) {
         return storedSheet;
       }
