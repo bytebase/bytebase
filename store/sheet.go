@@ -39,6 +39,7 @@ type sheetRaw struct {
 	Source     api.SheetSource
 	Type       api.SheetType
 	Payload    string
+	Size       int64
 }
 
 // toSheet creates an instance of Sheet based on the sheetRaw.
@@ -68,6 +69,7 @@ func (raw *sheetRaw) toSheet() *api.Sheet {
 		Source:     raw.Source,
 		Type:       raw.Type,
 		Payload:    raw.Payload,
+		Size:       raw.Size,
 	}
 }
 
@@ -334,7 +336,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, 10240), visibility, source, type, payload, octet_length(statement)
 	`
 	var sheetRaw sheetRaw
 	databaseID := sql.NullInt32{}
@@ -364,6 +366,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 		&sheetRaw.Source,
 		&sheetRaw.Type,
 		&sheetRaw.Payload,
+		&sheetRaw.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -407,7 +410,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, 10240), visibility, source, type, payload, octet_length(statement)
 	`, len(args)),
 		args...,
 	).Scan(
@@ -425,6 +428,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 		&sheetRaw.Source,
 		&sheetRaw.Type,
 		&sheetRaw.Payload,
+		&sheetRaw.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("sheet ID not found: %d", patch.ID)}
@@ -478,8 +482,12 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
+	statementField := "LEFT(statement, 10240)"
+	if find.LoadFull {
+		statementField = "statement"
+	}
 
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			id,
 			row_status,
@@ -490,13 +498,14 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 			project_id,
 			database_id,
 			name,
-			statement,
+			%s,
 			visibility,
 			source,
 			type,
-			payload
+			payload,
+			octet_length(statement)
 		FROM sheet
-		WHERE `+strings.Join(where, " AND "),
+		WHERE %s`, statementField, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -523,6 +532,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 			&sheetRaw.Source,
 			&sheetRaw.Type,
 			&sheetRaw.Payload,
+			&sheetRaw.Size,
 		); err != nil {
 			return nil, FormatError(err)
 		}
