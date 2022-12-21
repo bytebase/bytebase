@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-import { computed, unref, watch } from "vue";
+import { computed, unref, watch, markRaw } from "vue";
 import {
   Backup,
   Database,
@@ -140,10 +140,10 @@ function convert(
     }
   }
 
-  return {
+  return markRaw({
     ...(databaseWPartial as Omit<Database, "dataSourceList">),
     dataSourceList,
-  };
+  });
 }
 
 const databaseSorter = (a: Database, b: Database): number => {
