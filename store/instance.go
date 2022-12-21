@@ -669,7 +669,7 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 	return instanceRawList, nil
 }
 
-// patchInstanceImpl updates a instance by ID. Returns the new state of the instance after update.
+// patchInstanceImpl updates an instance by ID. Returns the new state of the instance after update.
 func patchInstanceImpl(ctx context.Context, tx *Tx, patch *InstancePatch) (*instanceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
