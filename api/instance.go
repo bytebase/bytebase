@@ -112,7 +112,7 @@ type InstancePatch struct {
 	AuthSource string `json:"authSource" jsonapi:"attr,authSource"`
 }
 
-// DataSourceFromInstanceWithType gets a typed data source from a instance.
+// DataSourceFromInstanceWithType gets a typed data source from an instance.
 func DataSourceFromInstanceWithType(instance *Instance, dataSourceType DataSourceType) *DataSource {
 	for _, dataSource := range instance.DataSourceList {
 		if dataSource.Type == dataSourceType {
