@@ -1736,5 +1736,8 @@
         "keep-going-with-bytebase": "Keep going with Bytebase!"
       }
     }
+  },
+  "schema-diagram": {
+    "self": "Schema Diagram"
   }
 }
