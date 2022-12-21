@@ -44,7 +44,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (te
 
 	statement := payload.Statement
 	if payload.SheetID > 0 {
-		sheet, err := exec.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID}, api.SystemBotID)
+		sheet, err := exec.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID, LoadFull: true}, api.SystemBotID)
 		if err != nil {
 			return true, nil, err
 		}
