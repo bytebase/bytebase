@@ -162,6 +162,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		sheetFind := &api.SheetFind{
 			ID: &id,
+			// Get the full statement by default when fetching sheet with id.
+			LoadFull: true,
 		}
 		sheet, err := s.store.GetSheet(ctx, sheetFind, currentPrincipalID)
 		if err != nil {
