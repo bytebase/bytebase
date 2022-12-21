@@ -1,5 +1,5 @@
 import { computed } from "vue";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isUndefined } from "lodash-es";
 import { useRoute } from "vue-router";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
@@ -181,7 +181,7 @@ export const useCommonLogic = () => {
     }
   };
 
-  const updateSheetId = (sheetId: SheetId) => {
+  const updateSheetId = (sheetId: SheetId | undefined) => {
     if (!create.value) {
       return;
     }
@@ -204,6 +204,10 @@ export const useCommonLogic = () => {
         sheetId: taskCreate.sheetId,
         earliestAllowedTs: taskCreate.earliestAllowedTs,
       };
+      // If task already has sheet id, we do not need to save statement.
+      if (!isUndefined(taskCreate.sheetId)) {
+        migrationDetail.statement = "";
+      }
       return migrationDetail;
     });
 
