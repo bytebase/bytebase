@@ -265,7 +265,7 @@ export const useSheetStore = defineStore("sheet", {
       if (
         storedSheet &&
         storedSheet.id !== UNKNOWN_ID &&
-        storedSheet.size === INCOMPLETE_SHEET_SIZE
+        storedSheet.size !== INCOMPLETE_SHEET_SIZE
       ) {
         return storedSheet;
       }
