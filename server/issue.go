@@ -942,7 +942,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
 		}
-		// TODO(steven): only clear statement for exsited sheet.
+		// TODO(steven): only clear statement for existed sheet.
 		if d.SheetID != 0 {
 			payload.Statement = ""
 		}
