@@ -27,5 +27,6 @@ export type SchemaDiagramContext = {
   events: Emittery<{
     render: undefined;
     layout: undefined;
+    "fit-view": undefined;
   }>;
 };

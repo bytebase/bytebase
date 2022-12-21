@@ -1738,6 +1738,7 @@
     }
   },
   "schema-diagram": {
-    "self": "Schema Diagram"
+    "self": "Schema Diagram",
+    "fit-content-with-view": "Fit content within view"
   }
 }
