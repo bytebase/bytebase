@@ -75,7 +75,20 @@ func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool
 		line   int
 		tp     string
 	}
+
 	var columnList []duplicateColumn
+	appendDuplicateColumnItem := func(keys []*ast.IndexPartSpecification, tp, table, index string, line int) {
+		if column, duplicate := hasDuplicateColumn(keys); duplicate {
+			columnList = append(columnList, duplicateColumn{
+				tp:     tp,
+				table:  table,
+				index:  index,
+				column: column,
+				line:   line,
+			})
+		}
+	}
+
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
@@ -85,27 +98,13 @@ func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool
 				ast.ConstraintUniqIndex,
 				ast.ConstraintIndex,
 				ast.ConstraintForeignKey:
-				if column, duplicate := hasDuplicateColumn(constraint.Keys); duplicate {
-					columnList = append(columnList, duplicateColumn{
-						tp:     indexTypeString(constraint.Tp),
-						table:  node.Table.Name.O,
-						index:  constraint.Name,
-						column: column,
-						line:   constraint.OriginTextPosition(),
-					})
-				}
+				appendDuplicateColumnItem(constraint.Keys, indexTypeString(constraint.Tp),
+					node.Table.Name.O, constraint.Name, constraint.OriginTextPosition())
 			}
 		}
 	case *ast.CreateIndexStmt:
-		if column, duplicate := hasDuplicateColumn(node.IndexPartSpecifications); duplicate {
-			columnList = append(columnList, duplicateColumn{
-				tp:     "INDEX",
-				table:  node.Table.Name.O,
-				index:  node.IndexName,
-				column: column,
-				line:   checker.line,
-			})
-		}
+		appendDuplicateColumnItem(node.IndexPartSpecifications, "INDEX",
+			node.Table.Name.O, node.IndexName, checker.line)
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTableAddConstraint {
@@ -115,15 +114,8 @@ func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool
 					ast.ConstraintUniqIndex,
 					ast.ConstraintIndex,
 					ast.ConstraintForeignKey:
-					if column, duplicate := hasDuplicateColumn(spec.Constraint.Keys); duplicate {
-						columnList = append(columnList, duplicateColumn{
-							tp:     indexTypeString(spec.Constraint.Tp),
-							table:  node.Table.Name.O,
-							index:  spec.Constraint.Name,
-							column: column,
-							line:   checker.line,
-						})
-					}
+					appendDuplicateColumnItem(spec.Constraint.Keys, indexTypeString(spec.Constraint.Tp),
+						node.Table.Name.O, spec.Constraint.Name, checker.line)
 				}
 			}
 		}

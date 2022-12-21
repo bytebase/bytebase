@@ -84,46 +84,30 @@ type insertRowLimitChecker struct {
 // Enter implements the ast.Visitor interface.
 func (checker *insertRowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.InsertStmt); ok {
-		if node.Select == nil {
-			if len(node.Lists) > checker.maxRow {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
-					Status:  checker.level,
-					Code:    advisor.InsertTooManyRows,
-					Title:   checker.title,
-					Content: fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, len(node.Lists), checker.maxRow),
-					Line:    checker.line,
-				})
+		rowCount, advisorCode, err := checker.getRowCount(node)
+		if err != nil {
+			content := fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error())
+			if advisorCode == advisor.Internal {
+				content = fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error())
 			}
-		} else if checker.driver != nil {
-			res, err := query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
-			if err != nil {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
-					Status:  checker.level,
-					Code:    advisor.InsertTooManyRows,
-					Title:   checker.title,
-					Content: fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
-					Line:    checker.line,
-				})
-			} else {
-				rowCount, err := getInsertRows(res)
-				if err != nil {
-					checker.adviceList = append(checker.adviceList, advisor.Advice{
-						Status:  checker.level,
-						Code:    advisor.Internal,
-						Title:   checker.title,
-						Content: fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
-						Line:    checker.line,
-					})
-				} else if rowCount > int64(checker.maxRow) {
-					checker.adviceList = append(checker.adviceList, advisor.Advice{
-						Status:  checker.level,
-						Code:    advisor.InsertTooManyRows,
-						Title:   checker.title,
-						Content: fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, rowCount, checker.maxRow),
-						Line:    checker.line,
-					})
-				}
-			}
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisorCode,
+				Title:   checker.title,
+				Content: content,
+				Line:    checker.line,
+			})
+			return in, false
+		}
+
+		if rowCount > int64(checker.maxRow) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.InsertTooManyRows,
+				Title:   checker.title,
+				Content: fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, rowCount, checker.maxRow),
+				Line:    checker.line,
+			})
 		}
 	}
 
@@ -133,6 +117,25 @@ func (checker *insertRowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 // Leave implements the ast.Visitor interface.
 func (*insertRowLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
+}
+
+func (checker *insertRowLimitChecker) getRowCount(node *ast.InsertStmt) (int64, advisor.Code, error) {
+	if node.Select == nil {
+		return int64(len(node.Lists)), advisor.Ok, nil
+	} else if checker.driver != nil {
+		res, err := query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
+		if err != nil {
+			return 0, advisor.InsertTooManyRows, err
+		}
+
+		rowCount, err := getInsertRows(res)
+		if err != nil {
+			return 0, advisor.Internal, err
+		}
+		return rowCount, advisor.InsertTooManyRows, nil
+	}
+
+	return 0, advisor.Ok, nil
 }
 
 func getInsertRows(res []interface{}) (int64, error) {
