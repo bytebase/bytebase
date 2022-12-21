@@ -1,5 +1,5 @@
 <template>
-  <div class="grid auto-rows-auto w-full h-full overflow-y-auto">
+  <div class="flex flex-col w-full h-full overflow-y-auto">
     <div
       class="pt-3 pl-1 w-full flex justify-start items-center border-b border-b-gray-300"
     >
