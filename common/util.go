@@ -13,6 +13,9 @@ import (
 	"time"
 )
 
+// MaxSheetSize is the maximum size of a sheet for displaying.
+const MaxSheetSize = 10240
+
 // FindString returns the search index of sorted strings.
 func FindString(stringList []string, search string) int {
 	sort.Strings(stringList)
@@ -117,8 +120,8 @@ func GetBinlogRelativeDir(binlogDir string) string {
 	return filepath.Join("backup", "instance", instanceID)
 }
 
-// truncateString truncates the string to have a maximum length of `limit` characters.
-func truncateString(str string, limit int) (string, bool) {
+// TruncateString truncates the string to have a maximum length of `limit` characters.
+func TruncateString(str string, limit int) (string, bool) {
 	chars := 0
 	// The string may contain unicode characters, so we iterate here.
 	for i := range str {
@@ -133,7 +136,7 @@ func truncateString(str string, limit int) (string, bool) {
 // TruncateStringWithDescription tries to truncate the string and append "... (view details in Bytebase)" if truncated.
 func TruncateStringWithDescription(str string) string {
 	const limit = 450
-	if truncatedStr, truncated := truncateString(str, limit); truncated {
+	if truncatedStr, truncated := TruncateString(str, limit); truncated {
 		return fmt.Sprintf("%s... (view details in Bytebase)", truncatedStr)
 	}
 	return str
