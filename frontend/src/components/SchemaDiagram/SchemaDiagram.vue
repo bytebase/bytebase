@@ -97,6 +97,11 @@ provideSchemaDiagramContext({
   events,
 });
 
-// autoLayout at the first time the diagram is mounted.
-onMounted(layout);
+// autoLayout and fit view at the first time the diagram is mounted.
+onMounted(() => {
+  layout();
+  nextTick(() => {
+    events.emit("fit-view");
+  });
+});
 </script>
