@@ -259,11 +259,7 @@ export const useSheetStore = defineStore("sheet", {
     },
     async getOrFetchSheetById(sheetId: SheetId) {
       const storedSheet = this.sheetById.get(sheetId);
-      if (
-        storedSheet &&
-        storedSheet.id !== UNKNOWN_ID &&
-        storedSheet.size === storedSheet.statement.length
-      ) {
+      if (storedSheet && storedSheet.id !== UNKNOWN_ID) {
         return storedSheet;
       }
       return this.fetchSheetById(sheetId);
