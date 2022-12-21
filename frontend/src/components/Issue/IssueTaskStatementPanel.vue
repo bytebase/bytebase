@@ -408,6 +408,27 @@ watch(statement, (cur) => {
   state.editStatement = cur;
 });
 
+watch(
+  [selectedTask],
+  async () => {
+    if (isTaskHasSheetId.value) {
+      const task = selectedTask.value;
+      const sheetId = create.value
+        ? (task as TaskCreate).sheetId
+        : sheetIdOfTask(task as Task);
+      if (sheetId) {
+        state.editStatement = (
+          await sheetStore.getOrFetchSheetById(sheetId)
+        ).statement;
+      }
+    }
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
+
 const beginEdit = () => {
   state.editStatement = statement.value;
   state.editing = true;
@@ -514,10 +535,12 @@ const handleUploadLocalFile = async (event: Event) => {
         // nothing to do
       },
       onPositiveClick: () => {
+        updateSheetId(undefined);
         updateStatement(statement);
       },
     });
   } else {
+    updateSheetId(undefined);
     updateStatement(statement);
   }
 };
@@ -544,7 +567,6 @@ const handleUploadLocalFileAsSheet = async (event: Event) => {
     });
 
     updateSheetId(sheet.id);
-    updateStatement(sheet.statement);
     state.isUploadingFile = false;
     if (selectedTask.value) updateEditorHeight();
   };
