@@ -1,12 +1,13 @@
-import { watchEffect } from "vue";
-import { defineStore, storeToRefs } from "pinia";
+import { defineStore } from "pinia";
 import axios from "axios";
+import { stringify } from "qs";
 import type {
   AuditLogState,
   ResourceObject,
   ResourceIdentifier,
+  ActivityFind,
 } from "@/types";
-import { AuditActivityType, empty, isPagedResponse } from "@/types";
+import { empty, isPagedResponse } from "@/types";
 import type { AuditLog } from "@/types/auditLog";
 import { getPrincipalFromIncludedList } from "./principal";
 import { convertEntityList } from "./utils";
@@ -45,12 +46,6 @@ function getAuditLogFromIncludedList(
   return empty("AUDIT_LOG");
 }
 
-const typePrefixQuery = `${(
-  Object.keys(AuditActivityType) as Array<keyof typeof AuditActivityType>
-)
-  .map((key) => `typePrefix=${AuditActivityType[key]}`)
-  .join("&")}`;
-
 export const useAuditLogStore = defineStore("auditLog", {
   state: (): AuditLogState => ({
     auditLogList: [],
@@ -59,8 +54,10 @@ export const useAuditLogStore = defineStore("auditLog", {
     setAuditLogList(auditLogList: AuditLog[]) {
       this.auditLogList = auditLogList;
     },
-    async fetchPagedAuditLogList() {
-      const url = `/api/activity?${typePrefixQuery}`;
+    async fetchPagedAuditLogList(params: ActivityFind) {
+      const url = `/api/activity?${stringify(params, {
+        arrayFormat: "repeat",
+      })}`;
       const responseData = (await axios.get(url)).data;
       const auditLogList = convertEntityList(
         responseData,
@@ -76,17 +73,10 @@ export const useAuditLogStore = defineStore("auditLog", {
         auditLogList,
       };
     },
-    async fetchAuditLogList() {
-      const res = await this.fetchPagedAuditLogList();
+    async fetchAuditLogList(params: ActivityFind) {
+      const res = await this.fetchPagedAuditLogList(params);
       this.setAuditLogList(res.auditLogList);
       return res.auditLogList;
     },
   },
 });
-
-export const useAuditLogList = () => {
-  const store = useAuditLogStore();
-  watchEffect(async () => await store.fetchAuditLogList());
-
-  return storeToRefs(store).auditLogList;
-};
