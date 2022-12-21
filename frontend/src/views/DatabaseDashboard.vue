@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <DatabaseTable :bordered="false" :database-list="filteredList" />
+    <DatabaseTable pagination-class="mb-4" :database-list="filteredList" />
 
     <div
       v-if="state.loading"
