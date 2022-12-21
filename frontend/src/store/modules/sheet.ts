@@ -125,6 +125,11 @@ export const useSheetStore = defineStore("sheet", {
         return true;
       }
 
+      // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.
+      if (currentSheet.statement.length !== currentSheet.size) {
+        return true;
+      }
+
       // The tab is not saved yet, it is editable.
       if (currentSheet.id === UNKNOWN_ID) {
         return false;
