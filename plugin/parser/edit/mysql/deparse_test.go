@@ -96,12 +96,11 @@ func TestDeparseCreateTable(t *testing.T) {
 						Engine: "InnoDB",
 						AddColumnList: []*api.AddColumnContext{
 							{
-								Name:       "id",
-								Type:       "int",
-								Comment:    "ID",
-								HasDefault: true,
-								Default:    defaultValue,
-								Nullable:   true,
+								Name:     "id",
+								Type:     "int",
+								Comment:  "ID",
+								Default:  &defaultValue,
+								Nullable: true,
 							},
 							{
 								Name:    "name",

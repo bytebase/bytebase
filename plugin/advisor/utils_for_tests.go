@@ -333,6 +333,11 @@ func (*MockDriver) FindRole(_ context.Context, _ string) (*v1pb.DatabaseRole, er
 	return nil, nil
 }
 
+// ListRole lists the role.
+func (*MockDriver) ListRole(_ context.Context) ([]*v1pb.DatabaseRole, error) {
+	return nil, nil
+}
+
 // DeleteRole deletes the role by name.
 func (*MockDriver) DeleteRole(_ context.Context, _ string) error {
 	return nil

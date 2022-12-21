@@ -133,7 +133,6 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 				if _, exist := checker.allowlist[charset]; charset != "" && !exist {
 					code = advisor.DisabledCharset
 					disabledCharset = charset
-					break
 				}
 			}
 		}

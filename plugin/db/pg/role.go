@@ -37,6 +37,10 @@ func (a RoleAttribute) ToString() string {
 	return string(a)
 }
 
+type roleFind struct {
+	Name *string
+}
+
 // CreateRole will create the PG role.
 func (driver *Driver) CreateRole(ctx context.Context, upsert *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
@@ -49,16 +53,21 @@ func (driver *Driver) CreateRole(ctx context.Context, upsert *v1pb.DatabaseRoleU
 		return nil, err
 	}
 
-	role, err := getRoleImpl(ctx, txn, upsert.Name)
+	roles, err := findRoleImpl(ctx, txn, &roleFind{
+		Name: &upsert.Name,
+	})
 	if err != nil {
 		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", upsert.Name))
 	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
 
-	return role, nil
+	return roles[0], nil
 }
 
 // UpdateRole will alter the PG role.
@@ -73,16 +82,21 @@ func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *v
 		return nil, err
 	}
 
-	role, err := getRoleImpl(ctx, txn, upsert.Name)
+	roles, err := findRoleImpl(ctx, txn, &roleFind{
+		Name: &upsert.Name,
+	})
 	if err != nil {
 		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", upsert.Name))
 	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
 
-	return role, nil
+	return roles[0], nil
 }
 
 // FindRole will find the PG role by name.
@@ -93,7 +107,32 @@ func (driver *Driver) FindRole(ctx context.Context, roleName string) (*v1pb.Data
 	}
 	defer txn.Rollback()
 
-	role, err := getRoleImpl(ctx, txn, roleName)
+	roles, err := findRoleImpl(ctx, txn, &roleFind{
+		Name: &roleName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", roleName))
+	}
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	return roles[0], nil
+}
+
+// ListRole lists the role.
+func (driver *Driver) ListRole(ctx context.Context) ([]*v1pb.DatabaseRole, error) {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	roles, err := findRoleImpl(ctx, txn, &roleFind{})
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +141,7 @@ func (driver *Driver) FindRole(ctx context.Context, roleName string) (*v1pb.Data
 		return nil, err
 	}
 
-	return role, nil
+	return roles, nil
 }
 
 // DeleteRole will drop the PG role by name.
@@ -115,7 +154,15 @@ func (driver *Driver) DeleteRole(ctx context.Context, roleName string) error {
 	return nil
 }
 
-func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*v1pb.DatabaseRole, error) {
+func findRoleImpl(ctx context.Context, txn *sql.Tx, find *roleFind) ([]*v1pb.DatabaseRole, error) {
+	where := []string{}
+	if v := find.Name; v != nil {
+		where = append(where, fmt.Sprintf("r.rolname = '%s'", *v))
+	}
+	if len(where) == 0 {
+		where = append(where, "r.rolname !~ '^pg_'")
+	}
+
 	statement := fmt.Sprintf(`
 		SELECT
 			r.rolname,
@@ -129,37 +176,46 @@ func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*v1pb.Datab
 			r.rolvaliduntil,
 			r.rolconnlimit
 		FROM pg_catalog.pg_roles r
-		WHERE r.rolname = '%s';
-	`, roleName)
+		WHERE %s;
+	`, strings.Join(where, " AND "))
 
-	role := &v1pb.DatabaseRole{
-		Name:      roleName,
-		Attribute: &v1pb.DatabaseRoleAttribute{},
-	}
-
-	inherit := false
-
-	if err := txn.QueryRowContext(ctx, statement).Scan(
-		&role.Name,
-		&role.Attribute.SuperUser,
-		&inherit,
-		&role.Attribute.CreateRole,
-		&role.Attribute.CreateDb,
-		&role.Attribute.CanLogin,
-		&role.Attribute.Replication,
-		&role.Attribute.BypassRls,
-		&role.ValidUntil,
-		&role.ConnectionLimit,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.Errorf(common.NotFound, fmt.Sprintf("query %q returned empty row", statement))
-		}
+	rows, err := txn.QueryContext(ctx, statement)
+	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, statement)
 	}
+	defer rows.Close()
 
-	role.Attribute.NoInherit = !inherit
+	var roleList []*v1pb.DatabaseRole
 
-	return role, nil
+	for rows.Next() {
+		inherit := false
+		role := &v1pb.DatabaseRole{
+			Attribute: &v1pb.DatabaseRoleAttribute{},
+		}
+
+		if err := rows.Scan(
+			&role.Name,
+			&role.Attribute.SuperUser,
+			&inherit,
+			&role.Attribute.CreateRole,
+			&role.Attribute.CreateDb,
+			&role.Attribute.CanLogin,
+			&role.Attribute.Replication,
+			&role.Attribute.BypassRls,
+			&role.ValidUntil,
+			&role.ConnectionLimit,
+		); err != nil {
+			return nil, util.FormatErrorWithQuery(err, statement)
+		}
+
+		role.Attribute.NoInherit = !inherit
+		roleList = append(roleList, role)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return roleList, nil
 }
 
 func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *v1pb.DatabaseRoleUpsert) error {

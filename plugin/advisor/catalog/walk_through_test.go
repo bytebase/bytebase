@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/plugin/advisor/db"
@@ -212,8 +213,7 @@ func (t *TableState) convertToColumnMetadataList() []*storepb.ColumnMetadata {
 		}
 
 		if column.defaultValue != nil {
-			columnMeta.HasDefault = true
-			columnMeta.Default = *column.defaultValue
+			columnMeta.Default = &wrapperspb.StringValue{Value: *column.defaultValue}
 		}
 
 		if column.characterSet != nil {

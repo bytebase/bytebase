@@ -37,7 +37,6 @@ export const transformColumnDataToColumn = (
     type: columnMetadata.type,
     nullable: columnMetadata.nullable,
     comment: columnMetadata.comment,
-    hasDefault: columnMetadata.hasDefault,
     default: columnMetadata.default,
     status: "normal",
   };
@@ -51,8 +50,7 @@ export const transformColumnToAddColumnContext = (
     type: defaultTo(column.type, ""),
     comment: defaultTo(column.comment, ""),
     nullable: defaultTo(column.nullable, false),
-    hasDefault: defaultTo(column.hasDefault, false),
-    default: defaultTo(column.default, ""),
+    default: defaultTo(column.default, undefined),
     characterSet: "",
     collation: "",
   };
@@ -68,8 +66,7 @@ export const transformColumnToChangeColumnContext = (
     type: defaultTo(column.type, ""),
     comment: defaultTo(column.comment, ""),
     nullable: defaultTo(column.nullable, false),
-    hasDefault: defaultTo(column.hasDefault, false),
-    default: defaultTo(column.default, ""),
+    default: defaultTo(column.default, undefined),
     characterSet: "",
     collation: "",
   };

@@ -507,6 +507,8 @@ type Driver interface {
 	UpdateRole(ctx context.Context, roleName string, upsert *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error)
 	// FindRole finds the role by name.
 	FindRole(ctx context.Context, roleName string) (*v1pb.DatabaseRole, error)
+	// ListRole lists the role.
+	ListRole(ctx context.Context) ([]*v1pb.DatabaseRole, error)
 	// DeleteRole deletes the role by name.
 	DeleteRole(ctx context.Context, roleName string) error
 

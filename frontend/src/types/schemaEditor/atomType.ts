@@ -12,8 +12,7 @@ export interface Column {
   type: string;
   nullable: boolean;
   comment: string;
-  hasDefault: boolean;
-  default: string;
+  default?: string;
   status: TableOrColumnStatus;
 }
 
@@ -61,7 +60,6 @@ export const convertColumnMetadataToColumn = (
     type: columnMetadata.type,
     nullable: columnMetadata.nullable,
     comment: columnMetadata.comment,
-    hasDefault: columnMetadata.hasDefault,
     default: columnMetadata.default,
     status: "normal",
   };

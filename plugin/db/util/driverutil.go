@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +24,9 @@ import (
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
+	if regexp.MustCompile("does not exist").MatchString(err.Error()) {
+		return common.Wrapf(err, common.NotFound, "failed to execute query %q", query)
+	}
 	return common.Wrapf(err, common.DbExecutionError, "failed to execute query %q", query)
 }
 

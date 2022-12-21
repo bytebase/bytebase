@@ -1,5 +1,5 @@
 <template>
-  <div class="grid auto-rows-auto w-full h-full overflow-y-auto">
+  <div class="flex flex-col w-full h-full overflow-y-auto">
     <div
       class="pt-3 pl-1 w-full flex justify-start items-center border-b border-b-gray-300"
     >
@@ -116,7 +116,7 @@
               <input
                 v-model="column.default"
                 :disabled="disableAlterColumn(column)"
-                :placeholder="column.hasDefault === false ? 'NULL' : ''"
+                :placeholder="column.default === undefined ? 'NULL' : ''"
                 class="column-field-input !pr-8"
                 type="text"
               />
@@ -390,8 +390,7 @@ const handleColumnDefaultFieldChange = (
   defaultString: string
 ) => {
   if (defaultString === "NULL") {
-    column.hasDefault = false;
-    column.default = "";
+    column.default = undefined;
   }
 };
 
