@@ -284,7 +284,8 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statement); err != nil {
+	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
+	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
 		return -1, err
 	}
 
