@@ -12,7 +12,7 @@
             <TabsContainer />
             <div
               :key="currentTab.id"
-              class="w-full h-auto relative overflow-y-auto"
+              class="w-full h-full relative overflow-y-auto"
             >
               <DatabaseEditor
                 v-if="currentTab.type === SchemaEditorTabType.TabForDatabase"
