@@ -322,7 +322,7 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 		create.Payload = "{}"
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -336,8 +336,8 @@ func createSheetImpl(ctx context.Context, tx *Tx, create *api.SheetCreate) (*she
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, 10240), visibility, source, type, payload, octet_length(statement)
-	`
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, payload, octet_length(statement)
+	`, common.MaxSheetSize)
 	var sheetRaw sheetRaw
 	databaseID := sql.NullInt32{}
 	if err := tx.QueryRowContext(ctx, query,
@@ -410,8 +410,8 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *api.SheetPatch) (*sheetR
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, 10240), visibility, source, type, payload, octet_length(statement)
-	`, len(args)),
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, payload, octet_length(statement)
+	`, len(args), common.MaxSheetSize),
 		args...,
 	).Scan(
 		&sheetRaw.ID,
@@ -482,7 +482,7 @@ func findSheetImpl(ctx context.Context, tx *Tx, find *api.SheetFind) ([]*sheetRa
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
-	statementField := "LEFT(statement, 10240)"
+	statementField := fmt.Sprintf("LEFT(statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
 		statementField = "statement"
 	}
