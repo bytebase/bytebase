@@ -754,6 +754,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		if detail.MigrationType != db.Baseline && (detail.Statement == "" && detail.SheetID == 0) {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "require sql statement or sheet ID to create an issue")
 		}
+		if detail.Statement != "" && detail.SheetID > 0 {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot set both statement and sheet ID to create an issue")
+		}
 		// TODO(d): validate sheet ID.
 		if detail.DatabaseID > 0 {
 			databaseIDCount++
@@ -942,10 +945,6 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
 		}
-		// TODO(steven): only clear statement for existed sheet.
-		if d.SheetID != 0 {
-			payload.Statement = ""
-		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
 			return api.TaskCreate{}, echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database schema update payload").SetInternal(err)
@@ -959,9 +958,6 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 			SheetID:       d.SheetID,
 			SchemaVersion: schemaVersion,
 			VCSPushEvent:  vcsPushEvent,
-		}
-		if d.SheetID != 0 {
-			payload.Statement = ""
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
