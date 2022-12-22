@@ -215,7 +215,8 @@
     "restart": "重启",
     "want-help": "加入用户群",
     "operation": "操作",
-    "rollback": "回滚"
+    "rollback": "回滚",
+    "total": "共计"
   },
   "error-page": {
     "go-back-home": "回到主页"
