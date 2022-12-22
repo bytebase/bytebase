@@ -85,7 +85,10 @@ const typePrefixList = (
 ).map((key) => AuditActivityType[key]);
 
 const handleViewDetail = (log: any) => {
-  state.modalContent = log;
+  // filter properties we don't need
+  state.modalContent = Object.fromEntries(
+    Object.entries(log).filter(([key, _]) => key in logKeyMap)
+  );
   state.showModal = true;
   dialog.value!.open();
 };
