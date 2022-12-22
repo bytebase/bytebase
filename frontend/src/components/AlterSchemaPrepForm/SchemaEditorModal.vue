@@ -394,7 +394,7 @@ const handlePreviewIssue = async () => {
   if (isTenantProject && props.databaseIdList.length > 1) {
     query.mode = "tenant";
   }
-  if (props.alterType !== "TENANT") {
+  if (query.mode !== "tenant") {
     // If we are not using tenant deployment config pipeline
     // we need to pass the databaseIdList explicitly.
     query.databaseList = props.databaseIdList.join(",");
