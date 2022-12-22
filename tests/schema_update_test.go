@@ -2082,6 +2082,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	})
 	a.NoError(err)
 
+	// Skip the task.
 	a.Equal(1, len(issue.Pipeline.StageList))
 	a.Equal(1, len(issue.Pipeline.StageList[0].TaskList))
 	task := issue.Pipeline.StageList[0].TaskList[0]
@@ -2092,11 +2093,13 @@ func TestMarkTaskAsDone(t *testing.T) {
 	}, issue.PipelineID, task.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, task.Status)
+
 	var payload api.TaskDatabaseSchemaUpdatePayload
 	err = json.Unmarshal([]byte(task.Payload), &payload)
 	a.NoError(err)
 	a.Equal(true, payload.Skipped)
 	a.Equal(skippedReason, payload.SkippedReason)
+
 	status, err := ctl.waitIssuePipelineWithNoApproval(issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
