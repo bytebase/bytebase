@@ -342,4 +342,8 @@ type TaskStatusPatch struct {
 	Code    *common.Code
 	Comment *string `jsonapi:"attr,comment"`
 	Result  *string
+	// Skipped is set to true if frontend sets the Status to DONE.
+	// And SkippedReason is Comment.
+	Skipped       *bool
+	SkippedReason *string
 }
