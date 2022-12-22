@@ -149,7 +149,7 @@ type MigrationExecutor interface {
 // Returns the created migration history id and the updated schema on success.
 func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
-	// Don't record schema if the database hasn't exist yet or the instance is MongoDB.
+	// Don't record schema if the database hasn't exist yet or the schemaless instance.
 	if !m.CreateDatabase && executor.GetType() != db.MongoDB {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
