@@ -46,6 +46,10 @@ var (
 		api.TaskFailed:          {api.TaskPendingApproval, api.TaskDone},
 		api.TaskCanceled:        {api.TaskPendingApproval, api.TaskDone},
 	}
+	allowedSkippedTaskStatus = map[api.TaskStatus]bool{
+		api.TaskPendingApproval: true,
+		api.TaskFailed:          true,
+	}
 )
 
 // NewScheduler creates a new task scheduler.
@@ -953,6 +957,13 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		return nil, &common.Error{
 			Code: common.Invalid,
 			Err:  errors.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status]),
+		}
+	}
+
+	if taskStatusPatch.Skipped != nil && *taskStatusPatch.Skipped && !allowedSkippedTaskStatus[task.Status] {
+		return nil, &common.Error{
+			Code: common.Invalid,
+			Err:  errors.Errorf("cannot skip task whose status is %v", task.Status),
 		}
 	}
 
