@@ -1040,13 +1040,13 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		return nil, err
 	}
 	payload := api.TaskDatabaseCreatePayload{
-		ProjectID:      project.ID,
-		CharacterSet:   c.CharacterSet,
-		CollectionName: c.TableName,
-		Collation:      c.Collation,
-		Labels:         c.Labels,
-		DatabaseName:   databaseName,
-		Statement:      statement,
+		ProjectID:    project.ID,
+		CharacterSet: c.CharacterSet,
+		TableName:    c.TableName,
+		Collation:    c.Collation,
+		Labels:       c.Labels,
+		DatabaseName: databaseName,
+		Statement:    statement,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
