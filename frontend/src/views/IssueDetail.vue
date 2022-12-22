@@ -88,7 +88,6 @@ watch(issueSlug, async () => {
 });
 
 const onStatusChanged = (eager: boolean) => {
-  console.log("status changed", eager);
   pollIssue(eager ? MINIMUM_POLL_INTERVAL : NORMAL_POLL_INTERVAL);
 };
 
