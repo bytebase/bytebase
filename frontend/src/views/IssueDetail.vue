@@ -8,7 +8,7 @@
     />
     <div
       v-if="showLoading"
-      class="w-full h-full absolute inset-0 flex justify-center items-center bg-white/50"
+      class="w-full h-full fixed md:absolute inset-0 flex justify-center items-center bg-white/50"
     >
       <NSpin />
     </div>
@@ -88,6 +88,7 @@ watch(issueSlug, async () => {
 });
 
 const onStatusChanged = (eager: boolean) => {
+  console.log("status changed", eager);
   pollIssue(eager ? MINIMUM_POLL_INTERVAL : NORMAL_POLL_INTERVAL);
 };
 
