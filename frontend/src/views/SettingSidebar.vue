@@ -73,6 +73,12 @@
             {{ $t("settings.sidebar.access-control") }}
           </router-link>
           <router-link
+            v-if="showAuditLogItem"
+            to="/setting/audit-log"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("settings.sidebar.audit-log") }}</router-link
+          >
+          <router-link
             v-if="showIMIntegrationItem"
             to="/setting/im-integration"
             class="outline-item group w-full flex items-center truncate pl-11 pr-2 py-2"
@@ -95,12 +101,6 @@
             to="/setting/subscription"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.subscription") }}</router-link
-          >
-          <router-link
-            v-if="showAuditLogItem"
-            to="/setting/audit-log"
-            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("settings.sidebar.audit-log") }}</router-link
           >
           <router-link
             v-if="showDebugLogItem"
