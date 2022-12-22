@@ -342,7 +342,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 
 	// Sync database schema
-	schema, err := driver.SyncDBSchema(ctx, databaseName)
+	schema, _, err := driver.SyncDBSchema(ctx, databaseName)
 	if err != nil {
 		return err
 	}
