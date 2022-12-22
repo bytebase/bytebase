@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/webhook"
 	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 
 	"github.com/pkg/errors"
@@ -333,6 +334,18 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		case api.TaskDone:
 			level = webhook.WebhookSuccess
 			title = "Task completed - " + task.Name
+
+			skipped, skippedReason, err := utils.GetTaskSkippedAndReason(task)
+			if err != nil {
+				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
+				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
+				return webhookCtx, err
+			}
+			if skipped {
+				title = "Task skipped - " + task.Name
+				webhookTaskResult.Status = "SKIPPED"
+				webhookTaskResult.SkippedReason = skippedReason
+			}
 		case api.TaskFailed:
 			level = webhook.WebhookError
 			title = "Task failed - " + task.Name
@@ -352,7 +365,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 
 			var result api.TaskRunResultPayload
 			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
-				err := errors.Wrapf(err, "failed to unmarshal TaskRun Result")
+				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
 				log.Warn(err.Error(),
 					zap.Any("TaskRun", task.TaskRunList[0]),
 					zap.Error(err))
