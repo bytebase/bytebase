@@ -129,7 +129,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert id %q to object id", strconv.Itoa(*v))
 		}
-		filter["_id"] = id
+		filter["id"] = id
 	}
 	if v := find.Database; v != nil {
 		filter["namespace"] = *v
@@ -145,8 +145,8 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		filter["source"] = *v
 	}
 	findOptions := []*options.FindOptions{
-		// Sort by _id in descending order.
-		options.Find().SetSort(bson.M{"_id": -1}),
+		// Sort by id in descending order.
+		options.Find().SetSort(bson.M{"id": -1}),
 	}
 	if v := find.Limit; v != nil {
 		findOptions = append(findOptions, options.Find().SetLimit(int64(*v)))
