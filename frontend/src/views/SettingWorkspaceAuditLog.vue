@@ -72,10 +72,9 @@ const { t } = useI18n();
 
 const logKeyMap = {
   createdTs: t("audit-log.table.created-time"),
-  updatedTs: t("audit-log.table.updated-time"),
-  creator: t("audit-log.table.creator"),
-  type: t("audit-log.table.type"),
   level: t("audit-log.table.level"),
+  type: t("audit-log.table.type"),
+  creator: t("audit-log.table.creator"),
   comment: t("audit-log.table.comment"),
   payload: t("audit-log.table.payload"),
 };
@@ -85,9 +84,9 @@ const typePrefixList = (
 ).map((key) => AuditActivityType[key]);
 
 const handleViewDetail = (log: any) => {
-  // filter properties we don't need
+  // Display detail fields in the same order as logKeyMap.
   state.modalContent = Object.fromEntries(
-    Object.entries(log).filter(([key, _]) => key in logKeyMap)
+    Object.keys(logKeyMap).map((logKey) => [logKey, log[logKey]])
   );
   state.showModal = true;
   dialog.value!.open();
