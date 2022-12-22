@@ -79,9 +79,29 @@ func TestTransformDelimiter(t *testing.T) {
 	}
 	a := require.New(t)
 	for _, test := range tests {
-		var buf bytes.Buffer
-		err := transformDelimiter(&buf, test.statement)
+		got, err := splitAndTransformDelimiter(test.statement)
 		a.NoError(err)
-		a.Equal(test.want, buf.String())
+		a.Len(got, 1)
+		a.Equal(test.want, got[0])
 	}
+}
+
+func TestTransformDelimiter_Truncate(t *testing.T) {
+	var out bytes.Buffer
+	for i := 0; i < 200000; i++ {
+		_, err := out.WriteString("INSERT INTO hello VALUES (555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555);")
+		require.NoError(t, err)
+	}
+	statements := out.String()
+
+	got, err := splitAndTransformDelimiter(statements)
+	require.NoError(t, err)
+
+	total := 0
+	for _, trunk := range got {
+		total += len(trunk)
+	}
+	require.Equal(t, 12, len(got))
+	// Make sure all trunks add up.
+	require.Equal(t, total, len(statements))
 }

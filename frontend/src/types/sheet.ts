@@ -55,6 +55,9 @@ export interface Sheet {
   starred: boolean;
   pinned: boolean;
   payload: SheetPayload;
+
+  // The current size of statement in bytes.
+  size: number;
 }
 
 export interface SheetUpsert {

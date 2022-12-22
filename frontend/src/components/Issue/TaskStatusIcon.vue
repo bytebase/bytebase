@@ -32,7 +32,8 @@
       </div>
     </template>
     <template v-else-if="status === 'DONE'">
-      <heroicons-solid:check class="w-5 h-5" />
+      <SkipIcon v-if="isSkipped" class="w-5 h-5" />
+      <heroicons-solid:check v-else class="w-5 h-5" />
     </template>
     <template v-else-if="status === 'FAILED'">
       <span
@@ -51,13 +52,21 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { TaskStatus } from "../../types";
+
+import type { Task, TaskCreate, TaskStatus } from "../../types";
+import { SkipIcon } from "../Icon";
+import { isTaskSkipped } from "@/utils";
 
 const props = defineProps<{
   create: boolean;
   active: boolean;
   status: TaskStatus;
+  task?: Task | TaskCreate;
 }>();
+
+const isSkipped = computed(() => {
+  return !props.create && props.task && isTaskSkipped(props.task as Task);
+});
 
 const classes = computed((): string => {
   switch (props.status) {
@@ -74,6 +83,9 @@ const classes = computed((): string => {
     case "RUNNING":
       return "bg-white border-2 border-info text-info";
     case "DONE":
+      if (isSkipped.value) {
+        return "bg-gray-200 text-gray-500";
+      }
       return "bg-success text-white";
     case "FAILED":
       return "bg-error text-white";

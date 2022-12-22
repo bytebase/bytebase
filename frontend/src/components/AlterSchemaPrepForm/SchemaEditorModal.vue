@@ -286,13 +286,17 @@ const handleSyncSQLFromSchemaEditor = async () => {
 const getDatabaseEditListWithSchemaEditor = () => {
   const databaseEditList: DatabaseEdit[] = [];
   for (const database of editorStore.databaseList) {
-    const databaseState = editorStore.databaseStateById.get(database.id);
-    if (!databaseState) {
+    const databaseSchema = editorStore.databaseSchemaById.get(database.id);
+    if (!databaseSchema) {
       continue;
     }
 
-    const originTableList = databaseState.originTableList;
-    const tableList = databaseState.tableList;
+    const originTableList = databaseSchema.originSchemaList
+      .map((schema) => schema.tableList)
+      .flat();
+    const tableList = databaseSchema.schemaList
+      .map((schema) => schema.tableList)
+      .flat();
     const diffTableListResult = diffTableList(originTableList, tableList);
     if (
       diffTableListResult.createTableList.length > 0 ||
@@ -387,12 +391,21 @@ const handlePreviewIssue = async () => {
     mode: "normal",
     ghost: undefined,
   };
-  if (isTenantProject && props.databaseIdList.length > 1) {
-    query.mode = "tenant";
+  if (isTenantProject) {
+    if (props.databaseIdList.length > 1) {
+      // A tenant pipeline with 2 or more databases will be generated
+      // via deployment config, so we don't need the databaseList parameter.
+      query.mode = "tenant";
+    } else {
+      // A tenant pipeline with only 1 database will be downgraded to
+      // a standard pipeline.
+      // So we need to provide the databaseList parameter
+      query.databaseList = props.databaseIdList.join(",");
+    }
   }
   if (props.alterType !== "TENANT") {
     // If we are not using tenant deployment config pipeline
-    // we need to pass the databaseIdList explicitly.
+    // we need to pass the databaseList explicitly.
     query.databaseList = props.databaseIdList.join(",");
   }
   if (state.selectedTab === "raw-sql") {

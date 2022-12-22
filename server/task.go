@@ -148,6 +148,13 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Not allowed to change task status")
 		}
 
+		if taskStatusPatch.Status == api.TaskDone {
+			// the user marks the task as DONE, set Skipped to true and SkippedReason to Comment.
+			skipped := true
+			taskStatusPatch.Skipped = &skipped
+			taskStatusPatch.SkippedReason = taskStatusPatch.Comment
+		}
+
 		taskPatched, err := s.TaskScheduler.PatchTaskStatus(ctx, task, taskStatusPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.Invalid {

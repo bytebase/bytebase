@@ -40,7 +40,6 @@ import {
   useDatabaseStore,
   useEnvironmentStore,
   useInstanceStore,
-  useIssueStore,
   usePrincipalStore,
   useRouterStore,
   useDBSchemaStore,
@@ -779,7 +778,12 @@ const routes: Array<RouteRecordRaw> = [
                 name: "workspace.database.table.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
-                    return `${t("db.tables")} - ${route.params.tableName}`;
+                    const schemaName = route.query.schema?.toString() || "";
+                    let tableName = route.params.tableName;
+                    if (schemaName) {
+                      tableName = `"${schemaName}"."${tableName}"`;
+                    }
+                    return `${t("db.tables")} - ${tableName}`;
                   },
                   allowBookmark: true,
                 },
@@ -837,14 +841,6 @@ const routes: Array<RouteRecordRaw> = [
             path: "issue/:issueSlug",
             name: "workspace.issue.detail",
             meta: {
-              title: (route: RouteLocationNormalized) => {
-                const slug = route.params.issueSlug as string;
-                if (slug.toLowerCase() == "new") {
-                  return t("issue.new-issue");
-                }
-                const issue = useIssueStore().getIssueById(idFromSlug(slug));
-                return issue.name;
-              },
               allowBookmark: true,
             },
             components: {
@@ -947,7 +943,6 @@ router.beforeEach((to, from, next) => {
   const dbSchemaStore = useDBSchemaStore();
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
-  const issueStore = useIssueStore();
   const routerStore = useRouterStore();
   const projectWebhookStore = useProjectWebhookStore();
   const projectStore = useProjectStore();
@@ -1229,62 +1224,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (issueSlug) {
-    if (issueSlug.toLowerCase() == "new") {
-      // For preparing the database if user visits creating issue url directly.
-      // It's horrible to fetchDatabaseById one-by-one when query.databaseList
-      // is big (100+ sometimes)
-      // So we are fetching databaseList by project since that's better cached.
-      const prepare = async () => {
-        if (to.query.project) {
-          // If we found query.project, we can directly fetchDatabaseListByProjectId
-          const projectId = to.query.project as string;
-          await databaseStore.fetchDatabaseListByProjectId(
-            parseInt(projectId, 10)
-          );
-        } else {
-          // Otherwise, we don't have the projectId (very rare to see, theoretically)
-          // so we need to fetch the first database in databaseList by id,
-          // and see what project it belongs.
-          const databaseIdList = (to.query.databaseList as string)
-            .split(",")
-            .map((str) => parseInt(str, 10));
-          if (databaseIdList.length > 0) {
-            const firstDB = await databaseStore.getOrFetchDatabaseById(
-              databaseIdList[0]
-            );
-            if (databaseIdList.length > 1) {
-              // If we have more than one databases in the list
-              // fetch the rest of databases by projectId
-              await databaseStore.fetchDatabaseListByProjectId(
-                firstDB.project.id
-              );
-            }
-          }
-        }
-      };
-      prepare()
-        .then(() => next())
-        .catch((error) => {
-          next({
-            name: "error.404",
-            replace: false,
-          });
-          throw error;
-        });
-      return;
-    }
-    issueStore
-      .fetchIssueById(idFromSlug(issueSlug))
-      .then(() => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
+    // We've moved the preparation data fetch jobs into IssueDetail page
+    // so just next() here.
+    next();
     return;
   }
 

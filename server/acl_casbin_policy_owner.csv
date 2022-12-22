@@ -48,6 +48,7 @@ p, OWNER, /instance/{instanceID}/migration, POST
 p, OWNER, /instance/{instanceID}/migration/status, GET
 p, OWNER, /instance/{instanceID}/migration/history, GET
 p, OWNER, /instance/{instanceID}/migration/history/{historyID}, GET
+p, OWNER, /instance/{instanceID}/role, GET
 p, OWNER, /instance/{instanceID}/role, POST
 p, OWNER, /instance/{instanceID}/role/{roleName}, GET
 p, OWNER, /instance/{instanceID}/role/{roleName}, PATCH

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -201,8 +202,7 @@ func TestConvertDBSchema(t *testing.T) {
 							{
 								Name:         "id",
 								Position:     0,
-								HasDefault:   false,
-								Default:      "",
+								Default:      nil,
 								Nullable:     false,
 								Type:         "int",
 								CharacterSet: "charset1",
@@ -212,8 +212,7 @@ func TestConvertDBSchema(t *testing.T) {
 							{
 								Name:         "name",
 								Position:     1,
-								HasDefault:   true,
-								Default:      "Jay",
+								Default:      &wrapperspb.StringValue{Value: "Jay"},
 								Nullable:     false,
 								Type:         "varchar(10)",
 								CharacterSet: "charset1",
@@ -223,8 +222,7 @@ func TestConvertDBSchema(t *testing.T) {
 							{
 								Name:         "age",
 								Position:     2,
-								HasDefault:   false,
-								Default:      "",
+								Default:      nil,
 								Nullable:     false,
 								Type:         "int",
 								CharacterSet: "charset1",
@@ -291,7 +289,7 @@ func TestConvertDBSchema(t *testing.T) {
 			},
 		},
 	}
-	got := convertDBSchema(dbSchema)
+	got := convertDBSchema(dbSchema, nil)
 	assert.Equal(t, want, got)
 }
 

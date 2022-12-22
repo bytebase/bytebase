@@ -242,3 +242,13 @@ export type ActivityPatch = {
   // Domain specific fields
   comment: string;
 };
+
+export type ActivityFind = {
+  typePrefix?: string | string[];
+  container?: number | string;
+  order?: "ASC" | "DESC";
+  user?: number;
+  limit?: number;
+  level?: string | string[];
+  token?: string;
+};

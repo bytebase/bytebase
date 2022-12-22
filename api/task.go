@@ -59,6 +59,10 @@ const (
 
 // TaskDatabasePITRRestorePayload is the task payload for database PITR restore.
 type TaskDatabasePITRRestorePayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+
 	// The project owning the database.
 	ProjectID int `json:"projectId,omitempty"`
 
@@ -82,10 +86,18 @@ type TaskDatabasePITRRestorePayload struct {
 
 // TaskDatabasePITRCutoverPayload is the task payload for PITR cutover.
 // It is currently only a placeholder.
-type TaskDatabasePITRCutoverPayload struct{}
+type TaskDatabasePITRCutoverPayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+}
 
 // TaskDatabaseCreatePayload is the task payload for creating databases.
 type TaskDatabaseCreatePayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+
 	// The project owning the database.
 	ProjectID    int    `json:"projectId,omitempty"`
 	DatabaseName string `json:"databaseName,omitempty"`
@@ -98,11 +110,19 @@ type TaskDatabaseCreatePayload struct {
 
 // TaskDatabaseSchemaBaselinePayload is the task payload for database schema baseline.
 type TaskDatabaseSchemaBaselinePayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+
 	SchemaVersion string `json:"schemaVersion,omitempty"`
 }
 
 // TaskDatabaseSchemaUpdatePayload is the task payload for database schema update (DDL).
 type TaskDatabaseSchemaUpdatePayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+
 	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
@@ -111,6 +131,10 @@ type TaskDatabaseSchemaUpdatePayload struct {
 
 // TaskDatabaseSchemaUpdateSDLPayload is the task payload for database schema update (SDL).
 type TaskDatabaseSchemaUpdateSDLPayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+
 	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
@@ -119,6 +143,10 @@ type TaskDatabaseSchemaUpdateSDLPayload struct {
 
 // TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
 type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+
 	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
@@ -130,10 +158,18 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 }
 
 // TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
-type TaskDatabaseSchemaUpdateGhostCutoverPayload struct{}
+type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+}
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+
 	Statement     string         `json:"statement,omitempty"`
 	SheetID       int            `json:"sheetId,omitempty"`
 	SchemaVersion string         `json:"schemaVersion,omitempty"`
@@ -164,6 +200,10 @@ type TaskDatabaseDataUpdatePayload struct {
 
 // TaskDatabaseBackupPayload is the task payload for database backup.
 type TaskDatabaseBackupPayload struct {
+	// Common fields
+	Skipped       bool   `json:"skipped,omitempty"`
+	SkippedReason string `json:"skippedReason,omitempty"`
+
 	BackupID int `json:"backupId,omitempty"`
 }
 
@@ -303,4 +343,8 @@ type TaskStatusPatch struct {
 	Code    *common.Code
 	Comment *string `jsonapi:"attr,comment"`
 	Result  *string
+	// Skipped is set to true if frontend sets the Status to DONE.
+	// And SkippedReason is Comment.
+	Skipped       *bool
+	SkippedReason *string
 }

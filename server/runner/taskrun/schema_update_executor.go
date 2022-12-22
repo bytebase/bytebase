@@ -47,8 +47,18 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, task *api.Task) (
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
 
-	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
-
+	statement := payload.Statement
+	if payload.SheetID > 0 {
+		sheet, err := exec.store.GetSheet(ctx, &api.SheetFind{ID: &payload.SheetID, LoadFull: true}, api.SystemBotID)
+		if err != nil {
+			return true, nil, err
+		}
+		if sheet == nil {
+			return true, nil, errors.Errorf("sheet ID %v not found", payload.SheetID)
+		}
+		statement = sheet.Statement
+	}
+	terminated, result, err := runMigration(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, payload.VCSPushEvent)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, task.Instance, task.Database.Name, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Instance.Name),

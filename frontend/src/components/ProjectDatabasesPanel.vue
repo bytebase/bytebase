@@ -14,7 +14,11 @@
     </div>
 
     <template v-if="databaseList.length > 0">
-      <DatabaseTable mode="PROJECT" :database-list="filteredDatabaseList" />
+      <DatabaseTable
+        mode="PROJECT"
+        table-class="border"
+        :database-list="filteredDatabaseList"
+      />
     </template>
     <div v-else class="text-center textinfolabel">
       <i18n-t keypath="project.overview.no-db-prompt" tag="p">

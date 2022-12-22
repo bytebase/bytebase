@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // RoleAttribute is the attribute string for role.
@@ -37,8 +37,12 @@ func (a RoleAttribute) ToString() string {
 	return string(a)
 }
 
+type roleFind struct {
+	Name *string
+}
+
 // CreateRole will create the PG role.
-func (driver *Driver) CreateRole(ctx context.Context, upsert *db.RoleUpsert) (*db.Role, error) {
+func (driver *Driver) CreateRole(ctx context.Context, upsert *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -49,20 +53,25 @@ func (driver *Driver) CreateRole(ctx context.Context, upsert *db.RoleUpsert) (*d
 		return nil, err
 	}
 
-	role, err := getRoleImpl(ctx, txn, upsert.Name)
+	roles, err := findRoleImpl(ctx, txn, &roleFind{
+		Name: &upsert.Name,
+	})
 	if err != nil {
 		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", upsert.Name))
 	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
 
-	return role, nil
+	return roles[0], nil
 }
 
 // UpdateRole will alter the PG role.
-func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *db.RoleUpsert) (*db.Role, error) {
+func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -73,27 +82,57 @@ func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *d
 		return nil, err
 	}
 
-	role, err := getRoleImpl(ctx, txn, upsert.Name)
+	roles, err := findRoleImpl(ctx, txn, &roleFind{
+		Name: &upsert.Name,
+	})
 	if err != nil {
 		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", upsert.Name))
 	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
 
-	return role, nil
+	return roles[0], nil
 }
 
 // FindRole will find the PG role by name.
-func (driver *Driver) FindRole(ctx context.Context, roleName string) (*db.Role, error) {
+func (driver *Driver) FindRole(ctx context.Context, roleName string) (*v1pb.DatabaseRole, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer txn.Rollback()
 
-	role, err := getRoleImpl(ctx, txn, roleName)
+	roles, err := findRoleImpl(ctx, txn, &roleFind{
+		Name: &roleName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, common.Errorf(common.NotFound, fmt.Sprintf("cannot find the role %s", roleName))
+	}
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	return roles[0], nil
+}
+
+// ListRole lists the role.
+func (driver *Driver) ListRole(ctx context.Context) ([]*v1pb.DatabaseRole, error) {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	roles, err := findRoleImpl(ctx, txn, &roleFind{})
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +141,7 @@ func (driver *Driver) FindRole(ctx context.Context, roleName string) (*db.Role, 
 		return nil, err
 	}
 
-	return role, nil
+	return roles, nil
 }
 
 // DeleteRole will drop the PG role by name.
@@ -115,7 +154,15 @@ func (driver *Driver) DeleteRole(ctx context.Context, roleName string) error {
 	return nil
 }
 
-func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*db.Role, error) {
+func findRoleImpl(ctx context.Context, txn *sql.Tx, find *roleFind) ([]*v1pb.DatabaseRole, error) {
+	where := []string{}
+	if v := find.Name; v != nil {
+		where = append(where, fmt.Sprintf("r.rolname = '%s'", *v))
+	}
+	if len(where) == 0 {
+		where = append(where, "r.rolname !~ '^pg_'")
+	}
+
 	statement := fmt.Sprintf(`
 		SELECT
 			r.rolname,
@@ -129,40 +176,49 @@ func getRoleImpl(ctx context.Context, txn *sql.Tx, roleName string) (*db.Role, e
 			r.rolvaliduntil,
 			r.rolconnlimit
 		FROM pg_catalog.pg_roles r
-		WHERE r.rolname = '%s';
-	`, roleName)
+		WHERE %s;
+	`, strings.Join(where, " AND "))
 
-	role := &db.Role{
-		Name:      roleName,
-		Attribute: &db.RoleAttribute{},
-	}
-
-	inherit := false
-
-	if err := txn.QueryRowContext(ctx, statement).Scan(
-		&role.Name,
-		&role.Attribute.SuperUser,
-		&inherit,
-		&role.Attribute.CreateRole,
-		&role.Attribute.CreateDB,
-		&role.Attribute.CanLogin,
-		&role.Attribute.Replication,
-		&role.Attribute.ByPassRLS,
-		&role.ValidUntil,
-		&role.ConnectionLimit,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(statement)
-		}
+	rows, err := txn.QueryContext(ctx, statement)
+	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, statement)
 	}
+	defer rows.Close()
 
-	role.Attribute.NoInherit = !inherit
+	var roleList []*v1pb.DatabaseRole
 
-	return role, nil
+	for rows.Next() {
+		inherit := false
+		role := &v1pb.DatabaseRole{
+			Attribute: &v1pb.DatabaseRoleAttribute{},
+		}
+
+		if err := rows.Scan(
+			&role.Name,
+			&role.Attribute.SuperUser,
+			&inherit,
+			&role.Attribute.CreateRole,
+			&role.Attribute.CreateDb,
+			&role.Attribute.CanLogin,
+			&role.Attribute.Replication,
+			&role.Attribute.BypassRls,
+			&role.ValidUntil,
+			&role.ConnectionLimit,
+		); err != nil {
+			return nil, util.FormatErrorWithQuery(err, statement)
+		}
+
+		role.Attribute.NoInherit = !inherit
+		roleList = append(roleList, role)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return roleList, nil
 }
 
-func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *db.RoleUpsert) error {
+func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *v1pb.DatabaseRoleUpsert) error {
 	statement := fmt.Sprintf(`CREATE ROLE "%s" %s;`, upsert.Name, convertToAttributeStatement(upsert))
 	if _, err := txn.ExecContext(ctx, statement); err != nil {
 		return util.FormatErrorWithQuery(err, statement)
@@ -171,7 +227,7 @@ func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *db.RoleUpsert) err
 	return nil
 }
 
-func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *db.RoleUpsert) error {
+func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *v1pb.DatabaseRoleUpsert) error {
 	if roleName != upsert.Name {
 		renameStatement := fmt.Sprintf(`ALTER ROLE "%s" RENAME TO "%s";`, roleName, upsert.Name)
 		if _, err := txn.ExecContext(ctx, renameStatement); err != nil {
@@ -192,7 +248,7 @@ func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *db
 	return nil
 }
 
-func convertToAttributeStatement(r *db.RoleUpsert) string {
+func convertToAttributeStatement(r *v1pb.DatabaseRoleUpsert) string {
 	attributeList := []string{}
 
 	if r.Attribute != nil {
@@ -208,13 +264,13 @@ func convertToAttributeStatement(r *db.RoleUpsert) string {
 		if r.Attribute.CreateRole {
 			attributeList = append(attributeList, CREATEROLE.ToString())
 		}
-		if r.Attribute.CreateDB {
+		if r.Attribute.CreateDb {
 			attributeList = append(attributeList, CREATEDB.ToString())
 		}
 		if r.Attribute.Replication {
 			attributeList = append(attributeList, REPLICATION.ToString())
 		}
-		if r.Attribute.ByPassRLS {
+		if r.Attribute.BypassRls {
 			attributeList = append(attributeList, BYPASSRLS.ToString())
 		}
 	}

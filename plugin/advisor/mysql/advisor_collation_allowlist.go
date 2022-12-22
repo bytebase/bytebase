@@ -133,7 +133,6 @@ func (checker *collationAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 				if _, exist := checker.allowlist[collation]; collation != "" && !exist {
 					code = advisor.DisabledCollation
 					disabledCollation = collation
-					break
 				}
 			}
 		}

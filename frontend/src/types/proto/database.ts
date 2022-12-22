@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { StringValue } from "./google/protobuf/wrappers";
 
 export const protobufPackage = "bytebase.store";
 
@@ -67,14 +68,8 @@ export interface ColumnMetadata {
   name: string;
   /** The position is the position in columns. */
   position: number;
-  /**
-   * The has_default is whether a column has a default.
-   * In proto3, we cannot distinguish between an empty string default value or no default.
-   * We have to introduce a boolean field to indicate the existance of a default.
-   */
-  hasDefault: boolean;
-  /** The default is the default of a column. */
-  default: string;
+  /** The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. */
+  default?: string;
   /** The nullable is the nullable of a column. */
   nullable: boolean;
   /** The type is the type of a column. */
@@ -506,8 +501,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
   return {
     name: "",
     position: 0,
-    hasDefault: false,
-    default: "",
+    default: undefined,
     nullable: false,
     type: "",
     characterSet: "",
@@ -524,26 +518,23 @@ export const ColumnMetadata = {
     if (message.position !== 0) {
       writer.uint32(16).int32(message.position);
     }
-    if (message.hasDefault === true) {
-      writer.uint32(24).bool(message.hasDefault);
-    }
-    if (message.default !== "") {
-      writer.uint32(34).string(message.default);
+    if (message.default !== undefined) {
+      StringValue.encode({ value: message.default! }, writer.uint32(26).fork()).ldelim();
     }
     if (message.nullable === true) {
-      writer.uint32(40).bool(message.nullable);
+      writer.uint32(32).bool(message.nullable);
     }
     if (message.type !== "") {
-      writer.uint32(50).string(message.type);
+      writer.uint32(42).string(message.type);
     }
     if (message.characterSet !== "") {
-      writer.uint32(58).string(message.characterSet);
+      writer.uint32(50).string(message.characterSet);
     }
     if (message.collation !== "") {
-      writer.uint32(66).string(message.collation);
+      writer.uint32(58).string(message.collation);
     }
     if (message.comment !== "") {
-      writer.uint32(74).string(message.comment);
+      writer.uint32(66).string(message.comment);
     }
     return writer;
   },
@@ -562,24 +553,21 @@ export const ColumnMetadata = {
           message.position = reader.int32();
           break;
         case 3:
-          message.hasDefault = reader.bool();
+          message.default = StringValue.decode(reader, reader.uint32()).value;
           break;
         case 4:
-          message.default = reader.string();
-          break;
-        case 5:
           message.nullable = reader.bool();
           break;
-        case 6:
+        case 5:
           message.type = reader.string();
           break;
-        case 7:
+        case 6:
           message.characterSet = reader.string();
           break;
-        case 8:
+        case 7:
           message.collation = reader.string();
           break;
-        case 9:
+        case 8:
           message.comment = reader.string();
           break;
         default:
@@ -594,8 +582,7 @@ export const ColumnMetadata = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       position: isSet(object.position) ? Number(object.position) : 0,
-      hasDefault: isSet(object.hasDefault) ? Boolean(object.hasDefault) : false,
-      default: isSet(object.default) ? String(object.default) : "",
+      default: isSet(object.default) ? String(object.default) : undefined,
       nullable: isSet(object.nullable) ? Boolean(object.nullable) : false,
       type: isSet(object.type) ? String(object.type) : "",
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
@@ -608,7 +595,6 @@ export const ColumnMetadata = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.position !== undefined && (obj.position = Math.round(message.position));
-    message.hasDefault !== undefined && (obj.hasDefault = message.hasDefault);
     message.default !== undefined && (obj.default = message.default);
     message.nullable !== undefined && (obj.nullable = message.nullable);
     message.type !== undefined && (obj.type = message.type);
@@ -622,8 +608,7 @@ export const ColumnMetadata = {
     const message = createBaseColumnMetadata();
     message.name = object.name ?? "";
     message.position = object.position ?? 0;
-    message.hasDefault = object.hasDefault ?? false;
-    message.default = object.default ?? "";
+    message.default = object.default ?? undefined;
     message.nullable = object.nullable ?? false;
     message.type = object.type ?? "";
     message.characterSet = object.characterSet ?? "";

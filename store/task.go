@@ -422,7 +422,10 @@ func (s *Store) patchTaskRaw(ctx context.Context, patch *api.TaskPatch) (*taskRa
 // patchTaskRawStatus updates existing task statuses and the corresponding task run statuses atomically.
 // Returns ENOTFOUND if tasks do not exist.
 func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPatch) ([]*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	// Without using serializable isolation transaction, we will get race condition and have multiple task runs inserted because
+	// we do a read and write on task, without guaranteed consistency on task runs.
+	// Once we have multiple task runs, the task will get to unrecoverable state because find task run will fail with two active runs.
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -773,6 +776,12 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
+	if v := patch.Skipped; v != nil {
+		set, args = append(set, fmt.Sprintf(`payload['skipped'] = to_json($%d::BOOLEAN)`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.SkippedReason; v != nil {
+		set, args = append(set, fmt.Sprintf(`payload['skippedReason'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+	}
 	var ids []string
 	for _, id := range patch.IDList {
 		ids = append(ids, strconv.Itoa(id))

@@ -5,7 +5,22 @@
         {{ $t("project.overview.recent-activity") }}
       </p>
       <div class="relative">
-        <ActivityTable :activity-list="state.activityList" />
+        <!-- show the first 5 activities -->
+        <!-- But won't show "Load more", since we have a "View all" link below -->
+        <PagedActivityTableVue
+          :activity-find="{
+            typePrefix: ['bb.project.', 'bb.database.'],
+            container: project.id,
+            order: 'DESC',
+          }"
+          session-key="project-activity"
+          :page-size="5"
+          :hide-load-more="true"
+        >
+          <template #table="{ activityList }">
+            <ActivityTable :activity-list="activityList" />
+          </template>
+        </PagedActivityTableVue>
         <div
           v-if="state.isFetchingActivityList"
           class="absolute inset-0 flex flex-col items-center justify-center bg-white/70"
@@ -91,20 +106,18 @@ import {
   PropType,
   computed,
   defineComponent,
-  watch,
 } from "vue";
 import ActivityTable from "../components/ActivityTable.vue";
 import { IssueTable } from "../components/Issue";
-import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
+import { Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
-import { useActivityStore } from "@/store";
 import PagedIssueTable from "@/components/Issue/PagedIssueTable.vue";
+import PagedActivityTableVue from "./PagedActivityTable.vue";
 
 // Show at most 5 activity
 const ACTIVITY_LIMIT = 5;
 
 interface LocalState {
-  activityList: Activity[];
   isFetchingActivityList: boolean;
   progressIssueList: Issue[];
   closedIssueList: Issue[];
@@ -119,6 +132,7 @@ export default defineComponent({
     ActivityTable,
     IssueTable,
     PagedIssueTable,
+    PagedActivityTableVue,
   },
   props: {
     project: {
@@ -132,7 +146,6 @@ export default defineComponent({
   },
   setup(props) {
     const state = reactive<LocalState>({
-      activityList: [],
       isFetchingActivityList: false,
       progressIssueList: [],
       closedIssueList: [],
@@ -140,40 +153,10 @@ export default defineComponent({
       xAxisLabel: "bb.environment",
       yAxisLabel: undefined,
     });
-    const activityStore = useActivityStore();
-
-    const prepareActivityList = () => {
-      state.isFetchingActivityList = true;
-      state.activityList = [];
-      const requests = [
-        activityStore.fetchActivityListForDatabaseByProjectId({
-          projectId: props.project.id,
-          limit: ACTIVITY_LIMIT,
-        }),
-        activityStore.fetchActivityListForProject({
-          projectId: props.project.id,
-          limit: ACTIVITY_LIMIT,
-        }),
-      ];
-
-      Promise.all(requests).then((lists) => {
-        const flattenList = lists.flatMap((list) => list);
-        flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
-        state.activityList = flattenList.slice(0, ACTIVITY_LIMIT);
-
-        state.isFetchingActivityList = false;
-      });
-    };
 
     const isTenantProject = computed((): boolean => {
       return props.project.tenantMode === "TENANT";
     });
-
-    const prepare = () => {
-      prepareActivityList();
-    };
-
-    watch(() => props.project.id, prepare, { immediate: true });
 
     const filteredDatabaseList = computed(() => {
       const filter = state.databaseNameFilter.toLocaleLowerCase();
@@ -198,6 +181,7 @@ export default defineComponent({
       isTenantProject,
       filteredDatabaseList,
       excludedKeyList,
+      ACTIVITY_LIMIT,
     };
   },
 });

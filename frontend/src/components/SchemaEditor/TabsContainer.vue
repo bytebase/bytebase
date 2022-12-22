@@ -89,9 +89,11 @@ const getTabComputedClassList = (tab: TabContext) => {
       return ["text-green-700"];
     }
 
-    const originTable = editorStore.databaseStateById
-      .get(tab.databaseId)
-      ?.originTableList.find((item) => item.oldName === table.oldName);
+    const originTable = editorStore.getOriginTable(
+      tab.databaseId,
+      tab.schemaName,
+      tab.tableName
+    );
     if (!isEqual(originTable, table)) {
       return ["text-yellow-700"];
     }

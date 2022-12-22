@@ -232,6 +232,12 @@ type Activity struct {
 	Payload string        `jsonapi:"attr,payload"`
 }
 
+// ActivityResponse is the API message for an activity response.
+type ActivityResponse struct {
+	ActivityList []*Activity `jsonapi:"relation,activityList"`
+	NextToken    string      `jsonapi:"attr,nextToken"`
+}
+
 // ActivityCreate is the API message for creating an activity.
 type ActivityCreate struct {
 	// Standard fields
@@ -251,11 +257,13 @@ type ActivityFind struct {
 	ID *int
 
 	// Domain specific fields
-	CreatorID   *int
-	TypePrefix  *string
-	Level       *ActivityLevel
-	ContainerID *int
-	Limit       *int
+	CreatorID      *int
+	TypePrefixList []string
+	LevelList      []ActivityLevel
+	ContainerID    *int
+	Limit          *int
+	// If specified, only find activities whose ID is smaller than SinceID.
+	SinceID *int
 	// If specified, sorts the returned list by created_ts in <<ORDER>>
 	// Different use cases want different orders.
 	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.

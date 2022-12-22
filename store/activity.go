@@ -344,11 +344,23 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.TypePrefix; v != nil {
-		where, args = append(where, fmt.Sprintf("type LIKE $%d", len(args)+1)), append(args, fmt.Sprintf("%s%%", *v))
+	if v := find.TypePrefixList; len(v) > 0 {
+		var queryValues []string
+		// Iterate over the typePrefix list and join each one with an OR condition.
+		for _, str := range v {
+			queryValues, args = append(queryValues, fmt.Sprintf("type LIKE $%d", len(args)+1)), append(args, fmt.Sprintf("%s%%", str))
+		}
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
 	}
-	if v := find.Level; v != nil {
-		where, args = append(where, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
+	if v := find.LevelList; len(v) > 0 {
+		var queryValues []string
+		for _, level := range v {
+			queryValues, args = append(queryValues, fmt.Sprintf("level = $%d", len(args)+1)), append(args, level)
+		}
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(queryValues, " OR ")))
+	}
+	if v := find.SinceID; v != nil {
+		where, args = append(where, fmt.Sprintf("id <= $%d", len(args)+1)), append(args, *v)
 	}
 
 	var query = `
@@ -366,7 +378,7 @@ func findActivityImpl(ctx context.Context, tx *Tx, find *api.ActivityFind) ([]*a
 		FROM activity
 		WHERE ` + strings.Join(where, " AND ")
 	if v := find.Order; v != nil {
-		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
+		query += fmt.Sprintf(" ORDER BY id %s", *v)
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
@@ -452,7 +464,7 @@ func patchActivityImpl(ctx context.Context, tx *Tx, patch *api.ActivityPatch) (*
 // TODO(d): remove this after the backfill.
 func (s *Store) BackfillSQLEditorActivity(ctx context.Context) error {
 	typePrefix := string(api.ActivitySQLEditorQuery)
-	activityList, err := s.FindActivity(ctx, &api.ActivityFind{TypePrefix: &typePrefix})
+	activityList, err := s.FindActivity(ctx, &api.ActivityFind{TypePrefixList: []string{typePrefix}})
 	if err != nil {
 		return err
 	}

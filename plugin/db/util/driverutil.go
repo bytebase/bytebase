@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +24,9 @@ import (
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
+	if regexp.MustCompile("does not exist").MatchString(err.Error()) {
+		return common.Wrapf(err, common.NotFound, "failed to execute query %q", query)
+	}
 	return common.Wrapf(err, common.DbExecutionError, "failed to execute query %q", query)
 }
 
@@ -288,7 +292,8 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
-	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statement); err != nil {
+	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
+	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
 		return -1, err
 	}
 
@@ -353,7 +358,9 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 	// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
 	// https://github.com/pingcap/tidb/issues/34626
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
-	if dbType == db.TiDB || dbType == db.ClickHouse {
+	// Snowflake doesn't support READ ONLY transactions.
+	// https://github.com/snowflakedb/gosnowflake/blob/0450f0b16a4679b216baecd3fd6cdce739dbb683/connection.go#L166
+	if dbType == db.TiDB || dbType == db.ClickHouse || dbType == db.Snowflake {
 		readOnly = false
 	}
 	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: readOnly})

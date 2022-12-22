@@ -1,5 +1,5 @@
 import { computed, defineComponent } from "vue";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isUndefined } from "lodash-es";
 import { useDatabaseStore, useTaskStore } from "@/store";
 import {
   Issue,
@@ -8,6 +8,7 @@ import {
   TaskCreate,
   TaskDatabaseSchemaUpdatePayload,
   MigrationContext,
+  SheetId,
 } from "@/types";
 import {
   errorAssertion,
@@ -83,8 +84,25 @@ export default defineComponent({
       }
     };
 
-    // We are never allowed to "apply statement to other stages" in tenant mode.
-    const allowApplyStatementToOtherTasks = computed(() => false);
+    const updateSheetId = (sheetId: SheetId | undefined) => {
+      if (!create.value) {
+        return;
+      }
+
+      // For tenant deploy mode, we apply the sheetId to all stages and all tasks
+      const allTaskList = flattenTaskList<TaskCreate>(issue.value);
+      allTaskList.forEach((task) => {
+        task.sheetId = sheetId;
+      });
+
+      const issueCreate = issue.value as IssueCreate;
+      const context = issueCreate.createContext as MigrationContext;
+      // We also apply it back to the CreateContext
+      context.detailList.forEach((detail) => (detail.sheetId = sheetId));
+    };
+
+    // We are never allowed to "apply task state to other stages" in tenant mode.
+    const allowApplyTaskStateToOthers = computed(() => false);
 
     const doCreate = () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
@@ -95,7 +113,12 @@ export default defineComponent({
       const context = issueCreate.createContext as MigrationContext;
       context.detailList.forEach((detail) => {
         const db = databaseStore.getDatabaseById(detail.databaseId!);
-        detail.statement = maybeFormatStatementOnSave(detail.statement, db);
+        if (!isUndefined(detail.sheetId)) {
+          // If task already has sheet id, we do not need to save statement.
+          detail.statement = "";
+        } else {
+          detail.statement = maybeFormatStatementOnSave(detail.statement, db);
+        }
       });
 
       createIssue(issueCreate);
@@ -106,8 +129,9 @@ export default defineComponent({
       allowEditStatement,
       selectedStatement,
       updateStatement,
-      allowApplyStatementToOtherTasks,
-      applyStatementToOtherTasks: errorAssertion,
+      updateSheetId,
+      allowApplyTaskStateToOthers,
+      applyTaskStateToOthers: errorAssertion,
       doCreate,
     };
     provideIssueLogic(logic);

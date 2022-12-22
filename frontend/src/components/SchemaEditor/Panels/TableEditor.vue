@@ -1,5 +1,5 @@
 <template>
-  <div class="grid auto-rows-auto w-full h-full overflow-y-auto">
+  <div class="flex flex-col w-full h-full overflow-y-auto">
     <div
       class="pt-3 pl-1 w-full flex justify-start items-center border-b border-b-gray-300"
     >
@@ -116,7 +116,7 @@
               <input
                 v-model="column.default"
                 :disabled="disableAlterColumn(column)"
-                :placeholder="column.hasDefault === false ? 'NULL' : ''"
+                :placeholder="column.default === undefined ? 'NULL' : ''"
                 class="column-field-input !pr-8"
                 type="text"
               />
@@ -216,10 +216,13 @@ import { useNotificationStore, useSchemaEditorStore } from "@/store/modules";
 import { TableTabContext } from "@/types";
 import { ColumnMetadata } from "@/types/proto/database";
 import { DatabaseEdit } from "@/types/schemaEditor";
-import { Column, Table } from "@/types/schemaEditor/atomType";
+import {
+  Column,
+  Table,
+  convertColumnMetadataToColumn,
+} from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
 import { diffTableList } from "@/utils/schemaEditor/diffTable";
-import { transformColumnDataToColumn } from "@/utils/schemaEditor/transform";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 
@@ -236,7 +239,9 @@ const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
 const currentTab = editorStore.currentTab as TableTabContext;
-const databaseState = editorStore.databaseStateById.get(currentTab.databaseId)!;
+const databaseSchema = editorStore.databaseSchemaById.get(
+  currentTab.databaseId
+)!;
 const state = reactive<LocalState>({
   selectedTab: "column-list",
   isFetchingDDL: false,
@@ -257,9 +262,9 @@ const allowResetTable = computed(() => {
     return false;
   }
 
-  const originTable = databaseState.originTableList.find(
-    (item) => item.oldName === state.tableCache.oldName
-  );
+  const originTable = databaseSchema.originSchemaList
+    .find((schema) => schema.name === currentTab.schemaName)
+    ?.tableList.find((table) => table.oldName === state.tableCache.oldName);
   return !isEqual(originTable, state.tableCache) || isDroppedTable.value;
 });
 
@@ -289,7 +294,7 @@ const columnHeaderList = computed(() => {
 });
 
 const dataTypeOptions = computed(() => {
-  const database = databaseState.database;
+  const database = databaseSchema.database;
   return getDataTypeSuggestionList(database.instance.engine).map((dataType) => {
     return {
       label: dataType,
@@ -329,8 +334,10 @@ watch(
   () => state.selectedTab,
   async () => {
     if (state.selectedTab === "raw-sql") {
-      const originTable = databaseState.originTableList.find(
-        (item) => item.oldName === state.tableCache.oldName
+      const originTable = editorStore.getOriginTable(
+        currentTab.databaseId,
+        currentTab.schemaName,
+        state.tableCache.oldName
       );
       const diffTableListResult = diffTableList(
         originTable ? [originTable] : [],
@@ -380,7 +387,7 @@ const handleSaveChanges = useDebounceFn(async () => {
 }, 500);
 
 const handleAddColumn = () => {
-  const column = transformColumnDataToColumn(ColumnMetadata.fromPartial({}));
+  const column = convertColumnMetadataToColumn(ColumnMetadata.fromPartial({}));
   column.status = "created";
   state.tableCache.columnList.push(column);
 };
@@ -390,8 +397,7 @@ const handleColumnDefaultFieldChange = (
   defaultString: string
 ) => {
   if (defaultString === "NULL") {
-    column.hasDefault = false;
-    column.default = "";
+    column.default = undefined;
   }
 };
 
@@ -418,8 +424,14 @@ const handleDiscardChanges = () => {
     return;
   }
 
+  const originTable = editorStore.getOriginTable(
+    currentTab.databaseId,
+    currentTab.schemaName,
+    state.tableCache.oldName
+  );
+
   state.tableCache.newName = state.tableCache.oldName;
-  state.tableCache.columnList = cloneDeep(state.tableCache.originColumnList);
+  state.tableCache.columnList = cloneDeep(originTable?.columnList ?? []);
   state.tableCache.status = "normal";
 
   const table = editorStore.getTableWithTableTab(currentTab) as Table;

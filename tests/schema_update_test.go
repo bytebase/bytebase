@@ -15,8 +15,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -24,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/tests/fake"
 )
@@ -1840,7 +1845,7 @@ func TestGetLatestSchema(t *testing.T) {
 		databaseName         string
 		ddl                  string
 		wantRawSchema        string
-		wantDatabaseMetadata string
+		wantDatabaseMetadata *storepb.DatabaseMetadata
 	}{
 		{
 			name:         "PostgreSQL",
@@ -1868,7 +1873,26 @@ CREATE TABLE public.book (
 );
 
 `,
-			wantDatabaseMetadata: `{"name": "latestSchema", "schemas": [{"name": "public", "tables": [{"name": "book", "columns": [{"name": "id", "type": "integer", "nullable": true, "position": 1, "hasDefault": true}, {"name": "name", "type": "text", "nullable": true, "position": 2, "hasDefault": true}], "dataSize": "8192"}]}], "collation": "en_US.UTF-8", "characterSet": "UTF8"}`,
+			wantDatabaseMetadata: &storepb.DatabaseMetadata{
+				Name:         "latestSchema",
+				CharacterSet: "UTF8",
+				Collation:    "en_US.UTF-8",
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name:     "book",
+								DataSize: 8192,
+								Columns: []*storepb.ColumnMetadata{
+									{Name: "id", Position: 1, Default: &wrapperspb.StringValue{Value: ""}, Nullable: true, Type: "integer"},
+									{Name: "name", Position: 2, Default: &wrapperspb.StringValue{Value: ""}, Nullable: true, Type: "text"},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 	a := require.New(t)
@@ -1958,9 +1982,130 @@ CREATE TABLE public.book (
 			latestSchemaDump, err := ctl.getLatestSchemaDump(database.ID)
 			a.NoError(err)
 			a.Equal(test.wantRawSchema, latestSchemaDump)
-			latestSchemaMetadata, err := ctl.getLatestSchemaMetadata(database.ID)
+			latestSchemaMetadataString, err := ctl.getLatestSchemaMetadata(database.ID)
 			a.NoError(err)
-			a.Equal(test.wantDatabaseMetadata, latestSchemaMetadata)
+			var latestSchemaMetadata storepb.DatabaseMetadata
+			err = protojson.Unmarshal([]byte(latestSchemaMetadataString), &latestSchemaMetadata)
+			a.NoError(err)
+			diff := cmp.Diff(test.wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
+			a.Equal("", diff)
 		})
 	}
+}
+
+func TestMarkTaskAsDone(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	dataDir := t.TempDir()
+	err := ctl.StartServerWithExternalPg(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+	})
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	// Create a project.
+	project, err := ctl.createProject(api.ProjectCreate{
+		Name: "Test Project",
+		Key:  "TestSchemaUpdate",
+	})
+	a.NoError(err)
+
+	// Provision an instance.
+	instanceRootDir := t.TempDir()
+	instanceName := "testInstance1"
+	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
+	a.NoError(err)
+
+	environments, err := ctl.getEnvironments()
+	a.NoError(err)
+	prodEnvironment, err := findEnvironment(environments, "Prod")
+	a.NoError(err)
+
+	// Add an instance.
+	instance, err := ctl.addInstance(api.InstanceCreate{
+		EnvironmentID: prodEnvironment.ID,
+		Name:          instanceName,
+		Engine:        db.SQLite,
+		Host:          instanceDir,
+	})
+	a.NoError(err)
+
+	// Expecting project to have no database.
+	databases, err := ctl.getDatabases(api.DatabaseFind{
+		ProjectID: &project.ID,
+	})
+	a.NoError(err)
+	a.Zero(len(databases))
+	// Expecting instance to have no database.
+	databases, err = ctl.getDatabases(api.DatabaseFind{
+		InstanceID: &instance.ID,
+	})
+	a.NoError(err)
+	a.Zero(len(databases))
+
+	// Create an issue that creates a database.
+	databaseName := "testSchemaUpdate"
+	err = ctl.createDatabase(project, instance, databaseName, "", nil /* labelMap */)
+	a.NoError(err)
+
+	// Expecting project to have 1 database.
+	databases, err = ctl.getDatabases(api.DatabaseFind{
+		ProjectID: &project.ID,
+	})
+	a.NoError(err)
+	a.Equal(1, len(databases))
+	database := databases[0]
+	a.Equal(instance.ID, database.Instance.ID)
+
+	// Create an issue that updates database schema.
+	createContext, err := json.Marshal(&api.MigrationContext{
+		DetailList: []*api.MigrationDetail{
+			{
+				MigrationType: db.Migrate,
+				DatabaseID:    database.ID,
+				Statement:     migrationStatement,
+			},
+		},
+	})
+	a.NoError(err)
+	issue, err := ctl.createIssue(api.IssueCreate{
+		ProjectID:   project.ID,
+		Name:        fmt.Sprintf("update schema for database %q", databaseName),
+		Type:        api.IssueDatabaseSchemaUpdate,
+		Description: fmt.Sprintf("This updates the schema of database %q.", databaseName),
+		// Assign to self.
+		AssigneeID:    project.Creator.ID,
+		CreateContext: string(createContext),
+	})
+	a.NoError(err)
+
+	// Skip the task.
+	a.Equal(1, len(issue.Pipeline.StageList))
+	a.Equal(1, len(issue.Pipeline.StageList[0].TaskList))
+	task := issue.Pipeline.StageList[0].TaskList[0]
+	skippedReason := "skip it!"
+	task, err = ctl.patchTaskStatus(api.TaskStatusPatch{
+		Status:  api.TaskDone,
+		Comment: &skippedReason,
+	}, issue.PipelineID, task.ID)
+	a.NoError(err)
+	a.Equal(api.TaskDone, task.Status)
+
+	var payload api.TaskDatabaseSchemaUpdatePayload
+	err = json.Unmarshal([]byte(task.Payload), &payload)
+	a.NoError(err)
+	a.Equal(true, payload.Skipped)
+	a.Equal(skippedReason, payload.SkippedReason)
+
+	status, err := ctl.waitIssuePipelineWithNoApproval(issue.ID)
+	a.NoError(err)
+	a.Equal(api.TaskDone, status)
+
+	// Query schema.
+	result, err := ctl.query(instance, databaseName, bookTableQuery)
+	a.NoError(err)
+	a.NotEqual(bookSchemaSQLResult, result)
 }

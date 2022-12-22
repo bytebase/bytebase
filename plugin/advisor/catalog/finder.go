@@ -10,7 +10,7 @@ type FinderContext struct {
 	// CheckIntegrity defines the policy for integrity checking.
 	// There are two cases that will cause database to have an empty catalog:
 	//   1. we cannot fetch the catalog, such as GitHub App/Actions.
-	//   2. the databse is indeed empty.
+	//   2. the database is indeed empty.
 	// We need different logic to deal with these two cases separately.
 	// If DROP TABLE t and t not exists:
 	//   1. For case one, just ignore this statement.

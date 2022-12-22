@@ -10,10 +10,14 @@ import {
   Issue,
   IssueId,
   PrincipalId,
-  ProjectId,
   ResourceObject,
   UNKNOWN_ID,
+  isPagedResponse,
+  ResourceIdentifier,
+  empty,
+  ActivityFind,
 } from "@/types";
+import { convertEntityList } from "./utils";
 import { useAuthStore } from "./auth";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useIssueStore } from "./issue";
@@ -38,6 +42,27 @@ function convert(
     id: parseInt(activity.id),
     payload,
   };
+}
+
+function getActivityFromIncludedList(
+  data:
+    | ResourceIdentifier<ResourceObject>
+    | ResourceIdentifier<ResourceObject>[]
+    | undefined,
+  includedList: ResourceObject[]
+): Activity {
+  if (data == null) {
+    return empty("ACTIVITY");
+  }
+  for (const item of includedList || []) {
+    if (item.type !== "activity") {
+      continue;
+    }
+    if (item.id == (data as ResourceIdentifier).id) {
+      return convert(item, includedList);
+    }
+  }
+  return empty("ACTIVITY");
 }
 
 export const useActivityStore = defineStore("activity", {
@@ -87,22 +112,31 @@ export const useActivityStore = defineStore("activity", {
       this.setActivityListForUser({ userId, activityList });
       return activityList;
     },
-    async fetchActivityList(params: {
-      typePrefix: string;
-      container: number | string;
-      order: "ASC" | "DESC";
-      limit?: number;
-    }) {
-      const url = `/api/activity?${stringify(params)}`;
-      const response = (await axios.get(url)).data;
-      const activityList: Activity[] = response.data.map(
-        (activity: ResourceObject) => {
-          return convert(activity, response.included);
-        }
+    async fetchPagedActivityList(params: ActivityFind) {
+      const url = `/api/activity?${stringify(params, {
+        arrayFormat: "repeat",
+      })}`;
+      const responseData = (await axios.get(url)).data;
+      const activityList = convertEntityList(
+        responseData,
+        "activityList",
+        convert,
+        getActivityFromIncludedList
       );
-      return activityList;
+      const nextToken = isPagedResponse(responseData, "activityList")
+        ? responseData.data.attributes.nextToken
+        : "";
+      return {
+        nextToken,
+        activityList,
+      };
+    },
+    async fetchActivityList(params: ActivityFind) {
+      const result = await this.fetchPagedActivityList(params);
+      return result.activityList;
     },
     async fetchActivityListForIssue(issue: Issue) {
+      // We should use two separate requests here because we are using different container ids.
       const requestListForIssue = this.fetchActivityList({
         typePrefix: "bb.issue.",
         container: issue.id,
@@ -140,88 +174,18 @@ export const useActivityStore = defineStore("activity", {
       }
       this.fetchActivityListForIssue(issue);
     },
-    // We do not store the returned list because the caller will specify different limits.
-    async fetchActivityListForProject({
-      projectId,
-      limit,
-    }: {
-      projectId: ProjectId;
-      limit?: number;
-    }) {
-      const queryList = [
-        "typePrefix=bb.project.",
-        `container=${projectId}`,
-        `order=DESC`,
-      ];
-      if (limit) {
-        queryList.push(`limit=${limit}`);
-      }
-      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
-        .data;
-      const activityList: Activity[] = data.data.map(
-        (activity: ResourceObject) => {
-          return convert(activity, data.included);
-        }
-      );
-
-      return activityList;
-    },
     async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
       const { currentUser } = useAuthStore();
-      const fetchQueryList = async (level: string) => {
-        const queryList = [
-          "typePrefix=bb.sql-editor.query",
-          `user=${currentUser.id}`,
-          `order=DESC`,
-          `limit=${limit}`,
-          // only fetch the successful query history
-          `level=${level}`,
-        ];
-        const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
-          .data;
-        const activityList: Activity[] = data.data.map(
-          (activity: ResourceObject) => {
-            return convert(activity, data.included);
-          }
-        );
-        return activityList;
-      };
-      const [successful, withWarning] = await Promise.all([
-        fetchQueryList("INFO"),
-        fetchQueryList("WARN"),
-      ]);
-      const mixedList = [...successful, ...withWarning];
-
-      // ORDER BY `id` DESC
-      mixedList.sort((a, b) => b.id - a.id);
+      const activityList = await this.fetchActivityList({
+        typePrefix: "bb.sql-editor.query",
+        user: currentUser.id,
+        order: "DESC",
+        limit,
+        level: ["INFO", "WARN"],
+      });
 
       // return the first `limit` rows
-      return mixedList.slice(0, limit);
-    },
-    async fetchActivityListForDatabaseByProjectId({
-      projectId,
-      limit,
-    }: {
-      projectId: ProjectId;
-      limit?: number;
-    }) {
-      const queryList = [
-        "typePrefix=bb.database.",
-        `container=${projectId}`,
-        `order=DESC`,
-      ];
-      if (limit) {
-        queryList.push(`limit=${limit}`);
-      }
-      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
-        .data;
-      const activityList: Activity[] = data.data.map(
-        (activity: ResourceObject) => {
-          return convert(activity, data.included);
-        }
-      );
-
-      return activityList;
+      return activityList.slice(0, limit);
     },
     async createActivity(newActivity: ActivityCreate) {
       const data = (

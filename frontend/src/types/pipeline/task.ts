@@ -6,6 +6,7 @@ import {
   InstanceId,
   IssueId,
   ProjectId,
+  SheetId,
   TaskId,
   TaskRunId,
 } from "../id";
@@ -45,40 +46,56 @@ export type TaskEarliestAllowedTimePayload = {
 };
 
 export type TaskDatabaseCreatePayload = {
+  skipped: boolean;
+  skippedReason: string;
   projectId: ProjectId;
   statement: string;
+  sheetId: SheetId;
   databaseName: string;
   characterSet: string;
   collation: string;
 };
 
 export type TaskDatabaseSchemaBaselinePayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
   schemaVersion: string;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdatePayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateSDLPayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateGhostSyncPayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
-  // empty by now
-  // more input and output parameters in the future
+  skipped: boolean;
+  skippedReason: string;
 };
 
 export type TaskDatabasePITRRestorePayload = {
+  skipped: boolean;
+  skippedReason: string;
   projectId: ProjectId;
   pointInTimeTs: number; // UNIX timestamp
   databaseName?: string; // used when PITR to new DB
@@ -86,8 +103,8 @@ export type TaskDatabasePITRRestorePayload = {
 };
 
 export type TaskDatabasePITRCutoverPayload = {
-  // empty by now
-  // more input and output parameters in the future
+  skipped: boolean;
+  skippedReason: string;
 };
 
 export type TaskDatabasePITRDeletePayload = {
@@ -96,7 +113,10 @@ export type TaskDatabasePITRDeletePayload = {
 };
 
 export type TaskDatabaseDataUpdatePayload = {
+  skipped: boolean;
+  skippedReason: string;
   statement: string;
+  sheetId: SheetId;
   pushEvent?: VCSPushEvent;
   rollbackStatement: string;
   rollbackFromIssueId: IssueId;
@@ -174,6 +194,8 @@ export type TaskCreate = {
   instanceId: InstanceId;
   databaseId?: DatabaseId;
   statement: string;
+  // statement and sheet ID should be mutually exclusive.
+  sheetId?: SheetId;
   databaseName?: string;
   characterSet?: string;
   collation?: string;

@@ -330,7 +330,6 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			continue
 		}
 		if len(backupList) > 0 {
-			log.Debug("Skip creating backup because it already exists", zap.Int("database-id", db.ID), zap.String("name", backupName))
 			continue
 		}
 

@@ -10,10 +10,13 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/common"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -23,6 +26,7 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID", s.getInstanceByID)
 	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
 	g.DELETE("/instance/:instanceID", s.deleteInstanceByOpenAPI)
+	g.GET("/instance/:instanceID/role", s.listDatabaseRole)
 	g.POST("/instance/:instanceID/role", s.createDatabaseRole)
 	g.GET("/instance/:instanceID/role/:roleName", s.getDatabaseRole)
 	g.PATCH("/instance/:instanceID/role/:roleName", s.updateDatabaseRole)
@@ -190,6 +194,55 @@ func (s *Server) getInstanceByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, convertToOpenAPIInstance(instance))
 }
 
+func (s *Server) listDatabaseRole(c echo.Context) error {
+	ctx := c.Request().Context()
+	instance, err := s.validateInstance(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	roleList, err := func() ([]*v1pb.DatabaseRole, error) {
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+
+		roleList, err := driver.ListRole(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return roleList, nil
+	}()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+	}
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+
+	response := &v1pb.DatabaseRoleList{}
+	for _, role := range roleList {
+		response.RoleList = append(response.RoleList, &v1pb.DatabaseRole{
+			Name:            role.Name,
+			InstanceId:      int32(instance.ID),
+			ConnectionLimit: role.ConnectionLimit,
+			ValidUntil:      role.ValidUntil,
+			Attribute:       role.Attribute,
+		})
+	}
+
+	metadataBytes, err := protojson.Marshal(response)
+	if err != nil {
+		return err
+	}
+	if _, err := c.Response().Write(metadataBytes); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to write schema response for role list").SetInternal(err)
+	}
+
+	return nil
+}
+
 func (s *Server) getDatabaseRole(c echo.Context) error {
 	ctx := c.Request().Context()
 	roleName := c.Param("roleName")
@@ -199,7 +252,7 @@ func (s *Server) getDatabaseRole(c echo.Context) error {
 		return err
 	}
 
-	role, err := func() (*db.Role, error) {
+	role, err := func() (*v1pb.DatabaseRole, error) {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
@@ -214,10 +267,13 @@ func (s *Server) getDatabaseRole(c echo.Context) error {
 		return role, nil
 	}()
 	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the role %s in instance %d", roleName, instance.ID))
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, convertToOpenAPIDatabaseRole(role, instance.ID))
+	return marshalDatabaseRoleResponse(c, role, instance.ID)
 }
 
 func (s *Server) createDatabaseRole(c echo.Context) error {
@@ -228,9 +284,9 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	upsert := &db.RoleUpsert{}
-	if err := json.Unmarshal(body, upsert); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
+	var upsert v1pb.DatabaseRoleUpsert
+	if err := protojson.Unmarshal(body, &upsert); err != nil {
+		return err
 	}
 
 	instance, err := s.validateInstance(ctx, c)
@@ -238,14 +294,14 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return err
 	}
 
-	role, err := func() (*db.Role, error) {
+	role, err := func() (*v1pb.DatabaseRole, error) {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
 		}
 		defer driver.Close(ctx)
 
-		role, err := driver.CreateRole(ctx, upsert)
+		role, err := driver.CreateRole(ctx, &upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -256,7 +312,7 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, convertToOpenAPIDatabaseRole(role, instance.ID))
+	return marshalDatabaseRoleResponse(c, role, instance.ID)
 }
 
 func (s *Server) deleteDatabaseRole(c echo.Context) error {
@@ -291,9 +347,9 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	upsert := &db.RoleUpsert{}
-	if err := json.Unmarshal(body, upsert); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create role request").SetInternal(err)
+	var upsert v1pb.DatabaseRoleUpsert
+	if err := protojson.Unmarshal(body, &upsert); err != nil {
+		return err
 	}
 
 	instance, err := s.validateInstance(ctx, c)
@@ -302,14 +358,14 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 	}
 
 	rawName := c.Param("roleName")
-	role, err := func() (*db.Role, error) {
+	role, err := func() (*v1pb.DatabaseRole, error) {
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
 		}
 		defer driver.Close(ctx)
 
-		role, err := driver.UpdateRole(ctx, rawName, upsert)
+		role, err := driver.UpdateRole(ctx, rawName, &upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -317,10 +373,13 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		return role, nil
 	}()
 	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the role %s in instance %d", rawName, instance.ID))
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, convertToOpenAPIDatabaseRole(role, instance.ID))
+	return marshalDatabaseRoleResponse(c, role, instance.ID)
 }
 
 func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Instance, error) {
@@ -340,14 +399,23 @@ func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Ins
 	return instance, nil
 }
 
-func convertToOpenAPIDatabaseRole(role *db.Role, instanceID int) *openAPIV1.DatabaseRole {
-	return &openAPIV1.DatabaseRole{
+func marshalDatabaseRoleResponse(c echo.Context, role *v1pb.DatabaseRole, instanceID int) error {
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	metadataBytes, err := protojson.Marshal(&v1pb.DatabaseRole{
 		Name:            role.Name,
-		InstanceID:      instanceID,
+		InstanceId:      int32(instanceID),
 		ConnectionLimit: role.ConnectionLimit,
 		ValidUntil:      role.ValidUntil,
 		Attribute:       role.Attribute,
+	})
+	if err != nil {
+		return err
 	}
+	if _, err := c.Response().Write(metadataBytes); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for role %v", role.Name)).SetInternal(err)
+	}
+
+	return nil
 }
 
 func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {

@@ -290,8 +290,8 @@
       "counting": "统计中"
     },
     "n-similar-tasks": "({count} 个相似的任务)",
-    "mark-as-done": "标记为已完成",
-    "mark-as-done-modal-title": "将任务[{name}]标记为已完成？"
+    "skip": "跳过",
+    "skip-modal-title": "跳过任务[{name}]？"
   },
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
@@ -483,7 +483,8 @@
       "task-name": "任务 {name}",
       "committed-to-at": "提交 {file} 到 {branch}{'@'}{repo}",
       "dismissed-stale-approval": "更新了{task}，此前的批准已被撤销",
-      "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批"
+      "external-approval-rejected": "拒绝阶段 \"{stageName}\" 的{imName}外部审批",
+      "skipped": "跳过"
     },
     "subject-prefix": {
       "task": "任务"
@@ -558,6 +559,8 @@
     "edit-sql-statement-in-vcs": "该项目开启了基于 VCS 的版本管理。请在对应的 Git 仓库修改 SQL 文件并提交，开启新的工单。",
     "edit-sql-statement": "编辑 SQL 语句",
     "upload-sql": "上传 SQL",
+    "upload-sql-as-sheet": "上传 SQL 至工作表",
+    "statement-from-sheet-warning": "当前的 SQL 语句来自一个工作表。它是只读的且只显示了部分内容。",
     "override-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
     "waiting-earliest-allowed-time": "将于 {time} 之后执行",
@@ -987,7 +990,11 @@
       "preview-issue": "预览工单"
     },
     "sensitive": "敏感",
-    "access-denied": "你没有访问该数据库的权限"
+    "access-denied": "你没有访问该数据库的权限",
+    "schema": {
+      "select": "选择 schema"
+    },
+    "show-missing-databases": "显示未找到的数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1733,5 +1740,9 @@
         "keep-going-with-bytebase": "继续使用 Bytebase！"
       }
     }
+  },
+  "schema-diagram": {
+    "self": "Schema 展示图",
+    "fit-content-with-view": "自动适应视图"
   }
 }

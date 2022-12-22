@@ -290,8 +290,8 @@
       "counting": "Counting"
     },
     "n-similar-tasks": "({count} similar tasks)",
-    "mark-as-done": "Mark as done",
-    "mark-as-done-modal-title": "Mark task [{name}] as done?"
+    "skip": "Skip",
+    "skip-modal-title": "Skip task [{name}]?"
   },
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
@@ -483,7 +483,8 @@
       "task-name": " task {name}",
       "committed-to-at": "committed {file} to {branch}{'@'}{repo}",
       "dismissed-stale-approval": "dismissed stale approvals of {task}",
-      "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\""
+      "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\"",
+      "skipped": "skipped"
     },
     "subject-prefix": {
       "task": "Task"
@@ -558,6 +559,8 @@
     "edit-sql-statement-in-vcs": "This project has enabled VCS based version control. Please modify the SQL file in the corresponding Git repository, and commit it to create a new issue.",
     "edit-sql-statement": "Edit SQL statement",
     "upload-sql": "Upload SQL",
+    "upload-sql-as-sheet": "Upload SQL as Sheet",
+    "statement-from-sheet-warning": "The current SQL statement comes from a sheet. It is read-only and only part of it is displayed.",
     "override-current-statement": "Override current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "waiting-earliest-allowed-time": "Will run after {time}",
@@ -987,7 +990,11 @@
       "preview-issue": "Preview issue"
     },
     "sensitive": "Sensitive",
-    "access-denied": "You don't have the permission to access this database."
+    "access-denied": "You don't have the permission to access this database.",
+    "schema": {
+      "select": "Select schema"
+    },
+    "show-missing-databases": "Show missing databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1732,5 +1739,9 @@
         "keep-going-with-bytebase": "Keep going with Bytebase!"
       }
     }
+  },
+  "schema-diagram": {
+    "self": "Schema Diagram",
+    "fit-content-with-view": "Fit content within view"
   }
 }

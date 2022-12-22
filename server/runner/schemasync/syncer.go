@@ -14,8 +14,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -342,7 +342,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 
 	// Sync database schema
-	schema, err := driver.SyncDBSchema(ctx, databaseName)
+	schema, fkMap, err := driver.SyncDBSchema(ctx, databaseName)
 	if err != nil {
 		return err
 	}
@@ -396,31 +396,22 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 
 	// Sync database schema
-	return syncDBSchema(ctx, s.store, database, schema, driver, force)
+	return syncDBSchema(ctx, s.store, database, schema, fkMap, driver, force)
 }
 
-func syncDBSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema, driver db.Driver, force bool) error {
-	dbSchema, err := store.GetDBSchema(ctx, database.ID)
+func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Database, schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMetadata, driver db.Driver, force bool) error {
+	dbSchema, err := stores.GetDBSchema(ctx, database.ID)
 	if err != nil {
 		return err
 	}
-
-	databaseMetadata := convertDBSchema(schema)
 	var oldDatabaseMetadata *storepb.DatabaseMetadata
 	if dbSchema != nil {
-		var m storepb.DatabaseMetadata
-		if err := protojson.Unmarshal([]byte(dbSchema.Metadata), &m); err != nil {
-			return err
-		}
-		oldDatabaseMetadata = &m
+		oldDatabaseMetadata = dbSchema.Metadata
 	}
 
+	databaseMetadata := convertDBSchema(schema, fkMap)
+
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
-		metadataBytes, err := protojson.Marshal(databaseMetadata)
-		if err != nil {
-			return err
-		}
-		metadata := string(metadataBytes)
 		rawDump := ""
 		if dbSchema != nil {
 			rawDump = dbSchema.RawDump
@@ -435,10 +426,10 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 			rawDump = schemaBuf.String()
 		}
 
-		if _, err := store.UpsertDBSchema(ctx, api.DBSchemaUpsert{
+		if err := stores.UpsertDBSchema(ctx, store.DBSchemaUpsert{
 			UpdatorID:  api.SystemBotID,
 			DatabaseID: database.ID,
-			Metadata:   metadata,
+			Metadata:   databaseMetadata,
 			RawDump:    rawDump,
 		}); err != nil {
 			return err
@@ -447,7 +438,10 @@ func syncDBSchema(ctx context.Context, store *store.Store, database *api.Databas
 	return nil
 }
 
-func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
+func convertDBSchema(schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMetadata) *storepb.DatabaseMetadata {
+	if fkMap == nil {
+		fkMap = make(map[string][]*storepb.ForeignKeyMetadata)
+	}
 	databaseMetadata := &storepb.DatabaseMetadata{
 		Name:         schema.Name,
 		CharacterSet: schema.CharacterSet,
@@ -489,6 +483,7 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 				IndexSize:     table.IndexSize,
 				CreateOptions: table.CreateOptions,
 				Comment:       table.Comment,
+				ForeignKeys:   fkMap[table.Name],
 			}
 
 			sort.Slice(table.ColumnList, func(i, j int) bool {
@@ -505,8 +500,7 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 					Comment:      column.Comment,
 				}
 				if column.Default != nil {
-					columnMetadata.HasDefault = true
-					columnMetadata.Default = *column.Default
+					columnMetadata.Default = &wrapperspb.StringValue{Value: *column.Default}
 				}
 				tableMetadata.Columns = append(tableMetadata.Columns, columnMetadata)
 			}

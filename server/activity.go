@@ -58,6 +58,15 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	g.GET("/activity", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		activityFind := &api.ActivityFind{}
+
+		pageToken := c.QueryParams().Get("token")
+		// We use descending order by default for activities.
+		sinceID, err := unmarshalPageToken(pageToken, api.DESC)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed page token").SetInternal(err)
+		}
+		activityFind.SinceID = &sinceID
+
 		if creatorIDStr := c.QueryParams().Get("user"); creatorIDStr != "" {
 			creatorID, err := strconv.Atoi(creatorIDStr)
 			if err != nil {
@@ -65,12 +74,15 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			}
 			activityFind.CreatorID = &creatorID
 		}
-		if typePrefixStr := c.QueryParams().Get("typePrefix"); typePrefixStr != "" {
-			activityFind.TypePrefix = &typePrefixStr
+		if typePrefixList := c.QueryParams()["typePrefix"]; typePrefixList != nil {
+			activityFind.TypePrefixList = typePrefixList
 		}
-		if levelStr := c.QueryParams().Get("level"); levelStr != "" {
-			activityLevel := api.ActivityLevel(levelStr)
-			activityFind.Level = &activityLevel
+		if levelList := c.QueryParams()["level"]; levelList != nil {
+			list := make([]api.ActivityLevel, len(levelList))
+			for i, level := range levelList {
+				list[i] = api.ActivityLevel(level)
+			}
+			activityFind.LevelList = list
 		}
 		if containerIDStr := c.QueryParams().Get("container"); containerIDStr != "" {
 			containerID, err := strconv.Atoi(containerIDStr)
@@ -85,6 +97,9 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter limit is not a number: %s", limitStr)).SetInternal(err)
 			}
 			activityFind.Limit = &limit
+		} else {
+			limit := api.DefaultPageSize
+			activityFind.Limit = &limit
 		}
 		if orderStr := c.QueryParams().Get("order"); orderStr != "" {
 			order, err := api.StringToSortOrder(orderStr)
@@ -98,8 +113,20 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch activity list").SetInternal(err)
 		}
 
+		activityResponse := &api.ActivityResponse{}
+		activityResponse.ActivityList = activityList
+
+		nextSinceID := sinceID
+		if len(activityList) > 0 {
+			// Decrement the ID as we use decreasing order by default.
+			nextSinceID = activityList[len(activityList)-1].ID - 1
+		}
+		if activityResponse.NextToken, err = marshalPageToken(nextSinceID); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal page token").SetInternal(err)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, activityList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, activityResponse); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal activity list response").SetInternal(err)
 		}
 		return nil
