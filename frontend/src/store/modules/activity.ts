@@ -136,6 +136,7 @@ export const useActivityStore = defineStore("activity", {
       return result.activityList;
     },
     async fetchActivityListForIssue(issue: Issue) {
+      // We should use two separate requests here because we are using different container ids.
       const requestListForIssue = this.fetchActivityList({
         typePrefix: "bb.issue.",
         container: issue.id,
