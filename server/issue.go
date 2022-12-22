@@ -1185,6 +1185,9 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
 		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
 	case db.MongoDB:
+		// We just run createCollection in mongosh instead of execute `use <database>` first, because we execute the
+		// mongodb statement in mongosh with --file flag, and it doesn't support `use <database>` statement in the file.
+		// And we pass the database name to Bytebase engine driver, which will be used to build the connection string.
 		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
