@@ -142,6 +142,7 @@ func (driver *Driver) syncAllIndexSchema(ctx context.Context, databaseName, coll
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list indexes")
 	}
+	defer indexCursor.Close(ctx)
 
 	var indexList []db.Index
 	for indexCursor.Next(ctx) {

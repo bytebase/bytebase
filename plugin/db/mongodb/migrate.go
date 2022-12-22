@@ -220,6 +220,7 @@ func (driver *Driver) FindLargestSequence(ctx context.Context, _ *sql.Tx, namesp
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to aggregate migration history list to find largest sequence")
 	}
+	defer cursor.Close(ctx)
 
 	var result bson.M
 	if cursor.Next(ctx) {
@@ -267,6 +268,8 @@ func (driver *Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *s
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to aggregate migration history list to find largest version since baseline")
 	}
+	defer cursor.Close(ctx)
+
 	if cursor.Next(ctx) {
 		var result bson.M
 		if err := cursor.Decode(&result); err != nil {
@@ -388,6 +391,8 @@ func (driver *Driver) getMigrationHistoryNextID(ctx context.Context) (int64, err
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to aggregate migration history list to find largest ID")
 	}
+	defer cursor.Close(ctx)
+
 	if cursor.Next(ctx) {
 		var result bson.M
 		if err := cursor.Decode(&result); err != nil {
