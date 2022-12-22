@@ -320,9 +320,9 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-  hideNotFoundDatabases: {
+  showMissingDatabases: {
     type: Boolean,
-    default: true,
+    default: false,
   },
 });
 
@@ -339,7 +339,7 @@ const wrapper = ref<HTMLElement>();
 
 const sortedDatabaseList = computed(() => {
   let list = [...props.databaseList];
-  if (props.hideNotFoundDatabases) {
+  if (!props.showMissingDatabases) {
     list = list.filter((db) => db.syncStatus === "OK");
   } else {
     list.sort((a, b) => {
@@ -502,7 +502,7 @@ watch(
   { immediate: true }
 );
 watch(
-  () => props.hideNotFoundDatabases,
+  () => props.showMissingDatabases,
   () => handleChangePage(1)
 );
 
