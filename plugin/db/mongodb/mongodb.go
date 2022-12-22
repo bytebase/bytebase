@@ -82,7 +82,7 @@ func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 	return nil, nil
 }
 
-// Execute executes a statement, always returns 0 as the number of rows affected.
+// Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
 func (driver *Driver) Execute(_ context.Context, statement string, _ bool) (int64, error) {
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
