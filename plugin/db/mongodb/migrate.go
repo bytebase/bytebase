@@ -287,7 +287,7 @@ func (driver *Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *s
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error) {
+func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, sequence int, _ string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error) {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 	currentTimestamp := getMongoTimestamp()
 	nextID, err := driver.getMigrationHistoryNextID(ctx)

@@ -83,7 +83,7 @@ func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 }
 
 // Execute executes a statement, always returns 0 as the number of rows affected.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
+func (driver *Driver) Execute(_ context.Context, statement string, _ bool) (int64, error) {
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
 	// There are some ways to execute the statement in mongosh:
