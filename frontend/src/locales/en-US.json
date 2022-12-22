@@ -991,7 +991,8 @@
     "access-denied": "You don't have the permission to access this database.",
     "schema": {
       "select": "Select schema"
-    }
+    },
+    "show-missing-databases": "Show missing databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

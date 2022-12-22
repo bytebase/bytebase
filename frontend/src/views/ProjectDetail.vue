@@ -11,6 +11,7 @@
       v-if="isTenantProject"
       id="deployment-config"
       :project="project"
+      :database-list="databaseList"
       :allow-edit="allowEdit"
     />
     <ProjectDatabasesPanel
@@ -114,7 +115,9 @@ export default defineComponent({
 
     const databaseList = computed(() => {
       const list = cloneDeep(
-        databaseStore.getDatabaseListByProjectId(project.value.id)
+        databaseStore
+          .getDatabaseListByProjectId(project.value.id)
+          .filter((db) => db.syncStatus === "OK")
       );
       return sortDatabaseList(list, environmentList.value);
     });
