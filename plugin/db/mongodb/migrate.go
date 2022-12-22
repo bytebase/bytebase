@@ -294,10 +294,9 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 
 	retryTimes := 3
-	nextID := int64(0)
 	for i := 0; i < retryTimes; i++ {
 		currentTimestamp := getMongoTimestamp()
-		nextID, err = driver.getMigrationHistoryNextID(ctx)
+		nextID, err := driver.getMigrationHistoryNextID(ctx)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to get next migration history ID")
 		}
@@ -340,7 +339,7 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 		}
 		return nextID, nil
 	}
-	return nextID, nil
+	return 0, errors.Errorf("failed to insert a pending migration history record because of the duplidate id after %d retries", retryTimes)
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
