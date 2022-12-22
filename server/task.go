@@ -149,6 +149,9 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		if taskStatusPatch.Status == api.TaskDone {
+			if task.Status == api.TaskRunning {
+				return echo.NewHTTPError(http.StatusBadRequest, "Cannot mark the task as done because it's running")
+			}
 			// the user marks the task as DONE, set Skipped to true and SkippedReason to Comment.
 			skipped := true
 			taskStatusPatch.Skipped = &skipped
