@@ -12,11 +12,11 @@
         <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
       </div>
       <button
-        v-if="allowApplyStatementToOtherTasks"
+        v-if="allowApplyTaskStateToOthers"
         :disabled="isEmpty(state.editStatement)"
         type="button"
         class="btn-small"
-        @click.prevent="applyStatementToOtherTasks(state.editStatement)"
+        @click.prevent="applyTaskStateToOthers(selectedTask as Task)"
       >
         {{ $t("issue.apply-to-other-tasks") }}
       </button>
@@ -233,8 +233,8 @@ const {
   selectedTask,
   updateStatement,
   updateSheetId,
-  allowApplyStatementToOtherTasks,
-  applyStatementToOtherTasks,
+  allowApplyTaskStateToOthers,
+  applyTaskStateToOthers,
 } = useIssueLogic();
 
 const { t } = useI18n();

@@ -32,8 +32,8 @@ export default defineComponent({
       createIssue,
       isTenantMode,
       allowApplyTaskStatusTransition: baseAllowApplyTaskStatusTransition,
-      allowApplyStatementToOtherTasks: baseAllowApplyStatementToOtherTasks,
-      applyStatementToOtherTasks: baseApplyStatementToOtherTasks,
+      allowApplyTaskStateToOthers: baseAllowApplyTaskStateToOthers,
+      applyTaskStateToOthers: baseApplyTaskStateToOthers,
       onStatusChanged,
     } = useIssueLogic();
     const databaseStore = useDatabaseStore();
@@ -248,14 +248,15 @@ export default defineComponent({
       return baseAllowApplyTaskStatusTransition(task, to);
     };
 
-    const allowApplyStatementToOtherTasks = computed(() => {
-      // We are never allowed to "apply statement to other stages" in tenant mode.
+    const allowApplyTaskStateToOthers = computed(() => {
+      // We are never allowed to "apply task state to other stages" in tenant mode.
       if (isTenantMode.value) return false;
-      return baseAllowApplyStatementToOtherTasks.value;
+      return baseAllowApplyTaskStateToOthers.value;
     });
-    const applyStatementToOtherTasks = (statement: string) => {
-      if (!allowApplyStatementToOtherTasks.value) return;
-      return baseApplyStatementToOtherTasks(statement);
+
+    const applyTaskStateToOthers = (task: Task) => {
+      if (!allowApplyTaskStateToOthers.value) return;
+      return baseApplyTaskStateToOthers(task);
     };
 
     const logic = {
@@ -263,8 +264,8 @@ export default defineComponent({
       selectedStatement,
       doCreate,
       allowApplyTaskStatusTransition,
-      allowApplyStatementToOtherTasks,
-      applyStatementToOtherTasks,
+      allowApplyTaskStateToOthers,
+      applyTaskStateToOthers,
       updateStatement,
       updateSheetId,
     };
