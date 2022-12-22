@@ -292,33 +292,48 @@ func (driver *Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *s
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, sequence int, _ string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error) {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
-	currentTimestamp := getMongoTimestamp()
-	nextID, err := driver.getMigrationHistoryNextID(ctx)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get next migration history ID")
-	}
 
-	document := bson.M{
-		"id":                    nextID,
-		"created_by":            m.Creator,
-		"created_ts":            currentTimestamp,
-		"updated_by":            m.Creator,
-		"updated_ts":            currentTimestamp,
-		"release_version":       m.ReleaseVersion,
-		"namespace":             m.Namespace,
-		"sequence":              int64(sequence),
-		"source":                m.Source,
-		"type":                  m.Type,
-		"status":                db.Pending,
-		"version":               storedVersion,
-		"description":           m.Description,
-		"statement":             statement,
-		"execution_duration_ns": int64(0),
-		"issue_id":              m.IssueID,
-		"payload":               m.Payload,
-	}
-	if _, err = collection.InsertOne(ctx, document); err != nil {
-		return 0, errors.Wrapf(err, "failed to insert a pending migration history")
+	retryTimes := 3
+	nextID := int64(0)
+	for i := 0; i < retryTimes; i++ {
+		currentTimestamp := getMongoTimestamp()
+		nextID, err = driver.getMigrationHistoryNextID(ctx)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to get next migration history ID")
+		}
+
+		document := bson.M{
+			"id":                    nextID,
+			"created_by":            m.Creator,
+			"created_ts":            currentTimestamp,
+			"updated_by":            m.Creator,
+			"updated_ts":            currentTimestamp,
+			"release_version":       m.ReleaseVersion,
+			"namespace":             m.Namespace,
+			"sequence":              int64(sequence),
+			"source":                m.Source,
+			"type":                  m.Type,
+			"status":                db.Pending,
+			"version":               storedVersion,
+			"description":           m.Description,
+			"statement":             statement,
+			"execution_duration_ns": int64(0),
+			"issue_id":              m.IssueID,
+			"payload":               m.Payload,
+		}
+		if _, err = collection.InsertOne(ctx, document); err != nil {
+			// Detect if it's a duplicate key error.
+			if driverErr, ok := err.(mongo.WriteException); ok {
+				for _, writeErr := range driverErr.WriteErrors {
+					if writeErr.Code == 121 {
+						log.Info("Duplicate key error with migration_history id: %d, retrying...", zap.Int64("id", nextID))
+						continue
+					}
+				}
+			}
+			return 0, errors.Wrapf(err, "failed to insert a pending migration history record")
+		}
+		return nextID, nil
 	}
 	return nextID, nil
 }
