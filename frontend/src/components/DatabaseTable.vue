@@ -316,6 +316,14 @@ const props = defineProps({
     type: Number,
     default: 20,
   },
+  scrollOnPageChange: {
+    type: Boolean,
+    default: true,
+  },
+  hideNotFoundDatabases: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(["select-database"]);
@@ -330,16 +338,21 @@ const state = reactive<State>({
 const wrapper = ref<HTMLElement>();
 
 const sortedDatabaseList = computed(() => {
-  const list = [...props.databaseList];
-  list.sort((a, b) => {
-    if (a.syncStatus === "NOT_FOUND" && b.syncStatus === "OK") {
-      return -1;
-    }
-    if (a.syncStatus === "OK" && b.syncStatus === "NOT_FOUND") {
-      return 1;
-    }
-    return b.createdTs - a.createdTs;
-  });
+  let list = [...props.databaseList];
+  if (props.hideNotFoundDatabases) {
+    list = list.filter((db) => db.syncStatus === "OK");
+  } else {
+    list.sort((a, b) => {
+      if (a.syncStatus === "NOT_FOUND" && b.syncStatus === "OK") {
+        return -1;
+      }
+      if (a.syncStatus === "OK" && b.syncStatus === "NOT_FOUND") {
+        return 1;
+      }
+      return b.createdTs - a.createdTs;
+    });
+  }
+
   return list;
 });
 
@@ -470,6 +483,17 @@ const pagedDataSource = computed(() => {
   return table.getRowModel().rows.map((row) => row.original);
 });
 
+const showPagination = computed(() => {
+  return mixedDatabaseList.value.length > props.pageSize;
+});
+
+const handleChangePage = (page: number) => {
+  table.setPageIndex(page - 1);
+  if (props.scrollOnPageChange && wrapper.value) {
+    const parent = getScrollParent(wrapper.value);
+    parent.scrollTo(0, 0);
+  }
+};
 watch(
   () => props.pageSize,
   (ps) => {
@@ -477,17 +501,10 @@ watch(
   },
   { immediate: true }
 );
-const showPagination = computed(() => {
-  return mixedDatabaseList.value.length > props.pageSize;
-});
-
-const handleChangePage = (page: number) => {
-  table.setPageIndex(page - 1);
-  if (wrapper.value) {
-    const parent = getScrollParent(wrapper.value);
-    parent.scrollTo(0, 0);
-  }
-};
+watch(
+  () => props.hideNotFoundDatabases,
+  () => handleChangePage(1)
+);
 
 const showReservedDatabaseList = () => {
   const count = regularDatabaseList.value.length;

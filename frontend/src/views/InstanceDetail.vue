@@ -23,7 +23,7 @@
             :tab-item-list="tabItemList"
             :selected-index="state.selectedIndex"
             @select-index="
-              (index) => {
+              (index: number) => {
                 state.selectedIndex = index;
               }
             "
@@ -54,11 +54,21 @@
             </button>
           </div>
         </div>
-        <DatabaseTable
-          v-if="state.selectedIndex == DATABASE_TAB"
-          :mode="'INSTANCE'"
-          :database-list="databaseList"
-        />
+        <div v-if="state.selectedIndex == DATABASE_TAB">
+          <div class="mb-2 pl-4">
+            <BBCheckbox
+              :title="$t('databases.hide-not-found-databases')"
+              :value="state.hideNotFoundDatabases"
+              @toggle="state.hideNotFoundDatabases = $event"
+            />
+          </div>
+          <DatabaseTable
+            mode="INSTANCE"
+            :scroll-on-page-change="false"
+            :hide-not-found-databases="state.hideNotFoundDatabases"
+            :database-list="databaseList"
+          />
+        </div>
         <InstanceUserTable
           v-else-if="state.selectedIndex == USER_TAB"
           :instance-user-list="instanceUserList"
@@ -177,6 +187,7 @@ interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
   showFeatureModal: boolean;
+  hideNotFoundDatabases: boolean;
 }
 
 const props = defineProps({
@@ -201,6 +212,7 @@ const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
   showFeatureModal: false,
+  hideNotFoundDatabases: true,
 });
 
 const instance = computed((): Instance => {

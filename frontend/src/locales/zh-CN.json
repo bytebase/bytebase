@@ -1741,5 +1741,8 @@
   "schema-diagram": {
     "self": "Schema 展示图",
     "fit-content-with-view": "自动适应视图"
+  },
+  "databases": {
+    "hide-not-found-databases": "隐藏未找到的数据库"
   }
 }
