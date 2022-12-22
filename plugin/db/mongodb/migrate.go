@@ -52,7 +52,7 @@ type MigrationHistory struct {
 	Type                string              `bson:"type"`
 	Status              string              `bson:"status"`
 	Version             string              `bson:"version"`
-	Description         string              `bson:"hash"`
+	Description         string              `bson:"description"`
 	Statement           string              `bson:"statement"`
 	ExecutionDurationNs int64               `bson:"execution_duration_ns"`
 	IssueID             string              `bson:"issue_id"`
