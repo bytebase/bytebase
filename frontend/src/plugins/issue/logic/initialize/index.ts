@@ -70,7 +70,6 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
           }
         } else {
           const id = idFromSlug(issueSlug);
-          await new Promise((resolve) => setTimeout(resolve, 15000));
           await issueStore.fetchIssueById(id);
         }
       } catch (error) {
