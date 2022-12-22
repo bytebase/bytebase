@@ -1,9 +1,25 @@
+<h1 align="center">
+  <a
+    target="_blank"
+    href="https://bytebase.com?source=github"
+  >
+    <img
+      align="center"
+      alt="Bytebase"
+      src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/banner.webp"
+      style="width:100%;"
+    />
+  </a>
+</h1>
 <p align="center">
-<a href="https://bytebase.com?source=github"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/banner.webp" /></a>
+  Database CI/CD for DevOps teams.
 </p>
 
-<p align="center" >
-<img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/db-and-vcs.png" width="60%" />
+<p align="center">
+  <a href="https://demo.bytebase.com?source=github" target="_blank"><b>🔥 Live Demo</b></a> •
+  <a href="https://bytebase.com/docs/get-started/install/overview" target="_blank"><b>⚙️ Install</b></a> •
+  <a href="https://bytebase.com/docs"><b>📚 Documentation</b></a> •
+  <a href="https://discord.gg/huyw7gRsyA"><b>🙋‍♀️ Get instance help</b></a>
 </p>
 
 <p align="center">
@@ -15,16 +31,9 @@
   </a>
 </p>
 
-<p align="center">
-  <a href="https://demo.bytebase.com?source=github" target="_blank">Live Demo</a> •
-  <a href="#installation">Install</a> •
-  <a href="#-docs">Help</a> •
-  <a href="#-development">Development</a> •
-  <a href="https://github.com/bytebase/bytebase/tree/main/docs/design">Design Doc</a> •
-  <a href="https://discord.gg/huyw7gRsyA">Discord</a>
+<p align="center" >
+<img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/db-and-vcs.png" width="60%" />
 </p>
-
-<hr />
 
 ## What is Bytebase?
 
@@ -97,70 +106,127 @@ to prepare those instances ready for application use.
 
 ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor-admin-mode.webp)
 
-## 📕 Docs
+# 🖖 Intro
 
-### Installation
+|   |   Topic |
+| --- | --- |
+| 🏗️ | <b>[Installation](#-installation)</b> |
+| 🎮 | <b>[Demo](#-demo)</b> | 
+| 👩‍🏫 | <b>[Tutorials](#-tutorials)</b> | 
+| 🧩 | <b>[Data Model](#-data-model)</b> | 
+| 🎭 | <b>[Roles](#-roles)</b> | 
+| 🕊 | <b>[Developing and Contributing](#-developing-and-contributing)</b> |
+| 🤺 | <b>[Bytebase vs Alternatives](#-bytebase-vs-alternatives)</b> |
 
-https://bytebase.com/docs/get-started/install/overview
+<br />
 
-### User doc
+# 🏗️ Installation
 
-https://bytebase.com/docs
+### One liner
 
-In particular, get familiar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
+```bash
+# One-liner installation script from latest release
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/bytebase/install/main/install.sh)"
 
-### Testing doc
+```
 
-How to run all or a subset of tests
+* [Build from source](https://www.bytebase.com/docs/get-started/install/build-from-source-code)
+* [Docker](https://www.bytebase.com/docs/get-started/install/deploy-with-docker)
+* [Kubernetes](https://www.bytebase.com/docs/get-started/install/deploy-to-kubernetes)
+* [render.com](https://www.bytebase.com/docs/get-started/install/deploy-to-render)
+* [Rainbond](https://www.bytebase.com/docs/get-started/install/deploy-to-rainbond)
 
-https://github.com/bytebase/bytebase/blob/main/docs/testing.md
+<br />
 
-### Design doc
+# 🎮 Demo
 
-https://github.com/bytebase/bytebase/tree/main/docs/design
+Live demo at https://demo.bytebase.com
 
-### Version upgrade policy
+You can also [book a 30min product walkthrough](https://cal.com/adela-bytebase/30min) with one of
+our product experts.
 
-https://github.com/bytebase/bytebase/tree/main/docs/version-management.md
+<br />
 
-## 🕊 Interested in contributing?
+# 👩‍🏫 Tutorials
 
-1. Checkout issues tagged with [good first issue](https://github.com/bytebase/bytebase/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+- [How to Set Up Database CI/CD with GitHub](https://www.bytebase.com/blog/github-database-cicd-part-1-sql-review-github-actions)
+- [How to integrate SQL Review into Your GitLab or GitHub CI/CD](https://www.bytebase.com/blog/how-to-integrate-sql-review-into-gitlab-github-ci)
+- [How to Synchronize Database Schemas](https://www.bytebase.com/blog/how-to-synchronize-database-schemas)
+- [Get Database Change Notification via Webhook](https://www.bytebase.com/blog/get-database-change-notification-via-webhook)
+- [How to Set Up Backup Monitoring with Better Uptime](https://www.bytebase.com/blog/how-to-use-bytebase-with-better-uptime)
 
-1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/?source=github), you can add/improve content there.
 
-1. Before creating a Pull Request, please follow the [Development Guide](https://github.com/bytebase/bytebase/blob/main/docs/dev-guide.md) for branch and commit message conventions.
+## Manage database from cloud database vendors
 
-**Note**: We are quite disciplined on <a href="#installation">tech stack</a>. If you consider bringing a new programming language, framework and any non-trivial external dependency, please open a discussion first.
+- [Manage Supabase PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/supabase)
+- [Manage render PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/render)
+- [Manage Neon database](https://www.bytebase.com/docs/how-to/integrations/neon)
 
-## 🏗 Development
+<br />
 
-<p align="center" >
-<a href="https://gitpod.io/#https://github.com/bytebase/bytebase">
-    <image src="https://gitpod.io/button/open-in-gitpod.svg" />
-</a>
+# 🧩 Data Model
+
+<p align="center">
+    <img
+      align="center"
+      alt="Data Model"
+      src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/data-model-v2.webp"
+      style="width:100%;"
+    />
 </p>
 
-Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start
+<br />
+
+# 🎭 Roles
+
+More details in [Roles and Permissions Doc](https://www.bytebase.com/docs/concepts/roles-and-permissions).
+
+Bytebase employs RBAC (Role-Based-Access-Control) and provides two role sets at the workspace and project level:
+
+- Workspace roles: `Owner`, `DBA`, `Developer`. The workspace role maps to the role in an engineering organization.
+- Project roles: `Owner`, `Developer`. The project level role maps to the role in a specific team or project.
+
+ Every user is assigned a workspace role, and if a particular user is involved in a particular project, then she will also be assigned a project role accordingly.
+
+ Below diagram describes a typical mapping between an engineering org and the corresponding roles in the Bytebase workspace
+
+<p align="center">
+    <img
+      align="center"
+      alt="Role Mapping"
+      src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/org-role-mapping.webp"
+      style="width:100%;"
+    />
+</p>
+
+<br />
+
+# 🕊 Developing and Contributing
+
+<p align="center">
+    <img
+      align="center"
+      alt="Tech Stack"
+      src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp"
+      style="width:100%;"
+    />
+</p>
+
+* Bytebase is built with a curated tech stack. It is optimized for **developer experience** and is very easy to start
 working on the code:
 
-1. It has no external dependency.
-1. It requires zero config.
-1. 1 command to start backend and 1 command to start frontend, both with live reload support.
+  1. It has no external dependency.
+  1. It requires zero config.
+  1. 1 command to start backend and 1 command to start frontend, both with live reload support.
 
-### Learn the codebase
+* Interactive code walkthrough
+  * [Life of a schema change](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/life-of-a-schema-change.snb.md)
+  * [SQL Review](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/sql-review-source-code-tour.snb.md)
 
-- [Interactive code walkthrough](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
+* Follow the [Development Guide](https://github.com/bytebase/bytebase/blob/main/docs/dev-guide.md) 
+to learn branch and commit message conventions.
 
-- [Coding guideline](https://github.com/bytebase/bytebase/tree/main/docs/dev-guide.md)
-
-- Tech Stack
-
-  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
-
-- Data Model
-
-  ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/data-model-v2.webp)
+## Dev Environemnt Setup
 
 ### Prerequisites
 
@@ -169,7 +235,6 @@ working on the code:
 - [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
   ```bash
   go install github.com/bytebase/air@87187cc
-  ```
 
 ### Steps
 
@@ -205,10 +270,52 @@ working on the code:
 
    Bytebase should now be running at http://localhost:3000 and change either frontend or backend code would trigger live reload.
 
-## Star History
+<br />
 
-[![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase&type=Date)](https://star-history.com/#bytebase/bytebase&Date)
+# 👨‍👩‍👧‍👦 Community
 
-## Jobs
+[![Hang out on Discord](https://img.shields.io/badge/%20-Hang%20out%20on%20Discord-5865F2?style=for-the-badge&logo=discord&labelColor=EEEEEE)](https://discord.gg/huyw7gRsyA)
 
-Check out our [jobs page](https://bytebase.com/jobs?source=github) for openings.
+[![Follow us on Twitter](https://img.shields.io/badge/Follow%20us%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&labelColor=EEEEEE)](https://twitter.com/Bytebase)
+
+<br />
+
+# 🤺 Bytebase vs Alternatives
+
+## Bytebase vs Flyway, Liquibase
+
+Either Flyway or Liquibase is a library and CLI focusing on schema change. While Bytebase is an one-stop
+solution covering the entire database development lifecycle for Developers and DBAs to collaborate.
+
+Another key difference is Bytebase **doesn't** support Oracle and SQL Server. This is a conscious
+decision we make so that we can focus on supporting other databases without good tooliing support.
+In particular, many of our users tell us Bytebase is by far the best (and sometimes the only) database
+tool that can support their PostgreSQL and ClickHouse use cases.
+
+
+[![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,liquibase/liquibase,flyway/flyway&type=Date)](https://star-history.com/#bytebase/bytebase&liquibase/liquibase&flyway/flyway&Date)
+
+
+## Bytebase vs Yearning, Archery
+
+Either Yearning or Archery provides a DBA operation portal. While Bytebase provides a collaboration
+workspace for DBAs and Developers, and brings DevOps practice to the Database Change Management (DCM).
+Bytebase has the similar `Project` concept seen in GitLab/GitHub and provides native GitOps integration
+with GitLab/GitHub.
+
+Another key difference is Yearning, Archery are open source projects maintained by the individuals part-time. While Bytebase is open-sourced, it adopts an open-core model and is a commercialized product, supported
+by a [fully staffed team](https://www.bytebase.com/about#team) [releasing new version every 2 weeks](https://www.bytebase.com/changelog). 
+
+
+[![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,cookieY/Yearning,hhyo/Archery&type=Date)](https://star-history.com/#bytebase/bytebase&cookieY/Yearning&hhyo/Archery&Date)
+
+# 🤔 Frequently Asked Questions (FAQs)
+
+Check out our [FAQ](https://www.bytebase.com/docs/faq).
+
+<br />
+
+# 🙋 Contact Us
+
+* Interested in joining us? Check out our [jobs page](https://bytebase.com/jobs?source=github) for openings.
+* Want to solve your schema change and database management headache? Book a [30min demo](https://cal.com/adela-bytebase/30min) with one of our product experts.
