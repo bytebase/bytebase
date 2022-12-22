@@ -84,7 +84,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, []*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
 	// Query MySQL version
 	version, err := driver.getVersion(ctx)
 	if err != nil {
@@ -389,7 +389,90 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	schema.TableList = tableMap[schema.Name]
 	schema.ViewList = viewMap[schema.Name]
 
-	return &schema, nil, err
+	fkMap, err := driver.getForeignKeyList(ctx, databaseName)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &schema, fkMap, err
+}
+
+func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[string][]*storepb.ForeignKeyMetadata, error) {
+	fkQuery := fmt.Sprintf(`
+		SELECT
+			fks.TABLE_NAME,
+			fks.CONSTRAINT_NAME,
+			kcu.COLUMN_NAME,
+			'',
+			fks.REFERENCED_TABLE_NAME,
+			kcu.REFERENCED_COLUMN_NAME,
+			fks.DELETE_RULE,
+			fks.UPDATE_RULE,
+			fks.MATCH_OPTION
+		FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS fks
+			JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+			ON fks.CONSTRAINT_SCHEMA = kcu.TABLE_SCHEMA
+				AND fks.TABLE_NAME = kcu.TABLE_NAME
+				AND fks.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+		WHERE LOWER(fks.CONSTRAINT_SCHEMA) = '%s'
+		ORDER BY fks.TABLE_NAME, fks.CONSTRAINT_NAME, kcu.ORDINAL_POSITION;
+	`, strings.ToLower(databaseName))
+
+	fkRows, err := driver.db.QueryContext(ctx, fkQuery)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, fkQuery)
+	}
+	defer fkRows.Close()
+	fkMap := make(map[string][]*storepb.ForeignKeyMetadata)
+	var buildingFk *storepb.ForeignKeyMetadata
+	var buildingTable string
+	for fkRows.Next() {
+		var tableName string
+		var fk storepb.ForeignKeyMetadata
+		var column, referencedColumn string
+		if err := fkRows.Scan(
+			&tableName,
+			&fk.Name,
+			&column,
+			&fk.ReferencedSchema,
+			&fk.ReferencedTable,
+			&referencedColumn,
+			&fk.OnDelete,
+			&fk.OnUpdate,
+			&fk.MatchType,
+		); err != nil {
+			return nil, err
+		}
+
+		fk.Columns = append(fk.Columns, column)
+		fk.ReferencedColumns = append(fk.ReferencedColumns, referencedColumn)
+		if buildingFk == nil {
+			buildingTable = tableName
+			buildingFk = &fk
+		} else {
+			if tableName == buildingTable && buildingFk.Name == fk.Name {
+				buildingFk.Columns = append(buildingFk.Columns, fk.Columns[0])
+				buildingFk.ReferencedColumns = append(buildingFk.ReferencedColumns, fk.ReferencedColumns[0])
+			} else {
+				if fkList, ok := fkMap[buildingTable]; ok {
+					fkMap[buildingTable] = append(fkList, buildingFk)
+					buildingTable = tableName
+					buildingFk = &fk
+				} else {
+					fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
+				}
+			}
+		}
+	}
+
+	if buildingFk != nil {
+		if fkList, ok := fkMap[buildingTable]; ok {
+			fkMap[buildingTable] = append(fkList, buildingFk)
+		} else {
+			fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
+		}
+	}
+
+	return fkMap, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {

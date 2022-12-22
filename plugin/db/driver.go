@@ -499,7 +499,7 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context, database string) (*Schema, []*storepb.ForeignKeyMetadata, error)
+	SyncDBSchema(ctx context.Context, database string) (*Schema, map[string][]*storepb.ForeignKeyMetadata, error)
 
 	// Role
 	// CreateRole creates the role.

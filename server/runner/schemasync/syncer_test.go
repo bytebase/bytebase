@@ -289,7 +289,7 @@ func TestConvertDBSchema(t *testing.T) {
 			},
 		},
 	}
-	got := convertDBSchema(dbSchema)
+	got := convertDBSchema(dbSchema, nil)
 	assert.Equal(t, want, got)
 }
 
