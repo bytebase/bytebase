@@ -317,7 +317,7 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 	if _, err = collection.InsertOne(ctx, document); err != nil {
 		return 0, errors.Wrapf(err, "failed to insert a pending migration history")
 	}
-	return 11, nil
+	return nextID, nil
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
@@ -332,12 +332,13 @@ func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrat
 			"execution_duration_ns": migrationDurationNs,
 		},
 	}
-	var result MigrationHistory
-	if err := collection.FindOneAndUpdate(ctx, filter, update).Decode(&result); err != nil {
-		if err == mongo.ErrNoDocuments {
-			return errors.Errorf("failed to find migration history with ID %d", insertedID)
-		}
-		return errors.Wrapf(err, "failed to update migration history with ID %d", insertedID)
+
+	updateResult, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update a migration history as done")
+	}
+	if updateResult.MatchedCount == 0 {
+		return errors.Errorf("failed to find migration history with ID %d", insertedID)
 	}
 	return nil
 }
