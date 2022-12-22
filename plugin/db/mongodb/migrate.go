@@ -324,11 +324,16 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 		if _, err = collection.InsertOne(ctx, document); err != nil {
 			// Detect if it's a duplicate key error.
 			if driverErr, ok := err.(mongo.WriteException); ok {
+				find := false
 				for _, writeErr := range driverErr.WriteErrors {
 					if writeErr.Code == 121 {
 						log.Info("Duplicate key error with migration_history id: %d, retrying...", zap.Int64("id", nextID))
-						continue
+						find = true
+						break
 					}
+				}
+				if find {
+					continue
 				}
 			}
 			return 0, errors.Wrapf(err, "failed to insert a pending migration history record")
