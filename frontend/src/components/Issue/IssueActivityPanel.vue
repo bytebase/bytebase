@@ -113,6 +113,15 @@
                     </div>
                   </div>
                 </template>
+                <template v-else-if="actionIcon(item.activity) == 'skip'">
+                  <div class="relative pl-1">
+                    <div
+                      class="w-6 h-6 bg-gray-200 rounded-full ring-4 ring-white flex items-center justify-center"
+                    >
+                      <SkipIcon class="w-5 h-5 text-gray-500" />
+                    </div>
+                  </div>
+                </template>
                 <template v-else-if="actionIcon(item.activity) == 'commit'">
                   <div class="relative pl-0.5">
                     <div
@@ -337,6 +346,7 @@ import {
 import { useRoute } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import HumanizeTs from "../misc/HumanizeTs.vue";
+import { SkipIcon } from "../Icon";
 import type {
   Issue,
   Activity,
@@ -384,6 +394,7 @@ type ActionIconType =
   | "cancel"
   | "fail"
   | "complete"
+  | "skip"
   | "commit";
 
 type DistinctActivity = {
@@ -601,7 +612,11 @@ const actionIcon = (activity: Activity): ActionIconType => {
         return "run";
       }
       case "DONE": {
-        return "complete";
+        if (payload.oldStatus === "RUNNING") {
+          return "complete";
+        } else {
+          return "skip";
+        }
       }
       case "FAILED": {
         return "fail";

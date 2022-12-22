@@ -138,3 +138,11 @@ export function taskCheckRunSummary(task?: Task): TaskCheckRunSummary {
 
   return summary;
 }
+
+export const isTaskSkipped = (task: Task): boolean => {
+  if (task.status === "DONE") {
+    const payload = task.payload as any;
+    return payload?.skipped === true;
+  }
+  return false;
+};
