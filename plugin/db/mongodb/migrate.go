@@ -360,7 +360,7 @@ func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrat
 		return errors.Wrapf(err, "failed to update a migration history as done")
 	}
 	if updateResult.MatchedCount == 0 {
-		return errors.Errorf("failed to find migration history with ID %d", insertedID)
+		return errors.Errorf("failed to find a migration history record to mark as done with ID %d ", insertedID)
 	}
 	return nil
 }
@@ -377,12 +377,12 @@ func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, _ *sql.Tx, migr
 			"execution_duration_ns": migrationDurationNs,
 		},
 	}
-	var result MigrationHistory
-	if err := collection.FindOneAndUpdate(ctx, filter, update).Decode(&result); err != nil {
-		if err == mongo.ErrNoDocuments {
-			return errors.Errorf("failed to find migration history with ID %d", insertedID)
-		}
-		return errors.Wrapf(err, "failed to update migration history with ID %d", insertedID)
+	updateResult, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.Wrapf(err, "failed to update a migration history as failed")
+	}
+	if updateResult.MatchedCount == 0 {
+		return errors.Errorf("failed to find a migration history record to mark as failed with ID %d ", insertedID)
 	}
 	return nil
 }
