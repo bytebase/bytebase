@@ -275,6 +275,8 @@ const databaseList = computed(() => {
     list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
   }
 
+  list = list.filter((db) => db.syncStatus === "OK");
+
   const keyword = state.searchText.trim();
   list = list.filter((db) =>
     filterDatabaseByKeyword(db, keyword, [
