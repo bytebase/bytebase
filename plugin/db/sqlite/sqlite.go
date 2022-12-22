@@ -68,7 +68,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 
 // GetType returns the database type.
 func (*Driver) GetType() db.Type {
-	return db.Snowflake
+	return db.SQLite
 }
 
 // GetDBConnection gets a database connection.
