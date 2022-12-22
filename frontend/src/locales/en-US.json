@@ -290,8 +290,8 @@
       "counting": "Counting"
     },
     "n-similar-tasks": "({count} similar tasks)",
-    "mark-as-done": "Mark as done",
-    "mark-as-done-modal-title": "Mark task [{name}] as done?"
+    "skip": "Skip",
+    "skip-modal-title": "Skip task [{name}]?"
   },
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
@@ -483,7 +483,8 @@
       "task-name": " task {name}",
       "committed-to-at": "committed {file} to {branch}{'@'}{repo}",
       "dismissed-stale-approval": "dismissed stale approvals of {task}",
-      "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\""
+      "external-approval-rejected": "rejected external approval from {imName} of stage \"{stageName}\"",
+      "skipped": "skipped"
     },
     "subject-prefix": {
       "task": "Task"
