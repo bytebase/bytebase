@@ -202,6 +202,10 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 		}
 	}
 
+	if executor.GetType() == db.MongoDB {
+		// Skip schema dump for MongoDB because it's schemaless.
+		return insertedID, "", nil
+	}
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
