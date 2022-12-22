@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -498,7 +499,7 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
+	SyncDBSchema(ctx context.Context, database string) (*Schema, map[string][]*storepb.ForeignKeyMetadata, error)
 
 	// Role
 	// CreateRole creates the role.

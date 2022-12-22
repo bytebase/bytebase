@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -83,11 +84,11 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
 	// Query MySQL version
 	version, err := driver.getVersion(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	isMySQL8 := strings.HasPrefix(version, "8.0")
 
@@ -125,7 +126,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	}
 	indexRows, err := driver.db.QueryContext(ctx, indexQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, indexQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
 	defer indexRows.Close()
 
@@ -149,7 +150,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			&index.Visible,
 			&index.Comment,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if columnName.Valid {
@@ -170,7 +171,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if err := indexRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, indexQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
 
 	// Query column info
@@ -191,7 +192,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			WHERE ` + columnWhere
 	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, columnQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
 
@@ -215,7 +216,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			&column.Collation,
 			&column.Comment,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if defaultStr.Valid {
@@ -234,7 +235,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if err := columnRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, columnQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 
 	// Query table info
@@ -258,7 +259,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			WHERE ` + tableWhere
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, tableQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
 
@@ -291,7 +292,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			&table.CreateOptions,
 			&table.Comment,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		table.ShortName = table.Name
 
@@ -319,7 +320,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if err := tableRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, tableQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
 	// Query view info
@@ -333,7 +334,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			WHERE ` + viewWhere
 	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, viewQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 	defer viewRows.Close()
 
@@ -347,7 +348,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			&view.Name,
 			&view.Definition,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		view.ShortName = view.Name
 
@@ -363,7 +364,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if err := viewRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, viewQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 
 	// Query db info
@@ -381,14 +382,97 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		&schema.CharacterSet,
 		&schema.Collation); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+			return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	schema.TableList = tableMap[schema.Name]
 	schema.ViewList = viewMap[schema.Name]
 
-	return &schema, err
+	fkMap, err := driver.getForeignKeyList(ctx, databaseName)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &schema, fkMap, err
+}
+
+func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[string][]*storepb.ForeignKeyMetadata, error) {
+	fkQuery := fmt.Sprintf(`
+		SELECT
+			fks.TABLE_NAME,
+			fks.CONSTRAINT_NAME,
+			kcu.COLUMN_NAME,
+			'',
+			fks.REFERENCED_TABLE_NAME,
+			kcu.REFERENCED_COLUMN_NAME,
+			fks.DELETE_RULE,
+			fks.UPDATE_RULE,
+			fks.MATCH_OPTION
+		FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS fks
+			JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+			ON fks.CONSTRAINT_SCHEMA = kcu.TABLE_SCHEMA
+				AND fks.TABLE_NAME = kcu.TABLE_NAME
+				AND fks.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+		WHERE LOWER(fks.CONSTRAINT_SCHEMA) = '%s'
+		ORDER BY fks.TABLE_NAME, fks.CONSTRAINT_NAME, kcu.ORDINAL_POSITION;
+	`, strings.ToLower(databaseName))
+
+	fkRows, err := driver.db.QueryContext(ctx, fkQuery)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, fkQuery)
+	}
+	defer fkRows.Close()
+	fkMap := make(map[string][]*storepb.ForeignKeyMetadata)
+	var buildingFk *storepb.ForeignKeyMetadata
+	var buildingTable string
+	for fkRows.Next() {
+		var tableName string
+		var fk storepb.ForeignKeyMetadata
+		var column, referencedColumn string
+		if err := fkRows.Scan(
+			&tableName,
+			&fk.Name,
+			&column,
+			&fk.ReferencedSchema,
+			&fk.ReferencedTable,
+			&referencedColumn,
+			&fk.OnDelete,
+			&fk.OnUpdate,
+			&fk.MatchType,
+		); err != nil {
+			return nil, err
+		}
+
+		fk.Columns = append(fk.Columns, column)
+		fk.ReferencedColumns = append(fk.ReferencedColumns, referencedColumn)
+		if buildingFk == nil {
+			buildingTable = tableName
+			buildingFk = &fk
+		} else {
+			if tableName == buildingTable && buildingFk.Name == fk.Name {
+				buildingFk.Columns = append(buildingFk.Columns, fk.Columns[0])
+				buildingFk.ReferencedColumns = append(buildingFk.ReferencedColumns, fk.ReferencedColumns[0])
+			} else {
+				if fkList, ok := fkMap[buildingTable]; ok {
+					fkMap[buildingTable] = append(fkList, buildingFk)
+					buildingTable = tableName
+					buildingFk = &fk
+				} else {
+					fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
+				}
+			}
+		}
+	}
+
+	if buildingFk != nil {
+		if fkList, ok := fkMap[buildingTable]; ok {
+			fkMap[buildingTable] = append(fkList, buildingFk)
+		} else {
+			fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
+		}
+	}
+
+	return fkMap, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {

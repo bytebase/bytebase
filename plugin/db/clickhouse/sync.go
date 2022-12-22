@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // SyncInstance syncs the instance.
@@ -68,7 +69,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
 	// Query column info
 	columnWhere := fmt.Sprintf("LOWER(database) = '%s'", strings.ToLower(databaseName))
 	columnQuery := `
@@ -84,7 +85,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			WHERE ` + columnWhere
 	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, columnQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
 
@@ -103,7 +104,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			&column.Type,
 			&column.Comment,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		key := fmt.Sprintf("%s/%s", dbName, tableName)
@@ -114,7 +115,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if err := columnRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, columnQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 
 	// Query table info
@@ -133,7 +134,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			WHERE ` + tableWhere
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, tableQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
 
@@ -156,7 +157,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			&definition,
 			&comment,
 		); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if engine == "View" {
@@ -182,7 +183,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if err := tableRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, tableQuery)
+		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
 	// Query db info
@@ -197,14 +198,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		&schema.Name,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+			return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	schema.TableList = tableMap[schema.Name]
 	schema.ViewList = viewMap[schema.Name]
 
-	return &schema, nil
+	return &schema, nil, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
