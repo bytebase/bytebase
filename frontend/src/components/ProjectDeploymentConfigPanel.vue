@@ -149,15 +149,14 @@ import {
   EMPTY_ID,
   DeploymentConfigPatch,
   LabelSelectorRequirement,
+  Database,
 } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
 import { validateDeploymentConfig } from "../utils";
 import {
   pushNotification,
-  useDatabaseStore,
   useDeploymentStore,
   useEnvironmentList,
-  useEnvironmentStore,
   useProjectStore,
 } from "@/store";
 
@@ -177,13 +176,16 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Project>,
     },
+    databaseList: {
+      type: Array as PropType<Database[]>,
+      default: () => [],
+    },
     allowEdit: {
       default: true,
       type: Boolean,
     },
   },
   setup(props) {
-    const databaseStore = useDatabaseStore();
     const deploymentStore = useDeploymentStore();
     const { t } = useI18n();
     const dialog = useDialog();
@@ -206,18 +208,7 @@ export default defineComponent({
       return true;
     });
 
-    const prepareList = () => {
-      useEnvironmentStore().fetchEnvironmentList();
-      databaseStore.fetchDatabaseListByProjectId(props.project.id);
-    };
-
     const environmentList = useEnvironmentList();
-
-    const databaseList = computed(() =>
-      databaseStore.getDatabaseListByProjectId(props.project.id)
-    );
-
-    watchEffect(prepareList);
 
     const resetStates = async () => {
       await nextTick(); // Waiting for all watchers done
@@ -359,7 +350,6 @@ export default defineComponent({
       isDeploymentConfigDirty,
       allowUpdateDeploymentConfig,
       environmentList,
-      databaseList,
       addStage,
       revertDeploymentConfig,
       updateDeploymentConfig,
