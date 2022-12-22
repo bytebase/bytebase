@@ -136,17 +136,36 @@ export const useActivityStore = defineStore("activity", {
       return result.activityList;
     },
     async fetchActivityListForIssue(issue: Issue) {
-      const activityList = await this.fetchActivityList({
-        typePrefix: ["bb.issue.", "bb.pipeline."],
+      // We should use two separate requests here because we are using different container ids.
+      const requestListForIssue = this.fetchActivityList({
+        typePrefix: "bb.issue.",
         container: issue.id,
         order: "ASC",
+      });
+      const requestListForPipeline = this.fetchActivityList({
+        typePrefix: "bb.pipeline.",
+        container: issue.pipeline.id,
+        order: "ASC",
+      });
+      const [listForIssue, listForPipeline] = await Promise.all([
+        requestListForIssue,
+        requestListForPipeline,
+      ]);
+
+      const mergedList = [...listForIssue, ...listForPipeline];
+      mergedList.sort((a, b) => {
+        if (a.createdTs !== b.createdTs) {
+          return a.createdTs - b.createdTs;
+        }
+
+        return a.id - b.id;
       });
 
       this.setActivityListForIssue({
         issueId: issue.id,
-        activityList,
+        activityList: mergedList,
       });
-      return activityList;
+      return mergedList;
     },
     async fetchActivityListByIssueId(issueId: IssueId) {
       const issue = useIssueStore().getIssueById(issueId);
