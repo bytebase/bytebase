@@ -191,8 +191,8 @@ const {
   allowApplyIssueStatusTransition,
   allowApplyTaskStatusTransition,
   selectedStatement,
-  allowApplyStatementToOtherTasks,
-  applyStatementToOtherTasks,
+  allowApplyTaskStateToOthers,
+  applyTaskStateToOthers,
 } = useBaseIssueLogic({ issue, create });
 
 const issueLogic = ref<IssueLogic>();
@@ -388,8 +388,8 @@ provideIssueLogic(
     allowApplyIssueStatusTransition,
     allowApplyTaskStatusTransition,
     selectedStatement,
-    allowApplyStatementToOtherTasks,
-    applyStatementToOtherTasks,
+    allowApplyTaskStateToOthers,
+    applyTaskStateToOthers,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.

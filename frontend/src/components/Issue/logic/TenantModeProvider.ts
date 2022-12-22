@@ -101,8 +101,8 @@ export default defineComponent({
       context.detailList.forEach((detail) => (detail.sheetId = sheetId));
     };
 
-    // We are never allowed to "apply statement to other stages" in tenant mode.
-    const allowApplyStatementToOtherTasks = computed(() => false);
+    // We are never allowed to "apply task state to other stages" in tenant mode.
+    const allowApplyTaskStateToOthers = computed(() => false);
 
     const doCreate = () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
@@ -130,8 +130,8 @@ export default defineComponent({
       selectedStatement,
       updateStatement,
       updateSheetId,
-      allowApplyStatementToOtherTasks,
-      applyStatementToOtherTasks: errorAssertion,
+      allowApplyTaskStateToOthers,
+      applyTaskStateToOthers: errorAssertion,
       doCreate,
     };
     provideIssueLogic(logic);
