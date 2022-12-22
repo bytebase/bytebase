@@ -1,6 +1,6 @@
 import { computed, ref, Ref, watch } from "vue";
 import { type LocationQuery, useRoute, useRouter } from "vue-router";
-import type { Issue, IssueCreate, IssueType } from "@/types";
+import { EMPTY_ID, Issue, IssueCreate, IssueType } from "@/types";
 import { SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
 import { pushNotification, useDatabaseStore, useIssueStore } from "@/store";
 import { idFromSlug } from "@/utils";
@@ -17,7 +17,19 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   const route = useRoute();
   const router = useRouter();
 
-  const issue = ref<Issue | IssueCreate | undefined>();
+  const issueCreate = ref<IssueCreate | undefined>();
+  const issue = computed((): Issue | IssueCreate | undefined => {
+    if (create.value) {
+      return issueCreate.value;
+    } else {
+      const id = idFromSlug(issueSlug.value);
+      const issueEntity = issueStore.getIssueById(id);
+      if (issueEntity.id === EMPTY_ID || issueEntity.id === UNKNOWN_ID) {
+        return undefined;
+      }
+      return issueEntity;
+    }
+  });
 
   const template = computed(() => {
     // Find proper IssueTemplate from route.query.template
@@ -42,24 +54,23 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   watch(
     [issueSlug, create],
     async ([issueSlug, create]) => {
-      issue.value = undefined;
-
       try {
         if (create) {
+          issueCreate.value = undefined;
+
           await prepareDatabaseListForIssueCreation(route.query);
 
-          issue.value = await buildNewIssue({ template, route });
+          issueCreate.value = await buildNewIssue({ template, route });
           if (
-            issue.value.assigneeId === UNKNOWN_ID ||
-            issue.value.assigneeId === SYSTEM_BOT_ID
+            issueCreate.value.assigneeId === UNKNOWN_ID ||
+            issueCreate.value.assigneeId === SYSTEM_BOT_ID
           ) {
             // Try to find a default assignee of the first task automatically.
-            await tryGetDefaultAssignee(issue.value);
+            await tryGetDefaultAssignee(issueCreate.value);
           }
         } else {
           const id = idFromSlug(issueSlug);
-          const fetchedIssue = await issueStore.fetchIssueById(id);
-          issue.value = fetchedIssue;
+          await issueStore.fetchIssueById(id);
         }
       } catch (error) {
         router.push({ name: "error.404" });

@@ -8,7 +8,7 @@
     />
     <div
       v-if="showLoading"
-      class="w-full h-full absolute inset-0 flex justify-center items-center bg-white/50"
+      class="w-full h-full fixed md:absolute inset-0 flex justify-center items-center bg-white/50"
     >
       <NSpin />
     </div>
