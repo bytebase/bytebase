@@ -12,8 +12,8 @@
           {{ dayjs.unix(auditLog.createdTs).format("YYYY-MM-DD HH:mm:ss Z") }}
         </div>
       </BBTableCell>
-      <BBTableCell class="table-cell w-20">
-        {{ auditLog.creator }}
+      <BBTableCell class="table-cell w-24">
+        <div>{{ auditLog.level }}</div>
       </BBTableCell>
       <BBTableCell class="table-cell w-28">
         <span
@@ -24,8 +24,8 @@
           }}
         </span>
       </BBTableCell>
-      <BBTableCell class="table-cell w-24">
-        <div>{{ auditLog.level }}</div>
+      <BBTableCell class="table-cell w-20">
+        {{ auditLog.creator }}
       </BBTableCell>
       <BBTableCell class="table-cell w-36">
         <div v-if="auditLog.comment">
@@ -86,13 +86,13 @@ const columnList = computed(() => [
     title: t("audit-log.table.created-ts"),
   },
   {
-    title: t("audit-log.table.creator"),
+    title: t("audit-log.table.level"),
   },
   {
     title: t("audit-log.table.type"),
   },
   {
-    title: t("audit-log.table.level"),
+    title: t("audit-log.table.creator"),
   },
   {
     title: t("audit-log.table.comment"),
