@@ -48,10 +48,12 @@ type Issue struct {
 
 // TaskResult is the latest result of a task.
 // The `detail` field is only present if the status is TaskFailed.
+// The `SkippedReason` field is only present if the task is skipped.
 type TaskResult struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Detail string `json:"detail"`
+	Name          string `json:"name"`
+	Status        string `json:"status"`
+	Detail        string `json:"detail"`
+	SkippedReason string `json:"skippedReason"`
 }
 
 // Project object of project.
@@ -120,6 +122,12 @@ func (c *Context) getMetaList() []meta {
 			m = append(m, meta{
 				Name:  "Result Detail",
 				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
+			})
+		}
+		if c.TaskResult.SkippedReason != "" {
+			m = append(m, meta{
+				Name:  "Skipped Reason",
+				Value: c.TaskResult.SkippedReason,
 			})
 		}
 	}
