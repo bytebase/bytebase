@@ -134,6 +134,7 @@ type CreateDatabaseContext struct {
 	// DatabaseName is the name of the database.
 	DatabaseName string `json:"databaseName"`
 	// TableName is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+	// For example, in MongoDB, it only creates the database when we first store data in that database.
 	TableName string `json:"tableName"`
 	// CharacterSet is the character set of the database.
 	CharacterSet string `json:"characterSet"`
