@@ -1,6 +1,6 @@
 <template>
   <NDropdown
-    v-if="allowMarkTaskAsDone"
+    v-if="allowSkipTask"
     trigger="click"
     placement="bottom-end"
     :options="options"
@@ -81,7 +81,7 @@ const currentUser = useCurrentUser();
 const { create, issue } = useIssueLogic();
 const { changeTaskStatus } = useExtraIssueLogic();
 
-const allowMarkTaskAsDone = computed(() => {
+const allowSkipTask = computed(() => {
   if (create.value) {
     return false;
   }
@@ -118,34 +118,34 @@ const allowMarkTaskAsDone = computed(() => {
 
 const options = computed(() => {
   const list: DropdownOption[] = [];
-  if (allowMarkTaskAsDone.value) {
+  if (allowSkipTask.value) {
     list.push({
-      key: "mark-task-as-done",
-      label: t("task.mark-as-done"),
+      key: "skip",
+      label: t("task.skip"),
     });
   }
   return list;
 });
 
 const handleSelect = (key: string) => {
-  if (key === "mark-task-as-done") {
+  if (key === "skip") {
     state.showModal = true;
   }
 };
 
-const confirmButtonText = computed(() => t("task.mark-as-done"));
+const confirmButtonText = computed(() => t("task.skip"));
 
 const transition = computed((): TaskStatusTransition => {
   return {
     buttonType: "PRIMARY",
-    buttonName: t("task.mark-as-done"),
+    buttonName: t("task.skip"),
     type: "SKIP",
     to: "DONE",
   };
 });
 
 const modalTitle = computed(() => {
-  return t("task.mark-as-done-modal-title", {
+  return t("task.skip-modal-title", {
     name: props.task.name,
   });
 });
