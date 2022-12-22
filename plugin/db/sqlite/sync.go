@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -62,10 +63,10 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	schema := db.Schema{
@@ -79,23 +80,23 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
+		return nil, nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
 	}
 	txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer txn.Rollback()
 	// Index statements.
 	indicesMap := make(map[string][]indexSchema)
 	indices, err := getIndices(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
+		return nil, nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
 	}
 	for _, idx := range indices {
 		indicesMap[idx.tableName] = append(indicesMap[idx.tableName], idx)
@@ -103,21 +104,21 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 
 	tbls, err := getTables(txn, indicesMap)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	schema.TableList = tbls
 
 	views, err := getViews(txn)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	schema.ViewList = views
 
 	if err := txn.Commit(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &schema, nil
+	return &schema, nil, nil
 }
 
 // getTables gets all tables of a database.
