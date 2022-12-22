@@ -776,6 +776,12 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
+	if v := patch.Skipped; v != nil {
+		set, args = append(set, fmt.Sprintf(`payload['skipped'] = to_json($%d::BOOLEAN)`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.SkippedReason; v != nil {
+		set, args = append(set, fmt.Sprintf(`payload['skippedReason'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+	}
 	var ids []string
 	for _, id := range patch.IDList {
 		ids = append(ids, strconv.Itoa(id))
