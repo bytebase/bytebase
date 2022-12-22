@@ -602,7 +602,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}
 
 	if instance.Engine == db.MongoDB && c.TableName == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, colleciton name missing for MongoDB")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collection name missing for MongoDB")
 	}
 
 	// Find project.
