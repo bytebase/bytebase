@@ -181,6 +181,16 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
 
       return this.databaseSchemaById.get(databaseId)!.schemaList;
     },
+    getSchema(databaseId: DatabaseId, schemaName: string) {
+      return this.databaseSchemaById
+        .get(databaseId)
+        ?.schemaList.find((schema) => schema.name === schemaName);
+    },
+    getOriginSchema(databaseId: DatabaseId, schemaName: string) {
+      return this.databaseSchemaById
+        .get(databaseId)
+        ?.originSchemaList.find((schema) => schema.name === schemaName);
+    },
     getTable(databaseId: DatabaseId, schemaName: string, tableName: string) {
       return this.databaseSchemaById
         .get(databaseId)

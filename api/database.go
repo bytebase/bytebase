@@ -158,7 +158,9 @@ type AlterTableContext struct {
 	AddColumnList    []*AddColumnContext    `json:"addColumnList"`
 	ChangeColumnList []*ChangeColumnContext `json:"changeColumnList"`
 	DropColumnList   []*DropColumnContext   `json:"dropColumnList"`
-	PrimaryKeyList   *[]string              `json:"primaryKeyList"`
+	// TODO(steven): diff schemas in backend, so we don't need this flag.
+	DropPrimaryKey bool      `json:"dropPrimaryKey"`
+	PrimaryKeyList *[]string `json:"primaryKeyList"`
 }
 
 // RenameTableContext is the edit database context to rename a table.

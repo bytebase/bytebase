@@ -43,6 +43,7 @@ import { ColumnMetadata, TableMetadata } from "@/types/proto/database";
 import {
   convertColumnMetadataToColumn,
   convertTableMetadataToTable,
+  Schema,
 } from "@/types/schemaEditor/atomType";
 
 const tableNameFieldRegexp = /^\S+$/;
@@ -96,12 +97,10 @@ const handleConfirmButtonClick = async () => {
   }
 
   const databaseId = props.databaseId;
-  const tableList =
-    editorStore.databaseSchemaById
-      .get(databaseId)
-      ?.schemaList.find((schema) => schema.name === props.schemaName)
-      ?.tableList ?? [];
-  const tableNameList = tableList.map((table) => table.newName);
+  const schema = editorStore.databaseSchemaById
+    .get(databaseId)
+    ?.schemaList.find((schema) => schema.name === props.schemaName) as Schema;
+  const tableNameList = schema.tableList.map((table) => table.newName);
   if (tableNameList.includes(state.tableName)) {
     notificationStore.pushNotification({
       module: "bytebase",
@@ -127,7 +126,11 @@ const handleConfirmButtonClick = async () => {
     column.status = "created";
     table.columnList.push(column);
 
-    tableList.push(table);
+    schema.tableList.push(table);
+    schema.primaryKeyList.push({
+      table: table.newName,
+      columnList: [],
+    });
     editorStore.addTab({
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForTable,
@@ -143,13 +146,22 @@ const handleConfirmButtonClick = async () => {
       props.tableName ?? ""
     );
     if (table) {
+      table.newName = state.tableName;
+
+      // TODO(steven): use reactive Ref.
+      // Update reference objects.
       const tab = editorStore.findTab(
         databaseId,
         table.newName
       ) as TableTabContext;
-      table.newName = state.tableName;
       if (tab) {
         tab.tableName = table.newName;
+      }
+      const primaryKey = schema.primaryKeyList.find(
+        (pk) => pk.table === props.tableName
+      );
+      if (primaryKey) {
+        primaryKey.table = table.newName;
       }
     }
     dismissModal();

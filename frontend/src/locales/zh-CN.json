@@ -1456,7 +1456,8 @@
       "type": "类型",
       "default": "默认值",
       "comment": "注释",
-      "not-null": "不可为空"
+      "not-null": "不可为空",
+      "primary": "主键"
     },
     "nothing-changed": "无任何改动",
     "message": {

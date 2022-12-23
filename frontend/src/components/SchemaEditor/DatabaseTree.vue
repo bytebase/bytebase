@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { escape, isEqual, isUndefined } from "lodash-es";
+import { escape, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -66,6 +66,7 @@ import TableNameModal from "./Modals/TableNameModal.vue";
 import DatabaseIcon from "~icons/heroicons-outline/database";
 import TableIcon from "~icons/heroicons-outline/table";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { isTableChanged } from "./utils/table";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -457,12 +458,13 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
     } else if (table.status === "dropped") {
       additionalClassList.push("text-red-700 line-through");
     } else {
-      const originTable = editorStore.getOriginTable(
-        treeNode.databaseId,
-        treeNode.schemaName,
-        treeNode.tableName
-      );
-      if (!isEqual(originTable, table)) {
+      if (
+        isTableChanged(
+          treeNode.databaseId,
+          treeNode.schemaName,
+          treeNode.tableName
+        )
+      ) {
         additionalClassList.push("text-yellow-700");
       }
     }
