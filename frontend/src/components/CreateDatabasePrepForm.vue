@@ -51,10 +51,10 @@
           <span class="text-red-600">*</span>
         </label>
         <input
-          id="name"
+          id="databaseName"
           v-model="state.databaseName"
           required
-          name="name"
+          name="databaseName"
           type="text"
           class="textfield mt-1 w-full"
         />
@@ -65,6 +65,21 @@
             </template>
           </i18n-t>
         </span>
+      </div>
+
+      <div v-if="selectedInstance.engine == 'MONGODB'" class="w-full">
+        <label for="name" class="textlabel">
+          {{ $t("create-db.new-collection-name") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <input
+          id="tableName"
+          v-model="state.tableName"
+          required
+          name="tableName"
+          type="text"
+          class="textfield mt-1 w-full"
+        />
       </div>
 
       <div v-if="selectedInstance.engine == 'CLICKHOUSE'" class="w-full">
@@ -155,12 +170,7 @@
         filter="optional"
       />
 
-      <template
-        v-if="
-          selectedInstance.engine != 'CLICKHOUSE' &&
-          selectedInstance.engine != 'SNOWFLAKE'
-        "
-      >
+      <template v-if="showCollationAndCharacterSet">
         <div class="w-full">
           <label for="charset" class="textlabel">
             {{
@@ -304,6 +314,7 @@ interface LocalState {
   instanceUserId?: InstanceUserId;
   labelList: DatabaseLabel[];
   databaseName: string;
+  tableName: string;
   characterSet: string;
   collation: string;
   cluster: string;
@@ -378,6 +389,7 @@ export default defineComponent({
       environmentId: props.environmentId,
       instanceId: props.instanceId,
       labelList: [],
+      tableName: "",
       characterSet: "",
       collation: "",
       cluster: "",
@@ -464,6 +476,18 @@ export default defineComponent({
         : (unknown("INSTANCE") as Instance);
     });
 
+    const showCollationAndCharacterSet = computed((): boolean => {
+      const instance = selectedInstance.value;
+      if (instance.id === UNKNOWN_ID) {
+        return true;
+      }
+      return (
+        instance.engine !== "MONGODB" &&
+        instance.engine !== "CLICKHOUSE" &&
+        instance.engine !== "SNOWFLAKE"
+      );
+    });
+
     const requireDatabaseOwnerName = computed((): boolean => {
       const instance = selectedInstance.value;
       if (instance.id === UNKNOWN_ID) {
@@ -514,6 +538,7 @@ export default defineComponent({
       const databaseName = isDbNameTemplateMode.value
         ? generatedDatabaseName.value
         : state.databaseName;
+      const tableName = state.tableName;
       const instanceId = state.instanceId as InstanceId;
       let owner = "";
       if (requireDatabaseOwnerName.value && state.instanceUserId) {
@@ -536,6 +561,7 @@ export default defineComponent({
       const createDatabaseContext: CreateDatabaseContext = {
         instanceId: instanceId,
         databaseName: databaseName,
+        tableName: tableName,
         owner,
         characterSet:
           state.characterSet || defaultCharset(selectedInstance.value.engine),
@@ -628,6 +654,7 @@ export default defineComponent({
       allowEditEnvironment,
       allowEditInstance,
       selectedInstance,
+      showCollationAndCharacterSet,
       requireDatabaseOwnerName,
       showAssigneeSelect,
       selectProject,

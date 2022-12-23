@@ -5,6 +5,7 @@
       "title": "Bytebase Migration History Object Validation",
       "required": [
         "_id",
+        "id",
         "created_by",
         "created_ts",
         "updated_by",
@@ -18,7 +19,7 @@
         "version",
         "description",
         "statement",
-        "executon_duration_ns",
+        "execution_duration_ns",
         "issue_id",
         "payload"
       ],
@@ -26,17 +27,21 @@
         "_id": {
           "bsonType": "objectId"
         },
+        "id": {
+          "bsonType": "long",
+          "minimum": 0
+        },
         "created_by": {
           "bsonType": "string"
         },
         "created_ts": {
-          "bsonType": "long"
+          "bsonType": "timestamp"
         },
         "updated_by": {
           "bsonType": "string"
         },
         "updated_ts": {
-          "bsonType": "long"
+          "bsonType": "timestamp"
         },
         "release_version": {
           "bsonType": "string"

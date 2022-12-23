@@ -153,8 +153,8 @@ type MigrationExecutor interface {
 // Returns the created migration history id and the updated schema on success.
 func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
-	// Don't record schema if the database hasn't exist yet.
-	if !m.CreateDatabase {
+	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
+	if !m.CreateDatabase && executor.GetType() != db.MongoDB {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
 		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
@@ -196,6 +196,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	}
 	if doMigrate {
 		// Switch to the target database only if we're NOT creating this target database.
+		// We should not call GetDBConnection() if the instance is MongoDB because it doesn't support.
 		if !m.CreateDatabase {
 			if _, err := executor.GetDBConnection(ctx, m.Database); err != nil {
 				return -1, "", err
@@ -206,6 +207,10 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 		}
 	}
 
+	if executor.GetType() == db.MongoDB {
+		// Skip schema dump for MongoDB because it's schemaless.
+		return insertedID, "", nil
+	}
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
@@ -256,16 +261,24 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	sqldb, err := executor.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return -1, err
+	var tx *sql.Tx
+	// We don't use transaction for MongoDB for the following reasons:
+	// 1. MongoDB support transaction only in replica set mode or shard cluster mode. But we need to
+	// support standalone mode as well. https://stackoverflow.com/a/51462024/19075342
+	// 2. We use mongodb driver, it has not implemented the SQL interface. So we can't use the same code.
+	if executor.GetType() != db.MongoDB {
+		// We use transaction here for the RDBMS.
+		sqldb, err := executor.GetDBConnection(ctx, databaseName)
+		if err != nil {
+			return -1, err
+		}
+		// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
+		tx, err = sqldb.BeginTx(ctx, nil)
+		if err != nil {
+			return -1, err
+		}
+		defer tx.Rollback()
 	}
-	// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
-	tx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return -1, err
-	}
-	defer tx.Rollback()
 
 	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
 	if err != nil {
@@ -289,8 +302,10 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		return -1, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return -1, err
+	if executor.GetType() != db.MongoDB {
+		if err := tx.Commit(); err != nil {
+			return -1, err
+		}
 	}
 
 	return insertedID, nil
@@ -300,15 +315,22 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
-	sqldb, err := executor.GetDBConnection(ctx, databaseName)
-	if err != nil {
-		return err
+	var tx *sql.Tx
+	// We don't use transaction for MongoDB for the following reasons:
+	// 1. MongoDB support transaction only in replica set mode or shard cluster mode. But we need to
+	// support standalone mode as well. https://stackoverflow.com/a/51462024/19075342
+	// 2. We use mongodb driver, it had not implment the sql interface. So we can't use the same code.
+	if executor.GetType() != db.MongoDB {
+		sqldb, err := executor.GetDBConnection(ctx, databaseName)
+		if err != nil {
+			return err
+		}
+		tx, err = sqldb.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
 	}
-	tx, err := sqldb.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 
 	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
@@ -321,8 +343,10 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 	if err != nil {
 		return err
 	}
-
-	return tx.Commit()
+	if executor.GetType() != db.MongoDB {
+		return tx.Commit()
+	}
+	return nil
 }
 
 // Query will execute a readonly / SELECT query.

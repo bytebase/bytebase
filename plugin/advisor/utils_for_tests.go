@@ -233,6 +233,11 @@ func (*MockDriver) Ping(_ context.Context) error {
 	return nil
 }
 
+// GetType implements the Driver interface.
+func (*MockDriver) GetType() database.Type {
+	return database.Type("MOCK")
+}
+
 // GetDBConnection implements the Driver interface.
 func (*MockDriver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 	return nil, nil
