@@ -197,7 +197,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	if doMigrate {
 		// Switch to the target database only if we're NOT creating this target database.
 		// We should not call GetDBConnection() if the instance is MongoDB because it doesn't support.
-		if !m.CreateDatabase {
+		if !m.CreateDatabase && executor.GetType() != db.MongoDB {
 			if _, err := executor.GetDBConnection(ctx, m.Database); err != nil {
 				return -1, "", err
 			}
