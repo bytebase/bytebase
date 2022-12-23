@@ -95,7 +95,7 @@
 <br />
 
 <p align="center">🔒</p>
-<h1 align="center">Security</h1>
+<h1 align="center">Secure</h1>
 <p align="center">
   Want to avoid data leakage, change outage and detect malicious behavior but don't know how?
 </p>
