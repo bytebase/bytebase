@@ -53,7 +53,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		var tlsConfig db.TLSConfig
-		if connectionInfo.Engine == db.ClickHouse {
+		supportTLS := (connectionInfo.Engine == db.ClickHouse || connectionInfo.Engine == db.MySQL || connectionInfo.Engine == db.TiDB)
+		if supportTLS {
 			if connectionInfo.SslCa == nil && connectionInfo.SslCert == nil && connectionInfo.SslKey == nil && connectionInfo.InstanceID != nil {
 				// Frontend will not pass ssl related field if user don't modify ssl suite, we need get ssl suite from database for this case.
 				tc, err := s.store.GetInstanceSslSuiteByID(ctx, *connectionInfo.InstanceID)
