@@ -79,9 +79,9 @@ func (*Driver) GetType() db.Type {
 
 // GetDBConnection returns a database connection.
 // It always return nil because it has not implemented the SQL interface, and we never return error, it's caller's responsibility to
-// avoid using the returned value for MongoDB.
+// avoid calling this function for MongoDB.
 func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
-	return nil, nil
+	return nil, errors.New("mongodb doesn't support GetDBConnection")
 }
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
