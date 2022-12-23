@@ -330,3 +330,187 @@ func TestDeparseDropTable(t *testing.T) {
 		assert.Equal(t, test.want, stmt)
 	}
 }
+
+func TestDeparseCreateTableWithPrimaryKey(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "create table t1",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				CreateTableList: []*api.CreateTableContext{
+					{
+						Name: "t1",
+						Type: "BASE TABLE",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+						},
+						PrimaryKeyList: []string{"id"},
+					},
+				},
+			},
+			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL,\n  PRIMARY KEY (`id`)\n);\n",
+		},
+		{
+			name: "create table t2",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				CreateTableList: []*api.CreateTableContext{
+					{
+						Name: "t2",
+						Type: "BASE TABLE",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "varchar(255)",
+								Nullable: false,
+							},
+						},
+						PrimaryKeyList: []string{"id", "name"},
+					},
+				},
+			},
+			want: "CREATE TABLE `t2` (\n  `id` INT NOT NULL,\n  `name` VARCHAR(255) NOT NULL,\n  PRIMARY KEY (`id`, `name`)\n);\n",
+		},
+		{
+			name: "create table t3",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				CreateTableList: []*api.CreateTableContext{
+					{
+						Name: "t3",
+						Type: "BASE TABLE",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "varchar(255)",
+								Nullable: false,
+							},
+						},
+						PrimaryKeyList: []string{"id"},
+					},
+				},
+			},
+			want: "CREATE TABLE `t3` (\n  `id` INT NOT NULL,\n  `name` VARCHAR(255) NOT NULL,\n  PRIMARY KEY (`id`)\n);\n",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
+func TestDeparseAlterTableWithPrimaryKey(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "alter table t1",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t1",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+						},
+						PrimaryKeyList: &[]string{"id"},
+					},
+				},
+			},
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), DROP PRIMARY KEY, ADD PRIMARY KEY (`id`);\n",
+		},
+		{
+			name: "alter table t2",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t2",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+						},
+						PrimaryKeyList: &[]string{},
+					},
+				},
+			},
+			want: "ALTER TABLE `t2` ADD COLUMN (`id` INT NOT NULL), DROP PRIMARY KEY;\n",
+		},
+		{
+			name: "alter table t3",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t3",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+						},
+					},
+				},
+			},
+			want: "ALTER TABLE `t3` ADD COLUMN (`id` INT NOT NULL);\n",
+		},
+		{
+			name: "alter table t4",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t4",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+						},
+						PrimaryKeyList: &[]string{"id"},
+					},
+				},
+			},
+			want: "ALTER TABLE `t4` ADD COLUMN (`id` INT NOT NULL), DROP PRIMARY KEY, ADD PRIMARY KEY (`id`);\n",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
