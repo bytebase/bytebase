@@ -90,7 +90,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
 		defer mysql.DeregisterTLSConfig(tlsKey)
-		dsn += fmt.Sprintf("?tls=%s", tlsKey)
+		dsn += fmt.Sprintf("&tls=%s", tlsKey)
 	}
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
