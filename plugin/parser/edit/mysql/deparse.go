@@ -109,6 +109,22 @@ func transformCreateTableContext(createTableContext *api.CreateTableContext) (*t
 	}
 	createTableStmt.Cols = columnDefs
 
+	if len(createTableContext.PrimaryKeyList) != 0 {
+		pkConstrains := tidbast.Constraint{
+			Tp:   tidbast.ConstraintPrimaryKey,
+			Keys: []*tidbast.IndexPartSpecification{},
+		}
+		for _, primaryKey := range createTableContext.PrimaryKeyList {
+			indexPart := tidbast.IndexPartSpecification{
+				Column: &tidbast.ColumnName{
+					Name: model.NewCIStr(primaryKey),
+				},
+			}
+			pkConstrains.Keys = append(pkConstrains.Keys, &indexPart)
+		}
+		createTableStmt.Constraints = append(createTableStmt.Constraints, &pkConstrains)
+	}
+
 	return createTableStmt, nil
 }
 
@@ -171,6 +187,33 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidb
 			}
 			alterTableSpec.NewColumns = []*tidbast.ColumnDef{column}
 			alterTableStmt.Specs = append(alterTableStmt.Specs, alterTableSpec)
+		}
+	}
+
+	if alterTableContext.PrimaryKeyList != nil {
+		dropPrimaryKeySpec := tidbast.AlterTableSpec{
+			Tp: tidbast.AlterTableDropPrimaryKey,
+		}
+		alterTableStmt.Specs = append(alterTableStmt.Specs, &dropPrimaryKeySpec)
+
+		if len(*alterTableContext.PrimaryKeyList) != 0 {
+			alterTableSpec := tidbast.AlterTableSpec{
+				Tp: tidbast.AlterTableAddConstraint,
+			}
+			pkConstrain := tidbast.Constraint{
+				Tp:   tidbast.ConstraintPrimaryKey,
+				Keys: []*tidbast.IndexPartSpecification{},
+			}
+			for _, primaryKey := range *alterTableContext.PrimaryKeyList {
+				indexPart := tidbast.IndexPartSpecification{
+					Column: &tidbast.ColumnName{
+						Name: model.NewCIStr(primaryKey),
+					},
+				}
+				pkConstrain.Keys = append(pkConstrain.Keys, &indexPart)
+			}
+			alterTableSpec.Constraint = &pkConstrain
+			alterTableStmt.Specs = append(alterTableStmt.Specs, &alterTableSpec)
 		}
 	}
 
