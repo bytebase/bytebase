@@ -144,7 +144,8 @@ type CreateTableContext struct {
 	Collation    string `json:"collation"`
 	Comment      string `json:"comment"`
 
-	AddColumnList []*AddColumnContext `json:"addColumnList"`
+	AddColumnList  []*AddColumnContext `json:"addColumnList"`
+	PrimaryKeyList []string            `json:"primaryKeyList"`
 }
 
 // AlterTableContext is the edit database context to alter a table.
@@ -157,6 +158,7 @@ type AlterTableContext struct {
 	AddColumnList    []*AddColumnContext    `json:"addColumnList"`
 	ChangeColumnList []*ChangeColumnContext `json:"changeColumnList"`
 	DropColumnList   []*DropColumnContext   `json:"dropColumnList"`
+	PrimaryKeyList   *[]string              `json:"primaryKeyList"`
 }
 
 // RenameTableContext is the edit database context to rename a table.

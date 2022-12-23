@@ -11,15 +11,12 @@
     />
   </a>
 </h1>
-<p align="center">
-  Database CI/CD for DevOps teams.
-</p>
 
 <p align="center">
   <a href="https://demo.bytebase.com?source=github" target="_blank"><b>🔥 Live Demo</b></a> •
   <a href="https://bytebase.com/docs/get-started/install/overview" target="_blank"><b>⚙️ Install</b></a> •
   <a href="https://bytebase.com/docs"><b>📚 Documentation</b></a> •
-  <a href="https://discord.gg/huyw7gRsyA"><b>🙋‍♀️ Get instance help</b></a>
+  <a href="https://discord.gg/huyw7gRsyA"><b>🙋‍♀️ Get Instant Help</b></a>
 </p>
 
 <p align="center">
@@ -29,92 +26,106 @@
   <a href="https://artifacthub.io/packages/search?repo=bytebase">
     <img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/bytebase" />
   </a>
+    <a
+    href="https://github.com/bytebase/bytebase"
+    target="_blank"
+  >
+    <img alt="Github Stars" src="https://img.shields.io/github/stars/bytebase/bytebase?logo=github">
+  </a>
 </p>
+
+<p align="center">
+  <b> Different </b> database development tasks
+</p>
+
+<p align="center">
+  <b> Multiple </b> database systems
+</p>
+
+<p align="center">
+  <b> Unified </b> process
+</p>
+
+<p align="center">
+  <b> Single </b> tool
+</p>
+
+<br />
 
 <p align="center" >
-<img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/db-and-vcs.png" width="60%" />
+  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/architecture1.webp" />
 </p>
 
-## What is Bytebase?
+<br />
 
-<p align="center" >
-<img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/architecture1.webp" />
+<p align="center">🪜</p>
+<h1 align="center">Change</h1>
+<p align="center">
+  Want to formalize the database change process but don't know how?
 </p>
 
-Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included in the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase). The Bytebase family consists of these tools:
+|   |   |
+| --- | --- |
+| <b>Standard Operating Procedure (SOP) </b><br />Standardize the database schema and data change process across different database systems, small or [large tables](https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql) and [different tenants](https://www.bytebase.com/docs/tenant-database-management/overview).<br /><br/><b>SQL Review</b><br />[100+ lint rules](https://www.bytebase.com/docs/sql-review/review-rules/overview) to detect SQL anti-patterns and enforce consistent SQL style in the organization.<br /><br /><b>GitOps</b><br />[Point-and-click GitHub and GitLab integration](https://www.bytebase.com/docs/vcs-integration/overview) to enable GitOps workflow for changing database.| <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/issue-detail.webp" /> |
 
-- [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
-- [Bytebase CLI (bb)](https://www.bytebase.com/docs/cli/overview): The CLI to help developers integrate MySQL and PostgreSQL schema change into the existing CI/CD workflow.
-- [Bytebase GitHub App](https://github.com/marketplace/bytebase) and [SQL Review GitHub Action](https://github.com/marketplace/actions/sql-review): The GitHub App and GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
+<br />
 
-## Supported Database
+<p align="center">🔮</p>
+<h1 align="center">Query</h1>
+<p align="center">
+  Want to control the data access but don't know how?
+</p>
 
-✅ MySQL ✅ PostgreSQL ✅ TiDB ✅ ClickHouse ✅ Snowflake
+|   |   |
+| --- | --- |
+| <b>All-in-one SQL Editor</b><br />Web-based IDE specifically for performing SQL specific tasks.<br /><br/><b>Data Anonymization</b><br />State-of-the-art [column level anonymization](https://www.bytebase.com/docs/sql-editor/anonymize-data) engine to cover complex situations like subquery, CTE.<br /><br /><b>Database Access Control</b><br />Organization level policy to centralize the [database access control](https://www.bytebase.com/docs/administration/database-access-control). | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp" /> |
 
-## VCS Integration
+<br />
 
-GitOps workflow, database-as-Code, login with VCS account, project membership sync.
+<p align="center">👩‍💼</p>
+<h1 align="center">Admin</h1>
+<p align="center">
+  Want to enforce organization policy and monitor database activity but don't know how?
+</p>
 
-✅ GitLab CE/EE ✅ GitHub.com
+|   |   |
+| --- | --- |
+|  <b>Manage Database Resources</b><br /> A single place to manage environments, database instances, database users for application development, with optional [Terraform integration](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs). <br /><br /><b>Policy Enforcement</b><br />Enforce organization wide SQL Review policy, backup policy and data access policy.<br /><br/><b>SQL Editor Admin mode</b><br />[CLI like experience](https://www.bytebase.com/docs/sql-editor/admin-mode) without setting up bastion.| <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-review-policy.webp" /> |
 
-## Terraform Integration
+<br />
 
-[Bytebase Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs)
-enables team to manage Bytebase resources via Terraform. A typical setup involves teams using
-Terraform to provision database instances from Cloud vendors, followed by using Bytebase TF provider
-to prepare those instances ready for application use.
+<p align="center">🔒</p>
+<h1 align="center">Security</h1>
+<p align="center">
+  Want to avoid data leakage, change outage and detect malicious behavior but don't know how?
+</p>
 
-## Features
+|   |   |
+| --- | --- |
+| <b>Centralize Change, Query and Admin Tasks</b><br />A single place to perform different tasks on different databases, thus enforce policy and monitor activity accordingly. <br /><br /><b>RBAC</b><br />[Two-level RBAC model](https://www.bytebase.com/docs/concepts/roles-and-permissions) mapping to the organization wide privileges and application team privileges respectively.<br /><br /><b>Anomaly Center and Audit Logging</b><br /> Capture all database [anomalies](https://www.bytebase.com/docs/anomaly-detection/anomaly-center), user actions and system events and present them in a holistic view. | <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/anomaly-center.webp" /> |
 
-- [x] Web-based database change and management workspace for teams
-- [x] SQL Review
-  - [UI based change workflow](https://www.bytebase.com/docs/change-database/change-workflow)
-  - [Version control based change workflow](https://www.bytebase.com/docs/vcs-integration/overview) (Database-as-Code)
-  - [SQL Review Rules](https://www.bytebase.com/docs/sql-review/review-rules/overview)
-- [x] Built-in SQL Editor with read-only and admin mode
-- [x] Detailed migration history
-- [x] Multi-tenancy (rollout change to homogeneous databases belonged to different tenants)
-- [x] Online schema change based on gh-ost
-- [x] Backup and restore
-- [x] Point-in-time recovery (PITR)
-- [x] Anomaly center
-- [x] Environment policy
-  - Approval policy
-  - Backup schedule enforcement
-- [x] Schema drift detection
-- [x] Backward compatibility schema change check
-- [x] Data Anonymization
-- [x] Role-based access control (RBAC)
-- [x] Webhook integration for Slack, Discord, MS Teams, DingTalk(钉钉), Feishu(飞书), WeCom(企业微信)
-- [x] External approval integration for Feishu(飞书)
-
-<figcaption align = "center">Fig.1 - Dashboard</figcaption>
-
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview1.webp)
-
-<figcaption align = "center">Fig.2 - SQL review issue pipeline</figcaption>
-
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/overview2.webp)
-
-<figcaption align = "center">Fig.3 - GitLab based schema migration (Database-as-code)</figcaption>
-
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/versioncontrol.webp)
-
-<figcaption align = "center">Fig.4 - Built-in SQL Editor (read-only and admin mode)</figcaption>
-
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor.webp)
-
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/sql-editor-admin-mode.webp)
+<br />
 
 # 🖖 Intro
 
+Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase). The Bytebase family consists of these tools:
+
+- [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
+- [Bytebase CLI (bb)](https://www.bytebase.com/docs/cli/overview): The CLI to help developers integrate database changes into the existing CI/CD workflow.
+- [Bytebase GitHub App](https://github.com/marketplace/bytebase) and [SQL Review GitHub Action](https://github.com/marketplace/actions/sql-review): The GitHub App and GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
+- [Terraform Bytebase Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs): The Terraform
+provider enables team to manage Bytebase resources via Terraform. A typical setup involves teams using
+Terraform to provision database instances from Cloud vendors, followed by using Bytebase provider to
+prepare those instances ready for application use.
+
 |   |   Topic |
-| --- | --- |
+| --- | :--- |
 | 🏗️ | <b>[Installation](#-installation)</b> |
 | 🎮 | <b>[Demo](#-demo)</b> | 
-| 👩‍🏫 | <b>[Tutorials](#-tutorials)</b> | 
-| 🧩 | <b>[Data Model](#-data-model)</b> | 
-| 🎭 | <b>[Roles](#-roles)</b> | 
+| 👩‍🏫 | <b>[Tutorials](#-tutorials)</b> |
+| 💎 | <b>[Design Principles](#-design-principles)</b> |
+| 🧩 | <b>[Data Model](#-data-model)</b> |
+| 🎭 | <b>[Roles](#-roles)</b> |
 | 🕊 | <b>[Developing and Contributing](#-developing-and-contributing)</b> |
 | 🤺 | <b>[Bytebase vs Alternatives](#-bytebase-vs-alternatives)</b> |
 
@@ -164,7 +175,19 @@ our product experts.
 
 <br />
 
+# 💎 Design Principles
+
+|   |   |   |
+| --- | --- | --- |
+| 🪶 | Dependency Free | Start with a single command `./bytebase` without any external dependency. External PostgreSQL data store and others are optional.|
+| 🔗 | Integration First | Solely focus on database management and leave the rest to others. We have native VCS integration with [GitHub/GitLab](https://www.bytebase.com/docs/vcs-integration/overview), [Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs), [webhook](https://www.bytebase.com/docs/administration/webhook-integration/overview), and etc.|
+| 💂‍♀️ | Engineering Disciplined | Disciplined [bi-weekly release](https://www.bytebase.com/changelog) and [engineering practice](https://github.com/bytebase/bytebase/blob/main/docs/life-of-a-feature.md).|
+
+<br />
+
 # 🧩 Data Model
+
+More details in [Data Model Doc](https://www.bytebase.com/docs/concepts/data-model).
 
 <p align="center">
     <img
@@ -223,8 +246,7 @@ working on the code:
   * [Life of a schema change](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/life-of-a-schema-change.snb.md)
   * [SQL Review](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/sql-review-source-code-tour.snb.md)
 
-* Follow the [Development Guide](https://github.com/bytebase/bytebase/blob/main/docs/dev-guide.md) 
-to learn branch and commit message conventions.
+* Follow [Life of a Feature](https://github.com/bytebase/bytebase/blob/main/docs/life-of-a-feature.md).
 
 ## Dev Environemnt Setup
 
@@ -272,15 +294,16 @@ to learn branch and commit message conventions.
 
 <br />
 
-# 👨‍👩‍👧‍👦 Community
-
-[![Hang out on Discord](https://img.shields.io/badge/%20-Hang%20out%20on%20Discord-5865F2?style=for-the-badge&logo=discord&labelColor=EEEEEE)](https://discord.gg/huyw7gRsyA)
-
-[![Follow us on Twitter](https://img.shields.io/badge/Follow%20us%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&labelColor=EEEEEE)](https://twitter.com/Bytebase)
-
-<br />
-
 # 🤺 Bytebase vs Alternatives
+
+<p align="center">
+    <img
+      align="center"
+      alt="Product Comparison"
+      src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/fish.webp"
+      style="width:100%;"
+    />
+</p>
 
 ## Bytebase vs Flyway, Liquibase
 
@@ -308,6 +331,14 @@ by a [fully staffed team](https://www.bytebase.com/about#team) [releasing new ve
 
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,cookieY/Yearning,hhyo/Archery&type=Date)](https://star-history.com/#bytebase/bytebase&cookieY/Yearning&hhyo/Archery&Date)
+
+# 👨‍👩‍👧‍👦 Community
+
+[![Hang out on Discord](https://img.shields.io/badge/%20-Hang%20out%20on%20Discord-5865F2?style=for-the-badge&logo=discord&labelColor=EEEEEE)](https://discord.gg/huyw7gRsyA)
+
+[![Follow us on Twitter](https://img.shields.io/badge/Follow%20us%20on%20Twitter-1DA1F2?style=for-the-badge&logo=twitter&labelColor=EEEEEE)](https://twitter.com/Bytebase)
+
+<br />
 
 # 🤔 Frequently Asked Questions (FAQs)
 
