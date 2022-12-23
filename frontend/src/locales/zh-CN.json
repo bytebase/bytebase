@@ -622,6 +622,7 @@
   },
   "create-db": {
     "new-database-name": "新数据库名称",
+    "new-collection-name": "新集合名称",
     "database-owner-name": "数据库所有者",
     "cluster": "集群",
     "reserved-db-error": "{databaseName} 是一个预留名称",
