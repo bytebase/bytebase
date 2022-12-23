@@ -79,10 +79,6 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 
-	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	if connCfg.Password != "" {
-		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	}
 	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
@@ -90,7 +86,11 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
 		defer mysql.DeregisterTLSConfig(tlsKey)
-		dsn += fmt.Sprintf("?tls=%s", tlsKey)
+		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
+	}
+	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
+	if connCfg.Password != "" {
+		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 	}
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
