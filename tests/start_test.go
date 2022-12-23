@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/resources/mongoutil"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 
@@ -58,6 +59,9 @@ func TestMain(m *testing.M) {
 	}
 	externalPgBinDir = dir
 	if _, err := mysqlutil.Install(resourceDirOverride); err != nil {
+		log.Fatal(err)
+	}
+	if _, err := mongoutil.Install(resourceDirOverride); err != nil {
 		log.Fatal(err)
 	}
 	dir, err = resourcemysql.Install(resourceDirOverride)
