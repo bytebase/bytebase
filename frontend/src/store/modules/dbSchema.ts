@@ -23,8 +23,9 @@ export const useDBSchemaStore = defineStore("dbSchema", {
         return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
       }
 
-      if (requestCache.has(databaseId)) {
-        return requestCache.get(databaseId)!;
+      const cachedRequest = requestCache.get(databaseId);
+      if (cachedRequest) {
+        return cachedRequest;
       }
 
       const promise = axios
