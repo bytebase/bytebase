@@ -120,6 +120,10 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *api.Task) {
 }
 
 func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+	// We cannot support rollback SQL generation for sheets because it can take lots of resources.
+	if payload.SheetID > 0 {
+		return "", errors.Errorf("rollback SQL isn't supported for large sheet")
+	}
 	basename, seqStart, err := mysql.ParseBinlogName(payload.BinlogFileStart)
 	if err != nil {
 		return "", errors.WithMessagef(err, "invalid start binlog file name %s", payload.BinlogFileStart)
