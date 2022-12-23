@@ -1,8 +1,18 @@
 <template>
-  <div class="space-y-4">
+  <div>
+    <div class="flex justify-end items-center mt-1">
+      <MemberSelect
+        class="w-72"
+        :show-all="true"
+        :show-system-bot="true"
+        :selected-id="selectedPrincipalId"
+        @select-principal-id="selectPrincipal"
+      />
+    </div>
     <PagedAuditLogTable
       :activity-find="{
         typePrefix: typePrefixList,
+        user: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
         order: 'DESC',
       }"
       session-key="settings-audit-log-table"
@@ -56,11 +66,12 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref } from "vue";
+import { reactive, ref, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { NGrid, NGi } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { BBDialog } from "@/bbkit";
-import { AuditActivityType } from "@/types";
+import { AuditActivityType, PrincipalId, EMPTY_ID } from "@/types";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 const state = reactive({
@@ -69,6 +80,8 @@ const state = reactive({
 });
 
 const { t } = useI18n();
+const router = useRouter();
+const route = useRoute();
 
 const logKeyMap = {
   createdTs: t("audit-log.table.created-time"),
@@ -83,6 +96,14 @@ const typePrefixList = (
   Object.keys(AuditActivityType) as Array<keyof typeof AuditActivityType>
 ).map((key) => AuditActivityType[key]);
 
+const selectedPrincipalId = computed((): PrincipalId => {
+  const id = parseInt(route.query.user as string, 10);
+  if (id >= 0) {
+    return id;
+  }
+  return EMPTY_ID;
+});
+
 const handleViewDetail = (log: any) => {
   // Display detail fields in the same order as logKeyMap.
   state.modalContent = Object.fromEntries(
@@ -90,5 +111,15 @@ const handleViewDetail = (log: any) => {
   );
   state.showModal = true;
   dialog.value!.open();
+};
+
+const selectPrincipal = (principalId: PrincipalId) => {
+  router.replace({
+    name: "setting.workspace.audit-log",
+    query: {
+      ...route.query,
+      user: principalId,
+    },
+  });
 };
 </script>
