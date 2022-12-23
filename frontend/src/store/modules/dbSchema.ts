@@ -20,14 +20,18 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       databaseId: DatabaseId
     ): Promise<DatabaseMetadata> {
       if (this.databaseMetadataById.has(databaseId)) {
+        // The metadata entity is stored in local dictionary.
         return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
       }
 
       const cachedRequest = requestCache.get(databaseId);
       if (cachedRequest) {
+        // The request was sent but still not returned.
+        // We won't create a duplicated request.
         return cachedRequest;
       }
 
+      // Send a request and cache it.
       const promise = axios
         .get(`/api/database/${databaseId}/schema?metadata=true`)
         .then((res) => {
