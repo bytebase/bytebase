@@ -332,7 +332,7 @@ type TaskPatch struct {
 
 // TaskStatusPatch is the API message for patching a task status.
 type TaskStatusPatch struct {
-	IDList []int
+	ID int
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

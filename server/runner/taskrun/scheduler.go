@@ -251,7 +251,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							code := common.ErrorCode(err)
 							result := string(bytes)
 							taskStatusPatch := &api.TaskStatusPatch{
-								IDList:    []int{task.ID},
+								ID:        task.ID,
 								UpdaterID: api.SystemBotID,
 								Status:    api.TaskFailed,
 								Code:      &code,
@@ -279,7 +279,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							code := common.Ok
 							result := string(bytes)
 							taskStatusPatch := &api.TaskStatusPatch{
-								IDList:    []int{task.ID},
+								ID:        task.ID,
 								UpdaterID: api.SystemBotID,
 								Status:    api.TaskDone,
 								Code:      &code,
@@ -359,7 +359,7 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 	// TODO(d): revisit this as task pending is only a short-period of time.
 	if taskPatched.Status == api.TaskPending {
 		t, err := s.PatchTaskStatus(ctx, taskPatched, &api.TaskStatusPatch{
-			IDList:    []int{taskPatch.ID},
+			ID:        taskPatch.ID,
 			UpdaterID: taskPatch.UpdaterID,
 			Status:    api.TaskPendingApproval,
 		})
@@ -853,7 +853,7 @@ func (s *Scheduler) scheduleIfNeeded(ctx context.Context, task *api.Task) error 
 	}
 
 	if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
-		IDList:    []int{task.ID},
+		ID:        task.ID,
 		UpdaterID: api.SystemBotID,
 		Status:    api.TaskRunning,
 	}); err != nil {
@@ -906,7 +906,7 @@ func (s *Scheduler) scheduleAutoApprovedTasks(ctx context.Context) error {
 		}
 		if ok {
 			if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
-				IDList:    []int{task.ID},
+				ID:        task.ID,
 				UpdaterID: api.SystemBotID,
 				Status:    api.TaskPending,
 			}); err != nil {
@@ -970,10 +970,6 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 			Code: common.Invalid,
 			Err:  errors.Errorf("cannot skip task whose status is %v", task.Status),
 		}
-	}
-
-	if len(taskStatusPatch.IDList) != 1 {
-		return nil, errors.Errorf("expect to patch 1 task, get %d", len(taskStatusPatch.IDList))
 	}
 
 	if taskStatusPatch.Status == api.TaskCanceled {
@@ -1261,7 +1257,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, new
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
 					if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
-						IDList:    []int{task.ID},
+						ID:        task.ID,
 						UpdaterID: updaterID,
 						Status:    api.TaskCanceled,
 					}); err != nil {
@@ -1443,6 +1439,7 @@ func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPat
 
 	return nil
 }
+
 func (s *Scheduler) onTaskPatchedWithoutIssue(ctx context.Context, taskPatched *api.Task) error {
 	pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
 	if err != nil {
