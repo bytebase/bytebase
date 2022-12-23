@@ -31,6 +31,7 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID/role/:roleName", s.getDatabaseRole)
 	g.PATCH("/instance/:instanceID/role/:roleName", s.updateDatabaseRole)
 	g.DELETE("/instance/:instanceID/role/:roleName", s.deleteDatabaseRole)
+	g.PATCH("/instance/:instanceName/database/:database", s.updateInstanceDatabase)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
@@ -490,4 +491,55 @@ func convertToAPIDataSouceList(dataSourceList []*openAPIV1.DataSourceCreate) ([]
 	}
 
 	return res, nil
+}
+
+func (s *Server) updateInstanceDatabase(c echo.Context) error {
+	ctx := c.Request().Context()
+	instanceName := c.Param("instanceName")
+	databaseName := c.Param("database")
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+	instanceDatabasePatch := &openAPIV1.InstanceDatabasePatch{}
+	if err := json.Unmarshal(body, instanceDatabasePatch); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch instance database request").SetInternal(err)
+	}
+
+	instances, err := s.store.FindInstance(ctx, &api.InstanceFind{Name: &instanceName})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
+	}
+	if len(instances) != 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Found %v instances with name %q but expecting one", len(instances), instanceName)
+	}
+	instance := instances[0]
+
+	databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &instance.ID, Name: &databaseName})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find database").SetInternal(err)
+	}
+	if len(databases) != 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Found %v databases with name %q but expecting one", len(databases), databaseName)
+	}
+	database := databases[0]
+
+	var patchProjectID *int
+	if instanceDatabasePatch.Project != nil {
+		projects, err := s.store.FindProject(ctx, &api.ProjectFind{Name: instanceDatabasePatch.Project})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find project").SetInternal(err)
+		}
+		if len(projects) != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Found %v projects with name %q but expecting one", len(projects), *instanceDatabasePatch.Project)
+		}
+		project := projects[0]
+		patchProjectID = &project.ID
+	}
+	updaterID := c.Get(getPrincipalIDContextKey()).(int)
+	if _, err := s.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: updaterID, ProjectID: patchProjectID}); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to patch database project").SetInternal(err)
+	}
+	return c.JSON(http.StatusOK, "")
 }
