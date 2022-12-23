@@ -265,7 +265,6 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// 1. MongoDB support transaction only in replica set mode or shard cluster mode. But we need to
 	// support standalone mode as well. https://stackoverflow.com/a/51462024/19075342
 	// 2. We use mongodb driver, it has not implemented the SQL interface. So we can't use the same code.
-	// 3. In Bytebase, our write operations are all in one goroutine, so there's no concurrency issue.
 	if executor.GetType() != db.MongoDB {
 		// We use transaction here for the RDBMS.
 		sqldb, err := executor.GetDBConnection(ctx, databaseName)
@@ -320,7 +319,6 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 	// 1. MongoDB support transaction only in replica set mode or shard cluster mode. But we need to
 	// support standalone mode as well. https://stackoverflow.com/a/51462024/19075342
 	// 2. We use mongodb driver, it had not implment the sql interface. So we can't use the same code.
-	// 3. In Bytebase, our write operations are all in one goroutine, so there's no concurrency issue.
 	if executor.GetType() != db.MongoDB {
 		sqldb, err := executor.GetDBConnection(ctx, databaseName)
 		if err != nil {
