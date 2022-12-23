@@ -53,6 +53,7 @@
         "instance-customized": "自定义",
         "environment-count": "环境数",
         "environment-upto-2": "不多于 2 个",
+        "environment-upto-3": "不多于 3 个",
         "environment-unlimited": "无限制",
         "task-count-in-issue": "单个工单的任务数",
         "task-upto-4": "不多于 4 个",

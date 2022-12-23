@@ -96,7 +96,7 @@ planList:
       - type: instance-count
         content: instance-minimum-5
       - type: environment-count
-        content: environment-unlimited
+        content: environment-upto-3
       - type: task-count-in-issue
         content: task-unlimited
       - type: schema-change
