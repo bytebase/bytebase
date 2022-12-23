@@ -78,6 +78,8 @@ func (*Driver) GetType() db.Type {
 }
 
 // GetDBConnection returns a database connection.
+// It always return nil because it has not implemented the SQL interface, and we never return error, it's caller's responsibility to
+// avoid using the returned value for MongoDB.
 func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 	return nil, nil
 }
