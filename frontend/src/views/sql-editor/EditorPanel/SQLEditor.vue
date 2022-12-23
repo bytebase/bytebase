@@ -167,7 +167,9 @@ const handleEditorReady = async () => {
       // Only provide auto-complete context for those opened database.
       for (const database of databaseList) {
         const tableList = dbSchemaStore.getTableListByDatabaseId(database.id);
-        databaseMap.set(database, tableList);
+        if (tableList.length > 0) {
+          databaseMap.set(database, tableList);
+        }
       }
       editorRef.value?.setEditorAutoCompletionContext(databaseMap);
     }
