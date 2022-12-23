@@ -404,7 +404,11 @@ const defaultPort = computed(() => {
 });
 
 const showSSL = computed((): boolean => {
-  return state.instance.engine === "CLICKHOUSE";
+  return (
+    state.instance.engine === "CLICKHOUSE" ||
+    state.instance.engine === "MYSQL" ||
+    state.instance.engine === "TIDB"
+  );
 });
 
 const showDatabase = computed((): boolean => {
