@@ -407,7 +407,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 
 	bytes, err := json.Marshal(createActivityPayload)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Name)
 	}
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   issueCreate.CreatorID,
@@ -419,8 +419,35 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Name)
 	}
+
+	if len(issue.Pipeline.StageList) > 0 {
+		stage := issue.Pipeline.StageList[0]
+		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+			StageID:               stage.ID,
+			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
+			IssueName:             issue.Name,
+			StageName:             stage.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Name)
+		}
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: issue.PipelineID,
+			Type:        api.ActivityPipelineStageStatusUpdate,
+			Level:       api.ActivityInfo,
+			Payload:     string(bytes),
+		}
+		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Name)
+		}
+	}
+
 	return issue, nil
 }
 

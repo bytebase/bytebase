@@ -50,6 +50,11 @@ var (
 		api.TaskPendingApproval: true,
 		api.TaskFailed:          true,
 	}
+	terminatedTaskStatus = map[api.TaskStatus]bool{
+		api.TaskDone:     true,
+		api.TaskCanceled: true,
+		api.TaskFailed:   true,
+	}
 )
 
 // NewScheduler creates a new task scheduler.
@@ -1023,89 +1028,8 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		}
 	}
 
-	// Every task in the stage completed means we are moving into a new stage. We need to
-	// 1. cancel external approval.
-	if taskPatched.Status == api.TaskDone && issue != nil {
-		foundStage := false
-		stageTaskAllDone := true
-		for _, stage := range issue.Pipeline.StageList {
-			if stage.ID == taskPatched.StageID {
-				foundStage = true
-				for _, task := range stage.TaskList {
-					if task.Status != api.TaskDone {
-						stageTaskAllDone = false
-						break
-					}
-				}
-				break
-			}
-		}
-		// every task in the stage completes
-		if foundStage && stageTaskAllDone {
-			// Cancel external approval, it's ok if we failed.
-			if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonNoTaskPendingApproval); err != nil {
-				log.Error("failed to cancel external approval on stage tasks completion", zap.Int("issue_id", issue.ID), zap.Error(err))
-			}
-		}
-	}
-
-	// If there isn't a pendingApproval task, then we need to set issue.AssigneeNeedAttention to false for UI workflow.
-	if taskPatched.Status == api.TaskPending && issue != nil && issue.Project.WorkflowType == api.UIWorkflow {
-		foundPendingApprovalTask := false
-		for _, stage := range issue.Pipeline.StageList {
-			if stage.ID == taskPatched.StageID {
-				for _, task := range stage.TaskList {
-					if task.Status == api.TaskPendingApproval {
-						foundPendingApprovalTask = true
-						break
-					}
-				}
-				break
-			}
-		}
-		if foundPendingApprovalTask {
-			needAttention := false
-			patch := &api.IssuePatch{
-				ID:                    issue.ID,
-				UpdaterID:             api.SystemBotID,
-				AssigneeNeedAttention: &needAttention,
-			}
-			if _, err := s.store.PatchIssue(ctx, patch); err != nil {
-				return nil, errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage, issuePatch: %+v", patch)
-			}
-		}
-	}
-
-	// If every task in the pipeline completes, and the assignee is system bot:
-	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
-	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
-	if taskPatched.Status == api.TaskDone && (issue == nil || issue.AssigneeID == api.SystemBotID) {
-		pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
-		if err != nil {
-			return nil, errors.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
-		}
-		if pipeline == nil {
-			return nil, errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
-		}
-		if areAllTasksDone(pipeline) {
-			if issue == nil {
-				// System-generated tasks such as backup tasks don't have corresponding issues.
-				status := api.PipelineDone
-				pipelinePatch := &api.PipelinePatch{
-					ID:        pipeline.ID,
-					UpdaterID: taskStatusPatch.UpdaterID,
-					Status:    &status,
-				}
-				if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-					return nil, errors.Wrapf(err, "failed to mark pipeline %v as DONE after completing task %v", pipeline.Name, taskPatched.Name)
-				}
-			} else {
-				issue.Pipeline = pipeline
-				if _, err := s.ChangeIssueStatus(ctx, issue, api.IssueDone, taskStatusPatch.UpdaterID, ""); err != nil {
-					return nil, errors.Wrapf(err, "failed to mark issue %v as DONE after completing task %v", issue.Name, taskPatched.Name)
-				}
-			}
-		}
+	if err := s.onTaskPatched(ctx, issue, taskPatched); err != nil {
+		return nil, err
 	}
 
 	return taskPatched, nil
@@ -1405,4 +1329,141 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, new
 	}
 
 	return updatedIssue, nil
+}
+
+func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPatched *api.Task) error {
+	if issue == nil {
+		return s.onTaskPatchedWithoutIssue(ctx, taskPatched)
+	}
+
+	foundStage := false
+	stageTaskHasPendingApproval := false
+	stageTaskAllTerminated := true
+	stageTaskAllDone := true
+	var stageIndex int
+	for i, stage := range issue.Pipeline.StageList {
+		if stage.ID == taskPatched.StageID {
+			foundStage = true
+			stageIndex = i
+			for _, task := range stage.TaskList {
+				if task.Status == api.TaskPendingApproval {
+					stageTaskHasPendingApproval = true
+				}
+				if task.Status != api.TaskDone {
+					stageTaskAllDone = false
+				}
+				if !terminatedTaskStatus[task.Status] {
+					stageTaskAllTerminated = false
+				}
+			}
+			break
+		}
+	}
+	if !foundStage {
+		return errors.New("failed to find corresponding stage of the task in the issue pipeline")
+	}
+
+	// every task in the stage completes
+	// cancel external approval, it's ok if we failed.
+	if stageTaskAllDone {
+		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonNoTaskPendingApproval); err != nil {
+			log.Error("failed to cancel external approval on stage tasks completion", zap.Int("issue_id", issue.ID), zap.Error(err))
+		}
+	}
+
+	// every task in the stage completes and this is not the last stage.
+	// create "stage begins" activity.
+	if stageTaskAllDone && stageIndex+1 < len(issue.Pipeline.StageList) {
+		stage := issue.Pipeline.StageList[stageIndex+1]
+		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+			StageID:               stage.ID,
+			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
+			IssueName:             issue.Name,
+			StageName:             stage.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
+		}
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: issue.PipelineID,
+			Type:        api.ActivityPipelineStageStatusUpdate,
+			Level:       api.ActivityInfo,
+			Payload:     string(bytes),
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
+		}
+	}
+
+	// every task in the stage terminated
+	// create "stage ends" activity.
+	if stageTaskAllTerminated {
+		stage := issue.Pipeline.StageList[stageIndex]
+		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+			StageID:               stage.ID,
+			StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
+			IssueName:             issue.Name,
+			StageName:             stage.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
+		}
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: issue.PipelineID,
+			Type:        api.ActivityPipelineStageStatusUpdate,
+			Level:       api.ActivityInfo,
+			Payload:     string(bytes),
+		}
+		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return errors.Wrap(err, "failed to create ActivityPipelineStageStatusUpdate activity")
+		}
+	}
+
+	// there isn't a pendingApproval task
+	// we need to set issue.AssigneeNeedAttention to false for UI workflow.
+	if taskPatched.Status == api.TaskPending && issue.Project.WorkflowType == api.UIWorkflow && stageTaskHasPendingApproval {
+		needAttention := false
+		patch := &api.IssuePatch{
+			ID:                    issue.ID,
+			UpdaterID:             api.SystemBotID,
+			AssigneeNeedAttention: &needAttention,
+		}
+		if _, err := s.store.PatchIssue(ctx, patch); err != nil {
+			return errors.Wrapf(err, "failed to patch issue assigneeNeedAttention after finding out that there isn't any pendingApproval task in the stage, issuePatch: %+v", patch)
+		}
+	}
+
+	return nil
+}
+func (s *Scheduler) onTaskPatchedWithoutIssue(ctx context.Context, taskPatched *api.Task) error {
+	pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
+	if err != nil {
+		return errors.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
+	}
+	if pipeline == nil {
+		return errors.Errorf("pipeline not found for ID %v", taskPatched.PipelineID)
+	}
+	// every task in the pipeline completes, and the assignee is system bot
+	// the task is NOT associated with an issue, then we mark the pipeline as DONE.
+	if areAllTasksDone(pipeline) {
+		// System-generated tasks such as backup tasks don't have corresponding issues.
+		status := api.PipelineDone
+		pipelinePatch := &api.PipelinePatch{
+			ID:        pipeline.ID,
+			UpdaterID: api.SystemBotID,
+			Status:    &status,
+		}
+		if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
+			return errors.Wrapf(err, "failed to mark pipeline %v as DONE after completing task %v", pipeline.Name, taskPatched.Name)
+		}
+	}
+	return nil
 }
