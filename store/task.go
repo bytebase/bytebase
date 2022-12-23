@@ -653,11 +653,15 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (
 	if (patch.Statement != nil || patch.SchemaVersion != nil) && patch.Payload != nil {
 		return nil, errors.Errorf("cannot set both statement/schemaVersion and payload for TaskPatch")
 	}
+	var payloadSet []string
 	if v := patch.Statement; v != nil {
-		set, args = append(set, fmt.Sprintf(`payload['statement'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('statement', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.SchemaVersion; v != nil {
-		set, args = append(set, fmt.Sprintf(`payload['schemaVersion'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('schemaVersion', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+	}
+	if len(payloadSet) != 0 {
+		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
 	}
 	if v := patch.Payload; v != nil {
 		payload := "{}"
@@ -776,12 +780,17 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
+	var payloadSet []string
 	if v := patch.Skipped; v != nil {
-		set, args = append(set, fmt.Sprintf(`payload['skipped'] = to_json($%d::BOOLEAN)`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('skipped', to_jsonb($%d::BOOLEAN))`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.SkippedReason; v != nil {
-		set, args = append(set, fmt.Sprintf(`payload['skippedReason'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('skippedReason', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
 	}
+	if len(payloadSet) != 0 {
+		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
+	}
+
 	var ids []string
 	for _, id := range patch.IDList {
 		ids = append(ids, strconv.Itoa(id))
