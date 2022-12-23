@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -219,7 +218,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
 	s.pgBinDir, err = postgres.Install(resourceDir)
 	if err != nil {
 		return nil, err
