@@ -69,7 +69,7 @@
 
       <div v-if="selectedInstance.engine == 'MONGODB'" class="w-full">
         <label for="name" class="textlabel">
-            {{ $t("create-db.new-collection-name") }}
+          {{ $t("create-db.new-collection-name") }}
           <span class="text-red-600">*</span>
         </label>
         <input
@@ -488,14 +488,6 @@ export default defineComponent({
       );
     });
 
-    const showNewTableName = computed((): boolean => {
-      const instance = selectedInstance.value;
-      if (instance.id === UNKNOWN_ID) {
-        return false;
-      }
-      return instance.engine === "MONGODB";
-    });
-
     const requireDatabaseOwnerName = computed((): boolean => {
       const instance = selectedInstance.value;
       if (instance.id === UNKNOWN_ID) {
@@ -663,7 +655,6 @@ export default defineComponent({
       allowEditInstance,
       selectedInstance,
       showCollationAndCharacterSet,
-      showNewTableName,
       requireDatabaseOwnerName,
       showAssigneeSelect,
       selectProject,
