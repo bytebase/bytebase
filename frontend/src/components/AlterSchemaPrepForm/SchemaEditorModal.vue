@@ -145,7 +145,7 @@ import {
   useProjectStore,
   useSchemaEditorStore,
 } from "@/store";
-import { diffTableList } from "@/utils/schemaEditor/diffTable";
+import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
@@ -291,23 +291,25 @@ const getDatabaseEditListWithSchemaEditor = () => {
       continue;
     }
 
-    const originTableList = databaseSchema.originSchemaList
-      .map((schema) => schema.tableList)
-      .flat();
-    const tableList = databaseSchema.schemaList
-      .map((schema) => schema.tableList)
-      .flat();
-    const diffTableListResult = diffTableList(originTableList, tableList);
-    if (
-      diffTableListResult.createTableList.length > 0 ||
-      diffTableListResult.alterTableList.length > 0 ||
-      diffTableListResult.renameTableList.length > 0 ||
-      diffTableListResult.dropTableList.length > 0
-    ) {
-      databaseEditList.push({
-        databaseId: database.id,
-        ...diffTableListResult,
-      });
+    for (const schema of databaseSchema.schemaList) {
+      const originSchema = databaseSchema.originSchemaList.find(
+        (schema) => schema.name === schema.name
+      );
+      if (!originSchema) {
+        continue;
+      }
+      const diffSchemaResult = diffSchema(originSchema, schema);
+      if (
+        diffSchemaResult.createTableList.length > 0 ||
+        diffSchemaResult.alterTableList.length > 0 ||
+        diffSchemaResult.renameTableList.length > 0 ||
+        diffSchemaResult.dropTableList.length > 0
+      ) {
+        databaseEditList.push({
+          databaseId: database.id,
+          ...diffSchemaResult,
+        });
+      }
     }
   }
   return databaseEditList;

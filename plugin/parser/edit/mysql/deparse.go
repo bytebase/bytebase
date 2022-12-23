@@ -191,10 +191,12 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidb
 	}
 
 	if alterTableContext.PrimaryKeyList != nil {
-		dropPrimaryKeySpec := tidbast.AlterTableSpec{
-			Tp: tidbast.AlterTableDropPrimaryKey,
+		if alterTableContext.DropPrimaryKey {
+			dropPrimaryKeySpec := tidbast.AlterTableSpec{
+				Tp: tidbast.AlterTableDropPrimaryKey,
+			}
+			alterTableStmt.Specs = append(alterTableStmt.Specs, &dropPrimaryKeySpec)
 		}
-		alterTableStmt.Specs = append(alterTableStmt.Specs, &dropPrimaryKeySpec)
 
 		if len(*alterTableContext.PrimaryKeyList) != 0 {
 			alterTableSpec := tidbast.AlterTableSpec{

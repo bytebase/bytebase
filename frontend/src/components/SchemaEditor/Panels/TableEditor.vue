@@ -37,7 +37,7 @@
         </div>
         <div class="w-auto flex flex-row justify-end items-center space-x-3">
           <button
-            v-if="state.tableCache.status !== 'created'"
+            v-if="table.status !== 'created'"
             class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="!allowResetTable"
             @click="handleDiscardChanges"
@@ -56,8 +56,8 @@
       >
         <!-- column table header -->
         <div
-          class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_112px_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
-          :class="state.tableCache.columnList.length > 0 && 'border-b'"
+          class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_112px)_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
+          :class="table.columnList.length > 0 && 'border-b'"
         >
           <span
             v-for="header in columnHeaderList"
@@ -70,9 +70,9 @@
         <!-- column table body -->
         <div class="w-full">
           <div
-            v-for="(column, index) in state.tableCache.columnList"
+            v-for="(column, index) in table.columnList"
             :key="`${index}-${column.oldName}`"
-            class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_112px_32px] gr text-sm even:bg-gray-50"
+            class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_112px)_32px] gr text-sm even:bg-gray-50"
             :class="
               isDroppedColumn(column) &&
               'text-red-700 cursor-not-allowed !bg-red-50 opacity-70'
@@ -116,7 +116,7 @@
               <input
                 v-model="column.default"
                 :disabled="disableAlterColumn(column)"
-                :placeholder="column.default === undefined ? 'NULL' : ''"
+                :placeholder="column.default === undefined ? 'NULL' : 'EMPTY'"
                 class="column-field-input !pr-8"
                 type="text"
               />
@@ -150,6 +150,16 @@
                 :value="!column.nullable"
                 :disabled="disableAlterColumn(column)"
                 @toggle="(value) => (column.nullable = !value)"
+              />
+            </div>
+            <div
+              class="table-body-item-container flex justify-start items-center"
+            >
+              <BBCheckbox
+                class="ml-3"
+                :value="isColumnPrimaryKey(column)"
+                :disabled="disableAlterColumn(column)"
+                @toggle="(value) => setColumnPrimaryKey(column, value)"
               />
             </div>
             <div class="w-full flex justify-start items-center">
@@ -208,10 +218,9 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from "lodash-es";
-import { computed, reactive, watch } from "vue";
+import { cloneDeep } from "lodash-es";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useDebounceFn } from "@vueuse/core";
 import { useNotificationStore, useSchemaEditorStore } from "@/store/modules";
 import { TableTabContext } from "@/types";
 import { ColumnMetadata } from "@/types/proto/database";
@@ -219,12 +228,15 @@ import { DatabaseEdit } from "@/types/schemaEditor";
 import {
   Column,
   Table,
+  Schema,
   convertColumnMetadataToColumn,
+  PrimaryKey,
 } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
-import { diffTableList } from "@/utils/schemaEditor/diffTable";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import { isTableChanged } from "../utils/table";
+import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 
 type TabType = "column-list" | "raw-sql";
 
@@ -232,7 +244,6 @@ interface LocalState {
   selectedTab: TabType;
   isFetchingDDL: boolean;
   statement: string;
-  tableCache: Table;
 }
 
 const { t } = useI18n();
@@ -246,26 +257,36 @@ const state = reactive<LocalState>({
   selectedTab: "column-list",
   isFetchingDDL: false,
   statement: "",
-  tableCache: cloneDeep(editorStore.getTableWithTableTab(currentTab) as Table),
 });
 
-const table = computed(
-  () => editorStore.getTableWithTableTab(currentTab) as Table
-);
+const table = ref(editorStore.getTableWithTableTab(currentTab) as Table);
+const schema = computed(() => {
+  return databaseSchema.schemaList.find(
+    (schema) => schema.name === currentTab.schemaName
+  ) as Schema;
+});
+const primaryKey = computed(() => {
+  return schema.value.primaryKeyList.find(
+    (pk) => pk.table === currentTab.tableName
+  ) as PrimaryKey;
+});
 
 const isDroppedTable = computed(() => {
-  return state.tableCache.status === "dropped";
+  return table.value.status === "dropped";
 });
 
 const allowResetTable = computed(() => {
-  if (state.tableCache.status === "created") {
+  if (table.value.status === "created") {
     return false;
   }
 
-  const originTable = databaseSchema.originSchemaList
-    .find((schema) => schema.name === currentTab.schemaName)
-    ?.tableList.find((table) => table.oldName === state.tableCache.oldName);
-  return !isEqual(originTable, state.tableCache) || isDroppedTable.value;
+  return (
+    isTableChanged(
+      currentTab.databaseId,
+      currentTab.schemaName,
+      currentTab.tableName
+    ) || isDroppedTable.value
+  );
 });
 
 const columnHeaderList = computed(() => {
@@ -290,6 +311,10 @@ const columnHeaderList = computed(() => {
       key: "nullable",
       label: t("schema-editor.column.not-null"),
     },
+    {
+      key: "primary",
+      label: t("schema-editor.column.primary"),
+    },
   ];
 });
 
@@ -304,48 +329,39 @@ const dataTypeOptions = computed(() => {
 });
 
 const dataDefaultOptions = [
-  // TODO(steven): support set default field with EMPTY.
-  // {
-  //   label: "EMPTY",
-  //   key: "EMPTY",
-  // },
   {
     label: "NULL",
     key: "NULL",
   },
-];
-
-watch(
-  () => state.tableCache,
-  () => {
-    handleSaveChanges();
-  },
   {
-    deep: true,
-  }
-);
-
-watch([table.value], () => {
-  state.tableCache.newName = table.value.newName;
-  state.tableCache.status = table.value.status;
-});
+    label: "EMPTY",
+    key: "EMPTY",
+  },
+];
 
 watch(
   () => state.selectedTab,
   async () => {
     if (state.selectedTab === "raw-sql") {
-      const originTable = editorStore.getOriginTable(
+      const originSchema = editorStore.getOriginSchema(
         currentTab.databaseId,
-        currentTab.schemaName,
-        state.tableCache.oldName
-      );
-      const diffTableListResult = diffTableList(
-        originTable ? [originTable] : [],
-        [state.tableCache]
-      );
+        currentTab.schemaName
+      ) as Schema;
+      const diffSchemaResult = diffSchema(originSchema, schema.value);
       const databaseEdit: DatabaseEdit = {
         databaseId: currentTab.databaseId,
-        ...diffTableListResult,
+        createTableList: diffSchemaResult.createTableList.filter(
+          (context) => context.name === table.value.newName
+        ),
+        alterTableList: diffSchemaResult.alterTableList.filter(
+          (context) => context.name === table.value.newName
+        ),
+        renameTableList: diffSchemaResult.renameTableList.filter(
+          (context) => context.newName === table.value.newName
+        ),
+        dropTableList: diffSchemaResult.dropTableList.filter(
+          (context) => context.name === table.value.oldName
+        ),
       };
       state.isFetchingDDL = true;
       const databaseEditResult = await editorStore.postDatabaseEdit(
@@ -369,6 +385,15 @@ watch(
   }
 );
 
+const isColumnPrimaryKey = (column: Column): boolean => {
+  for (const columnRef of primaryKey.value.columnList) {
+    if (columnRef.value === column) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const isDroppedColumn = (column: Column): boolean => {
   return column.status === "dropped";
 };
@@ -377,19 +402,25 @@ const disableAlterColumn = (column: Column): boolean => {
   return isDroppedTable.value || isDroppedColumn(column);
 };
 
+const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
+  if (isPrimaryKey) {
+    primaryKey.value?.columnList.push(ref(column));
+  } else {
+    const index = primaryKey.value?.columnList.findIndex(
+      (columnRef) => columnRef.value === column
+    );
+    primaryKey.value?.columnList.splice(index, 1);
+  }
+};
+
 const handleChangeTab = (tab: TabType) => {
   state.selectedTab = tab;
 };
 
-const handleSaveChanges = useDebounceFn(async () => {
-  const table = editorStore.getTableWithTableTab(currentTab) as Table;
-  table.columnList = cloneDeep(state.tableCache.columnList);
-}, 500);
-
 const handleAddColumn = () => {
   const column = convertColumnMetadataToColumn(ColumnMetadata.fromPartial({}));
   column.status = "created";
-  state.tableCache.columnList.push(column);
+  table.value.columnList.push(column);
 };
 
 const handleColumnDefaultFieldChange = (
@@ -398,12 +429,14 @@ const handleColumnDefaultFieldChange = (
 ) => {
   if (defaultString === "NULL") {
     column.default = undefined;
+  } else if (defaultString === "EMPTY") {
+    column.default = "";
   }
 };
 
 const handleDropColumn = (column: Column) => {
   if (column.status === "created") {
-    state.tableCache.columnList = state.tableCache.columnList.filter(
+    table.value.columnList = table.value.columnList.filter(
       (item) => item !== column
     );
   } else {
@@ -420,24 +453,38 @@ const handleRestoreColumn = (column: Column) => {
 };
 
 const handleDiscardChanges = () => {
-  if (state.tableCache.status === "created") {
+  if (table.value.status === "created") {
     return;
   }
 
+  const originSchema = editorStore.getOriginSchema(
+    currentTab.databaseId,
+    currentTab.schemaName
+  );
   const originTable = editorStore.getOriginTable(
     currentTab.databaseId,
     currentTab.schemaName,
-    state.tableCache.oldName
+    table.value.oldName
   );
 
-  state.tableCache.newName = state.tableCache.oldName;
-  state.tableCache.columnList = cloneDeep(originTable?.columnList ?? []);
-  state.tableCache.status = "normal";
+  table.value.newName = table.value.oldName;
+  table.value.columnList = cloneDeep(originTable?.columnList ?? []);
+  table.value.status = "normal";
 
-  const table = editorStore.getTableWithTableTab(currentTab) as Table;
-  table.newName = table.oldName;
-  table.columnList = cloneDeep(table.columnList);
-  table.status = "normal";
+  // TODO(steven): use reactive Ref.
+  // Update reference objects.
+  currentTab.tableName = table.value.newName;
+  primaryKey.value.table = table.value.newName;
+  primaryKey.value.columnList = [];
+  const primaryKeyColumnNameList = (
+    originSchema?.primaryKeyList.find((pk) => pk.table === table.value.oldName)
+      ?.columnList || []
+  ).map((columnRef) => columnRef.value.oldName);
+  for (const column of table.value.columnList) {
+    if (primaryKeyColumnNameList.includes(column.oldName)) {
+      primaryKey.value.columnList.push(ref(column));
+    }
+  }
 };
 </script>
 

@@ -60,6 +60,7 @@ export interface CreateTableContext {
   comment: string;
 
   addColumnList: AddColumnContext[];
+  primaryKeyList: string[];
 }
 
 export interface AlterTableContext {
@@ -68,6 +69,8 @@ export interface AlterTableContext {
   addColumnList: AddColumnContext[];
   changeColumnList: ChangeColumnContext[];
   dropColumnList: DropColumnContext[];
+  dropPrimaryKey: boolean;
+  primaryKeyList?: string[];
 }
 
 export interface RenameTableContext {
