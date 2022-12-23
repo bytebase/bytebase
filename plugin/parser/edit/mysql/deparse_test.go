@@ -444,7 +444,7 @@ func TestDeparseAlterTableWithPrimaryKey(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), DROP PRIMARY KEY, ADD PRIMARY KEY (`id`);\n",
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL), ADD PRIMARY KEY (`id`);\n",
 		},
 		{
 			name: "alter table t2",
@@ -460,6 +460,7 @@ func TestDeparseAlterTableWithPrimaryKey(t *testing.T) {
 								Nullable: false,
 							},
 						},
+						DropPrimaryKey: true,
 						PrimaryKeyList: &[]string{},
 					},
 				},
@@ -484,26 +485,6 @@ func TestDeparseAlterTableWithPrimaryKey(t *testing.T) {
 				},
 			},
 			want: "ALTER TABLE `t3` ADD COLUMN (`id` INT NOT NULL);\n",
-		},
-		{
-			name: "alter table t4",
-			databaseEdit: &api.DatabaseEdit{
-				DatabaseID: api.UnknownID,
-				AlterTableList: []*api.AlterTableContext{
-					{
-						Name: "t4",
-						AddColumnList: []*api.AddColumnContext{
-							{
-								Name:     "id",
-								Type:     "int",
-								Nullable: false,
-							},
-						},
-						PrimaryKeyList: &[]string{"id"},
-					},
-				},
-			},
-			want: "ALTER TABLE `t4` ADD COLUMN (`id` INT NOT NULL), DROP PRIMARY KEY, ADD PRIMARY KEY (`id`);\n",
 		},
 	}
 

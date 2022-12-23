@@ -1,3 +1,4 @@
+import { ref, Ref } from "vue";
 import {
   ColumnMetadata,
   SchemaMetadata,
@@ -29,9 +30,9 @@ export interface Table {
 }
 
 export interface PrimaryKey {
-  schema: string;
   table: string;
-  columnList: string[];
+  // column is a ref to Column.
+  columnList: Ref<Column>[];
 }
 
 export interface ForeignKey {
@@ -91,17 +92,27 @@ export const convertSchemaMetadataToSchema = (
   const foreignKeyList: ForeignKey[] = [];
 
   for (const tableMetadata of schemaMetadata.tables) {
-    tableList.push(convertTableMetadataToTable(tableMetadata));
+    const table = convertTableMetadataToTable(tableMetadata);
+    tableList.push(table);
 
+    const primaryKey: PrimaryKey = {
+      table: tableMetadata.name,
+      columnList: [],
+    };
     for (const indexMetadata of tableMetadata.indexes) {
       if (indexMetadata.primary === true) {
-        primaryKeyList.push({
-          schema: schemaMetadata.name,
-          table: tableMetadata.name,
-          columnList: indexMetadata.expressions,
-        });
+        for (const columnName of indexMetadata.expressions) {
+          const column = table.columnList.find(
+            (column) => column.oldName === columnName
+          );
+          if (column) {
+            primaryKey.columnList.push(ref(column));
+          }
+        }
+        break;
       }
     }
+    primaryKeyList.push(primaryKey);
 
     for (const foreignKeyMetadata of tableMetadata.foreignKeys) {
       foreignKeyList.push({
