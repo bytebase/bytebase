@@ -158,16 +158,15 @@ const handleEditorReady = async () => {
     },
   });
 
-  watchEffect(async () => {
+  watchEffect(() => {
     if (selectedInstance.value) {
       const databaseMap: Map<Database, TableMetadata[]> = new Map();
       const databaseList = databaseStore.getDatabaseListByInstanceId(
         selectedInstance.value.id
       );
+      // Only provide auto-complete context for those opened database.
       for (const database of databaseList) {
-        const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
-          database.id
-        );
+        const tableList = dbSchemaStore.getTableListByDatabaseId(database.id);
         databaseMap.set(database, tableList);
       }
       editorRef.value?.setEditorAutoCompletionContext(databaseMap);
