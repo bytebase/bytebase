@@ -1429,7 +1429,7 @@ func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPat
 
 	// there isn't a pendingApproval task
 	// we need to set issue.AssigneeNeedAttention to false for UI workflow.
-	if taskPatched.Status == api.TaskPending && issue.Project.WorkflowType == api.UIWorkflow && stageTaskHasPendingApproval {
+	if taskPatched.Status == api.TaskPending && issue.Project.WorkflowType == api.UIWorkflow && !stageTaskHasPendingApproval {
 		needAttention := false
 		patch := &api.IssuePatch{
 			ID:                    issue.ID,
