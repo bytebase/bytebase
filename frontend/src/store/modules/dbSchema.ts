@@ -9,6 +9,8 @@ import {
   ViewMetadata,
 } from "@/types/proto/database";
 
+const requestCache = new Map<DatabaseId, Promise<DatabaseMetadata>>();
+
 export const useDBSchemaStore = defineStore("dbSchema", {
   state: (): DBSchemaState => ({
     databaseMetadataById: new Map(),
@@ -18,15 +20,28 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       databaseId: DatabaseId
     ): Promise<DatabaseMetadata> {
       if (this.databaseMetadataById.has(databaseId)) {
+        // The metadata entity is stored in local dictionary.
         return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
       }
 
-      const res = await axios.get(
-        `/api/database/${databaseId}/schema?metadata=true`
-      );
-      const databaseMetadata = DatabaseMetadata.fromJSON(res.data);
-      this.databaseMetadataById.set(databaseId, databaseMetadata);
-      return databaseMetadata;
+      const cachedRequest = requestCache.get(databaseId);
+      if (cachedRequest) {
+        // The request was sent but still not returned.
+        // We won't create a duplicated request.
+        return cachedRequest;
+      }
+
+      // Send a request and cache it.
+      const promise = axios
+        .get(`/api/database/${databaseId}/schema?metadata=true`)
+        .then((res) => {
+          const databaseMetadata = DatabaseMetadata.fromJSON(res.data);
+          this.databaseMetadataById.set(databaseId, databaseMetadata);
+          return databaseMetadata;
+        });
+      requestCache.set(databaseId, promise);
+
+      return promise;
     },
     async getOrFetchSchemaListByDatabaseId(
       databaseId: DatabaseId
