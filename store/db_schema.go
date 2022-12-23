@@ -39,7 +39,8 @@ type dbSchemaRaw struct {
 
 func (raw *dbSchemaRaw) toDBSchema() (*DBSchema, error) {
 	var databaseSchema storepb.DatabaseMetadata
-	if err := protojson.Unmarshal([]byte(raw.Metadata), &databaseSchema); err != nil {
+	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := decoder.Unmarshal([]byte(raw.Metadata), &databaseSchema); err != nil {
 		return nil, err
 	}
 	return &DBSchema{
