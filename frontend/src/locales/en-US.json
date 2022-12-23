@@ -1456,7 +1456,8 @@
       "type": "Type",
       "default": "Default",
       "comment": "Comment",
-      "not-null": "Not Null"
+      "not-null": "Not Null",
+      "primary": "Primary"
     },
     "nothing-changed": "Nothing changed",
     "message": {

@@ -45,6 +45,7 @@ export const transformTableToCreateTableContext = (
     collation: defaultTo(table.collation, ""),
     comment: defaultTo(table.comment, ""),
     addColumnList: [],
+    primaryKeyList: [],
     // As we don't have a CharacterSet field in table model,
     // set it as an empty string for now.
     characterSet: "",
