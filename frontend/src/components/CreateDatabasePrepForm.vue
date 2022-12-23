@@ -67,11 +67,9 @@
         </span>
       </div>
 
-      <div v-if="showNewTableName" class="w-full">
+      <div v-if="selectedInstance.engine == 'MONGODB'" class="w-full">
         <label for="name" class="textlabel">
-          <template v-if="selectedInstance.engine == 'MONGODB'">
-            {{ $t("create-db.new-collection-name") }}</template
-          >
+            {{ $t("create-db.new-collection-name") }}
           <span class="text-red-600">*</span>
         </label>
         <input
