@@ -53,7 +53,7 @@
 <br />
 
 <p align="center" >
-  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/architecture1.webp" />
+  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/old-to-new-world.webp" />
 </p>
 
 <br />
