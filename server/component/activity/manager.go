@@ -289,6 +289,23 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		default:
 			title = fmt.Sprintf("Updated issue - %s", meta.Issue.Name)
 		}
+	case api.ActivityPipelineStageStatusUpdate:
+		payload := &api.ActivityPipelineStageStatusUpdatePayload{}
+		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
+			log.Warn(
+				"failed to post webhook event after stage status updating, failed to unmarshal payload",
+				zap.String("issue_name", meta.Issue.Name),
+				zap.Error(err))
+			return webhookCtx, err
+		}
+		link += fmt.Sprintf("?stage=%d", payload.StageID)
+		switch payload.StageStatusUpdateType {
+		case api.StageStatusUpdateTypeBegin:
+			title = fmt.Sprintf("Stage begins - %s", payload.StageName)
+		case api.StageStatusUpdateTypeEnd:
+			title = fmt.Sprintf("Stage ends - %s", payload.StageName)
+		}
+
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
@@ -449,6 +466,8 @@ func shouldPostInbox(activity *api.Activity, createType api.ActivityType) (bool,
 	case api.ActivityPipelineTaskStatementUpdate:
 		return true, nil
 	case api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
+		return true, nil
+	case api.ActivityPipelineStageStatusUpdate:
 		return true, nil
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := new(api.ActivityPipelineTaskStatusUpdatePayload)
