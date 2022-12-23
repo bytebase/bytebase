@@ -125,7 +125,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		taskStatusPatch := &api.TaskStatusPatch{
-			IDList:    []int{taskID},
+			ID:        taskID,
 			UpdaterID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {

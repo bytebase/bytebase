@@ -710,66 +710,64 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 	// Updates the corresponding task run if applicable.
 	// We update the task run first because updating task below returns row and it's a bit complicated to
 	// arrange code to prevent that opening row interfering with the task run update.
-	for _, id := range patch.IDList {
-		taskFind := &api.TaskFind{
-			ID: &id,
-		}
-		taskRawObj, err := s.getTaskRawTx(ctx, tx, taskFind)
-		if err != nil {
-			return nil, err
-		}
-		if taskRawObj == nil {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task ID not found: %d", id)}
-		}
+	taskFind := &api.TaskFind{
+		ID: &patch.ID,
+	}
+	taskRawObj, err := s.getTaskRawTx(ctx, tx, taskFind)
+	if err != nil {
+		return nil, err
+	}
+	if taskRawObj == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task ID not found: %d", patch.ID)}
+	}
 
-		taskRunFind := &api.TaskRunFind{
-			TaskID: &taskRawObj.ID,
-			StatusList: &[]api.TaskRunStatus{
-				api.TaskRunRunning,
-			},
-		}
-		taskRunRaw, err := s.getTaskRunRawTx(ctx, tx, taskRunFind)
-		if err != nil {
-			return nil, err
-		}
-		if taskRunRaw == nil {
-			if patch.Status == api.TaskRunning {
-				taskRunCreate := &api.TaskRunCreate{
-					CreatorID: patch.UpdaterID,
-					TaskID:    taskRawObj.ID,
-					Name:      fmt.Sprintf("%s %d", taskRawObj.Name, time.Now().Unix()),
-					Type:      taskRawObj.Type,
-					Payload:   taskRawObj.Payload,
-				}
-				// insert a running taskRun
-				if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
-					return nil, err
-				}
+	taskRunFind := &api.TaskRunFind{
+		TaskID: &taskRawObj.ID,
+		StatusList: &[]api.TaskRunStatus{
+			api.TaskRunRunning,
+		},
+	}
+	taskRunRaw, err := s.getTaskRunRawTx(ctx, tx, taskRunFind)
+	if err != nil {
+		return nil, err
+	}
+	if taskRunRaw == nil {
+		if patch.Status == api.TaskRunning {
+			taskRunCreate := &api.TaskRunCreate{
+				CreatorID: patch.UpdaterID,
+				TaskID:    taskRawObj.ID,
+				Name:      fmt.Sprintf("%s %d", taskRawObj.Name, time.Now().Unix()),
+				Type:      taskRawObj.Type,
+				Payload:   taskRawObj.Payload,
 			}
-		} else {
-			if patch.Status == api.TaskRunning {
-				return nil, errors.Errorf("task is already running: %v", taskRawObj.Name)
-			}
-			taskRunStatusPatch := &api.TaskRunStatusPatch{
-				ID:        &taskRunRaw.ID,
-				UpdaterID: patch.UpdaterID,
-				Code:      patch.Code,
-				Result:    patch.Result,
-				Comment:   patch.Comment,
-			}
-			switch patch.Status {
-			case api.TaskDone:
-				taskRunStatusPatch.Status = api.TaskRunDone
-			case api.TaskFailed:
-				taskRunStatusPatch.Status = api.TaskRunFailed
-			case api.TaskPending:
-			case api.TaskPendingApproval:
-			case api.TaskCanceled:
-				taskRunStatusPatch.Status = api.TaskRunCanceled
-			}
-			if _, err := s.patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
+			// insert a running taskRun
+			if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
 				return nil, err
 			}
+		}
+	} else {
+		if patch.Status == api.TaskRunning {
+			return nil, errors.Errorf("task is already running: %v", taskRawObj.Name)
+		}
+		taskRunStatusPatch := &api.TaskRunStatusPatch{
+			ID:        &taskRunRaw.ID,
+			UpdaterID: patch.UpdaterID,
+			Code:      patch.Code,
+			Result:    patch.Result,
+			Comment:   patch.Comment,
+		}
+		switch patch.Status {
+		case api.TaskDone:
+			taskRunStatusPatch.Status = api.TaskRunDone
+		case api.TaskFailed:
+			taskRunStatusPatch.Status = api.TaskRunFailed
+		case api.TaskPending:
+		case api.TaskPendingApproval:
+		case api.TaskCanceled:
+			taskRunStatusPatch.Status = api.TaskRunCanceled
+		}
+		if _, err := s.patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
+			return nil, err
 		}
 	}
 
@@ -788,16 +786,11 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
 	}
 
-	var ids []string
-	for _, id := range patch.IDList {
-		ids = append(ids, strconv.Itoa(id))
-	}
-
 	// Execute update query with RETURNING.
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
-		WHERE id in (`+strings.Join(ids, ",")+`) 
+		WHERE id = `+fmt.Sprintf("%d", patch.ID)+`
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`,
 		args...,
