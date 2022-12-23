@@ -9,6 +9,8 @@ import {
   ViewMetadata,
 } from "@/types/proto/database";
 
+const requestCache = new Map<DatabaseId, Promise<DatabaseMetadata>>();
+
 export const useDBSchemaStore = defineStore("dbSchema", {
   state: (): DBSchemaState => ({
     databaseMetadataById: new Map(),
@@ -21,12 +23,20 @@ export const useDBSchemaStore = defineStore("dbSchema", {
         return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
       }
 
-      const res = await axios.get(
-        `/api/database/${databaseId}/schema?metadata=true`
-      );
-      const databaseMetadata = DatabaseMetadata.fromJSON(res.data);
-      this.databaseMetadataById.set(databaseId, databaseMetadata);
-      return databaseMetadata;
+      if (requestCache.has(databaseId)) {
+        return requestCache.get(databaseId)!;
+      }
+
+      const promise = axios
+        .get(`/api/database/${databaseId}/schema?metadata=true`)
+        .then((res) => {
+          const databaseMetadata = DatabaseMetadata.fromJSON(res.data);
+          this.databaseMetadataById.set(databaseId, databaseMetadata);
+          return databaseMetadata;
+        });
+      requestCache.set(databaseId, promise);
+
+      return promise;
     },
     async getOrFetchSchemaListByDatabaseId(
       databaseId: DatabaseId
