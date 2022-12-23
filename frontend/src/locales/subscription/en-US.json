@@ -53,6 +53,7 @@
         "instance-minimum-5": "5 ~ unlimited",
         "environment-count": "Environment count",
         "environment-upto-2": "Up to 2",
+        "environment-upto-3": "Up to 3",
         "environment-unlimited": "Unlimited",
         "task-count-in-issue": "Task count in an issue",
         "task-upto-4": "Up to 4",
