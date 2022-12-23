@@ -13,16 +13,17 @@
         </div>
       </BBTableCell>
       <BBTableCell class="table-cell w-24">
-        <div>{{ auditLog.level }}</div>
-      </BBTableCell>
-      <BBTableCell class="table-cell w-28">
         <span
-          class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-green-100 text-green-800"
+          :class="`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold whitespace-nowrap ${
+            auditLevelColorMap[auditLog.level as AuditActivityLevel]
+          }`"
+          >{{ auditLog.level }}</span
         >
-          {{
-            t(AuditActivityTypeI18nNameMap[auditLog.type as AuditActivityType])
-          }}
-        </span>
+      </BBTableCell>
+      <BBTableCell class="table-cell w-28 whitespace-nowrap">
+        {{
+          t(AuditActivityTypeI18nNameMap[auditLog.type as AuditActivityType])
+        }}
       </BBTableCell>
       <BBTableCell class="table-cell w-20">
         {{ auditLog.creator }}
@@ -66,6 +67,7 @@ import {
   AuditLog,
   AuditActivityTypeI18nNameMap,
   AuditActivityType,
+  AuditActivityLevel,
 } from "@/types";
 
 defineProps({
@@ -80,6 +82,12 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const auditLevelColorMap: Record<AuditActivityLevel, string> = {
+  [AuditActivityLevel.INFO]: "bg-gray-100 text-gray-800",
+  [AuditActivityLevel.WARN]: "bg-yellow-100 text-yellow-800",
+  [AuditActivityLevel.ERROR]: "bg-red-100 text-red-800",
+};
 
 const columnList = computed(() => [
   {
