@@ -992,11 +992,10 @@ func (s *Scheduler) PatchTaskStatus(ctx context.Context, task *api.Task, taskSta
 		taskStatusPatch.Result = &resultStr
 	}
 
-	taskPatchedList, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
+	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to change task %v(%v) status", task.ID, task.Name)
 	}
-	taskPatched := taskPatchedList[0]
 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
 	// behaves differently depending on whether the task is wrapped in an issue.
