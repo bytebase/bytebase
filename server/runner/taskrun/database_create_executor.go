@@ -56,7 +56,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	instance := task.Instance
 	var driver db.Driver
 	if instance.Engine == db.MongoDB {
-		// For MongoDB, it allows us to collect to the unexisting database. So wee pass the database name to driver to let us connect to the specific database.
+		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
 		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, payload.DatabaseName)
 		if err != nil {
