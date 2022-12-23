@@ -49,3 +49,8 @@ type InstancePatch struct {
 	Port         *string `json:"port"`
 	Database     *string `json:"database"`
 }
+
+// InstanceDatabasePatch is the API message for patching an instance database.
+type InstanceDatabasePatch struct {
+	Project *string `json:"project"`
+}
