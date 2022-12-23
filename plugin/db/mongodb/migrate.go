@@ -3,7 +3,6 @@ package mongodb
 import (
 	"context"
 	"database/sql"
-	"strconv"
 	"time"
 
 	// embed will embeds the migration schema.
@@ -125,11 +124,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	collection := database.Collection(migrationHistoryDefaultCollection)
 	filter := bson.M{}
 	if v := find.ID; v != nil {
-		id, err := primitive.ObjectIDFromHex(strconv.Itoa(*v))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert id %q to object id", strconv.Itoa(*v))
-		}
-		filter["id"] = id
+		filter["id"] = *v
 	}
 	if v := find.Database; v != nil {
 		filter["namespace"] = *v
