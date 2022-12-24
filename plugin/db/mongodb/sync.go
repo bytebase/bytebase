@@ -12,7 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var systemCollection map[string]bool = map[string]bool{
+var systemCollection = map[string]bool{
 	"system.namespaces": true,
 	"system.indexes":    true,
 	"system.profile":    true,
