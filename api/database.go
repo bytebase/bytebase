@@ -144,8 +144,9 @@ type CreateTableContext struct {
 	Collation    string `json:"collation"`
 	Comment      string `json:"comment"`
 
-	AddColumnList  []*AddColumnContext `json:"addColumnList"`
-	PrimaryKeyList []string            `json:"primaryKeyList"`
+	AddColumnList     []*AddColumnContext     `json:"addColumnList"`
+	PrimaryKeyList    []string                `json:"primaryKeyList"`
+	AddForeignKeyList []*AddForeignKeyContext `json:"addForeignKeyList"`
 }
 
 // AlterTableContext is the edit database context to alter a table.
@@ -159,8 +160,10 @@ type AlterTableContext struct {
 	ChangeColumnList []*ChangeColumnContext `json:"changeColumnList"`
 	DropColumnList   []*DropColumnContext   `json:"dropColumnList"`
 	// TODO(steven): diff schemas in backend, so we don't need this flag.
-	DropPrimaryKey bool      `json:"dropPrimaryKey"`
-	PrimaryKeyList *[]string `json:"primaryKeyList"`
+	DropPrimaryKey     bool                    `json:"dropPrimaryKey"`
+	PrimaryKeyList     *[]string               `json:"primaryKeyList"`
+	DropForeignKeyList []string                `json:"dropForeignKeyList"`
+	AddForeignKeyList  []*AddForeignKeyContext `json:"addForeignKeyList"`
 }
 
 // RenameTableContext is the edit database context to rename a table.
@@ -200,6 +203,12 @@ type ChangeColumnContext struct {
 // DropColumnContext is the alter table context to drop a column.
 type DropColumnContext struct {
 	Name string `json:"name"`
+}
+
+type AddForeignKeyContext struct {
+	ColumnList           []string `json:"columnList"`
+	ReferencedTable      string   `json:"referencedTable"`
+	ReferencedColumnList []string `json:"referencedColumnList"`
 }
 
 // ValidateResultType is the type of a validate result.
