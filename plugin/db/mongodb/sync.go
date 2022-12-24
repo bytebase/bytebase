@@ -12,6 +12,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+var systemCollection map[string]bool = map[string]bool{
+	"system.namespaces": true,
+	"system.indexes":    true,
+	"system.profile":    true,
+	"system.js":         true,
+	"system.views":      true,
+}
+
 // UsersInfo is the subset of the mongodb command result of "usersInfo".
 type UsersInfo struct {
 	Users []User `bson:"users"`
@@ -90,6 +98,9 @@ func (driver *Driver) syncAllCollectionSchema(ctx context.Context, databaseName 
 	}
 	var tableList []db.Table
 	for _, collectionName := range collectionList {
+		if systemCollection[collectionName] {
+			continue
+		}
 		table, err := driver.syncCollectionSchema(ctx, databaseName, collectionName)
 		if err != nil {
 			return nil, err
