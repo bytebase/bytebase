@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/store"
@@ -217,7 +218,7 @@ func (s *Server) listDatabaseRole(c echo.Context) error {
 		return roleList, nil
 	}()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list the role").SetInternal(err)
 	}
 
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -285,8 +286,11 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	var upsert v1pb.DatabaseRoleUpsert
-	if err := protojson.Unmarshal(body, &upsert); err != nil {
+	upsert := &v1pb.DatabaseRoleUpsert{}
+	if err := protojson.Unmarshal(body, upsert); err != nil {
+		return err
+	}
+	if err := validateRole(upsert); err != nil {
 		return err
 	}
 
@@ -302,7 +306,7 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		}
 		defer driver.Close(ctx)
 
-		role, err := driver.CreateRole(ctx, &upsert)
+		role, err := driver.CreateRole(ctx, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -310,7 +314,7 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return role, nil
 	}()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create the role").SetInternal(err)
 	}
 
 	return marshalDatabaseRoleResponse(c, role, instance.ID)
@@ -348,8 +352,11 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	var upsert v1pb.DatabaseRoleUpsert
-	if err := protojson.Unmarshal(body, &upsert); err != nil {
+	upsert := &v1pb.DatabaseRoleUpsert{}
+	if err := protojson.Unmarshal(body, upsert); err != nil {
+		return err
+	}
+	if err := validateRole(upsert); err != nil {
 		return err
 	}
 
@@ -366,7 +373,7 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		}
 		defer driver.Close(ctx)
 
-		role, err := driver.UpdateRole(ctx, rawName, &upsert)
+		role, err := driver.UpdateRole(ctx, rawName, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -377,10 +384,23 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		if common.ErrorCode(err) == common.NotFound {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the role %s in instance %d", rawName, instance.ID))
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update the role").SetInternal(err)
 	}
 
 	return marshalDatabaseRoleResponse(c, role, instance.ID)
+}
+
+func validateRole(upsert *v1pb.DatabaseRoleUpsert) error {
+	if v := upsert.ConnectionLimit; v != nil && *v < int32(-1) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid connection limit, it should greater than or equal to -1")
+	}
+	if v := upsert.ValidUntil; v != nil {
+		if _, err := time.Parse(time.RFC3339, *v); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid timestamp for valid_until").SetInternal(err)
+		}
+	}
+
+	return nil
 }
 
 func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Instance, error) {
@@ -395,6 +415,9 @@ func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Ins
 	}
 	if instance == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", instanceID))
+	}
+	if instance.Engine != db.Postgres {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Role management for %v is not support", instance.Engine))
 	}
 
 	return instance, nil
