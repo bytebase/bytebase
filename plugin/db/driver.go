@@ -55,11 +55,14 @@ type View struct {
 	ShortName string
 	// Schema is the schema name for a table. It should be supported only for Postgres and Snowflake.
 	Schema string
-	// CreatedTs isn't supported for ClickHouse.
-	CreatedTs  int64
-	UpdatedTs  int64
+	// CreatedTs isn't supported for ClickHouse, MongoDB.
+	CreatedTs int64
+	// UpdatedTs isn't supported for MongoDB.
+	UpdatedTs int64
+	// Definition isn't supported for MongoDB.
 	Definition string
-	Comment    string
+	// Comment isn't supported for MongoDB.
+	Comment string
 }
 
 // Extension is the database extension.
