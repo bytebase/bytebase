@@ -185,6 +185,25 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *api.Tas
 	return &taskRunRaw, nil
 }
 
+func (s *Store) listTaskRun(ctx context.Context, find *api.TaskRunFind) ([]*taskRunRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	list, err := s.findTaskRunImpl(ctx, tx, find)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return list, nil
+}
+
 func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *api.TaskRunFind) ([]*taskRunRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}

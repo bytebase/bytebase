@@ -73,12 +73,6 @@ func (raw *taskRaw) toTask() *api.Task {
 		EarliestAllowedTs: raw.EarliestAllowedTs,
 		BlockedBy:         raw.BlockedBy,
 	}
-	for _, taskRunRaw := range raw.TaskRunRawList {
-		task.TaskRunList = append(task.TaskRunList, taskRunRaw.toTaskRun())
-	}
-	for _, taskCheckRunRaw := range raw.TaskCheckRunRawList {
-		task.TaskCheckRunList = append(task.TaskCheckRunList, taskCheckRunRaw.toTaskCheckRun())
-	}
 	return task
 }
 
@@ -259,7 +253,21 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 	}
 	task.Updater = updater
 
-	for _, taskRun := range task.TaskRunList {
+	taskRunRawList, err := s.listTaskRun(ctx, &api.TaskRunFind{
+		TaskID: &task.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID: &task.ID,
+	}
+	taskCheckRunRawList, err := s.listTaskCheckRun(ctx, taskCheckRunFind)
+	if err != nil {
+		return nil, err
+	}
+	for _, taskRunRaw := range taskRunRawList {
+		taskRun := taskRunRaw.toTaskRun()
 		creator, err := s.GetPrincipalByID(ctx, taskRun.CreatorID)
 		if err != nil {
 			return nil, err
@@ -271,9 +279,10 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 			return nil, err
 		}
 		taskRun.Updater = updater
+		task.TaskRunList = append(task.TaskRunList, taskRun)
 	}
-
-	for _, taskCheckRun := range task.TaskCheckRunList {
+	for _, taskCheckRunRaw := range taskCheckRunRawList {
+		taskCheckRun := taskCheckRunRaw.toTaskCheckRun()
 		creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
 		if err != nil {
 			return nil, err
@@ -285,6 +294,7 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 			return nil, err
 		}
 		taskCheckRun.Updater = updater
+		task.TaskCheckRunList = append(task.TaskCheckRunList, taskCheckRun)
 	}
 
 	blockedBy := []string{}
@@ -516,7 +526,7 @@ func (*Store) createTaskImpl(ctx context.Context, tx *Tx, creates ...*api.TaskCr
 	return taskRawList, nil
 }
 
-func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([]*taskRaw, error) {
+func (*Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([]*taskRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -602,26 +612,6 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
-	}
-
-	for _, taskRaw := range taskRawList {
-		taskRunFind := &api.TaskRunFind{
-			TaskID: &taskRaw.ID,
-		}
-		taskRunRawList, err := s.findTaskRunImpl(ctx, tx, taskRunFind)
-		if err != nil {
-			return nil, err
-		}
-		taskRaw.TaskRunRawList = taskRunRawList
-
-		taskCheckRunFind := &api.TaskCheckRunFind{
-			TaskID: &taskRaw.ID,
-		}
-		taskCheckRunRawList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
-		if err != nil {
-			return nil, err
-		}
-		taskRaw.TaskCheckRunRawList = taskCheckRunRawList
 	}
 	return taskRawList, nil
 }
@@ -799,23 +789,6 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 	); err != nil {
 		return nil, FormatError(err)
 	}
-
-	taskRunRawList, err := s.findTaskRunImpl(ctx, tx, &api.TaskRunFind{
-		TaskID: &taskRaw.ID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	taskRaw.TaskRunRawList = taskRunRawList
-
-	taskCheckRunFind := &api.TaskCheckRunFind{
-		TaskID: &taskRaw.ID,
-	}
-	taskCheckRunRawList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
-	if err != nil {
-		return nil, err
-	}
-	taskRaw.TaskCheckRunRawList = taskCheckRunRawList
 
 	return &taskRaw, nil
 }
