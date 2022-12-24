@@ -17,19 +17,32 @@ type RoleAttribute string
 const (
 	// SUPERUSER is the role attribute for rolsuper.
 	SUPERUSER RoleAttribute = "SUPERUSER"
+	// NOSUPERUSER is the role attribute for rolsuper.
+	NOSUPERUSER RoleAttribute = "NOSUPERUSER"
 	// LOGIN is the role attribute for rolcanlogin.
 	LOGIN RoleAttribute = "LOGIN"
+	// NOLOGIN is the role attribute for rolcanlogin.
+	NOLOGIN RoleAttribute = "NOLOGIN"
+	// INHERIT is the role attribute for rolinherit.
+	INHERIT RoleAttribute = "INHERIT"
 	// NOINHERIT is the role attribute for rolinherit.
-	// INHERIT is the default value for rolinherit, so we need to use the NOINHERIT.
 	NOINHERIT RoleAttribute = "NOINHERIT"
 	// CREATEDB is the role attribute for rolcreatedb.
 	CREATEDB RoleAttribute = "CREATEDB"
+	// NOCREATEDB is the role attribute for rolcreatedb.
+	NOCREATEDB RoleAttribute = "NOCREATEDB"
 	// CREATEROLE is the role attribute for rolcreaterole.
 	CREATEROLE RoleAttribute = "CREATEROLE"
+	// NOCREATEROLE is the role attribute for rolcreaterole.
+	NOCREATEROLE RoleAttribute = "NOCREATEROLE"
 	// REPLICATION is the role attribute for rolreplication.
 	REPLICATION RoleAttribute = "REPLICATION"
+	// NOREPLICATION is the role attribute for rolreplication.
+	NOREPLICATION RoleAttribute = "NOREPLICATION"
 	// BYPASSRLS is the role attribute for rolbypassrls.
 	BYPASSRLS RoleAttribute = "BYPASSRLS"
+	// NOBYPASSRLS is the role attribute for rolbypassrls.
+	NOBYPASSRLS RoleAttribute = "BYPASSRLS"
 )
 
 // ToString returns the string value for role attribute.
@@ -254,24 +267,38 @@ func convertToAttributeStatement(r *v1pb.DatabaseRoleUpsert) string {
 	if r.Attribute != nil {
 		if r.Attribute.SuperUser {
 			attributeList = append(attributeList, SUPERUSER.ToString())
+		} else {
+			attributeList = append(attributeList, NOSUPERUSER.ToString())
 		}
 		if r.Attribute.NoInherit {
 			attributeList = append(attributeList, NOINHERIT.ToString())
+		} else {
+			attributeList = append(attributeList, INHERIT.ToString())
 		}
 		if r.Attribute.CanLogin {
 			attributeList = append(attributeList, LOGIN.ToString())
+		} else {
+			attributeList = append(attributeList, NOLOGIN.ToString())
 		}
 		if r.Attribute.CreateRole {
 			attributeList = append(attributeList, CREATEROLE.ToString())
+		} else {
+			attributeList = append(attributeList, NOCREATEROLE.ToString())
 		}
 		if r.Attribute.CreateDb {
 			attributeList = append(attributeList, CREATEDB.ToString())
+		} else {
+			attributeList = append(attributeList, NOCREATEDB.ToString())
 		}
 		if r.Attribute.Replication {
 			attributeList = append(attributeList, REPLICATION.ToString())
+		} else {
+			attributeList = append(attributeList, NOREPLICATION.ToString())
 		}
 		if r.Attribute.BypassRls {
 			attributeList = append(attributeList, BYPASSRLS.ToString())
+		} else {
+			attributeList = append(attributeList, NOBYPASSRLS.ToString())
 		}
 	}
 
