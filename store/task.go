@@ -165,12 +165,23 @@ func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task,
 	return task, nil
 }
 
-// PatchTaskStatus patches a list of TaskStatus.
+// PatchTaskStatus patches a task status.
 func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
-	taskRaw, err := s.patchTaskRawStatus(ctx, patch)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch TaskStatus with TaskStatusPatch[%+v]", patch)
+		return nil, FormatError(err)
 	}
+	defer tx.Rollback()
+
+	taskRaw, err := s.patchTaskStatusImpl(ctx, tx, patch)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
 	task, err := s.composeTask(ctx, taskRaw)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose TaskStatus with taskRaw[%+v]", taskRaw)
@@ -404,27 +415,6 @@ func (s *Store) patchTaskRaw(ctx context.Context, patch *api.TaskPatch) (*taskRa
 	defer tx.Rollback()
 
 	task, err := s.patchTaskImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return task, nil
-}
-
-// patchTaskRawStatus updates existing task statuses and the corresponding task run statuses atomically.
-// Returns ENOTFOUND if tasks do not exist.
-func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPatch) (*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	task, err := s.patchTaskStatusImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -734,7 +724,6 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 				TaskID:    taskRawObj.ID,
 				Name:      fmt.Sprintf("%s %d", taskRawObj.Name, time.Now().Unix()),
 				Type:      taskRawObj.Type,
-				Payload:   taskRawObj.Payload,
 			}
 			// insert a running taskRun
 			if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
