@@ -106,7 +106,7 @@ func (driver *Driver) syncAllViewSchema(ctx context.Context, databaseName string
 }
 
 // syncViewSchema returns the view schema.
-func (driver *Driver) syncViewSchema(_ context.Context, _ string, viewName string) (db.View, error) {
+func (*Driver) syncViewSchema(_ context.Context, _ string, viewName string) (db.View, error) {
 	var view db.View
 	view.Name = viewName
 	view.ShortName = viewName
