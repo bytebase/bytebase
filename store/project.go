@@ -78,6 +78,23 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 	return project, nil
 }
 
+// GetProjectByKey gets an instance of Project by the unique key.
+func (s *Store) GetProjectByKey(ctx context.Context, key string) (*api.Project, error) {
+	find := &api.ProjectFind{Key: &key}
+	projectRaw, err := s.getProjectRaw(ctx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get Project with key %s", key)
+	}
+	if projectRaw == nil {
+		return nil, nil
+	}
+	project, err := s.composeProject(ctx, projectRaw)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", projectRaw)
+	}
+	return project, nil
+}
+
 // FindProject finds a list of Project instances.
 func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.Project, error) {
 	projectRawList, err := s.findProjectRaw(ctx, find)
@@ -373,6 +390,9 @@ func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*pro
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Key; v != nil {
+		where, args = append(where, fmt.Sprintf("key = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)

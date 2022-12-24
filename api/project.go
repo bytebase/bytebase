@@ -116,6 +116,7 @@ type ProjectFind struct {
 	// Domain specific fields
 	// If present, will only find project containing PrincipalID as an active member
 	PrincipalID *int
+	Key         *string
 }
 
 func (find *ProjectFind) String() string {
