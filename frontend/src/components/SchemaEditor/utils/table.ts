@@ -1,6 +1,7 @@
+import { isEqual } from "lodash-es";
 import { useSchemaEditorStore } from "@/store";
 import { DatabaseId } from "@/types";
-import { isEqual } from "lodash-es";
+import { ForeignKey } from "@/types/schemaEditor/atomType";
 
 export const isTableChanged = (
   databaseId: DatabaseId,
@@ -15,16 +16,55 @@ export const isTableChanged = (
     (item) => item.oldName === table?.oldName
   );
   const originPrimaryKeyColumnList = originSchema?.primaryKeyList
-    .find((pk) => pk.table === tableName)
+    .find((pk) => pk.table === table?.oldName)
     ?.columnList.map((columnRef) => columnRef.value)
     .sort();
   const primaryKeyColumnList = schema?.primaryKeyList
     .find((pk) => pk.table === tableName)
     ?.columnList.map((columnRef) => columnRef.value)
     .sort();
+  const originForeignKeyList =
+    originSchema?.foreignKeyList.filter((pk) => pk.table === table?.oldName) ||
+    [];
+  const foreignKeyList =
+    schema?.foreignKeyList.filter((pk) => pk.table === tableName) || [];
 
   return (
     !isEqual(originTable, table) ||
-    !isEqual(originPrimaryKeyColumnList, primaryKeyColumnList)
+    !isEqual(originPrimaryKeyColumnList, primaryKeyColumnList) ||
+    !isEqualForeignKeyList(originForeignKeyList, foreignKeyList)
+  );
+};
+
+export const isEqualForeignKeyList = (
+  originForeignKeyList: ForeignKey[],
+  foreignKeyList: ForeignKey[]
+) => {
+  if (originForeignKeyList.length !== foreignKeyList.length) {
+    return false;
+  }
+  for (let i = 0; i < foreignKeyList.length; i++) {
+    if (!isEqualForeignKey(originForeignKeyList[i], foreignKeyList[i])) {
+      return false;
+    }
+  }
+  return true;
+};
+
+export const isEqualForeignKey = (
+  originForeignKey?: ForeignKey,
+  foreignKey?: ForeignKey
+) => {
+  return isEqual(
+    {
+      ...originForeignKey,
+      columnList: originForeignKey?.columnList.map(
+        (columnRef) => columnRef.value
+      ),
+    },
+    {
+      ...foreignKey,
+      columnList: foreignKey?.columnList.map((columnRef) => columnRef.value),
+    }
   );
 };

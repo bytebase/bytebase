@@ -46,6 +46,7 @@ export const transformTableToCreateTableContext = (
     comment: defaultTo(table.comment, ""),
     addColumnList: [],
     primaryKeyList: [],
+    addForeignKeyList: [],
     // As we don't have a CharacterSet field in table model,
     // set it as an empty string for now.
     characterSet: "",

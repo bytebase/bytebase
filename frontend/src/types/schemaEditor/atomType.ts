@@ -3,7 +3,7 @@ import {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "../proto/database";
+} from "../proto/store/database";
 
 type TableOrColumnStatus = "normal" | "created" | "dropped";
 
@@ -36,9 +36,10 @@ export interface PrimaryKey {
 }
 
 export interface ForeignKey {
-  schema: string;
+  // Should be an unique name.
+  name: string;
   table: string;
-  columnList: string[];
+  columnList: Ref<Column>[];
   referencedSchema: string;
   referencedTable: string;
   referencedColumns: string[];
@@ -115,14 +116,31 @@ export const convertSchemaMetadataToSchema = (
     primaryKeyList.push(primaryKey);
 
     for (const foreignKeyMetadata of tableMetadata.foreignKeys) {
-      foreignKeyList.push({
-        schema: schemaMetadata.name,
+      // TODO(steven): remove this after backend return unique fk.
+      if (
+        foreignKeyList.map((fk) => fk.name).includes(foreignKeyMetadata.name)
+      ) {
+        continue;
+      }
+
+      const fk: ForeignKey = {
         table: tableMetadata.name,
-        columnList: foreignKeyMetadata.columns,
+        name: foreignKeyMetadata.name,
+        columnList: [],
         referencedSchema: foreignKeyMetadata.referencedSchema,
         referencedTable: foreignKeyMetadata.referencedTable,
         referencedColumns: foreignKeyMetadata.referencedColumns,
-      });
+      };
+
+      for (const columnName of foreignKeyMetadata.columns) {
+        const column = table.columnList.find(
+          (column) => column.oldName === columnName
+        );
+        if (column) {
+          fk.columnList.push(ref(column));
+        }
+      }
+      foreignKeyList.push(fk);
     }
   }
 

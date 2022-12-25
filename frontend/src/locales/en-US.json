@@ -1448,10 +1448,12 @@
     },
     "table-list": "Table List",
     "table": {
+      "select": "Select table",
       "name": "Table Name"
     },
     "column-list": "Column List",
     "column": {
+      "select": "Select column",
       "name": "Name",
       "type": "Type",
       "default": "Default",
@@ -1471,7 +1473,10 @@
       "title": "Confirm to close",
       "description": "Are you sure you want to close the panel? Your changes will be lost."
     },
-    "tenant-mode-tips": "Changes will be applied to all selected tenant databases after clicking \"Preview issue\"."
+    "tenant-mode-tips": "Changes will be applied to all selected tenant databases after clicking \"Preview issue\".",
+    "edit-foreign-key": "Edit foreign key",
+    "select-reference-table": "Select a table to reference to",
+    "select-reference-column": "Select a column to reference to"
   },
   "label": {
     "empty-label-value": "<Empty Value>",

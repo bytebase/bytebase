@@ -16,6 +16,7 @@ import {
   convertSchemaMetadataToSchema,
   Table,
 } from "@/types/schemaEditor/atomType";
+import { SchemaMetadata } from "@/types/proto/store/database";
 import { useDatabaseStore, useDBSchemaStore } from ".";
 
 export const generateUniqueTabId = () => {
@@ -172,6 +173,12 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
         const schemaList = schemaMetadataList.map((schemaMetadata) =>
           convertSchemaMetadataToSchema(schemaMetadata)
         );
+        if (schemaList.length === 0 && database.instance.engine === "MYSQL") {
+          schemaList.push(
+            convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}))
+          );
+        }
+
         this.databaseSchemaById.set(databaseId, {
           database: database,
           schemaList: schemaList,
