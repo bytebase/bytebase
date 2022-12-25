@@ -57,14 +57,14 @@ export const isEqualForeignKey = (
 ) => {
   return isEqual(
     {
-      ...originForeignKey,
       columnList: originForeignKey?.columnList.map(
         (columnRef) => columnRef.value
       ),
+      referencedColumns: originForeignKey?.referencedColumns,
     },
     {
-      ...foreignKey,
       columnList: foreignKey?.columnList.map((columnRef) => columnRef.value),
+      referencedColumns: foreignKey?.referencedColumns,
     }
   );
 };
