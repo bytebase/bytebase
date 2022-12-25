@@ -32,7 +32,7 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID/role/:roleName", s.getDatabaseRole)
 	g.PATCH("/instance/:instanceID/role/:roleName", s.updateDatabaseRole)
 	g.DELETE("/instance/:instanceID/role/:roleName", s.deleteDatabaseRole)
-	g.PATCH("/instance/:instanceName/database/:database", s.updateInstanceDatabase)
+	g.PATCH("/instances/:instanceName/databases/:database", s.updateInstanceDatabase)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
