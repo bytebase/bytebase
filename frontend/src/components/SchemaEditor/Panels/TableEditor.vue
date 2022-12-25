@@ -56,7 +56,7 @@
       >
         <!-- column table header -->
         <div
-          class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_112px)_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
+          class="sticky top-0 z-10 grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] w-full text-sm leading-6 select-none bg-gray-50 text-gray-400"
           :class="table.columnList.length > 0 && 'border-b'"
         >
           <span
@@ -72,7 +72,7 @@
           <div
             v-for="(column, index) in table.columnList"
             :key="`${index}-${column.oldName}`"
-            class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_112px)_32px] gr text-sm even:bg-gray-50"
+            class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
             :class="
               isDroppedColumn(column) &&
               'text-red-700 cursor-not-allowed !bg-red-50 opacity-70'
@@ -162,6 +162,27 @@
                 @toggle="(value) => setColumnPrimaryKey(column, value)"
               />
             </div>
+            <div
+              class="table-body-item-container foreign-key-field flex justify-start items-center"
+            >
+              <span
+                v-if="checkColumnHasForeignKey(column)"
+                class="column-field-text !w-auto"
+              >
+                {{ getReferencedForeignKeyName(column) }}
+              </span>
+              <span
+                v-else
+                class="column-field-text italic text-gray-400 !w-auto"
+                >EMPTY</span
+              >
+              <span
+                class="foreign-key-edit-button hidden cursor-pointer hover:opacity-80"
+                @click="handleEditColumnForeignKey(column)"
+              >
+                <heroicons:pencil-square class="w-4 h-auto text-gray-400" />
+              </span>
+            </div>
             <div class="w-full flex justify-start items-center">
               <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
                 <template #trigger>
@@ -215,10 +236,19 @@
       </template>
     </div>
   </div>
+
+  <EditColumnForeignKeyModal
+    v-if="state.showEditColumnForeignKeyModal && editForeignKeyColumn"
+    :database-id="currentTab.databaseId"
+    :schema-name="schema.name"
+    :table-name="table.newName"
+    :column="editForeignKeyColumn"
+    @close="state.showEditColumnForeignKeyModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isUndefined, flatten } from "lodash-es";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useNotificationStore, useSchemaEditorStore } from "@/store/modules";
@@ -231,12 +261,14 @@ import {
   Schema,
   convertColumnMetadataToColumn,
   PrimaryKey,
+  ForeignKey,
 } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import { isTableChanged } from "../utils/table";
 import { diffSchema } from "@/utils/schemaEditor/diffSchema";
+import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 
 type TabType = "column-list" | "raw-sql";
 
@@ -244,6 +276,7 @@ interface LocalState {
   selectedTab: TabType;
   isFetchingDDL: boolean;
   statement: string;
+  showEditColumnForeignKeyModal: boolean;
 }
 
 const { t } = useI18n();
@@ -257,6 +290,7 @@ const state = reactive<LocalState>({
   selectedTab: "column-list",
   isFetchingDDL: false,
   statement: "",
+  showEditColumnForeignKeyModal: false,
 });
 
 const table = ref(editorStore.getTableWithTableTab(currentTab) as Table);
@@ -270,6 +304,13 @@ const primaryKey = computed(() => {
     (pk) => pk.table === currentTab.tableName
   ) as PrimaryKey;
 });
+const foreignKeyList = computed(() => {
+  return schema.value.foreignKeyList.filter(
+    (pk) => pk.table === currentTab.tableName
+  ) as ForeignKey[];
+});
+
+const editForeignKeyColumn = ref<Column>();
 
 const isDroppedTable = computed(() => {
   return table.value.status === "dropped";
@@ -315,12 +356,19 @@ const columnHeaderList = computed(() => {
       key: "primary",
       label: t("schema-editor.column.primary"),
     },
+    {
+      key: "foreign_key",
+      label: "Foreign Key",
+    },
   ];
 });
 
+const databaseEngine = computed(() => {
+  return databaseSchema.database.instance.engine;
+});
+
 const dataTypeOptions = computed(() => {
-  const database = databaseSchema.database;
-  return getDataTypeSuggestionList(database.instance.engine).map((dataType) => {
+  return getDataTypeSuggestionList(databaseEngine.value).map((dataType) => {
     return {
       label: dataType,
       key: dataType,
@@ -394,6 +442,38 @@ const isColumnPrimaryKey = (column: Column): boolean => {
   return false;
 };
 
+const checkColumnHasForeignKey = (column: Column): boolean => {
+  const columnRefList = flatten(
+    foreignKeyList.value.map((fk) => fk.columnList)
+  );
+  const find = columnRefList.find((columnRef) => columnRef.value === column);
+  return find !== undefined;
+};
+
+const getReferencedForeignKeyName = (column: Column) => {
+  if (!checkColumnHasForeignKey(column)) {
+    return;
+  }
+  const fk = foreignKeyList.value.find(
+    (fk) =>
+      fk.columnList.find((columnRef) => columnRef.value === column) !==
+      undefined
+  );
+  const index = fk?.columnList.findIndex(
+    (columnRef) => columnRef.value === column
+  );
+
+  if (isUndefined(fk) || isUndefined(index) || index < 0) {
+    return;
+  }
+  const referColumnName = fk.referencedColumns[index];
+  if (databaseEngine.value === "MYSQL") {
+    return `${fk.referencedTable}(${referColumnName})`;
+  } else {
+    return `${fk.referencedSchema}.${fk.referencedTable}(${referColumnName})`;
+  }
+};
+
 const isDroppedColumn = (column: Column): boolean => {
   return column.status === "dropped";
 };
@@ -434,10 +514,18 @@ const handleColumnDefaultFieldChange = (
   }
 };
 
+const handleEditColumnForeignKey = (column: Column) => {
+  editForeignKeyColumn.value = column;
+  state.showEditColumnForeignKeyModal = true;
+};
+
 const handleDropColumn = (column: Column) => {
   if (column.status === "created") {
     table.value.columnList = table.value.columnList.filter(
       (item) => item !== column
+    );
+    primaryKey.value.columnList = primaryKey.value.columnList.filter(
+      (item) => item.value !== column
     );
   } else {
     column.status = "dropped";
@@ -485,6 +573,31 @@ const handleDiscardChanges = () => {
       primaryKey.value.columnList.push(ref(column));
     }
   }
+
+  schema.value.foreignKeyList = schema.value.foreignKeyList.filter(
+    (fk) => fk.table !== table.value.newName
+  );
+  const originForeignKeyList =
+    originSchema?.foreignKeyList.filter(
+      (fk) => fk.table === table.value.newName
+    ) || [];
+  for (const originForeignKey of originForeignKeyList) {
+    const tempForeignKey: ForeignKey = {
+      ...cloneDeep(originForeignKey),
+      columnList: [],
+    };
+    const originColumnNameList = originForeignKey.columnList.map(
+      (columnRef) => columnRef.value.oldName
+    );
+    for (const column of table.value.columnList) {
+      if (originColumnNameList.includes(column.oldName)) {
+        tempForeignKey.columnList.push(ref(column));
+      }
+    }
+    if (tempForeignKey.columnList.length > 0) {
+      schema.value.foreignKeyList.push(tempForeignKey);
+    }
+  }
 };
 </script>
 
@@ -497,5 +610,11 @@ const handleDiscardChanges = () => {
 }
 .column-field-input {
   @apply w-full pr-1 box-border border-transparent truncate select-none rounded bg-transparent text-sm placeholder:italic placeholder:text-gray-400 focus:bg-white focus:text-black;
+}
+.column-field-text {
+  @apply w-full pl-3 pr-1 box-border border-transparent truncate select-none rounded bg-transparent text-sm placeholder:italic placeholder:text-gray-400 focus:bg-white focus:text-black;
+}
+.foreign-key-field:hover .foreign-key-edit-button {
+  @apply block;
 }
 </style>

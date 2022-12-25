@@ -1449,10 +1449,12 @@
     },
     "table-list": "表",
     "table": {
+      "select": "选择表",
       "name": "表名"
     },
     "column-list": "列",
     "column": {
+      "select": "选择列",
       "name": "名称",
       "type": "类型",
       "default": "默认值",
@@ -1472,7 +1474,10 @@
       "title": "确定关闭？",
       "description": "关闭后更改将会丢失。"
     },
-    "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。"
+    "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。",
+    "edit-foreign-key": "修改外键",
+    "select-reference-table": "选择外键的表",
+    "select-reference-column": "选择外键的列"
   },
   "label": {
     "empty-label-value": "<空值>",
