@@ -249,12 +249,15 @@ func start() {
 		log.Error(fmt.Sprintf("server port %d is not available", flags.port), zap.Error(err))
 		return
 	}
-
 	if profile.UseEmbedDB() {
 		if err := checkPort(profile.DatastorePort); err != nil {
 			log.Error(fmt.Sprintf("database port %d is not available", profile.DatastorePort), zap.Error(err))
 			return
 		}
+	}
+	if err := checkPort(profile.GrpcPort); err != nil {
+		log.Error(fmt.Sprintf("gRPC server port %d is not available", profile.GrpcPort), zap.Error(err))
+		return
 	}
 
 	var s *server.Server
