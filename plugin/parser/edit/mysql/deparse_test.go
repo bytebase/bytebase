@@ -495,3 +495,99 @@ func TestDeparseAlterTableWithPrimaryKey(t *testing.T) {
 		assert.Equal(t, test.want, stmt)
 	}
 }
+
+func TestDeparseCreateTableWithForeignKey(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "create table t1",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				CreateTableList: []*api.CreateTableContext{
+					{
+						Name: "t1",
+						Type: "BASE TABLE",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "int",
+								Nullable: false,
+							},
+						},
+						AddForeignKeyList: []*api.AddForeignKeyContext{
+							{
+								ColumnList:           []string{"name"},
+								ReferencedTable:      "t2",
+								ReferencedColumnList: []string{"name"},
+							},
+						},
+					},
+				},
+			},
+			want: "CREATE TABLE `t1` (\n  `id` INT NOT NULL,\n  `name` INT NOT NULL,\n  CONSTRAINT FOREIGN KEY (`name`) REFERENCES `t2` (`name`)\n);\n",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
+func TestDeparseAlterTableWithForeignKey(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "create table t1",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t1",
+						AddColumnList: []*api.AddColumnContext{
+							{
+								Name:     "id",
+								Type:     "int",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "int",
+								Nullable: false,
+							},
+						},
+						DropForeignKeyList: []string{"t1_ibkf_1", "t1_ibkf_2"},
+						AddForeignKeyList: []*api.AddForeignKeyContext{
+							{
+								ColumnList:           []string{"name"},
+								ReferencedTable:      "t2",
+								ReferencedColumnList: []string{"name"},
+							},
+						},
+					},
+				},
+			},
+			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `name` INT NOT NULL), DROP FOREIGN KEY `t1_ibkf_1`, DROP FOREIGN KEY `t1_ibkf_2`, ADD CONSTRAINT FOREIGN KEY (`name`) REFERENCES `t2` (`name`);\n",
+		},
+	}
+
+	mysqlEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := mysqlEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
