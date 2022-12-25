@@ -12,7 +12,7 @@ import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
 
 import { Database } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import { Position, Rect, Size, SchemaDiagramContext } from "./types";
 import Canvas from "./Canvas";
 import { TableNode, autoLayout } from "./ER";

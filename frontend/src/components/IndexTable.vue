@@ -52,7 +52,7 @@
 import { computed, defineComponent, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { Database } from "@/types";
-import { IndexMetadata } from "@/types/proto/database";
+import { IndexMetadata } from "@/types/proto/store/database";
 import { BBTableSectionDataSource } from "@/bbkit/types";
 
 export default defineComponent({

@@ -39,7 +39,7 @@ import {
   useNotificationStore,
   generateUniqueTabId,
 } from "@/store";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/database";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import {
   convertColumnMetadataToColumn,
   convertTableMetadataToTable,

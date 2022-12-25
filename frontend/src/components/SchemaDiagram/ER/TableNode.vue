@@ -58,7 +58,7 @@ import { computed } from "vue";
 import { NEllipsis } from "naive-ui";
 
 import { hashCode } from "@/bbkit/BBUtil";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import { useSchemaDiagramContext, isPrimaryKey, isIndex } from "../common";
 
 const props = withDefaults(

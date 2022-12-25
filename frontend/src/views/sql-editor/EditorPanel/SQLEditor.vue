@@ -35,7 +35,7 @@ import type {
   ExecuteOption,
   SQLDialect,
 } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;

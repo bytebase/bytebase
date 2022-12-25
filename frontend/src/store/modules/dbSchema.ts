@@ -7,7 +7,7 @@ import {
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
-} from "@/types/proto/database";
+} from "@/types/proto/store/database";
 
 const requestCache = new Map<DatabaseId, Promise<DatabaseMetadata>>();
 
