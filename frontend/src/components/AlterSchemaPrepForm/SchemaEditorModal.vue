@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="$t('database.alter-schema')"
-    class="schema-editor-modal-container !w-320 h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
+    class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
     :esc-closable="false"
     @close="dismissModal"
   >
@@ -527,7 +527,7 @@ watch(
 
 <style>
 .schema-editor-modal-container > .modal-container {
-  @apply w-full h-160 overflow-auto grid;
+  @apply w-full h-[46rem] overflow-auto grid;
   grid-template-rows: min-content 1fr min-content;
 }
 </style>

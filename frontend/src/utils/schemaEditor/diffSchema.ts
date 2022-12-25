@@ -1,11 +1,15 @@
 import {
+  isEqualForeignKeyList,
+  isEqualForeignKey,
+} from "@/components/SchemaEditor/utils/table";
+import {
   AlterTableContext,
   CreateTableContext,
   DropTableContext,
   RenameTableContext,
 } from "@/types";
-import { Schema } from "@/types/schemaEditor/atomType";
-import { isEqual } from "lodash-es";
+import { Column, ForeignKey, Schema } from "@/types/schemaEditor/atomType";
+import { isEqual, isUndefined } from "lodash-es";
 import { diffColumnList } from "./diffColumn";
 import { transformTableToCreateTableContext } from "./transform";
 
@@ -22,6 +26,20 @@ export const diffSchema = (originSchema: Schema, schema: Schema) => {
       schema.primaryKeyList
         .find((pk) => pk.table === createTableContext.name)
         ?.columnList.map((columnRef) => columnRef.value.newName) ?? [];
+    const foreignKeyList = schema.foreignKeyList.filter(
+      (fk) => fk.table === createTableContext.name
+    );
+    for (const foreignKey of foreignKeyList) {
+      if (foreignKey.columnList.length > 0) {
+        createTableContext.addForeignKeyList.push({
+          columnList: foreignKey.columnList.map(
+            (columnRef) => columnRef.value.newName
+          ),
+          referencedTable: foreignKey.referencedTable,
+          referencedColumnList: foreignKey.referencedColumns,
+        });
+      }
+    }
     createTableContextList.push(createTableContext);
   }
 
@@ -35,16 +53,25 @@ export const diffSchema = (originSchema: Schema, schema: Schema) => {
       (originTable) => originTable.oldName === table.oldName
     );
     const originPrimaryKey = originSchema?.primaryKeyList
-      .find((pk) => pk.table === table.newName)
+      .find((pk) => pk.table === table.oldName)
       ?.columnList.map((columnRef) => columnRef.value)
       .sort();
     const primaryKey = schema?.primaryKeyList
       .find((pk) => pk.table === table.newName)
-      ?.columnList.map((columnRef) => columnRef.value)
+      ?.columnList.filter((column) => column.value.status !== "dropped")
+      .map((columnRef) => columnRef.value)
       .sort();
+    const originForeignKeyList = originSchema.foreignKeyList.filter(
+      (fk) => fk.table === table.newName
+    );
+    const foreignKeyList = schema.foreignKeyList.filter(
+      (fk) => fk.table === table.newName
+    );
+
     if (
       !isEqual(originTable, table) ||
-      !isEqual(originPrimaryKey, primaryKey)
+      !isEqual(originPrimaryKey, primaryKey) ||
+      !isEqualForeignKeyList(originForeignKeyList, foreignKeyList)
     ) {
       if (table.newName !== table.oldName) {
         renameTableContextList.push({
@@ -59,6 +86,7 @@ export const diffSchema = (originSchema: Schema, schema: Schema) => {
       );
       if (
         !isEqual(originPrimaryKey, primaryKey) ||
+        !isEqualForeignKeyList(originForeignKeyList, foreignKeyList) ||
         columnListDiffResult.addColumnList.length > 0 ||
         columnListDiffResult.changeColumnList.length > 0 ||
         columnListDiffResult.dropColumnList.length > 0
@@ -67,15 +95,19 @@ export const diffSchema = (originSchema: Schema, schema: Schema) => {
           name: table.newName,
           ...columnListDiffResult,
           dropPrimaryKey: false,
+          dropForeignKeyList: [],
+          addForeignKeyList: [],
         };
-        if (!isEqual(originPrimaryKey, primaryKey)) {
-          if (originPrimaryKey?.length !== 0) {
-            alterTableContext.dropPrimaryKey = true;
-          }
-          alterTableContext.primaryKeyList = primaryKey?.map(
-            (column) => column.newName
-          );
-        }
+        composePrimaryKeyWithAlterTableContext(
+          originPrimaryKey || [],
+          primaryKey || [],
+          alterTableContext
+        );
+        composeForeignKeyWithAlterTableContext(
+          originForeignKeyList || [],
+          foreignKeyList || [],
+          alterTableContext
+        );
         alterTableContextList.push(alterTableContext);
       }
     }
@@ -97,4 +129,51 @@ export const diffSchema = (originSchema: Schema, schema: Schema) => {
     renameTableList: renameTableContextList,
     dropTableList: dropTableContextList,
   };
+};
+
+const composePrimaryKeyWithAlterTableContext = (
+  originPrimaryKey: Column[],
+  primaryKey: Column[],
+  alterTableContext: AlterTableContext
+) => {
+  const droppedColumnNameList = alterTableContext.dropColumnList.map(
+    (column) => column.name
+  );
+  const filterOriginPrimaryKey = originPrimaryKey.filter(
+    (column) => !droppedColumnNameList.includes(column.oldName)
+  );
+  if (!isEqual(filterOriginPrimaryKey, primaryKey)) {
+    if (originPrimaryKey.length !== 0) {
+      alterTableContext.dropPrimaryKey = true;
+    }
+    alterTableContext.primaryKeyList = primaryKey.map(
+      (column) => column.newName
+    );
+  }
+};
+
+const composeForeignKeyWithAlterTableContext = (
+  originForeignKeyList: ForeignKey[],
+  foreignKeyList: ForeignKey[],
+  alterTableContext: AlterTableContext
+) => {
+  for (let i = 0; i < foreignKeyList.length; i++) {
+    const originForeignKey = originForeignKeyList[i];
+    const foreignKey = foreignKeyList[i];
+
+    if (!isEqualForeignKey(originForeignKey, foreignKey)) {
+      if (!isUndefined(originForeignKey)) {
+        alterTableContext.dropForeignKeyList.push(originForeignKey.name);
+      }
+      if (foreignKey.columnList.length > 0) {
+        alterTableContext.addForeignKeyList.push({
+          columnList: foreignKey.columnList.map(
+            (columnRef) => columnRef.value.newName
+          ),
+          referencedTable: foreignKey.referencedTable,
+          referencedColumnList: foreignKey.referencedColumns,
+        });
+      }
+    }
+  }
 };
