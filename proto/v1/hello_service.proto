@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "generated-go/v1";
+
+service GreeterService {
+  rpc SayHello(HelloRequest) returns (HelloResponse) {
+    option (google.api.http) = {
+      get: "/say/{name}"
+    };
+  }
+}
+
+message HelloRequest {
+  string name = 1;
+  string value = 2;
+}
+
+message HelloResponse {
+  string message = 1;
+}
