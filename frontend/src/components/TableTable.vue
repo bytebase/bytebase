@@ -57,7 +57,7 @@ import { computed, defineComponent, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Database } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import { bytesToString, databaseSlug, isGhostTable } from "@/utils";
 import EllipsisText from "@/components/EllipsisText.vue";
 

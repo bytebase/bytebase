@@ -1,4 +1,4 @@
-import { ColumnMetadata, TableMetadata } from "@/types/proto/database";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 
 export const findPrimaryKey = (table: TableMetadata) => {
   return table.indexes.find((idx) => idx.primary);

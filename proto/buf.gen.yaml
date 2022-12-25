@@ -1,0 +1,9 @@
+version: v1
+plugins:
+  - name: go
+    out: generated-go
+    opt: paths=source_relative
+  - name: ts
+    out: ../frontend/src/types/proto
+    opt: esModuleInterop=true,env=browser,useOptionals=messages,initializeFieldsAsUndefined=true
+    path: ../frontend/node_modules/.bin/protoc-gen-ts_proto
