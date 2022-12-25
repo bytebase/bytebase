@@ -640,8 +640,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 	if s.grpcServer != nil {
-		s.grpcServer.Stop()
-		// s.grpcServer.GracefulStop()
+		s.grpcServer.GracefulStop()
 	}
 
 	// Wait for all runners to exit.
