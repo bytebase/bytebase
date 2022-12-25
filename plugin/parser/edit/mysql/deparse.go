@@ -125,6 +125,13 @@ func transformCreateTableContext(createTableContext *api.CreateTableContext) (*t
 		createTableStmt.Constraints = append(createTableStmt.Constraints, &pkConstrains)
 	}
 
+	if len(createTableContext.AddForeignKeyList) != 0 {
+		for _, addForeignKeyContext := range createTableContext.AddForeignKeyList {
+			constraint := transfromAddForeignKeyContext(addForeignKeyContext)
+			createTableStmt.Constraints = append(createTableStmt.Constraints, constraint)
+		}
+	}
+
 	return createTableStmt, nil
 }
 
@@ -215,6 +222,27 @@ func transformAlterTableContext(alterTableContext *api.AlterTableContext) (*tidb
 				pkConstrain.Keys = append(pkConstrain.Keys, &indexPart)
 			}
 			alterTableSpec.Constraint = &pkConstrain
+			alterTableStmt.Specs = append(alterTableStmt.Specs, &alterTableSpec)
+		}
+	}
+
+	if len(alterTableContext.DropForeignKeyList) != 0 {
+		for _, name := range alterTableContext.DropForeignKeyList {
+			alterTableSpec := tidbast.AlterTableSpec{
+				Tp:   tidbast.AlterTableDropForeignKey,
+				Name: name,
+			}
+			alterTableStmt.Specs = append(alterTableStmt.Specs, &alterTableSpec)
+		}
+	}
+
+	if len(alterTableContext.AddForeignKeyList) != 0 {
+		for _, addForeignKeyContext := range alterTableContext.AddForeignKeyList {
+			alterTableSpec := tidbast.AlterTableSpec{
+				Tp: tidbast.AlterTableAddConstraint,
+			}
+			constraint := transfromAddForeignKeyContext(addForeignKeyContext)
+			alterTableSpec.Constraint = constraint
 			alterTableStmt.Specs = append(alterTableStmt.Specs, &alterTableSpec)
 		}
 	}
@@ -335,6 +363,42 @@ func transformChangeColumnContext(changeColumnContext *api.ChangeColumnContext) 
 	columnDef.Options = columnOptionList
 
 	return columnDef, nil
+}
+
+func transfromAddForeignKeyContext(addForeignKeyContext *api.AddForeignKeyContext) *tidbast.Constraint {
+	constraint := &tidbast.Constraint{
+		Tp: tidbast.ConstraintForeignKey,
+	}
+
+	for _, column := range addForeignKeyContext.ColumnList {
+		constraint.Keys = append(constraint.Keys, &tidbast.IndexPartSpecification{
+			Column: &tidbast.ColumnName{
+				Name: model.NewCIStr(column),
+			},
+		})
+	}
+
+	constraint.Refer = &tidbast.ReferenceDef{
+		Table: &tidbast.TableName{
+			Name: model.NewCIStr(addForeignKeyContext.ReferencedTable),
+		},
+		IndexPartSpecifications: []*tidbast.IndexPartSpecification{},
+		OnDelete: &tidbast.OnDeleteOpt{
+			ReferOpt: tidbast.ReferOptionNoOption,
+		},
+		OnUpdate: &tidbast.OnUpdateOpt{
+			ReferOpt: tidbast.ReferOptionNoOption,
+		},
+	}
+	for _, referencedColumn := range addForeignKeyContext.ReferencedColumnList {
+		constraint.Refer.IndexPartSpecifications = append(constraint.Refer.IndexPartSpecifications, &tidbast.IndexPartSpecification{
+			Column: &tidbast.ColumnName{
+				Name: model.NewCIStr(referencedColumn),
+			},
+		})
+	}
+
+	return constraint
 }
 
 func transformColumnType(typeStr string) (*types.FieldType, error) {
