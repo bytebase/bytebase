@@ -221,11 +221,9 @@ func (s *Server) listDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list the role").SetInternal(err)
 	}
 
-	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-
-	response := &v1pb.DatabaseRoleList{}
+	response := &v1pb.ListDatabaseRoleResponse{}
 	for _, role := range roleList {
-		response.RoleList = append(response.RoleList, &v1pb.DatabaseRole{
+		response.Roles = append(response.Roles, &v1pb.DatabaseRole{
 			Name:            role.Name,
 			InstanceId:      int32(instance.ID),
 			ConnectionLimit: role.ConnectionLimit,
@@ -233,11 +231,12 @@ func (s *Server) listDatabaseRole(c echo.Context) error {
 			Attribute:       role.Attribute,
 		})
 	}
-
 	metadataBytes, err := protojson.Marshal(response)
 	if err != nil {
 		return err
 	}
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 	if _, err := c.Response().Write(metadataBytes); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to write schema response for role list").SetInternal(err)
 	}
