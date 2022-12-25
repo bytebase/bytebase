@@ -197,7 +197,7 @@ import type {
   TaskId,
 } from "@/types";
 import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import IssueRollbackButton from "./IssueRollbackButton.vue";
 import { isUndefined } from "lodash-es";

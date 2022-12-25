@@ -19,7 +19,7 @@ import {
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
 import { Database, SQLDialect } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
 import type { useLanguageClient } from "@sql-lsp/client";

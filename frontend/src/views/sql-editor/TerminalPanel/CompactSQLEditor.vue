@@ -43,7 +43,7 @@ import {
 } from "@/store";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { Database, ExecuteConfig, ExecuteOption, SQLDialect } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 
 const props = defineProps({
   sql: {

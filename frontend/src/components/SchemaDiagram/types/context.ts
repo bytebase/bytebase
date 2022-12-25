@@ -1,6 +1,6 @@
 import { Ref } from "vue";
 import type Emittery from "emittery";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 
 import { Position, Rect } from "./geometry";
 

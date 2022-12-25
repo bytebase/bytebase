@@ -5,7 +5,7 @@ import {
   Database,
   Instance,
 } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 
 export const mapConnectionAtom =
   (
