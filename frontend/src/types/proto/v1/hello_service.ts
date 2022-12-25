@@ -5,24 +5,20 @@ export const protobufPackage = "bytebase.v1";
 
 export interface HelloRequest {
   name: string;
-  value: string;
 }
 
 export interface HelloResponse {
-  message: string;
+  answer: string;
 }
 
 function createBaseHelloRequest(): HelloRequest {
-  return { name: "", value: "" };
+  return { name: "" };
 }
 
 export const HelloRequest = {
   encode(message: HelloRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
     }
     return writer;
   },
@@ -37,9 +33,6 @@ export const HelloRequest = {
         case 1:
           message.name = reader.string();
           break;
-        case 2:
-          message.value = reader.string();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -49,35 +42,30 @@ export const HelloRequest = {
   },
 
   fromJSON(object: any): HelloRequest {
-    return {
-      name: isSet(object.name) ? String(object.name) : "",
-      value: isSet(object.value) ? String(object.value) : "",
-    };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: HelloRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.value !== undefined && (obj.value = message.value);
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<HelloRequest>, I>>(object: I): HelloRequest {
     const message = createBaseHelloRequest();
     message.name = object.name ?? "";
-    message.value = object.value ?? "";
     return message;
   },
 };
 
 function createBaseHelloResponse(): HelloResponse {
-  return { message: "" };
+  return { answer: "" };
 }
 
 export const HelloResponse = {
   encode(message: HelloResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.message !== "") {
-      writer.uint32(10).string(message.message);
+    if (message.answer !== "") {
+      writer.uint32(10).string(message.answer);
     }
     return writer;
   },
@@ -90,7 +78,7 @@ export const HelloResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.message = reader.string();
+          message.answer = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -101,24 +89,24 @@ export const HelloResponse = {
   },
 
   fromJSON(object: any): HelloResponse {
-    return { message: isSet(object.message) ? String(object.message) : "" };
+    return { answer: isSet(object.answer) ? String(object.answer) : "" };
   },
 
   toJSON(message: HelloResponse): unknown {
     const obj: any = {};
-    message.message !== undefined && (obj.message = message.message);
+    message.answer !== undefined && (obj.answer = message.answer);
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<HelloResponse>, I>>(object: I): HelloResponse {
     const message = createBaseHelloResponse();
-    message.message = object.message ?? "";
+    message.answer = object.answer ?? "";
     return message;
   },
 };
 
 export interface GreeterService {
-  SayHello(request: HelloRequest): Promise<HelloResponse>;
+  Hello(request: HelloRequest): Promise<HelloResponse>;
 }
 
 export class GreeterServiceClientImpl implements GreeterService {
@@ -127,11 +115,11 @@ export class GreeterServiceClientImpl implements GreeterService {
   constructor(rpc: Rpc, opts?: { service?: string }) {
     this.service = opts?.service || "bytebase.v1.GreeterService";
     this.rpc = rpc;
-    this.SayHello = this.SayHello.bind(this);
+    this.Hello = this.Hello.bind(this);
   }
-  SayHello(request: HelloRequest): Promise<HelloResponse> {
+  Hello(request: HelloRequest): Promise<HelloResponse> {
     const data = HelloRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "SayHello", data);
+    const promise = this.rpc.request(this.service, "Hello", data);
     return promise.then((data) => HelloResponse.decode(new _m0.Reader(data)));
   }
 }
