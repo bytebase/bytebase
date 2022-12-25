@@ -223,7 +223,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useNotificationStore, useSchemaEditorStore } from "@/store/modules";
 import { TableTabContext } from "@/types";
-import { ColumnMetadata } from "@/types/proto/database";
+import { ColumnMetadata } from "@/types/proto/store/database";
 import { DatabaseEdit } from "@/types/schemaEditor";
 import {
   Column,

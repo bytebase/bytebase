@@ -212,7 +212,7 @@ import {
   usePolicyByDatabaseAndType,
 } from "@/store";
 import { SensitiveData, SensitiveDataPolicyPayload } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
