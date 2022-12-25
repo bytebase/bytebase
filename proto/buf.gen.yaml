@@ -1,0 +1,5 @@
+version: v1
+plugins:
+  - name: go
+    out: generated-go
+    opt: paths=source_relative
