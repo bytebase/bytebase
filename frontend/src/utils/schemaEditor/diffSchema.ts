@@ -62,7 +62,7 @@ export const diffSchema = (originSchema: Schema, schema: Schema) => {
       .map((columnRef) => columnRef.value)
       .sort();
     const originForeignKeyList = originSchema.foreignKeyList.filter(
-      (fk) => fk.table === table.newName
+      (fk) => fk.table === table.oldName
     );
     const foreignKeyList = schema.foreignKeyList.filter(
       (fk) => fk.table === table.newName
@@ -157,21 +157,34 @@ const composeForeignKeyWithAlterTableContext = (
   foreignKeyList: ForeignKey[],
   alterTableContext: AlterTableContext
 ) => {
-  for (let i = 0; i < foreignKeyList.length; i++) {
-    const originForeignKey = originForeignKeyList[i];
-    const foreignKey = foreignKeyList[i];
+  for (const foreignKey of foreignKeyList) {
+    const originForeignKey =
+      originForeignKeyList[foreignKeyList.findIndex((fk) => fk === foreignKey)];
 
     if (!isEqualForeignKey(originForeignKey, foreignKey)) {
       if (!isUndefined(originForeignKey)) {
         alterTableContext.dropForeignKeyList.push(originForeignKey.name);
       }
-      if (foreignKey.columnList.length > 0) {
+      if (
+        foreignKey.columnList.length > 0 &&
+        foreignKey.columnList.length === foreignKey.referencedColumns.length
+      ) {
+        const columnList: string[] = [];
+        const referencedColumnList: string[] = [];
+        for (const column of foreignKey.columnList) {
+          if (column.value.status !== "dropped") {
+            columnList.push(column.value.newName);
+            referencedColumnList.push(
+              foreignKey.referencedColumns[
+                foreignKey.columnList.findIndex((item) => item === column)
+              ]
+            );
+          }
+        }
         alterTableContext.addForeignKeyList.push({
-          columnList: foreignKey.columnList.map(
-            (columnRef) => columnRef.value.newName
-          ),
           referencedTable: foreignKey.referencedTable,
-          referencedColumnList: foreignKey.referencedColumns,
+          columnList,
+          referencedColumnList,
         });
       }
     }

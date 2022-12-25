@@ -148,7 +148,9 @@
               <BBCheckbox
                 class="ml-3"
                 :value="!column.nullable"
-                :disabled="disableAlterColumn(column)"
+                :disabled="
+                  disableAlterColumn(column) || isColumnPrimaryKey(column)
+                "
                 @toggle="(value) => (column.nullable = !value)"
               />
             </div>
@@ -260,7 +262,6 @@ import {
   Table,
   Schema,
   convertColumnMetadataToColumn,
-  PrimaryKey,
   ForeignKey,
 } from "@/types/schemaEditor/atomType";
 import { getDataTypeSuggestionList } from "@/utils";
@@ -299,10 +300,11 @@ const schema = computed(() => {
     (schema) => schema.name === currentTab.schemaName
   ) as Schema;
 });
-const primaryKey = computed(() => {
-  return schema.value.primaryKeyList.find(
-    (pk) => pk.table === currentTab.tableName
-  ) as PrimaryKey;
+const primaryKeyColumnList = computed(() => {
+  return (
+    schema.value.primaryKeyList.find((pk) => pk.table === currentTab.tableName)
+      ?.columnList || []
+  );
 });
 const foreignKeyList = computed(() => {
   return schema.value.foreignKeyList.filter(
@@ -434,7 +436,7 @@ watch(
 );
 
 const isColumnPrimaryKey = (column: Column): boolean => {
-  for (const columnRef of primaryKey.value.columnList) {
+  for (const columnRef of primaryKeyColumnList.value) {
     if (columnRef.value === column) {
       return true;
     }
@@ -484,12 +486,17 @@ const disableAlterColumn = (column: Column): boolean => {
 
 const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
   if (isPrimaryKey) {
-    primaryKey.value?.columnList.push(ref(column));
+    column.nullable = false;
+    primaryKeyColumnList.value.push(ref(column));
   } else {
-    const index = primaryKey.value?.columnList.findIndex(
-      (columnRef) => columnRef.value === column
+    const primaryKey = schema.value.primaryKeyList.find(
+      (pk) => pk.table === currentTab.tableName
     );
-    primaryKey.value?.columnList.splice(index, 1);
+    if (primaryKey) {
+      primaryKey.columnList = primaryKey.columnList.filter(
+        (columnRef) => columnRef.value !== column
+      );
+    }
   }
 };
 
@@ -524,9 +531,26 @@ const handleDropColumn = (column: Column) => {
     table.value.columnList = table.value.columnList.filter(
       (item) => item !== column
     );
-    primaryKey.value.columnList = primaryKey.value.columnList.filter(
-      (item) => item.value !== column
+    const primaryKey = schema.value.primaryKeyList.find(
+      (pk) => pk.table === currentTab.tableName
     );
+    if (primaryKey) {
+      primaryKey.columnList = primaryKey.columnList.filter(
+        (item) => item.value !== column
+      );
+    }
+    const foreignKeyList = schema.value.foreignKeyList.filter(
+      (fk) => fk.table === currentTab.tableName
+    );
+    for (const foreignKey of foreignKeyList) {
+      const columnRefIndex = foreignKey.columnList.findIndex(
+        (columnRef) => columnRef.value === column
+      );
+      if (columnRefIndex > -1) {
+        foreignKey.columnList.splice(columnRefIndex, 1);
+        foreignKey.referencedColumns.splice(columnRefIndex, 1);
+      }
+    }
   } else {
     column.status = "dropped";
   }
@@ -555,31 +579,38 @@ const handleDiscardChanges = () => {
     table.value.oldName
   );
 
+  const previousName = table.value.newName;
   table.value.newName = table.value.oldName;
   table.value.columnList = cloneDeep(originTable?.columnList ?? []);
   table.value.status = "normal";
 
   // TODO(steven): use reactive Ref.
   // Update reference objects.
-  currentTab.tableName = table.value.newName;
-  primaryKey.value.table = table.value.newName;
-  primaryKey.value.columnList = [];
-  const primaryKeyColumnNameList = (
-    originSchema?.primaryKeyList.find((pk) => pk.table === table.value.oldName)
-      ?.columnList || []
-  ).map((columnRef) => columnRef.value.oldName);
-  for (const column of table.value.columnList) {
-    if (primaryKeyColumnNameList.includes(column.oldName)) {
-      primaryKey.value.columnList.push(ref(column));
+  currentTab.tableName = table.value.oldName;
+  const primaryKey = schema.value.primaryKeyList.find(
+    (pk) => pk.table === previousName
+  );
+  if (primaryKey) {
+    const originPrimaryKeyColumnNameList = (
+      originSchema?.primaryKeyList.find(
+        (pk) => pk.table === table.value.oldName
+      )?.columnList || []
+    ).map((columnRef) => columnRef.value.oldName);
+    primaryKey.table = table.value.oldName;
+    primaryKey.columnList = [];
+    for (const column of table.value.columnList) {
+      if (originPrimaryKeyColumnNameList.includes(column.oldName)) {
+        primaryKey.columnList.push(ref(column));
+      }
     }
   }
 
   schema.value.foreignKeyList = schema.value.foreignKeyList.filter(
-    (fk) => fk.table !== table.value.newName
+    (fk) => fk.table !== table.value.oldName
   );
   const originForeignKeyList =
     originSchema?.foreignKeyList.filter(
-      (fk) => fk.table === table.value.newName
+      (fk) => fk.table === table.value.oldName
     ) || [];
   for (const originForeignKey of originForeignKeyList) {
     const tempForeignKey: ForeignKey = {

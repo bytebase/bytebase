@@ -291,7 +291,7 @@ func TestDeparseAlterAndRenameTable(t *testing.T) {
 					},
 				},
 			},
-			want: "ALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);\n\nRENAME TABLE `t1` TO `t2`;\n",
+			want: "RENAME TABLE `t1` TO `t2`;\n\nALTER TABLE `t1` ADD COLUMN (`id` INT NOT NULL, `id_card` INT NOT NULL);\n",
 		},
 	}
 

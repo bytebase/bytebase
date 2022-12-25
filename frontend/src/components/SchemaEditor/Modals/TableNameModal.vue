@@ -152,7 +152,7 @@ const handleConfirmButtonClick = async () => {
       // Update reference objects.
       const tab = editorStore.findTab(
         databaseId,
-        table.newName
+        props.tableName
       ) as TableTabContext;
       if (tab) {
         tab.tableName = table.newName;
@@ -162,6 +162,11 @@ const handleConfirmButtonClick = async () => {
       );
       if (primaryKey) {
         primaryKey.table = table.newName;
+      }
+      for (const fk of schema.foreignKeyList) {
+        if (fk.table === props.tableName) {
+          fk.table = table.newName;
+        }
       }
     }
     dismissModal();

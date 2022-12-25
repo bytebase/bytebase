@@ -31,6 +31,15 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 
 		stmtList = append(stmtList, stmt)
 	}
+	for _, renameTableContext := range databaseEdit.RenameTableList {
+		renameTableStmt := transformRenameTableContext(renameTableContext)
+		stmt, err := restoreASTNode(renameTableStmt)
+		if err != nil {
+			return "", err
+		}
+
+		stmtList = append(stmtList, stmt)
+	}
 	for _, alterTableContext := range databaseEdit.AlterTableList {
 		alterTableStmt, err := transformAlterTableContext(alterTableContext)
 		if err != nil {
@@ -38,15 +47,6 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 		}
 
 		stmt, err := restoreASTNode(alterTableStmt)
-		if err != nil {
-			return "", err
-		}
-
-		stmtList = append(stmtList, stmt)
-	}
-	for _, renameTableContext := range databaseEdit.RenameTableList {
-		renameTableStmt := transformRenameTableContext(renameTableContext)
-		stmt, err := restoreASTNode(renameTableStmt)
 		if err != nil {
 			return "", err
 		}
