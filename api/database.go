@@ -205,6 +205,7 @@ type DropColumnContext struct {
 	Name string `json:"name"`
 }
 
+// AddForeignKeyContext is the add foreign key context.
 type AddForeignKeyContext struct {
 	ColumnList           []string `json:"columnList"`
 	ReferencedTable      string   `json:"referencedTable"`
