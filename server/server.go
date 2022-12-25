@@ -26,9 +26,6 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	gw "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -43,6 +40,7 @@ import (
 	"github.com/bytebase/bytebase/resources/mongoutil"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
+	apiv1 "github.com/bytebase/bytebase/server/api/v1"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
@@ -296,12 +294,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}))
 
 	// Setup the gRPC and grpc-gateway.
-	grpcServer := grpc.NewServer()
-	gw.RegisterGreeterServiceServer(grpcServer, &GreeterServerImpl{})
-	s.grpcServer = grpcServer
+	s.grpcServer = grpc.NewServer()
 	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := gw.RegisterGreeterServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf(":%d", profile.GrpcPort), opts); err != nil {
+	if err := apiv1.Register(ctx, s.grpcServer, mux, profile.GrpcPort); err != nil {
 		return nil, err
 	}
 	e.Any("/v2/*", echo.WrapHandler(mux))
