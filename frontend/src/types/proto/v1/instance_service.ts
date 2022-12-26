@@ -74,6 +74,45 @@ export function engineToJSON(object: Engine): string {
   }
 }
 
+export enum DataSourceType {
+  DATA_SOURCE_UNSPECIFIED = 0,
+  DATA_SOURCE_ADMIN = 1,
+  DATA_SOURCE_RO = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function dataSourceTypeFromJSON(object: any): DataSourceType {
+  switch (object) {
+    case 0:
+    case "DATA_SOURCE_UNSPECIFIED":
+      return DataSourceType.DATA_SOURCE_UNSPECIFIED;
+    case 1:
+    case "DATA_SOURCE_ADMIN":
+      return DataSourceType.DATA_SOURCE_ADMIN;
+    case 2:
+    case "DATA_SOURCE_RO":
+      return DataSourceType.DATA_SOURCE_RO;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceType.UNRECOGNIZED;
+  }
+}
+
+export function dataSourceTypeToJSON(object: DataSourceType): string {
+  switch (object) {
+    case DataSourceType.DATA_SOURCE_UNSPECIFIED:
+      return "DATA_SOURCE_UNSPECIFIED";
+    case DataSourceType.DATA_SOURCE_ADMIN:
+      return "DATA_SOURCE_ADMIN";
+    case DataSourceType.DATA_SOURCE_RO:
+      return "DATA_SOURCE_RO";
+    case DataSourceType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetInstanceRequest {
   /**
    * The name of the instance to retrieve.
@@ -180,7 +219,7 @@ export interface Instance {
 
 export interface DataSource {
   title: string;
-  type: string;
+  type: DataSourceType;
   username: string;
   password: string;
   sslCa: string;
@@ -715,7 +754,7 @@ export const Instance = {
 };
 
 function createBaseDataSource(): DataSource {
-  return { title: "", type: "", username: "", password: "", sslCa: "", sslCert: "", sslKey: "", host: "", port: "" };
+  return { title: "", type: 0, username: "", password: "", sslCa: "", sslCert: "", sslKey: "", host: "", port: "" };
 }
 
 export const DataSource = {
@@ -723,8 +762,8 @@ export const DataSource = {
     if (message.title !== "") {
       writer.uint32(10).string(message.title);
     }
-    if (message.type !== "") {
-      writer.uint32(18).string(message.type);
+    if (message.type !== 0) {
+      writer.uint32(16).int32(message.type);
     }
     if (message.username !== "") {
       writer.uint32(26).string(message.username);
@@ -761,7 +800,7 @@ export const DataSource = {
           message.title = reader.string();
           break;
         case 2:
-          message.type = reader.string();
+          message.type = reader.int32() as any;
           break;
         case 3:
           message.username = reader.string();
@@ -795,7 +834,7 @@ export const DataSource = {
   fromJSON(object: any): DataSource {
     return {
       title: isSet(object.title) ? String(object.title) : "",
-      type: isSet(object.type) ? String(object.type) : "",
+      type: isSet(object.type) ? dataSourceTypeFromJSON(object.type) : 0,
       username: isSet(object.username) ? String(object.username) : "",
       password: isSet(object.password) ? String(object.password) : "",
       sslCa: isSet(object.sslCa) ? String(object.sslCa) : "",
@@ -809,7 +848,7 @@ export const DataSource = {
   toJSON(message: DataSource): unknown {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
-    message.type !== undefined && (obj.type = message.type);
+    message.type !== undefined && (obj.type = dataSourceTypeToJSON(message.type));
     message.username !== undefined && (obj.username = message.username);
     message.password !== undefined && (obj.password = message.password);
     message.sslCa !== undefined && (obj.sslCa = message.sslCa);
@@ -823,7 +862,7 @@ export const DataSource = {
   fromPartial<I extends Exact<DeepPartial<DataSource>, I>>(object: I): DataSource {
     const message = createBaseDataSource();
     message.title = object.title ?? "";
-    message.type = object.type ?? "";
+    message.type = object.type ?? 0;
     message.username = object.username ?? "";
     message.password = object.password ?? "";
     message.sslCa = object.sslCa ?? "";

@@ -159,7 +159,7 @@ enum Engine {
 
 message DataSource {
   string title = 1;
-  string type = 2;
+  DataSourceType type = 2;
   string username = 3;
   string password = 4;
   string ssl_ca = 5;
@@ -167,4 +167,10 @@ message DataSource {
   string ssl_key = 7;
   string host = 8;
   string port = 9;
+}
+
+enum DataSourceType {
+  DATA_SOURCE_UNSPECIFIED = 0;
+  DATA_SOURCE_ADMIN = 1;
+  DATA_SOURCE_RO = 2;
 }
