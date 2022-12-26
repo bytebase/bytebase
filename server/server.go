@@ -40,6 +40,7 @@ import (
 	"github.com/bytebase/bytebase/resources/mongoutil"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server/api/auth"
 	apiv1 "github.com/bytebase/bytebase/server/api/v1"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
@@ -294,7 +295,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}))
 
 	// Setup the gRPC and grpc-gateway.
-	s.grpcServer = grpc.NewServer()
+	authProvider := auth.New(s.store, s.secret, profile.Mode)
+	s.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(authProvider.UnaryInterceptor))
 	mux := runtime.NewServeMux()
 	if err := apiv1.Register(ctx, s.grpcServer, mux, profile.GrpcPort); err != nil {
 		return nil, err
