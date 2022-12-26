@@ -1173,17 +1173,17 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "mixAsterisks",
 			vcsProviderCreator: fake.NewGitLab,
-			envName:            "生产",
+			envName:            "prod1",
 			baseDirectory:      "bbtest",
 			vcsType:            vcs.GitLabSelfHost,
 			filePathTemplate:   "{{ENV_NAME}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
-				fmt.Sprintf("%s/%s/foo/foo/bar/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "生产", dbName),
+				fmt.Sprintf("%s/%s/foo/foo/bar/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "prod1", dbName),
 				// ** matches foo/bar/foo, foo matches foo, * matches bar
-				fmt.Sprintf("%s/%s/foo/bar/foo/foo/bar/%s##ver2##migrate##create_table_t2.sql", baseDirectory, "生产", dbName),
+				fmt.Sprintf("%s/%s/foo/bar/foo/foo/bar/%s##ver2##migrate##create_table_t2.sql", baseDirectory, "prod1", dbName),
 				// cannot match
-				fmt.Sprintf("%s/%s/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "生产", dbName),
+				fmt.Sprintf("%s/%s/%s##ver3##migrate##create_table_t3.sql", baseDirectory, "prod1", dbName),
 			},
 			commitNewFileContents: []string{
 				"CREATE TABLE t1 (id INT);",

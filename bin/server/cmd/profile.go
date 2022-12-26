@@ -22,12 +22,11 @@ func getBaseProfile() config.Profile {
 	if flags.backupBucket != "" {
 		backupStorageBackend = api.BackupStorageBackendS3
 	}
-	// Using flags.port + 1 as our datastore port
-	datastorePort := flags.port + 1
 
 	return config.Profile{
 		ExternalURL:          flags.externalURL,
-		DatastorePort:        datastorePort,
+		GrpcPort:             flags.port + 1, // Using flags.port + 1 as our gRPC server port.
+		DatastorePort:        flags.port + 2, // Using flags.port + 2 as our datastore port.
 		Readonly:             flags.readonly,
 		Debug:                flags.debug,
 		Demo:                 flags.demo,

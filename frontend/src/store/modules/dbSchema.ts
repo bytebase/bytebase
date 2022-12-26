@@ -17,18 +17,21 @@ export const useDBSchemaStore = defineStore("dbSchema", {
   }),
   actions: {
     async getOrFetchDatabaseMetadataById(
-      databaseId: DatabaseId
+      databaseId: DatabaseId,
+      skipCache = false
     ): Promise<DatabaseMetadata> {
-      if (this.databaseMetadataById.has(databaseId)) {
-        // The metadata entity is stored in local dictionary.
-        return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
-      }
+      if (!skipCache) {
+        if (this.databaseMetadataById.has(databaseId)) {
+          // The metadata entity is stored in local dictionary.
+          return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
+        }
 
-      const cachedRequest = requestCache.get(databaseId);
-      if (cachedRequest) {
-        // The request was sent but still not returned.
-        // We won't create a duplicated request.
-        return cachedRequest;
+        const cachedRequest = requestCache.get(databaseId);
+        if (cachedRequest) {
+          // The request was sent but still not returned.
+          // We won't create a duplicated request.
+          return cachedRequest;
+        }
       }
 
       // Send a request and cache it.
@@ -44,10 +47,11 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       return promise;
     },
     async getOrFetchSchemaListByDatabaseId(
-      databaseId: DatabaseId
+      databaseId: DatabaseId,
+      skipCache = false
     ): Promise<SchemaMetadata[]> {
-      if (!this.databaseMetadataById.has(databaseId)) {
-        await this.getOrFetchDatabaseMetadataById(databaseId);
+      if (skipCache || !this.databaseMetadataById.has(databaseId)) {
+        await this.getOrFetchDatabaseMetadataById(databaseId, skipCache);
       }
       return this.getSchemaListByDatabaseId(databaseId);
     },

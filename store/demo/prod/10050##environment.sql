@@ -4,7 +4,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        "order"
+        "order",
+        resource_id
     )
 VALUES
     (
@@ -12,7 +13,8 @@ VALUES
         101,
         101,
         'Dev',
-        0
+        0,
+        'dev'
     );
 
 INSERT INTO
@@ -21,7 +23,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        "order"
+        "order",
+        resource_id
     )
 VALUES
     (
@@ -29,7 +32,8 @@ VALUES
         101,
         101,
         'Integration',
-        1
+        1,
+        'integration'
     );
 
 INSERT INTO
@@ -38,7 +42,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        "order"
+        "order",
+        resource_id
     )
 VALUES
     (
@@ -46,7 +51,8 @@ VALUES
         101,
         101,
         'Staging',
-        2
+        2,
+        'staging'
     );
 
 INSERT INTO
@@ -55,7 +61,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        "order"
+        "order",
+        resource_id
     )
 VALUES
     (
@@ -63,7 +70,8 @@ VALUES
         101,
         101,
         'Prod',
-        3
+        3,
+        'prod'
     );
 
 INSERT INTO
@@ -73,7 +81,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        "order"
+        "order",
+        resource_id
     )
 VALUES
     (
@@ -82,7 +91,8 @@ VALUES
         101,
         101,
         'Archived Env 1',
-        4
+        4,
+        'archived'
     );
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 5006;

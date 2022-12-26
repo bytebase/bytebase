@@ -8,7 +8,8 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_template
+        db_name_template,
+        resource_id
     )
 VALUES
     (
@@ -20,7 +21,8 @@ VALUES
         'UI',
         'PUBLIC',
         'DISABLED',
-        ''
+        '',
+        'test-ui'
     );
 
 INSERT INTO
@@ -33,7 +35,8 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_template
+        db_name_template,
+        resource_id
     )
 VALUES
     (
@@ -45,7 +48,8 @@ VALUES
         'VCS',
         'PUBLIC',
         'DISABLED',
-        ''
+        '',
+        'shop-git'
     );
 
 INSERT INTO
@@ -58,7 +62,8 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_template
+        db_name_template,
+        resource_id
     )
 VALUES
     (
@@ -70,7 +75,8 @@ VALUES
         'VCS',
         'PUBLIC',
         'DISABLED',
-        ''
+        '',
+        'blog-git'
     );
 
 INSERT INTO
@@ -84,7 +90,8 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_template
+        db_name_template,
+        resource_id
     )
 VALUES
     (
@@ -97,7 +104,8 @@ VALUES
         'UI',
         'PUBLIC',
         'DISABLED',
-        ''
+        '',
+        'retired-project'
     );
 
 ALTER SEQUENCE principal_id_seq RESTART WITH 3005;

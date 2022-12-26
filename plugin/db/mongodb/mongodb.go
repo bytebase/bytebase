@@ -128,8 +128,31 @@ func (driver *Driver) Execute(_ context.Context, statement string, _ bool) (int6
 }
 
 // Query queries a statement.
-func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interface{}, error) {
-	panic("not implemented")
+func (driver *Driver) Query(ctx context.Context, statement string, _ *db.QueryContext) ([]interface{}, error) {
+	connectionURI := getMongoDBConnectionURI(driver.connCfg)
+	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
+	// 1. Query always short, so it's safe to execute in the command line.
+	// 2. We cannot catch the output if we use the --file option.
+
+	mongoshArgs := []string{
+		connectionURI,
+		"--quiet",
+		"--eval",
+		statement,
+	}
+
+	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
+	var errContent bytes.Buffer
+	var outContent bytes.Buffer
+	mongoshCmd.Stderr = &errContent
+	mongoshCmd.Stdout = &outContent
+	if err := mongoshCmd.Run(); err != nil {
+		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
+	}
+	field := []string{"result"}
+	types := []string{"TEXT"}
+	rows := [][]interface{}{{outContent.String()}}
+	return []interface{}{field, types, rows}, nil
 }
 
 // Dump dumps the database.

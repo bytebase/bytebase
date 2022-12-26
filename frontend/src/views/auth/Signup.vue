@@ -313,7 +313,8 @@ export default defineComponent({
     };
 
     const onTextEmail = () => {
-      const email = state.email.trim();
+      const email = state.email.trim().toLowerCase();
+      state.email = email;
       if (!state.nameManuallyEdited) {
         const emailParts = email.split("@");
         if (emailParts.length > 0) {
