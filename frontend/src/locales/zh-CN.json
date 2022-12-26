@@ -441,6 +441,7 @@
       "comment-create": "创建评论",
       "issue-field-update": "更新工单字段",
       "issue-status-update": "更新工单状态",
+      "pipeline-stage-status-update": "更新工单阶段状态",
       "pipeline-task-status-update": "更新工单任务状态",
       "pipeline-task-file-commit": "提交文件",
       "pipeline-task-statement-update": "更新 SQL",
@@ -1161,6 +1162,10 @@
         "issue-comment-creation": {
           "title": "工单被评论",
           "label": "当新的工单评论被创建"
+        },
+        "issue-stage-status-change": {
+          "title": "工单阶段状态变更",
+          "label": "当一个工单的阶段状态发生了变更"
         }
       }
     },

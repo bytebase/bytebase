@@ -441,6 +441,7 @@
       "comment-create": "create comment",
       "issue-field-update": "update issue field",
       "issue-status-update": "update issue status",
+      "pipeline-stage-status-update": "update issue stage status",
       "pipeline-task-status-update": "update issue task status",
       "pipeline-task-file-commit": "commit file",
       "pipeline-task-statement-update": "SQL update",
@@ -1149,6 +1150,10 @@
         "issue-status-change": {
           "title": "Issue status change",
           "label": "When issue status has changed"
+        },
+        "issue-stage-status-change": {
+          "title": "Issue stage status change",
+          "label": "When issue's stage status has changed"
         },
         "issue-task-status-change": {
           "title": "Issue task status change",

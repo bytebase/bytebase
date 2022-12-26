@@ -21,6 +21,7 @@ export type IssueActivityType =
   | "bb.issue.comment.create"
   | "bb.issue.field.update"
   | "bb.issue.status.update"
+  | "bb.pipeline.stage.status.update"
   | "bb.pipeline.task.status.update"
   | "bb.pipeline.task.file.commit"
   | "bb.pipeline.task.statement.update"
@@ -60,6 +61,8 @@ export function activityName(type: ActivityType): string {
       return t("activity.type.issue-field-update");
     case "bb.issue.status.update":
       return t("activity.type.issue-status-update");
+    case "bb.pipeline.stage.status.update":
+      return t("activity.type.pipeline-stage-status-update");
     case "bb.pipeline.task.status.update":
       return t("activity.type.pipeline-task-status-update");
     case "bb.pipeline.task.file.commit":
