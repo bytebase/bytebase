@@ -77,26 +77,7 @@
               :key="index"
               role="option"
               class="group text-main cursor-default select-none relative py-2 pl-3 pr-9 hover:bg-gray-200"
-              @click="
-                if (!multiple) {
-                  if (item !== state.selectedItem) {
-                    $emit('select-item', item, () => {
-                      state.selectedItem = item;
-                    });
-                  }
-                  close();
-                } else {
-                  if (!state.selectedItemList.includes(item)) {
-                    state.selectedItemList.push(item);
-                  } else {
-                    state.selectedItemList.splice(
-                      state.selectedItemList.indexOf(item),
-                      1
-                    );
-                  }
-                  $emit('update-item-list', state.selectedItemList);
-                }
-              "
+              @click="handleSelect(item)"
             >
               <div class="whitespace-nowrap hide-scrollbar overflow-x-auto">
                 <slot name="menuItem" :item="item" :index="index" />
@@ -193,7 +174,7 @@ export default defineComponent({
     },
   },
   emits: ["select-item", "update-item-list"],
-  setup(props) {
+  setup(props, { emit }) {
     const state = reactive<LocalState>({
       showMenu: false,
       selectedItem: props.selectedItem,
@@ -237,6 +218,27 @@ export default defineComponent({
       }
     );
 
+    const handleSelect = (item: any) => {
+      if (!props.multiple) {
+        if (item !== state.selectedItem) {
+          emit("select-item", item, () => {
+            state.selectedItem = item;
+          });
+        }
+        close();
+      } else {
+        if (!state.selectedItemList.includes(item)) {
+          state.selectedItemList.push(item);
+        } else {
+          state.selectedItemList.splice(
+            state.selectedItemList.indexOf(item),
+            1
+          );
+        }
+        emit("update-item-list", state.selectedItemList);
+      }
+    };
+
     const toggle = () => {
       state.showMenu = !state.showMenu;
     };
@@ -250,6 +252,7 @@ export default defineComponent({
     return {
       state,
       isSelected,
+      handleSelect,
       toggle,
       close,
       button,
