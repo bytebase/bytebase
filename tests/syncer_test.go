@@ -263,20 +263,49 @@ func TestSyncerForMySQL(t *testing.T) {
 			b int DEFAULT NULL,
 			c int DEFAULT NULL,
 			UNIQUE KEY a (a,b,c)
-		  );
-		  CREATE TABLE tfk (
+		);
+		CREATE TABLE t1 (
+			id int PRIMARY KEY
+		);
+		CREATE TABLE tfk (
 			a int DEFAULT NULL,
 			b int DEFAULT NULL,
 			c int DEFAULT NULL,
 			KEY a (a,b,c),
-			CONSTRAINT tfk_ibfk_1 FOREIGN KEY (a, b, c) REFERENCES trd (a, b, c)
-		  );
+			CONSTRAINT tfk_ibfk_1 FOREIGN KEY (a, b, c) REFERENCES trd (a, b, c),
+			CONSTRAINT tfk_ibfk_2 FOREIGN KEY (a) REFERENCES t1 (id)
+		);
 		`
 		expectedSchema = `{
 			"name":"test_sync_mysql_schema_db",
 			"schemas":[
 			   {
 				  "tables":[
+					 {
+						"name":"t1",
+						"columns":[
+						   {
+							  "name":"id",
+							  "position":1,
+							  "type":"int"
+						   }
+						],
+						"indexes":[
+						   {
+							  "name":"PRIMARY",
+							  "expressions":[
+								 "id"
+							  ],
+							  "type":"BTREE",
+							  "unique":true,
+							  "primary":true,
+							  "visible":true
+						   }
+						],
+						"engine":"InnoDB",
+						"collation":"utf8mb4_general_ci",
+						"dataSize":"16384"
+					 },
 					 {
 						"name":"tfk",
 						"columns":[
@@ -328,6 +357,19 @@ func TestSyncerForMySQL(t *testing.T) {
 								 "a",
 								 "b",
 								 "c"
+							  ],
+							  "onDelete":"NO ACTION",
+							  "onUpdate":"NO ACTION",
+							  "matchType":"NONE"
+						   },
+						   {
+							  "name":"tfk_ibfk_2",
+							  "columns":[
+								 "a"
+							  ],
+							  "referencedTable":"t1",
+							  "referencedColumns":[
+								 "id"
 							  ],
 							  "onDelete":"NO ACTION",
 							  "onUpdate":"NO ACTION",
