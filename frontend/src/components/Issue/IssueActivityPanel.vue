@@ -352,6 +352,7 @@ import type {
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityTaskStatusUpdatePayload,
+  ActivityStageStatusUpdatePayload,
   ActivityCreate,
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
@@ -623,6 +624,16 @@ const actionIcon = (activity: Activity): ActionIconType => {
       }
       case "PENDING_APPROVAL": {
         return "avatar"; // stale approval dismissed.
+      }
+    }
+  } else if (activity.type == "bb.pipeline.stage.status.update") {
+    const payload = activity.payload as ActivityStageStatusUpdatePayload;
+    switch (payload.stageStatusUpdateType) {
+      case "BEGIN": {
+        return "run";
+      }
+      case "END": {
+        return "complete";
       }
     }
   } else if (activity.type == "bb.pipeline.task.file.commit") {

@@ -6,11 +6,12 @@ import {
   DatabaseId,
   InstanceId,
   PrincipalId,
+  StageId,
   TaskId,
 } from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
-import { TaskStatus } from "./pipeline";
+import { StageStatusUpdateType, TaskStatus } from "./pipeline";
 import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 import { Advice } from "./sql";
@@ -118,6 +119,12 @@ export type ActivityIssueStatusUpdatePayload = {
   oldStatus: IssueStatus;
   newStatus: IssueStatus;
   issueName: string;
+};
+export type ActivityStageStatusUpdatePayload = {
+  stageId: StageId;
+  stageStatusUpdateType: StageStatusUpdateType;
+  issueName: string;
+  stageName: string;
 };
 
 export type ActivityTaskStatusUpdatePayload = {
