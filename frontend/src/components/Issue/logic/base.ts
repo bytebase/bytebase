@@ -24,7 +24,6 @@ import {
 import { useDatabaseStore, useIssueStore, useProjectStore } from "@/store";
 import {
   flattenTaskList,
-  sheetIdOfTask,
   statementOfTask,
   TaskTypeWithSheetId,
   TaskTypeWithStatement,
@@ -253,16 +252,18 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
-  const applyTaskStateToOthers = (task: Task) => {
+  const applyTaskStateToOthers = (task: TaskCreate) => {
     const taskList = flattenTaskList<TaskCreate>(issue.value);
-    const sheetId = sheetIdOfTask(task);
-    const statement = statementOfTask(task);
+    const sheetId = task.sheetId;
+    const statement = task.statement;
 
     for (const taskItem of taskList) {
       if (TaskTypeWithStatement.includes(taskItem.type)) {
         if (!isUndefined(sheetId)) {
           taskItem.sheetId = sheetId;
+          taskItem.statement = "";
         } else {
+          taskItem.sheetId = undefined;
           taskItem.statement = statement ?? "";
         }
       }
