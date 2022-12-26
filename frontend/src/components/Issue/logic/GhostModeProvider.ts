@@ -254,7 +254,7 @@ export default defineComponent({
       return baseAllowApplyTaskStateToOthers.value;
     });
 
-    const applyTaskStateToOthers = (task: Task) => {
+    const applyTaskStateToOthers = (task: TaskCreate) => {
       if (!allowApplyTaskStateToOthers.value) return;
       return baseApplyTaskStateToOthers(task);
     };
