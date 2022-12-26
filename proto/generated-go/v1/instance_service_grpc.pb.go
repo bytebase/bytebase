@@ -28,6 +28,7 @@ type InstanceServiceClient interface {
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	UndeleteInstance(ctx context.Context, in *UndeleteInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 }
 
 type instanceServiceClient struct {
@@ -83,6 +84,15 @@ func (c *instanceServiceClient) DeleteInstance(ctx context.Context, in *DeleteIn
 	return out, nil
 }
 
+func (c *instanceServiceClient) UndeleteInstance(ctx context.Context, in *UndeleteInstanceRequest, opts ...grpc.CallOption) (*Instance, error) {
+	out := new(Instance)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceService/UndeleteInstance", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InstanceServiceServer is the server API for InstanceService service.
 // All implementations must embed UnimplementedInstanceServiceServer
 // for forward compatibility
@@ -92,6 +102,7 @@ type InstanceServiceServer interface {
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error)
+	UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error)
 	mustEmbedUnimplementedInstanceServiceServer()
 }
 
@@ -113,6 +124,9 @@ func (UnimplementedInstanceServiceServer) UpdateInstance(context.Context, *Updat
 }
 func (UnimplementedInstanceServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
+}
+func (UnimplementedInstanceServiceServer) UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UndeleteInstance not implemented")
 }
 func (UnimplementedInstanceServiceServer) mustEmbedUnimplementedInstanceServiceServer() {}
 
@@ -217,6 +231,24 @@ func _InstanceService_DeleteInstance_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InstanceService_UndeleteInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UndeleteInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).UndeleteInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.InstanceService/UndeleteInstance",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).UndeleteInstance(ctx, req.(*UndeleteInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InstanceService_ServiceDesc is the grpc.ServiceDesc for InstanceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -243,6 +275,10 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteInstance",
 			Handler:    _InstanceService_DeleteInstance_Handler,
+		},
+		{
+			MethodName: "UndeleteInstance",
+			Handler:    _InstanceService_UndeleteInstance_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
