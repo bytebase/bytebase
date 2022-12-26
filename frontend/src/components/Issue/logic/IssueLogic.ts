@@ -64,7 +64,7 @@ type IssueLogic = {
   ) => any;
   updateSheetId: (sheetId: SheetId | undefined) => void;
   allowApplyTaskStateToOthers: Ref<boolean>;
-  applyTaskStateToOthers: (task: Task) => any;
+  applyTaskStateToOthers: (task: TaskCreate) => any;
   doCreate(): any;
 
   // events
