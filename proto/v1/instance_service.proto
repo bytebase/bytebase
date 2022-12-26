@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "generated-go/v1";
+
+service InstanceService {
+  rpc GetInstance(GetInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      get: "/v2/{name=environments/*/instances/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
+    option (google.api.http) = {
+      get: "/v2/{parent=environments/*}/instances"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc CreateInstance(CreateInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v2/{parent=environments/*}/instances"
+      body: "instance"
+    };
+    option (google.api.method_signature) = "parent,instance";
+  }
+
+  rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      patch: "/v2/{instance.name=environments/*/instances/*}"
+      body: "instance"
+    };
+    option (google.api.method_signature) = "instance,update_mask";
+  }
+
+  rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/{name=environments/*/instances/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
+    option (google.api.http) = {
+      post: "/v2/{name=environments/*/instances/*}:undelete"
+      body: "*"
+    };
+  }
+}
+
+message GetInstanceRequest {
+  // The name of the instance to retrieve.
+  // Format: environments/{environment}/instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListInstancesRequest {
+  // The parent, which owns this collection of instances.
+  // Format: environments/{environment}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of instances to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 instances will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListInstances` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListInstances` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Show deleted instances if specified.
+  bool show_deleted = 4;
+}
+
+message ListInstancesResponse {
+  // The instances from the specified publisher.
+  repeated Instance instances = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateInstanceRequest {
+  // The parent resource where this instance will be created.
+  // Format: environments/{environment}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The instance to create.
+  Instance instance = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the instance, which will become the final component of
+  // the instance's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string instance_id = 3;
+}
+
+message UpdateInstanceRequest {
+  // The instance to update.
+  //
+  // The instance's `name` field is used to identify the instance to update.
+  // Format: environments/{environment}/instances/{instance}
+  Instance instance = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteInstanceRequest {
+  // The name of the instance to delete.
+  // Format: environments/{environment}/instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteInstanceRequest {
+  // The name of the deleted instance.
+  // Format: environments/{environment}/instances/{instance}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Instance {
+  // The name of the instance.
+  // Format: environments/{environment}/instances/{instance}
+  string name = 1;
+
+  string title = 2;
+  Engine engine = 3;
+  string external_link = 4;
+  repeated DataSource data_sources = 8;
+}
+
+enum Engine {
+  ENGINE_UNSPECIFIED = 0;
+  ENGINE_CLICKHOUSE = 1;
+  ENGINE_MYSQL = 2;
+  ENGINE_POSTGRES = 3;
+  ENGINE_SNOWFLAKE = 4;
+  ENGINE_SQLITE = 5;
+  ENGINE_TIDB = 6;
+  ENGINE_MONGODB = 7;
+}
+
+message DataSource {
+  string title = 1;
+  DataSourceType type = 2;
+  string username = 3;
+  string password = 4;
+  string ssl_ca = 5;
+  string ssl_cert = 6;
+  string ssl_key = 7;
+  string host = 8;
+  string port = 9;
+  string database = 10;
+}
+
+enum DataSourceType {
+  DATA_SOURCE_UNSPECIFIED = 0;
+  DATA_SOURCE_ADMIN = 1;
+  DATA_SOURCE_RO = 2;
+}
