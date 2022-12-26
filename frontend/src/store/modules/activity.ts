@@ -10,12 +10,12 @@ import {
   Issue,
   IssueId,
   PrincipalId,
-  ProjectId,
   ResourceObject,
   UNKNOWN_ID,
   isPagedResponse,
   ResourceIdentifier,
   empty,
+  ActivityFind,
 } from "@/types";
 import { convertEntityList } from "./utils";
 import { useAuthStore } from "./auth";
@@ -112,15 +112,7 @@ export const useActivityStore = defineStore("activity", {
       this.setActivityListForUser({ userId, activityList });
       return activityList;
     },
-    async fetchPagedActivityList(params: {
-      typePrefix: string | string[];
-      container?: number | string;
-      order: "ASC" | "DESC";
-      user?: number;
-      limit?: number;
-      level?: string | string[];
-      token?: string;
-    }) {
+    async fetchPagedActivityList(params: ActivityFind) {
       const url = `/api/activity?${stringify(params, {
         arrayFormat: "repeat",
       })}`;
@@ -139,30 +131,41 @@ export const useActivityStore = defineStore("activity", {
         activityList,
       };
     },
-    async fetchActivityList(params: {
-      typePrefix: string | string[];
-      container?: number | string;
-      order: "ASC" | "DESC";
-      user?: number;
-      limit?: number;
-      level?: string | string[];
-      token?: string;
-    }) {
+    async fetchActivityList(params: ActivityFind) {
       const result = await this.fetchPagedActivityList(params);
       return result.activityList;
     },
     async fetchActivityListForIssue(issue: Issue) {
-      const activityList = await this.fetchActivityList({
-        typePrefix: ["bb.issue.", "bb.pipeline."],
+      // We should use two separate requests here because we are using different container ids.
+      const requestListForIssue = this.fetchActivityList({
+        typePrefix: "bb.issue.",
         container: issue.id,
         order: "ASC",
+      });
+      const requestListForPipeline = this.fetchActivityList({
+        typePrefix: "bb.pipeline.",
+        container: issue.pipeline.id,
+        order: "ASC",
+      });
+      const [listForIssue, listForPipeline] = await Promise.all([
+        requestListForIssue,
+        requestListForPipeline,
+      ]);
+
+      const mergedList = [...listForIssue, ...listForPipeline];
+      mergedList.sort((a, b) => {
+        if (a.createdTs !== b.createdTs) {
+          return a.createdTs - b.createdTs;
+        }
+
+        return a.id - b.id;
       });
 
       this.setActivityListForIssue({
         issueId: issue.id,
-        activityList,
+        activityList: mergedList,
       });
-      return activityList;
+      return mergedList;
     },
     async fetchActivityListByIssueId(issueId: IssueId) {
       const issue = useIssueStore().getIssueById(issueId);
@@ -170,23 +173,6 @@ export const useActivityStore = defineStore("activity", {
         return;
       }
       this.fetchActivityListForIssue(issue);
-    },
-    // We do not store the returned list because the caller will specify different limits.
-    async fetchActivityListForProject({
-      projectId,
-      limit,
-    }: {
-      projectId: ProjectId;
-      limit?: number;
-    }) {
-      const activityList = await this.fetchActivityList({
-        typePrefix: ["bb.project.", "bb.database."],
-        container: projectId,
-        order: "DESC",
-        limit,
-      });
-
-      return activityList;
     },
     async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
       const { currentUser } = useAuthStore();

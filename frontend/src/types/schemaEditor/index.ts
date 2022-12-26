@@ -1,5 +1,5 @@
 import { Database, DatabaseId } from "..";
-import { Table } from "./atomType";
+import { Schema } from "./atomType";
 
 export enum SchemaEditorTabType {
   TabForDatabase = "database",
@@ -18,6 +18,7 @@ export interface TableTabContext {
   id: string;
   type: SchemaEditorTabType.TabForTable;
   databaseId: DatabaseId;
+  schemaName: string;
   tableName: string;
 }
 
@@ -25,10 +26,10 @@ export type TabContext = DatabaseTabContext | TableTabContext;
 
 type TabId = string;
 
-interface DatabaseState {
+export interface DatabaseSchema {
   database: Database;
-  originTableList: Table[];
-  tableList: Table[];
+  schemaList: Schema[];
+  originSchemaList: Schema[];
 }
 
 export interface SchemaEditorState {
@@ -36,7 +37,7 @@ export interface SchemaEditorState {
     tabMap: Map<TabId, TabContext>;
     currentTabId?: TabId;
   };
-  databaseStateById: Map<DatabaseId, DatabaseState>;
+  databaseSchemaById: Map<DatabaseId, DatabaseSchema>;
 }
 
 /**
@@ -59,6 +60,8 @@ export interface CreateTableContext {
   comment: string;
 
   addColumnList: AddColumnContext[];
+  primaryKeyList: string[];
+  addForeignKeyList: AddForeignKeyContext[];
 }
 
 export interface AlterTableContext {
@@ -67,6 +70,10 @@ export interface AlterTableContext {
   addColumnList: AddColumnContext[];
   changeColumnList: ChangeColumnContext[];
   dropColumnList: DropColumnContext[];
+  dropPrimaryKey: boolean;
+  primaryKeyList?: string[];
+  dropForeignKeyList: string[];
+  addForeignKeyList: AddForeignKeyContext[];
 }
 
 export interface RenameTableContext {
@@ -101,6 +108,12 @@ export interface ChangeColumnContext {
 
 export interface DropColumnContext {
   name: string;
+}
+
+export interface AddForeignKeyContext {
+  columnList: string[];
+  referencedTable: string;
+  referencedColumnList: string[];
 }
 
 /**

@@ -81,34 +81,31 @@ type indexData struct {
 // Enter implements the ast.Visitor interface.
 func (checker *indexKeyNumberLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var indexList []indexData
+
+	appendIndexItem := func(table, index string, line int) {
+		indexList = append(indexList, indexData{
+			table: table,
+			index: index,
+			line:  line,
+		})
+	}
+
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
 			if checker.max > 0 && indexKeyNumber(constraint) > checker.max {
-				indexList = append(indexList, indexData{
-					table: node.Table.Name.O,
-					index: constraint.Name,
-					line:  constraint.OriginTextPosition(),
-				})
+				appendIndexItem(node.Table.Name.O, constraint.Name, constraint.OriginTextPosition())
 			}
 		}
 	case *ast.CreateIndexStmt:
 		if checker.max > 0 && len(node.IndexPartSpecifications) > checker.max {
-			indexList = append(indexList, indexData{
-				table: node.Table.Name.O,
-				index: node.IndexName,
-				line:  checker.line,
-			})
+			appendIndexItem(node.Table.Name.O, node.IndexName, checker.line)
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
 			if spec.Tp == ast.AlterTableAddConstraint {
 				if checker.max > 0 && indexKeyNumber(spec.Constraint) > checker.max {
-					indexList = append(indexList, indexData{
-						table: node.Table.Name.O,
-						index: spec.Constraint.Name,
-						line:  checker.line,
-					})
+					appendIndexItem(node.Table.Name.O, spec.Constraint.Name, checker.line)
 				}
 			}
 		}

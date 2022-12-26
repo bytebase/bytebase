@@ -39,11 +39,12 @@ import {
   useNotificationStore,
   generateUniqueTabId,
 } from "@/store";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import {
-  transformColumnDataToColumn,
-  transformTableDataToTable,
-} from "@/utils/schemaEditor/transform";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/database";
+  convertColumnMetadataToColumn,
+  convertTableMetadataToTable,
+  Schema,
+} from "@/types/schemaEditor/atomType";
 
 const tableNameFieldRegexp = /^\S+$/;
 
@@ -55,6 +56,10 @@ const props = defineProps({
   databaseId: {
     type: Number as PropType<DatabaseId>,
     default: UNKNOWN_ID,
+  },
+  schemaName: {
+    type: String as PropType<string>,
+    default: "",
   },
   tableName: {
     type: String as PropType<string | undefined>,
@@ -92,10 +97,10 @@ const handleConfirmButtonClick = async () => {
   }
 
   const databaseId = props.databaseId;
-  const tableList = await editorStore.getOrFetchTableListByDatabaseId(
-    databaseId
-  );
-  const tableNameList = tableList.map((table) => table.newName);
+  const schema = editorStore.databaseSchemaById
+    .get(databaseId)
+    ?.schemaList.find((schema) => schema.name === props.schemaName) as Schema;
+  const tableNameList = schema.tableList.map((table) => table.newName);
   if (tableNameList.includes(state.tableName)) {
     notificationStore.pushNotification({
       module: "bytebase",
@@ -106,12 +111,14 @@ const handleConfirmButtonClick = async () => {
   }
 
   if (isCreatingTable.value) {
-    const table = transformTableDataToTable(TableMetadata.fromPartial({}));
+    const table = convertTableMetadataToTable(TableMetadata.fromPartial({}));
     table.oldName = state.tableName;
     table.newName = state.tableName;
     table.status = "created";
 
-    const column = transformColumnDataToColumn(ColumnMetadata.fromPartial({}));
+    const column = convertColumnMetadataToColumn(
+      ColumnMetadata.fromPartial({})
+    );
     column.oldName = "id";
     column.newName = "id";
     column.type = "int";
@@ -119,27 +126,47 @@ const handleConfirmButtonClick = async () => {
     column.status = "created";
     table.columnList.push(column);
 
-    const tableList = editorStore.databaseStateById.get(databaseId)!.tableList;
-    tableList.push(table);
+    schema.tableList.push(table);
+    schema.primaryKeyList.push({
+      table: table.newName,
+      columnList: [],
+    });
     editorStore.addTab({
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForTable,
       databaseId: props.databaseId,
+      schemaName: props.schemaName,
       tableName: table.newName,
     });
     dismissModal();
   } else {
-    const table = editorStore.databaseStateById
-      .get(databaseId)!
-      .tableList.find((table) => table.newName === props.tableName);
+    const table = editorStore.getTable(
+      props.databaseId,
+      props.schemaName,
+      props.tableName ?? ""
+    );
     if (table) {
+      table.newName = state.tableName;
+
+      // TODO(steven): use reactive Ref.
+      // Update reference objects.
       const tab = editorStore.findTab(
         databaseId,
-        table.newName
+        props.tableName
       ) as TableTabContext;
-      table.newName = state.tableName;
       if (tab) {
         tab.tableName = table.newName;
+      }
+      const primaryKey = schema.primaryKeyList.find(
+        (pk) => pk.table === props.tableName
+      );
+      if (primaryKey) {
+        primaryKey.table = table.newName;
+      }
+      for (const fk of schema.foreignKeyList) {
+        if (fk.table === props.tableName) {
+          fk.table = table.newName;
+        }
       }
     }
     dismissModal();

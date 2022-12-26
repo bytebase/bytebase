@@ -13,13 +13,15 @@ import (
 type DBFactory struct {
 	mysqlBinDir string
 	pgBinDir    string
+	mongoBinDir string
 	dataDir     string
 }
 
 // New creates a new database driver factory.
-func New(mysqlBinDir, pgBinDir, dataDir string) *DBFactory {
+func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir string) *DBFactory {
 	return &DBFactory{
 		mysqlBinDir: mysqlBinDir,
+		mongoBinDir: mongoBinDir,
 		pgBinDir:    pgBinDir,
 		dataDir:     dataDir,
 	}
@@ -39,6 +41,8 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *api.In
 		dbBinDir = d.mysqlBinDir
 	case db.Postgres:
 		dbBinDir = d.pgBinDir
+	case db.MongoDB:
+		dbBinDir = d.mongoBinDir
 	}
 
 	if databaseName == "" {

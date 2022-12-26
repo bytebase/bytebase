@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +33,7 @@ import (
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
 	"github.com/bytebase/bytebase/plugin/app/feishu"
 	bbs3 "github.com/bytebase/bytebase/plugin/storage/s3"
+	"github.com/bytebase/bytebase/resources/mongoutil"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/server/component/activity"
@@ -122,6 +122,8 @@ type Server struct {
 
 	// MySQL utility binaries
 	mysqlBinDir string
+	// MongoDB utility binaries
+	mongoBinDir string
 	// Postgres utility binaries
 	pgBinDir string
 
@@ -209,9 +211,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
+	s.mongoBinDir, err = mongoutil.Install(resourceDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot install mongo utility binaries")
+	}
+
 	// Installs the Postgres and utility binaries and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q", runtime.GOOS, runtime.GOARCH))
 	s.pgBinDir, err = postgres.Install(resourceDir)
 	if err != nil {
 		return nil, err
@@ -270,7 +276,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.workspaceID = config.workspaceID
 
 	s.ActivityManager = activity.NewManager(storeInstance, profile)
-	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.pgBinDir, profile.DataDir)
+	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir)
 	e := echo.New()
 	e.Debug = profile.Debug
 	e.HideBanner = true

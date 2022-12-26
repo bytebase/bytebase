@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/store"
@@ -31,6 +32,7 @@ func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
 	g.GET("/instance/:instanceID/role/:roleName", s.getDatabaseRole)
 	g.PATCH("/instance/:instanceID/role/:roleName", s.updateDatabaseRole)
 	g.DELETE("/instance/:instanceID/role/:roleName", s.deleteDatabaseRole)
+	g.PATCH("/instances/:instanceName/databases/:database", s.updateInstanceDatabase)
 }
 
 func (s *Server) listInstance(c echo.Context) error {
@@ -216,14 +218,12 @@ func (s *Server) listDatabaseRole(c echo.Context) error {
 		return roleList, nil
 	}()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list the role").SetInternal(err)
 	}
 
-	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-
-	response := &v1pb.DatabaseRoleList{}
+	response := &v1pb.ListDatabaseRoleResponse{}
 	for _, role := range roleList {
-		response.RoleList = append(response.RoleList, &v1pb.DatabaseRole{
+		response.Roles = append(response.Roles, &v1pb.DatabaseRole{
 			Name:            role.Name,
 			InstanceId:      int32(instance.ID),
 			ConnectionLimit: role.ConnectionLimit,
@@ -231,11 +231,12 @@ func (s *Server) listDatabaseRole(c echo.Context) error {
 			Attribute:       role.Attribute,
 		})
 	}
-
 	metadataBytes, err := protojson.Marshal(response)
 	if err != nil {
 		return err
 	}
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 	if _, err := c.Response().Write(metadataBytes); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to write schema response for role list").SetInternal(err)
 	}
@@ -284,8 +285,11 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	var upsert v1pb.DatabaseRoleUpsert
-	if err := protojson.Unmarshal(body, &upsert); err != nil {
+	upsert := &v1pb.DatabaseRoleUpsert{}
+	if err := protojson.Unmarshal(body, upsert); err != nil {
+		return err
+	}
+	if err := validateRole(upsert); err != nil {
 		return err
 	}
 
@@ -301,7 +305,7 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		}
 		defer driver.Close(ctx)
 
-		role, err := driver.CreateRole(ctx, &upsert)
+		role, err := driver.CreateRole(ctx, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -309,7 +313,7 @@ func (s *Server) createDatabaseRole(c echo.Context) error {
 		return role, nil
 	}()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create the role").SetInternal(err)
 	}
 
 	return marshalDatabaseRoleResponse(c, role, instance.ID)
@@ -347,8 +351,11 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	var upsert v1pb.DatabaseRoleUpsert
-	if err := protojson.Unmarshal(body, &upsert); err != nil {
+	upsert := &v1pb.DatabaseRoleUpsert{}
+	if err := protojson.Unmarshal(body, upsert); err != nil {
+		return err
+	}
+	if err := validateRole(upsert); err != nil {
 		return err
 	}
 
@@ -365,7 +372,7 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		}
 		defer driver.Close(ctx)
 
-		role, err := driver.UpdateRole(ctx, rawName, &upsert)
+		role, err := driver.UpdateRole(ctx, rawName, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -376,10 +383,23 @@ func (s *Server) updateDatabaseRole(c echo.Context) error {
 		if common.ErrorCode(err) == common.NotFound {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found the role %s in instance %d", rawName, instance.ID))
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query the role").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update the role").SetInternal(err)
 	}
 
 	return marshalDatabaseRoleResponse(c, role, instance.ID)
+}
+
+func validateRole(upsert *v1pb.DatabaseRoleUpsert) error {
+	if v := upsert.ConnectionLimit; v != nil && *v < int32(-1) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid connection limit, it should greater than or equal to -1")
+	}
+	if v := upsert.ValidUntil; v != nil {
+		if _, err := time.Parse(time.RFC3339, *v); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid timestamp for valid_until").SetInternal(err)
+		}
+	}
+
+	return nil
 }
 
 func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Instance, error) {
@@ -394,6 +414,9 @@ func (s *Server) validateInstance(ctx context.Context, c echo.Context) (*api.Ins
 	}
 	if instance == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", instanceID))
+	}
+	if instance.Engine != db.Postgres {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Role management for %v is not support", instance.Engine))
 	}
 
 	return instance, nil
@@ -490,4 +513,55 @@ func convertToAPIDataSouceList(dataSourceList []*openAPIV1.DataSourceCreate) ([]
 	}
 
 	return res, nil
+}
+
+func (s *Server) updateInstanceDatabase(c echo.Context) error {
+	ctx := c.Request().Context()
+	instanceName := c.Param("instanceName")
+	databaseName := c.Param("database")
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
+	}
+	instanceDatabasePatch := &openAPIV1.InstanceDatabasePatch{}
+	if err := json.Unmarshal(body, instanceDatabasePatch); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch instance database request").SetInternal(err)
+	}
+
+	instances, err := s.store.FindInstance(ctx, &api.InstanceFind{Name: &instanceName})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
+	}
+	if len(instances) != 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Found %v instances with name %q but expecting one", len(instances), instanceName)
+	}
+	instance := instances[0]
+
+	databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &instance.ID, Name: &databaseName})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find database").SetInternal(err)
+	}
+	if len(databases) != 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Found %v databases with name %q but expecting one", len(databases), databaseName)
+	}
+	database := databases[0]
+
+	var patchProjectID *int
+	if instanceDatabasePatch.Project != nil {
+		projects, err := s.store.FindProject(ctx, &api.ProjectFind{Name: instanceDatabasePatch.Project})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find project").SetInternal(err)
+		}
+		if len(projects) != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Found %v projects with name %q but expecting one", len(projects), *instanceDatabasePatch.Project)
+		}
+		project := projects[0]
+		patchProjectID = &project.ID
+	}
+	updaterID := c.Get(getPrincipalIDContextKey()).(int)
+	if _, err := s.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: updaterID, ProjectID: patchProjectID}); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to patch database project").SetInternal(err)
+	}
+	return c.JSON(http.StatusOK, "")
 }

@@ -1,5 +1,5 @@
 import { computed, defineComponent } from "vue";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isUndefined } from "lodash-es";
 import { provideIssueLogic, useIssueLogic } from "./index";
 import {
   flattenTaskList,
@@ -32,8 +32,8 @@ export default defineComponent({
       createIssue,
       isTenantMode,
       allowApplyTaskStatusTransition: baseAllowApplyTaskStatusTransition,
-      allowApplyStatementToOtherTasks: baseAllowApplyStatementToOtherTasks,
-      applyStatementToOtherTasks: baseApplyStatementToOtherTasks,
+      allowApplyTaskStateToOthers: baseAllowApplyTaskStateToOthers,
+      applyTaskStateToOthers: baseApplyTaskStateToOthers,
       onStatusChanged,
     } = useIssueLogic();
     const databaseStore = useDatabaseStore();
@@ -152,7 +152,7 @@ export default defineComponent({
       }
     };
 
-    const updateSheetId = (sheetId: SheetId) => {
+    const updateSheetId = (sheetId: SheetId | undefined) => {
       if (!create.value) {
         return;
       }
@@ -186,7 +186,12 @@ export default defineComponent({
         const context = issueCreate.createContext as MigrationContext;
         context.detailList.forEach((detail) => {
           const db = databaseStore.getDatabaseById(detail.databaseId!);
-          detail.statement = maybeFormatStatementOnSave(detail.statement, db);
+          if (!isUndefined(detail.sheetId)) {
+            // If task already has sheet id, we do not need to save statement.
+            detail.statement = "";
+          } else {
+            detail.statement = maybeFormatStatementOnSave(detail.statement, db);
+          }
         });
       } else {
         // for standard pipeline, we copy user edited tasks back to
@@ -206,7 +211,12 @@ export default defineComponent({
           );
           if (detail) {
             const db = databaseStore.getDatabaseById(databaseId);
-            detail.statement = maybeFormatStatementOnSave(task.statement, db);
+            if (!isUndefined(detail.sheetId)) {
+              // If task already has sheet id, we do not need to save statement.
+              detail.statement = "";
+            } else {
+              detail.statement = maybeFormatStatementOnSave(task.statement, db);
+            }
             detail.earliestAllowedTs = task.earliestAllowedTs;
           }
         });
@@ -238,14 +248,15 @@ export default defineComponent({
       return baseAllowApplyTaskStatusTransition(task, to);
     };
 
-    const allowApplyStatementToOtherTasks = computed(() => {
-      // We are never allowed to "apply statement to other stages" in tenant mode.
+    const allowApplyTaskStateToOthers = computed(() => {
+      // We are never allowed to "apply task state to other stages" in tenant mode.
       if (isTenantMode.value) return false;
-      return baseAllowApplyStatementToOtherTasks.value;
+      return baseAllowApplyTaskStateToOthers.value;
     });
-    const applyStatementToOtherTasks = (statement: string) => {
-      if (!allowApplyStatementToOtherTasks.value) return;
-      return baseApplyStatementToOtherTasks(statement);
+
+    const applyTaskStateToOthers = (task: Task) => {
+      if (!allowApplyTaskStateToOthers.value) return;
+      return baseApplyTaskStateToOthers(task);
     };
 
     const logic = {
@@ -253,8 +264,8 @@ export default defineComponent({
       selectedStatement,
       doCreate,
       allowApplyTaskStatusTransition,
-      allowApplyStatementToOtherTasks,
-      applyStatementToOtherTasks,
+      allowApplyTaskStateToOthers,
+      applyTaskStateToOthers,
       updateStatement,
       updateSheetId,
     };

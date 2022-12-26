@@ -78,6 +78,9 @@ type Sheet struct {
 	Payload    string          `jsonapi:"attr,payload"`
 	Starred    bool            `jsonapi:"attr,starred"`
 	Pinned     bool            `jsonapi:"attr,pinned"`
+
+	// Size is the size of statement in bytes.
+	Size int64 `jsonapi:"attr,size"`
 }
 
 // SheetCreate is the API message for creating a sheet.
@@ -125,6 +128,8 @@ type SheetFind struct {
 	// Used to find the creator's sheet list.
 	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
 	CreatorID *int
+	// LoadFull is used if we want to load the full sheet.
+	LoadFull bool
 
 	// Related fields
 	ProjectID  *int

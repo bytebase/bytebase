@@ -32,7 +32,7 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 	default:
 		return "", "", errors.Errorf("unsupported platform: %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
-	return tarName, strings.TrimRight(tarName, "txz"), nil
+	return tarName, strings.TrimRight(tarName, ".txz"), nil
 }
 
 // Install installs mongoutil in resourceDir.

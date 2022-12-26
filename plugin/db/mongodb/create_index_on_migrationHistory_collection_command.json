@@ -3,6 +3,13 @@
   "indexes": [
     {
       "key": {
+        "id": 1
+      },
+      "name": "bytebase_idx_unique_migration_history_id",
+      "unique": true
+    },
+    {
+      "key": {
         "namespace": 1,
         "sequence": 1
       },

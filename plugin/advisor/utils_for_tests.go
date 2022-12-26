@@ -233,6 +233,11 @@ func (*MockDriver) Ping(_ context.Context) error {
 	return nil
 }
 
+// GetType implements the Driver interface.
+func (*MockDriver) GetType() database.Type {
+	return database.Type("MOCK")
+}
+
 // GetDBConnection implements the Driver interface.
 func (*MockDriver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 	return nil, nil
@@ -284,8 +289,8 @@ func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMeta, erro
 }
 
 // SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context, _ string) (*database.Schema, error) {
-	return nil, nil
+func (*MockDriver) SyncDBSchema(_ context.Context, _ string) (*database.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
+	return nil, nil, nil
 }
 
 // NeedsSetupMigration implements the Driver interface.

@@ -342,7 +342,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 
 	// Sync database schema
-	schema, err := driver.SyncDBSchema(ctx, databaseName)
+	schema, fkMap, err := driver.SyncDBSchema(ctx, databaseName)
 	if err != nil {
 		return err
 	}
@@ -396,10 +396,10 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 
 	// Sync database schema
-	return syncDBSchema(ctx, s.store, database, schema, driver, force)
+	return syncDBSchema(ctx, s.store, database, schema, fkMap, driver, force)
 }
 
-func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Database, schema *db.Schema, driver db.Driver, force bool) error {
+func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Database, schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMetadata, driver db.Driver, force bool) error {
 	dbSchema, err := stores.GetDBSchema(ctx, database.ID)
 	if err != nil {
 		return err
@@ -409,7 +409,7 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 		oldDatabaseMetadata = dbSchema.Metadata
 	}
 
-	databaseMetadata := convertDBSchema(schema)
+	databaseMetadata := convertDBSchema(schema, fkMap)
 
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
 		rawDump := ""
@@ -438,7 +438,10 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 	return nil
 }
 
-func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
+func convertDBSchema(schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMetadata) *storepb.DatabaseMetadata {
+	if fkMap == nil {
+		fkMap = make(map[string][]*storepb.ForeignKeyMetadata)
+	}
 	databaseMetadata := &storepb.DatabaseMetadata{
 		Name:         schema.Name,
 		CharacterSet: schema.CharacterSet,
@@ -480,6 +483,7 @@ func convertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 				IndexSize:     table.IndexSize,
 				CreateOptions: table.CreateOptions,
 				Comment:       table.Comment,
+				ForeignKeys:   fkMap[table.Name],
 			}
 
 			sort.Slice(table.ColumnList, func(i, j int) bool {

@@ -1,5 +1,5 @@
 import { computed, defineComponent } from "vue";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isUndefined } from "lodash-es";
 import { useDatabaseStore, useTaskStore } from "@/store";
 import {
   Issue,
@@ -84,7 +84,7 @@ export default defineComponent({
       }
     };
 
-    const updateSheetId = (sheetId: SheetId) => {
+    const updateSheetId = (sheetId: SheetId | undefined) => {
       if (!create.value) {
         return;
       }
@@ -101,8 +101,8 @@ export default defineComponent({
       context.detailList.forEach((detail) => (detail.sheetId = sheetId));
     };
 
-    // We are never allowed to "apply statement to other stages" in tenant mode.
-    const allowApplyStatementToOtherTasks = computed(() => false);
+    // We are never allowed to "apply task state to other stages" in tenant mode.
+    const allowApplyTaskStateToOthers = computed(() => false);
 
     const doCreate = () => {
       const issueCreate = cloneDeep(issue.value as IssueCreate);
@@ -113,7 +113,12 @@ export default defineComponent({
       const context = issueCreate.createContext as MigrationContext;
       context.detailList.forEach((detail) => {
         const db = databaseStore.getDatabaseById(detail.databaseId!);
-        detail.statement = maybeFormatStatementOnSave(detail.statement, db);
+        if (!isUndefined(detail.sheetId)) {
+          // If task already has sheet id, we do not need to save statement.
+          detail.statement = "";
+        } else {
+          detail.statement = maybeFormatStatementOnSave(detail.statement, db);
+        }
       });
 
       createIssue(issueCreate);
@@ -125,8 +130,8 @@ export default defineComponent({
       selectedStatement,
       updateStatement,
       updateSheetId,
-      allowApplyStatementToOtherTasks,
-      applyStatementToOtherTasks: errorAssertion,
+      allowApplyTaskStateToOthers,
+      applyTaskStateToOthers: errorAssertion,
       doCreate,
     };
     provideIssueLogic(logic);

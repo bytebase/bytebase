@@ -8,7 +8,7 @@
     />
     <div
       v-if="showLoading"
-      class="w-full h-full absolute inset-0 flex justify-center items-center bg-white/50"
+      class="w-full h-full fixed md:absolute inset-0 flex justify-center items-center bg-white/50"
     >
       <NSpin />
     </div>
@@ -32,9 +32,12 @@ import {
   Project,
   unknown,
   UNKNOWN_ID,
+  Issue,
 } from "@/types";
 import { hasFeature, useIssueStore, useProjectStore } from "@/store";
 import { useInitializeIssue, usePollIssue } from "@/plugins/issue/logic";
+import { useTitle } from "@vueuse/core";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -48,6 +51,7 @@ const props = defineProps({
 });
 
 const route = useRoute();
+const { t } = useI18n();
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
@@ -100,4 +104,18 @@ const findProject = async (): Promise<Project> => {
 
   return project;
 };
+
+const documentTitle = computed(() => {
+  if (create.value) {
+    return t("issue.new-issue");
+  } else {
+    const issueEntity = issue.value as Issue | undefined;
+
+    if (issueEntity) {
+      return issueEntity.name;
+    }
+    return t("common.loading");
+  }
+});
+useTitle(documentTitle);
 </script>

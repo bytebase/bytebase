@@ -1,7 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { StringValue } from "./google/protobuf/wrappers";
+import { StringValue } from "../google/protobuf/wrappers";
 
 export const protobufPackage = "bytebase.store";
 

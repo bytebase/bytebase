@@ -1,9 +1,9 @@
 <template>
-  <renderer />
+  <Renderer />
 </template>
 
 <script lang="ts" setup>
-import { h, PropType } from "vue";
+import { defineComponent, h, PropType } from "vue";
 import {
   Activity,
   ActivityIssueCommentCreatePayload,
@@ -85,7 +85,11 @@ const renderActionSentence = () => {
           break;
         }
         case "DONE": {
-          str = t("activity.sentence.completed");
+          if (payload.oldStatus === "RUNNING") {
+            str = t("activity.sentence.completed");
+          } else {
+            str = t("activity.sentence.skipped");
+          }
           break;
         }
         case "FAILED": {
@@ -144,9 +148,9 @@ const renderActionSentence = () => {
   return "";
 };
 
-const renderer = {
+const Renderer = defineComponent({
   render: renderActionSentence,
-};
+});
 
 const renderStatement = (statement: string) => {
   return h(SQLPreviewPopover, {

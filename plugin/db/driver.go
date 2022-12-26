@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -54,11 +55,14 @@ type View struct {
 	ShortName string
 	// Schema is the schema name for a table. It should be supported only for Postgres and Snowflake.
 	Schema string
-	// CreatedTs isn't supported for ClickHouse.
-	CreatedTs  int64
-	UpdatedTs  int64
+	// CreatedTs isn't supported for ClickHouse, MongoDB.
+	CreatedTs int64
+	// UpdatedTs isn't supported for MongoDB.
+	UpdatedTs int64
+	// Definition isn't supported for MongoDB.
 	Definition string
-	Comment    string
+	// Comment isn't supported for MongoDB.
+	Comment string
 }
 
 // Extension is the database extension.
@@ -172,7 +176,7 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL).
+	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL, mongosh for MongoDB).
 	DbBinDir string
 
 	// NOTE, introducing db specific fields is the last resort.
@@ -487,6 +491,7 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
+	GetType() Type
 	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
@@ -498,7 +503,7 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
+	SyncDBSchema(ctx context.Context, database string) (*Schema, map[string][]*storepb.ForeignKeyMetadata, error)
 
 	// Role
 	// CreateRole creates the role.

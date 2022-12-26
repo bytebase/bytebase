@@ -183,6 +183,11 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
+// GetType returns the database type.
+func (*Driver) GetType() db.Type {
+	return db.Postgres
+}
+
 // GetDBConnection gets a database connection.
 func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if err := driver.switchDatabase(database); err != nil {

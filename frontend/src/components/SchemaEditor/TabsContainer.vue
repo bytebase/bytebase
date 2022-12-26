@@ -43,12 +43,12 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { useSchemaEditorStore } from "@/store";
 import { TabContext, SchemaEditorTabType } from "@/types";
+import { isTableChanged } from "./utils/table";
 
 const editorStore = useSchemaEditorStore();
 const tabsContainerRef = ref();
@@ -89,10 +89,7 @@ const getTabComputedClassList = (tab: TabContext) => {
       return ["text-green-700"];
     }
 
-    const originTable = editorStore.databaseStateById
-      .get(tab.databaseId)
-      ?.originTableList.find((item) => item.oldName === table.oldName);
-    if (!isEqual(originTable, table)) {
+    if (isTableChanged(tab.databaseId, tab.schemaName, tab.tableName)) {
       return ["text-yellow-700"];
     }
   }

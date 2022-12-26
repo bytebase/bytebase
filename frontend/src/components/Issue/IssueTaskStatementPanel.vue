@@ -12,11 +12,11 @@
         <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
       </div>
       <button
-        v-if="allowApplyStatementToOtherTasks"
+        v-if="allowApplyTaskStateToOthers"
         :disabled="isEmpty(state.editStatement)"
         type="button"
         class="btn-small"
-        @click.prevent="applyStatementToOtherTasks(state.editStatement)"
+        @click.prevent="applyTaskStateToOthers(selectedTask as Task)"
       >
         {{ $t("issue.apply-to-other-tasks") }}
       </button>
@@ -197,7 +197,7 @@ import type {
   TaskId,
 } from "@/types";
 import { baseDirectoryWebUrl, UNKNOWN_ID } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import IssueRollbackButton from "./IssueRollbackButton.vue";
 import { isUndefined } from "lodash-es";
@@ -233,8 +233,8 @@ const {
   selectedTask,
   updateStatement,
   updateSheetId,
-  allowApplyStatementToOtherTasks,
-  applyStatementToOtherTasks,
+  allowApplyTaskStateToOthers,
+  applyTaskStateToOthers,
 } = useIssueLogic();
 
 const { t } = useI18n();
@@ -408,6 +408,27 @@ watch(statement, (cur) => {
   state.editStatement = cur;
 });
 
+watch(
+  [selectedTask],
+  async () => {
+    if (isTaskHasSheetId.value) {
+      const task = selectedTask.value;
+      const sheetId = create.value
+        ? (task as TaskCreate).sheetId
+        : sheetIdOfTask(task as Task);
+      if (sheetId) {
+        state.editStatement = (
+          await sheetStore.getOrFetchSheetById(sheetId)
+        ).statement;
+      }
+    }
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
+
 const beginEdit = () => {
   state.editStatement = statement.value;
   state.editing = true;
@@ -514,10 +535,12 @@ const handleUploadLocalFile = async (event: Event) => {
         // nothing to do
       },
       onPositiveClick: () => {
+        updateSheetId(undefined);
         updateStatement(statement);
       },
     });
   } else {
+    updateSheetId(undefined);
     updateStatement(statement);
   }
 };
@@ -543,10 +566,7 @@ const handleUploadLocalFileAsSheet = async (event: Event) => {
       payload: {},
     });
 
-    // TODO(steven): maybe return the sliced statement from backend?
-    const statementSlice = statement.slice(0, 40 * 1024);
     updateSheetId(sheet.id);
-    updateStatement(statementSlice);
     state.isUploadingFile = false;
     if (selectedTask.value) updateEditorHeight();
   };

@@ -152,6 +152,7 @@
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
     :database-id="state.tableNameModalContext.databaseId"
+    :schema-name="state.tableNameModalContext.schemaName"
     :table-name="state.tableNameModalContext.tableName"
     @close="state.tableNameModalContext = undefined"
   />
@@ -167,22 +168,30 @@ import {
   useNotificationStore,
   useSchemaEditorStore,
 } from "@/store";
-import { DatabaseId, DatabaseTabContext, SchemaEditorTabType } from "@/types";
+import {
+  DatabaseId,
+  DatabaseTabContext,
+  DatabaseSchema,
+  SchemaEditorTabType,
+  DatabaseEdit,
+} from "@/types";
 import { Table } from "@/types/schemaEditor/atomType";
 import { bytesToString } from "@/utils";
+import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
-import { diffTableList } from "@/utils/schemaEditor/diffTable";
 import SchemaDiagram from "@/components/SchemaDiagram";
 
 type TabType = "table-list" | "schema-diagram" | "raw-sql";
 
 interface LocalState {
   selectedTab: TabType;
+  selectedSchema: string;
   isFetchingDDL: boolean;
   statement: string;
   tableNameModalContext?: {
     databaseId: DatabaseId;
+    schemaName: string;
     tableName: string | undefined;
   };
 }
@@ -193,13 +202,22 @@ const dbSchemaStore = useDBSchemaStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   selectedTab: "table-list",
+  selectedSchema: "",
   isFetchingDDL: false,
   statement: "",
 });
 const currentTab = editorStore.currentTab as DatabaseTabContext;
-const databaseState = editorStore.databaseStateById.get(currentTab.databaseId)!;
-const database = databaseState.database;
-const tableList = databaseState.tableList;
+const databaseSchema = editorStore.databaseSchemaById.get(
+  currentTab.databaseId
+) as DatabaseSchema;
+const database = databaseSchema.database;
+const schemaList = databaseSchema.schemaList;
+const tableList = computed(() => {
+  return (
+    schemaList.find((schema) => schema.name === state.selectedSchema)
+      ?.tableList ?? []
+  );
+});
 
 const tableHeaderList = computed(() => {
   return [
@@ -235,39 +253,49 @@ watch(
   async () => {
     if (state.selectedTab === "raw-sql") {
       state.isFetchingDDL = true;
-      const originTableList = databaseState.originTableList;
-      const updatedTableList =
-        await editorStore.getOrFetchTableListByDatabaseId(database.id);
-      const diffTableListResult = diffTableList(
-        originTableList,
-        updatedTableList
-      );
-      if (
-        diffTableListResult.createTableList.length > 0 ||
-        diffTableListResult.alterTableList.length > 0 ||
-        diffTableListResult.renameTableList.length > 0 ||
-        diffTableListResult.dropTableList.length > 0
-      ) {
-        const databaseEdit = {
-          databaseId: database.id,
-          ...diffTableListResult,
-        };
-        const databaseEditResult = await editorStore.postDatabaseEdit(
-          databaseEdit
+      const databaseEditList: DatabaseEdit[] = [];
+      for (const schema of databaseSchema.schemaList) {
+        const originSchema = databaseSchema.originSchemaList.find(
+          (schema) => schema.name === schema.name
         );
-        if (databaseEditResult.validateResultList.length > 0) {
-          notificationStore.pushNotification({
-            module: "bytebase",
-            style: "CRITICAL",
-            title: "Invalid request",
-            description: databaseEditResult.validateResultList
-              .map((result) => result.message)
-              .join("\n"),
-          });
-          state.statement = "";
-          return;
+        if (!originSchema) {
+          continue;
         }
-        state.statement = databaseEditResult.statement;
+        const diffSchemaResult = diffSchema(originSchema, schema);
+        if (
+          diffSchemaResult.createTableList.length > 0 ||
+          diffSchemaResult.alterTableList.length > 0 ||
+          diffSchemaResult.renameTableList.length > 0 ||
+          diffSchemaResult.dropTableList.length > 0
+        ) {
+          databaseEditList.push({
+            databaseId: database.id,
+            ...diffSchemaResult,
+          });
+        }
+      }
+
+      if (databaseEditList.length > 0) {
+        const statementList: string[] = [];
+        for (const databaseEdit of databaseEditList) {
+          const databaseEditResult = await editorStore.postDatabaseEdit(
+            databaseEdit
+          );
+          if (databaseEditResult.validateResultList.length > 0) {
+            notificationStore.pushNotification({
+              module: "bytebase",
+              style: "CRITICAL",
+              title: "Invalid request",
+              description: databaseEditResult.validateResultList
+                .map((result) => result.message)
+                .join("\n"),
+            });
+            state.statement = "";
+            return;
+          }
+          statementList.push(databaseEditResult.statement);
+        }
+        state.statement = statementList.join("\n");
       }
       state.isFetchingDDL = false;
     }
@@ -285,6 +313,7 @@ const handleChangeTab = (tab: TabType) => {
 const handleCreateNewTable = () => {
   state.tableNameModalContext = {
     databaseId: database.id,
+    schemaName: state.selectedSchema,
     tableName: undefined,
   };
 };
@@ -294,12 +323,13 @@ const handleTableItemClick = (table: Table) => {
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
     databaseId: database.id,
+    schemaName: state.selectedSchema,
     tableName: table.newName,
   });
 };
 
 const handleDropTable = (table: Table) => {
-  editorStore.dropTable(database.id, table);
+  editorStore.dropTable(database.id, state.selectedSchema, table);
 };
 
 const handleRestoreTable = (table: Table) => {

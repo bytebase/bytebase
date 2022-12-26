@@ -137,12 +137,13 @@ func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfact
 	}
 	defer driver.Close(ctx)
 
+	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
 	log.Debug("Start migration...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", databaseName),
 		zap.String("source", string(mi.Source)),
 		zap.String("type", string(mi.Type)),
-		zap.String("statement", statement),
+		zap.String("statement", statementRecord),
 	)
 
 	setup, err := driver.NeedsSetupMigration(ctx)

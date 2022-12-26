@@ -130,6 +130,11 @@ export const useSheetStore = defineStore("sheet", {
         return false;
       }
 
+      // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.
+      if (currentSheet.statement.length !== currentSheet.size) {
+        return true;
+      }
+
       return !isSheetWritable(currentSheet, currentUser);
     },
   },

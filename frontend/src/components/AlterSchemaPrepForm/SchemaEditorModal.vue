@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="$t('database.alter-schema')"
-    class="schema-editor-modal-container !w-320 h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
+    class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
     :esc-closable="false"
     @close="dismissModal"
   >
@@ -145,7 +145,7 @@ import {
   useProjectStore,
   useSchemaEditorStore,
 } from "@/store";
-import { diffTableList } from "@/utils/schemaEditor/diffTable";
+import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import SchemaEditor from "@/components/SchemaEditor/SchemaEditor.vue";
@@ -286,24 +286,30 @@ const handleSyncSQLFromSchemaEditor = async () => {
 const getDatabaseEditListWithSchemaEditor = () => {
   const databaseEditList: DatabaseEdit[] = [];
   for (const database of editorStore.databaseList) {
-    const databaseState = editorStore.databaseStateById.get(database.id);
-    if (!databaseState) {
+    const databaseSchema = editorStore.databaseSchemaById.get(database.id);
+    if (!databaseSchema) {
       continue;
     }
 
-    const originTableList = databaseState.originTableList;
-    const tableList = databaseState.tableList;
-    const diffTableListResult = diffTableList(originTableList, tableList);
-    if (
-      diffTableListResult.createTableList.length > 0 ||
-      diffTableListResult.alterTableList.length > 0 ||
-      diffTableListResult.renameTableList.length > 0 ||
-      diffTableListResult.dropTableList.length > 0
-    ) {
-      databaseEditList.push({
-        databaseId: database.id,
-        ...diffTableListResult,
-      });
+    for (const schema of databaseSchema.schemaList) {
+      const originSchema = databaseSchema.originSchemaList.find(
+        (schema) => schema.name === schema.name
+      );
+      if (!originSchema) {
+        continue;
+      }
+      const diffSchemaResult = diffSchema(originSchema, schema);
+      if (
+        diffSchemaResult.createTableList.length > 0 ||
+        diffSchemaResult.alterTableList.length > 0 ||
+        diffSchemaResult.renameTableList.length > 0 ||
+        diffSchemaResult.dropTableList.length > 0
+      ) {
+        databaseEditList.push({
+          databaseId: database.id,
+          ...diffSchemaResult,
+        });
+      }
     }
   }
   return databaseEditList;
@@ -387,12 +393,21 @@ const handlePreviewIssue = async () => {
     mode: "normal",
     ghost: undefined,
   };
-  if (isTenantProject && props.databaseIdList.length > 1) {
-    query.mode = "tenant";
+  if (isTenantProject) {
+    if (props.databaseIdList.length > 1) {
+      // A tenant pipeline with 2 or more databases will be generated
+      // via deployment config, so we don't need the databaseList parameter.
+      query.mode = "tenant";
+    } else {
+      // A tenant pipeline with only 1 database will be downgraded to
+      // a standard pipeline.
+      // So we need to provide the databaseList parameter
+      query.databaseList = props.databaseIdList.join(",");
+    }
   }
   if (props.alterType !== "TENANT") {
     // If we are not using tenant deployment config pipeline
-    // we need to pass the databaseIdList explicitly.
+    // we need to pass the databaseList explicitly.
     query.databaseList = props.databaseIdList.join(",");
   }
   if (state.selectedTab === "raw-sql") {
@@ -512,7 +527,7 @@ watch(
 
 <style>
 .schema-editor-modal-container > .modal-container {
-  @apply w-full h-160 overflow-auto grid;
+  @apply w-full h-[46rem] overflow-auto grid;
   grid-template-rows: min-content 1fr min-content;
 }
 </style>

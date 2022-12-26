@@ -12,7 +12,7 @@ import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
 
 import { Database } from "@/types";
-import { TableMetadata } from "@/types/proto/database";
+import { TableMetadata } from "@/types/proto/store/database";
 import { Position, Rect, Size, SchemaDiagramContext } from "./types";
 import Canvas from "./Canvas";
 import { TableNode, autoLayout } from "./ER";
@@ -97,6 +97,11 @@ provideSchemaDiagramContext({
   events,
 });
 
-// autoLayout at the first time the diagram is mounted.
-onMounted(layout);
+// autoLayout and fit view at the first time the diagram is mounted.
+onMounted(() => {
+  layout();
+  nextTick(() => {
+    events.emit("fit-view");
+  });
+});
 </script>

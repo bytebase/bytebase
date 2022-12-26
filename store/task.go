@@ -73,12 +73,6 @@ func (raw *taskRaw) toTask() *api.Task {
 		EarliestAllowedTs: raw.EarliestAllowedTs,
 		BlockedBy:         raw.BlockedBy,
 	}
-	for _, taskRunRaw := range raw.TaskRunRawList {
-		task.TaskRunList = append(task.TaskRunList, taskRunRaw.toTaskRun())
-	}
-	for _, taskCheckRunRaw := range raw.TaskCheckRunRawList {
-		task.TaskCheckRunList = append(task.TaskCheckRunList, taskCheckRunRaw.toTaskCheckRun())
-	}
 	return task
 }
 
@@ -165,21 +159,28 @@ func (s *Store) PatchTask(ctx context.Context, patch *api.TaskPatch) (*api.Task,
 	return task, nil
 }
 
-// PatchTaskStatus patches a list of TaskStatus.
-func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) ([]*api.Task, error) {
-	taskRawList, err := s.patchTaskRawStatus(ctx, patch)
+// PatchTaskStatus patches a task status.
+func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch) (*api.Task, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch TaskStatus with TaskStatusPatch[%+v]", patch)
+		return nil, FormatError(err)
 	}
-	var taskList []*api.Task
-	for _, taskRaw := range taskRawList {
-		task, err := s.composeTask(ctx, taskRaw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose TaskStatus with taskRaw[%+v]", taskRaw)
-		}
-		taskList = append(taskList, task)
+	defer tx.Rollback()
+
+	taskRaw, err := s.patchTaskStatusImpl(ctx, tx, patch)
+	if err != nil {
+		return nil, FormatError(err)
 	}
-	return taskList, nil
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	task, err := s.composeTask(ctx, taskRaw)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to compose TaskStatus with taskRaw[%+v]", taskRaw)
+	}
+	return task, nil
 }
 
 // BatchPatchTaskStatus patches status for a list of tasks.
@@ -252,7 +253,21 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 	}
 	task.Updater = updater
 
-	for _, taskRun := range task.TaskRunList {
+	taskRunRawList, err := s.listTaskRun(ctx, &api.TaskRunFind{
+		TaskID: &task.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	taskCheckRunFind := &api.TaskCheckRunFind{
+		TaskID: &task.ID,
+	}
+	taskCheckRunRawList, err := s.listTaskCheckRun(ctx, taskCheckRunFind)
+	if err != nil {
+		return nil, err
+	}
+	for _, taskRunRaw := range taskRunRawList {
+		taskRun := taskRunRaw.toTaskRun()
 		creator, err := s.GetPrincipalByID(ctx, taskRun.CreatorID)
 		if err != nil {
 			return nil, err
@@ -264,9 +279,10 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 			return nil, err
 		}
 		taskRun.Updater = updater
+		task.TaskRunList = append(task.TaskRunList, taskRun)
 	}
-
-	for _, taskCheckRun := range task.TaskCheckRunList {
+	for _, taskCheckRunRaw := range taskCheckRunRawList {
+		taskCheckRun := taskCheckRunRaw.toTaskCheckRun()
 		creator, err := s.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
 		if err != nil {
 			return nil, err
@@ -278,6 +294,7 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 			return nil, err
 		}
 		taskCheckRun.Updater = updater
+		task.TaskCheckRunList = append(task.TaskCheckRunList, taskCheckRun)
 	}
 
 	blockedBy := []string{}
@@ -419,30 +436,6 @@ func (s *Store) patchTaskRaw(ctx context.Context, patch *api.TaskPatch) (*taskRa
 	return task, nil
 }
 
-// patchTaskRawStatus updates existing task statuses and the corresponding task run statuses atomically.
-// Returns ENOTFOUND if tasks do not exist.
-func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPatch) ([]*taskRaw, error) {
-	// Without using serializable isolation transaction, we will get race condition and have multiple task runs inserted because
-	// we do a read and write on task, without guaranteed consistency on task runs.
-	// Once we have multiple task runs, the task will get to unrecoverable state because find task run will fail with two active runs.
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	taskList, err := s.patchTaskStatusImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return taskList, nil
-}
-
 // createTaskImpl creates tasks.
 func (*Store) createTaskImpl(ctx context.Context, tx *Tx, creates ...*api.TaskCreate) ([]*taskRaw, error) {
 	var query strings.Builder
@@ -533,7 +526,7 @@ func (*Store) createTaskImpl(ctx context.Context, tx *Tx, creates ...*api.TaskCr
 	return taskRawList, nil
 }
 
-func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([]*taskRaw, error) {
+func (*Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([]*taskRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -620,26 +613,6 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *Tx, find *api.TaskFind) ([
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	for _, taskRaw := range taskRawList {
-		taskRunFind := &api.TaskRunFind{
-			TaskID: &taskRaw.ID,
-		}
-		taskRunRawList, err := s.findTaskRunImpl(ctx, tx, taskRunFind)
-		if err != nil {
-			return nil, err
-		}
-		taskRaw.TaskRunRawList = taskRunRawList
-
-		taskCheckRunFind := &api.TaskCheckRunFind{
-			TaskID: &taskRaw.ID,
-		}
-		taskCheckRunRawList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
-		if err != nil {
-			return nil, err
-		}
-		taskRaw.TaskCheckRunRawList = taskCheckRunRawList
-	}
 	return taskRawList, nil
 }
 
@@ -653,11 +626,15 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (
 	if (patch.Statement != nil || patch.SchemaVersion != nil) && patch.Payload != nil {
 		return nil, errors.Errorf("cannot set both statement/schemaVersion and payload for TaskPatch")
 	}
+	var payloadSet []string
 	if v := patch.Statement; v != nil {
-		set, args = append(set, fmt.Sprintf(`payload['statement'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('statement', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.SchemaVersion; v != nil {
-		set, args = append(set, fmt.Sprintf(`payload['schemaVersion'] = to_json($%d::TEXT)`, len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('schemaVersion', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+	}
+	if len(payloadSet) != 0 {
+		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
 	}
 	if v := patch.Payload; v != nil {
 		payload := "{}"
@@ -705,70 +682,67 @@ func (*Store) patchTaskImpl(ctx context.Context, tx *Tx, patch *api.TaskPatch) (
 }
 
 // patchTaskStatusImpl updates task status by IDList. Returns the new state of the tasks after update.
-func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.TaskStatusPatch) ([]*taskRaw, error) {
+func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.TaskStatusPatch) (*taskRaw, error) {
 	// Updates the corresponding task run if applicable.
 	// We update the task run first because updating task below returns row and it's a bit complicated to
 	// arrange code to prevent that opening row interfering with the task run update.
-	for _, id := range patch.IDList {
-		taskFind := &api.TaskFind{
-			ID: &id,
-		}
-		taskRawObj, err := s.getTaskRawTx(ctx, tx, taskFind)
-		if err != nil {
-			return nil, err
-		}
-		if taskRawObj == nil {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task ID not found: %d", id)}
-		}
+	taskFind := &api.TaskFind{
+		ID: &patch.ID,
+	}
+	taskRawObj, err := s.getTaskRawTx(ctx, tx, taskFind)
+	if err != nil {
+		return nil, err
+	}
+	if taskRawObj == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task ID not found: %d", patch.ID)}
+	}
 
-		taskRunFind := &api.TaskRunFind{
-			TaskID: &taskRawObj.ID,
-			StatusList: &[]api.TaskRunStatus{
-				api.TaskRunRunning,
-			},
-		}
-		taskRunRaw, err := s.getTaskRunRawTx(ctx, tx, taskRunFind)
-		if err != nil {
-			return nil, err
-		}
-		if taskRunRaw == nil {
-			if patch.Status == api.TaskRunning {
-				taskRunCreate := &api.TaskRunCreate{
-					CreatorID: patch.UpdaterID,
-					TaskID:    taskRawObj.ID,
-					Name:      fmt.Sprintf("%s %d", taskRawObj.Name, time.Now().Unix()),
-					Type:      taskRawObj.Type,
-					Payload:   taskRawObj.Payload,
-				}
-				// insert a running taskRun
-				if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
-					return nil, err
-				}
+	taskRunFind := &api.TaskRunFind{
+		TaskID: &taskRawObj.ID,
+		StatusList: &[]api.TaskRunStatus{
+			api.TaskRunRunning,
+		},
+	}
+	taskRunRaw, err := s.getTaskRunRawTx(ctx, tx, taskRunFind)
+	if err != nil {
+		return nil, err
+	}
+	if taskRunRaw == nil {
+		if patch.Status == api.TaskRunning {
+			taskRunCreate := &api.TaskRunCreate{
+				CreatorID: patch.UpdaterID,
+				TaskID:    taskRawObj.ID,
+				Name:      fmt.Sprintf("%s %d", taskRawObj.Name, time.Now().Unix()),
+				Type:      taskRawObj.Type,
 			}
-		} else {
-			if patch.Status == api.TaskRunning {
-				return nil, errors.Errorf("task is already running: %v", taskRawObj.Name)
-			}
-			taskRunStatusPatch := &api.TaskRunStatusPatch{
-				ID:        &taskRunRaw.ID,
-				UpdaterID: patch.UpdaterID,
-				Code:      patch.Code,
-				Result:    patch.Result,
-				Comment:   patch.Comment,
-			}
-			switch patch.Status {
-			case api.TaskDone:
-				taskRunStatusPatch.Status = api.TaskRunDone
-			case api.TaskFailed:
-				taskRunStatusPatch.Status = api.TaskRunFailed
-			case api.TaskPending:
-			case api.TaskPendingApproval:
-			case api.TaskCanceled:
-				taskRunStatusPatch.Status = api.TaskRunCanceled
-			}
-			if _, err := s.patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
+			// insert a running taskRun
+			if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
 				return nil, err
 			}
+		}
+	} else {
+		if patch.Status == api.TaskRunning {
+			return nil, errors.Errorf("task is already running: %v", taskRawObj.Name)
+		}
+		taskRunStatusPatch := &api.TaskRunStatusPatch{
+			ID:        &taskRunRaw.ID,
+			UpdaterID: patch.UpdaterID,
+			Code:      patch.Code,
+			Result:    patch.Result,
+			Comment:   patch.Comment,
+		}
+		switch patch.Status {
+		case api.TaskDone:
+			taskRunStatusPatch.Status = api.TaskRunDone
+		case api.TaskFailed:
+			taskRunStatusPatch.Status = api.TaskRunFailed
+		case api.TaskPending:
+		case api.TaskPendingApproval:
+		case api.TaskCanceled:
+			taskRunStatusPatch.Status = api.TaskRunCanceled
+		}
+		if _, err := s.patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
+			return nil, err
 		}
 	}
 
@@ -776,72 +750,45 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *Tx, patch *api.Task
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
-	var ids []string
-	for _, id := range patch.IDList {
-		ids = append(ids, strconv.Itoa(id))
+	var payloadSet []string
+	if v := patch.Skipped; v != nil {
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('skipped', to_jsonb($%d::BOOLEAN))`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.SkippedReason; v != nil {
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('skippedReason', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+	}
+	if len(payloadSet) != 0 {
+		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
 	}
 
+	var taskRaw taskRaw
+
 	// Execute update query with RETURNING.
-	rows, err := tx.QueryContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
-		WHERE id in (`+strings.Join(ids, ",")+`) 
+		WHERE id = `+fmt.Sprintf("%d", patch.ID)+`
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`,
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var taskRawList []*taskRaw
-	for rows.Next() {
-		var taskRaw taskRaw
-		if err := rows.Scan(
-			&taskRaw.ID,
-			&taskRaw.CreatorID,
-			&taskRaw.CreatedTs,
-			&taskRaw.UpdaterID,
-			&taskRaw.UpdatedTs,
-			&taskRaw.PipelineID,
-			&taskRaw.StageID,
-			&taskRaw.InstanceID,
-			&taskRaw.DatabaseID,
-			&taskRaw.Name,
-			&taskRaw.Status,
-			&taskRaw.Type,
-			&taskRaw.Payload,
-			&taskRaw.EarliestAllowedTs,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		taskRawList = append(taskRawList, &taskRaw)
-	}
-
-	if err := rows.Err(); err != nil {
+	).Scan(
+		&taskRaw.ID,
+		&taskRaw.CreatorID,
+		&taskRaw.CreatedTs,
+		&taskRaw.UpdaterID,
+		&taskRaw.UpdatedTs,
+		&taskRaw.PipelineID,
+		&taskRaw.StageID,
+		&taskRaw.InstanceID,
+		&taskRaw.DatabaseID,
+		&taskRaw.Name,
+		&taskRaw.Status,
+		&taskRaw.Type,
+		&taskRaw.Payload,
+		&taskRaw.EarliestAllowedTs,
+	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	for _, taskRaw := range taskRawList {
-		taskRunRawList, err := s.findTaskRunImpl(ctx, tx, &api.TaskRunFind{
-			TaskID: &taskRaw.ID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		taskRaw.TaskRunRawList = taskRunRawList
-
-		taskCheckRunFind := &api.TaskCheckRunFind{
-			TaskID: &taskRaw.ID,
-		}
-		taskCheckRunRawList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
-		if err != nil {
-			return nil, err
-		}
-		taskRaw.TaskCheckRunRawList = taskCheckRunRawList
-	}
-
-	return taskRawList, nil
+	return &taskRaw, nil
 }

@@ -1,8 +1,9 @@
+import { ref, Ref } from "vue";
 import {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
-} from "../proto/database";
+} from "../proto/store/database";
 
 type TableOrColumnStatus = "normal" | "created" | "dropped";
 
@@ -29,15 +30,16 @@ export interface Table {
 }
 
 export interface PrimaryKey {
-  schema: string;
   table: string;
-  columnList: string[];
+  // column is a ref to Column.
+  columnList: Ref<Column>[];
 }
 
 export interface ForeignKey {
-  schema: string;
+  // Should be an unique name.
+  name: string;
   table: string;
-  columnList: string[];
+  columnList: Ref<Column>[];
   referencedSchema: string;
   referencedTable: string;
   referencedColumns: string[];
@@ -91,27 +93,54 @@ export const convertSchemaMetadataToSchema = (
   const foreignKeyList: ForeignKey[] = [];
 
   for (const tableMetadata of schemaMetadata.tables) {
-    tableList.push(convertTableMetadataToTable(tableMetadata));
+    const table = convertTableMetadataToTable(tableMetadata);
+    tableList.push(table);
 
+    const primaryKey: PrimaryKey = {
+      table: tableMetadata.name,
+      columnList: [],
+    };
     for (const indexMetadata of tableMetadata.indexes) {
       if (indexMetadata.primary === true) {
-        primaryKeyList.push({
-          schema: schemaMetadata.name,
-          table: tableMetadata.name,
-          columnList: indexMetadata.expressions,
-        });
+        for (const columnName of indexMetadata.expressions) {
+          const column = table.columnList.find(
+            (column) => column.oldName === columnName
+          );
+          if (column) {
+            primaryKey.columnList.push(ref(column));
+          }
+        }
+        break;
       }
     }
+    primaryKeyList.push(primaryKey);
 
     for (const foreignKeyMetadata of tableMetadata.foreignKeys) {
-      foreignKeyList.push({
-        schema: schemaMetadata.name,
+      // TODO(steven): remove this after backend return unique fk.
+      if (
+        foreignKeyList.map((fk) => fk.name).includes(foreignKeyMetadata.name)
+      ) {
+        continue;
+      }
+
+      const fk: ForeignKey = {
         table: tableMetadata.name,
-        columnList: foreignKeyMetadata.columns,
+        name: foreignKeyMetadata.name,
+        columnList: [],
         referencedSchema: foreignKeyMetadata.referencedSchema,
         referencedTable: foreignKeyMetadata.referencedTable,
         referencedColumns: foreignKeyMetadata.referencedColumns,
-      });
+      };
+
+      for (const columnName of foreignKeyMetadata.columns) {
+        const column = table.columnList.find(
+          (column) => column.oldName === columnName
+        );
+        if (column) {
+          fk.columnList.push(ref(column));
+        }
+      }
+      foreignKeyList.push(fk);
     }
   }
 

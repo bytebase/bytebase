@@ -1,5 +1,5 @@
 import { computed, Ref } from "vue";
-import { isEmpty } from "lodash-es";
+import { isEmpty, isUndefined } from "lodash-es";
 import {
   Issue,
   IssueCreate,
@@ -24,7 +24,9 @@ import {
 import { useDatabaseStore, useIssueStore, useProjectStore } from "@/store";
 import {
   flattenTaskList,
+  sheetIdOfTask,
   statementOfTask,
+  TaskTypeWithSheetId,
   TaskTypeWithStatement,
 } from "./common";
 
@@ -220,14 +222,16 @@ export const useBaseIssueLogic = (params: {
     return statementOfTask(task as Task) || "";
   });
 
-  const allowApplyStatementToOtherTasks = computed(() => {
+  const allowApplyTaskStateToOthers = computed(() => {
     if (!create.value) {
       return false;
     }
     const taskList = flattenTaskList<TaskCreate>(issue.value);
-    // Allowed when more than one tasks need SQL statement.
-    const count = taskList.filter((task) =>
-      TaskTypeWithStatement.includes(task.type)
+    // Allowed when more than one tasks need SQL statement or sheet.
+    const count = taskList.filter(
+      (task) =>
+        TaskTypeWithStatement.includes(task.type) ||
+        TaskTypeWithSheetId.includes(task.type)
     ).length;
 
     return count > 1;
@@ -249,12 +253,18 @@ export const useBaseIssueLogic = (params: {
     return true;
   };
 
-  const applyStatementToOtherTasks = (statement: string) => {
+  const applyTaskStateToOthers = (task: Task) => {
     const taskList = flattenTaskList<TaskCreate>(issue.value);
+    const sheetId = sheetIdOfTask(task);
+    const statement = statementOfTask(task);
 
-    for (const task of taskList) {
-      if (TaskTypeWithStatement.includes(task.type)) {
-        task.statement = statement;
+    for (const taskItem of taskList) {
+      if (TaskTypeWithStatement.includes(taskItem.type)) {
+        if (!isUndefined(sheetId)) {
+          taskItem.sheetId = sheetId;
+        } else {
+          taskItem.statement = statement ?? "";
+        }
       }
     }
   };
@@ -273,8 +283,8 @@ export const useBaseIssueLogic = (params: {
     taskStatusOfStage,
     isValidStage,
     selectedStatement,
-    allowApplyStatementToOtherTasks,
-    applyStatementToOtherTasks,
+    allowApplyTaskStateToOthers,
+    applyTaskStateToOthers,
     allowApplyIssueStatusTransition,
     allowApplyTaskStatusTransition,
   };

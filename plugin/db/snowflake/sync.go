@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -62,16 +63,16 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
 	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	schema := db.Schema{
@@ -85,16 +86,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
 	tableList, viewList, err := driver.syncTableSchema(ctx, databaseName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	schema.TableList, schema.ViewList = tableList, viewList
 
-	return &schema, nil
+	return &schema, nil, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {

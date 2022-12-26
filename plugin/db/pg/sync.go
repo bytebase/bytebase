@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // pgDatabaseSchema describes a pg database schema.
@@ -122,11 +123,11 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get databases")
+		return nil, nil, errors.Wrap(err, "failed to get databases")
 	}
 
 	schema := db.Schema{
@@ -142,16 +143,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if !found {
-		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
+		return nil, nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
 	}
 	txn, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer txn.Rollback()
 
@@ -159,7 +160,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	indicesMap := make(map[string][]*indexSchema)
 	indices, err := getIndices(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
+		return nil, nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
 	}
 	for _, idx := range indices {
 		key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
@@ -169,7 +170,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// Table statements.
 	tables, err := getPgTables(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
+		return nil, nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
 	}
 	for _, tbl := range tables {
 		var dbTable db.Table
@@ -212,7 +213,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// View statements.
 	views, err := getViews(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+		return nil, nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
 	}
 	for _, view := range views {
 		var dbView db.View
@@ -229,15 +230,21 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// Extensions.
 	extensions, err := getExtensions(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
+		return nil, nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
 	}
 	schema.ExtensionList = extensions
 
-	if err := txn.Commit(); err != nil {
-		return nil, err
+	// Foreign keys.
+	foreignKeys, err := getPgForeignKeys(txn)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get foreign keys from database %q", databaseName)
 	}
 
-	return &schema, err
+	if err := txn.Commit(); err != nil {
+		return nil, nil, err
+	}
+
+	return &schema, foreignKeys, err
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
@@ -307,6 +314,138 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 		return nil, err
 	}
 	return userList, nil
+}
+
+func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, error) {
+	query := `
+	SELECT
+		n.nspname AS fk_schema,
+		conrelid::regclass AS fk_table,
+		conname AS fk_name,
+		(SELECT nspname FROM pg_namespace JOIN pg_class ON pg_namespace.oid = pg_class.relnamespace WHERE c.confrelid = pg_class.oid) AS fk_ref_schema,
+		confrelid::regclass AS fk_ref_table,
+		confdeltype AS delete_option,
+		confupdtype AS update_option,
+		confmatchtype AS match_option,
+		pg_get_constraintdef(c.oid) AS fk_def
+	FROM
+		pg_constraint c
+		JOIN pg_namespace n ON n.oid = c.connamespace
+	WHERE
+		n.nspname NOT IN('pg_catalog', 'information_schema')
+		AND c.contype = 'f';
+	`
+	ret := make(map[string][]*storepb.ForeignKeyMetadata)
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var fkMetadata storepb.ForeignKeyMetadata
+		var fkSchema, fkTable, fkDefinition string
+		if err := rows.Scan(
+			&fkSchema,
+			&fkTable,
+			&fkMetadata.Name,
+			&fkMetadata.ReferencedSchema,
+			&fkMetadata.ReferencedTable,
+			&fkMetadata.OnDelete,
+			&fkMetadata.OnUpdate,
+			&fkMetadata.MatchType,
+			&fkDefinition,
+		); err != nil {
+			return nil, err
+		}
+
+		fkTable = formatTableNameFromRegclass(fkTable)
+		fkMetadata.ReferencedTable = formatTableNameFromRegclass(fkMetadata.ReferencedTable)
+		fkMetadata.OnDelete = convertForeignKeyActionCode(fkMetadata.OnDelete)
+		fkMetadata.OnUpdate = convertForeignKeyActionCode(fkMetadata.OnUpdate)
+		fkMetadata.MatchType = convertForeignKeyMatchType(fkMetadata.MatchType)
+
+		if fkMetadata.Columns, fkMetadata.ReferencedColumns, err = getForeignKeyColumnsAndReferencedColumns(fkDefinition); err != nil {
+			return nil, err
+		}
+		key := fmt.Sprintf("%s.%s", fkSchema, fkTable)
+		if info, exists := ret[key]; exists {
+			ret[key] = append(info, &fkMetadata)
+		} else {
+			ret[key] = []*storepb.ForeignKeyMetadata{&fkMetadata}
+		}
+	}
+
+	return ret, nil
+}
+
+func convertForeignKeyMatchType(in string) string {
+	switch in {
+	case "f":
+		return "FULL"
+	case "p":
+		return "PARTIAL"
+	case "s":
+		return "SIMPLE"
+	default:
+		return in
+	}
+}
+
+func convertForeignKeyActionCode(in string) string {
+	switch in {
+	case "a":
+		return "NO ACTION"
+	case "r":
+		return "RESTRICT"
+	case "c":
+		return "CASCADE"
+	case "n":
+		return "SET NULL"
+	case "d":
+		return "SET DEFAULT"
+	default:
+		return in
+	}
+}
+
+func getForeignKeyColumnsAndReferencedColumns(definition string) ([]string, []string, error) {
+	columnsRegexp := regexp.MustCompile(`FOREIGN KEY \((.*)\) REFERENCES (.*)\((.*)\)`)
+	matches := columnsRegexp.FindStringSubmatch(definition)
+	if len(matches) != 4 {
+		return nil, nil, errors.Errorf("invalid foreign key definition: %q", definition)
+	}
+	columnList, err := getColumnList(matches[1])
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "invalid foreign key definition: %q", definition)
+	}
+	referencedColumnList, err := getColumnList(matches[3])
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "invalid foreign key definition: %q", definition)
+	}
+
+	return columnList, referencedColumnList, nil
+}
+
+func getColumnList(definition string) ([]string, error) {
+	list := strings.Split(definition, ",")
+	if len(list) == 0 {
+		return nil, errors.Errorf("invalid column list definition: %q", definition)
+	}
+	var result []string
+	for _, name := range list {
+		name = strings.TrimSpace(name)
+		name = strings.Trim(name, `"`)
+		result = append(result, name)
+	}
+	return result, nil
+}
+
+func formatTableNameFromRegclass(name string) string {
+	if strings.Contains(name, ".") {
+		name = name[1+strings.Index(name, "."):]
+	}
+	return strings.Trim(name, `"`)
 }
 
 // getTables gets all tables of a database.

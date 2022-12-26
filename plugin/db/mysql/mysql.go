@@ -6,7 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
@@ -80,10 +79,6 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
 
-	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	if connCfg.Password != "" {
-		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
-	}
 	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
@@ -91,7 +86,11 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
 		defer mysql.DeregisterTLSConfig(tlsKey)
-		dsn += fmt.Sprintf("?tls=%s", tlsKey)
+		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
+	}
+	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
+	if connCfg.Password != "" {
+		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 	}
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -124,6 +123,11 @@ func (driver *Driver) Close(context.Context) error {
 // Ping pings the database.
 func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
+}
+
+// GetType returns the database type.
+func (driver *Driver) GetType() db.Type {
+	return driver.dbType
 }
 
 // GetDBConnection gets a database connection.
@@ -169,32 +173,36 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ bool) (int64, error) {
-	var buf bytes.Buffer
-	if err := transformDelimiter(&buf, statement); err != nil {
+	trunks, err := splitAndTransformDelimiter(statement)
+	if err != nil {
 		return 0, err
 	}
-	transformedStatement := buf.String()
+
 	tx, err := driver.migrationConn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
 
-	sqlResult, err := tx.ExecContext(ctx, transformedStatement)
-	if err != nil {
-		return 0, err
+	var totalRowsAffected int64
+	for _, trunk := range trunks {
+		sqlResult, err := tx.ExecContext(ctx, trunk)
+		if err != nil {
+			return 0, err
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			log.Debug("rowsAffected returns error", zap.Error(err))
+		}
+		totalRowsAffected += rowsAffected
 	}
+
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
-	rowsAffected, err := sqlResult.RowsAffected()
-	if err != nil {
-		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		log.Debug("rowsAffected returns error", zap.Error(err))
-		return 0, nil
-	}
 
-	return rowsAffected, nil
+	return totalRowsAffected, nil
 }
 
 // GetMigrationConnID gets the ID of the connection executing migrations.
@@ -230,11 +238,16 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 	return util.Query(ctx, driver.dbType, driver.db, statement, queryContext)
 }
 
-// transformDelimiter transform the delimiter to the MySQL default delimiter.
-func transformDelimiter(out io.Writer, statement string) error {
+const querySize = 2 * 1024 * 1024 // 2M.
+
+// splitAndTransformDelimiter transform the delimiter to the MySQL default delimiter.
+func splitAndTransformDelimiter(statement string) ([]string, error) {
+	var trunks []string
+
+	var out bytes.Buffer
 	statements, err := bbparser.SplitMultiSQL(bbparser.MySQL, statement)
 	if err != nil {
-		return errors.Wrapf(err, "failed to split SQL statements")
+		return nil, errors.Wrapf(err, "failed to split SQL statements")
 	}
 	delimiter := `;`
 	for _, singleSQL := range statements {
@@ -242,7 +255,7 @@ func transformDelimiter(out io.Writer, statement string) error {
 		if bbparser.IsDelimiter(stmt) {
 			delimiter, err = bbparser.ExtractDelimiter(stmt)
 			if err != nil {
-				return errors.Wrapf(err, "failed to extract delimiter")
+				return nil, errors.Wrapf(err, "failed to extract delimiter")
 			}
 			continue
 		}
@@ -251,8 +264,16 @@ func transformDelimiter(out io.Writer, statement string) error {
 			stmt = fmt.Sprintf("%s;", stmt[:len(stmt)-len(delimiter)])
 		}
 		if _, err = out.Write([]byte(stmt)); err != nil {
-			return errors.Wrapf(err, "failed to write SQL statement")
+			return nil, errors.Wrapf(err, "failed to write SQL statement")
+		}
+
+		if out.Len() > querySize {
+			trunks = append(trunks, out.String())
+			out.Reset()
 		}
 	}
-	return nil
+	if out.Len() > 0 {
+		trunks = append(trunks, out.String())
+	}
+	return trunks, nil
 }

@@ -21,6 +21,8 @@ const (
 	ActivityIssueFieldUpdate ActivityType = "bb.issue.field.update"
 	// ActivityIssueStatusUpdate is the type for updating issue status.
 	ActivityIssueStatusUpdate ActivityType = "bb.issue.status.update"
+	// ActivityPipelineStageStatusUpdate is the type for stage begins or ends.
+	ActivityPipelineStageStatusUpdate ActivityType = "bb.pipeline.stage.status.update"
 	// ActivityPipelineTaskStatusUpdate is the type for updating pipeline task status.
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
 	// ActivityPipelineTaskFileCommit is the type for committing pipeline task file.
@@ -110,6 +112,16 @@ type ActivityIssueStatusUpdatePayload struct {
 	NewStatus IssueStatus `json:"newStatus,omitempty"`
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
+}
+
+// ActivityPipelineStageStatusUpdatePayload is the API message payloads for stage status updates.
+type ActivityPipelineStageStatusUpdatePayload struct {
+	StageID               int                   `json:"stageId"`
+	StageStatusUpdateType StageStatusUpdateType `json:"stageStatusUpdateType"`
+
+	// Used by inbox to display info without paying the join cost
+	IssueName string `json:"issueName"`
+	StageName string `json:"stageName"`
 }
 
 // ActivityPipelineTaskStatusUpdatePayload is the API message payloads for updating pipeline task status.

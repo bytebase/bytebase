@@ -9,7 +9,16 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+var systemCollection = map[string]bool{
+	"system.namespaces": true,
+	"system.indexes":    true,
+	"system.profile":    true,
+	"system.js":         true,
+	"system.views":      true,
+}
 
 // UsersInfo is the subset of the mongodb command result of "usersInfo".
 type UsersInfo struct {
@@ -59,25 +68,57 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs the database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
 	exist, err := driver.isDatabaseExist(ctx, databaseName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !exist {
-		return nil, errors.Errorf("database %s does not exist", databaseName)
+		return nil, nil, errors.Errorf("database %s does not exist", databaseName)
 	}
 	schema := db.Schema{}
 	schema.Name = databaseName
 
 	tableList, err := driver.syncAllCollectionSchema(ctx, databaseName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	schema.TableList = tableList
 
-	// TODO(zp): sync View schema
-	return &schema, nil
+	viewList, err := driver.syncAllViewSchema(ctx, databaseName)
+	if err != nil {
+		return nil, nil, err
+	}
+	schema.ViewList = viewList
+
+	return &schema, nil, nil
+}
+
+// syncAllViewSchema returns all views schema of a database.
+func (driver *Driver) syncAllViewSchema(ctx context.Context, databaseName string) ([]db.View, error) {
+	database := driver.client.Database(databaseName)
+	viewFilter := bson.M{"type": viewType}
+	viewList, err := database.ListCollectionNames(ctx, viewFilter)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list view names")
+	}
+	var viewSchemaList []db.View
+	for _, viewName := range viewList {
+		view, err := driver.syncViewSchema(ctx, databaseName, viewName)
+		if err != nil {
+			return nil, err
+		}
+		viewSchemaList = append(viewSchemaList, view)
+	}
+	return viewSchemaList, nil
+}
+
+// syncViewSchema returns the view schema.
+func (*Driver) syncViewSchema(_ context.Context, _ string, viewName string) (db.View, error) {
+	var view db.View
+	view.Name = viewName
+	view.ShortName = viewName
+	return view, nil
 }
 
 func (driver *Driver) syncAllCollectionSchema(ctx context.Context, databaseName string) ([]db.Table, error) {
@@ -89,6 +130,9 @@ func (driver *Driver) syncAllCollectionSchema(ctx context.Context, databaseName 
 	}
 	var tableList []db.Table
 	for _, collectionName := range collectionList {
+		if systemCollection[collectionName] {
+			continue
+		}
 		table, err := driver.syncCollectionSchema(ctx, databaseName, collectionName)
 		if err != nil {
 			return nil, err
@@ -142,6 +186,7 @@ func (driver *Driver) syncAllIndexSchema(ctx context.Context, databaseName, coll
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list indexes")
 	}
+	defer indexCursor.Close(ctx)
 
 	var indexList []db.Index
 	for indexCursor.Next(ctx) {

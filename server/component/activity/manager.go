@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/webhook"
 	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 
 	"github.com/pkg/errors"
@@ -288,6 +289,23 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		default:
 			title = fmt.Sprintf("Updated issue - %s", meta.Issue.Name)
 		}
+	case api.ActivityPipelineStageStatusUpdate:
+		payload := &api.ActivityPipelineStageStatusUpdatePayload{}
+		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
+			log.Warn(
+				"failed to post webhook event after stage status updating, failed to unmarshal payload",
+				zap.String("issue_name", meta.Issue.Name),
+				zap.Error(err))
+			return webhookCtx, err
+		}
+		link += fmt.Sprintf("?stage=%d", payload.StageID)
+		switch payload.StageStatusUpdateType {
+		case api.StageStatusUpdateTypeBegin:
+			title = fmt.Sprintf("Stage begins - %s", payload.StageName)
+		case api.StageStatusUpdateTypeEnd:
+			title = fmt.Sprintf("Stage ends - %s", payload.StageName)
+		}
+
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
@@ -333,6 +351,18 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		case api.TaskDone:
 			level = webhook.WebhookSuccess
 			title = "Task completed - " + task.Name
+
+			skipped, skippedReason, err := utils.GetTaskSkippedAndReason(task)
+			if err != nil {
+				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
+				log.Warn(err.Error(), zap.String("task.Payload", task.Payload), zap.Error(err))
+				return webhookCtx, err
+			}
+			if skipped {
+				title = "Task skipped - " + task.Name
+				webhookTaskResult.Status = "SKIPPED"
+				webhookTaskResult.SkippedReason = skippedReason
+			}
 		case api.TaskFailed:
 			level = webhook.WebhookError
 			title = "Task failed - " + task.Name
@@ -352,7 +382,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 
 			var result api.TaskRunResultPayload
 			if err := json.Unmarshal([]byte(task.TaskRunList[0].Result), &result); err != nil {
-				err := errors.Wrapf(err, "failed to unmarshal TaskRun Result")
+				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
 				log.Warn(err.Error(),
 					zap.Any("TaskRun", task.TaskRunList[0]),
 					zap.Error(err))
@@ -436,6 +466,8 @@ func shouldPostInbox(activity *api.Activity, createType api.ActivityType) (bool,
 	case api.ActivityPipelineTaskStatementUpdate:
 		return true, nil
 	case api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
+		return true, nil
+	case api.ActivityPipelineStageStatusUpdate:
 		return true, nil
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := new(api.ActivityPipelineTaskStatusUpdatePayload)

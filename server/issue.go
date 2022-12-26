@@ -407,7 +407,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 
 	bytes, err := json.Marshal(createActivityPayload)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Name)
 	}
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   issueCreate.CreatorID,
@@ -419,8 +419,35 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) 
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity after creating the issue: %v", issue.Name)
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Name)
 	}
+
+	if len(issue.Pipeline.StageList) > 0 {
+		stage := issue.Pipeline.StageList[0]
+		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
+			StageID:               stage.ID,
+			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
+			IssueName:             issue.Name,
+			StageName:             stage.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Name)
+		}
+		activityCreate := &api.ActivityCreate{
+			CreatorID:   api.SystemBotID,
+			ContainerID: issue.PipelineID,
+			Type:        api.ActivityPipelineStageStatusUpdate,
+			Level:       api.ActivityInfo,
+			Payload:     string(bytes),
+		}
+		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+			Issue: issue,
+		}); err != nil {
+			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Name)
+		}
+	}
+
 	return issue, nil
 }
 
@@ -600,6 +627,11 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	if instance == nil {
 		return nil, errors.Errorf("instance ID not found %v", c.InstanceID)
 	}
+
+	if instance.Engine == db.MongoDB && c.TableName == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collection name missing for MongoDB")
+	}
+
 	// Find project.
 	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 	if err != nil {
@@ -753,6 +785,9 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 		if detail.MigrationType != db.Baseline && (detail.Statement == "" && detail.SheetID == 0) {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "require sql statement or sheet ID to create an issue")
+		}
+		if detail.Statement != "" && detail.SheetID > 0 {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot set both statement and sheet ID to create an issue")
 		}
 		// TODO(d): validate sheet ID.
 		if detail.DatabaseID > 0 {
@@ -1003,6 +1038,9 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		// Snowflake needs to use upper case of DatabaseName.
 		c.DatabaseName = strings.ToUpper(c.DatabaseName)
 	}
+	if instance.Engine == db.MongoDB && c.TableName == "" {
+		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB"))
+	}
 	// Validate the labels. Labels are set upon task completion.
 	if c.Labels != "" {
 		if err := utils.SetDatabaseLabels(ctx, s.store, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
@@ -1034,6 +1072,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 	payload := api.TaskDatabaseCreatePayload{
 		ProjectID:    project.ID,
 		CharacterSet: c.CharacterSet,
+		TableName:    c.TableName,
 		Collation:    c.Collation,
 		Labels:       c.Labels,
 		DatabaseName: databaseName,
@@ -1175,6 +1214,11 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 	case db.SQLite:
 		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
 		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
+	case db.MongoDB:
+		// We just run createCollection in mongosh instead of execute `use <database>` first, because we execute the
+		// mongodb statement in mongosh with --file flag, and it doesn't support `use <database>` statement in the file.
+		// And we pass the database name to Bytebase engine driver, which will be used to build the connection string.
+		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }
@@ -1249,7 +1293,7 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 		if owner == "" {
 			return errors.Errorf("database owner is required for PostgreSQL")
 		}
-	case db.SQLite:
+	case db.SQLite, db.MongoDB:
 		// no-op.
 	default:
 		if characterSet == "" {

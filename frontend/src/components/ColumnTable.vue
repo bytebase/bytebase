@@ -79,7 +79,7 @@ import {
   SensitiveData,
   SensitiveDataPolicyPayload,
 } from "@/types";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/database";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { featureToRef, useCurrentUser, usePolicyStore } from "@/store";
 import { hasWorkspacePermission } from "@/utils";
 import { BBTableColumn } from "@/bbkit/types";
