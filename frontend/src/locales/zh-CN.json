@@ -1718,7 +1718,8 @@
       "comment": "评论",
       "payload": "Payload",
       "empty": "<空>",
-      "view-details": "查看详情"
+      "view-details": "查看详情",
+      "select-type": "选择类型"
     },
     "type": {
       "member-create": "增加成员",

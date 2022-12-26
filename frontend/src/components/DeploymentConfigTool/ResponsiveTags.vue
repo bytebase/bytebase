@@ -134,6 +134,6 @@ export default defineComponent({
   @apply flex flex-1 gap-1 overflow-hidden max-h-full;
 }
 .tag {
-  @apply inline-flex items-center bg-blue-100 border-blue-300 border px-2 rounded whitespace-nowrap;
+  @apply inline-flex items-center bg-blue-100 border-blue-300 px-2 rounded whitespace-nowrap;
 }
 </style>

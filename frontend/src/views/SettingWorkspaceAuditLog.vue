@@ -2,16 +2,25 @@
   <div>
     <div class="flex justify-end items-center mt-1">
       <MemberSelect
-        class="w-72"
+        class="w-52"
         :show-all="true"
         :show-system-bot="true"
         :selected-id="selectedPrincipalId"
         @select-principal-id="selectPrincipal"
       />
+      <div class="w-52 ml-2">
+        <TypeSelect
+          :selected-type-list="selectedAuditTypeList"
+          @update-selected-type-list="selectAuditType"
+        />
+      </div>
     </div>
     <PagedAuditLogTable
       :activity-find="{
-        typePrefix: typePrefixList,
+        typePrefix:
+          selectedAuditTypeList.length > 0
+            ? selectedAuditTypeList
+            : typePrefixList,
         user: selectedPrincipalId > 0 ? selectedPrincipalId : undefined,
         order: 'DESC',
       }"
@@ -104,6 +113,18 @@ const selectedPrincipalId = computed((): PrincipalId => {
   return EMPTY_ID;
 });
 
+const selectedAuditTypeList = computed((): AuditActivityType[] => {
+  const typeList = route.query.type as string;
+  if (typeList) {
+    if (typeList.includes(",")) {
+      return typeList.split(",") as AuditActivityType[];
+    } else {
+      return [typeList as AuditActivityType];
+    }
+  }
+  return [];
+});
+
 const handleViewDetail = (log: any) => {
   // Display detail fields in the same order as logKeyMap.
   state.modalContent = Object.fromEntries(
@@ -121,5 +142,26 @@ const selectPrincipal = (principalId: PrincipalId) => {
       user: principalId,
     },
   });
+};
+
+const selectAuditType = (typeList: AuditActivityType[]) => {
+  if (typeList.length === 0) {
+    // Clear `type=` query string if no type selected.
+    const query = Object.assign({}, route.query);
+    delete query.type;
+
+    router.replace({
+      name: "setting.workspace.audit-log",
+      query,
+    });
+  } else {
+    router.replace({
+      name: "setting.workspace.audit-log",
+      query: {
+        ...route.query,
+        type: typeList.join(","),
+      },
+    });
+  }
 };
 </script>
