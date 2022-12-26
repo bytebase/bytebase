@@ -285,15 +285,6 @@ func TestGhostTenant(t *testing.T) {
 		prodInstances = append(prodInstances, instance)
 	}
 
-	// Set up label values for tenants.
-	// Prod and test are using the same tenant values. Use prodInstancesNumber because it's larger than testInstancesNumber.
-	var tenants []string
-	for i := 0; i < prodTenantNumber; i++ {
-		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
-	}
-	err = ctl.addLabelValues(api.TenantLabelKey, tenants)
-	a.NoError(err)
-
 	// Create deployment configuration.
 	_, err = ctl.upsertDeploymentConfig(
 		api.DeploymentConfigUpsert{
