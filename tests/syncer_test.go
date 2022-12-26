@@ -263,18 +263,18 @@ func TestSyncerForMySQL(t *testing.T) {
 			b int DEFAULT NULL,
 			c int DEFAULT NULL,
 			UNIQUE KEY a (a,b,c)
-		  );
+		);
 		CREATE TABLE t1 (
 			id int PRIMARY KEY
 		);
-		  CREATE TABLE tfk (
+		CREATE TABLE tfk (
 			a int DEFAULT NULL,
 			b int DEFAULT NULL,
 			c int DEFAULT NULL,
 			KEY a (a,b,c),
 			CONSTRAINT tfk_ibfk_1 FOREIGN KEY (a, b, c) REFERENCES trd (a, b, c),
 			CONSTRAINT tfk_ibfk_2 FOREIGN KEY (a) REFERENCES t1 (id)
-		  );
+		);
 		`
 		expectedSchema = `{
 			"name":"test_sync_mysql_schema_db",
