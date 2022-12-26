@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -22,6 +23,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 
 		principalCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		principalCreate.Email = strings.ToLower(principalCreate.Email)
 
 		if principalCreate.Type == api.ServiceAccount {
 			pwd, err := common.RandomString(20)
