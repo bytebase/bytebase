@@ -24,10 +24,14 @@
         >
           <template v-if="isSelected">
             <slot
+              v-if="!multiple"
               name="menuItem"
               :item="state.selectedItem"
               :index="itemList.indexOf(state.selectedItem)"
             />
+            <template v-else>
+              <slot name="menuItemGroup" :item-list="state.selectedItemList" />
+            </template>
           </template>
           <template v-else>
             <slot name="placeholder" :placeholder="placeholder">
@@ -74,19 +78,34 @@
               role="option"
               class="group text-main cursor-default select-none relative py-2 pl-3 pr-9 hover:bg-gray-200"
               @click="
-                if (item !== state.selectedItem) {
-                  $emit('select-item', item, () => {
-                    state.selectedItem = item;
-                  });
+                if (!multiple) {
+                  if (item !== state.selectedItem) {
+                    $emit('select-item', item, () => {
+                      state.selectedItem = item;
+                    });
+                  }
+                  close();
+                } else {
+                  if (!state.selectedItemList.includes(item)) {
+                    state.selectedItemList.push(item);
+                  } else {
+                    state.selectedItemList.splice(
+                      state.selectedItemList.indexOf(item),
+                      1
+                    );
+                  }
+                  $emit('update-item-list', state.selectedItemList);
                 }
-                close();
               "
             >
               <div class="whitespace-nowrap hide-scrollbar overflow-x-auto">
                 <slot name="menuItem" :item="item" :index="index" />
               </div>
               <span
-                v-if="item === state.selectedItem"
+                v-if="
+                  (!multiple && item === state.selectedItem) ||
+                  (multiple && state.selectedItemList.includes(item))
+                "
                 class="absolute inset-y-0 right-0 flex items-center pr-4"
               >
                 <!-- Heroicon name: solid/check -->
@@ -119,6 +138,7 @@ import { onClickOutside, useElementBounding } from "@vueuse/core";
 interface LocalState {
   showMenu: boolean;
   selectedItem: any;
+  selectedItemList: any[];
 }
 
 type ItemType = number | string | any;
@@ -138,6 +158,11 @@ export default defineComponent({
       type: [Object, Number, String] as PropType<ItemType>,
       default: undefined,
     },
+    selectedItemList: {
+      type: Array as PropType<ItemType[]>,
+      default: () => [],
+      required: false,
+    },
     itemList: {
       required: true,
       type: Array as PropType<ItemType[]>,
@@ -147,6 +172,10 @@ export default defineComponent({
       type: String,
     },
     disabled: {
+      default: false,
+      type: Boolean,
+    },
+    multiple: {
       default: false,
       type: Boolean,
     },
@@ -163,11 +192,12 @@ export default defineComponent({
       default: false,
     },
   },
-  emits: ["select-item"],
+  emits: ["select-item", "update-item-list"],
   setup(props) {
     const state = reactive<LocalState>({
       showMenu: false,
       selectedItem: props.selectedItem,
+      selectedItemList: props.selectedItemList,
     });
 
     const button = ref<HTMLButtonElement>();
@@ -185,11 +215,19 @@ export default defineComponent({
     });
 
     const isSelected = computed(() => {
-      return (
-        state.selectedItem !== null &&
-        state.selectedItem !== undefined &&
-        state.selectedItem !== ""
-      );
+      if (props.multiple) {
+        return (
+          state.selectedItemList !== null &&
+          state.selectedItemList !== undefined &&
+          state.selectedItemList.length > 0
+        );
+      } else {
+        return (
+          state.selectedItem !== null &&
+          state.selectedItem !== undefined &&
+          state.selectedItem !== ""
+        );
+      }
     });
 
     watch(
