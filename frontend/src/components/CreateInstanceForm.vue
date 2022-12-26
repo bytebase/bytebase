@@ -342,10 +342,8 @@ const engineList = computed(() => {
     "TIDB",
     "SNOWFLAKE",
     "CLICKHOUSE",
+    "MONGODB",
   ];
-  if (isDev()) {
-    engines.push("MONGODB");
-  }
   return engines;
 });
 

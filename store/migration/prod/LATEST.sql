@@ -281,7 +281,7 @@ CREATE TABLE instance (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
-    engine TEXT NOT NULL CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE')),
+    engine TEXT NOT NULL CONSTRAINT instance_engine_check CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE', 'MONGODB')),
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
@@ -556,7 +556,8 @@ CREATE TABLE data_source (
     ssl_ca TEXT NOT NULL DEFAULT '',
     -- host_override and port_override are used for read-replicas that have different connection addresses.
     host_override TEXT NOT NULL DEFAULT '',
-    port_override TEXT NOT NULL DEFAULT ''
+    port_override TEXT NOT NULL DEFAULT '',
+    options JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
