@@ -9,7 +9,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -22,7 +23,8 @@ VALUES
         '8.0.19',
         '127.0.0.1',
         '3306',
-        'bytebase.com/database/mysql'
+        'bytebase.com/database/mysql',
+        'localhost-dev-mysql'
     );
 
 INSERT INTO
@@ -36,7 +38,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -49,7 +52,8 @@ VALUES
         '8.0.19',
         'mysql.integration.example.com',
         '3306',
-        'bytebase.com/database/mysql'
+        'bytebase.com/database/mysql',
+        'onpremises-integration-mysql'
     );
 
 INSERT INTO
@@ -63,7 +67,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -76,7 +81,8 @@ VALUES
         '8.0.19',
         'mysql.staging.example.com',
         '3306',
-        'bytebase.com/database/mysql'
+        'bytebase.com/database/mysql',
+        'onpremises-staging-mysql'
     );
 
 INSERT INTO
@@ -90,7 +96,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -103,7 +110,8 @@ VALUES
         '8.0.19',
         'mysql.prod.example.com',
         '3306',
-        'bytebase.com/database/mysql'
+        'bytebase.com/database/mysql',
+        'onpremises-prod-mysql'
     );
 
 INSERT INTO
@@ -117,7 +125,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -130,7 +139,8 @@ VALUES
         '13.0',
         '127.0.0.1',
         '5432',
-        'bytebase.com/database/postgres'
+        'bytebase.com/database/postgres',
+        'localhost-dev-postgresql'
     );
 
 INSERT INTO
@@ -144,7 +154,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -157,7 +168,8 @@ VALUES
         '13.0',
         'dpg-c8a7pcd0mal7gtod05p0',
         '5432',
-        'postgres://postgre_demo_user:3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG@dpg-c8a7pcd0mal7gtod05p0/postgre_demo'
+        'postgres://postgre_demo_user:3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG@dpg-c8a7pcd0mal7gtod05p0/postgre_demo',
+        'demo-postgresql-on-render'
     );
 
 INSERT INTO
@@ -171,7 +183,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -184,7 +197,8 @@ VALUES
         '5.7.25-TiDB-v5.2.1',
         '127.0.0.1',
         '4000',
-        'bytebase.com/database/tidb'
+        'bytebase.com/database/tidb',
+        'localhost-dev-tidb'
     );
 
 INSERT INTO
@@ -198,7 +212,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -211,7 +226,8 @@ VALUES
         '21.10.2.15',
         '127.0.0.1',
         '9000',
-        'bytebase.com/database/clickhouse'
+        'bytebase.com/database/clickhouse',
+        'localhost-dev-clickhouse'
     );
 
 INSERT INTO
@@ -225,7 +241,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -238,7 +255,8 @@ VALUES
         '21.10.2.15',
         '127.0.0.1',
         '',
-        'bytebase.com/database/snowflake'
+        'bytebase.com/database/snowflake',
+        'localhost-dev-snowflake'
     );
 
 INSERT INTO
@@ -253,7 +271,8 @@ INSERT INTO
         engine_version,
         host,
         port,
-        external_link
+        external_link,
+        resource_id
     )
 VALUES
     (
@@ -267,7 +286,8 @@ VALUES
         '5.7.25',
         'mysql.retired.example.com',
         '3306',
-        'bytebase.com/database/mysql'
+        'bytebase.com/database/mysql',
+        'retired-prod-mysql'
     );
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 6011;

@@ -383,15 +383,18 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *Environm
 		order++
 	}
 
+	// TODO(d): allow users to set resource_id.
+	resourceID := strings.ToLower(create.Name)
 	// Insert row into database.
 	query := `
 		INSERT INTO environment (
 			creator_id,
 			updater_id,
 			name,
-			"order"
+			"order",
+			resource_id
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
 	`
 	var envRaw environmentRaw
@@ -400,6 +403,7 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *Environm
 		create.CreatorID,
 		create.Name,
 		order,
+		resourceID,
 	).Scan(
 		&envRaw.ID,
 		&envRaw.RowStatus,

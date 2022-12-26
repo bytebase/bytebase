@@ -222,13 +222,7 @@ func SetDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON strin
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 
-	rowStatus := api.Normal
-	labelKeyList, err := store.FindLabelKey(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
-	}
-
-	if err := validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
+	if err := validateDatabaseLabelList(labels, database.Instance.Environment.Name); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
 	}
 
@@ -240,15 +234,7 @@ func SetDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON strin
 	return nil
 }
 
-func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*api.LabelKey, environmentName string) error {
-	keyValueList := make(map[string]map[string]bool)
-	for _, labelKey := range labelKeyList {
-		keyValueList[labelKey.Key] = map[string]bool{}
-		for _, value := range labelKey.ValueList {
-			keyValueList[labelKey.Key][value] = true
-		}
-	}
-
+func validateDatabaseLabelList(labelList []*api.DatabaseLabel, environmentName string) error {
 	var environmentValue *string
 
 	// check label key & value availability
@@ -256,9 +242,6 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*a
 		if label.Key == api.EnvironmentKeyName {
 			environmentValue = &label.Value
 			continue
-		}
-		if _, ok := keyValueList[label.Key]; !ok {
-			return common.Errorf(common.Invalid, "invalid database label key: %v", label.Key)
 		}
 	}
 
