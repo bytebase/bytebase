@@ -13,14 +13,14 @@ option go_package = "generated-go/v1";
 service InstanceService {
   rpc GetInstance(GetInstanceRequest) returns (Instance) {
     option (google.api.http) = {
-      get: "/v1/{name=environments/*/instances/*}"
+      get: "/v2/{name=environments/*/instances/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
     option (google.api.http) = {
-      get: "/v1/{parent=environments/*}/instances"
+      get: "/v2/{parent=environments/*}/instances"
     };
     option (google.api.method_signature) = "parent";
   }
@@ -35,7 +35,7 @@ service InstanceService {
 
   rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
     option (google.api.http) = {
-      patch: "/v1/{instance.name=environments/*/instances/*}"
+      patch: "/v2/{instance.name=environments/*/instances/*}"
       body: "instance"
     };
     option (google.api.method_signature) = "instance,update_mask";
@@ -43,14 +43,14 @@ service InstanceService {
 
   rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/v1/{name=environments/*/instances/*}"
+      delete: "/v2/{name=environments/*/instances/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
   rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
     option (google.api.http) = {
-      post: "/v1/{name=environments/*/instances/*}:undelete"
+      post: "/v2/{name=environments/*/instances/*}:undelete"
       body: "*"
     };
   }

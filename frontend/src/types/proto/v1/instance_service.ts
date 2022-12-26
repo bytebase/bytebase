@@ -103,6 +103,8 @@ export interface ListInstancesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** Show deleted instances if specified. */
+  showDeleted: boolean;
 }
 
 export interface ListInstancesResponse {
@@ -148,6 +150,14 @@ export interface UpdateInstanceRequest {
 export interface DeleteInstanceRequest {
   /**
    * The name of the instance to delete.
+   * Format: environments/{environment}/instances/{instance}
+   */
+  name: string;
+}
+
+export interface UndeleteInstanceRequest {
+  /**
+   * The name of the deleted instance.
    * Format: environments/{environment}/instances/{instance}
    */
   name: string;
@@ -216,7 +226,7 @@ export const GetInstanceRequest = {
 };
 
 function createBaseListInstancesRequest(): ListInstancesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListInstancesRequest = {
@@ -229,6 +239,9 @@ export const ListInstancesRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.showDeleted === true) {
+      writer.uint32(32).bool(message.showDeleted);
     }
     return writer;
   },
@@ -249,6 +262,9 @@ export const ListInstancesRequest = {
         case 3:
           message.pageToken = reader.string();
           break;
+        case 4:
+          message.showDeleted = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -262,6 +278,7 @@ export const ListInstancesRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
     };
   },
 
@@ -270,6 +287,7 @@ export const ListInstancesRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -278,6 +296,7 @@ export const ListInstancesRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
@@ -520,6 +539,53 @@ export const DeleteInstanceRequest = {
   },
 };
 
+function createBaseUndeleteInstanceRequest(): UndeleteInstanceRequest {
+  return { name: "" };
+}
+
+export const UndeleteInstanceRequest = {
+  encode(message: UndeleteInstanceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteInstanceRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUndeleteInstanceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UndeleteInstanceRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: UndeleteInstanceRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<UndeleteInstanceRequest>, I>>(object: I): UndeleteInstanceRequest {
+    const message = createBaseUndeleteInstanceRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseInstance(): Instance {
   return { name: "", title: "", engine: 0, externalLink: "", host: "", port: "", database: "" };
 }
@@ -629,6 +695,7 @@ export interface InstanceService {
   CreateInstance(request: CreateInstanceRequest): Promise<Instance>;
   UpdateInstance(request: UpdateInstanceRequest): Promise<Instance>;
   DeleteInstance(request: DeleteInstanceRequest): Promise<Empty>;
+  UndeleteInstance(request: UndeleteInstanceRequest): Promise<Instance>;
 }
 
 export class InstanceServiceClientImpl implements InstanceService {
@@ -642,6 +709,7 @@ export class InstanceServiceClientImpl implements InstanceService {
     this.CreateInstance = this.CreateInstance.bind(this);
     this.UpdateInstance = this.UpdateInstance.bind(this);
     this.DeleteInstance = this.DeleteInstance.bind(this);
+    this.UndeleteInstance = this.UndeleteInstance.bind(this);
   }
   GetInstance(request: GetInstanceRequest): Promise<Instance> {
     const data = GetInstanceRequest.encode(request).finish();
@@ -671,6 +739,12 @@ export class InstanceServiceClientImpl implements InstanceService {
     const data = DeleteInstanceRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "DeleteInstance", data);
     return promise.then((data) => Empty.decode(new _m0.Reader(data)));
+  }
+
+  UndeleteInstance(request: UndeleteInstanceRequest): Promise<Instance> {
+    const data = UndeleteInstanceRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UndeleteInstance", data);
+    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
   }
 }
 
