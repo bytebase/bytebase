@@ -161,30 +161,27 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
       }
       return databaseList;
     },
-    async getOrFetchSchemaListByDatabaseId(databaseId: DatabaseId) {
-      const databaseSchema = this.databaseSchemaById.get(databaseId);
-      if (
-        isUndefined(databaseSchema) ||
-        databaseSchema.schemaList.length === 0
-      ) {
-        const database = useDatabaseStore().getDatabaseById(databaseId);
-        const schemaMetadataList =
-          await useDBSchemaStore().getOrFetchSchemaListByDatabaseId(databaseId);
-        const schemaList = schemaMetadataList.map((schemaMetadata) =>
-          convertSchemaMetadataToSchema(schemaMetadata)
+    async fetchSchemaListByDatabaseId(databaseId: DatabaseId) {
+      const database = useDatabaseStore().getDatabaseById(databaseId);
+      const schemaMetadataList =
+        await useDBSchemaStore().getOrFetchSchemaListByDatabaseId(
+          databaseId,
+          true
         );
-        if (schemaList.length === 0 && database.instance.engine === "MYSQL") {
-          schemaList.push(
-            convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}))
-          );
-        }
-
-        this.databaseSchemaById.set(databaseId, {
-          database: database,
-          schemaList: schemaList,
-          originSchemaList: cloneDeep(schemaList),
-        });
+      const schemaList = schemaMetadataList.map((schemaMetadata) =>
+        convertSchemaMetadataToSchema(schemaMetadata)
+      );
+      if (schemaList.length === 0 && database.instance.engine === "MYSQL") {
+        schemaList.push(
+          convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}))
+        );
       }
+
+      this.databaseSchemaById.set(databaseId, {
+        database: database,
+        schemaList: schemaList,
+        originSchemaList: cloneDeep(schemaList),
+      });
 
       return this.databaseSchemaById.get(databaseId)!.schemaList;
     },

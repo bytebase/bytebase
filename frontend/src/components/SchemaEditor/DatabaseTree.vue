@@ -525,7 +525,7 @@ const loadSubTree = async (treeNode: TreeNode) => {
     }
 
     databaseDataLoadedSet.value.add(databaseId);
-    const schemaList = await editorStore.getOrFetchSchemaListByDatabaseId(
+    const schemaList = await editorStore.fetchSchemaListByDatabaseId(
       databaseId
     );
     if (schemaList.length === 0) {
