@@ -210,7 +210,7 @@
             type="text"
             class="textfield mt-1 w-full"
             autocomplete="off"
-            placeholder="Auth Source"
+            placeholder="admin"
             :value="state.instance.authSource"
             @input="handleInstanceAuthSourceInput"
           />
