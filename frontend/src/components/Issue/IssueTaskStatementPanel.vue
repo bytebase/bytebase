@@ -16,7 +16,7 @@
         :disabled="isEmpty(state.editStatement)"
         type="button"
         class="btn-small"
-        @click.prevent="applyTaskStateToOthers(selectedTask as Task)"
+        @click.prevent="applyTaskStateToOthers(selectedTask as TaskCreate)"
       >
         {{ $t("issue.apply-to-other-tasks") }}
       </button>
@@ -369,10 +369,6 @@ const allowUploadSheetForTask = computed(() => {
 });
 
 const isTaskHasSheetId = computed(() => {
-  if (!allowUploadSheetForTask.value) {
-    return false;
-  }
-
   const task = selectedTask.value;
   if (create.value) {
     return !isUndefined((task as TaskCreate).sheetId);
