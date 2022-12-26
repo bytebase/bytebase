@@ -3,6 +3,14 @@ plugins:
   - name: go
     out: generated-go
     opt: paths=source_relative
+  - name: go-grpc
+    out: generated-go
+    opt:
+      - paths=source_relative
+  - name: grpc-gateway
+    out: generated-go
+    opt:
+      - paths=source_relative
   - name: ts
     out: ../frontend/src/types/proto
     opt: esModuleInterop=true,env=browser,useOptionals=messages,initializeFieldsAsUndefined=true
