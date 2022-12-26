@@ -78,10 +78,9 @@ func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 		CreateContext:         string(createContext),
 	}
 
-	issue, err := s.createIssue(ctx, issueCreate)
-	if err != nil {
+	if _, err := s.createIssue(ctx, issueCreate); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create the issue").SetInternal(err)
 	}
 
-	return c.JSON(http.StatusOK, issue)
+	return c.String(http.StatusOK, "OK")
 }
