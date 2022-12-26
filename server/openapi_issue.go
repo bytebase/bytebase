@@ -7,15 +7,14 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
+	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 	"github.com/bytebase/bytebase/plugin/db"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func (s *Server) registerOpenAPIRoutesForIssue(g *echo.Group) {
-	g.POST("issue", s.createIssueByOpenAPI)
+	g.POST("/issue", s.createIssueByOpenAPI)
 }
 
 func (s *Server) createIssueByOpenAPI(c echo.Context) error {
@@ -26,31 +25,37 @@ func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body").SetInternal(err)
 	}
 
-	var create v1pb.IssueCreate
-	if err := protojson.Unmarshal(body, &create); err != nil {
-		return err
+	create := &openAPIV1.IssueCreate{}
+	if err := json.Unmarshal(body, create); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create instance request").SetInternal(err)
 	}
 
 	project, err := s.store.GetProjectByKey(ctx, create.ProjectKey)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with key %s", create.ProjectKey)).SetInternal(err)
 	}
+	if project == nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found project with key %s", create.ProjectKey))
+	}
 
+	issueType := api.IssueDatabaseDataUpdate
 	migrationList := []*api.MigrationDetail{}
-	for _, mi := range create.MigrationList {
-		dbList, err := s.findProjectDatabases(ctx, project.ID, mi.DatabaseName, mi.EnvironmentName)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list database").SetInternal(err)
-		}
+	dbList, err := s.findProjectDatabases(ctx, project.ID, create.Database, create.Environment)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list database").SetInternal(err)
+	}
 
-		for _, database := range dbList {
-			migrationList = append(migrationList, &api.MigrationDetail{
-				DatabaseID:    database.ID,
-				MigrationType: db.MigrationType(mi.MigrationType),
-				Statement:     mi.Statement,
-				SchemaVersion: mi.SchemaVersion,
-			})
-		}
+	for _, database := range dbList {
+		migrationList = append(migrationList, &api.MigrationDetail{
+			DatabaseID:    database.ID,
+			MigrationType: create.MigrationType,
+			Statement:     create.Statement,
+			SchemaVersion: create.SchemaVersion,
+		})
+	}
+
+	if create.MigrationType == db.Migrate || create.MigrationType == db.Baseline {
+		issueType = api.IssueDatabaseSchemaUpdate
 	}
 
 	createContext, err := json.Marshal(
@@ -66,7 +71,7 @@ func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 		CreatorID:             c.Get(getPrincipalIDContextKey()).(int),
 		ProjectID:             project.ID,
 		Name:                  create.Name,
-		Type:                  api.IssueType(create.Type),
+		Type:                  issueType,
 		Description:           create.Description,
 		AssigneeID:            api.SystemBotID,
 		AssigneeNeedAttention: true,
