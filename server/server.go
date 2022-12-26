@@ -304,10 +304,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterGreeterServiceServer(s.grpcServer, &v1.GreeterServerImpl{})
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, &profile))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf(":%d", profile.GrpcPort), opts); err != nil {
+	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
+	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterGreeterServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf(":%d", profile.GrpcPort), opts); err != nil {
+	if err := v1pb.RegisterGreeterServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
 	e.Any("/v2/*", echo.WrapHandler(mux))
