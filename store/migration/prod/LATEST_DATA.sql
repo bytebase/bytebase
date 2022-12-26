@@ -5,7 +5,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        "order"
+        "order",
+        resource_id
     )
 VALUES
     (
@@ -13,7 +14,8 @@ VALUES
         1,
         1,
         'Test',
-        0
+        0,
+        'test'
     );
 
 INSERT INTO
@@ -22,7 +24,8 @@ INSERT INTO
         creator_id,
         updater_id,
         name,
-        "order"
+        "order",
+        resource_id
     )
 VALUES
     (
@@ -30,7 +33,8 @@ VALUES
         1,
         1,
         'Prod',
-        1
+        1,
+        'prod'
     );
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 103;
@@ -105,36 +109,3 @@ VALUES
     );
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 104;
-
--- Create label keys for `bb.location` and `bb.tenant`.
-INSERT INTO
-    label_key (
-        id,
-        creator_id,
-        updater_id,
-        key
-    )
-VALUES
-    (
-        101,
-        1,
-        1,
-        'bb.location'
-    );
-
-INSERT INTO
-    label_key (
-        id,
-        creator_id,
-        updater_id,
-        key
-    )
-VALUES
-    (
-        102,
-        1,
-        1,
-        'bb.tenant'
-    );
-
-ALTER SEQUENCE label_key_id_seq RESTART WITH 103;
