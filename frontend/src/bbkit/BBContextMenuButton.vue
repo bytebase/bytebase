@@ -33,8 +33,8 @@
     >
       <template #trigger>
         <div
-          class="flex items-center px-2 h-full"
-          :class="[actionButtonClass.btn, disabled && 'pointer-events-none']"
+          class="flex items-center px-2 h-full hover:opacity-80"
+          :class="[disabled && 'pointer-events-none']"
         >
           <heroicons-outline:chevron-down />
         </div>
