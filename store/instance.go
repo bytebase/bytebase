@@ -561,7 +561,7 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 // createInstanceImpl creates a new instance.
 func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*instanceRaw, error) {
 	// TODO(d): allow users to set resource_id.
-	resourceID := fmt.Sprintf("project-%s", uuid.New().String()[:8])
+	resourceID := fmt.Sprintf("instance-%s", uuid.New().String()[:8])
 	// Insert row into database.
 	query := `
 		INSERT INTO instance (
