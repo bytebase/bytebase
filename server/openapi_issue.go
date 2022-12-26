@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Server) registerOpenAPIRoutesForIssue(g *echo.Group) {
-	g.POST("/issue", s.createIssueByOpenAPI)
+	g.POST("/issues", s.createIssueByOpenAPI)
 }
 
 func (s *Server) createIssueByOpenAPI(c echo.Context) error {
