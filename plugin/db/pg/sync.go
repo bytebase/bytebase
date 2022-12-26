@@ -375,6 +375,9 @@ func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, er
 			ret[key] = []*storepb.ForeignKeyMetadata{&fkMetadata}
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return ret, nil
 }
