@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "generated-go/v1";
+
+service ProjectService {
+  rpc GetProject(GetProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      get: "/v2/{name=projects/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+    option (google.api.http) = {
+      get: "/v2/projects"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc CreateProject(CreateProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v2/projects"
+      body: "project"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateProject(UpdateProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      patch: "/v2/{project.name=projects/*}"
+      body: "project"
+    };
+    option (google.api.method_signature) = "project,update_mask";
+  }
+
+  rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/{name=projects/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
+    option (google.api.http) = {
+      post: "/v2/{name=projects/*}:undelete"
+      body: "*"
+    };
+  }
+}
+
+message GetProjectRequest {
+  // The name of the project to retrieve.
+  // Format: projects/{project}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListProjectsRequest {
+  // The maximum number of projects to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 projects will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListProjects` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListProjects` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted projects if specified.
+  bool show_deleted = 3;
+}
+
+message ListProjectsResponse {
+  // The projects from the specified publisher.
+  repeated Project projects = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateProjectRequest {
+  // The project to create.
+  Project project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the project, which will become the final component of
+  // the project's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string project_id = 2;
+}
+
+message UpdateProjectRequest {
+  // The project to update.
+  //
+  // The project's `name` field is used to identify the project to update.
+  // Format: projects/{project}
+  Project project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteProjectRequest {
+  // The name of the project to delete.
+  // Format: projects/{project}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteProjectRequest {
+  // The name of the deleted project.
+  // Format: projects/{project}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Project {
+  // The name of the project.
+  // Format: projects/{project}
+  string name = 1;
+
+  string title = 2;
+  int32 order = 3;
+}
