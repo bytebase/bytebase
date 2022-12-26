@@ -1726,7 +1726,8 @@
       "member-role-update": "更新角色",
       "member-activate": "激活成员",
       "member-deactivate": "禁用成员",
-      "database-transfer": "转移数据库"
+      "database-transfer": "转移数据库",
+      "sql-editor-query": "SQL 编辑器查询"
     }
   },
   "onboarding-guide": {

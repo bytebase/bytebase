@@ -1725,7 +1725,8 @@
       "member-role-update": "Update Member Role",
       "member-activate": "Activate Member",
       "member-deactivate": "Deactivate Member",
-      "database-transfer": "Transfer Database"
+      "database-transfer": "Transfer Database",
+      "sql-editor-query": "SQL Editor Query"
     }
   },
   "onboarding-guide": {
