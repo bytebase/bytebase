@@ -67,7 +67,7 @@ func IsValidEnvironmentName(environmentName string) error {
 		return errors.Errorf("environment name %q cannot contain placeholder characters (\\, /, ?, %%, *, :, |, \", <, >)", environmentName)
 	}
 	if !alphaNumeric.MatchString(environmentName) {
-		return errors.Errorf("environment name %q can only contain alphabet numeric characters (a-z, A-Z, 0-9).", environmentName)
+		return errors.Errorf("environment name %q can only contain alphabet numeric characters (a-z, A-Z, 0-9)", environmentName)
 	}
 
 	return nil
