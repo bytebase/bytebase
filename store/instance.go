@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
@@ -559,6 +560,8 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 
 // createInstanceImpl creates a new instance.
 func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*instanceRaw, error) {
+	// TODO(d): allow users to set resource_id.
+	resourceID := fmt.Sprintf("instance-%s", uuid.New().String()[:8])
 	// Insert row into database.
 	query := `
 		INSERT INTO instance (
@@ -570,9 +573,10 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*i
 			external_link,
 			host,
 			port,
-			database
+			database,
+			resource_id
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`
 	var instanceRaw instanceRaw
@@ -586,6 +590,7 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*i
 		create.Host,
 		create.Port,
 		create.Database,
+		resourceID,
 	).Scan(
 		&instanceRaw.ID,
 		&instanceRaw.RowStatus,

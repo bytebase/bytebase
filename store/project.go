@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
@@ -315,6 +316,8 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 	if create.SchemaChangeType == "" {
 		create.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
 	}
+	// TODO(d): allow users to set resource_id.
+	resourceID := fmt.Sprintf("project-%s", uuid.New().String()[:8])
 	query := `
 		INSERT INTO project (
 			creator_id,
@@ -327,9 +330,10 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 			db_name_template,
 			role_provider,
 			schema_change_type,
-			lgtm_check
+			lgtm_check,
+			resource_id
 		)
-		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7, $8, $9, $10)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type, lgtm_check
 	`
 	var project projectRaw
@@ -343,6 +347,7 @@ func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (
 		create.RoleProvider,
 		create.SchemaChangeType,
 		api.GetDefaultLGTMCheckSetting(),
+		resourceID,
 	).Scan(
 		&project.ID,
 		&project.RowStatus,

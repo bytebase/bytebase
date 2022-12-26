@@ -95,15 +95,6 @@ func TestTenant(t *testing.T) {
 		prodInstances = append(prodInstances, instance)
 	}
 
-	// Set up label values for tenants.
-	// Prod and test are using the same tenant values. Use prodInstancesNumber because it's larger than testInstancesNumber.
-	var tenants []string
-	for i := 0; i < prodTenantNumber; i++ {
-		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
-	}
-	err = ctl.addLabelValues(api.TenantLabelKey, tenants)
-	a.NoError(err)
-
 	// Create deployment configuration.
 	_, err = ctl.upsertDeploymentConfig(
 		api.DeploymentConfigUpsert{
@@ -396,15 +387,6 @@ func TestTenantVCS(t *testing.T) {
 				prodInstances = append(prodInstances, instance)
 			}
 
-			// Set up label values for tenants.
-			// Prod and test are using the same tenant values. Use prodInstancesNumber because it's larger than testInstancesNumber.
-			var tenants []string
-			for i := 0; i < prodTenantNumber; i++ {
-				tenants = append(tenants, fmt.Sprintf("tenant%d", i))
-			}
-			err = ctl.addLabelValues(api.TenantLabelKey, tenants)
-			a.NoError(err)
-
 			// Create deployment configuration.
 			_, err = ctl.upsertDeploymentConfig(
 				api.DeploymentConfigUpsert{
@@ -571,15 +553,6 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		Engine:        db.SQLite,
 		Host:          prodInstanceDir,
 	})
-	a.NoError(err)
-
-	// Set up label values for tenants.
-	// Prod and test are using the same tenant values. Use prodTenantNumber because it's larger than testInstancesNumber.
-	var tenants []string
-	for i := 0; i < prodTenantNumber; i++ {
-		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
-	}
-	err = ctl.addLabelValues(api.TenantLabelKey, tenants)
 	a.NoError(err)
 
 	// Create deployment configuration.
@@ -861,15 +834,6 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				a.NoError(err)
 				prodInstances = append(prodInstances, instance)
 			}
-
-			// Set up label values for tenants.
-			// Prod and test are using the same tenant values. Use prodInstancesNumber because it's larger than testInstancesNumber.
-			var tenants []string
-			for i := 0; i < prodTenantNumber; i++ {
-				tenants = append(tenants, fmt.Sprintf("tenant%d", i))
-			}
-			err = ctl.addLabelValues(api.TenantLabelKey, tenants)
-			a.NoError(err)
 
 			// Create deployment configuration.
 			_, err = ctl.upsertDeploymentConfig(
