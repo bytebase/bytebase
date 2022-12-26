@@ -513,13 +513,14 @@ type Instance struct {
 
 	// The name of the instance.
 	// Format: environments/{environment}/instances/{instance}
-	Name         string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title        string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Engine       Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	ExternalLink string `protobuf:"bytes,4,opt,name=external_link,json=externalLink,proto3" json:"external_link,omitempty"`
-	Host         string `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
-	Port         string `protobuf:"bytes,6,opt,name=port,proto3" json:"port,omitempty"`
-	Database     string `protobuf:"bytes,7,opt,name=database,proto3" json:"database,omitempty"` // TODO(d): add data sources.
+	Name         string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Title        string        `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Engine       Engine        `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	ExternalLink string        `protobuf:"bytes,4,opt,name=external_link,json=externalLink,proto3" json:"external_link,omitempty"`
+	Host         string        `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
+	Port         string        `protobuf:"bytes,6,opt,name=port,proto3" json:"port,omitempty"`
+	Database     string        `protobuf:"bytes,7,opt,name=database,proto3" json:"database,omitempty"`
+	DataSources  []*DataSource `protobuf:"bytes,8,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
 }
 
 func (x *Instance) Reset() {
@@ -603,6 +604,124 @@ func (x *Instance) GetDatabase() string {
 	return ""
 }
 
+func (x *Instance) GetDataSources() []*DataSource {
+	if x != nil {
+		return x.DataSources
+	}
+	return nil
+}
+
+type DataSource struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Title    string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Type     string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Username string `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
+	Password string `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
+	SslCa    string `protobuf:"bytes,5,opt,name=ssl_ca,json=sslCa,proto3" json:"ssl_ca,omitempty"`
+	SslCert  string `protobuf:"bytes,6,opt,name=ssl_cert,json=sslCert,proto3" json:"ssl_cert,omitempty"`
+	SslKey   string `protobuf:"bytes,7,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
+	Host     string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
+	Port     string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
+}
+
+func (x *DataSource) Reset() {
+	*x = DataSource{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_instance_service_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DataSource) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataSource) ProtoMessage() {}
+
+func (x *DataSource) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataSource.ProtoReflect.Descriptor instead.
+func (*DataSource) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *DataSource) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *DataSource) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *DataSource) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *DataSource) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslCa() string {
+	if x != nil {
+		return x.SslCa
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslCert() string {
+	if x != nil {
+		return x.SslCert
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslKey() string {
+	if x != nil {
+		return x.SslKey
+	}
+	return ""
+}
+
+func (x *DataSource) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *DataSource) GetPort() string {
+	if x != nil {
+		return x.Port
+	}
+	return ""
+}
+
 var File_v1_instance_service_proto protoreflect.FileDescriptor
 
 var file_v1_instance_service_proto_rawDesc = []byte{
@@ -662,7 +781,7 @@ var file_v1_instance_service_proto_rawDesc = []byte{
 	0x22, 0x33, 0x0a, 0x17, 0x55, 0x6e, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x49, 0x6e, 0x73, 0x74,
 	0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a, 0x04, 0x6e,
 	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x04, 0xe2, 0x41, 0x01, 0x02, 0x52,
-	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0xca, 0x01, 0x0a, 0x08, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x86, 0x02, 0x0a, 0x08, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e,
 	0x63, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
 	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x2b, 0x0a, 0x06,
@@ -675,7 +794,25 @@ var file_v1_instance_service_proto_rawDesc = []byte{
 	0x73, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09,
 	0x52, 0x04, 0x70, 0x6f, 0x72, 0x74, 0x12, 0x1a, 0x0a, 0x08, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
 	0x73, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
-	0x73, 0x65, 0x2a, 0xac, 0x01, 0x0a, 0x06, 0x45, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x12, 0x16, 0x0a,
+	0x73, 0x65, 0x12, 0x3a, 0x0a, 0x0c, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x73, 0x6f, 0x75, 0x72, 0x63,
+	0x65, 0x73, 0x18, 0x08, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63,
+	0x65, 0x52, 0x0b, 0x64, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x22, 0xe1,
+	0x01, 0x0a, 0x0a, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x12, 0x14, 0x0a,
+	0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69,
+	0x74, 0x6c, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e,
+	0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x12,
+	0x15, 0x0a, 0x06, 0x73, 0x73, 0x6c, 0x5f, 0x63, 0x61, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x73, 0x73, 0x6c, 0x43, 0x61, 0x12, 0x19, 0x0a, 0x08, 0x73, 0x73, 0x6c, 0x5f, 0x63, 0x65,
+	0x72, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x73, 0x73, 0x6c, 0x43, 0x65, 0x72,
+	0x74, 0x12, 0x17, 0x0a, 0x07, 0x73, 0x73, 0x6c, 0x5f, 0x6b, 0x65, 0x79, 0x18, 0x07, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x06, 0x73, 0x73, 0x6c, 0x4b, 0x65, 0x79, 0x12, 0x12, 0x0a, 0x04, 0x68, 0x6f,
+	0x73, 0x74, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x12, 0x12,
+	0x0a, 0x04, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x09, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x70, 0x6f,
+	0x72, 0x74, 0x2a, 0xac, 0x01, 0x0a, 0x06, 0x45, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x12, 0x16, 0x0a,
 	0x12, 0x45, 0x4e, 0x47, 0x49, 0x4e, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46,
 	0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x15, 0x0a, 0x11, 0x45, 0x4e, 0x47, 0x49, 0x4e, 0x45, 0x5f,
 	0x43, 0x4c, 0x49, 0x43, 0x4b, 0x48, 0x4f, 0x55, 0x53, 0x45, 0x10, 0x01, 0x12, 0x10, 0x0a, 0x0c,
@@ -758,7 +895,7 @@ func file_v1_instance_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_v1_instance_service_proto_goTypes = []interface{}{
 	(Engine)(0),                     // 0: bytebase.v1.Engine
 	(*GetInstanceRequest)(nil),      // 1: bytebase.v1.GetInstanceRequest
@@ -769,32 +906,34 @@ var file_v1_instance_service_proto_goTypes = []interface{}{
 	(*DeleteInstanceRequest)(nil),   // 6: bytebase.v1.DeleteInstanceRequest
 	(*UndeleteInstanceRequest)(nil), // 7: bytebase.v1.UndeleteInstanceRequest
 	(*Instance)(nil),                // 8: bytebase.v1.Instance
-	(*fieldmaskpb.FieldMask)(nil),   // 9: google.protobuf.FieldMask
-	(*emptypb.Empty)(nil),           // 10: google.protobuf.Empty
+	(*DataSource)(nil),              // 9: bytebase.v1.DataSource
+	(*fieldmaskpb.FieldMask)(nil),   // 10: google.protobuf.FieldMask
+	(*emptypb.Empty)(nil),           // 11: google.protobuf.Empty
 }
 var file_v1_instance_service_proto_depIdxs = []int32{
 	8,  // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
 	8,  // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
 	8,  // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	9,  // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	10, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
 	0,  // 4: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
-	1,  // 5: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
-	2,  // 6: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
-	4,  // 7: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
-	5,  // 8: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
-	6,  // 9: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
-	7,  // 10: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
-	8,  // 11: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
-	3,  // 12: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
-	8,  // 13: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
-	8,  // 14: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
-	10, // 15: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
-	8,  // 16: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
-	11, // [11:17] is the sub-list for method output_type
-	5,  // [5:11] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	9,  // 5: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
+	1,  // 6: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
+	2,  // 7: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
+	4,  // 8: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
+	5,  // 9: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
+	6,  // 10: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
+	7,  // 11: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
+	8,  // 12: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
+	3,  // 13: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
+	8,  // 14: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
+	8,  // 15: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
+	11, // 16: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
+	8,  // 17: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
+	12, // [12:18] is the sub-list for method output_type
+	6,  // [6:12] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_v1_instance_service_proto_init() }
@@ -899,6 +1038,18 @@ func file_v1_instance_service_proto_init() {
 				return nil
 			}
 		}
+		file_v1_instance_service_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DataSource); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -906,7 +1057,7 @@ func file_v1_instance_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_instance_service_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -143,7 +143,7 @@ message Instance {
   string host = 5;
   string port = 6;
   string database = 7;
-  // TODO(d): add data sources.
+  repeated DataSource data_sources = 8;
 }
 
 enum Engine {
@@ -155,4 +155,16 @@ enum Engine {
   ENGINE_SQLITE = 5;
   ENGINE_TIDB = 6;
   ENGINE_MONGODB = 7;
+}
+
+message DataSource {
+  string title = 1;
+  string type = 2;
+  string username = 3;
+  string password = 4;
+  string ssl_ca = 5;
+  string ssl_cert = 6;
+  string ssl_key = 7;
+  string host = 8;
+  string port = 9;
 }

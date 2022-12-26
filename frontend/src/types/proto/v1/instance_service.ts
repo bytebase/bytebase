@@ -174,8 +174,20 @@ export interface Instance {
   externalLink: string;
   host: string;
   port: string;
-  /** TODO(d): add data sources. */
   database: string;
+  dataSources: DataSource[];
+}
+
+export interface DataSource {
+  title: string;
+  type: string;
+  username: string;
+  password: string;
+  sslCa: string;
+  sslCert: string;
+  sslKey: string;
+  host: string;
+  port: string;
 }
 
 function createBaseGetInstanceRequest(): GetInstanceRequest {
@@ -587,7 +599,7 @@ export const UndeleteInstanceRequest = {
 };
 
 function createBaseInstance(): Instance {
-  return { name: "", title: "", engine: 0, externalLink: "", host: "", port: "", database: "" };
+  return { name: "", title: "", engine: 0, externalLink: "", host: "", port: "", database: "", dataSources: [] };
 }
 
 export const Instance = {
@@ -612,6 +624,9 @@ export const Instance = {
     }
     if (message.database !== "") {
       writer.uint32(58).string(message.database);
+    }
+    for (const v of message.dataSources) {
+      DataSource.encode(v!, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -644,6 +659,9 @@ export const Instance = {
         case 7:
           message.database = reader.string();
           break;
+        case 8:
+          message.dataSources.push(DataSource.decode(reader, reader.uint32()));
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -661,6 +679,7 @@ export const Instance = {
       host: isSet(object.host) ? String(object.host) : "",
       port: isSet(object.port) ? String(object.port) : "",
       database: isSet(object.database) ? String(object.database) : "",
+      dataSources: Array.isArray(object?.dataSources) ? object.dataSources.map((e: any) => DataSource.fromJSON(e)) : [],
     };
   },
 
@@ -673,6 +692,11 @@ export const Instance = {
     message.host !== undefined && (obj.host = message.host);
     message.port !== undefined && (obj.port = message.port);
     message.database !== undefined && (obj.database = message.database);
+    if (message.dataSources) {
+      obj.dataSources = message.dataSources.map((e) => e ? DataSource.toJSON(e) : undefined);
+    } else {
+      obj.dataSources = [];
+    }
     return obj;
   },
 
@@ -685,6 +709,128 @@ export const Instance = {
     message.host = object.host ?? "";
     message.port = object.port ?? "";
     message.database = object.database ?? "";
+    message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDataSource(): DataSource {
+  return { title: "", type: "", username: "", password: "", sslCa: "", sslCert: "", sslKey: "", host: "", port: "" };
+}
+
+export const DataSource = {
+  encode(message: DataSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
+    }
+    if (message.type !== "") {
+      writer.uint32(18).string(message.type);
+    }
+    if (message.username !== "") {
+      writer.uint32(26).string(message.username);
+    }
+    if (message.password !== "") {
+      writer.uint32(34).string(message.password);
+    }
+    if (message.sslCa !== "") {
+      writer.uint32(42).string(message.sslCa);
+    }
+    if (message.sslCert !== "") {
+      writer.uint32(50).string(message.sslCert);
+    }
+    if (message.sslKey !== "") {
+      writer.uint32(58).string(message.sslKey);
+    }
+    if (message.host !== "") {
+      writer.uint32(66).string(message.host);
+    }
+    if (message.port !== "") {
+      writer.uint32(74).string(message.port);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataSource {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.title = reader.string();
+          break;
+        case 2:
+          message.type = reader.string();
+          break;
+        case 3:
+          message.username = reader.string();
+          break;
+        case 4:
+          message.password = reader.string();
+          break;
+        case 5:
+          message.sslCa = reader.string();
+          break;
+        case 6:
+          message.sslCert = reader.string();
+          break;
+        case 7:
+          message.sslKey = reader.string();
+          break;
+        case 8:
+          message.host = reader.string();
+          break;
+        case 9:
+          message.port = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSource {
+    return {
+      title: isSet(object.title) ? String(object.title) : "",
+      type: isSet(object.type) ? String(object.type) : "",
+      username: isSet(object.username) ? String(object.username) : "",
+      password: isSet(object.password) ? String(object.password) : "",
+      sslCa: isSet(object.sslCa) ? String(object.sslCa) : "",
+      sslCert: isSet(object.sslCert) ? String(object.sslCert) : "",
+      sslKey: isSet(object.sslKey) ? String(object.sslKey) : "",
+      host: isSet(object.host) ? String(object.host) : "",
+      port: isSet(object.port) ? String(object.port) : "",
+    };
+  },
+
+  toJSON(message: DataSource): unknown {
+    const obj: any = {};
+    message.title !== undefined && (obj.title = message.title);
+    message.type !== undefined && (obj.type = message.type);
+    message.username !== undefined && (obj.username = message.username);
+    message.password !== undefined && (obj.password = message.password);
+    message.sslCa !== undefined && (obj.sslCa = message.sslCa);
+    message.sslCert !== undefined && (obj.sslCert = message.sslCert);
+    message.sslKey !== undefined && (obj.sslKey = message.sslKey);
+    message.host !== undefined && (obj.host = message.host);
+    message.port !== undefined && (obj.port = message.port);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DataSource>, I>>(object: I): DataSource {
+    const message = createBaseDataSource();
+    message.title = object.title ?? "";
+    message.type = object.type ?? "";
+    message.username = object.username ?? "";
+    message.password = object.password ?? "";
+    message.sslCa = object.sslCa ?? "";
+    message.sslCert = object.sslCert ?? "";
+    message.sslKey = object.sslKey ?? "";
+    message.host = object.host ?? "";
+    message.port = object.port ?? "";
     return message;
   },
 };
