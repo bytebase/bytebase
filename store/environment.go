@@ -522,3 +522,45 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *Environme
 	}
 	return &environment, nil
 }
+
+// EnvironmentMessage is the mssage for environment.
+type EnvironmentMessage struct {
+	ResourceID string
+	Name       string
+	Order      int
+}
+
+// GetEnvironmentV2 gets environment by resource ID.
+func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*EnvironmentMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var environmentMessage EnvironmentMessage
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			resource_id,
+			name,
+			"order"
+		FROM environment
+		WHERE resource_id = $1`,
+		resourceID,
+	).Scan(
+		&environmentMessage.ResourceID,
+		&environmentMessage.Name,
+		&environmentMessage.Order,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &environmentMessage, nil
+}
