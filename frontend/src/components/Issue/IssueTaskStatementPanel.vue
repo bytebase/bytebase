@@ -356,6 +356,14 @@ const formatOnSave = computed({
 });
 
 const allowUploadSheetForTask = computed(() => {
+  if (!create.value) {
+    return false;
+  }
+
+  if (issue.value.type !== "bb.issue.database.data.update") {
+    return false;
+  }
+
   const task = selectedTask.value;
   return TaskTypeWithSheetId.includes(task.type);
 });
