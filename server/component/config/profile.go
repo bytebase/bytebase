@@ -17,6 +17,8 @@ type Profile struct {
 	// DatastorePort is the binding port for database instance for storing Bytebase metadata.
 	// Only applicable when using embedded PG (PgURL is empty).
 	DatastorePort int
+	// GrpcPort is the binding port for gRPC server.
+	GrpcPort int
 	// PgUser is the user we use to connect to bytebase's Postgres database.
 	// The name of the database storing metadata is the same as pgUser.
 	PgUser string

@@ -170,7 +170,7 @@ func getTestPort() int {
 	mu.Lock()
 	defer mu.Unlock()
 	p := nextPort
-	nextPort++
+	nextPort += 2
 	return p
 }
 
@@ -179,7 +179,7 @@ func getTestPortForEmbeddedPg() int {
 	mu.Lock()
 	defer mu.Unlock()
 	p := nextPort
-	nextPort += 2
+	nextPort += 3
 	return p
 }
 
@@ -256,12 +256,11 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
 func getTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL string) componentConfig.Profile {
-	// Using flags.port + 1 as our datastore port
-	datastorePort := port + 1
 	return componentConfig.Profile{
 		Mode:                 testReleaseMode,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
-		DatastorePort:        datastorePort,
+		GrpcPort:             port + 1,
+		DatastorePort:        port + 2,
 		PgUser:               "bbtest",
 		DataDir:              dataDir,
 		ResourceDirOverride:  resourceDirOverride,
@@ -279,6 +278,7 @@ func getTestProfileWithExternalPg(dataDir, resourceDirOverride string, port int,
 	return componentConfig.Profile{
 		Mode:                 testReleaseMode,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
+		GrpcPort:             port + 1,
 		PgUser:               pgUser,
 		DataDir:              dataDir,
 		ResourceDirOverride:  resourceDirOverride,
