@@ -263,6 +263,9 @@ const showIssueOutputPanel = computed(() => {
 
 const showIssueTaskStatementPanel = computed(() => {
   const task = selectedTask.value;
+  if (task.type === "bb.task.database.schema.baseline" && !create.value) {
+    return false;
+  }
   return TaskTypeWithStatement.includes(task.type);
 });
 
