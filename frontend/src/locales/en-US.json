@@ -1717,7 +1717,8 @@
       "comment": "Comment",
       "payload": "Payload",
       "empty": "<Empty>",
-      "view-details": "View Details"
+      "view-details": "View Details",
+      "select-type": "Select Type"
     },
     "type": {
       "member-create": "Create Member",
