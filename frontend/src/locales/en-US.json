@@ -1153,7 +1153,7 @@
         },
         "issue-stage-status-change": {
           "title": "Issue stage status change",
-          "label": "When issue's stage status has changed"
+          "label": "When issue's enclosing stage status has changed"
         },
         "issue-task-status-change": {
           "title": "Issue task status change",
