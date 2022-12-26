@@ -211,9 +211,6 @@ export interface Instance {
   title: string;
   engine: Engine;
   externalLink: string;
-  host: string;
-  port: string;
-  database: string;
   dataSources: DataSource[];
 }
 
@@ -227,6 +224,7 @@ export interface DataSource {
   sslKey: string;
   host: string;
   port: string;
+  database: string;
 }
 
 function createBaseGetInstanceRequest(): GetInstanceRequest {
@@ -638,7 +636,7 @@ export const UndeleteInstanceRequest = {
 };
 
 function createBaseInstance(): Instance {
-  return { name: "", title: "", engine: 0, externalLink: "", host: "", port: "", database: "", dataSources: [] };
+  return { name: "", title: "", engine: 0, externalLink: "", dataSources: [] };
 }
 
 export const Instance = {
@@ -654,15 +652,6 @@ export const Instance = {
     }
     if (message.externalLink !== "") {
       writer.uint32(34).string(message.externalLink);
-    }
-    if (message.host !== "") {
-      writer.uint32(42).string(message.host);
-    }
-    if (message.port !== "") {
-      writer.uint32(50).string(message.port);
-    }
-    if (message.database !== "") {
-      writer.uint32(58).string(message.database);
     }
     for (const v of message.dataSources) {
       DataSource.encode(v!, writer.uint32(66).fork()).ldelim();
@@ -689,15 +678,6 @@ export const Instance = {
         case 4:
           message.externalLink = reader.string();
           break;
-        case 5:
-          message.host = reader.string();
-          break;
-        case 6:
-          message.port = reader.string();
-          break;
-        case 7:
-          message.database = reader.string();
-          break;
         case 8:
           message.dataSources.push(DataSource.decode(reader, reader.uint32()));
           break;
@@ -715,9 +695,6 @@ export const Instance = {
       title: isSet(object.title) ? String(object.title) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       externalLink: isSet(object.externalLink) ? String(object.externalLink) : "",
-      host: isSet(object.host) ? String(object.host) : "",
-      port: isSet(object.port) ? String(object.port) : "",
-      database: isSet(object.database) ? String(object.database) : "",
       dataSources: Array.isArray(object?.dataSources) ? object.dataSources.map((e: any) => DataSource.fromJSON(e)) : [],
     };
   },
@@ -728,9 +705,6 @@ export const Instance = {
     message.title !== undefined && (obj.title = message.title);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.externalLink !== undefined && (obj.externalLink = message.externalLink);
-    message.host !== undefined && (obj.host = message.host);
-    message.port !== undefined && (obj.port = message.port);
-    message.database !== undefined && (obj.database = message.database);
     if (message.dataSources) {
       obj.dataSources = message.dataSources.map((e) => e ? DataSource.toJSON(e) : undefined);
     } else {
@@ -745,16 +719,24 @@ export const Instance = {
     message.title = object.title ?? "";
     message.engine = object.engine ?? 0;
     message.externalLink = object.externalLink ?? "";
-    message.host = object.host ?? "";
-    message.port = object.port ?? "";
-    message.database = object.database ?? "";
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseDataSource(): DataSource {
-  return { title: "", type: 0, username: "", password: "", sslCa: "", sslCert: "", sslKey: "", host: "", port: "" };
+  return {
+    title: "",
+    type: 0,
+    username: "",
+    password: "",
+    sslCa: "",
+    sslCert: "",
+    sslKey: "",
+    host: "",
+    port: "",
+    database: "",
+  };
 }
 
 export const DataSource = {
@@ -785,6 +767,9 @@ export const DataSource = {
     }
     if (message.port !== "") {
       writer.uint32(74).string(message.port);
+    }
+    if (message.database !== "") {
+      writer.uint32(82).string(message.database);
     }
     return writer;
   },
@@ -823,6 +808,9 @@ export const DataSource = {
         case 9:
           message.port = reader.string();
           break;
+        case 10:
+          message.database = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -842,6 +830,7 @@ export const DataSource = {
       sslKey: isSet(object.sslKey) ? String(object.sslKey) : "",
       host: isSet(object.host) ? String(object.host) : "",
       port: isSet(object.port) ? String(object.port) : "",
+      database: isSet(object.database) ? String(object.database) : "",
     };
   },
 
@@ -856,6 +845,7 @@ export const DataSource = {
     message.sslKey !== undefined && (obj.sslKey = message.sslKey);
     message.host !== undefined && (obj.host = message.host);
     message.port !== undefined && (obj.port = message.port);
+    message.database !== undefined && (obj.database = message.database);
     return obj;
   },
 
@@ -870,6 +860,7 @@ export const DataSource = {
     message.sslKey = object.sslKey ?? "";
     message.host = object.host ?? "";
     message.port = object.port ?? "";
+    message.database = object.database ?? "";
     return message;
   },
 };

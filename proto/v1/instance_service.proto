@@ -140,9 +140,6 @@ message Instance {
   string title = 2;
   Engine engine = 3;
   string external_link = 4;
-  string host = 5;
-  string port = 6;
-  string database = 7;
   repeated DataSource data_sources = 8;
 }
 
@@ -167,6 +164,7 @@ message DataSource {
   string ssl_key = 7;
   string host = 8;
   string port = 9;
+  string database = 10;
 }
 
 enum DataSourceType {
