@@ -455,13 +455,16 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 			} else {
 				if fkList, ok := fkMap[buildingTable]; ok {
 					fkMap[buildingTable] = append(fkList, buildingFk)
-					buildingTable = tableName
-					buildingFk = &fk
 				} else {
 					fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
 				}
+				buildingTable = tableName
+				buildingFk = &fk
 			}
 		}
+	}
+	if err := fkRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, fkQuery)
 	}
 
 	if buildingFk != nil {
