@@ -130,5 +130,58 @@ message Project {
   string name = 1;
 
   string title = 2;
-  int32 order = 3;
+  string key = 3;
+  Workflow workflow = 4;
+  Visibility visibility = 5;
+  TenantMode tenant_mode = 6;
+  string db_name_template = 7;
+  RoleProvider role_provider = 8;
+  SchemaVersion schema_version = 9;
+  SchemaChange schema_change = 10;
+  LgtmCheck lgtm_check = 11;
+}
+
+enum Workflow {
+  WORKFLOW_UNSPECIFIED = 0;
+  WORKFLOW_UI = 1;
+  WORKFLOW_VCS = 2;
+}
+
+enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0;
+  VISIBILITY_PUBLIC = 1;
+  VISIBILITY_PRIVATE = 2;
+}
+
+enum TenantMode {
+  TENANT_MODE_UNSPECIFIED = 0;
+  TENANT_MODE_DISABLED = 1;
+  TENANT_MODE_ENABLED = 2;
+}
+
+enum RoleProvider {
+  ROLE_PROVIDER_UNSPECIFIED = 0;
+  ROLE_PROVIDER_BYTEBASE = 1;
+  ROLE_PROVIDER_GITLAB_SELF_HOST = 2;
+  ROLE_PROVIDER_GITHUB_COM = 3;
+}
+
+enum SchemaVersion {
+  SCHEMA_VERSION_UNSPECIFIED = 0;
+  SCHEMA_VERSION_TIMESTAMP = 1;
+  SCHEMA_VERSION_SEMANTIC = 2;
+}
+
+enum SchemaChange {
+  SCHEMA_CHANGE_UNSPECIFIED = 0;
+  SCHEMA_CHANGE_DDL = 1;
+  SCHEMA_CHANGE_SDL = 2;
+}
+
+
+enum LgtmCheck {
+  LGTM_CHECK_UNSPECIFIED = 0;
+  LGTM_CHECK_DISABLED = 1;
+  LGTM_CHECK_PROJECT_OWNER = 2;
+  LGTM_CHECK_PROJECT_MEMBER = 3;
 }

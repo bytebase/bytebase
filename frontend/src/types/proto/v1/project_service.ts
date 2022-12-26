@@ -5,6 +5,291 @@ import { FieldMask } from "../google/protobuf/field_mask";
 
 export const protobufPackage = "bytebase.v1";
 
+export enum Workflow {
+  WORKFLOW_UNSPECIFIED = 0,
+  WORKFLOW_UI = 1,
+  WORKFLOW_VCS = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function workflowFromJSON(object: any): Workflow {
+  switch (object) {
+    case 0:
+    case "WORKFLOW_UNSPECIFIED":
+      return Workflow.WORKFLOW_UNSPECIFIED;
+    case 1:
+    case "WORKFLOW_UI":
+      return Workflow.WORKFLOW_UI;
+    case 2:
+    case "WORKFLOW_VCS":
+      return Workflow.WORKFLOW_VCS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Workflow.UNRECOGNIZED;
+  }
+}
+
+export function workflowToJSON(object: Workflow): string {
+  switch (object) {
+    case Workflow.WORKFLOW_UNSPECIFIED:
+      return "WORKFLOW_UNSPECIFIED";
+    case Workflow.WORKFLOW_UI:
+      return "WORKFLOW_UI";
+    case Workflow.WORKFLOW_VCS:
+      return "WORKFLOW_VCS";
+    case Workflow.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0,
+  VISIBILITY_PUBLIC = 1,
+  VISIBILITY_PRIVATE = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function visibilityFromJSON(object: any): Visibility {
+  switch (object) {
+    case 0:
+    case "VISIBILITY_UNSPECIFIED":
+      return Visibility.VISIBILITY_UNSPECIFIED;
+    case 1:
+    case "VISIBILITY_PUBLIC":
+      return Visibility.VISIBILITY_PUBLIC;
+    case 2:
+    case "VISIBILITY_PRIVATE":
+      return Visibility.VISIBILITY_PRIVATE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Visibility.UNRECOGNIZED;
+  }
+}
+
+export function visibilityToJSON(object: Visibility): string {
+  switch (object) {
+    case Visibility.VISIBILITY_UNSPECIFIED:
+      return "VISIBILITY_UNSPECIFIED";
+    case Visibility.VISIBILITY_PUBLIC:
+      return "VISIBILITY_PUBLIC";
+    case Visibility.VISIBILITY_PRIVATE:
+      return "VISIBILITY_PRIVATE";
+    case Visibility.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum TenantMode {
+  TENANT_MODE_UNSPECIFIED = 0,
+  TENANT_MODE_DISABLED = 1,
+  TENANT_MODE_ENABLED = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function tenantModeFromJSON(object: any): TenantMode {
+  switch (object) {
+    case 0:
+    case "TENANT_MODE_UNSPECIFIED":
+      return TenantMode.TENANT_MODE_UNSPECIFIED;
+    case 1:
+    case "TENANT_MODE_DISABLED":
+      return TenantMode.TENANT_MODE_DISABLED;
+    case 2:
+    case "TENANT_MODE_ENABLED":
+      return TenantMode.TENANT_MODE_ENABLED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TenantMode.UNRECOGNIZED;
+  }
+}
+
+export function tenantModeToJSON(object: TenantMode): string {
+  switch (object) {
+    case TenantMode.TENANT_MODE_UNSPECIFIED:
+      return "TENANT_MODE_UNSPECIFIED";
+    case TenantMode.TENANT_MODE_DISABLED:
+      return "TENANT_MODE_DISABLED";
+    case TenantMode.TENANT_MODE_ENABLED:
+      return "TENANT_MODE_ENABLED";
+    case TenantMode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum RoleProvider {
+  ROLE_PROVIDER_UNSPECIFIED = 0,
+  ROLE_PROVIDER_BYTEBASE = 1,
+  ROLE_PROVIDER_GITLAB_SELF_HOST = 2,
+  ROLE_PROVIDER_GITHUB_COM = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function roleProviderFromJSON(object: any): RoleProvider {
+  switch (object) {
+    case 0:
+    case "ROLE_PROVIDER_UNSPECIFIED":
+      return RoleProvider.ROLE_PROVIDER_UNSPECIFIED;
+    case 1:
+    case "ROLE_PROVIDER_BYTEBASE":
+      return RoleProvider.ROLE_PROVIDER_BYTEBASE;
+    case 2:
+    case "ROLE_PROVIDER_GITLAB_SELF_HOST":
+      return RoleProvider.ROLE_PROVIDER_GITLAB_SELF_HOST;
+    case 3:
+    case "ROLE_PROVIDER_GITHUB_COM":
+      return RoleProvider.ROLE_PROVIDER_GITHUB_COM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RoleProvider.UNRECOGNIZED;
+  }
+}
+
+export function roleProviderToJSON(object: RoleProvider): string {
+  switch (object) {
+    case RoleProvider.ROLE_PROVIDER_UNSPECIFIED:
+      return "ROLE_PROVIDER_UNSPECIFIED";
+    case RoleProvider.ROLE_PROVIDER_BYTEBASE:
+      return "ROLE_PROVIDER_BYTEBASE";
+    case RoleProvider.ROLE_PROVIDER_GITLAB_SELF_HOST:
+      return "ROLE_PROVIDER_GITLAB_SELF_HOST";
+    case RoleProvider.ROLE_PROVIDER_GITHUB_COM:
+      return "ROLE_PROVIDER_GITHUB_COM";
+    case RoleProvider.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum SchemaVersion {
+  SCHEMA_VERSION_UNSPECIFIED = 0,
+  SCHEMA_VERSION_TIMESTAMP = 1,
+  SCHEMA_VERSION_SEMANTIC = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function schemaVersionFromJSON(object: any): SchemaVersion {
+  switch (object) {
+    case 0:
+    case "SCHEMA_VERSION_UNSPECIFIED":
+      return SchemaVersion.SCHEMA_VERSION_UNSPECIFIED;
+    case 1:
+    case "SCHEMA_VERSION_TIMESTAMP":
+      return SchemaVersion.SCHEMA_VERSION_TIMESTAMP;
+    case 2:
+    case "SCHEMA_VERSION_SEMANTIC":
+      return SchemaVersion.SCHEMA_VERSION_SEMANTIC;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SchemaVersion.UNRECOGNIZED;
+  }
+}
+
+export function schemaVersionToJSON(object: SchemaVersion): string {
+  switch (object) {
+    case SchemaVersion.SCHEMA_VERSION_UNSPECIFIED:
+      return "SCHEMA_VERSION_UNSPECIFIED";
+    case SchemaVersion.SCHEMA_VERSION_TIMESTAMP:
+      return "SCHEMA_VERSION_TIMESTAMP";
+    case SchemaVersion.SCHEMA_VERSION_SEMANTIC:
+      return "SCHEMA_VERSION_SEMANTIC";
+    case SchemaVersion.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum SchemaChange {
+  SCHEMA_CHANGE_UNSPECIFIED = 0,
+  SCHEMA_CHANGE_DDL = 1,
+  SCHEMA_CHANGE_SDL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function schemaChangeFromJSON(object: any): SchemaChange {
+  switch (object) {
+    case 0:
+    case "SCHEMA_CHANGE_UNSPECIFIED":
+      return SchemaChange.SCHEMA_CHANGE_UNSPECIFIED;
+    case 1:
+    case "SCHEMA_CHANGE_DDL":
+      return SchemaChange.SCHEMA_CHANGE_DDL;
+    case 2:
+    case "SCHEMA_CHANGE_SDL":
+      return SchemaChange.SCHEMA_CHANGE_SDL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SchemaChange.UNRECOGNIZED;
+  }
+}
+
+export function schemaChangeToJSON(object: SchemaChange): string {
+  switch (object) {
+    case SchemaChange.SCHEMA_CHANGE_UNSPECIFIED:
+      return "SCHEMA_CHANGE_UNSPECIFIED";
+    case SchemaChange.SCHEMA_CHANGE_DDL:
+      return "SCHEMA_CHANGE_DDL";
+    case SchemaChange.SCHEMA_CHANGE_SDL:
+      return "SCHEMA_CHANGE_SDL";
+    case SchemaChange.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum LgtmCheck {
+  LGTM_CHECK_UNSPECIFIED = 0,
+  LGTM_CHECK_DISABLED = 1,
+  LGTM_CHECK_PROJECT_OWNER = 2,
+  LGTM_CHECK_PROJECT_MEMBER = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function lgtmCheckFromJSON(object: any): LgtmCheck {
+  switch (object) {
+    case 0:
+    case "LGTM_CHECK_UNSPECIFIED":
+      return LgtmCheck.LGTM_CHECK_UNSPECIFIED;
+    case 1:
+    case "LGTM_CHECK_DISABLED":
+      return LgtmCheck.LGTM_CHECK_DISABLED;
+    case 2:
+    case "LGTM_CHECK_PROJECT_OWNER":
+      return LgtmCheck.LGTM_CHECK_PROJECT_OWNER;
+    case 3:
+    case "LGTM_CHECK_PROJECT_MEMBER":
+      return LgtmCheck.LGTM_CHECK_PROJECT_MEMBER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return LgtmCheck.UNRECOGNIZED;
+  }
+}
+
+export function lgtmCheckToJSON(object: LgtmCheck): string {
+  switch (object) {
+    case LgtmCheck.LGTM_CHECK_UNSPECIFIED:
+      return "LGTM_CHECK_UNSPECIFIED";
+    case LgtmCheck.LGTM_CHECK_DISABLED:
+      return "LGTM_CHECK_DISABLED";
+    case LgtmCheck.LGTM_CHECK_PROJECT_OWNER:
+      return "LGTM_CHECK_PROJECT_OWNER";
+    case LgtmCheck.LGTM_CHECK_PROJECT_MEMBER:
+      return "LGTM_CHECK_PROJECT_MEMBER";
+    case LgtmCheck.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetProjectRequest {
   /**
    * The name of the project to retrieve.
@@ -91,7 +376,15 @@ export interface Project {
    */
   name: string;
   title: string;
-  order: number;
+  key: string;
+  workflow: Workflow;
+  visibility: Visibility;
+  tenantMode: TenantMode;
+  dbNameTemplate: string;
+  roleProvider: RoleProvider;
+  schemaVersion: SchemaVersion;
+  schemaChange: SchemaChange;
+  lgtmCheck: LgtmCheck;
 }
 
 function createBaseGetProjectRequest(): GetProjectRequest {
@@ -485,7 +778,19 @@ export const UndeleteProjectRequest = {
 };
 
 function createBaseProject(): Project {
-  return { name: "", title: "", order: 0 };
+  return {
+    name: "",
+    title: "",
+    key: "",
+    workflow: 0,
+    visibility: 0,
+    tenantMode: 0,
+    dbNameTemplate: "",
+    roleProvider: 0,
+    schemaVersion: 0,
+    schemaChange: 0,
+    lgtmCheck: 0,
+  };
 }
 
 export const Project = {
@@ -496,8 +801,32 @@ export const Project = {
     if (message.title !== "") {
       writer.uint32(18).string(message.title);
     }
-    if (message.order !== 0) {
-      writer.uint32(24).int32(message.order);
+    if (message.key !== "") {
+      writer.uint32(26).string(message.key);
+    }
+    if (message.workflow !== 0) {
+      writer.uint32(32).int32(message.workflow);
+    }
+    if (message.visibility !== 0) {
+      writer.uint32(40).int32(message.visibility);
+    }
+    if (message.tenantMode !== 0) {
+      writer.uint32(48).int32(message.tenantMode);
+    }
+    if (message.dbNameTemplate !== "") {
+      writer.uint32(58).string(message.dbNameTemplate);
+    }
+    if (message.roleProvider !== 0) {
+      writer.uint32(64).int32(message.roleProvider);
+    }
+    if (message.schemaVersion !== 0) {
+      writer.uint32(72).int32(message.schemaVersion);
+    }
+    if (message.schemaChange !== 0) {
+      writer.uint32(80).int32(message.schemaChange);
+    }
+    if (message.lgtmCheck !== 0) {
+      writer.uint32(88).int32(message.lgtmCheck);
     }
     return writer;
   },
@@ -516,7 +845,31 @@ export const Project = {
           message.title = reader.string();
           break;
         case 3:
-          message.order = reader.int32();
+          message.key = reader.string();
+          break;
+        case 4:
+          message.workflow = reader.int32() as any;
+          break;
+        case 5:
+          message.visibility = reader.int32() as any;
+          break;
+        case 6:
+          message.tenantMode = reader.int32() as any;
+          break;
+        case 7:
+          message.dbNameTemplate = reader.string();
+          break;
+        case 8:
+          message.roleProvider = reader.int32() as any;
+          break;
+        case 9:
+          message.schemaVersion = reader.int32() as any;
+          break;
+        case 10:
+          message.schemaChange = reader.int32() as any;
+          break;
+        case 11:
+          message.lgtmCheck = reader.int32() as any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -530,7 +883,15 @@ export const Project = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       title: isSet(object.title) ? String(object.title) : "",
-      order: isSet(object.order) ? Number(object.order) : 0,
+      key: isSet(object.key) ? String(object.key) : "",
+      workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : 0,
+      visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
+      tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : 0,
+      dbNameTemplate: isSet(object.dbNameTemplate) ? String(object.dbNameTemplate) : "",
+      roleProvider: isSet(object.roleProvider) ? roleProviderFromJSON(object.roleProvider) : 0,
+      schemaVersion: isSet(object.schemaVersion) ? schemaVersionFromJSON(object.schemaVersion) : 0,
+      schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
+      lgtmCheck: isSet(object.lgtmCheck) ? lgtmCheckFromJSON(object.lgtmCheck) : 0,
     };
   },
 
@@ -538,7 +899,15 @@ export const Project = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.title !== undefined && (obj.title = message.title);
-    message.order !== undefined && (obj.order = Math.round(message.order));
+    message.key !== undefined && (obj.key = message.key);
+    message.workflow !== undefined && (obj.workflow = workflowToJSON(message.workflow));
+    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
+    message.tenantMode !== undefined && (obj.tenantMode = tenantModeToJSON(message.tenantMode));
+    message.dbNameTemplate !== undefined && (obj.dbNameTemplate = message.dbNameTemplate);
+    message.roleProvider !== undefined && (obj.roleProvider = roleProviderToJSON(message.roleProvider));
+    message.schemaVersion !== undefined && (obj.schemaVersion = schemaVersionToJSON(message.schemaVersion));
+    message.schemaChange !== undefined && (obj.schemaChange = schemaChangeToJSON(message.schemaChange));
+    message.lgtmCheck !== undefined && (obj.lgtmCheck = lgtmCheckToJSON(message.lgtmCheck));
     return obj;
   },
 
@@ -546,7 +915,15 @@ export const Project = {
     const message = createBaseProject();
     message.name = object.name ?? "";
     message.title = object.title ?? "";
-    message.order = object.order ?? 0;
+    message.key = object.key ?? "";
+    message.workflow = object.workflow ?? 0;
+    message.visibility = object.visibility ?? 0;
+    message.tenantMode = object.tenantMode ?? 0;
+    message.dbNameTemplate = object.dbNameTemplate ?? "";
+    message.roleProvider = object.roleProvider ?? 0;
+    message.schemaVersion = object.schemaVersion ?? 0;
+    message.schemaChange = object.schemaChange ?? 0;
+    message.lgtmCheck = object.lgtmCheck ?? 0;
     return message;
   },
 };
