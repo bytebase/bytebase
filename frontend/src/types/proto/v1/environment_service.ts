@@ -2,6 +2,7 @@
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -90,6 +91,7 @@ export interface Environment {
    * Format: environments/{environment}
    */
   name: string;
+  state: State;
   title: string;
   order: number;
 }
@@ -489,7 +491,7 @@ export const UndeleteEnvironmentRequest = {
 };
 
 function createBaseEnvironment(): Environment {
-  return { name: "", title: "", order: 0 };
+  return { name: "", state: 0, title: "", order: 0 };
 }
 
 export const Environment = {
@@ -497,11 +499,14 @@ export const Environment = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.state !== 0) {
+      writer.uint32(16).int32(message.state);
+    }
     if (message.title !== "") {
-      writer.uint32(18).string(message.title);
+      writer.uint32(26).string(message.title);
     }
     if (message.order !== 0) {
-      writer.uint32(24).int32(message.order);
+      writer.uint32(32).int32(message.order);
     }
     return writer;
   },
@@ -517,9 +522,12 @@ export const Environment = {
           message.name = reader.string();
           break;
         case 2:
-          message.title = reader.string();
+          message.state = reader.int32() as any;
           break;
         case 3:
+          message.title = reader.string();
+          break;
+        case 4:
           message.order = reader.int32();
           break;
         default:
@@ -533,6 +541,7 @@ export const Environment = {
   fromJSON(object: any): Environment {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       order: isSet(object.order) ? Number(object.order) : 0,
     };
@@ -541,6 +550,7 @@ export const Environment = {
   toJSON(message: Environment): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.title !== undefined && (obj.title = message.title);
     message.order !== undefined && (obj.order = Math.round(message.order));
     return obj;
@@ -549,6 +559,7 @@ export const Environment = {
   fromPartial<I extends Exact<DeepPartial<Environment>, I>>(object: I): Environment {
     const message = createBaseEnvironment();
     message.name = object.name ?? "";
+    message.state = object.state ?? 0;
     message.title = object.title ?? "";
     message.order = object.order ?? 0;
     return message;

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+option go_package = "generated-go/v1";
+
+enum State {
+  STATE_UNSPECIFIED = 0;
+  STATE_ACTIVE = 1;
+  STATE_DELETED = 2;
+}

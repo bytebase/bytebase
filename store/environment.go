@@ -528,6 +528,7 @@ type EnvironmentMessage struct {
 	ResourceID string
 	Name       string
 	Order      int
+	Deleted    bool
 }
 
 // GetEnvironmentV2 gets environment by resource ID.
@@ -539,11 +540,13 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 	defer tx.Rollback()
 
 	var environmentMessage EnvironmentMessage
+	var rowStatus string
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
 			resource_id,
 			name,
-			"order"
+			"order",
+			row_status,
 		FROM environment
 		WHERE resource_id = $1`,
 		resourceID,
@@ -551,11 +554,15 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 		&environmentMessage.ResourceID,
 		&environmentMessage.Name,
 		&environmentMessage.Order,
+		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, FormatError(err)
+	}
+	if rowStatus == string(api.Archived) {
+		environmentMessage.Deleted = true
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -563,4 +570,57 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 	}
 
 	return &environmentMessage, nil
+}
+
+// ListEnvironmentV2 lists all environment.
+func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*EnvironmentMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if !showDeleted {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var environmentMessages []*EnvironmentMessage
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			resource_id
+			name,
+			"order",
+			row_status,
+		FROM environment
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var environmentMessage EnvironmentMessage
+		var rowStatus string
+		if err := rows.Scan(
+			&environmentMessage.ResourceID,
+			&environmentMessage.Name,
+			&environmentMessage.Order,
+			&rowStatus,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if rowStatus == string(api.Archived) {
+			environmentMessage.Deleted = true
+		}
+
+		environmentMessages = append(environmentMessages, &environmentMessage)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return environmentMessages, nil
 }

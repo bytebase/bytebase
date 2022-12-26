@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -42,16 +43,40 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 	if environment == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
 	}
+	state := v1pb.State_STATE_ACTIVE
+	if environment.Deleted {
+		state = v1pb.State_STATE_DELETED
+	}
 	return &v1pb.Environment{
 		Name:  request.GetName(),
 		Title: environment.Name,
 		Order: int32(environment.Order),
+		State: state,
 	}, nil
 }
 
 // ListEnvironments lists all environments.
-func (*EnvironmentService) ListEnvironments(_ context.Context, _ *v1pb.ListEnvironmentsRequest) (*v1pb.ListEnvironmentsResponse, error) {
-	return nil, nil
+func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb.ListEnvironmentsRequest) (*v1pb.ListEnvironmentsResponse, error) {
+	environments, err := s.store.ListEnvironmentV2(ctx, request.GetShowDeleted())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	response := &v1pb.ListEnvironmentsResponse{}
+	for _, environment := range environments {
+		state := v1pb.State_STATE_ACTIVE
+		if environment.Deleted {
+			state = v1pb.State_STATE_DELETED
+		}
+		response.Environments = append(
+			response.Environments,
+			&v1pb.Environment{
+				Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+				Title: environment.Name,
+				Order: int32(environment.Order),
+				State: state,
+			})
+	}
+	return response, nil
 }
 
 // CreateEnvironment creates an environment.
