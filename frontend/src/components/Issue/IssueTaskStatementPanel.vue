@@ -4,7 +4,7 @@
   >
     <div class="flex space-x-4 flex-1">
       <div
-        class="text-sm font-medium"
+        class="py-2 text-sm font-medium"
         :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
       >
         {{ $t("common.sql") }}
@@ -33,48 +33,32 @@
           />
           <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
         </label>
-        <button
-          v-if="state.editing && allowUploadSheetForTask"
-          type="button"
-          class="cursor-pointer border border-control-border rounded text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg-hover disabled:cursor-not-allowed disabled:opacity-60 text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-          :disabled="state.isUploadingFile"
-        >
-          <label
-            for="sql-file-with-sheet-input"
-            class="px-3 py-1 w-full flex flex-row justify-center items-center cursor-pointer"
-            :class="state.isUploadingFile && 'cursor-wait'"
-          >
-            <heroicons-outline:document-text class="w-4 h-auto mr-1" />
-            {{ $t("issue.upload-sql-as-sheet") }}
-            <input
-              id="sql-file-with-sheet-input"
-              type="file"
-              accept=".sql,.txt,application/sql,text/plain"
-              class="hidden"
-              @change="handleUploadLocalFileAsSheet"
-            />
-          </label>
-        </button>
-        <button
+        <BBContextMenuButton
           v-if="state.editing"
-          type="button"
-          class="cursor-pointer border border-control-border rounded text-control bg-control-bg hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+          :disabled="state.isUploadingFile"
+          :action-list="uploadSQLActionButtonList"
         >
-          <label
-            for="sql-file-input"
-            class="px-3 py-1 w-full flex flex-row justify-center items-center cursor-pointer"
-          >
-            <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
-            {{ $t("issue.upload-sql") }}
-            <input
-              id="sql-file-input"
-              type="file"
-              accept=".sql,.txt,application/sql,text/plain"
-              class="hidden"
-              @change="handleUploadLocalFile"
-            />
-          </label>
-        </button>
+          <template #default="{ action }">
+            <button type="button">
+              <label
+                for="sql-file-input"
+                class="w-full flex flex-row justify-center items-center cursor-pointer"
+              >
+                <heroicons-outline:arrow-up-tray class="w-4 h-auto mr-1" />
+                <span>{{ action.text }}</span>
+                <input
+                  id="sql-file-input"
+                  type="file"
+                  accept=".sql,.txt,application/sql,text/plain"
+                  class="hidden"
+                  @change="
+                    (event) => handleUploadFileButtonClick(event, action.key)
+                  "
+                />
+              </label>
+            </button>
+          </template>
+        </BBContextMenuButton>
       </template>
 
       <button
@@ -89,7 +73,7 @@
         <button
           v-if="state.editing"
           type="button"
-          class="px-3 py-1 cursor-pointer border border-control-border rounded text-control bg-control-bg hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+          class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
           :disabled="!allowSaveSQL"
           @click.prevent="saveEdit"
         >
@@ -98,7 +82,7 @@
         <button
           v-if="state.editing"
           type="button"
-          class="px-3 py-1 cursor-pointer rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+          class="px-4 py-2 cursor-pointer rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
           @click.prevent="cancelEdit"
         >
           {{ $t("common.cancel") }}
@@ -360,12 +344,31 @@ const allowUploadSheetForTask = computed(() => {
     return false;
   }
 
+  // Only allow DML.
   if (issue.value.type !== "bb.issue.database.data.update") {
     return false;
   }
 
   const task = selectedTask.value;
   return TaskTypeWithSheetId.includes(task.type);
+});
+
+const uploadSQLActionButtonList = computed(() => {
+  const list = [
+    {
+      key: "NORMAL",
+      text: t("issue.upload-sql"),
+    },
+  ];
+
+  if (allowUploadSheetForTask.value) {
+    list.push({
+      key: "SHEET",
+      text: t("issue.upload-sql-as-sheet"),
+    });
+  }
+
+  return list;
 });
 
 const isTaskHasSheetId = computed(() => {
@@ -465,6 +468,17 @@ const allowSaveSQL = computed((): boolean => {
   // Allowed to save otherwise
   return true;
 });
+
+const handleUploadFileButtonClick = (
+  event: Event,
+  action: "NORMAL" | "SHEET"
+) => {
+  if (action === "SHEET") {
+    handleUploadLocalFileAsSheet(event);
+  } else {
+    handleUploadLocalFile(event);
+  }
+};
 
 const handleUploadFileEvent = (
   event: Event,
