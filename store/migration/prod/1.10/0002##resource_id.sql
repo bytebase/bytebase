@@ -3,7 +3,7 @@ ALTER TABLE project ADD COLUMN resource_id TEXT;
 ALTER TABLE instance ADD COLUMN resource_id TEXT;
 
 UPDATE environment SET resource_id=LOWER(name);
-UPDATE project SET resource_id='default' WHERE id == 1;
+UPDATE project SET resource_id='default' WHERE id = 1;
 UPDATE project SET resource_id=CONCAT('project-', LEFT(gen_random_uuid()::TEXT, 8)) WHERE id != 1;
 UPDATE instance SET resource_id=CONCAT('instance-', LEFT(gen_random_uuid()::TEXT, 8));
 
