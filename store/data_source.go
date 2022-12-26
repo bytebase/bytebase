@@ -284,7 +284,7 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 }
 
 // createDataSourceImpl creates a new dataSource.
-func (s *Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
+func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
 	// Insert row into dataSource.
 	query := `
 		INSERT INTO data_source (
@@ -349,7 +349,7 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Da
 	return &dataSourceRaw, nil
 }
 
-func (s *Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
+func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -429,7 +429,7 @@ func (s *Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSo
 }
 
 // patchDataSourceImpl updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (s *Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
+func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Username; v != nil {
