@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -15,12 +16,18 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/store"
 )
 
 const (
+	issuer = "bytebase"
+	// Signing key section. For now, this is only used for signing, not for verifying since we only
+	// have 1 version. But it will be used to maintain backward compatibility if we change the signing mechanism.
+	keyID                  = "v1"
 	accessTokenAudienceFmt = "bb.user.access.%s"
+	apiTokenDuration       = 2 * time.Hour
 )
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.
@@ -39,9 +46,20 @@ func New(store *store.Store, secret string, mode common.ReleaseMode) *APIAuthInt
 	}
 }
 
+var authAllowlistMethods = []string{
+	"/bytebase.v1.AuthService/Login",
+}
+
 // UnaryInterceptor is the unary interceptor for gRPC API.
-func (in *APIAuthInterceptor) UnaryInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	// TODO(d): skips auth, actuator, GET /subscription request, OpenAPI SQL endpoint.
+func (in *APIAuthInterceptor) UnaryInterceptor(ctx context.Context, req interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	// TODO(d): skips actuator, GET /subscription request, OpenAPI SQL endpoint.
+	// Skip the allowlisted methods for auth interceptor.
+	for _, allow := range authAllowlistMethods {
+		if strings.HasPrefix(serverInfo.FullMethod, allow) {
+			return handler(ctx, req)
+		}
+	}
+
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.PermissionDenied, "failed to parse metadata from incoming context")
@@ -114,4 +132,38 @@ func audienceContains(audience jwt.ClaimStrings, token string) bool {
 type claims struct {
 	Name string `json:"name"`
 	jwt.RegisteredClaims
+}
+
+// GenerateAPIToken generates an API token.
+func GenerateAPIToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+	expirationTime := time.Now().Add(apiTokenDuration)
+	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+}
+
+// Pay attention to this function. It holds the main JWT token generation logic.
+func generateToken(user *api.Principal, aud string, expirationTime time.Time, secret []byte) (string, error) {
+	// Create the JWT claims, which includes the username and expiry time.
+	claims := &claims{
+		Name: user.Name,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Audience: jwt.ClaimStrings{aud},
+			// In JWT, the expiry time is expressed as unix milliseconds.
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    issuer,
+			Subject:   strconv.Itoa(user.ID),
+		},
+	}
+
+	// Declare the token with the HS256 algorithm used for signing, and the claims.
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = keyID
+
+	// Create the JWT string.
+	tokenString, err := token.SignedString(secret)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
 }
