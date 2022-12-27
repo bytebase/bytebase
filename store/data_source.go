@@ -524,13 +524,7 @@ type DataSourceMessage struct {
 	Database string
 }
 
-func (s *Store) listDataSourceV2(ctx context.Context, instanceID int) ([]*DataSourceMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
+func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([]*DataSourceMessage, error) {
 	var dataSourceMessages []*DataSourceMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -578,10 +572,6 @@ func (s *Store) listDataSourceV2(ctx context.Context, instanceID int) ([]*DataSo
 		}
 		dataSourceMessage.Database = database.Name
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
 	}
 
 	return dataSourceMessages, nil

@@ -807,7 +807,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, resourceID string) (*Instance
 	}
 	instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 
-	dataSourceList, err := s.listDataSourceV2(ctx, instanceID)
+	dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -865,7 +865,7 @@ func (s *Store) ListInstanceV2(ctx context.Context, showDeleted bool) ([]*Instan
 			return nil, FormatError(err)
 		}
 		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-		dataSourceList, err := s.listDataSourceV2(ctx, instanceID)
+		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
 		if err != nil {
 			return nil, FormatError(err)
 		}
