@@ -99,6 +99,7 @@ type DataSource struct {
 	Host     string            `jsonapi:"attr,hostOverride"`
 	Port     string            `jsonapi:"attr,portOverride"`
 	Options  DataSourceOptions `jsonapi:"attr,options"`
+	Database string
 }
 
 // DataSourceCreate is the API message for creating a data source.
@@ -162,6 +163,7 @@ type DataSourcePatch struct {
 	Host             *string            `jsonapi:"attr,hostOverride"`
 	Port             *string            `jsonapi:"attr,portOverride"`
 	Options          *DataSourceOptions `jsonapi:"attr,options"`
+	Database         *string            `jsonapi:"attr,database"`
 }
 
 // DataSourceDelete is the API message for deleting data sources.
