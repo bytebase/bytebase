@@ -8,6 +8,8 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 
+import "v1/common.proto";
+
 option go_package = "generated-go/v1";
 
 service InstanceService {
@@ -137,10 +139,11 @@ message Instance {
   // Format: environments/{environment}/instances/{instance}
   string name = 1;
 
-  string title = 2;
-  Engine engine = 3;
-  string external_link = 4;
-  repeated DataSource data_sources = 8;
+  State state = 2;
+  string title = 3;
+  Engine engine = 4;
+  string external_link = 5;
+  repeated DataSource data_sources = 6;
 }
 
 enum Engine {
