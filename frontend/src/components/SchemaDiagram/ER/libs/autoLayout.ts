@@ -1,5 +1,5 @@
+import { Path, Rect, Size } from "../../types";
 import dagre from "dagre";
-import { Rect, Size } from "../../types";
 
 export type GraphNodeItem = {
   id: string;
@@ -7,36 +7,54 @@ export type GraphNodeItem = {
 };
 
 export type GraphEdgeItem = {
+  id: string;
   from: string;
   to: string;
 };
 
-export const autoLayout = (
+export type Layout = {
+  rects: Map<string, Rect>;
+  paths: Map<string, Path>;
+};
+
+export const layoutDagre = async (
   nodeList: GraphNodeItem[],
   edgeList: GraphEdgeItem[]
-) => {
-  const g = new dagre.graphlib.Graph();
+): Promise<Layout> => {
+  const g = new dagre.graphlib.Graph({ multigraph: true });
   g.setGraph({
-    rankdir: "TD",
-    nodesep: 100, // x gap
-    ranksep: 100, // y gap
+    rankdir: "LR",
+    nodesep: 160, // gap between nodes in a layer
+    ranksep: 160, // gap between layers
   });
   g.setDefaultEdgeLabel(() => ({}));
-
   nodeList.forEach(({ id, size }) => {
     g.setNode(id, {
       ...size,
     });
   });
-  edgeList.forEach(({ from, to }) => {
-    g.setEdge({ v: from, w: to });
+  edgeList.forEach(({ id, from, to }) => {
+    g.setEdge({ name: id, v: from, w: to });
   });
   dagre.layout(g);
-
-  const rectsByTableId = new Map<string, Rect>();
+  const rects = new Map<string, Rect>();
   g.nodes().forEach((id) => {
     const node = g.node(id);
-    rectsByTableId.set(id, node);
+    rects.set(id, node);
   });
-  return rectsByTableId;
+  const paths = new Map<string, Path>();
+  g.edges().forEach((e) => {
+    const edge = g.edge(e);
+    const { points } = edge;
+    paths.set(e.name!, points);
+  });
+
+  return { rects, paths };
+};
+
+export const autoLayout = async (
+  nodeList: GraphNodeItem[],
+  edgeList: GraphEdgeItem[]
+): Promise<Layout> => {
+  return layoutDagre(nodeList, edgeList);
 };
