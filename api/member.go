@@ -26,6 +26,8 @@ const (
 	DBA Role = "DBA"
 	// Developer is the DEVELOPER role.
 	Developer Role = "DEVELOPER"
+	// UnknownRole is the unknown role.
+	UnknownRole Role = "UNKNOWN"
 )
 
 // Member is the API message for a member.
