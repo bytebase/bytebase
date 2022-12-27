@@ -18,6 +18,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -32,30 +33,27 @@ const (
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.
 type APIAuthInterceptor struct {
-	store  *store.Store
-	secret string
-	mode   common.ReleaseMode
+	store          *store.Store
+	secret         string
+	licenseService enterpriseAPI.LicenseService
+	mode           common.ReleaseMode
 }
 
 // New returns a new API auth interceptor.
-func New(store *store.Store, secret string, mode common.ReleaseMode) *APIAuthInterceptor {
+func New(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, mode common.ReleaseMode) *APIAuthInterceptor {
 	return &APIAuthInterceptor{
-		store:  store,
-		secret: secret,
-		mode:   mode,
+		store:          store,
+		secret:         secret,
+		licenseService: licenseService,
+		mode:           mode,
 	}
 }
 
-var authAllowlistMethods = []string{
-	"/bytebase.v1.AuthService/Login",
-}
-
-// UnaryInterceptor is the unary interceptor for gRPC API.
-func (in *APIAuthInterceptor) UnaryInterceptor(ctx context.Context, req interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+// AuthenticationInterceptor is the unary interceptor for gRPC API.
+func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	// TODO(d): skips actuator, GET /subscription request, OpenAPI SQL endpoint.
-	// Skip the allowlisted methods for auth interceptor.
-	for _, allow := range authAllowlistMethods {
-		if strings.HasPrefix(serverInfo.FullMethod, allow) {
+	for _, allow := range authenticationAllowlistMethods {
+		if strings.HasPrefix(serverInfo.FullMethod, fmt.Sprintf("%s%s", apiPackagePrefix, allow)) {
 			return handler(ctx, req)
 		}
 	}
