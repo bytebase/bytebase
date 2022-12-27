@@ -91,18 +91,18 @@ func TestDataSource(t *testing.T) {
 	err = ctl.removeLicense()
 	a.NoError(err)
 	err = ctl.patchDataSource(adminDataSource.DatabaseID, api.DataSourcePatch{
-		ID:           readOnlyDataSource.ID,
-		HostOverride: &dataSourceNewHostOverride,
-		PortOverride: &dataSourceNewPortOverride,
+		ID:   readOnlyDataSource.ID,
+		Host: &dataSourceNewHostOverride,
+		Port: &dataSourceNewPortOverride,
 	})
 	a.Equal(err.Error(), "http response error code 403 body \"{\\\"message\\\":\\\"Read replica connection is a ENTERPRISE feature, please upgrade to access it.\\\"}\\n\"")
 
 	err = ctl.setLicense()
 	a.NoError(err)
 	err = ctl.patchDataSource(adminDataSource.DatabaseID, api.DataSourcePatch{
-		ID:           readOnlyDataSource.ID,
-		HostOverride: &dataSourceNewHostOverride,
-		PortOverride: &dataSourceNewPortOverride,
+		ID:   readOnlyDataSource.ID,
+		Host: &dataSourceNewHostOverride,
+		Port: &dataSourceNewPortOverride,
 	})
 	a.NoError(err)
 
