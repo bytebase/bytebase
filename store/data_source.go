@@ -299,12 +299,12 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 			ssl_key,
 			ssl_cert,
 			ssl_ca,
-			host_override,
-			port_override,
+			host,
+			port,
 			options
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override, options
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options
 	`
 	var dataSourceRaw dataSourceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -381,8 +381,8 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 			ssl_key,
 			ssl_cert,
 			ssl_ca,
-			host_override,
-			port_override,
+			host,
+			port,
 			options
 		FROM data_source
 		WHERE `+strings.Join(where, " AND "),
@@ -448,10 +448,10 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 		set, args = append(set, fmt.Sprintf("ssl_cert= $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.HostOverride; v != nil {
-		set, args = append(set, fmt.Sprintf("host_override= $%d", len(args)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("host = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.PortOverride; v != nil {
-		set, args = append(set, fmt.Sprintf("port_override= $%d", len(args)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Options; v != nil {
 		set, args = append(set, fmt.Sprintf("options= $%d", len(args)+1)), append(args, *v)
@@ -464,7 +464,7 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 			UPDATE data_source
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override, options
+			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options
 		`, len(args)),
 		args...,
 	).Scan(
