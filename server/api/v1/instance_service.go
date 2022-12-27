@@ -47,6 +47,19 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 	return convertInstance(instance), nil
 }
 
+// ListInstances lists all instances.
+func (s *EnvironmentService) ListInstances(ctx context.Context, request *v1pb.ListEnvironmentsRequest) (*v1pb.ListInstancesResponse, error) {
+	instances, err := s.store.ListInstanceV2(ctx, request.ShowDeleted)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	response := &v1pb.ListInstancesResponse{}
+	for _, instance := range instances {
+		response.Instances = append(response.Instances, convertInstance(instance))
+	}
+	return response, nil
+}
+
 func getInstanceID(name string) (string, error) {
 	if !strings.HasPrefix(name, instanceNamePrefix) {
 		return "", errors.Errorf("invalid instance name %q", name)
