@@ -95,8 +95,8 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *api
 	}
 
 	host, port := instance.Host, instance.Port
-	if dataSource.HostOverride != "" || dataSource.PortOverride != "" {
-		host, port = dataSource.HostOverride, dataSource.PortOverride
+	if dataSource.Host != "" || dataSource.Port != "" {
+		host, port = dataSource.Host, dataSource.Port
 	}
 
 	dbBinDir := ""

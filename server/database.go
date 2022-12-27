@@ -503,12 +503,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
 		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
-			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
+			if dataSourceCreate.Host != "" || dataSourceCreate.Port != "" {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
 		}
 
-		if dataSourceCreate.Type == api.Admin && (dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "") {
+		if dataSourceCreate.Type == api.Admin && (dataSourceCreate.Host != "" || dataSourceCreate.Port != "") {
 			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
 		}
 
@@ -580,7 +580,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
-			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
+			if (dataSourcePatch.Host != nil && *dataSourcePatch.Host != "") || (dataSourcePatch.Port != nil && *dataSourcePatch.Port != "") {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
 		}
@@ -592,7 +592,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			password := ""
 			dataSourcePatch.Password = &password
 		}
-		if dataSourceOld.Type == api.Admin && (dataSourcePatch.HostOverride != nil || dataSourcePatch.PortOverride != nil) {
+		if dataSourceOld.Type == api.Admin && (dataSourcePatch.Host != nil || dataSourcePatch.Port != nil) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
 		}
 
