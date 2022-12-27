@@ -84,8 +84,9 @@ type DataSource struct {
 
 	// Related fields
 	// Just returns InstanceID and DatabaseID otherwise would cause circular dependency.
-	InstanceID int `jsonapi:"attr,instanceId"`
-	DatabaseID int `jsonapi:"attr,databaseId"`
+	InstanceID   int `jsonapi:"attr,instanceId"`
+	DatabaseID   int `jsonapi:"attr,databaseId"`
+	DatabaseName string
 
 	// Domain specific fields
 	Name     string         `jsonapi:"attr,name"`
