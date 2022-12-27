@@ -1419,7 +1419,8 @@
     "connect-in-admin-mode": "Connect in admin mode",
     "admin-mode": {
       "self": "Admin mode"
-    }
+    },
+    "read-only-mode-not-allowed": "Instance {instance} is not accessible in read-only mode."
   },
   "schema-editor": {
     "self": "Schema Editor",
