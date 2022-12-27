@@ -355,7 +355,7 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			}
 		case *ast.RenameTableStmt:
 			if len(in.AlterItemList) != 1 {
-				return errors.Errorf("Deparse failed, RenameTableStmt needs to be alone in a ALTER TABLE statement.")
+				return errors.Errorf("deparse failed, RenameTableStmt needs to be alone in a ALTER TABLE statement")
 			}
 			if err := deparseRenameTable(itemContext, action, buf); err != nil {
 				return err
