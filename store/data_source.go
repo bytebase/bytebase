@@ -536,8 +536,8 @@ func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([
 			ssl_key,
 			ssl_cert,
 			ssl_ca,
-			host_override,
-			port_override
+			host,
+			port
 		FROM data_source
 		WHERE instance_id = $1`,
 		instanceID,
@@ -559,7 +559,7 @@ func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([
 			&dataSourceMessage.SslCert,
 			&dataSourceMessage.SslCa,
 			&dataSourceMessage.Host,
-			&dataSourceMessage.Password,
+			&dataSourceMessage.Port,
 		); err != nil {
 			return nil, FormatError(err)
 		}
