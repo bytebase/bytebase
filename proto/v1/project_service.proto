@@ -8,6 +8,8 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 
+import "v1/common.proto";
+
 option go_package = "generated-go/v1";
 
 service ProjectService {
@@ -128,17 +130,18 @@ message Project {
   // The name of the project.
   // Format: projects/{project}
   string name = 1;
+  State state = 2;
 
-  string title = 2;
-  string key = 3;
-  Workflow workflow = 4;
-  Visibility visibility = 5;
-  TenantMode tenant_mode = 6;
-  string db_name_template = 7;
-  RoleProvider role_provider = 8;
-  SchemaVersion schema_version = 9;
-  SchemaChange schema_change = 10;
-  LgtmCheck lgtm_check = 11;
+  string title = 3;
+  string key = 4;
+  Workflow workflow = 5;
+  Visibility visibility = 6;
+  TenantMode tenant_mode = 7;
+  string db_name_template = 8;
+  RoleProvider role_provider = 9;
+  SchemaVersion schema_version = 10;
+  SchemaChange schema_change = 11;
+  LgtmCheck lgtm_check = 12;
 }
 
 enum Workflow {

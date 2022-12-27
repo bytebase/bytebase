@@ -8,6 +8,8 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 
+import "v1/common.proto";
+
 option go_package = "generated-go/v1";
 
 service EnvironmentService {
@@ -129,6 +131,8 @@ message Environment {
   // Format: environments/{environment}
   string name = 1;
 
-  string title = 2;
-  int32 order = 3;
+  State state = 2;
+
+  string title = 3;
+  int32 order = 4;
 }

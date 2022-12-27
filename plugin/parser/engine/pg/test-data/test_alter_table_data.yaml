@@ -124,3 +124,11 @@
   want: |-
     ALTER TABLE "t"
         ADD CONSTRAINT "circles_c_excl" EXCLUDE USING gist (c WITH &&, d WITH &&) WHERE (a > 0 AND b < 10);
+- stmt: alter table t rename to t1
+  want: |-
+    ALTER TABLE "t"
+        RENAME TO "t1";
+- stmt: alter table t rename column c1 to c2
+  want: |-
+    ALTER TABLE "t"
+        RENAME COLUMN "c1" TO "c2";

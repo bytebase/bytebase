@@ -353,9 +353,49 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseDropDefault(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.RenameColumnStmt:
+			if len(in.AlterItemList) != 1 {
+				return errors.Errorf("deparse failed, RenameColumnStmt needs to be alone in a ALTER TABLE statement")
+			}
+			if err := deparseRenameColumn(itemContext, action, buf); err != nil {
+				return err
+			}
+		case *ast.RenameTableStmt:
+			if len(in.AlterItemList) != 1 {
+				return errors.Errorf("deparse failed, RenameTableStmt needs to be alone in a ALTER TABLE statement")
+			}
+			if err := deparseRenameTable(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func deparseRenameColumn(context parser.DeparseContext, in *ast.RenameColumnStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("RENAME COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" TO "); err != nil {
+		return err
+	}
+	return writeSurrounding(buf, in.NewName, `"`)
+}
+
+func deparseRenameTable(context parser.DeparseContext, in *ast.RenameTableStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("RENAME TO "); err != nil {
+		return err
+	}
+	return writeSurrounding(buf, in.NewName, `"`)
 }
 
 func deparseSetDefault(context parser.DeparseContext, in *ast.SetDefaultStmt, buf *strings.Builder) error {
@@ -736,7 +776,7 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 		return err
 	}
 
-	if len(in.ColumnList) != 0 {
+	if len(in.ColumnList)+len(in.ConstraintList) != 0 {
 		if _, err := buf.WriteString(" ("); err != nil {
 			return err
 		}
@@ -757,16 +797,48 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 			return err
 		}
 	}
+	for i, constraint := range in.ConstraintList {
+		if i != 0 || len(in.ColumnList) > 0 {
+			if _, err := buf.WriteString(","); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := deparseTableConstraint(columnContext, constraint, buf); err != nil {
+			return err
+		}
+	}
 	if _, err := buf.WriteString("\n"); err != nil {
 		return err
 	}
-	if len(in.ColumnList) != 0 {
+	if len(in.ColumnList)+len(in.ConstraintList) != 0 {
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func deparseTableConstraint(context parser.DeparseContext, in *ast.ConstraintDef, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if in.Name != "" {
+		if _, err := buf.WriteString("CONSTRAINT "); err != nil {
+			return err
+		}
+		if err := writeSurrounding(buf, in.Name, `"`); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(" "); err != nil {
+			return err
+		}
+	}
+	return deparseConstraintDef(context, in, buf)
 }
 
 func deparseColumnDef(context parser.DeparseContext, in *ast.ColumnDef, buf *strings.Builder) error {
