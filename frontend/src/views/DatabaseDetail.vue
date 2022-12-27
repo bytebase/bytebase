@@ -304,9 +304,11 @@
   <BBModal
     v-if="state.showSchemaDiagram"
     :title="$t('schema-diagram.self')"
+    class="h-[calc(100vh-40px)] !max-h-[calc(100vh-40px)]"
+    container-class="flex-1 !pt-0 !border-0"
     @close="state.showSchemaDiagram = false"
   >
-    <div class="w-[80vw] h-[80vh]">
+    <div class="w-[80vw] h-full">
       <SchemaDiagram
         :database="database"
         :table-list="dbSchemaStore.getTableListByDatabaseId(database.id)"
