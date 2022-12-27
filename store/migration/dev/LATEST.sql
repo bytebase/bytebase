@@ -112,10 +112,13 @@ CREATE TABLE environment (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    "order" INTEGER NOT NULL CHECK ("order" >= 0)
+    "order" INTEGER NOT NULL CHECK ("order" >= 0),
+    resource_id TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_environment_unique_name ON environment(name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON environment(resource_id);
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 101;
 
@@ -173,10 +176,13 @@ CREATE TABLE project (
     role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
     schema_version_type TEXT NOT NULL CHECK (schema_version_type IN ('TIMESTAMP', 'SEMANTIC')) DEFAULT 'TIMESTAMP',
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
-    lgtm_check JSONB NOT NULL DEFAULT '{}'
+    lgtm_check JSONB NOT NULL DEFAULT '{}',
+    resource_id TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
 
 INSERT INTO
     project (
@@ -188,7 +194,8 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_template
+        db_name_template,
+        resource_id
     )
 VALUES
     (
@@ -200,7 +207,8 @@ VALUES
         'UI',
         'PUBLIC',
         'DISABLED',
-        ''
+        '',
+        'default'
     );
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
@@ -279,8 +287,11 @@ CREATE TABLE instance (
     host TEXT NOT NULL,
     port TEXT NOT NULL,
     external_link TEXT NOT NULL DEFAULT '',
-    database TEXT NOT NULL DEFAULT ''
+    database TEXT NOT NULL DEFAULT '',
+    resource_id TEXT NOT NULL
 );
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 

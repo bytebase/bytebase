@@ -4,6 +4,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
@@ -22,6 +24,11 @@ import (
 	"github.com/pkg/errors"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -36,6 +43,8 @@ import (
 	"github.com/bytebase/bytebase/resources/mongoutil"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server/api/auth"
+	v1 "github.com/bytebase/bytebase/server/api/v1"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/component/config"
 	"github.com/bytebase/bytebase/server/component/dbfactory"
@@ -112,6 +121,7 @@ type Server struct {
 
 	profile         config.Profile
 	e               *echo.Echo
+	grpcServer      *grpc.Server
 	metaDB          *store.MetadataDB
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
@@ -286,6 +296,22 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))
+
+	// Setup the gRPC and grpc-gateway.
+	authProvider := auth.New(s.store, s.secret, profile.Mode)
+	s.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(authProvider.UnaryInterceptor))
+	mux := runtime.NewServeMux()
+	v1pb.RegisterGreeterServiceServer(s.grpcServer, &v1.GreeterServerImpl{})
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, &profile))
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
+	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterGreeterServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	e.Any("/v2/*", echo.WrapHandler(mux))
 
 	embedFrontend(e)
 	s.e = e
@@ -585,6 +611,15 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		}
 	}
 
+	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
+	if err != nil {
+		return err
+	}
+	go func() {
+		if err := s.grpcServer.Serve(listen); err != nil {
+			log.Error("grpc server listen error", zap.Error(err))
+		}
+	}()
 	return s.e.Start(fmt.Sprintf(":%d", port))
 }
 
@@ -611,6 +646,9 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		if err := s.e.Shutdown(ctx); err != nil {
 			s.e.Logger.Fatal(err)
 		}
+	}
+	if s.grpcServer != nil {
+		s.grpcServer.GracefulStop()
 	}
 
 	// Wait for all runners to exit.

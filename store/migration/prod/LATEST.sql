@@ -112,10 +112,13 @@ CREATE TABLE environment (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    "order" INTEGER NOT NULL CHECK ("order" >= 0)
+    "order" INTEGER NOT NULL CHECK ("order" >= 0),
+    resource_id TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_environment_unique_name ON environment(name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON environment(resource_id);
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 101;
 
@@ -172,10 +175,13 @@ CREATE TABLE project (
     db_name_template TEXT NOT NULL,
     role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
-    lgtm_check JSONB NOT NULL DEFAULT '{}'
+    lgtm_check JSONB NOT NULL DEFAULT '{}',
+    resource_id TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
 
 INSERT INTO
     project (
@@ -187,7 +193,8 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_template
+        db_name_template,
+        resource_id
     )
 VALUES
     (
@@ -199,7 +206,8 @@ VALUES
         'UI',
         'PUBLIC',
         'DISABLED',
-        ''
+        '',
+        'default'
     );
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
@@ -273,13 +281,16 @@ CREATE TABLE instance (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     name TEXT NOT NULL,
-    engine TEXT NOT NULL CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE')),
+    engine TEXT NOT NULL CONSTRAINT instance_engine_check CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE', 'MONGODB')),
     engine_version TEXT NOT NULL DEFAULT '',
     host TEXT NOT NULL,
     port TEXT NOT NULL,
     external_link TEXT NOT NULL DEFAULT '',
-    database TEXT NOT NULL DEFAULT ''
+    database TEXT NOT NULL DEFAULT '',
+    resource_id TEXT NOT NULL
 );
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 
@@ -545,7 +556,8 @@ CREATE TABLE data_source (
     ssl_ca TEXT NOT NULL DEFAULT '',
     -- host_override and port_override are used for read-replicas that have different connection addresses.
     host_override TEXT NOT NULL DEFAULT '',
-    port_override TEXT NOT NULL DEFAULT ''
+    port_override TEXT NOT NULL DEFAULT '',
+    options JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_data_source_instance_id ON data_source(instance_id);
