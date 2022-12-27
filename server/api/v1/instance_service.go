@@ -67,7 +67,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 	return response, nil
 }
 
-// CreateInstance creates the instance.
+// CreateInstance creates an instance.
 func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.CreateInstanceRequest) (*v1pb.Instance, error) {
 	if request.Instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
@@ -85,13 +85,64 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	instance, err := s.store.CreateInstanceV2(ctx,
 		environmentID,
-		principalID,
 		instanceMessage,
+		principalID,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return convertToInstance(environmentID, instance), nil
+}
+
+// UpdateInstance updates an instance.
+func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.UpdateInstanceRequest) (*v1pb.Instance, error) {
+	if request.Instance == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
+	}
+
+	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Instance.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, environmentID, instanceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Instance.Name)
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance.Name)
+	}
+
+	patch := &store.UpdateInstanceMessage{}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "instance.title":
+			patch.Title = &request.Instance.Title
+		case "instance.external_link":
+			patch.ExternalLink = &request.Instance.ExternalLink
+		case "instance.data_sources":
+			datasourceList, err := convertToDataSourceMessageList(request.Instance.DataSources)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			patch.DataSources = datasourceList
+		}
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	ins, err := s.store.UpdateInstanceV2(ctx,
+		environmentID,
+		instanceID,
+		patch,
+		principalID,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToInstance(environmentID, ins), nil
 }
 
 func getEnvironmentAndInstanceID(name string) (string, string, error) {
@@ -194,8 +245,23 @@ func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*stor
 		return nil, errors.Errorf("invalid instance engine %v", instance.Engine)
 	}
 
+	datasourceList, err := convertToDataSourceMessageList(instance.DataSources)
+	if err != nil {
+		return nil, err
+	}
+
+	return &store.InstanceMessage{
+		InstanceID:   instanceID,
+		Title:        instance.Title,
+		Engine:       engine,
+		ExternalLink: instance.ExternalLink,
+		DataSources:  datasourceList,
+	}, nil
+}
+
+func convertToDataSourceMessageList(dataSources []*v1pb.DataSource) ([]*store.DataSourceMessage, error) {
 	datasourceList := []*store.DataSourceMessage{}
-	for _, ds := range instance.DataSources {
+	for _, ds := range dataSources {
 		var dsType api.DataSourceType
 		switch ds.Type {
 		case v1pb.DataSourceType_DATA_SOURCE_RO:
@@ -218,11 +284,6 @@ func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*stor
 			Database: ds.Database,
 		})
 	}
-	return &store.InstanceMessage{
-		InstanceID:   instanceID,
-		Title:        instance.Title,
-		Engine:       engine,
-		ExternalLink: instance.ExternalLink,
-		DataSources:  datasourceList,
-	}, nil
+
+	return datasourceList, nil
 }

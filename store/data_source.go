@@ -535,7 +535,7 @@ type DataSourceMessage struct {
 	Database string
 }
 
-func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([]*DataSourceMessage, error) {
+func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([]*DataSourceMessage, error) {
 	var dataSourceMessages []*DataSourceMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
