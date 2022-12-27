@@ -14,8 +14,8 @@ type DataSource struct {
 	Type     api.DataSourceType `json:"type"`
 	Username string             `json:"username"`
 
-	Host     string `json:"hostOverride"`
-	Port     string `json:"portOverride"`
+	Host     string `json:"host"`
+	Port     string `json:"port"`
 	Database string `json:"database"`
 }
 
@@ -29,7 +29,7 @@ type DataSourceCreate struct {
 	SslCa    string             `json:"sslCa"`
 	SslCert  string             `json:"sslCert"`
 	SslKey   string             `json:"sslKey"`
-	Host     string             `json:"hostOverride"`
-	Port     string             `json:"portOverride"`
+	Host     string             `json:"host"`
+	Port     string             `json:"port"`
 	Database string             `json:"database"`
 }

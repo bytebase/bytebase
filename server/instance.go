@@ -137,9 +137,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			Name:          instancePatch.Name,
 			EngineVersion: instancePatch.EngineVersion,
 			ExternalLink:  instancePatch.ExternalLink,
-			Host:          instancePatch.Host,
-			Port:          instancePatch.Port,
-			Database:      instancePatch.Database,
 		})
 		if err != nil {
 			return err

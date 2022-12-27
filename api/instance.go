@@ -103,9 +103,6 @@ type InstancePatch struct {
 	Name          *string `jsonapi:"attr,name"`
 	EngineVersion *string
 	ExternalLink  *string `jsonapi:"attr,externalLink"`
-	Host          *string `jsonapi:"attr,host"`
-	Port          *string `jsonapi:"attr,port"`
-	Database      *string `jsonapi:"attr,database"`
 	// SRV record is used for MongoDB only.
 	SRV bool `jsonapi:"attr,srv"`
 	// AuthSource is used for MongoDB only.
