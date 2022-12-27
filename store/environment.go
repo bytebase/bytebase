@@ -628,10 +628,10 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*Env
 }
 
 // CreateEnvironmentV2 creates an environment.
-func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *EnvironmentMessage, creatorID int) error {
+func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *EnvironmentMessage, creatorID int) (*EnvironmentMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
@@ -651,14 +651,19 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *Env
 		creatorID,
 		creatorID,
 	); err != nil {
-		return FormatError(err)
+		return nil, FormatError(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return FormatError(err)
+		return nil, FormatError(err)
 	}
 
-	return nil
+	return &EnvironmentMessage{
+		EnvironmentID: environmentMessage.EnvironmentID,
+		Title:         environmentMessage.Title,
+		Order:         environmentMessage.Order,
+		Deleted:       false,
+	}, nil
 }
 
 // UpdateEnvironmentV2 updates an environment.

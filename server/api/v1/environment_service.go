@@ -66,22 +66,18 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	if request.Environment == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "environment must be set")
 	}
-	if err := s.store.CreateEnvironmentV2(ctx,
+	environment, err := s.store.CreateEnvironmentV2(ctx,
 		&store.EnvironmentMessage{
 			EnvironmentID: request.EnvironmentId,
 			Title:         request.Environment.Title,
 			Order:         request.Environment.Order,
 		},
 		principalID,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return &v1pb.Environment{
-		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, request.EnvironmentId),
-		Title: request.Environment.Name,
-		Order: request.Environment.Order,
-		State: v1pb.State_STATE_ACTIVE,
-	}, nil
+	return convertEnvironment(environment), nil
 }
 
 // UpdateEnvironment updates an environment.
