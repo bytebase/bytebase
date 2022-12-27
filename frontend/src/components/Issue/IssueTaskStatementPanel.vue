@@ -15,7 +15,7 @@
         v-if="allowApplyTaskStateToOthers"
         :disabled="isEmpty(state.editStatement)"
         type="button"
-        class="btn-small"
+        class="btn-small py-1 px-3 my-auto"
         @click.prevent="applyTaskStateToOthers(selectedTask as TaskCreate)"
       >
         {{ $t("issue.apply-to-other-tasks") }}
