@@ -634,20 +634,49 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *Env
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO environment (
-			resource_id,
-			name,
-			"order",
-			creator_id,
-			updater_id,
-		)
-		VALUES ($1, $2, $3, $4, $5)
+			INSERT INTO environment (
+				resource_id,
+				name,
+				"order",
+				creator_id,
+				updater_id,
+			)
+			VALUES ($1, $2, $3, $4, $5)
 		`,
 		environmentMessage.ResourceID,
 		environmentMessage.Name,
 		environmentMessage.Order,
 		creatorID,
 		creatorID,
+	); err != nil {
+		return FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
+}
+
+// DeleteEnvironmentV2 deletes an environment (archiving).
+func (s *Store) DeleteEnvironmentV2(ctx context.Context, environmentID string, updaterID int) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+			UPDATE environment
+			SET
+				row_status = $1,
+				updater_id = $2
+			WHERE resource_id = $3
+		`,
+		api.Archived,
+		updaterID,
+		environmentID,
 	); err != nil {
 		return FormatError(err)
 	}

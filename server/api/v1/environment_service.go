@@ -107,8 +107,25 @@ func (*EnvironmentService) UpdateEnvironment(_ context.Context, _ *v1pb.UpdateEn
 }
 
 // DeleteEnvironment deletes an environment.
-func (*EnvironmentService) DeleteEnvironment(_ context.Context, _ *v1pb.DeleteEnvironmentRequest) (*emptypb.Empty, error) {
-	return nil, nil
+func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1pb.DeleteEnvironmentRequest) (*emptypb.Empty, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	environmentID, err := getEnvironmentID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
+	}
+
+	if err := s.store.DeleteEnvironmentV2(ctx, environmentID, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func getEnvironmentID(name string) (string, error) {
