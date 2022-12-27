@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
 	"github.com/bytebase/bytebase/server/component/activity"
@@ -309,6 +310,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+		}
+
+		if database.Instance.Engine == db.MongoDB {
+			return echo.NewHTTPError(http.StatusBadRequest, "Backup is not supported for MongoDB")
 		}
 
 		storeBackupList, err := s.store.FindBackup(ctx, &api.BackupFind{
