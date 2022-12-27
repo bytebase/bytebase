@@ -64,3 +64,19 @@
         "s" serial,
         "t" numeric
     );
+- stmt: |-
+    CREATE TABLE t(
+      a int,
+      b int,
+      c int,
+      PRIMARY KEY(a, b, c),
+      CONSTRAINT uk1 UNIQUE(a, b)
+    )
+  want: |-
+    CREATE TABLE "t" (
+        "a" integer,
+        "b" integer,
+        "c" integer,
+        PRIMARY KEY ("a", "b", "c"),
+        CONSTRAINT "uk1" UNIQUE ("a", "b")
+    );
