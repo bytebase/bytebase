@@ -502,7 +502,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
-		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) && dataSourceCreate.Type == api.RO {
 			if dataSourceCreate.Host != "" || dataSourceCreate.Port != "" {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
@@ -587,10 +587,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			password := ""
 			dataSourcePatch.Password = &password
 		}
-		if dataSourceOld.Type == api.Admin && (dataSourcePatch.Host != nil || dataSourcePatch.Port != nil) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
-		}
-
 		dataSourceNew, err := s.store.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
