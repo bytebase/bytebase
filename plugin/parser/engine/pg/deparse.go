@@ -736,7 +736,7 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 		return err
 	}
 
-	if len(in.ColumnList) != 0 {
+	if len(in.ColumnList)+len(in.ConstraintList) != 0 {
 		if _, err := buf.WriteString(" ("); err != nil {
 			return err
 		}
@@ -757,16 +757,48 @@ func deparseCreateTable(context parser.DeparseContext, in *ast.CreateTableStmt, 
 			return err
 		}
 	}
+	for i, constraint := range in.ConstraintList {
+		if i != 0 || len(in.ColumnList) > 0 {
+			if _, err := buf.WriteString(","); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := deparseTableConstraint(columnContext, constraint, buf); err != nil {
+			return err
+		}
+	}
 	if _, err := buf.WriteString("\n"); err != nil {
 		return err
 	}
-	if len(in.ColumnList) != 0 {
+	if len(in.ColumnList)+len(in.ConstraintList) != 0 {
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func deparseTableConstraint(context parser.DeparseContext, in *ast.ConstraintDef, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+
+	if in.Name != "" {
+		if _, err := buf.WriteString("CONSTRAINT "); err != nil {
+			return err
+		}
+		if err := writeSurrounding(buf, in.Name, `"`); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(" "); err != nil {
+			return err
+		}
+	}
+	return deparseConstraintDef(context, in, buf)
 }
 
 func deparseColumnDef(context parser.DeparseContext, in *ast.ColumnDef, buf *strings.Builder) error {
