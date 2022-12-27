@@ -773,6 +773,13 @@ type InstanceMessage struct {
 	DataSources  []*DataSourceMessage
 }
 
+// UpdateInstanceMessage is the mssage for updating an instance.
+type UpdateInstanceMessage struct {
+	Title        *string
+	ExternalLink *string
+	DataSources  []*DataSourceMessage
+}
+
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, environmentID, resourceID string) (*InstanceMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -886,4 +893,203 @@ func (s *Store) ListInstanceV2(ctx context.Context, environmentID string, showDe
 	}
 
 	return instanceMessages, nil
+}
+
+// CreateInstanceV2 creates the instance.
+func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, instanceCreate *InstanceMessage, creatorID int) (*InstanceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	environmentMessage, err := getEnvironmentImplV2(ctx, tx, environmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	var instanceID int
+	if err := tx.QueryRowContext(ctx, `
+			INSERT INTO instance (
+				resource_id,
+				creator_id,
+				updater_id,
+				environment_id,
+				name,
+				engine,
+				external_link
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id
+		`,
+		instanceCreate.InstanceID,
+		creatorID,
+		creatorID,
+		environmentMessage.InternalID,
+		instanceCreate.Title,
+		instanceCreate.Engine,
+		instanceCreate.ExternalLink,
+	).Scan(&instanceID); err != nil {
+		return nil, FormatError(err)
+	}
+
+	databaseCreate := &api.DatabaseCreate{
+		CreatorID:     creatorID,
+		ProjectID:     api.DefaultProjectID,
+		InstanceID:    instanceID,
+		EnvironmentID: environmentMessage.InternalID,
+		Name:          api.AllDatabaseName,
+		CharacterSet:  api.DefaultCharacterSetName,
+		Collation:     api.DefaultCollationName,
+	}
+	allDatabase, err := s.createDatabaseRawTx(ctx, tx, databaseCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ds := range instanceCreate.DataSources {
+		dataSourceCreate := &api.DataSourceCreate{
+			CreatorID:  creatorID,
+			InstanceID: instanceID,
+			DatabaseID: allDatabase.ID,
+			Name:       ds.Title,
+			Type:       ds.Type,
+			Username:   ds.Username,
+			Password:   ds.Password,
+			SslKey:     ds.SslKey,
+			SslCert:    ds.SslCert,
+			SslCa:      ds.SslCa,
+			Host:       ds.Host,
+			Port:       ds.Port,
+			Database:   ds.Database,
+		}
+		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &InstanceMessage{
+		InstanceID:   instanceCreate.InstanceID,
+		Title:        instanceCreate.Title,
+		Engine:       instanceCreate.Engine,
+		ExternalLink: instanceCreate.ExternalLink,
+		DataSources:  instanceCreate.DataSources,
+	}, nil
+}
+
+// UpdateInstanceV2 updates an instance.
+func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID string, patch *UpdateInstanceMessage, updaterID int) (*InstanceMessage, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	if v := patch.Title; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.ExternalLink; v != nil {
+		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	environmentMessage, err := getEnvironmentImplV2(ctx, tx, environmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	args = append(args, resourceID, environmentMessage.InternalID)
+
+	var instanceMessage InstanceMessage
+	var rowStatus string
+	var instanceID int
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+			UPDATE instance
+			SET `+strings.Join(set, ", ")+`
+			WHERE resource_id = $%d AND environment_id = $%d
+			RETURNING
+				id,
+				resource_id,
+				name,
+				engine,
+				external_link,
+				row_status
+		`, len(args)-1, len(args)),
+		args...,
+	).Scan(
+		&instanceID,
+		&instanceMessage.InstanceID,
+		&instanceMessage.Title,
+		&instanceMessage.Engine,
+		&instanceMessage.ExternalLink,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+
+	if patch.DataSources != nil {
+		dbName := api.AllDatabaseName
+		dbFind := &api.DatabaseFind{
+			InstanceID:         &instanceID,
+			Name:               &dbName,
+			IncludeAllDatabase: true,
+		}
+		databaseList, err := s.findDatabaseImpl(ctx, tx, dbFind)
+		if err != nil {
+			return nil, err
+		}
+		if len(databaseList) == 0 {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot find database with filter %+v. ", dbFind)}
+		}
+		if len(databaseList) > 1 {
+			return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(databaseList), dbFind)}
+		}
+		database := databaseList[0]
+
+		if err := s.clearDataSourceImpl(ctx, tx, instanceID, database.ID); err != nil {
+			return nil, err
+		}
+
+		for _, ds := range patch.DataSources {
+			dataSourceCreate := &api.DataSourceCreate{
+				CreatorID:  updaterID,
+				InstanceID: instanceID,
+				DatabaseID: database.ID,
+				Name:       ds.Title,
+				Type:       ds.Type,
+				Username:   ds.Username,
+				Password:   ds.Password,
+				SslKey:     ds.SslKey,
+				SslCert:    ds.SslCert,
+				SslCa:      ds.SslCa,
+				Host:       ds.Host,
+				Port:       ds.Port,
+				Database:   ds.Database,
+			}
+			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+
+	dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	instanceMessage.DataSources = dataSourceList
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &instanceMessage, nil
 }
