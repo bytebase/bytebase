@@ -25,7 +25,7 @@
           <heroicons-solid:x class="w-6 h-6" />
         </button>
       </div>
-      <div class="modal-container">
+      <div class="modal-container" :class="containerClass">
         <slot />
       </div>
     </div>
@@ -41,11 +41,13 @@ import {
   onBeforeMount,
   onMounted,
   onUnmounted,
+  PropType,
   provide,
   ref,
   Ref,
   RenderFunction,
 } from "vue";
+import type { VueClass } from "@/utils";
 import { useModalStack } from "./BBModalStack.vue";
 
 type Overrides = {
@@ -71,6 +73,10 @@ export default defineComponent({
     showClose: {
       type: Boolean,
       default: true,
+    },
+    containerClass: {
+      type: [String, Object, Array] as PropType<VueClass>,
+      default: undefined,
     },
     escClosable: {
       type: Boolean,
