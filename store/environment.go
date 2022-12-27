@@ -546,7 +546,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 			resource_id,
 			name,
 			"order",
-			row_status,
+			row_status
 		FROM environment
 		WHERE resource_id = $1`,
 		resourceID,
@@ -591,7 +591,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*Env
 			resource_id
 			name,
 			"order",
-			row_status,
+			row_status
 		FROM environment
 		WHERE `+strings.Join(where, " AND "),
 		args...,
