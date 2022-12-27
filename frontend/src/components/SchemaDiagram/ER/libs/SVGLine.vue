@@ -6,10 +6,21 @@
     :style="{
       left: `${bbox.x - AA_OFFSET[0]}px`,
       top: `${bbox.y - AA_OFFSET[1]}px`,
-      width: `${bbox.width + AA_OFFSET[0]}px`,
-      height: `${bbox.height + AA_OFFSET[1]}px`,
+      width: `${bbox.width + AA_OFFSET[0] * 2}px`,
+      height: `${bbox.height + AA_OFFSET[1] * 2}px`,
     }"
   >
+    <path
+      version="1.1"
+      xmlns="http://www.w3.org/2000/svg"
+      :d="svgLine"
+      v-bind="aaProps"
+      pointer-events="visibleStroke"
+      fill="none"
+      stroke="11.5"
+      stroke-width="11.5"
+      class="opacity-40"
+    ></path>
     <path
       v-for="(decorator, i) in svgDecorators"
       :key="i"
@@ -31,7 +42,6 @@
       fill="none"
       stroke="rgb(40, 40, 40)"
       stroke-width="1.5"
-      stroke-linejoin="round"
     ></path>
   </svg>
 </template>
