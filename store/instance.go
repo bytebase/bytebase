@@ -541,6 +541,8 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 				SslCa:      dataSource.SslCa,
 				Host:       dataSource.Host,
 				Port:       dataSource.Port,
+				Options:    dataSource.Options,
+				Database:   dataSource.Database,
 			}
 			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 				return nil, err

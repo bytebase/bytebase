@@ -303,9 +303,10 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 			ssl_ca,
 			host,
 			port,
-			options
+			options,
+			database
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
 	`
 	var dataSourceRaw dataSourceRaw
@@ -324,6 +325,7 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		create.Host,
 		create.Port,
 		create.Options,
+		create.Database,
 	).Scan(
 		&dataSourceRaw.ID,
 		&dataSourceRaw.CreatorID,
