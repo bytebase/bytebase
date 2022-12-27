@@ -761,6 +761,10 @@ const handleCreateDataSource = (type: DataSourceType) => {
     type: type,
     username: "",
     password: "",
+    options: {
+      authSource: "",
+      srv: false,
+    },
   } as DataSource;
   state.dataSourceList.push({
     ...tempDataSource,
