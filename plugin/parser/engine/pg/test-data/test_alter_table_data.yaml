@@ -128,3 +128,7 @@
   want: |-
     ALTER TABLE "t"
         RENAME TO "t1";
+- stmt: alter table t rename column c1 to c2
+  want: |-
+    ALTER TABLE "t"
+        RENAME COLUMN "c1" TO "c2";

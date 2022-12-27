@@ -353,6 +353,13 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseDropDefault(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.RenameColumnStmt:
+			if len(in.AlterItemList) != 1 {
+				return errors.Errorf("deparse failed, RenameColumnStmt needs to be alone in a ALTER TABLE statement")
+			}
+			if err := deparseRenameColumn(itemContext, action, buf); err != nil {
+				return err
+			}
 		case *ast.RenameTableStmt:
 			if len(in.AlterItemList) != 1 {
 				return errors.Errorf("deparse failed, RenameTableStmt needs to be alone in a ALTER TABLE statement")
@@ -363,6 +370,22 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 		}
 	}
 	return nil
+}
+
+func deparseRenameColumn(context parser.DeparseContext, in *ast.RenameColumnStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("RENAME COLUMN "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" TO "); err != nil {
+		return err
+	}
+	return writeSurrounding(buf, in.NewName, `"`)
 }
 
 func deparseRenameTable(context parser.DeparseContext, in *ast.RenameTableStmt, buf *strings.Builder) error {
