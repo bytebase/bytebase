@@ -298,8 +298,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}))
 
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, profile.Mode)
-	s.grpcServer = grpc.NewServer(grpc.UnaryInterceptor(authProvider.UnaryInterceptor))
+	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
+	s.grpcServer = grpc.NewServer(
+		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, authProvider.ACLInterceptor),
+	)
 	mux := runtime.NewServeMux()
 	v1pb.RegisterGreeterServiceServer(s.grpcServer, &v1.GreeterServerImpl{})
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, &profile))
@@ -477,6 +479,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 	s.registerOpenAPIRoutesForSQL(openAPIGroup)
 	s.registerOpenAPIRoutesForAuth(openAPIGroup)
 	s.registerOpenAPIRoutesForInstance(openAPIGroup)
+	s.registerOpenAPIRoutesForIssue(openAPIGroup)
 	s.registerOpenAPIRoutesForEnvironment(openAPIGroup)
 
 	openAPIGroup.GET("/healthz", func(c echo.Context) error {

@@ -28,16 +28,17 @@ type dataSourceRaw struct {
 	DatabaseID int
 
 	// Domain specific fields
-	Name         string
-	Type         api.DataSourceType
-	Username     string
-	Password     string
-	SslCa        string
-	SslCert      string
-	SslKey       string
-	HostOverride string
-	PortOverride string
-	Options      api.DataSourceOptions
+	Name     string
+	Type     api.DataSourceType
+	Username string
+	Password string
+	SslCa    string
+	SslCert  string
+	SslKey   string
+	Host     string
+	Port     string
+	Options  api.DataSourceOptions
+	Database string
 }
 
 // toDataSource creates an instance of DataSource based on the dataSourceRaw.
@@ -57,16 +58,17 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 		DatabaseID: raw.DatabaseID,
 
 		// Domain specific fields
-		Name:         raw.Name,
-		Type:         raw.Type,
-		Username:     raw.Username,
-		Password:     raw.Password,
-		SslCa:        raw.SslCa,
-		SslCert:      raw.SslCert,
-		SslKey:       raw.SslKey,
-		HostOverride: raw.HostOverride,
-		PortOverride: raw.PortOverride,
-		Options:      raw.Options,
+		Name:     raw.Name,
+		Type:     raw.Type,
+		Username: raw.Username,
+		Password: raw.Password,
+		SslCa:    raw.SslCa,
+		SslCert:  raw.SslCert,
+		SslKey:   raw.SslKey,
+		Host:     raw.Host,
+		Port:     raw.Port,
+		Options:  raw.Options,
+		Database: raw.Database,
 	}
 }
 
@@ -299,12 +301,13 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 			ssl_key,
 			ssl_cert,
 			ssl_ca,
-			host_override,
-			port_override,
-			options
+			host,
+			port,
+			options,
+			database
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override, options
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
 	`
 	var dataSourceRaw dataSourceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -319,9 +322,10 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		create.SslKey,
 		create.SslCert,
 		create.SslCa,
-		create.HostOverride,
-		create.PortOverride,
+		create.Host,
+		create.Port,
 		create.Options,
+		create.Database,
 	).Scan(
 		&dataSourceRaw.ID,
 		&dataSourceRaw.CreatorID,
@@ -337,9 +341,10 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		&dataSourceRaw.SslKey,
 		&dataSourceRaw.SslCert,
 		&dataSourceRaw.SslCa,
-		&dataSourceRaw.HostOverride,
-		&dataSourceRaw.PortOverride,
+		&dataSourceRaw.Host,
+		&dataSourceRaw.Port,
 		&dataSourceRaw.Options,
+		&dataSourceRaw.Database,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -381,9 +386,10 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 			ssl_key,
 			ssl_cert,
 			ssl_ca,
-			host_override,
-			port_override,
-			options
+			host,
+			port,
+			options,
+			database
 		FROM data_source
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -412,9 +418,10 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 			&dataSourceRaw.SslKey,
 			&dataSourceRaw.SslCert,
 			&dataSourceRaw.SslCa,
-			&dataSourceRaw.HostOverride,
-			&dataSourceRaw.PortOverride,
+			&dataSourceRaw.Host,
+			&dataSourceRaw.Port,
 			&dataSourceRaw.Options,
+			&dataSourceRaw.Database,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -447,14 +454,17 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 	if v := patch.SslCert; v != nil {
 		set, args = append(set, fmt.Sprintf("ssl_cert= $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.HostOverride; v != nil {
-		set, args = append(set, fmt.Sprintf("host_override= $%d", len(args)+1)), append(args, *v)
+	if v := patch.Host; v != nil {
+		set, args = append(set, fmt.Sprintf("host = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.PortOverride; v != nil {
-		set, args = append(set, fmt.Sprintf("port_override= $%d", len(args)+1)), append(args, *v)
+	if v := patch.Port; v != nil {
+		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Options; v != nil {
 		set, args = append(set, fmt.Sprintf("options= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Database; v != nil {
+		set, args = append(set, fmt.Sprintf("database = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.ID)
 
@@ -464,7 +474,7 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 			UPDATE data_source
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host_override, port_override, options
+			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
 		`, len(args)),
 		args...,
 	).Scan(
@@ -482,9 +492,10 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 		&dataSourceRaw.SslKey,
 		&dataSourceRaw.SslCert,
 		&dataSourceRaw.SslCa,
-		&dataSourceRaw.HostOverride,
-		&dataSourceRaw.PortOverride,
+		&dataSourceRaw.Host,
+		&dataSourceRaw.Port,
 		&dataSourceRaw.Options,
+		&dataSourceRaw.Database,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("DataSource not found with ID %d", patch.ID)}
@@ -536,8 +547,8 @@ func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([
 			ssl_key,
 			ssl_cert,
 			ssl_ca,
-			host_override,
-			port_override
+			host,
+			port
 		FROM data_source
 		WHERE instance_id = $1`,
 		instanceID,
@@ -559,7 +570,7 @@ func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([
 			&dataSourceMessage.SslCert,
 			&dataSourceMessage.SslCa,
 			&dataSourceMessage.Host,
-			&dataSourceMessage.Password,
+			&dataSourceMessage.Port,
 		); err != nil {
 			return nil, FormatError(err)
 		}

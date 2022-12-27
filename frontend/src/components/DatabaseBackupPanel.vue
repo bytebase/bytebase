@@ -115,6 +115,7 @@
             v-if="allowEdit"
             type="button"
             class="btn-normal whitespace-nowrap items-center"
+            :disabled="database.instance.engine === 'MONGODB'"
             @click.prevent="state.showCreateBackupModal = true"
           >
             {{ $t("database.backup-now") }}
