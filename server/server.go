@@ -479,6 +479,7 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 	s.registerOpenAPIRoutesForSQL(openAPIGroup)
 	s.registerOpenAPIRoutesForAuth(openAPIGroup)
 	s.registerOpenAPIRoutesForInstance(openAPIGroup)
+	s.registerOpenAPIRoutesForIssue(openAPIGroup)
 	s.registerOpenAPIRoutesForEnvironment(openAPIGroup)
 
 	openAPIGroup.GET("/healthz", func(c echo.Context) error {
