@@ -525,7 +525,7 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *Environme
 
 // EnvironmentMessage is the mssage for environment.
 type EnvironmentMessage struct {
-	ID            int
+	InternalID    int
 	EnvironmentID string
 	Title         string
 	Order         int32
@@ -741,7 +741,7 @@ func getEnvironmentImplV2(ctx context.Context, tx *Tx, resourceID string) (*Envi
 		WHERE resource_id = $1`,
 		resourceID,
 	).Scan(
-		&environmentMessage.ID,
+		&environmentMessage.InternalID,
 		&environmentMessage.EnvironmentID,
 		&environmentMessage.Title,
 		&environmentMessage.Order,

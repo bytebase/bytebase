@@ -925,7 +925,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		instanceCreate.InstanceID,
 		creatorID,
 		creatorID,
-		environmentMessage.ID,
+		environmentMessage.InternalID,
 		instanceCreate.Title,
 		instanceCreate.Engine,
 		instanceCreate.ExternalLink,
@@ -937,7 +937,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		CreatorID:     creatorID,
 		ProjectID:     api.DefaultProjectID,
 		InstanceID:    instanceID,
-		EnvironmentID: environmentMessage.ID,
+		EnvironmentID: environmentMessage.InternalID,
 		Name:          api.AllDatabaseName,
 		CharacterSet:  api.DefaultCharacterSetName,
 		Collation:     api.DefaultCollationName,
@@ -1002,7 +1002,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID 
 		return nil, err
 	}
 
-	args = append(args, resourceID, environmentMessage.ID)
+	args = append(args, resourceID, environmentMessage.InternalID)
 
 	var instanceMessage InstanceMessage
 	var rowStatus string
