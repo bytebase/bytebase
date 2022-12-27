@@ -52,10 +52,8 @@ func New(store *store.Store, secret string, licenseService enterpriseAPI.License
 // AuthenticationInterceptor is the unary interceptor for gRPC API.
 func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	// TODO(d): skips actuator, GET /subscription request, OpenAPI SQL endpoint.
-	for _, allow := range authenticationAllowlistMethods {
-		if strings.HasPrefix(serverInfo.FullMethod, fmt.Sprintf("%s%s", apiPackagePrefix, allow)) {
-			return handler(ctx, req)
-		}
+	if isAuthenticationAllowed(serverInfo.FullMethod) {
+		return handler(ctx, req)
 	}
 
 	md, ok := metadata.FromIncomingContext(ctx)

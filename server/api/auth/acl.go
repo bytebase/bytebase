@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"google.golang.org/grpc"
 
@@ -12,12 +10,9 @@ import (
 
 // ACLInterceptor is the unary interceptor for gRPC API.
 func (in *APIAuthInterceptor) ACLInterceptor(ctx context.Context, req interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	for _, allow := range authenticationAllowlistMethods {
-		if strings.HasPrefix(serverInfo.FullMethod, fmt.Sprintf("%s%s", apiPackagePrefix, allow)) {
-			return handler(ctx, req)
-		}
+	if isAuthenticationAllowed(serverInfo.FullMethod) {
+		return handler(ctx, req)
 	}
-
 	// If RBAC feature is not enabled, all users are treated as OWNER.
 	if !in.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
 		return handler(ctx, req)
