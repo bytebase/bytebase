@@ -771,7 +771,7 @@ type InstanceMessage struct {
 }
 
 // GetInstanceV2 gets an instance by the resource_id.
-func (s *Store) GetInstanceV2(ctx context.Context, resourceID string) (*InstanceMessage, error) {
+func (s *Store) GetInstanceV2(ctx context.Context, environmentID, resourceID string) (*InstanceMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -783,14 +783,17 @@ func (s *Store) GetInstanceV2(ctx context.Context, resourceID string) (*Instance
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
-			id,
-			resource_id,
-			name,
+			instance.id AS id,
+			instance.resource_id AS resource_id,
+			instance.name AS name,
 			engine,
 			external_link,
-			row_status
+			instance.row_status AS row_status
 		FROM instance
-		WHERE resource_id = $1`,
+		LEFT JOIN environment
+		ON environment.id = instance.environment_id
+		WHERE environment.resource_id = $1 AND instance.resource_id = $2`,
+		environmentID,
 		resourceID,
 	).Scan(
 		&instanceID,
@@ -821,29 +824,31 @@ func (s *Store) GetInstanceV2(ctx context.Context, resourceID string) (*Instance
 }
 
 // ListInstanceV2 lists all instance.
-func (s *Store) ListInstanceV2(ctx context.Context, showDeleted bool) ([]*InstanceMessage, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if !showDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
-	}
-
+func (s *Store) ListInstanceV2(ctx context.Context, environmentID string, showDeleted bool) ([]*InstanceMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
+	where, args := []string{"1 = 1"}, []interface{}{environmentID}
+	if !showDeleted {
+		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
 	var instanceMessages []*InstanceMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
-			resource_id,
-			name,
+			instance.id AS id,
+			instance.resource_id AS resource_id,
+			instance.name AS name,
 			engine,
 			external_link,
-			row_status
+			instance.row_status AS row_status
 		FROM instance
-		WHERE `+strings.Join(where, " AND "),
+		LEFT JOIN environment
+		ON environment.id = instance.environment_id
+		WHERE environment.resource_id = $1 AND `+strings.Join(where, " AND "),
 		args...,
 	)
 	if err != nil {

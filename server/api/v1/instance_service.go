@@ -38,7 +38,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, instanceID)
+	instance, err := s.store.GetInstanceV2(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -55,7 +55,7 @@ func (s *EnvironmentService) ListInstances(ctx context.Context, request *v1pb.Li
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instances, err := s.store.ListInstanceV2(ctx, request.ShowDeleted)
+	instances, err := s.store.ListInstanceV2(ctx, environmentID, request.ShowDeleted)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
