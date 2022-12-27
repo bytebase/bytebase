@@ -488,7 +488,8 @@
       "skipped": "跳过"
     },
     "subject-prefix": {
-      "task": "任务"
+      "task": "任务",
+      "stage": "阶段"
     },
     "n-similar-activities": "({count} 个相似的活动)"
   },

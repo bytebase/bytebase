@@ -488,7 +488,8 @@
       "skipped": "skipped"
     },
     "subject-prefix": {
-      "task": "Task"
+      "task": "Task",
+      "stage": "Stage"
     },
     "n-similar-activities": "({count} similar activity) | ({count} similar activities)"
   },

@@ -654,6 +654,9 @@ const actionSubjectPrefix = (activity: Activity): string => {
     if (activity.type == "bb.pipeline.task.status.update") {
       return `${t("activity.subject-prefix.task")} `;
     }
+    if (activity.type == "bb.pipeline.stage.status.update") {
+      return `${t("activity.subject-prefix.stage")}`;
+    }
   }
   return "";
 };
@@ -676,6 +679,17 @@ const actionSubject = (activity: Activity): ActionSubject => {
           link,
         };
       }
+    }
+    if (activity.type == "bb.pipeline.stage.status.update") {
+      const payload = activity.payload as ActivityStageStatusUpdatePayload;
+      const link = `/issue/${issueSlug(
+        issue.value.name,
+        issue.value.id
+      )}?stage=${payload.stageId}`;
+      return {
+        name: `${payload.stageName}`,
+        link,
+      };
     }
   }
   return {
