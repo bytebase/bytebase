@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/common"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
@@ -32,7 +33,7 @@ func NewEnvironmentService(store *store.Store) *EnvironmentService {
 
 // GetEnvironment gets an environment.
 func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.GetEnvironmentRequest) (*v1pb.Environment, error) {
-	environmentID, err := getEnvironmentID(request.GetName())
+	environmentID, err := getEnvironmentID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -48,7 +49,7 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 		state = v1pb.State_STATE_DELETED
 	}
 	return &v1pb.Environment{
-		Name:  request.GetName(),
+		Name:  request.Name,
 		Title: environment.Name,
 		Order: int32(environment.Order),
 		State: state,
@@ -57,7 +58,7 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 
 // ListEnvironments lists all environments.
 func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb.ListEnvironmentsRequest) (*v1pb.ListEnvironmentsResponse, error) {
-	environments, err := s.store.ListEnvironmentV2(ctx, request.GetShowDeleted())
+	environments, err := s.store.ListEnvironmentV2(ctx, request.ShowDeleted)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -80,8 +81,24 @@ func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb
 }
 
 // CreateEnvironment creates an environment.
-func (*EnvironmentService) CreateEnvironment(_ context.Context, _ *v1pb.CreateEnvironmentRequest) (*v1pb.Environment, error) {
-	return nil, nil
+func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1pb.CreateEnvironmentRequest) (*v1pb.Environment, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if err := s.store.CreateEnvironmentV2(ctx,
+		&store.EnvironmentMessage{
+			ResourceID: request.EnvironmentId,
+			Name:       request.Environment.Title,
+			Order:      int(request.Environment.Order),
+		},
+		principalID,
+	); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &v1pb.Environment{
+		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, request.EnvironmentId),
+		Title: request.Environment.Name,
+		Order: int32(request.Environment.Order),
+		State: v1pb.State_STATE_ACTIVE,
+	}, nil
 }
 
 // UpdateEnvironment updates an environment.

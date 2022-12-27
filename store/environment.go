@@ -624,3 +624,37 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*Env
 
 	return environmentMessages, nil
 }
+
+// CreateEnvironmentV2 creates an environment.
+func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *EnvironmentMessage, creatorID int) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO environment (
+			resource_id,
+			name,
+			"order",
+			creator_id,
+			updater_id,
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		`,
+		environmentMessage.ResourceID,
+		environmentMessage.Name,
+		environmentMessage.Order,
+		creatorID,
+		creatorID,
+	); err != nil {
+		return FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
+}
