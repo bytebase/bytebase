@@ -526,9 +526,15 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *Environme
 // EnvironmentMessage is the mssage for environment.
 type EnvironmentMessage struct {
 	ResourceID string
-	Name       string
-	Order      int
+	Title      string
+	Order      int32
 	Deleted    bool
+}
+
+// UpdateEnvironmentMessage is the message for updating an environment.
+type UpdateEnvironmentMessage struct {
+	Name  *string
+	Order *int32
 }
 
 // GetEnvironmentV2 gets environment by resource ID.
@@ -552,7 +558,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 		resourceID,
 	).Scan(
 		&environmentMessage.ResourceID,
-		&environmentMessage.Name,
+		&environmentMessage.Title,
 		&environmentMessage.Order,
 		&rowStatus,
 	); err != nil {
@@ -605,7 +611,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*Env
 		var rowStatus string
 		if err := rows.Scan(
 			&environmentMessage.ResourceID,
-			&environmentMessage.Name,
+			&environmentMessage.Title,
 			&environmentMessage.Order,
 			&rowStatus,
 		); err != nil {
@@ -644,7 +650,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *Env
 			VALUES ($1, $2, $3, $4, $5)
 		`,
 		environmentMessage.ResourceID,
-		environmentMessage.Name,
+		environmentMessage.Title,
 		environmentMessage.Order,
 		creatorID,
 		creatorID,
@@ -657,6 +663,54 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *Env
 	}
 
 	return nil
+}
+
+// UpdateEnvironmentV2 updates an environment.
+func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, patch *UpdateEnvironmentMessage, updaterID int) (*EnvironmentMessage, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Order; v != nil {
+		set, args = append(set, fmt.Sprintf(`"order" = $%d`, len(args)+1)), append(args, *v)
+	}
+	args = append(args, environmentID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var environmentMessage EnvironmentMessage
+	var rowStatus string
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+			UPDATE environment
+			SET `+strings.Join(set, ", ")+`
+			WHERE resource_id = $%d
+			RETURNING resource_id, name, "order", row_status
+		`, len(args)),
+		args...,
+	).Scan(
+		&environmentMessage.ResourceID,
+		&environmentMessage.Title,
+		&environmentMessage.Order,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+	if rowStatus == string(api.Archived) {
+		environmentMessage.Deleted = true
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &environmentMessage, nil
 }
 
 // DeleteOrUndeleteEnvironmentV2 deletes or undeletes an environment (archiving).

@@ -50,8 +50,8 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 	}
 	return &v1pb.Environment{
 		Name:  request.Name,
-		Title: environment.Name,
-		Order: int32(environment.Order),
+		Title: environment.Title,
+		Order: environment.Order,
 		State: state,
 	}, nil
 }
@@ -72,8 +72,8 @@ func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb
 			response.Environments,
 			&v1pb.Environment{
 				Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
-				Title: environment.Name,
-				Order: int32(environment.Order),
+				Title: environment.Title,
+				Order: environment.Order,
 				State: state,
 			})
 	}
@@ -83,11 +83,14 @@ func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb
 // CreateEnvironment creates an environment.
 func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1pb.CreateEnvironmentRequest) (*v1pb.Environment, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if request.Environment == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "environment must be set")
+	}
 	if err := s.store.CreateEnvironmentV2(ctx,
 		&store.EnvironmentMessage{
 			ResourceID: request.EnvironmentId,
-			Name:       request.Environment.Title,
-			Order:      int(request.Environment.Order),
+			Title:      request.Environment.Title,
+			Order:      request.Environment.Order,
 		},
 		principalID,
 	); err != nil {
@@ -96,14 +99,64 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	return &v1pb.Environment{
 		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, request.EnvironmentId),
 		Title: request.Environment.Name,
-		Order: int32(request.Environment.Order),
+		Order: request.Environment.Order,
 		State: v1pb.State_STATE_ACTIVE,
 	}, nil
 }
 
 // UpdateEnvironment updates an environment.
-func (*EnvironmentService) UpdateEnvironment(_ context.Context, _ *v1pb.UpdateEnvironmentRequest) (*v1pb.Environment, error) {
-	return nil, nil
+func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1pb.UpdateEnvironmentRequest) (*v1pb.Environment, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if request.Environment == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "environment must be set")
+	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+	environmentID, err := getEnvironmentID(request.Environment.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
+	}
+	if environment.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
+	}
+
+	patch := &store.UpdateEnvironmentMessage{}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "environment.title":
+			patch.Name = &request.Environment.Title
+		case "environment.order":
+			patch.Order = &request.Environment.Order
+		}
+	}
+
+	environment, err = s.store.UpdateEnvironmentV2(ctx,
+		environmentID,
+		patch,
+		principalID,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	state := v1pb.State_STATE_ACTIVE
+	if environment.Deleted {
+		state = v1pb.State_STATE_DELETED
+	}
+	return &v1pb.Environment{
+		Name:  request.Environment.Name,
+		Title: environment.Title,
+		Order: environment.Order,
+		State: state,
+	}, nil
 }
 
 // DeleteEnvironment deletes an environment.
@@ -155,8 +208,8 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 	}
 	return &v1pb.Environment{
 		Name:  request.Name,
-		Title: environment.Name,
-		Order: int32(environment.Order),
+		Title: environment.Title,
+		Order: environment.Order,
 		State: v1pb.State_STATE_ACTIVE,
 	}, nil
 }
