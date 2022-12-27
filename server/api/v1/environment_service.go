@@ -127,16 +127,7 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	state := v1pb.State_STATE_ACTIVE
-	if environment.Deleted {
-		state = v1pb.State_STATE_DELETED
-	}
-	return &v1pb.Environment{
-		Name:  request.Environment.Name,
-		Title: environment.Title,
-		Order: environment.Order,
-		State: state,
-	}, nil
+	return convertEnvironment(environment), nil
 }
 
 // DeleteEnvironment deletes an environment.
@@ -186,12 +177,10 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 	if err := s.store.DeleteOrUndeleteEnvironmentV2(ctx, environmentID, false /* delete */, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return &v1pb.Environment{
-		Name:  request.Name,
-		Title: environment.Title,
-		Order: environment.Order,
-		State: v1pb.State_STATE_ACTIVE,
-	}, nil
+
+	resp := convertEnvironment(environment)
+	resp.State = v1pb.State_STATE_ACTIVE
+	return resp, nil
 }
 
 func getEnvironmentID(name string) (string, error) {
