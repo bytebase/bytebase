@@ -20,7 +20,7 @@ func (in *APIAuthInterceptor) ACLInterceptor(ctx context.Context, req interface{
 	// Stores principalID into context.
 	childCtx := context.WithValue(ctx, common.RoleContextKey, role)
 
-	//TODO(d): implement the authorization.
+	// TODO(d): implement the authorization.
 
 	return handler(childCtx, req)
 }
