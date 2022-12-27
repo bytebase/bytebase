@@ -525,6 +525,7 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *Environme
 
 // EnvironmentMessage is the mssage for environment.
 type EnvironmentMessage struct {
+	InternalID    int
 	EnvironmentID string
 	Title         string
 	Order         int32
@@ -545,35 +546,16 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 	}
 	defer tx.Rollback()
 
-	var environmentMessage EnvironmentMessage
-	var rowStatus string
-	if err := tx.QueryRowContext(ctx, `
-		SELECT
-			resource_id,
-			name,
-			"order",
-			row_status
-		FROM environment
-		WHERE resource_id = $1`,
-		resourceID,
-	).Scan(
-		&environmentMessage.EnvironmentID,
-		&environmentMessage.Title,
-		&environmentMessage.Order,
-		&rowStatus,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, FormatError(err)
+	environmentMessage, err := getEnvironmentImplV2(ctx, tx, resourceID)
+	if err != nil {
+		return nil, err
 	}
-	environmentMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &environmentMessage, nil
+	return environmentMessage, nil
 }
 
 // ListEnvironmentV2 lists all environment.
@@ -743,6 +725,35 @@ func (s *Store) DeleteOrUndeleteEnvironmentV2(ctx context.Context, environmentID
 	}
 
 	return nil
+}
+
+func getEnvironmentImplV2(ctx context.Context, tx *Tx, resourceID string) (*EnvironmentMessage, error) {
+	var environmentMessage EnvironmentMessage
+	var rowStatus string
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			id,
+			resource_id,
+			name,
+			"order",
+			row_status
+		FROM environment
+		WHERE resource_id = $1`,
+		resourceID,
+	).Scan(
+		&environmentMessage.InternalID,
+		&environmentMessage.EnvironmentID,
+		&environmentMessage.Title,
+		&environmentMessage.Order,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+	environmentMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+	return &environmentMessage, nil
 }
 
 func convertRowStatusToDeleted(rowStatus string) bool {

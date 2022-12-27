@@ -535,11 +535,10 @@ type DataSourceMessage struct {
 	Database string
 }
 
-func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([]*DataSourceMessage, error) {
+func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([]*DataSourceMessage, error) {
 	var dataSourceMessages []*DataSourceMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			database_id,
 			name,
 			type,
 			username,
@@ -548,7 +547,8 @@ func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([
 			ssl_cert,
 			ssl_ca,
 			host,
-			port
+			port,
+			database
 		FROM data_source
 		WHERE instance_id = $1`,
 		instanceID,
@@ -559,9 +559,7 @@ func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([
 	defer rows.Close()
 	for rows.Next() {
 		var dataSourceMessage DataSourceMessage
-		var databaseID int
 		if err := rows.Scan(
-			&databaseID,
 			&dataSourceMessage.Title,
 			&dataSourceMessage.Type,
 			&dataSourceMessage.Username,
@@ -571,17 +569,11 @@ func (s *Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([
 			&dataSourceMessage.SslCa,
 			&dataSourceMessage.Host,
 			&dataSourceMessage.Port,
+			&dataSourceMessage.Database,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		database, err := s.getDatabaseRaw(ctx, &api.DatabaseFind{
-			ID: &databaseID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		dataSourceMessage.Database = database.Name
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
 
