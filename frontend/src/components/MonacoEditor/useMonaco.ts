@@ -6,10 +6,12 @@ import { getBBTheme } from "./themes/bb";
 import { getBBDarkTheme } from "./themes/bb-dark";
 
 export const useMonaco = async () => {
-  const [monaco, { default: EditorWorker }] = await Promise.all([
-    import("monaco-editor"),
-    import("monaco-editor/esm/vs/editor/editor.worker?worker"),
-  ]);
+  const [monaco, { default: EditorWorker }, { default: TSWorker }] =
+    await Promise.all([
+      import("monaco-editor"),
+      import("monaco-editor/esm/vs/editor/editor.worker?worker"),
+      import("monaco-editor/esm/vs/language/typescript/ts.worker?worker"),
+    ]);
 
   const bbTheme = getBBTheme();
   const bbDarkTheme = getBBDarkTheme();
@@ -19,6 +21,9 @@ export const useMonaco = async () => {
   self.MonacoEnvironment = {
     getWorker: (workerId, label) => {
       console.debug("MonacoEnvironment.getWorker", workerId, label);
+      if (label === "javascript") {
+        return new TSWorker();
+      }
       return new EditorWorker();
     },
   };

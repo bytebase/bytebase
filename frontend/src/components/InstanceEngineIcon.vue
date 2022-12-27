@@ -2,7 +2,7 @@
   <NTooltip>
     <template #trigger>
       <div class="relative w-4" v-bind="$attrs">
-        <img class="h-4 w-auto" :src="SelectedEngineIconPath" />
+        <img class="h-4 w-auto mx-auto" :src="SelectedEngineIconPath" />
         <div
           v-if="showStatus"
           class="bg-green-400 border-surface-high rounded-full absolute border-2"
