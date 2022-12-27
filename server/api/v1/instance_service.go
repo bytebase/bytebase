@@ -56,7 +56,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instances, err := s.store.ListInstanceV2(ctx, environmentID, request.ShowDeleted)
+	instances, err := s.store.ListInstancesV2(ctx, environmentID, request.ShowDeleted)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -200,6 +200,7 @@ func convertToInstance(environmentID string, instance *store.InstanceMessage) *v
 			Title:    ds.Title,
 			Type:     dataSourceType,
 			Username: ds.Username,
+			// We don't return the password on reads.
 			SslCa:    ds.SslCa,
 			SslCert:  ds.SslCert,
 			SslKey:   ds.SslKey,
