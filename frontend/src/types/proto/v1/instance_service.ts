@@ -2,6 +2,7 @@
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -208,6 +209,7 @@ export interface Instance {
    * Format: environments/{environment}/instances/{instance}
    */
   name: string;
+  state: State;
   title: string;
   engine: Engine;
   externalLink: string;
@@ -636,7 +638,7 @@ export const UndeleteInstanceRequest = {
 };
 
 function createBaseInstance(): Instance {
-  return { name: "", title: "", engine: 0, externalLink: "", dataSources: [] };
+  return { name: "", state: 0, title: "", engine: 0, externalLink: "", dataSources: [] };
 }
 
 export const Instance = {
@@ -644,17 +646,20 @@ export const Instance = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.state !== 0) {
+      writer.uint32(16).int32(message.state);
+    }
     if (message.title !== "") {
-      writer.uint32(18).string(message.title);
+      writer.uint32(26).string(message.title);
     }
     if (message.engine !== 0) {
-      writer.uint32(24).int32(message.engine);
+      writer.uint32(32).int32(message.engine);
     }
     if (message.externalLink !== "") {
-      writer.uint32(34).string(message.externalLink);
+      writer.uint32(42).string(message.externalLink);
     }
     for (const v of message.dataSources) {
-      DataSource.encode(v!, writer.uint32(66).fork()).ldelim();
+      DataSource.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -670,15 +675,18 @@ export const Instance = {
           message.name = reader.string();
           break;
         case 2:
-          message.title = reader.string();
+          message.state = reader.int32() as any;
           break;
         case 3:
-          message.engine = reader.int32() as any;
+          message.title = reader.string();
           break;
         case 4:
+          message.engine = reader.int32() as any;
+          break;
+        case 5:
           message.externalLink = reader.string();
           break;
-        case 8:
+        case 6:
           message.dataSources.push(DataSource.decode(reader, reader.uint32()));
           break;
         default:
@@ -692,6 +700,7 @@ export const Instance = {
   fromJSON(object: any): Instance {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       externalLink: isSet(object.externalLink) ? String(object.externalLink) : "",
@@ -702,6 +711,7 @@ export const Instance = {
   toJSON(message: Instance): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.title !== undefined && (obj.title = message.title);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.externalLink !== undefined && (obj.externalLink = message.externalLink);
@@ -716,6 +726,7 @@ export const Instance = {
   fromPartial<I extends Exact<DeepPartial<Instance>, I>>(object: I): Instance {
     const message = createBaseInstance();
     message.name = object.name ?? "";
+    message.state = object.state ?? 0;
     message.title = object.title ?? "";
     message.engine = object.engine ?? 0;
     message.externalLink = object.externalLink ?? "";
