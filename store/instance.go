@@ -404,19 +404,20 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 
 	for _, dataSource := range create.DataSourceList {
 		dataSourceCreate := &api.DataSourceCreate{
-			CreatorID:    create.CreatorID,
-			InstanceID:   instance.ID,
-			DatabaseID:   allDatabase.ID,
-			Name:         dataSource.Name,
-			Type:         dataSource.Type,
-			Username:     dataSource.Username,
-			Password:     dataSource.Password,
-			SslKey:       dataSource.SslKey,
-			SslCert:      dataSource.SslCert,
-			SslCa:        dataSource.SslCa,
-			HostOverride: dataSource.HostOverride,
-			PortOverride: dataSource.PortOverride,
-			Options:      dataSource.Options,
+			CreatorID:  create.CreatorID,
+			InstanceID: instance.ID,
+			DatabaseID: allDatabase.ID,
+			Name:       dataSource.Name,
+			Type:       dataSource.Type,
+			Username:   dataSource.Username,
+			Password:   dataSource.Password,
+			SslKey:     dataSource.SslKey,
+			SslCert:    dataSource.SslCert,
+			SslCa:      dataSource.SslCa,
+			Host:       dataSource.Host,
+			Port:       dataSource.Port,
+			Options:    dataSource.Options,
+			Database:   dataSource.Database,
 		}
 		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 			return nil, err
@@ -528,18 +529,20 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 
 		for _, dataSource := range patch.DataSourceList {
 			dataSourceCreate := &api.DataSourceCreate{
-				CreatorID:    patch.UpdaterID,
-				InstanceID:   instance.ID,
-				DatabaseID:   database.ID,
-				Name:         dataSource.Name,
-				Type:         dataSource.Type,
-				Username:     dataSource.Username,
-				Password:     dataSource.Password,
-				SslKey:       dataSource.SslKey,
-				SslCert:      dataSource.SslCert,
-				SslCa:        dataSource.SslCa,
-				HostOverride: dataSource.HostOverride,
-				PortOverride: dataSource.PortOverride,
+				CreatorID:  patch.UpdaterID,
+				InstanceID: instance.ID,
+				DatabaseID: database.ID,
+				Name:       dataSource.Name,
+				Type:       dataSource.Type,
+				Username:   dataSource.Username,
+				Password:   dataSource.Password,
+				SslKey:     dataSource.SslKey,
+				SslCert:    dataSource.SslCert,
+				SslCa:      dataSource.SslCa,
+				Host:       dataSource.Host,
+				Port:       dataSource.Port,
+				Options:    dataSource.Options,
+				Database:   dataSource.Database,
 			}
 			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 				return nil, err
@@ -758,4 +761,129 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 	}
 
 	return strings.Join(where, " AND "), args
+}
+
+// InstanceMessage is the mssage for instance.
+type InstanceMessage struct {
+	InstanceID   string
+	Title        string
+	Engine       db.Type
+	ExternalLink string
+	Deleted      bool
+	DataSources  []*DataSourceMessage
+}
+
+// GetInstanceV2 gets an instance by the resource_id.
+func (s *Store) GetInstanceV2(ctx context.Context, environmentID, resourceID string) (*InstanceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var instanceMessage InstanceMessage
+	var rowStatus string
+	var instanceID int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			instance.id AS id,
+			instance.resource_id AS resource_id,
+			instance.name AS name,
+			engine,
+			external_link,
+			instance.row_status AS row_status
+		FROM instance
+		LEFT JOIN environment
+		ON environment.id = instance.environment_id
+		WHERE environment.resource_id = $1 AND instance.resource_id = $2`,
+		environmentID,
+		resourceID,
+	).Scan(
+		&instanceID,
+		&instanceMessage.InstanceID,
+		&instanceMessage.Title,
+		&instanceMessage.Engine,
+		&instanceMessage.ExternalLink,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+	instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+
+	dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	instanceMessage.DataSources = dataSourceList
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &instanceMessage, nil
+}
+
+// ListInstanceV2 lists all instance.
+func (s *Store) ListInstanceV2(ctx context.Context, environmentID string, showDeleted bool) ([]*InstanceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	where, args := []string{"1 = 1"}, []interface{}{environmentID}
+	if !showDeleted {
+		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
+	var instanceMessages []*InstanceMessage
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			instance.id AS id,
+			instance.resource_id AS resource_id,
+			instance.name AS name,
+			engine,
+			external_link,
+			instance.row_status AS row_status
+		FROM instance
+		LEFT JOIN environment
+		ON environment.id = instance.environment_id
+		WHERE environment.resource_id = $1 AND `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var instanceMessage InstanceMessage
+		var rowStatus string
+		var instanceID int
+		if err := rows.Scan(
+			&instanceID,
+			&instanceMessage.InstanceID,
+			&instanceMessage.Title,
+			&instanceMessage.Engine,
+			&instanceMessage.ExternalLink,
+			&rowStatus,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		instanceMessage.DataSources = dataSourceList
+		instanceMessages = append(instanceMessages, &instanceMessage)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return instanceMessages, nil
 }

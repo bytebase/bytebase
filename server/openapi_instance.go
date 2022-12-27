@@ -445,13 +445,13 @@ func convertToOpenAPIInstance(instance *api.Instance) *openAPIV1.Instance {
 	dataSourceList := []*openAPIV1.DataSource{}
 	for _, dataSource := range instance.DataSourceList {
 		dataSourceList = append(dataSourceList, &openAPIV1.DataSource{
-			ID:           dataSource.ID,
-			DatabaseID:   dataSource.DatabaseID,
-			Name:         dataSource.Name,
-			Type:         dataSource.Type,
-			Username:     dataSource.Username,
-			HostOverride: dataSource.HostOverride,
-			PortOverride: dataSource.PortOverride,
+			ID:         dataSource.ID,
+			DatabaseID: dataSource.DatabaseID,
+			Name:       dataSource.Name,
+			Type:       dataSource.Type,
+			Username:   dataSource.Username,
+			Host:       dataSource.Host,
+			Port:       dataSource.Port,
 		})
 	}
 
@@ -497,15 +497,15 @@ func convertToAPIDataSouceList(dataSourceList []*openAPIV1.DataSourceCreate) ([]
 			})
 		case api.RO:
 			res = append(res, &api.DataSourceCreate{
-				Name:         dataSource.Name,
-				Type:         api.RO,
-				Username:     dataSource.Username,
-				Password:     dataSource.Password,
-				SslCa:        dataSource.SslCa,
-				SslCert:      dataSource.SslCert,
-				SslKey:       dataSource.SslKey,
-				HostOverride: dataSource.HostOverride,
-				PortOverride: dataSource.PortOverride,
+				Name:     dataSource.Name,
+				Type:     api.RO,
+				Username: dataSource.Username,
+				Password: dataSource.Password,
+				SslCa:    dataSource.SslCa,
+				SslCert:  dataSource.SslCert,
+				SslKey:   dataSource.SslKey,
+				Host:     dataSource.Host,
+				Port:     dataSource.Port,
 			})
 		default:
 			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The data source type %s is not supported", dataSource.Type))

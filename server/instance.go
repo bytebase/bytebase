@@ -50,10 +50,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					SslCa:    instanceCreate.SslCa,
 					SslCert:  instanceCreate.SslCert,
 					SslKey:   instanceCreate.SslKey,
+					Host:     instanceCreate.Host,
+					Port:     instanceCreate.Port,
 					Options: api.DataSourceOptions{
 						SRV:        instanceCreate.SRV,
 						AuthSource: instanceCreate.AuthSource,
 					},
+					Database: instanceCreate.Database,
 				},
 			},
 			Name:         instanceCreate.Name,
