@@ -404,19 +404,20 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 
 	for _, dataSource := range create.DataSourceList {
 		dataSourceCreate := &api.DataSourceCreate{
-			CreatorID:    create.CreatorID,
-			InstanceID:   instance.ID,
-			DatabaseID:   allDatabase.ID,
-			Name:         dataSource.Name,
-			Type:         dataSource.Type,
-			Username:     dataSource.Username,
-			Password:     dataSource.Password,
-			SslKey:       dataSource.SslKey,
-			SslCert:      dataSource.SslCert,
-			SslCa:        dataSource.SslCa,
-			HostOverride: dataSource.HostOverride,
-			PortOverride: dataSource.PortOverride,
-			Options:      dataSource.Options,
+			CreatorID:  create.CreatorID,
+			InstanceID: instance.ID,
+			DatabaseID: allDatabase.ID,
+			Name:       dataSource.Name,
+			Type:       dataSource.Type,
+			Username:   dataSource.Username,
+			Password:   dataSource.Password,
+			SslKey:     dataSource.SslKey,
+			SslCert:    dataSource.SslCert,
+			SslCa:      dataSource.SslCa,
+			Host:       dataSource.Host,
+			Port:       dataSource.Port,
+			Options:    dataSource.Options,
+			Database:   dataSource.Database,
 		}
 		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 			return nil, err
@@ -528,18 +529,20 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 
 		for _, dataSource := range patch.DataSourceList {
 			dataSourceCreate := &api.DataSourceCreate{
-				CreatorID:    patch.UpdaterID,
-				InstanceID:   instance.ID,
-				DatabaseID:   database.ID,
-				Name:         dataSource.Name,
-				Type:         dataSource.Type,
-				Username:     dataSource.Username,
-				Password:     dataSource.Password,
-				SslKey:       dataSource.SslKey,
-				SslCert:      dataSource.SslCert,
-				SslCa:        dataSource.SslCa,
-				HostOverride: dataSource.HostOverride,
-				PortOverride: dataSource.PortOverride,
+				CreatorID:  patch.UpdaterID,
+				InstanceID: instance.ID,
+				DatabaseID: database.ID,
+				Name:       dataSource.Name,
+				Type:       dataSource.Type,
+				Username:   dataSource.Username,
+				Password:   dataSource.Password,
+				SslKey:     dataSource.SslKey,
+				SslCert:    dataSource.SslCert,
+				SslCa:      dataSource.SslCa,
+				Host:       dataSource.Host,
+				Port:       dataSource.Port,
+				Options:    dataSource.Options,
+				Database:   dataSource.Database,
 			}
 			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 				return nil, err

@@ -502,14 +502,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
-		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
-			if dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "" {
+		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) && dataSourceCreate.Type == api.RO {
+			if dataSourceCreate.Host != "" || dataSourceCreate.Port != "" {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
-		}
-
-		if dataSourceCreate.Type == api.Admin && (dataSourceCreate.HostOverride != "" || dataSourceCreate.PortOverride != "") {
-			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
 		}
 
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
@@ -578,9 +574,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
-		if !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
-			// In the non-enterprise version, we should allow users to set HostOverride or PortOverride to the empty string.
-			if (dataSourcePatch.HostOverride != nil && *dataSourcePatch.HostOverride != "") || (dataSourcePatch.PortOverride != nil && *dataSourcePatch.PortOverride != "") {
+		if dataSourceOld.Type == api.RO && !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
+			if (dataSourcePatch.Host != nil && *dataSourcePatch.Host != "") || (dataSourcePatch.Port != nil && *dataSourcePatch.Port != "") {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
 		}
@@ -592,10 +587,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			password := ""
 			dataSourcePatch.Password = &password
 		}
-		if dataSourceOld.Type == api.Admin && (dataSourcePatch.HostOverride != nil || dataSourcePatch.PortOverride != nil) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Host and port override cannot be set for admin type of data sources.")
-		}
-
 		dataSourceNew, err := s.store.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)

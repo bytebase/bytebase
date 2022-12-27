@@ -14,21 +14,22 @@ type DataSource struct {
 	Type     api.DataSourceType `json:"type"`
 	Username string             `json:"username"`
 
-	// HostOverride and PortOverride are only used for read-only data sources for user's read-replica instances.
-	HostOverride string `json:"hostOverride"`
-	PortOverride string `json:"portOverride"`
+	Host     string `json:"hostOverride"`
+	Port     string `json:"portOverride"`
+	Database string `json:"database"`
 }
 
 // DataSourceCreate is the API message for creating a data source.
 type DataSourceCreate struct {
 	// Domain specific fields
-	Name         string             `json:"name"`
-	Type         api.DataSourceType `json:"type"`
-	Username     string             `json:"username"`
-	Password     string             `json:"password"`
-	SslCa        string             `json:"sslCa"`
-	SslCert      string             `json:"sslCert"`
-	SslKey       string             `json:"sslKey"`
-	HostOverride string             `json:"hostOverride"`
-	PortOverride string             `json:"portOverride"`
+	Name     string             `json:"name"`
+	Type     api.DataSourceType `json:"type"`
+	Username string             `json:"username"`
+	Password string             `json:"password"`
+	SslCa    string             `json:"sslCa"`
+	SslCert  string             `json:"sslCert"`
+	SslKey   string             `json:"sslKey"`
+	Host     string             `json:"hostOverride"`
+	Port     string             `json:"portOverride"`
+	Database string             `json:"database"`
 }
