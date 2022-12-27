@@ -96,10 +96,10 @@ type DataSource struct {
 	SslCa    string
 	SslCert  string
 	SslKey   string
-	// HostOverride and PortOverride are only used for read-only data sources for user's read-replica instances.
-	HostOverride string            `jsonapi:"attr,hostOverride"`
-	PortOverride string            `jsonapi:"attr,portOverride"`
-	Options      DataSourceOptions `jsonapi:"attr,options"`
+	Host     string            `jsonapi:"attr,hostOverride"`
+	Port     string            `jsonapi:"attr,portOverride"`
+	Options  DataSourceOptions `jsonapi:"attr,options"`
+	Database string            `jsonapi:"attr,database"`
 }
 
 // DataSourceCreate is the API message for creating a data source.
@@ -113,16 +113,17 @@ type DataSourceCreate struct {
 	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name         string            `jsonapi:"attr,name"`
-	Type         DataSourceType    `jsonapi:"attr,type"`
-	Username     string            `jsonapi:"attr,username"`
-	Password     string            `jsonapi:"attr,password"`
-	SslCa        string            `jsonapi:"attr,sslCa"`
-	SslCert      string            `jsonapi:"attr,sslCert"`
-	SslKey       string            `jsonapi:"attr,sslKey"`
-	HostOverride string            `jsonapi:"attr,hostOverride"`
-	PortOverride string            `jsonapi:"attr,portOverride"`
-	Options      DataSourceOptions `jsonapi:"attr,options"`
+	Name     string            `jsonapi:"attr,name"`
+	Type     DataSourceType    `jsonapi:"attr,type"`
+	Username string            `jsonapi:"attr,username"`
+	Password string            `jsonapi:"attr,password"`
+	SslCa    string            `jsonapi:"attr,sslCa"`
+	SslCert  string            `jsonapi:"attr,sslCert"`
+	SslKey   string            `jsonapi:"attr,sslKey"`
+	Host     string            `jsonapi:"attr,hostOverride"`
+	Port     string            `jsonapi:"attr,portOverride"`
+	Options  DataSourceOptions `jsonapi:"attr,options"`
+	Database string            `jsonapi:"attr,database"`
 }
 
 // DataSourceFind is the API message for finding data sources.
@@ -160,9 +161,10 @@ type DataSourcePatch struct {
 	SslCa            *string            `jsonapi:"attr,sslCa"`
 	SslCert          *string            `jsonapi:"attr,sslCert"`
 	SslKey           *string            `jsonapi:"attr,sslKey"`
-	HostOverride     *string            `jsonapi:"attr,hostOverride"`
-	PortOverride     *string            `jsonapi:"attr,portOverride"`
+	Host             *string            `jsonapi:"attr,hostOverride"`
+	Port             *string            `jsonapi:"attr,portOverride"`
 	Options          *DataSourceOptions `jsonapi:"attr,options"`
+	Database         *string            `jsonapi:"attr,database"`
 }
 
 // DataSourceDelete is the API message for deleting data sources.
