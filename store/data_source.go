@@ -509,3 +509,80 @@ func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID, datab
 	}
 	return nil
 }
+
+// DataSourceMessage is the mssage for data source.
+type DataSourceMessage struct {
+	Title    string
+	Type     api.DataSourceType
+	Username string
+	Password string
+	SslCa    string
+	SslCert  string
+	SslKey   string
+	Host     string
+	Port     string
+	Database string
+}
+
+func (s *Store) listDataSourceV2(ctx context.Context, instanceID int) ([]*DataSourceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var dataSourceMessages []*DataSourceMessage
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			database_id,
+			name,
+			type,
+			username,
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca,
+			host_override,
+			port_override
+		FROM data_source
+		WHERE instance_id = $1`,
+		instanceID,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var dataSourceMessage DataSourceMessage
+		var databaseID int
+		if err := rows.Scan(
+			&databaseID,
+			&dataSourceMessage.Title,
+			&dataSourceMessage.Type,
+			&dataSourceMessage.Username,
+			&dataSourceMessage.Password,
+			&dataSourceMessage.SslKey,
+			&dataSourceMessage.SslCert,
+			&dataSourceMessage.SslCa,
+			&dataSourceMessage.Host,
+			&dataSourceMessage.Password,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		database, err := s.getDatabaseRaw(ctx, &api.DatabaseFind{
+			ID: &databaseID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		dataSourceMessage.Database = database.Name
+		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return dataSourceMessages, nil
+}

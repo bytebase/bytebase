@@ -63,12 +63,11 @@ type instanceRaw struct {
 	ID int
 
 	// Standard fields
-	RowStatus  api.RowStatus
-	CreatorID  int
-	CreatedTs  int64
-	UpdaterID  int
-	UpdatedTs  int64
-	ResourceID string
+	RowStatus api.RowStatus
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
 
 	// Related fields
 	EnvironmentID int
@@ -90,12 +89,11 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 		ID: raw.ID,
 
 		// Standard fields
-		RowStatus:  raw.RowStatus,
-		CreatorID:  raw.CreatorID,
-		CreatedTs:  raw.CreatedTs,
-		UpdaterID:  raw.UpdaterID,
-		UpdatedTs:  raw.UpdatedTs,
-		ResourceID: raw.ResourceID,
+		RowStatus: raw.RowStatus,
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
 		EnvironmentID: raw.EnvironmentID,
@@ -130,23 +128,6 @@ func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, err
 	instanceRaw, err := s.getInstanceRaw(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Instance with ID %d", id)
-	}
-	if instanceRaw == nil {
-		return nil, nil
-	}
-	instance, err := s.composeInstance(ctx, instanceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
-	}
-	return instance, nil
-}
-
-// GetInstanceV2 gets an instance by the resource_id.
-func (s *Store) GetInstanceV2(ctx context.Context, resourceID string) (*api.Instance, error) {
-	find := &api.InstanceFind{ResourceID: &resourceID}
-	instanceRaw, err := s.getInstanceRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Instance with resource_id %s", resourceID)
 	}
 	if instanceRaw == nil {
 		return nil, nil
@@ -388,13 +369,6 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 		if dataSource.Updater, err = s.GetPrincipalByID(ctx, dataSource.UpdaterID); err != nil {
 			return nil, err
 		}
-		database, err := s.getDatabaseRaw(ctx, &api.DatabaseFind{
-			ID: &dataSource.DatabaseID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		dataSource.DatabaseName = database.Name
 	}
 
 	return instance, nil
@@ -603,7 +577,7 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*i
 			resource_id
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database, resource_id
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`
 	var instanceRaw instanceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -632,7 +606,6 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*i
 		&instanceRaw.Host,
 		&instanceRaw.Port,
 		&instanceRaw.Database,
-		&instanceRaw.ResourceID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -660,8 +633,7 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 			external_link,
 			host,
 			port,
-			database,
-			resource_id
+			database
 		FROM instance
 		WHERE `+where,
 		args...,
@@ -690,7 +662,6 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 			&instanceRaw.Host,
 			&instanceRaw.Port,
 			&instanceRaw.Database,
-			&instanceRaw.ResourceID,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -737,7 +708,7 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *InstancePatch) (*inst
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database, resource_id
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`, len(args)),
 		args...,
 	).Scan(
@@ -755,7 +726,6 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *InstancePatch) (*inst
 		&instanceRaw.Host,
 		&instanceRaw.Port,
 		&instanceRaw.Database,
-		&instanceRaw.ResourceID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("instance ID not found: %d", patch.ID)}
@@ -786,9 +756,66 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
-	}
 
 	return strings.Join(where, " AND "), args
+}
+
+// InstanceMessage is the mssage for instance.
+type InstanceMessage struct {
+	InstanceID   string
+	Title        string
+	Engine       db.Type
+	ExternalLink string
+	Deleted      bool
+	DataSources  []*DataSourceMessage
+}
+
+// GetInstanceV2 gets an instance by the resource_id.
+func (s *Store) GetInstanceV2(ctx context.Context, resourceID string) (*InstanceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var instanceMessage InstanceMessage
+	var rowStatus string
+	var instanceID int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			id,
+			resource_id,
+			name,
+			engine,
+			external_link,
+			row_status
+		FROM instance
+		WHERE resource_id = $1`,
+		resourceID,
+	).Scan(
+		&instanceID,
+		&instanceMessage.InstanceID,
+		&instanceMessage.Title,
+		&instanceMessage.Engine,
+		&instanceMessage.ExternalLink,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+	instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+
+	dataSourceList, err := s.listDataSourceV2(ctx, instanceID)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	instanceMessage.DataSources = dataSourceList
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &instanceMessage, nil
 }

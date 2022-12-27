@@ -11,14 +11,13 @@ type Instance struct {
 	ID int `jsonapi:"primary,instance"`
 
 	// Standard fields
-	RowStatus  RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorID  int
-	Creator    *Principal `jsonapi:"relation,creator"`
-	CreatedTs  int64      `jsonapi:"attr,createdTs"`
-	UpdaterID  int
-	Updater    *Principal `jsonapi:"relation,updater"`
-	UpdatedTs  int64      `jsonapi:"attr,updatedTs"`
-	ResourceID string
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
+	CreatorID int
+	Creator   *Principal `jsonapi:"relation,creator"`
+	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	UpdaterID int
+	Updater   *Principal `jsonapi:"relation,updater"`
+	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
 	EnvironmentID  int
@@ -72,8 +71,7 @@ type InstanceFind struct {
 	ID *int
 
 	// Standard fields
-	RowStatus  *RowStatus
-	ResourceID *string
+	RowStatus *RowStatus
 
 	// Related fields
 	EnvironmentID *int

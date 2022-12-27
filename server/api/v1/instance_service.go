@@ -54,7 +54,7 @@ func getInstanceID(name string) (string, error) {
 	return strings.TrimPrefix(name, instanceNamePrefix), nil
 }
 
-func convertInstance(instance *api.Instance) *v1pb.Instance {
+func convertInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	engine := v1pb.Engine_ENGINE_UNSPECIFIED
 	switch instance.Engine {
 	case db.ClickHouse:
@@ -74,7 +74,7 @@ func convertInstance(instance *api.Instance) *v1pb.Instance {
 	}
 
 	dataSourceList := []*v1pb.DataSource{}
-	for _, ds := range instance.DataSourceList {
+	for _, ds := range instance.DataSources {
 		dataSourceType := v1pb.DataSourceType_DATA_SOURCE_UNSPECIFIED
 		switch ds.Type {
 		case api.Admin:
@@ -84,23 +84,29 @@ func convertInstance(instance *api.Instance) *v1pb.Instance {
 		}
 
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
-			Title:    ds.Name,
+			Title:    ds.Title,
 			Type:     dataSourceType,
 			Username: ds.Username,
 			SslCa:    ds.SslCa,
 			SslCert:  ds.SslCert,
 			SslKey:   ds.SslKey,
-			Host:     ds.HostOverride,
-			Port:     ds.PortOverride,
-			Database: ds.DatabaseName,
+			Host:     ds.Host,
+			Port:     ds.Port,
+			Database: ds.Database,
 		})
 	}
 
+	state := v1pb.State_STATE_ACTIVE
+	if instance.Deleted {
+		state = v1pb.State_STATE_DELETED
+	}
+
 	return &v1pb.Instance{
-		Name:         fmt.Sprintf("%s%s", instanceNamePrefix, instance.ResourceID),
-		Title:        instance.Name,
+		Name:         fmt.Sprintf("%s%s", instanceNamePrefix, instance.InstanceID),
+		Title:        instance.Title,
 		Engine:       engine,
 		ExternalLink: instance.ExternalLink,
 		DataSources:  dataSourceList,
+		State:        state,
 	}
 }
