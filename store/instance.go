@@ -887,3 +887,89 @@ func (s *Store) ListInstanceV2(ctx context.Context, environmentID string, showDe
 
 	return instanceMessages, nil
 }
+
+// CreateInstanceV2 creates the instance.
+func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, creatorID int, instanceCreate *InstanceMessage) (*InstanceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	environmentMessage, err := getEnvironmentImplV2(ctx, tx, environmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	var instanceID int
+	if err := tx.QueryRowContext(ctx, `
+			INSERT INTO instance (
+				resource_id,
+				creator_id,
+				updater_id,
+				environment_id,
+				name,
+				engine,
+				external_link
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id
+		`,
+		instanceCreate.InstanceID,
+		creatorID,
+		creatorID,
+		environmentMessage.ID,
+		instanceCreate.Title,
+		instanceCreate.Engine,
+		instanceCreate.ExternalLink,
+	).Scan(&instanceID); err != nil {
+		return nil, FormatError(err)
+	}
+
+	databaseCreate := &api.DatabaseCreate{
+		CreatorID:     creatorID,
+		ProjectID:     api.DefaultProjectID,
+		InstanceID:    instanceID,
+		EnvironmentID: environmentMessage.ID,
+		Name:          api.AllDatabaseName,
+		CharacterSet:  api.DefaultCharacterSetName,
+		Collation:     api.DefaultCollationName,
+	}
+	allDatabase, err := s.createDatabaseRawTx(ctx, tx, databaseCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ds := range instanceCreate.DataSources {
+		dataSourceCreate := &api.DataSourceCreate{
+			CreatorID:  creatorID,
+			InstanceID: instanceID,
+			DatabaseID: allDatabase.ID,
+			Name:       ds.Title,
+			Type:       ds.Type,
+			Username:   ds.Username,
+			Password:   ds.Password,
+			SslKey:     ds.SslKey,
+			SslCert:    ds.SslCert,
+			SslCa:      ds.SslCa,
+			Host:       ds.Host,
+			Port:       ds.Port,
+			Database:   ds.Database,
+		}
+		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &InstanceMessage{
+		InstanceID:   instanceCreate.InstanceID,
+		Title:        instanceCreate.Title,
+		Engine:       instanceCreate.Engine,
+		ExternalLink: instanceCreate.ExternalLink,
+		DataSources:  instanceCreate.DataSources,
+	}, nil
+}

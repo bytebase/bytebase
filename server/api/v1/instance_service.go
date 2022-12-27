@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
@@ -45,11 +46,11 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 	if instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", instanceID)
 	}
-	return convertInstance(environmentID, instance), nil
+	return convertToInstance(environmentID, instance), nil
 }
 
 // ListInstances lists all instances.
-func (s *EnvironmentService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
+func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
 	environmentID, err := getEnvironmentID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -61,9 +62,36 @@ func (s *EnvironmentService) ListInstances(ctx context.Context, request *v1pb.Li
 	}
 	response := &v1pb.ListInstancesResponse{}
 	for _, instance := range instances {
-		response.Instances = append(response.Instances, convertInstance(environmentID, instance))
+		response.Instances = append(response.Instances, convertToInstance(environmentID, instance))
 	}
 	return response, nil
+}
+
+// CreateInstance creates the instance.
+func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.CreateInstanceRequest) (*v1pb.Instance, error) {
+	if request.Instance == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
+	}
+	environmentID, err := getEnvironmentID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instanceMessage, err := convertToInstanceMessage(request.InstanceId, request.Instance)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	instance, err := s.store.CreateInstanceV2(ctx,
+		environmentID,
+		principalID,
+		instanceMessage,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToInstance(environmentID, instance), nil
 }
 
 func getEnvironmentAndInstanceID(name string) (string, string, error) {
@@ -88,7 +116,7 @@ func getEnvironmentAndInstanceID(name string) (string, string, error) {
 	return sections[1], sections[3], nil
 }
 
-func convertInstance(environmentID string, instance *store.InstanceMessage) *v1pb.Instance {
+func convertToInstance(environmentID string, instance *store.InstanceMessage) *v1pb.Instance {
 	engine := v1pb.Engine_ENGINE_UNSPECIFIED
 	switch instance.Engine {
 	case db.ClickHouse:
@@ -143,4 +171,58 @@ func convertInstance(environmentID string, instance *store.InstanceMessage) *v1p
 		DataSources:  dataSourceList,
 		State:        state,
 	}
+}
+
+func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
+	var engine db.Type
+	switch instance.Engine {
+	case v1pb.Engine_ENGINE_CLICKHOUSE:
+		engine = db.ClickHouse
+	case v1pb.Engine_ENGINE_MYSQL:
+		engine = db.MySQL
+	case v1pb.Engine_ENGINE_POSTGRES:
+		engine = db.Postgres
+	case v1pb.Engine_ENGINE_SNOWFLAKE:
+		engine = db.Snowflake
+	case v1pb.Engine_ENGINE_SQLITE:
+		engine = db.SQLite
+	case v1pb.Engine_ENGINE_TIDB:
+		engine = db.TiDB
+	case v1pb.Engine_ENGINE_MONGODB:
+		engine = db.MongoDB
+	default:
+		return nil, errors.Errorf("invalid instance engine %v", instance.Engine)
+	}
+
+	datasourceList := []*store.DataSourceMessage{}
+	for _, ds := range instance.DataSources {
+		var dsType api.DataSourceType
+		switch ds.Type {
+		case v1pb.DataSourceType_DATA_SOURCE_RO:
+			dsType = api.RO
+		case v1pb.DataSourceType_DATA_SOURCE_ADMIN:
+			dsType = api.Admin
+		default:
+			return nil, errors.Errorf("invalid data source type %v", ds.Type)
+		}
+		datasourceList = append(datasourceList, &store.DataSourceMessage{
+			Title:    ds.Title,
+			Type:     dsType,
+			Username: ds.Username,
+			Password: ds.Password,
+			SslCa:    ds.SslCa,
+			SslCert:  ds.SslCert,
+			SslKey:   ds.SslKey,
+			Host:     ds.Host,
+			Port:     ds.Port,
+			Database: ds.Database,
+		})
+	}
+	return &store.InstanceMessage{
+		InstanceID:   instanceID,
+		Title:        instance.Title,
+		Engine:       engine,
+		ExternalLink: instance.ExternalLink,
+		DataSources:  datasourceList,
+	}, nil
 }
