@@ -525,10 +525,10 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *Environme
 
 // EnvironmentMessage is the mssage for environment.
 type EnvironmentMessage struct {
-	ResourceID string
-	Title      string
-	Order      int32
-	Deleted    bool
+	EnvironmentID string
+	Title         string
+	Order         int32
+	Deleted       bool
 }
 
 // UpdateEnvironmentMessage is the message for updating an environment.
@@ -557,7 +557,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 		WHERE resource_id = $1`,
 		resourceID,
 	).Scan(
-		&environmentMessage.ResourceID,
+		&environmentMessage.EnvironmentID,
 		&environmentMessage.Title,
 		&environmentMessage.Order,
 		&rowStatus,
@@ -610,7 +610,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*Env
 		var environmentMessage EnvironmentMessage
 		var rowStatus string
 		if err := rows.Scan(
-			&environmentMessage.ResourceID,
+			&environmentMessage.EnvironmentID,
 			&environmentMessage.Title,
 			&environmentMessage.Order,
 			&rowStatus,
@@ -649,7 +649,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *Env
 			)
 			VALUES ($1, $2, $3, $4, $5)
 		`,
-		environmentMessage.ResourceID,
+		environmentMessage.EnvironmentID,
 		environmentMessage.Title,
 		environmentMessage.Order,
 		creatorID,
@@ -692,7 +692,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		`, len(args)),
 		args...,
 	).Scan(
-		&environmentMessage.ResourceID,
+		&environmentMessage.EnvironmentID,
 		&environmentMessage.Title,
 		&environmentMessage.Order,
 		&rowStatus,

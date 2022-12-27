@@ -44,16 +44,7 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 	if environment == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
 	}
-	state := v1pb.State_STATE_ACTIVE
-	if environment.Deleted {
-		state = v1pb.State_STATE_DELETED
-	}
-	return &v1pb.Environment{
-		Name:  request.Name,
-		Title: environment.Title,
-		Order: environment.Order,
-		State: state,
-	}, nil
+	return convertEnvironment(environment), nil
 }
 
 // ListEnvironments lists all environments.
@@ -64,18 +55,7 @@ func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb
 	}
 	response := &v1pb.ListEnvironmentsResponse{}
 	for _, environment := range environments {
-		state := v1pb.State_STATE_ACTIVE
-		if environment.Deleted {
-			state = v1pb.State_STATE_DELETED
-		}
-		response.Environments = append(
-			response.Environments,
-			&v1pb.Environment{
-				Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
-				Title: environment.Title,
-				Order: environment.Order,
-				State: state,
-			})
+		response.Environments = append(response.Environments, convertEnvironment(environment))
 	}
 	return response, nil
 }
@@ -88,9 +68,9 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	}
 	if err := s.store.CreateEnvironmentV2(ctx,
 		&store.EnvironmentMessage{
-			ResourceID: request.EnvironmentId,
-			Title:      request.Environment.Title,
-			Order:      request.Environment.Order,
+			EnvironmentID: request.EnvironmentId,
+			Title:         request.Environment.Title,
+			Order:         request.Environment.Order,
 		},
 		principalID,
 	); err != nil {
@@ -219,4 +199,17 @@ func getEnvironmentID(name string) (string, error) {
 		return "", errors.Errorf("invalid environment name %q", name)
 	}
 	return strings.TrimPrefix(name, environmentNamePrefix), nil
+}
+
+func convertEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
+	state := v1pb.State_STATE_ACTIVE
+	if environment.Deleted {
+		state = v1pb.State_STATE_DELETED
+	}
+	return &v1pb.Environment{
+		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.EnvironmentID),
+		Title: environment.Title,
+		Order: environment.Order,
+		State: state,
+	}
 }
