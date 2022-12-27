@@ -14,8 +14,9 @@ type DataSource struct {
 	Type     api.DataSourceType `json:"type"`
 	Username string             `json:"username"`
 
-	Host string `json:"hostOverride"`
-	Port string `json:"portOverride"`
+	Host     string `json:"hostOverride"`
+	Port     string `json:"portOverride"`
+	Database string `json:"database"`
 }
 
 // DataSourceCreate is the API message for creating a data source.
@@ -30,4 +31,5 @@ type DataSourceCreate struct {
 	SslKey   string             `json:"sslKey"`
 	Host     string             `json:"hostOverride"`
 	Port     string             `json:"portOverride"`
+	Database string             `json:"database"`
 }

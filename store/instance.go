@@ -417,6 +417,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 			Host:       dataSource.Host,
 			Port:       dataSource.Port,
 			Options:    dataSource.Options,
+			Database:   dataSource.Database,
 		}
 		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 			return nil, err

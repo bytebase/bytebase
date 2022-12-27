@@ -99,7 +99,7 @@ type DataSource struct {
 	Host     string            `jsonapi:"attr,hostOverride"`
 	Port     string            `jsonapi:"attr,portOverride"`
 	Options  DataSourceOptions `jsonapi:"attr,options"`
-	Database string
+	Database string            `jsonapi:"attr,database"`
 }
 
 // DataSourceCreate is the API message for creating a data source.
@@ -123,6 +123,7 @@ type DataSourceCreate struct {
 	Host     string            `jsonapi:"attr,hostOverride"`
 	Port     string            `jsonapi:"attr,portOverride"`
 	Options  DataSourceOptions `jsonapi:"attr,options"`
+	Database string            `jsonapi:"attr,database"`
 }
 
 // DataSourceFind is the API message for finding data sources.
