@@ -1091,5 +1091,5 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID 
 		return nil, FormatError(err)
 	}
 
-	return nil, nil
+	return &instanceMessage, nil
 }
