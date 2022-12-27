@@ -2,6 +2,8 @@
   <Canvas>
     <template #desktop>
       <TableNode v-for="(table, i) in tableList" :key="i" :table="table" />
+
+      <ForeignKeyLine v-for="(fk, i) in foreignKeys" :key="i" :fk="fk" />
     </template>
   </Canvas>
 </template>
@@ -13,9 +15,15 @@ import Emittery from "emittery";
 
 import { Database } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
-import { Position, Rect, Size, SchemaDiagramContext } from "./types";
+import {
+  Position,
+  Rect,
+  Size,
+  SchemaDiagramContext,
+  ForeignKey,
+} from "./types";
 import Canvas from "./Canvas";
-import { TableNode, autoLayout } from "./ER";
+import { TableNode, autoLayout, GraphNodeItem } from "./ER";
 import { provideSchemaDiagramContext } from "./common";
 
 const props = withDefaults(
@@ -38,6 +46,28 @@ const events: SchemaDiagramContext["events"] = new Emittery();
 
 const tableIds = ref(new WeakMap<TableMetadata, string>());
 const rectsByTableId = ref(new Map<string, Rect>());
+const foreignKeys = computed((): ForeignKey[] => {
+  const find = (t: string, c: string) => {
+    const table = props.tableList.find((table) => table.name === t)!;
+    const column = c;
+    return { table, column };
+  };
+  const fks: ForeignKey[] = [];
+  props.tableList.forEach((table) => {
+    table.foreignKeys.forEach((fkMetadata) => {
+      const { columns, referencedTable, referencedColumns } = fkMetadata;
+      for (let i = 0; i < columns.length; i++) {
+        fks.push({
+          from: { table, column: columns[i] },
+          to: find(referencedTable, referencedColumns[i]),
+          metadata: fkMetadata,
+        });
+      }
+    });
+  });
+
+  return fks;
+});
 
 const idOfTable = (table: TableMetadata): string => {
   const ids = tableIds.value;
@@ -53,7 +83,7 @@ const rectOfTable = (table: TableMetadata): Rect => {
 };
 
 const layout = () => {
-  nextTick(() => {
+  return nextTick(async () => {
     const nodeList = props.tableList
       .map((table) => {
         const id = idOfTable(table);
@@ -65,7 +95,7 @@ const layout = () => {
         };
       })
       .filter((item) => !!item.elem)
-      .map((item) => {
+      .map<GraphNodeItem>((item) => {
         const size: Size = {
           width: item.elem.clientWidth,
           height: item.elem.clientHeight,
@@ -73,15 +103,23 @@ const layout = () => {
         return {
           ...item,
           size,
+          ports: [],
         };
       });
-    const layout = autoLayout(nodeList, []);
-    for (const [id, rect] of layout) {
+    const edgeList = foreignKeys.value.map((fk) => {
+      return {
+        id: `${fk.from.table.name}.${fk.from.column}->${fk.to.table.name}.${fk.to.column}`,
+        from: idOfTable(fk.from.table),
+        to: idOfTable(fk.to.table),
+      };
+    });
+    const { rects } = await autoLayout(nodeList, edgeList);
+    for (const [id, rect] of rects) {
       rectsByTableId.value.set(id, rect);
     }
-  });
 
-  render();
+    render();
+  });
 };
 
 events.on("layout", layout);
@@ -98,8 +136,8 @@ provideSchemaDiagramContext({
 });
 
 // autoLayout and fit view at the first time the diagram is mounted.
-onMounted(() => {
-  layout();
+onMounted(async () => {
+  await layout();
   nextTick(() => {
     events.emit("fit-view");
   });
