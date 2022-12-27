@@ -113,7 +113,7 @@
               @click.prevent="state.showSchemaDiagram = true"
             >
               <span class="mr-1">{{ $t("schema-diagram.self") }}</span>
-              <heroicons-solid:table-cells class="w-4 h-4" />
+              <SchemaDiagramIcon />
             </dd>
             <DatabaseLabelProps
               :label-list="database.labels"
@@ -304,9 +304,11 @@
   <BBModal
     v-if="state.showSchemaDiagram"
     :title="$t('schema-diagram.self')"
+    class="h-[calc(100vh-40px)] !max-h-[calc(100vh-40px)]"
+    container-class="flex-1 !pt-0 !border-0"
     @close="state.showSchemaDiagram = false"
   >
-    <div class="w-[80vw] h-[70vh]">
+    <div class="w-[80vw] h-full">
       <SchemaDiagram
         :database="database"
         :table-list="dbSchemaStore.getTableListByDatabaseId(database.id)"
@@ -357,7 +359,7 @@ import {
 import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
-import SchemaDiagram from "@/components/SchemaDiagram";
+import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import {
   pushNotification,
   useCurrentUser,
