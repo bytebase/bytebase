@@ -353,9 +353,26 @@ func deparseAlterTable(context parser.DeparseContext, in *ast.AlterTableStmt, bu
 			if err := deparseDropDefault(itemContext, action, buf); err != nil {
 				return err
 			}
+		case *ast.RenameTableStmt:
+			if len(in.AlterItemList) != 1 {
+				return errors.Errorf("Deparse failed, RenameTableStmt needs to be alone in a ALTER TABLE statement.")
+			}
+			if err := deparseRenameTable(itemContext, action, buf); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func deparseRenameTable(context parser.DeparseContext, in *ast.RenameTableStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, parser.DeparseIndentString); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("RENAME TO "); err != nil {
+		return err
+	}
+	return writeSurrounding(buf, in.NewName, `"`)
 }
 
 func deparseSetDefault(context parser.DeparseContext, in *ast.SetDefaultStmt, buf *strings.Builder) error {
