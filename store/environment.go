@@ -567,9 +567,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 		}
 		return nil, FormatError(err)
 	}
-	if rowStatus == string(api.Archived) {
-		environmentMessage.Deleted = true
-	}
+	environmentMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
@@ -617,9 +615,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*Env
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		if rowStatus == string(api.Archived) {
-			environmentMessage.Deleted = true
-		}
+		environmentMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 
 		environmentMessages = append(environmentMessages, &environmentMessage)
 	}
@@ -702,9 +698,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		}
 		return nil, FormatError(err)
 	}
-	if rowStatus == string(api.Archived) {
-		environmentMessage.Deleted = true
-	}
+	environmentMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
@@ -744,4 +738,8 @@ func (s *Store) DeleteOrUndeleteEnvironmentV2(ctx context.Context, environmentID
 	}
 
 	return nil
+}
+
+func convertRowStatusToDeleted(rowStatus string) bool {
+	return rowStatus == string(api.Archived)
 }
