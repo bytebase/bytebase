@@ -121,11 +121,44 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 	if environment == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
 	}
+	if environment.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
+	}
 
-	if err := s.store.DeleteEnvironmentV2(ctx, environmentID, principalID); err != nil {
+	if err := s.store.DeleteOrUndeleteEnvironmentV2(ctx, environmentID, true /* delete */, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
+}
+
+// UndeleteEnvironment undeletes an environment.
+func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v1pb.UndeleteEnvironmentRequest) (*v1pb.Environment, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	environmentID, err := getEnvironmentID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
+	}
+	if !environment.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q is active", environmentID)
+	}
+
+	if err := s.store.DeleteOrUndeleteEnvironmentV2(ctx, environmentID, false /* delete */, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &v1pb.Environment{
+		Name:  request.Name,
+		Title: environment.Name,
+		Order: int32(environment.Order),
+		State: v1pb.State_STATE_ACTIVE,
+	}, nil
 }
 
 func getEnvironmentID(name string) (string, error) {

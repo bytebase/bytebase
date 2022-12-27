@@ -659,14 +659,18 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *Env
 	return nil
 }
 
-// DeleteEnvironmentV2 deletes an environment (archiving).
-func (s *Store) DeleteEnvironmentV2(ctx context.Context, environmentID string, updaterID int) error {
+// DeleteOrUndeleteEnvironmentV2 deletes or undeletes an environment (archiving).
+func (s *Store) DeleteOrUndeleteEnvironmentV2(ctx context.Context, environmentID string, delete bool, updaterID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.Rollback()
 
+	rowStatus := api.Normal
+	if delete {
+		rowStatus = api.Archived
+	}
 	if _, err := tx.ExecContext(ctx, `
 			UPDATE environment
 			SET
@@ -674,7 +678,7 @@ func (s *Store) DeleteEnvironmentV2(ctx context.Context, environmentID string, u
 				updater_id = $2
 			WHERE resource_id = $3
 		`,
-		api.Archived,
+		rowStatus,
 		updaterID,
 		environmentID,
 	); err != nil {
