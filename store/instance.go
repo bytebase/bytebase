@@ -820,6 +820,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, resourceID string) (*Instance
 	return &instanceMessage, nil
 }
 
+// ListInstanceV2 lists all instance.
 func (s *Store) ListInstanceV2(ctx context.Context, showDeleted bool) ([]*InstanceMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if !showDeleted {
