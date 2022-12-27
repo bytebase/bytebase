@@ -33,10 +33,11 @@ func NewInstanceService(store *store.Store) *InstanceService {
 
 // GetInstance gets an instance.
 func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInstanceRequest) (*v1pb.Instance, error) {
-	instanceID, err := getInstanceID(request.Name)
+	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
 	instance, err := s.store.GetInstanceV2(ctx, instanceID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -44,30 +45,50 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 	if instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", instanceID)
 	}
-	return convertInstance(instance), nil
+	return convertInstance(environmentID, instance), nil
 }
 
 // ListInstances lists all instances.
-func (s *EnvironmentService) ListInstances(ctx context.Context, request *v1pb.ListEnvironmentsRequest) (*v1pb.ListInstancesResponse, error) {
+func (s *EnvironmentService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
+	environmentID, err := getEnvironmentID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
 	instances, err := s.store.ListInstanceV2(ctx, request.ShowDeleted)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListInstancesResponse{}
 	for _, instance := range instances {
-		response.Instances = append(response.Instances, convertInstance(instance))
+		response.Instances = append(response.Instances, convertInstance(environmentID, instance))
 	}
 	return response, nil
 }
 
-func getInstanceID(name string) (string, error) {
-	if !strings.HasPrefix(name, instanceNamePrefix) {
-		return "", errors.Errorf("invalid instance name %q", name)
+func getEnvironmentAndInstanceID(name string) (string, string, error) {
+	// the instance request should be environments/{environment-id}/instances/{instance-id}
+	if !strings.HasPrefix(name, environmentNamePrefix) {
+		return "", "", errors.Errorf("invalid request %q", name)
 	}
-	return strings.TrimPrefix(name, instanceNamePrefix), nil
+
+	sections := strings.Split(name, "/")
+	if len(sections) != 4 {
+		return "", "", errors.Errorf("invalid request %q", name)
+	}
+
+	if fmt.Sprintf("%s/", sections[2]) != instanceNamePrefix {
+		return "", "", errors.Errorf("invalid request %q", name)
+	}
+
+	if sections[1] == "" || sections[3] == "" {
+		return "", "", errors.Errorf("invalid request %q", name)
+	}
+
+	return sections[1], sections[3], nil
 }
 
-func convertInstance(instance *store.InstanceMessage) *v1pb.Instance {
+func convertInstance(environmentID string, instance *store.InstanceMessage) *v1pb.Instance {
 	engine := v1pb.Engine_ENGINE_UNSPECIFIED
 	switch instance.Engine {
 	case db.ClickHouse:
@@ -115,7 +136,7 @@ func convertInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	}
 
 	return &v1pb.Instance{
-		Name:         fmt.Sprintf("%s%s", instanceNamePrefix, instance.InstanceID),
+		Name:         fmt.Sprintf("%s%s%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instance.InstanceID),
 		Title:        instance.Title,
 		Engine:       engine,
 		ExternalLink: instance.ExternalLink,
