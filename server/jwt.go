@@ -19,9 +19,6 @@ import (
 )
 
 const (
-	// Expiration section.
-	refreshThresholdDuration = 1 * time.Hour
-
 	// Context section
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
@@ -178,7 +175,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 				))
 		}
 
-		generateToken := time.Until(claims.ExpiresAt.Time) < refreshThresholdDuration
+		generateToken := time.Until(claims.ExpiresAt.Time) < auth.RefreshThresholdDuration
 		if err != nil {
 			var ve *jwt.ValidationError
 			if errors.As(err, &ve) {
