@@ -177,7 +177,7 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 			// If we have a valid refresh token, we will generate new access token and refresh token
 			if refreshToken != nil && refreshToken.Valid {
 				if err := generateTokensAndSetCookies(ctx, user, in.mode, in.secret); err != nil {
-					return fmt.Errorf("failed to regenerate token, error %v", err)
+					return errs.Wrapf(err, "failed to regenerate token")
 				}
 			}
 
