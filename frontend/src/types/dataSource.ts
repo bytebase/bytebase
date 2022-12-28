@@ -36,15 +36,14 @@ export type DataSource = {
   name: string;
   type: DataSourceType;
   // In mysql, username can be empty which means anonymous user
-  username?: string;
+  username: string;
   password?: string;
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
-
-  // hostOverride and portOverride are only used for read-only data sources for user's read-replica instances.
-  hostOverride: string;
-  portOverride: string;
+  host: string;
+  port: string;
+  database: string;
 
   options: DataSourceOptions;
   // UI-only fields
@@ -59,13 +58,14 @@ export type DataSourceCreate = {
   // Domain specific fields
   name: string;
   type: DataSourceType;
-  username?: string;
+  username: string;
   password?: string;
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
-  hostOverride: string;
-  portOverride: string;
+  host: string;
+  port: string;
+  database: string;
 };
 
 export type DataSourcePatch = {
@@ -77,8 +77,9 @@ export type DataSourcePatch = {
   sslCa?: string;
   sslCert?: string;
   sslKey?: string;
-  hostOverride?: string;
-  portOverride?: string;
+  host?: string;
+  port?: string;
+  database?: string;
   options?: DataSourceOptions;
 };
 

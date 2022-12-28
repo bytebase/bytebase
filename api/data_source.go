@@ -96,8 +96,8 @@ type DataSource struct {
 	SslCa    string
 	SslCert  string
 	SslKey   string
-	Host     string            `jsonapi:"attr,hostOverride"`
-	Port     string            `jsonapi:"attr,portOverride"`
+	Host     string            `jsonapi:"attr,host"`
+	Port     string            `jsonapi:"attr,port"`
 	Options  DataSourceOptions `jsonapi:"attr,options"`
 	Database string            `jsonapi:"attr,database"`
 }
@@ -120,8 +120,8 @@ type DataSourceCreate struct {
 	SslCa    string            `jsonapi:"attr,sslCa"`
 	SslCert  string            `jsonapi:"attr,sslCert"`
 	SslKey   string            `jsonapi:"attr,sslKey"`
-	Host     string            `jsonapi:"attr,hostOverride"`
-	Port     string            `jsonapi:"attr,portOverride"`
+	Host     string            `jsonapi:"attr,host"`
+	Port     string            `jsonapi:"attr,port"`
 	Options  DataSourceOptions `jsonapi:"attr,options"`
 	Database string            `jsonapi:"attr,database"`
 }
@@ -161,8 +161,8 @@ type DataSourcePatch struct {
 	SslCa            *string            `jsonapi:"attr,sslCa"`
 	SslCert          *string            `jsonapi:"attr,sslCert"`
 	SslKey           *string            `jsonapi:"attr,sslKey"`
-	Host             *string            `jsonapi:"attr,hostOverride"`
-	Port             *string            `jsonapi:"attr,portOverride"`
+	Host             *string            `jsonapi:"attr,host"`
+	Port             *string            `jsonapi:"attr,port"`
 	Options          *DataSourceOptions `jsonapi:"attr,options"`
 	Database         *string            `jsonapi:"attr,database"`
 }
