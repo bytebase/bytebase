@@ -497,11 +497,11 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 	e.DELETE("/v1/instance/:instanceID/role/:roleName", s.deleteDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.PATCH("/v1/instances/:instanceName/databases/:database", s.updateInstanceDatabase, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.POST("/v1/issues", s.createIssueByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.GET("/environment", s.listEnvironment, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.POST("/environment", s.createEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.GET("/environment/:environmentID", s.getEnvironmentByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.PATCH("/environment/:environmentID", s.updateEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.DELETE("/environment/:environmentID", s.deleteEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/environment", s.listEnvironment, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/v1/environment", s.createEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/environment/:environmentID", s.getEnvironmentByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/v1/environment/:environmentID", s.updateEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.DELETE("/v1/environment/:environmentID", s.deleteEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 }
 
 // initMetricReporter will initial the metric scheduler.
