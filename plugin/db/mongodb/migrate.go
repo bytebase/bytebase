@@ -159,33 +159,42 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		if err := cursor.Decode(&history); err != nil {
 			return nil, errors.Wrapf(err, "failed to decode migration history")
 		}
-		migrationHistory := convertMigrationHistory(history)
+		migrationHistory, err := convertMigrationHistory(history)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert migration history")
+		}
 		migrationHistoryList = append(migrationHistoryList, &migrationHistory)
 	}
 
 	return migrationHistoryList, nil
 }
 
-func convertMigrationHistory(history MigrationHistory) db.MigrationHistory {
-	return db.MigrationHistory{
-		ID:                  int(history.ID),
-		Creator:             history.CreatedBy,
-		CreatedTs:           int64(history.CreatedTs.T),
-		Updater:             history.UpdatedBy,
-		UpdatedTs:           int64(history.UpdatedTs.T),
-		ReleaseVersion:      history.ReleaseVersion,
-		Namespace:           history.Namespace,
-		Sequence:            int(history.Sequence),
-		Source:              db.MigrationSource(history.Source),
-		Type:                db.MigrationType(history.Type),
-		Status:              db.MigrationStatus(history.Status),
-		Version:             history.Version,
-		Description:         history.Description,
-		Statement:           history.Statement,
-		ExecutionDurationNs: history.ExecutionDurationNs,
-		IssueID:             history.IssueID,
-		Payload:             history.Payload,
+func convertMigrationHistory(history MigrationHistory) (db.MigrationHistory, error) {
+	useSemanticVersion, version, semanticVersionSuffix, err := util.FromStoredVersion(history.Version)
+	if err != nil {
+		return db.MigrationHistory{}, err
 	}
+	return db.MigrationHistory{
+		ID:                    int(history.ID),
+		Creator:               history.CreatedBy,
+		CreatedTs:             int64(history.CreatedTs.T),
+		Updater:               history.UpdatedBy,
+		UpdatedTs:             int64(history.UpdatedTs.T),
+		ReleaseVersion:        history.ReleaseVersion,
+		Namespace:             history.Namespace,
+		Sequence:              int(history.Sequence),
+		Source:                db.MigrationSource(history.Source),
+		Type:                  db.MigrationType(history.Type),
+		Status:                db.MigrationStatus(history.Status),
+		Version:               version,
+		Description:           history.Description,
+		Statement:             history.Statement,
+		ExecutionDurationNs:   history.ExecutionDurationNs,
+		IssueID:               history.IssueID,
+		Payload:               history.Payload,
+		UseSemanticVersion:    useSemanticVersion,
+		SemanticVersionSuffix: semanticVersionSuffix,
+	}, nil
 }
 
 // FindLargestSequence finds the largest sequence, return 0 if not found.
