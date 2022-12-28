@@ -633,7 +633,7 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 			return nil, err
 		}
 
-		useSemanticVersion, version, semanticVersionSuffix, err := fromStoredVersion(storedVersion)
+		useSemanticVersion, version, semanticVersionSuffix, err := FromStoredVersion(storedVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -687,8 +687,8 @@ func ToStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix str
 	return fmt.Sprintf("%04s.%04s.%04s-%s", major, minor, patch, semanticVersionSuffix), nil
 }
 
-// fromStoredVersion converts stored version to semantic or non-semantic version.
-func fromStoredVersion(storedVersion string) (bool, string, string, error) {
+// FromStoredVersion converts stored version to semantic or non-semantic version.
+func FromStoredVersion(storedVersion string) (bool, string, string, error) {
 	if strings.HasPrefix(storedVersion, NonSemanticPrefix) {
 		return false, strings.TrimPrefix(storedVersion, NonSemanticPrefix), "", nil
 	}
