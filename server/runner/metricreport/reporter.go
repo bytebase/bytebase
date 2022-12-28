@@ -128,14 +128,16 @@ func (m *Reporter) Identify(ctx context.Context) {
 		log.Debug("unable to get the first principal user", zap.Int("id", api.PrincipalIDForFirstUser), zap.Error(err))
 	}
 	email := ""
+	name := ""
 	if principal != nil {
 		email = principal.Email
+		name = principal.Name
 	}
 
 	if err := m.reporter.Identify(&metric.Identifier{
 		ID:    m.workspaceID,
 		Email: email,
-		Name:  principal.Name,
+		Name:  name,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,
 			identifyTraitForVersion: m.version,
