@@ -137,6 +137,7 @@ type DatabaseEdit struct {
 
 // CreateTableContext is the edit database context to create a table.
 type CreateTableContext struct {
+	Schema       string `json:"schema"`
 	Name         string `json:"name"`
 	Type         string `json:"type"`
 	Engine       string `json:"engine"`
@@ -151,7 +152,8 @@ type CreateTableContext struct {
 
 // AlterTableContext is the edit database context to alter a table.
 type AlterTableContext struct {
-	Name string `json:"name"`
+	Schema string `json:"schema"`
+	Name   string `json:"name"`
 
 	// ColumnNameList should be the final order of columns in UI editor and is used to confirm column positions.
 	ColumnNameList []string `json:"columnNameList"`
@@ -161,6 +163,7 @@ type AlterTableContext struct {
 	DropColumnList   []*DropColumnContext   `json:"dropColumnList"`
 	// TODO(steven): diff schemas in backend, so we don't need this flag.
 	DropPrimaryKey     bool                    `json:"dropPrimaryKey"`
+	DropPrimaryKeyList []string                `json:"dropPrimaryKeyList"`
 	PrimaryKeyList     *[]string               `json:"primaryKeyList"`
 	DropForeignKeyList []string                `json:"dropForeignKeyList"`
 	AddForeignKeyList  []*AddForeignKeyContext `json:"addForeignKeyList"`
@@ -168,13 +171,15 @@ type AlterTableContext struct {
 
 // RenameTableContext is the edit database context to rename a table.
 type RenameTableContext struct {
+	Schema  string `json:"schema"`
 	OldName string `json:"oldName"`
 	NewName string `json:"newName"`
 }
 
 // DropTableContext is the edit database context to drop a table.
 type DropTableContext struct {
-	Name string `json:"name"`
+	Schema string `json:"schema"`
+	Name   string `json:"name"`
 }
 
 // AddColumnContext is the create/alter table context to add a column.
@@ -208,6 +213,7 @@ type DropColumnContext struct {
 // AddForeignKeyContext is the add foreign key context.
 type AddForeignKeyContext struct {
 	ColumnList           []string `json:"columnList"`
+	ReferencedSchema     string   `json:"referencedSchema"`
 	ReferencedTable      string   `json:"referencedTable"`
 	ReferencedColumnList []string `json:"referencedColumnList"`
 }
