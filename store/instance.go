@@ -765,12 +765,13 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 
 // InstanceMessage is the mssage for instance.
 type InstanceMessage struct {
-	InstanceID   string
-	Title        string
-	Engine       db.Type
-	ExternalLink string
-	Deleted      bool
-	DataSources  []*DataSourceMessage
+	EnvironmentID string
+	InstanceID    string
+	Title         string
+	Engine        db.Type
+	ExternalLink  string
+	Deleted       bool
+	DataSources   []*DataSourceMessage
 }
 
 // UpdateInstanceMessage is the mssage for updating an instance.
@@ -1049,6 +1050,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			instance.id AS id,
+			environment.resource_id as environment_id,
 			instance.resource_id AS resource_id,
 			instance.name AS name,
 			engine,
@@ -1070,6 +1072,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		var instanceID int
 		if err := rows.Scan(
 			&instanceID,
+			&instanceMessage.EnvironmentID,
 			&instanceMessage.InstanceID,
 			&instanceMessage.Title,
 			&instanceMessage.Engine,
