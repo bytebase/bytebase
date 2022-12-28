@@ -15,21 +15,21 @@ option go_package = "generated-go/v1";
 service EnvironmentService {
   rpc GetEnvironment(GetEnvironmentRequest) returns (Environment) {
     option (google.api.http) = {
-      get: "/v2/{name=environments/*}"
+      get: "/v1/{name=environments/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
   rpc ListEnvironments(ListEnvironmentsRequest) returns (ListEnvironmentsResponse) {
     option (google.api.http) = {
-      get: "/v2/environments"
+      get: "/v1/environments"
     };
     option (google.api.method_signature) = "";
   }
 
   rpc CreateEnvironment(CreateEnvironmentRequest) returns (Environment) {
     option (google.api.http) = {
-      post: "/v2/environments"
+      post: "/v1/environments"
       body: "environment"
     };
     option (google.api.method_signature) = "";
@@ -37,7 +37,7 @@ service EnvironmentService {
 
   rpc UpdateEnvironment(UpdateEnvironmentRequest) returns (Environment) {
     option (google.api.http) = {
-      patch: "/v2/{environment.name=environments/*}"
+      patch: "/v1/{environment.name=environments/*}"
       body: "environment"
     };
     option (google.api.method_signature) = "environment,update_mask";
@@ -45,14 +45,14 @@ service EnvironmentService {
 
   rpc DeleteEnvironment(DeleteEnvironmentRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/v2/{name=environments/*}"
+      delete: "/v1/{name=environments/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
   rpc UndeleteEnvironment(UndeleteEnvironmentRequest) returns (Environment) {
     option (google.api.http) = {
-      post: "/v2/{name=environments/*}:undelete"
+      post: "/v1/{name=environments/*}:undelete"
       body: "*"
     };
   }

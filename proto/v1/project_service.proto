@@ -15,21 +15,21 @@ option go_package = "generated-go/v1";
 service ProjectService {
   rpc GetProject(GetProjectRequest) returns (Project) {
     option (google.api.http) = {
-      get: "/v2/{name=projects/*}"
+      get: "/v1/{name=projects/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
     option (google.api.http) = {
-      get: "/v2/projects"
+      get: "/v1/projects"
     };
     option (google.api.method_signature) = "";
   }
 
   rpc CreateProject(CreateProjectRequest) returns (Project) {
     option (google.api.http) = {
-      post: "/v2/projects"
+      post: "/v1/projects"
       body: "project"
     };
     option (google.api.method_signature) = "";
@@ -37,7 +37,7 @@ service ProjectService {
 
   rpc UpdateProject(UpdateProjectRequest) returns (Project) {
     option (google.api.http) = {
-      patch: "/v2/{project.name=projects/*}"
+      patch: "/v1/{project.name=projects/*}"
       body: "project"
     };
     option (google.api.method_signature) = "project,update_mask";
@@ -45,14 +45,14 @@ service ProjectService {
 
   rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/v2/{name=projects/*}"
+      delete: "/v1/{name=projects/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
   rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
     option (google.api.http) = {
-      post: "/v2/{name=projects/*}:undelete"
+      post: "/v1/{name=projects/*}:undelete"
       body: "*"
     };
   }
