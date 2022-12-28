@@ -323,7 +323,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterInstanceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
-	e.Any("/v2/*", echo.WrapHandler(mux))
+	e.Any("/v1/*", echo.WrapHandler(mux))
 
 	embedFrontend(e)
 	s.e = e

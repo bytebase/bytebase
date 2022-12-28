@@ -9,7 +9,7 @@ option go_package = "generated-go/v1";
 service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
-      post: "/v2/auth/login"
+      post: "/v1/auth/login"
       body: "*"
     };
   }

@@ -10,7 +10,7 @@ option go_package = "generated-go/v1";
 service GreeterService {
   rpc Hello(HelloRequest) returns (HelloResponse) {
     option (google.api.http) = {
-      get: "/v2/hello/{name}"
+      get: "/v1/hello/{name}"
     };
   }
 }
