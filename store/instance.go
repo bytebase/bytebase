@@ -781,120 +781,50 @@ type UpdateInstanceMessage struct {
 	DataSources  []*DataSourceMessage
 }
 
+// FindInstanceMessage is the message for finding instances.
+type FindInstanceMessage struct {
+	EnvironmentID *string
+	ResourceID    *string
+	ShowDeleted   bool
+}
+
 // GetInstanceV2 gets an instance by the resource_id.
-func (s *Store) GetInstanceV2(ctx context.Context, environmentID, resourceID string) (*InstanceMessage, error) {
+func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	var instanceMessage InstanceMessage
-	var rowStatus string
-	var instanceID int
-	if err := tx.QueryRowContext(ctx, `
-		SELECT
-			instance.id AS id,
-			environment.resource_id as environment_id,
-			instance.resource_id AS resource_id,
-			instance.name AS name,
-			engine,
-			external_link,
-			instance.row_status AS row_status
-		FROM instance
-		LEFT JOIN environment
-		ON environment.id = instance.environment_id
-		WHERE environment.resource_id = $1 AND instance.resource_id = $2`,
-		environmentID,
-		resourceID,
-	).Scan(
-		&instanceID,
-		&instanceMessage.EnvironmentID,
-		&instanceMessage.InstanceID,
-		&instanceMessage.Title,
-		&instanceMessage.Engine,
-		&instanceMessage.ExternalLink,
-		&rowStatus,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, FormatError(err)
-	}
-	instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-
-	dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
+	instanceMessages, err := s.listInstanceImplV2(ctx, tx, find)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, err
 	}
-	instanceMessage.DataSources = dataSourceList
+	if len(instanceMessages) == 0 {
+		return nil, nil
+	}
+	if len(instanceMessages) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(instanceMessages), find)}
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &instanceMessage, nil
+	return instanceMessages[0], nil
 }
 
 // ListInstancesV2 lists all instance.
-// If environmentID is empty string, we will list all instances from all environments.
-func (s *Store) ListInstancesV2(ctx context.Context, environmentID string, showDeleted bool) ([]*InstanceMessage, error) {
+func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if environmentID != "" {
-		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, environmentID)
-	}
-	if !showDeleted {
-		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
-	}
-
-	var instanceMessages []*InstanceMessage
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			instance.id AS id,
-			environment.resource_id as environment_id,
-			instance.resource_id AS resource_id,
-			instance.name AS name,
-			engine,
-			external_link,
-			instance.row_status AS row_status
-		FROM instance
-		LEFT JOIN environment
-		ON environment.id = instance.environment_id
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+	instanceMessages, err := s.listInstanceImplV2(ctx, tx, find)
 	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var instanceMessage InstanceMessage
-		var rowStatus string
-		var instanceID int
-		if err := rows.Scan(
-			&instanceID,
-			&instanceMessage.EnvironmentID,
-			&instanceMessage.InstanceID,
-			&instanceMessage.Title,
-			&instanceMessage.Engine,
-			&instanceMessage.ExternalLink,
-			&rowStatus,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		instanceMessage.DataSources = dataSourceList
-		instanceMessages = append(instanceMessages, &instanceMessage)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -982,7 +912,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	}
 
 	return &InstanceMessage{
-		EnvironmentID: environmentMessage.EnvironmentID,
+		EnvironmentID: environmentID,
 		InstanceID:    instanceCreate.InstanceID,
 		Title:         instanceCreate.Title,
 		Engine:        instanceCreate.Engine,
@@ -1104,4 +1034,63 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID 
 	}
 
 	return &instanceMessage, nil
+}
+
+func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.EnvironmentID; v != nil {
+		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
+	var instanceMessages []*InstanceMessage
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			instance.id AS id,
+			environment.resource_id as environment_id,
+			instance.resource_id AS resource_id,
+			instance.name AS name,
+			engine,
+			external_link,
+			instance.row_status AS row_status
+		FROM instance
+		LEFT JOIN environment
+		ON environment.id = instance.environment_id
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var instanceMessage InstanceMessage
+		var rowStatus string
+		var instanceID int
+		if err := rows.Scan(
+			&instanceID,
+			&instanceMessage.EnvironmentID,
+			&instanceMessage.InstanceID,
+			&instanceMessage.Title,
+			&instanceMessage.Engine,
+			&instanceMessage.ExternalLink,
+			&rowStatus,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		instanceMessage.DataSources = dataSourceList
+		instanceMessages = append(instanceMessages, &instanceMessage)
+	}
+
+	return instanceMessages, nil
 }
