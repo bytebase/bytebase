@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "generated-go/v1";
 
@@ -13,14 +14,26 @@ service AuthService {
       body: "*"
     };
   }
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/auth/logout"
+      body: "*"
+    };
+  }
 }
 
 message LoginRequest {
   string email = 1;
 
   string password = 2;
+
+  // If web is set, we will set access token, refresh token, and user to the cookie.
+  bool web = 3;
 }
 
 message LoginResponse {
   string token = 1;
+}
+
+message LogoutRequest {
 }

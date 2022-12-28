@@ -26,9 +26,34 @@ const (
 	issuer = "bytebase"
 	// Signing key section. For now, this is only used for signing, not for verifying since we only
 	// have 1 version. But it will be used to maintain backward compatibility if we change the signing mechanism.
-	keyID                  = "v1"
-	accessTokenAudienceFmt = "bb.user.access.%s"
-	apiTokenDuration       = 2 * time.Hour
+	keyID = "v1"
+	// AccessTokenAudienceFmt is the format of the acccess token audience.
+	AccessTokenAudienceFmt = "bb.user.access.%s"
+	// RefreshTokenAudienceFmt is the format of the refresh token audience.
+	RefreshTokenAudienceFmt = "bb.user.refresh.%s"
+	apiTokenDuration        = 2 * time.Hour
+	accessTokenDuration     = 24 * time.Hour
+	refreshTokenDuration    = 7 * 24 * time.Hour
+
+	// CookieExpDuration expires slightly earlier than the jwt expiration. Client would be logged out if the user
+	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
+	// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
+	// 1. The access token is about to expire in <<refreshThresholdDuration>>
+	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
+	CookieExpDuration = refreshTokenDuration - 1*time.Minute
+	// AccessTokenCookieName is the cookie name of access token.
+	AccessTokenCookieName = "access-token"
+	// RefreshTokenCookieName is the cookie name of refresh token.
+	RefreshTokenCookieName = "refresh-token"
+	// UserIDCookieName is the cookie name of user ID.
+	UserIDCookieName = "user"
+
+	// GatewayMetadataAccessTokenKey is the gateway metadata key for access token.
+	GatewayMetadataAccessTokenKey = "bytebase-access-token"
+	// GatewayMetadataRefreshTokenKey is the gateway metadata key for refresh token.
+	GatewayMetadataRefreshTokenKey = "bytebase-refresh-token"
+	// GatewayMetadataUserIDKey is the gateway metadata key for user ID.
+	GatewayMetadataUserIDKey = "bytebase-user"
 )
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.
@@ -93,11 +118,11 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 		}
 		return nil, status.Errorf(codes.Unauthenticated, "failed to parse claim")
 	}
-	if !audienceContains(claims.Audience, fmt.Sprintf(accessTokenAudienceFmt, in.mode)) {
+	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.mode)) {
 		return nil, status.Errorf(codes.Unauthenticated,
 			"invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 			claims.Audience,
-			fmt.Sprintf(accessTokenAudienceFmt, in.mode),
+			fmt.Sprintf(AccessTokenAudienceFmt, in.mode),
 		)
 	}
 
@@ -134,7 +159,19 @@ type claims struct {
 // GenerateAPIToken generates an API token.
 func GenerateAPIToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(apiTokenDuration)
-	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(user, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+}
+
+// GenerateAccessToken generates an access token for web.
+func GenerateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+	expirationTime := time.Now().Add(accessTokenDuration)
+	return generateToken(user, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+}
+
+// GenerateRefreshToken generates a refresh token for web.
+func GenerateRefreshToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+	expirationTime := time.Now().Add(refreshTokenDuration)
+	return generateToken(user, fmt.Sprintf(RefreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.
