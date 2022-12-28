@@ -815,7 +815,6 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 }
 
 // ListInstancesV2 lists all instance.
-// If environmentID is "*", we will list all instances from all environments.
 func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
