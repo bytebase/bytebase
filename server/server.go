@@ -485,8 +485,6 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 	}
 	e.POST("/v1/sql/advise", s.sqlCheckController)
 	e.POST("/v1/sql/schema/diff", schemaDiff)
-	e.POST("/v1/auth/login", s.openAPIUserLogin, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.POST("/v1/auth/login", s.openAPIUserLogin, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.POST("/v1/instance", s.createInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.GET("/v1/instance", s.listInstance, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.GET("/v1/instance/:instanceID", s.getInstanceByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
