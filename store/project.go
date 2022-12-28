@@ -533,3 +533,132 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*pr
 	}
 	return &project, nil
 }
+
+// ProjectMessage is the mssage for project.
+type ProjectMessage struct {
+	ProjectID        string
+	Title            string
+	Key              string
+	Workflow         api.ProjectWorkflowType
+	Visibility       api.ProjectVisibility
+	TenantMode       api.ProjectTenantMode
+	DBNameTemplate   string
+	RoleProvider     api.ProjectRoleProvider
+	SchemaChangeType api.ProjectSchemaChangeType
+	LGTMCheckSetting api.LGTMCheckSetting
+	Deleted          bool
+}
+
+// FindProjectMessage is the message for finding projects.
+type FindProjectMessage struct {
+	ResourceID  *string
+	ShowDeleted bool
+}
+
+// GetProjectV2 gets project by resource ID.
+func (s *Store) GetProjectV2(ctx context.Context, resourceID string) (*ProjectMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	find := &FindProjectMessage{
+		ResourceID: &resourceID,
+	}
+	projects, err := s.listProjectImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(projects) == 0 {
+		return nil, nil
+	}
+	if len(projects) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(projects), find)}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return projects[0], nil
+}
+
+// ListProjectV2 lists all projects.
+func (s *Store) ListProjectV2(ctx context.Context, showDeleted bool) ([]*ProjectMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	projects, err := s.listProjectImplV2(ctx, tx, &FindProjectMessage{
+		ShowDeleted: showDeleted,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return projects, nil
+}
+
+func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
+	var projectMessages []*ProjectMessage
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			resource_id,
+			name,
+			key,
+			workflow_type,
+			visibility,
+			tenant_mode,
+			db_name_template,
+			role_provider,
+			schema_change_type,
+			lgtm_check,
+			row_status
+		FROM project
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var projectMessage ProjectMessage
+		var rowStatus string
+
+		if err := rows.Scan(
+			&projectMessage.ProjectID,
+			&projectMessage.Title,
+			&projectMessage.Key,
+			&projectMessage.Workflow,
+			&projectMessage.TenantMode,
+			&projectMessage.DBNameTemplate,
+			&projectMessage.RoleProvider,
+			&projectMessage.SchemaChangeType,
+			&projectMessage.LGTMCheckSetting,
+			&rowStatus,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+		projectMessages = append(projectMessages, &projectMessage)
+	}
+
+	return projectMessages, nil
+}
