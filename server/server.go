@@ -85,14 +85,14 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/parser/differ/mysql"
 	// Register postgres differ driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/differ/pg"
-	// Register postgres parser driver.
-	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
-	// Register mysql transform driver.
-	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
 	// Register mysql edit driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/edit/mysql"
 	// Register postgres edit driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/edit/pg"
+	// Register postgres parser driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
+	// Register mysql transform driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
 )
 
 const (

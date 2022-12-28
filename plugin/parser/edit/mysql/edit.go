@@ -5,7 +5,6 @@ import (
 	bbparser "github.com/bytebase/bytebase/plugin/parser"
 
 	"github.com/bytebase/bytebase/plugin/parser/edit"
-
 )
 
 var (
