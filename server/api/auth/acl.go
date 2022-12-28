@@ -13,20 +13,24 @@ import (
 
 // ACLInterceptor is the unary interceptor for gRPC API.
 func (in *APIAuthInterceptor) ACLInterceptor(ctx context.Context, req interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	role, err := in.getWorkspaceRole(ctx, serverInfo.FullMethod)
+	methodName := getShortMethodName(serverInfo.FullMethod)
+	role, err := in.getWorkspaceRole(ctx, methodName)
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
+	if role == api.Developer && isOwnerAndDBAMethod(methodName) {
+		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can access method %q", methodName)
+	}
+
+	// TODO(d): implement authorization checks for project resources.
+
 	// Stores principalID into context.
 	childCtx := context.WithValue(ctx, common.RoleContextKey, role)
-
-	// TODO(d): implement the authorization.
-
 	return handler(childCtx, req)
 }
 
-func (in *APIAuthInterceptor) getWorkspaceRole(ctx context.Context, fullMethod string) (api.Role, error) {
-	if isAuthenticationAllowed(fullMethod) {
+func (in *APIAuthInterceptor) getWorkspaceRole(ctx context.Context, methodName string) (api.Role, error) {
+	if isAuthenticationAllowed(methodName) {
 		return api.Owner, nil
 	}
 	// If RBAC feature is not enabled, all users are treated as OWNER.

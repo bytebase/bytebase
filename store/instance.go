@@ -755,8 +755,13 @@ type InstanceMessage struct {
 
 // UpdateInstanceMessage is the mssage for updating an instance.
 type UpdateInstanceMessage struct {
+	UpdaterID     int
+	EnvironmentID string
+	ResourceID    string
+
 	Title        *string
 	ExternalLink *string
+	RowStatus    *api.RowStatus
 	DataSources  []*DataSourceMessage
 }
 
@@ -901,13 +906,16 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 }
 
 // UpdateInstanceV2 updates an instance.
-func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID string, patch *UpdateInstanceMessage, updaterID int) (*InstanceMessage, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ExternalLink; v != nil {
 		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -916,15 +924,15 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID 
 	}
 	defer tx.Rollback()
 
-	environmentMessage, err := getEnvironmentImplV2(ctx, tx, environmentID)
+	environmentMessage, err := getEnvironmentImplV2(ctx, tx, patch.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
 
-	args = append(args, resourceID, environmentMessage.InternalID)
+	args = append(args, patch.ResourceID, environmentMessage.InternalID)
 
 	instanceMessage := InstanceMessage{
-		EnvironmentID: environmentID,
+		EnvironmentID: patch.EnvironmentID,
 	}
 	var rowStatus string
 	var instanceID int
@@ -980,7 +988,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID 
 
 		for _, ds := range patch.DataSources {
 			dataSourceCreate := &api.DataSourceCreate{
-				CreatorID:  updaterID,
+				CreatorID:  patch.UpdaterID,
 				InstanceID: instanceID,
 				DatabaseID: database.ID,
 				Name:       ds.Title,
