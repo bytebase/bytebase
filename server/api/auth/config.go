@@ -1,21 +1,34 @@
 package auth
 
 import (
-	"fmt"
 	"strings"
 )
 
 const apiPackagePrefix = "/bytebase.v1."
 
-var authenticationAllowlistMethods = []string{
-	"AuthService/Login",
+var authenticationAllowlistMethods = map[string]bool{
+	"AuthService/Login": true,
 }
 
-func isAuthenticationAllowed(fullMethod string) bool {
-	for _, allow := range authenticationAllowlistMethods {
-		if strings.HasPrefix(fullMethod, fmt.Sprintf("%s%s", apiPackagePrefix, allow)) {
-			return true
-		}
-	}
-	return false
+var ownerAndDBAMethods = map[string]bool{
+	"EnvironmentService/CreateEnvironment":   true,
+	"EnvironmentService/UpdateEnvironment":   true,
+	"EnvironmentService/DeleteEnvironment":   true,
+	"EnvironmentService/UndeleteEnvironment": true,
+	"InstanceService/CreateInstance":         true,
+	"InstanceService/UpdateInstance":         true,
+	"InstanceService/DeleteInstance":         true,
+	"InstanceService/UndeleteInstance":       true,
+}
+
+func getShortMethodName(fullMethod string) string {
+	return strings.TrimPrefix(fullMethod, apiPackagePrefix)
+}
+
+func isAuthenticationAllowed(methodName string) bool {
+	return authenticationAllowlistMethods[methodName]
+}
+
+func isOwnerAndDBAMethod(methodName string) bool {
+	return ownerAndDBAMethods[methodName]
 }
