@@ -40,11 +40,6 @@ func (c *catalogService) GetFinder() *catalog.Finder {
 	return c.finder
 }
 
-func (s *Server) registerOpenAPIRoutesForSQL(g *echo.Group) {
-	g.POST("/sql/advise", s.sqlCheckController)
-	g.POST("/sql/schema/diff", schemaDiff)
-}
-
 type sqlCheckRequestBody struct {
 	Statement       string `json:"statement"`
 	DatabaseType    string `json:"databaseType"`

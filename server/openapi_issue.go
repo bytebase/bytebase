@@ -13,10 +13,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
-func (s *Server) registerOpenAPIRoutesForIssue(g *echo.Group) {
-	g.POST("/issues", s.createIssueByOpenAPI)
-}
-
 func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 	ctx := c.Request().Context()
 

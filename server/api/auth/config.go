@@ -7,7 +7,8 @@ import (
 const apiPackagePrefix = "/bytebase.v1."
 
 var authenticationAllowlistMethods = map[string]bool{
-	"AuthService/Login": true,
+	"AuthService/Login":    true,
+	"GreeterService/Hello": true,
 }
 
 var ownerAndDBAMethods = map[string]bool{

@@ -21,20 +21,6 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-func (s *Server) registerOpenAPIRoutesForInstance(g *echo.Group) {
-	g.POST("/instance", s.createInstanceByOpenAPI)
-	g.GET("/instance", s.listInstance)
-	g.GET("/instance/:instanceID", s.getInstanceByID)
-	g.PATCH("/instance/:instanceID", s.updateInstanceByOpenAPI)
-	g.DELETE("/instance/:instanceID", s.deleteInstanceByOpenAPI)
-	g.GET("/instance/:instanceID/role", s.listDatabaseRole)
-	g.POST("/instance/:instanceID/role", s.createDatabaseRole)
-	g.GET("/instance/:instanceID/role/:roleName", s.getDatabaseRole)
-	g.PATCH("/instance/:instanceID/role/:roleName", s.updateDatabaseRole)
-	g.DELETE("/instance/:instanceID/role/:roleName", s.deleteDatabaseRole)
-	g.PATCH("/instances/:instanceName/databases/:database", s.updateInstanceDatabase)
-}
-
 func (s *Server) listInstance(c echo.Context) error {
 	ctx := c.Request().Context()
 	rowStatus := api.Normal
