@@ -91,6 +91,8 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/parser/transform/mysql"
 	// Register mysql edit driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/edit/mysql"
+	// Register postgres edit driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/edit/pg"
 )
 
 const (
