@@ -1100,15 +1100,15 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	}
 	defer tx.Rollback()
 
-	query := `SELECT COUNT(1) FROM instance WHERE row_status = $1`
+	query := `
+		SELECT
+			count(1)
+		FROM instance
+		LEFT JOIN environment
+		ON environment.id = instance.environment_id
+		WHERE ` + strings.Join(where, " AND ")
 	var count int
-	if err := tx.QueryRowContext(ctx, `
-			SELECT
-				count(1)
-			FROM instance
-			LEFT JOIN environment
-			ON environment.id = instance.environment_id
-			WHERE `+strings.Join(where, " AND "),
+	if err := tx.QueryRowContext(ctx, query,
 		args...).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
