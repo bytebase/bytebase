@@ -765,12 +765,13 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 
 // InstanceMessage is the mssage for instance.
 type InstanceMessage struct {
-	InstanceID   string
-	Title        string
-	Engine       db.Type
-	ExternalLink string
-	Deleted      bool
-	DataSources  []*DataSourceMessage
+	EnvironmentID string
+	InstanceID    string
+	Title         string
+	Engine        db.Type
+	ExternalLink  string
+	Deleted       bool
+	DataSources   []*DataSourceMessage
 }
 
 // UpdateInstanceMessage is the mssage for updating an instance.
@@ -794,6 +795,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, environmentID, resourceID str
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
 			instance.id AS id,
+			environment.resource_id as environment_id,
 			instance.resource_id AS resource_id,
 			instance.name AS name,
 			engine,
@@ -807,6 +809,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, environmentID, resourceID str
 		resourceID,
 	).Scan(
 		&instanceID,
+		&instanceMessage.EnvironmentID,
 		&instanceMessage.InstanceID,
 		&instanceMessage.Title,
 		&instanceMessage.Engine,
@@ -854,6 +857,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, environmentID string, showD
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			instance.id AS id,
+			environment.resource_id as environment_id,
 			instance.resource_id AS resource_id,
 			instance.name AS name,
 			engine,
@@ -875,6 +879,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, environmentID string, showD
 		var instanceID int
 		if err := rows.Scan(
 			&instanceID,
+			&instanceMessage.EnvironmentID,
 			&instanceMessage.InstanceID,
 			&instanceMessage.Title,
 			&instanceMessage.Engine,
@@ -977,11 +982,12 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	}
 
 	return &InstanceMessage{
-		InstanceID:   instanceCreate.InstanceID,
-		Title:        instanceCreate.Title,
-		Engine:       instanceCreate.Engine,
-		ExternalLink: instanceCreate.ExternalLink,
-		DataSources:  instanceCreate.DataSources,
+		EnvironmentID: environmentMessage.EnvironmentID,
+		InstanceID:    instanceCreate.InstanceID,
+		Title:         instanceCreate.Title,
+		Engine:        instanceCreate.Engine,
+		ExternalLink:  instanceCreate.ExternalLink,
+		DataSources:   instanceCreate.DataSources,
 	}, nil
 }
 
@@ -1008,7 +1014,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID 
 
 	args = append(args, resourceID, environmentMessage.InternalID)
 
-	var instanceMessage InstanceMessage
+	instanceMessage := InstanceMessage{
+		EnvironmentID: environmentID,
+	}
 	var rowStatus string
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
