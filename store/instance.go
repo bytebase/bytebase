@@ -913,11 +913,12 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	}
 
 	return &InstanceMessage{
-		InstanceID:   instanceCreate.InstanceID,
-		Title:        instanceCreate.Title,
-		Engine:       instanceCreate.Engine,
-		ExternalLink: instanceCreate.ExternalLink,
-		DataSources:  instanceCreate.DataSources,
+		EnvironmentID: environmentID,
+		InstanceID:    instanceCreate.InstanceID,
+		Title:         instanceCreate.Title,
+		Engine:        instanceCreate.Engine,
+		ExternalLink:  instanceCreate.ExternalLink,
+		DataSources:   instanceCreate.DataSources,
 	}, nil
 }
 
@@ -944,7 +945,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, environmentID, resourceID 
 
 	args = append(args, resourceID, environmentMessage.InternalID)
 
-	var instanceMessage InstanceMessage
+	instanceMessage := InstanceMessage{
+		EnvironmentID: environmentID,
+	}
 	var rowStatus string
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
