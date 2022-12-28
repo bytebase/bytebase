@@ -1115,6 +1115,5 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 		}
 		return 0, FormatError(err)
 	}
-	fmt.Printf("Barny: %d\n", count)
 	return count, nil
 }
