@@ -576,7 +576,11 @@ const showDatabase = computed((): boolean => {
 });
 
 const showSSL = computed((): boolean => {
-  return state.instance.engine === "CLICKHOUSE";
+  return (
+    state.instance.engine === "CLICKHOUSE" ||
+    state.instance.engine === "MYSQL" ||
+    state.instance.engine === "TIDB"
+  );
 });
 
 const showAuthSource = computed((): boolean => {
