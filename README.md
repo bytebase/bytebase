@@ -169,6 +169,9 @@ our product experts.
 
 ## Manage database from cloud database vendors
 
+- Manage Snowflake
+  - [Database Change Management with Snowflake](https://www.bytebase.com/blog/database-change-management-with-snowflake)
+  - [Database Change Management with Snowflake and GitHub](https://www.bytebase.com/blog/database-change-management-with-snowflake-and-github)
 - [Manage Supabase PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/supabase)
 - [Manage render PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/render)
 - [Manage Neon database](https://www.bytebase.com/docs/how-to/integrations/neon)
