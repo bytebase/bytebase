@@ -83,9 +83,6 @@ export type Instance = {
   engine: EngineType;
   engineVersion: string;
   externalLink?: string;
-  database: string;
-  host: string;
-  port?: string;
   srv: boolean;
   authSource: string;
 };
@@ -120,9 +117,6 @@ export type InstancePatch = {
   // Domain specific fields
   name?: string;
   externalLink?: string;
-  host?: string;
-  port?: string;
-  database?: string;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";
