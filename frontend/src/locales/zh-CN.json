@@ -1419,7 +1419,8 @@
     "connect-in-admin-mode": "以管理员模式连接",
     "admin-mode": {
       "self": "管理员模式"
-    }
+    },
+    "read-only-mode-not-allowed": "实例{instance}无法通过只读模式访问。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

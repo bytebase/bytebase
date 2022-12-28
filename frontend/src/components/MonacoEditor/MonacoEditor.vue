@@ -16,9 +16,10 @@ import {
   shallowRef,
   PropType,
   onBeforeUnmount,
+  watchEffect,
 } from "vue";
 import type { editor as Editor } from "monaco-editor";
-import { Database, SQLDialect } from "@/types";
+import { Database, Language, SQLDialect } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
@@ -28,6 +29,10 @@ const props = defineProps({
   value: {
     type: String,
     required: true,
+  },
+  language: {
+    type: String as PropType<Language>,
+    default: "sql",
   },
   dialect: {
     type: String as PropType<SQLDialect>,
@@ -69,7 +74,7 @@ const initEditorInstance = () => {
   const { monaco, formatContent, setPositionAtEndOfLine } =
     monacoInstanceRef.value!;
 
-  const model = monaco.editor.createModel(sqlCode.value, "sql");
+  const model = monaco.editor.createModel(sqlCode.value, props.language);
   const editorInstance = monaco.editor.create(editorContainerRef.value!, {
     model,
     theme: "bb",
@@ -100,22 +105,32 @@ const initEditorInstance = () => {
     ...props.options,
   });
 
-  // add `Format SQL` action into context menu
-  editorInstance.addAction({
-    id: "format-sql",
-    label: "Format SQL",
-    keybindings: [
-      monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
-    ],
-    contextMenuGroupId: "operation",
-    contextMenuOrder: 1,
-    run: () => {
-      if (readOnly.value) {
-        return;
-      }
-      formatContent(editorInstance, dialect.value);
-      nextTick(() => setPositionAtEndOfLine(editorInstance));
-    },
+  watchEffect((onCleanup) => {
+    if (props.language === "sql") {
+      // add `Format SQL` action into context menu
+      const action = editorInstance.addAction({
+        id: "format-sql",
+        label: "Format SQL",
+        keybindings: [
+          monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
+        ],
+        contextMenuGroupId: "operation",
+        contextMenuOrder: 1,
+        run: () => {
+          if (readOnly.value) {
+            return;
+          }
+          formatContent(editorInstance, dialect.value);
+          nextTick(() => setPositionAtEndOfLine(editorInstance));
+        },
+      });
+      onCleanup(() => {
+        action.dispose();
+      });
+    } else {
+      // When the language is "javascript", we can still use Alt+Shift+F to
+      // format the document (the native feature of monaco-editor).
+    }
   });
 
   // typed something, change the text
