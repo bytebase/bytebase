@@ -317,6 +317,12 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterGreeterServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
+	if err := v1pb.RegisterEnvironmentServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterInstanceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
 	e.Any("/v2/*", echo.WrapHandler(mux))
 
 	embedFrontend(e)
