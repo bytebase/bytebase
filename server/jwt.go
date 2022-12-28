@@ -85,11 +85,6 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 	return nil
 }
 
-func generateAPIToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
-	expirationTime := time.Now().Add(apiTokenDuration)
-	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
-}
-
 func generateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(accessTokenDuration)
 	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
