@@ -438,11 +438,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 // instanceCountGuard is a feature guard for instance count.
 // We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
 func (s *Server) instanceCountGuard(ctx context.Context) error {
-	status := api.Normal
-	count, err := s.store.CountInstance(ctx, &api.InstanceFind{
-		RowStatus: &status,
-	})
-
+	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 	}
@@ -465,9 +461,6 @@ func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error 
 
 func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreate) (*api.Instance, error) {
 	if err := s.instanceCountGuard(ctx); err != nil {
-		return nil, err
-	}
-	if err := s.validateInstanceName(ctx, create.Name); err != nil {
 		return nil, err
 	}
 	if err := s.validateDataSourceList(create.DataSourceList); err != nil {
@@ -514,11 +507,6 @@ func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreat
 }
 
 func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch) (*api.Instance, error) {
-	if v := patch.Name; v != nil {
-		if err := s.validateInstanceName(ctx, *v); err != nil {
-			return nil, err
-		}
-	}
 	if v := patch.DataSourceList; v != nil {
 		if err := s.validateDataSourceList(v); err != nil {
 			return nil, err
@@ -608,21 +596,6 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 	}
 
 	return instancePatched, nil
-}
-
-func (s *Server) validateInstanceName(ctx context.Context, instanceName string) error {
-	count, err := s.store.CountInstance(ctx, &api.InstanceFind{
-		Name: &instanceName,
-	})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count the instance by name").SetInternal(err)
-	}
-
-	if count > 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Duplicate instance name %s", instanceName))
-	}
-
-	return nil
 }
 
 func (*Server) validateDataSourceList(dataSourceList []*api.DataSourceCreate) error {
