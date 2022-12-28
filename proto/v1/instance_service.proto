@@ -67,7 +67,7 @@ message GetInstanceRequest {
 message ListInstancesRequest {
   // The parent, which owns this collection of instances.
   // Format: environments/{environment}
-  // Use "environments/*" to list all instances from all environments.
+  // Use "environments/-" to list all instances from all environments.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of instances to return. The service may return fewer than
@@ -162,10 +162,10 @@ message DataSource {
   string title = 1;
   DataSourceType type = 2;
   string username = 3;
-  string password = 4;
-  string ssl_ca = 5;
-  string ssl_cert = 6;
-  string ssl_key = 7;
+  string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_ca = 5 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_cert = 6 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
   string host = 8;
   string port = 9;
   string database = 10;

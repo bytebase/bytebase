@@ -49,7 +49,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 	if instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", instanceID)
 	}
-	return convertToInstance(environmentID, instance), nil
+	return convertToInstance(instance), nil
 }
 
 // ListInstances lists all instances.
@@ -57,6 +57,10 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 	environmentID, err := getEnvironmentID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	// Use "environments/-" to list all instances from all environments.
+	if environmentID == "-" {
+		environmentID = ""
 	}
 
 	find := &store.FindInstanceMessage{
@@ -71,7 +75,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 	}
 	response := &v1pb.ListInstancesResponse{}
 	for _, instance := range instances {
-		response.Instances = append(response.Instances, convertToInstance(environmentID, instance))
+		response.Instances = append(response.Instances, convertToInstance(instance))
 	}
 	return response, nil
 }
@@ -100,7 +104,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToInstance(environmentID, instance), nil
+	return convertToInstance(instance), nil
 }
 
 // UpdateInstance updates an instance.
@@ -152,7 +156,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToInstance(environmentID, ins), nil
+	return convertToInstance(ins), nil
 }
 
 func getEnvironmentAndInstanceID(name string) (string, string, error) {
@@ -177,7 +181,7 @@ func getEnvironmentAndInstanceID(name string) (string, string, error) {
 	return sections[1], sections[3], nil
 }
 
-func convertToInstance(environmentID string, instance *store.InstanceMessage) *v1pb.Instance {
+func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	engine := v1pb.Engine_ENGINE_UNSPECIFIED
 	switch instance.Engine {
 	case db.ClickHouse:
@@ -226,7 +230,7 @@ func convertToInstance(environmentID string, instance *store.InstanceMessage) *v
 	}
 
 	return &v1pb.Instance{
-		Name:         fmt.Sprintf("%s%s%s%s", environmentNamePrefix, environmentID, instanceNamePrefix, instance.InstanceID),
+		Name:         fmt.Sprintf("%s%s%s%s", environmentNamePrefix, instance.EnvironmentID, instanceNamePrefix, instance.InstanceID),
 		Title:        instance.Title,
 		Engine:       engine,
 		ExternalLink: instance.ExternalLink,
