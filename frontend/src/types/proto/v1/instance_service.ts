@@ -126,7 +126,7 @@ export interface ListInstancesRequest {
   /**
    * The parent, which owns this collection of instances.
    * Format: environments/{environment}
-   * Use "environments/*" to list all instances from all environments.
+   * Use "environments/-" to list all instances from all environments.
    */
   parent: string;
   /**

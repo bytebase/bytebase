@@ -834,7 +834,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, environmentID, resourceID str
 }
 
 // ListInstancesV2 lists all instance.
-// If environmentID is "*", we will list all instances from all environments.
+// If environmentID is empty string, we will list all instances from all environments.
 func (s *Store) ListInstancesV2(ctx context.Context, environmentID string, showDeleted bool) ([]*InstanceMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -843,7 +843,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, environmentID string, showD
 	defer tx.Rollback()
 
 	where, args := []string{"1 = 1"}, []interface{}{}
-	if environmentID != "*" {
+	if environmentID != "" {
 		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, environmentID)
 	}
 	if !showDeleted {

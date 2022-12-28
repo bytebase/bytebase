@@ -55,6 +55,10 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	// Use "environments/-" to list all instances from all environments.
+	if environmentID == "-" {
+		environmentID = ""
+	}
 
 	instances, err := s.store.ListInstancesV2(ctx, environmentID, request.ShowDeleted)
 	if err != nil {

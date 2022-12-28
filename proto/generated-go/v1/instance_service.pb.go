@@ -192,7 +192,7 @@ type ListInstancesRequest struct {
 
 	// The parent, which owns this collection of instances.
 	// Format: environments/{environment}
-	// Use "environments/*" to list all instances from all environments.
+	// Use "environments/-" to list all instances from all environments.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of instances to return. The service may return fewer than
 	// this value.
