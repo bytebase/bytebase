@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
@@ -23,13 +24,15 @@ const instanceNamePrefix = "instances/"
 // InstanceService implements the instance service.
 type InstanceService struct {
 	v1pb.UnimplementedInstanceServiceServer
-	store *store.Store
+	store          *store.Store
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService) *InstanceService {
 	return &InstanceService{
-		store: store,
+		store:          store,
+		licenseService: licenseService,
 	}
 }
 
@@ -87,12 +90,24 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	if !isValidResourceID(request.InstanceId) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", request.InstanceId)
+	}
+
+	// Instance limit in the plan.
+	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	subscription := s.licenseService.LoadSubscription(ctx)
+	if count >= subscription.InstanceCount {
+		return nil, status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", subscription.InstanceCount)
+	}
 
 	instanceMessage, err := convertToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	instance, err := s.store.CreateInstanceV2(ctx,
 		environmentID,
@@ -102,6 +117,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	// TODO(d): sync instance databases.
 	return convertToInstance(instance), nil
 }
 
@@ -152,6 +169,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	// TODO(d): sync instance databases.
+
 	return convertToInstance(ins), nil
 }
 
@@ -285,18 +305,13 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		})
 	}
 
-	state := v1pb.State_STATE_ACTIVE
-	if instance.Deleted {
-		state = v1pb.State_STATE_DELETED
-	}
-
 	return &v1pb.Instance{
 		Name:         fmt.Sprintf("%s%s%s%s", environmentNamePrefix, instance.EnvironmentID, instanceNamePrefix, instance.InstanceID),
 		Title:        instance.Title,
 		Engine:       engine,
 		ExternalLink: instance.ExternalLink,
 		DataSources:  dataSourceList,
-		State:        state,
+		State:        convertDeletedToState(instance.Deleted),
 	}
 }
 
