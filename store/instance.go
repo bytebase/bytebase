@@ -169,27 +169,6 @@ func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.I
 	return instance, nil
 }
 
-// CountInstance counts the number of instances.
-func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	where, args := findInstanceQuery(find)
-
-	query := `SELECT COUNT(*) FROM instance WHERE ` + where
-	var count int
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return 0, FormatError(err)
-	}
-	return count, nil
-}
-
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
 // Used by the metric collector.
 func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) ([]*metric.InstanceCountMetric, error) {
@@ -1093,4 +1072,23 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	return instanceMessages, nil
+}
+
+// CountInstance counts the number of instances.
+func (s *Store) CountInstance(ctx context.Context) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	query := `SELECT COUNT(1) FROM instance WHERE row_status = $1`
+	var count int
+	if err := tx.QueryRowContext(ctx, query, api.Normal).Scan(&count); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return 0, FormatError(err)
+	}
+	return count, nil
 }

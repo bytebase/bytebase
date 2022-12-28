@@ -11,7 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
@@ -21,13 +23,15 @@ const environmentNamePrefix = "environments/"
 // EnvironmentService implements the environment service.
 type EnvironmentService struct {
 	v1pb.UnimplementedEnvironmentServiceServer
-	store *store.Store
+	store          *store.Store
+	licenseService enterpriseAPI.LicenseService
 }
 
 // NewEnvironmentService creates a new EnvironmentService.
-func NewEnvironmentService(store *store.Store) *EnvironmentService {
+func NewEnvironmentService(store *store.Store, licenseService enterpriseAPI.LicenseService) *EnvironmentService {
 	return &EnvironmentService{
-		store: store,
+		store:          store,
+		licenseService: licenseService,
 	}
 }
 
@@ -66,6 +70,24 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	if request.Environment == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "environment must be set")
 	}
+
+	if err := api.IsValidEnvironmentName(request.Environment.Title); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid environment title, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.")
+	}
+	if !resourceIDMatcher.MatchString(request.EnvironmentId) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid environment ID %v", request.EnvironmentId)
+	}
+
+	// Environment limit in the plan.
+	environments, err := s.store.ListEnvironmentV2(ctx, false /* showDeleted */)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	maximumEnvironmentLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumEnvironment)
+	if int64(len(environments)) >= maximumEnvironmentLimit {
+		return nil, status.Errorf(codes.ResourceExhausted, "current plan can create up to %d environments.", maximumEnvironmentLimit)
+	}
+
 	environment, err := s.store.CreateEnvironmentV2(ctx,
 		&store.EnvironmentMessage{
 			EnvironmentID: request.EnvironmentId,
@@ -145,6 +167,18 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
 	}
 
+	// All instances in the environment must be deleted.
+	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ShowDeleted:   false,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if len(instances) > 0 {
+		return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment should be deleted")
+	}
+
 	if err := s.store.DeleteOrUndeleteEnvironmentV2(ctx, environmentID, true /* delete */, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -191,14 +225,10 @@ func getEnvironmentID(name string) (string, error) {
 }
 
 func convertEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
-	state := v1pb.State_STATE_ACTIVE
-	if environment.Deleted {
-		state = v1pb.State_STATE_DELETED
-	}
 	return &v1pb.Environment{
 		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.EnvironmentID),
 		Title: environment.Title,
 		Order: environment.Order,
-		State: state,
+		State: convertDeletedToState(environment.Deleted),
 	}
 }
