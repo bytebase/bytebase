@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/pkg/errors"
 
@@ -127,7 +128,11 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Instance.Name)
 	}
 
-	patch := &store.UpdateInstanceMessage{}
+	patch := &store.UpdateInstanceMessage{
+		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
+		EnvironmentID: environmentID,
+		ResourceID:    instanceID,
+	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "instance.title":
@@ -143,16 +148,75 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		}
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	ins, err := s.store.UpdateInstanceV2(ctx,
-		environmentID,
-		instanceID,
-		patch,
-		principalID,
-	)
+	ins, err := s.store.UpdateInstanceV2(ctx, patch)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	return convertToInstance(ins), nil
+}
+
+// DeleteInstance deletes an instance.
+func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
+	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+		ShowDeleted:   false,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Name)
+	}
+
+	rowStatus := api.Archived
+	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
+		EnvironmentID: environmentID,
+		ResourceID:    instanceID,
+		RowStatus:     &rowStatus,
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+// UndeleteInstance undeletes an instance.
+func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.UndeleteInstanceRequest) (*v1pb.Instance, error) {
+	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+		ShowDeleted:   false,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Name)
+	}
+
+	rowStatus := api.Archived
+	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
+		EnvironmentID: environmentID,
+		ResourceID:    instanceID,
+		RowStatus:     &rowStatus,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	return convertToInstance(ins), nil
 }
 
