@@ -90,7 +90,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if !resourceIDMatcher.MatchString(request.InstanceId) {
+	if !isValidResourceID(request.InstanceId) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", request.InstanceId)
 	}
 

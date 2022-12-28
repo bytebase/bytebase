@@ -14,3 +14,7 @@ func convertDeletedToState(deleted bool) v1pb.State {
 	}
 	return v1pb.State_STATE_ACTIVE
 }
+
+func isValidResourceID(resourceID string) bool {
+	return resourceIDMatcher.MatchString(resourceID)
+}
