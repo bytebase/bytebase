@@ -68,7 +68,7 @@
             "
             class="textfield mt-1 w-full"
             :disabled="!allowEdit"
-            :value="state.instance.host"
+            :value="adminDataSource.host"
             @input="handleInstanceHostInput"
           />
           <div
@@ -90,7 +90,7 @@
             class="textfield mt-1 w-full"
             :placeholder="defaultPort"
             :disabled="!allowEdit"
-            :value="state.instance.port"
+            :value="adminDataSource.port"
             @wheel="handleInstancePortWheelScroll"
             @input="handleInstancePortInput"
           />
@@ -108,10 +108,8 @@
             </span>
             <button
               class="ml-1 btn-icon"
-              :disabled="instanceLink(state.instance)?.trim().length == 0"
-              @click.prevent="
-                window.open(urlfy(instanceLink(state.instance)), '_blank')
-              "
+              :disabled="instanceLink.trim().length == 0"
+              @click.prevent="window.open(urlfy(instanceLink), '_blank')"
             >
               <heroicons-outline:external-link class="w-4 h-4" />
             </button>
@@ -124,7 +122,7 @@
               type="text"
               class="textfield mt-1 w-full"
               disabled="true"
-              :value="instanceLink(state.instance)"
+              :value="instanceLink"
             />
           </template>
           <template v-else>
@@ -299,8 +297,8 @@
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              :value="currentDataSource.hostOverride"
-              @input="handleCurrentDataSourceHostOverrideInput"
+              :value="currentDataSource.host"
+              @input="handleCurrentDataSourceHostInput"
             />
           </div>
 
@@ -316,8 +314,8 @@
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              :value="currentDataSource.portOverride"
-              @input="handleCurrentDataSourcePortOverrideInput"
+              :value="currentDataSource.port"
+              @input="handleCurrentDataSourcePortInput"
             />
           </div>
         </template>
@@ -328,7 +326,7 @@
           </label>
           <input
             id="database"
-            v-model="state.instance.database"
+            v-model="currentDataSource.database"
             name="database"
             type="text"
             class="textfield mt-1 w-full"
@@ -378,7 +376,7 @@
           <button
             type="button"
             class="btn-normal whitespace-nowrap items-center"
-            :disabled="!instance.host"
+            :disabled="!currentDataSource.host"
             @click.prevent="testConnection"
           >
             {{ $t("instance.test-connection") }}
@@ -418,7 +416,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual, pick } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive, PropType } from "vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
@@ -513,14 +511,9 @@ const connectionInfoChanged = computed(() => {
     return false;
   }
 
-  return (
-    state.instance.host !== state.originalInstance.host ||
-    state.instance.port !== state.originalInstance.port ||
-    state.instance.database !== state.originalInstance.database ||
-    !isEqual(
-      state.originalInstance.dataSourceList,
-      state.instance.dataSourceList
-    )
+  return !isEqual(
+    state.originalInstance.dataSourceList,
+    state.instance.dataSourceList
   );
 });
 
@@ -542,7 +535,7 @@ const defaultPort = computed(() => {
 const adminDataSource = computed(() => {
   const temp = state.dataSourceList.find(
     (ds) => ds.type === "ADMIN"
-  ) as DataSource;
+  ) as EditDataSource;
   return temp;
 });
 
@@ -565,16 +558,16 @@ const currentDataSource = computed(() => {
 const snowflakeExtraLinkPlaceHolder =
   "https://us-west-1.console.aws.amazon.com/rds/home?region=us-west-1#database:id=mysql-instance-foo;is-cluster=false";
 
-const instanceLink = (instance: Instance): string => {
-  if (instance.engine == "SNOWFLAKE") {
-    if (instance.host) {
+const instanceLink = computed(() => {
+  if (state.instance.engine == "SNOWFLAKE") {
+    if (currentDataSource.value.host) {
       return `https://${
-        instance.host.split("@")[0]
+        currentDataSource.value.host.split("@")[0]
       }.snowflakecomputing.com/console`;
     }
   }
-  return instance.host;
-};
+  return currentDataSource.value.host || "";
+});
 
 const showDatabase = computed((): boolean => {
   return (
@@ -596,7 +589,8 @@ const handleInstanceNameInput = (event: Event) => {
 };
 
 const handleInstanceHostInput = (event: Event) => {
-  updateInstance("host", (event.target as HTMLInputElement).value);
+  adminDataSource.value.host = (event.target as HTMLInputElement).value;
+  updateInstanceDataSource(adminDataSource.value);
 };
 
 const handleInstancePortWheelScroll = (event: MouseEvent) => {
@@ -604,7 +598,8 @@ const handleInstancePortWheelScroll = (event: MouseEvent) => {
 };
 
 const handleInstancePortInput = (event: Event) => {
-  updateInstance("port", (event.target as HTMLInputElement).value);
+  currentDataSource.value.port = (event.target as HTMLInputElement).value;
+  updateInstanceDataSource(adminDataSource.value);
 };
 
 const handleInstanceExternalLinkInput = (event: Event) => {
@@ -618,41 +613,41 @@ const handleDataSourceTypeChange = (value: string) => {
 const handleCurrentDataSourceNameInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.username = str;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleToggleUseEmptyPassword = (on: boolean) => {
   currentDataSource.value.useEmptyPassword = on;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleCurrentDataSourcePasswordInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.updatedPassword = str;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleInstanceAuthSourceInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
   currentDataSource.value.options.authSource = str;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleToggleSRV = (on: boolean) => {
   currentDataSource.value.options.srv = on;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
-const handleCurrentDataSourceHostOverrideInput = (event: Event) => {
+const handleCurrentDataSourceHostInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.hostOverride = str;
-  updateInstanceDataSource();
+  currentDataSource.value.host = str;
+  updateInstanceDataSource(currentDataSource.value);
 };
 
-const handleCurrentDataSourcePortOverrideInput = (event: Event) => {
+const handleCurrentDataSourcePortInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.portOverride = str;
-  updateInstanceDataSource();
+  currentDataSource.value.port = str;
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleDeleteReadOnlyDataSource = async () => {
@@ -690,7 +685,7 @@ const handleEditSsl = (edit: boolean) => {
     curr.sslKey = "";
     curr.updateSsl = true;
   }
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
 const handleCurrentDataSourceSslChange = (
@@ -698,51 +693,49 @@ const handleCurrentDataSourceSslChange = (
 ) => {
   Object.assign(currentDataSource.value, value);
   currentDataSource.value.updateSsl = true;
-  updateInstanceDataSource();
+  updateInstanceDataSource(currentDataSource.value);
 };
 
-const updateInstanceDataSource = () => {
-  const curr = currentDataSource.value;
-  const index = state.dataSourceList.findIndex((ds) => ds === curr);
+const updateInstanceDataSource = (dataSource: EditDataSource) => {
+  const index = state.dataSourceList.findIndex((ds) => ds === dataSource);
   let newValue = {
     ...state.instance.dataSourceList[index],
-    username: curr.username,
-    options: curr.options,
+    username: dataSource.username,
+    options: dataSource.options,
   };
 
-  if (curr.type === "RO") {
+  if (dataSource.type === "RO") {
     if (!hasFeature("bb.feature.read-replica-connection")) {
-      if (curr.hostOverride || curr.portOverride) {
-        state.dataSourceList[index].hostOverride = "";
-        state.dataSourceList[index].portOverride = "";
-        newValue.hostOverride = "";
-        newValue.portOverride = "";
+      if (dataSource.host || dataSource.port) {
+        state.dataSourceList[index].host = "";
+        state.dataSourceList[index].port = "";
+        newValue.host = "";
+        newValue.port = "";
         state.showFeatureModal = true;
       }
     } else {
       newValue = {
         ...newValue,
-        ...pick(curr, ["hostOverride", "portOverride"]),
       };
     }
   }
 
-  if (curr.useEmptyPassword) {
+  if (dataSource.useEmptyPassword) {
     // When 'Password: Empty' is checked, we set the password to empty string.
     newValue.password = "";
-  } else if (curr.updatedPassword) {
+  } else if (dataSource.updatedPassword) {
     // When the user has typed something in the password textbox, we use the typed value.
-    newValue.password = curr.updatedPassword;
+    newValue.password = dataSource.updatedPassword;
   } else {
     // When the user didn't touch the password textbox, or the user did typed something
     // but cleared the textbox again, we won't update the password.
     delete newValue.password;
   }
 
-  if (curr.updateSsl) {
-    newValue.sslCa = curr.sslCa;
-    newValue.sslKey = curr.sslKey;
-    newValue.sslCert = curr.sslCert;
+  if (dataSource.updateSsl) {
+    newValue.sslCa = dataSource.sslCa;
+    newValue.sslKey = dataSource.sslKey;
+    newValue.sslCert = dataSource.sslCert;
   } else {
     delete newValue.sslCa;
     delete newValue.sslCert;
@@ -825,18 +818,6 @@ const doUpdate = () => {
     patchedInstance.externalLink = state.instance.externalLink;
     instanceInfoChanged = true;
   }
-  if (state.instance.host != state.originalInstance.host) {
-    patchedInstance.host = state.instance.host;
-    instanceInfoChanged = true;
-  }
-  if (state.instance.port != state.originalInstance.port) {
-    patchedInstance.port = state.instance.port;
-    instanceInfoChanged = true;
-  }
-  if (state.instance.database !== state.originalInstance.database) {
-    patchedInstance.database = state.instance.database;
-    instanceInfoChanged = true;
-  }
 
   if (
     !isEqual(
@@ -864,8 +845,9 @@ const doUpdate = () => {
               type: dataSource.type,
               username: dataSource.username,
               password: dataSource.password,
-              hostOverride: dataSource.hostOverride,
-              portOverride: dataSource.portOverride,
+              host: dataSource.host,
+              port: dataSource.port,
+              database: dataSource.database,
             };
             if (typeof dataSource.sslCa !== "undefined") {
               dataSourceCreate.sslCa = dataSource.sslCa;
@@ -885,8 +867,8 @@ const doUpdate = () => {
             ...dataSource,
           };
           if (dataSource.type !== "RO") {
-            dataSourcePatch.hostOverride = undefined;
-            dataSourcePatch.portOverride = undefined;
+            dataSourcePatch.host = undefined;
+            dataSourcePatch.port = undefined;
           }
 
           requests.push(
@@ -930,24 +912,24 @@ const doUpdate = () => {
 const testConnection = () => {
   const instance = state.instance;
   const dataSource = currentDataSource.value;
-  let connectionHost = instance.host;
-  let connectionPort = instance.port;
+  let connectionHost = adminDataSource.value.host;
+  let connectionPort = adminDataSource.value.port;
   if (dataSource.type === "RO") {
-    if (dataSource.hostOverride && dataSource.portOverride) {
-      connectionHost = dataSource.hostOverride;
-      connectionPort = dataSource.portOverride;
+    if (dataSource.host && dataSource.port) {
+      connectionHost = dataSource.host;
+      connectionPort = dataSource.port;
     }
   }
 
   const connectionInfo: ConnectionInfo = {
+    instanceId: instance.id,
     engine: instance.engine,
     username: dataSource.username,
     password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
     useEmptyPassword: dataSource.useEmptyPassword,
     host: connectionHost,
     port: connectionPort,
-    database: instance.database,
-    instanceId: instance.id,
+    database: dataSource.database,
     srv: dataSource.options.srv,
     authSource: dataSource.options.authSource,
   };
