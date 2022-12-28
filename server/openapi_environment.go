@@ -18,14 +18,6 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-func (s *Server) registerOpenAPIRoutesForEnvironment(g *echo.Group) {
-	g.GET("/environment", s.listEnvironment)
-	g.POST("/environment", s.createEnvironmentByOpenAPI)
-	g.GET("/environment/:environmentID", s.getEnvironmentByID)
-	g.PATCH("/environment/:environmentID", s.updateEnvironmentByOpenAPI)
-	g.DELETE("/environment/:environmentID", s.deleteEnvironmentByOpenAPI)
-}
-
 func (s *Server) listEnvironment(c echo.Context) error {
 	ctx := c.Request().Context()
 	rowStatus := api.Normal

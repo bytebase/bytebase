@@ -468,25 +468,37 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 }
 
 func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof config.Profile) {
-	openAPIGroup := e.Group(openAPIPrefix)
-
-	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	jwtMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(openAPIPrefix, s.store, next, prof.Mode, s.secret)
-	})
-	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	}
+	aclMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return aclMiddleware(s, openAPIPrefix, ce, next, prof.Readonly)
-	})
-	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	}
+	metricMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return openAPIMetricMiddleware(s, next)
-	})
-
-	s.registerOpenAPIRoutesForSQL(openAPIGroup)
-	s.registerOpenAPIRoutesForAuth(openAPIGroup)
-	s.registerOpenAPIRoutesForInstance(openAPIGroup)
-	s.registerOpenAPIRoutesForIssue(openAPIGroup)
-	s.registerOpenAPIRoutesForEnvironment(openAPIGroup)
-
-	openAPIGroup.GET("/healthz", func(c echo.Context) error {
+	}
+	e.POST("/v1/sql/advise", s.sqlCheckController)
+	e.POST("/v1/sql/schema/diff", schemaDiff)
+	e.POST("/v1/auth/login", s.openAPIUserLogin, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/v1/auth/login", s.openAPIUserLogin, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/v1/instance", s.createInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/instance", s.listInstance, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/instance/:instanceID", s.getInstanceByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/v1/instance/:instanceID", s.updateInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.DELETE("/v1/instance/:instanceID", s.deleteInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/instance/:instanceID/role", s.listDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/v1/instance/:instanceID/role", s.createDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/instance/:instanceID/role/:roleName", s.getDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/v1/instance/:instanceID/role/:roleName", s.updateDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.DELETE("/v1/instance/:instanceID/role/:roleName", s.deleteDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/v1/instances/:instanceName/databases/:database", s.updateInstanceDatabase, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/v1/issues", s.createIssueByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/environment", s.listEnvironment, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/environment", s.createEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/environment/:environmentID", s.getEnvironmentByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/environment/:environmentID", s.updateEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.DELETE("/environment/:environmentID", s.deleteEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/healthz", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"content": "OK",
 		})
