@@ -7,7 +7,12 @@
         class="py-2 text-sm font-medium"
         :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
       >
-        {{ $t("common.sql") }}
+        <template v-if="language === 'sql'">
+          {{ $t("common.sql") }}
+        </template>
+        <template v-else>
+          {{ $t("common.statement") }}
+        </template>
         <span v-if="create" class="text-red-600">*</span>
         <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
       </div>
@@ -25,7 +30,10 @@
     <div class="space-x-2 flex items-center">
       <template v-if="create || state.editing">
         <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
-        <label class="mt-0.5 mr-2 inline-flex items-center gap-1">
+        <label
+          v-if="allowFormatOnSave"
+          class="mt-0.5 mr-2 inline-flex items-center gap-1"
+        >
           <input
             v-model="formatOnSave"
             type="checkbox"
@@ -126,6 +134,7 @@
       :value="state.editStatement"
       :readonly="!state.editing || !allowEditStatement || isTaskHasSheetId"
       :auto-focus="false"
+      :language="language"
       :dialect="dialect"
       @change="onStatementChange"
       @ready="handleMonacoEditorReady"
@@ -185,6 +194,7 @@ import { TableMetadata } from "@/types/proto/store/database";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import IssueRollbackButton from "./IssueRollbackButton.vue";
 import { isUndefined } from "lodash-es";
+import { useInstanceEditorLanguage } from "@/utils";
 
 interface LocalState {
   editing: boolean;
@@ -325,6 +335,10 @@ const useTempEditState = (state: LocalState) => {
 
 useTempEditState(state);
 
+const language = useInstanceEditorLanguage(
+  computed(() => selectedDatabase.value?.instance)
+);
+
 const dialect = computed((): SQLDialect => {
   const db = selectedDatabase.value;
   if (db?.instance.engine === "POSTGRES") {
@@ -338,6 +352,8 @@ const formatOnSave = computed({
   get: () => uiStateStore.issueFormatStatementOnSave,
   set: (value: boolean) => uiStateStore.setIssueFormatStatementOnSave(value),
 });
+
+const allowFormatOnSave = computed(() => language.value === "sql");
 
 const allowUploadSheetForTask = computed(() => {
   if (!create.value) {
@@ -391,7 +407,7 @@ const shouldShowStatementEditButton = computed(() => {
     return false;
   }
 
-  return allowEditStatement;
+  return allowEditStatement.value;
 });
 
 onMounted(() => {
@@ -442,7 +458,7 @@ const beginEdit = () => {
 };
 
 const saveEdit = () => {
-  if (formatOnSave.value) {
+  if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
   updateStatement(state.editStatement, () => {

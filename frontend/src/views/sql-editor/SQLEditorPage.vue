@@ -6,19 +6,44 @@
         <AsidePanel />
       </Pane>
       <Pane size="80" class="relative">
-        <template v-if="allowQuery">
-          <Splitpanes
-            v-if="tabStore.currentTab.mode === TabMode.ReadOnly"
-            horizontal
-            class="default-theme"
-          >
-            <Pane :size="isDisconnected ? 100 : 60">
-              <EditorPanel />
-            </Pane>
-            <Pane :size="isDisconnected ? 0 : 40">
-              <TablePanel />
-            </Pane>
-          </Splitpanes>
+        <template v-if="allowAccess">
+          <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
+            <Splitpanes
+              v-if="allowReadOnlyMode"
+              horizontal
+              class="default-theme"
+            >
+              <Pane :size="isDisconnected ? 100 : 60">
+                <EditorPanel />
+              </Pane>
+              <Pane :size="isDisconnected ? 0 : 40">
+                <TablePanel />
+              </Pane>
+            </Splitpanes>
+
+            <div
+              v-else
+              class="w-full h-full flex flex-col items-center justify-center gap-y-2"
+            >
+              <img
+                src="../../assets/illustration/403.webp"
+                class="max-h-[40%]"
+              />
+              <i18n-t
+                class="textinfolabel flex items-center"
+                keypath="sql-editor.read-only-mode-not-allowed"
+                tag="div"
+              >
+                <template #instance>
+                  <span class="inline-flex items-center mx-1">
+                    <InstanceEngineIcon :instance="instance" />
+                    <span>{{ instanceName(instance) }}</span>
+                  </span>
+                </template>
+              </i18n-t>
+              <AdminModeButton />
+            </div>
+          </template>
 
           <TerminalPanel v-if="tabStore.currentTab.mode === TabMode.Admin" />
         </template>
@@ -49,8 +74,10 @@ import { Splitpanes, Pane } from "splitpanes";
 
 import { TabMode, UNKNOWN_ID } from "@/types";
 import {
+  useConnectionTreeStore,
   useCurrentUser,
   useDatabaseStore,
+  useInstanceById,
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
@@ -60,28 +87,43 @@ import TerminalPanel from "./TerminalPanel/TerminalPanel.vue";
 import TabList from "./TabList";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import { isDatabaseAccessible } from "@/utils";
+import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
+const connectionTreeStore = useConnectionTreeStore();
 const sqlEditorStore = useSQLEditorStore();
 const currentUser = useCurrentUser();
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
 
-const allowQuery = computed(() => {
+const allowAccess = computed(() => {
   const { databaseId } = tabStore.currentTab.connection;
   const database = databaseStore.getDatabaseById(databaseId);
   if (database.id === UNKNOWN_ID) {
     // Allowed if connected to an instance
     return true;
   }
-  const { accessControlPolicyList } = sqlEditorStore;
+  const { accessControlPolicyList } = connectionTreeStore;
   return isDatabaseAccessible(
     database,
     accessControlPolicyList,
     currentUser.value
   );
+});
+
+const instance = useInstanceById(
+  computed(() => tabStore.currentTab.connection.instanceId)
+);
+
+const allowReadOnlyMode = computed(() => {
+  if (isDisconnected.value) return true;
+
+  if (instance.value.engine === "MONGODB") {
+    return false;
+  }
+  return true;
 });
 </script>
 
