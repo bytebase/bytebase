@@ -502,11 +502,6 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 	e.GET("/environment/:environmentID", s.getEnvironmentByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.PATCH("/environment/:environmentID", s.updateEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.DELETE("/environment/:environmentID", s.deleteEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.GET("/v1/healthz", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"content": "OK",
-		})
-	})
 }
 
 // initMetricReporter will initial the metric scheduler.
