@@ -95,7 +95,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	}
 
 	// Instance limit in the plan.
-	count, err := s.store.CountInstance(ctx)
+	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

@@ -168,14 +168,11 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 	}
 
 	// All instances in the environment must be deleted.
-	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ShowDeleted:   false,
-	})
+	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{EnvironmentID: &environmentID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if len(instances) > 0 {
+	if count > 0 {
 		return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment should be deleted")
 	}
 

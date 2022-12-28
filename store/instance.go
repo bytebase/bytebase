@@ -1082,8 +1082,18 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	return instanceMessages, nil
 }
 
+// CountInstanceMessage is the message for counting instances.
+type CountInstanceMessage struct {
+	EnvironmentID *string
+}
+
 // CountInstance counts the number of instances.
-func (s *Store) CountInstance(ctx context.Context) (int, error) {
+func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
+	where, args := []string{"instance.row_status = $1"}, []interface{}{api.Normal}
+	if v := find.EnvironmentID; v != nil {
+		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, FormatError(err)
@@ -1092,11 +1102,19 @@ func (s *Store) CountInstance(ctx context.Context) (int, error) {
 
 	query := `SELECT COUNT(1) FROM instance WHERE row_status = $1`
 	var count int
-	if err := tx.QueryRowContext(ctx, query, api.Normal).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, `
+			SELECT
+				count(1)
+			FROM instance
+			LEFT JOIN environment
+			ON environment.id = instance.environment_id
+			WHERE `+strings.Join(where, " AND "),
+		args...).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return 0, FormatError(err)
 	}
+	fmt.Printf("Barny: %d\n", count)
 	return count, nil
 }
