@@ -183,7 +183,11 @@ func getEnvironmentID(name string) (string, error) {
 	if !strings.HasPrefix(name, environmentNamePrefix) {
 		return "", errors.Errorf("invalid environment name %q", name)
 	}
-	return strings.TrimPrefix(name, environmentNamePrefix), nil
+	environmentID := strings.TrimPrefix(name, environmentNamePrefix)
+	if environmentID == "" {
+		return "", errors.Errorf("environment cannot be empty")
+	}
+	return environmentID, nil
 }
 
 func convertEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
