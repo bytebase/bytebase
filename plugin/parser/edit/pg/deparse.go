@@ -11,8 +11,10 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
+// DeparseContext is the context including walkthrough nodes and comment statements.
 type DeparseContext struct {
 	NodeList []ast.Node
+	// StmtList mainly contains column comment statements.
 	StmtList []string
 }
 
@@ -84,9 +86,7 @@ func transformCreateTableContext(ctx *DeparseContext, createTableContext *api.Cr
 			Type:    ast.ConstraintTypePrimary,
 			KeyList: []string{},
 		}
-		for _, primaryKey := range createTableContext.PrimaryKeyList {
-			constraint.KeyList = append(constraint.KeyList, primaryKey)
-		}
+		constraint.KeyList = append(constraint.KeyList, createTableContext.PrimaryKeyList...)
 		createTableStmt.ConstraintList = append(createTableStmt.ConstraintList, &constraint)
 	}
 
@@ -209,9 +209,7 @@ func transformAlterTableContext(ctx *DeparseContext, alterTableContext *api.Alte
 			Type:    ast.ConstraintTypePrimary,
 			KeyList: []string{},
 		}
-		for _, primaryKey := range *alterTableContext.PrimaryKeyList {
-			constraint.KeyList = append(constraint.KeyList, primaryKey)
-		}
+		constraint.KeyList = append(constraint.KeyList, *alterTableContext.PrimaryKeyList...)
 		addConstraintSmt := ast.AddConstraintStmt{
 			Table:      table,
 			Constraint: &constraint,
@@ -287,7 +285,7 @@ func transformDropTableContext(ctx *DeparseContext, dropTableContext *api.DropTa
 	ctx.NodeList = append(ctx.NodeList, dropTableStmt)
 }
 
-func transformAddColumnContext(ctx *DeparseContext, addColumnContext *api.AddColumnContext) (*ast.ColumnDef, error) {
+func transformAddColumnContext(_ *DeparseContext, addColumnContext *api.AddColumnContext) (*ast.ColumnDef, error) {
 	columnType, err := transformColumnType(addColumnContext.Type)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to transform column type")
