@@ -376,7 +376,6 @@
           <button
             type="button"
             class="btn-normal whitespace-nowrap items-center"
-            :disabled="!currentDataSource.host"
             @click.prevent="testConnection"
           >
             {{ $t("instance.test-connection") }}
@@ -416,7 +415,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, isEqual, omit } from "lodash-es";
 import { computed, reactive, PropType } from "vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
@@ -698,10 +697,9 @@ const handleCurrentDataSourceSslChange = (
 
 const updateInstanceDataSource = (dataSource: EditDataSource) => {
   const index = state.dataSourceList.findIndex((ds) => ds === dataSource);
-  let newValue = {
+  const newValue = {
     ...state.instance.dataSourceList[index],
-    username: dataSource.username,
-    options: dataSource.options,
+    ...omit(dataSource, ["updatedPassword", "useEmptyPassword"]),
   };
 
   if (dataSource.type === "RO") {
@@ -713,10 +711,6 @@ const updateInstanceDataSource = (dataSource: EditDataSource) => {
         newValue.port = "";
         state.showFeatureModal = true;
       }
-    } else {
-      newValue = {
-        ...newValue,
-      };
     }
   }
 
@@ -866,11 +860,6 @@ const doUpdate = () => {
           const dataSourcePatch: DataSourcePatch = {
             ...dataSource,
           };
-          if (dataSource.type !== "RO") {
-            dataSourcePatch.host = undefined;
-            dataSourcePatch.port = undefined;
-          }
-
           requests.push(
             dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
@@ -915,8 +904,10 @@ const testConnection = () => {
   let connectionHost = adminDataSource.value.host;
   let connectionPort = adminDataSource.value.port;
   if (dataSource.type === "RO") {
-    if (dataSource.host && dataSource.port) {
+    if (dataSource.host) {
       connectionHost = dataSource.host;
+    }
+    if (dataSource.port) {
       connectionPort = dataSource.port;
     }
   }
