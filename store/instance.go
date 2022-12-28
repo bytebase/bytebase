@@ -1010,7 +1010,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 	instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 
-	dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
+	dataSourceList, err := s.listDataSourceV2(ctx, tx, patch.ResourceID)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -1038,7 +1038,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	var instanceMessages []*InstanceMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			instance.id AS id,
 			environment.resource_id as environment_id,
 			instance.resource_id AS resource_id,
 			instance.name AS name,
@@ -1058,9 +1057,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	for rows.Next() {
 		var instanceMessage InstanceMessage
 		var rowStatus string
-		var instanceID int
 		if err := rows.Scan(
-			&instanceID,
 			&instanceMessage.EnvironmentID,
 			&instanceMessage.InstanceID,
 			&instanceMessage.Title,
@@ -1071,12 +1068,15 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			return nil, FormatError(err)
 		}
 		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceID)
+		instanceMessages = append(instanceMessages, &instanceMessage)
+	}
+
+	for _, instanceMessage := range instanceMessages {
+		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceMessage.InstanceID)
 		if err != nil {
 			return nil, FormatError(err)
 		}
 		instanceMessage.DataSources = dataSourceList
-		instanceMessages = append(instanceMessages, &instanceMessage)
 	}
 
 	return instanceMessages, nil

@@ -574,7 +574,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*Env
 	var environmentMessages []*EnvironmentMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			resource_id
+			resource_id,
 			name,
 			"order",
 			row_status

@@ -305,7 +305,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, authProvider.ACLInterceptor),
 	)
 	mux := runtime.NewServeMux()
-	v1pb.RegisterGreeterServiceServer(s.grpcServer, &v1.GreeterServerImpl{})
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, &profile))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService))
@@ -315,10 +314,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterGreeterServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+	if err := v1pb.RegisterEnvironmentServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
-	e.Any("/v2/*", echo.WrapHandler(mux))
+	if err := v1pb.RegisterInstanceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterProjectServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	e.Any("/v1/*", echo.WrapHandler(mux))
 
 	embedFrontend(e)
 	s.e = e
@@ -469,29 +474,34 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 }
 
 func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof config.Profile) {
-	openAPIGroup := e.Group(openAPIPrefix)
-
-	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	jwtMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(openAPIPrefix, s.store, next, prof.Mode, s.secret)
-	})
-	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	}
+	aclMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return aclMiddleware(s, openAPIPrefix, ce, next, prof.Readonly)
-	})
-	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	}
+	metricMiddlewareFunc := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return openAPIMetricMiddleware(s, next)
-	})
-
-	s.registerOpenAPIRoutesForSQL(openAPIGroup)
-	s.registerOpenAPIRoutesForAuth(openAPIGroup)
-	s.registerOpenAPIRoutesForInstance(openAPIGroup)
-	s.registerOpenAPIRoutesForIssue(openAPIGroup)
-	s.registerOpenAPIRoutesForEnvironment(openAPIGroup)
-
-	openAPIGroup.GET("/healthz", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"content": "OK",
-		})
-	})
+	}
+	e.POST("/v1/sql/advise", s.sqlCheckController)
+	e.POST("/v1/sql/schema/diff", schemaDiff)
+	e.POST("/v1/instance", s.createInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/instance", s.listInstance, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/instance/:instanceID", s.getInstanceByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/v1/instance/:instanceID", s.updateInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.DELETE("/v1/instance/:instanceID", s.deleteInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/instance/:instanceID/role", s.listDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/v1/instance/:instanceID/role", s.createDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/instance/:instanceID/role/:roleName", s.getDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/v1/instance/:instanceID/role/:roleName", s.updateDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.DELETE("/v1/instance/:instanceID/role/:roleName", s.deleteDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/v1/instances/:instanceName/databases/:database", s.updateInstanceDatabase, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/v1/issues", s.createIssueByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/environment", s.listEnvironment, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.POST("/v1/environment", s.createEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.GET("/v1/environment/:environmentID", s.getEnvironmentByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.PATCH("/v1/environment/:environmentID", s.updateEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
+	e.DELETE("/v1/environment/:environmentID", s.deleteEnvironmentByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 }
 
 // initMetricReporter will initial the metric scheduler.

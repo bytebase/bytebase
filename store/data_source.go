@@ -535,22 +535,24 @@ type DataSourceMessage struct {
 	Database string
 }
 
-func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID int) ([]*DataSourceMessage, error) {
+func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
 	var dataSourceMessages []*DataSourceMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			name,
-			type,
-			username,
-			password,
-			ssl_key,
-			ssl_cert,
-			ssl_ca,
-			host,
-			port,
-			database
+			data_source.name,
+			data_source.type,
+			data_source.username,
+			data_source.password,
+			data_source.ssl_key,
+			data_source.ssl_cert,
+			data_source.ssl_ca,
+			data_source.host,
+			data_source.port,
+			data_source.database
 		FROM data_source
-		WHERE instance_id = $1`,
+		LEFT JOIN instance
+		ON instance.id = data_source.instance_id
+		WHERE instance.resource_id = $1`,
 		instanceID,
 	)
 	if err != nil {
