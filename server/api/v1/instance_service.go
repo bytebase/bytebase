@@ -39,7 +39,10 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, environmentID, instanceID)
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -56,7 +59,13 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instances, err := s.store.ListInstancesV2(ctx, environmentID, request.ShowDeleted)
+	find := &store.FindInstanceMessage{
+		ShowDeleted: request.ShowDeleted,
+	}
+	if environmentID != "*" {
+		find.EnvironmentID = &environmentID
+	}
+	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -105,15 +114,16 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, environmentID, instanceID)
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+		ShowDeleted:   false,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Instance.Name)
-	}
-	if instance.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance.Name)
 	}
 
 	patch := &store.UpdateInstanceMessage{}
