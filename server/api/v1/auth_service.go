@@ -18,6 +18,8 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
+const userNamePrefix = "users/"
+
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
@@ -77,7 +79,7 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		role = v1pb.UserRole_USER_ROLE_DEVELOPER
 	}
 	return &v1pb.User{
-		Name:     fmt.Sprintf("users/%d", user.ID),
+		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Title:    user.Name,
