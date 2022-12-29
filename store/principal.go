@@ -412,3 +412,123 @@ func patchPrincipalImpl(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) 
 	}
 	return &principalRaw, nil
 }
+
+// FindUserMessage is the message for finding users.
+type FindUserMessage struct {
+	ID          *int
+	Email       *string
+	ShowDeleted bool
+}
+
+// UserMessage is the message for an user.
+type UserMessage struct {
+	ID            int
+	Email         string
+	Name          string
+	PasswordHash  string
+	Role          api.Role
+	MemberDeleted bool
+}
+
+// GetUserByID gets the user by ID.
+func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	userMessages, err := s.listUserImpl(ctx, tx, &FindUserMessage{ID: &id, ShowDeleted: true})
+	if err != nil {
+		return nil, err
+	}
+	if len(userMessages) == 0 {
+		return nil, nil
+	}
+	if len(userMessages) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with id %q, expect 1", len(userMessages), id)}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return userMessages[0], nil
+}
+
+// GetUserByEmail gets the user by email.
+func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	userMessages, err := s.listUserImpl(ctx, tx, &FindUserMessage{Email: &email, ShowDeleted: true})
+	if err != nil {
+		return nil, err
+	}
+	if len(userMessages) == 0 {
+		return nil, nil
+	}
+	if len(userMessages) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with email %q, expect 1", len(userMessages), email)}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return userMessages[0], nil
+}
+
+// GetUserByEmailV2 gets an instance of Principal.
+func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ID; v != nil {
+		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Email; v != nil {
+		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
+	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
+	var userMessages []*UserMessage
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			principal.id AS user_id,
+			principal.name,
+			principal.email,
+			principal.password_hash,
+			member.role,
+			member.row_status AS row_status
+		FROM principal
+		LEFT JOIN member ON principal.id = member.principal_id
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var userMessage UserMessage
+		var rowStatus string
+		if err := rows.Scan(
+			&userMessage.ID,
+			&userMessage.Name,
+			&userMessage.Email,
+			&userMessage.PasswordHash,
+			&userMessage.Role,
+			&rowStatus,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
+		userMessages = append(userMessages, &userMessage)
+	}
+
+	return userMessages, nil
+}
