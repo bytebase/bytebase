@@ -34,6 +34,11 @@ func NewAuthService(store *store.Store, secret string, profile *config.Profile) 
 	}
 }
 
+// CreateUser creates a user.
+func (*AuthService) CreateUser(_ context.Context, _ *v1pb.CreateUserRequest) (*v1pb.User, error) {
+	return &v1pb.User{}, nil
+}
+
 // Login is the auth login method.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
 	user, err := s.store.GetUserByEmail(ctx, request.Email)
