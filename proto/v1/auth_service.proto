@@ -8,6 +8,12 @@ import "google/protobuf/empty.proto";
 option go_package = "generated-go/v1";
 
 service AuthService {
+  rpc Signup(SignupRequest) returns (SignupResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/signup"
+      body: "*"
+    };
+  }
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
       post: "/v1/auth/login"
@@ -20,6 +26,18 @@ service AuthService {
       body: "*"
     };
   }
+}
+
+message SignupRequest {
+  // email is the account email.
+  string email = 1;
+  // name is the name of the user.
+  string name = 2;
+  // password is the login password.
+  string password = 3;
+}
+
+message SignupResponse {
 }
 
 message LoginRequest {

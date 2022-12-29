@@ -4,6 +4,18 @@ import { Empty } from "../google/protobuf/empty";
 
 export const protobufPackage = "bytebase.v1";
 
+export interface SignupRequest {
+  /** email is the account email. */
+  email: string;
+  /** name is the name of the user. */
+  name: string;
+  /** password is the login password. */
+  password: string;
+}
+
+export interface SignupResponse {
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -17,6 +29,112 @@ export interface LoginResponse {
 
 export interface LogoutRequest {
 }
+
+function createBaseSignupRequest(): SignupRequest {
+  return { email: "", name: "", password: "" };
+}
+
+export const SignupRequest = {
+  encode(message: SignupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.email !== "") {
+      writer.uint32(10).string(message.email);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.password !== "") {
+      writer.uint32(26).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SignupRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSignupRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.email = reader.string();
+          break;
+        case 2:
+          message.name = reader.string();
+          break;
+        case 3:
+          message.password = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SignupRequest {
+    return {
+      email: isSet(object.email) ? String(object.email) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      password: isSet(object.password) ? String(object.password) : "",
+    };
+  },
+
+  toJSON(message: SignupRequest): unknown {
+    const obj: any = {};
+    message.email !== undefined && (obj.email = message.email);
+    message.name !== undefined && (obj.name = message.name);
+    message.password !== undefined && (obj.password = message.password);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<SignupRequest>, I>>(object: I): SignupRequest {
+    const message = createBaseSignupRequest();
+    message.email = object.email ?? "";
+    message.name = object.name ?? "";
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
+function createBaseSignupResponse(): SignupResponse {
+  return {};
+}
+
+export const SignupResponse = {
+  encode(_: SignupResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SignupResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSignupResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): SignupResponse {
+    return {};
+  },
+
+  toJSON(_: SignupResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<SignupResponse>, I>>(_: I): SignupResponse {
+    const message = createBaseSignupResponse();
+    return message;
+  },
+};
 
 function createBaseLoginRequest(): LoginRequest {
   return { email: "", password: "", web: false };
@@ -172,6 +290,7 @@ export const LogoutRequest = {
 };
 
 export interface AuthService {
+  Signup(request: SignupRequest): Promise<SignupResponse>;
   Login(request: LoginRequest): Promise<LoginResponse>;
   Logout(request: LogoutRequest): Promise<Empty>;
 }
@@ -182,9 +301,16 @@ export class AuthServiceClientImpl implements AuthService {
   constructor(rpc: Rpc, opts?: { service?: string }) {
     this.service = opts?.service || "bytebase.v1.AuthService";
     this.rpc = rpc;
+    this.Signup = this.Signup.bind(this);
     this.Login = this.Login.bind(this);
     this.Logout = this.Logout.bind(this);
   }
+  Signup(request: SignupRequest): Promise<SignupResponse> {
+    const data = SignupRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "Signup", data);
+    return promise.then((data) => SignupResponse.decode(new _m0.Reader(data)));
+  }
+
   Login(request: LoginRequest): Promise<LoginResponse> {
     const data = LoginRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "Login", data);
