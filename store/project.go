@@ -555,6 +555,22 @@ type FindProjectMessage struct {
 	ShowDeleted bool
 }
 
+// UpdateProjectMessage is the message for updating a project.
+type UpdateProjectMessage struct {
+	UpdaterID  int
+	ResourceID string
+
+	Title            *string
+	Key              *string
+	TenantMode       *api.ProjectTenantMode
+	DBNameTemplate   *string
+	Workflow         *api.ProjectWorkflowType
+	RoleProvider     *api.ProjectRoleProvider
+	SchemaChangeType *api.ProjectSchemaChangeType
+	LGTMCheckSetting *api.LGTMCheckSetting
+	RowStatus        *api.RowStatus
+}
+
 // GetProjectV2 gets project by resource ID.
 func (s *Store) GetProjectV2(ctx context.Context, resourceID string) (*ProjectMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -606,6 +622,139 @@ func (s *Store) ListProjectV2(ctx context.Context, showDeleted bool) ([]*Project
 	return projects, nil
 }
 
+// CreateProjectV2 creates a project.
+func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMessage, creatorID int) (*ProjectMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+			INSERT INTO project (
+				creator_id,
+				updater_id,
+				resource_id,
+				name,
+				key,
+				workflow_type,
+				visibility,
+				tenant_mode,
+				db_name_template,
+				role_provider,
+				schema_change_type,
+				lgtm_check
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		`,
+		creatorID,
+		creatorID,
+		projectMessage.ProjectID,
+		projectMessage.Title,
+		projectMessage.Key,
+		projectMessage.Workflow,
+		projectMessage.Visibility,
+		projectMessage.TenantMode,
+		projectMessage.DBNameTemplate,
+		projectMessage.RoleProvider,
+		projectMessage.SchemaChangeType,
+		projectMessage.LGTMCheckSetting,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return projectMessage, nil
+}
+
+// UpdateProjectV2 updates a project.
+func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage) (*ProjectMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
+	if v := patch.Title; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Key; v != nil {
+		set, args = append(set, fmt.Sprintf("key = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.TenantMode; v != nil {
+		set, args = append(set, fmt.Sprintf("tenant_mode = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.DBNameTemplate; v != nil {
+		set, args = append(set, fmt.Sprintf("db_name_template = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Workflow; v != nil {
+		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.RoleProvider; v != nil {
+		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SchemaChangeType; v != nil {
+		set, args = append(set, fmt.Sprintf("schema_change_type = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.LGTMCheckSetting; v != nil {
+		set, args = append(set, fmt.Sprintf("lgtm_check = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, patch.ResourceID)
+
+	var projectMessage ProjectMessage
+	var rowStatus string
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+		UPDATE project
+		SET `+strings.Join(set, ", ")+`
+		WHERE resource_id = $%d
+		RETURNING
+			resource_id,
+			name,
+			key,
+			workflow_type,
+			visibility,
+			tenant_mode,
+			db_name_template,
+			role_provider,
+			schema_change_type,
+			lgtm_check,
+			row_status
+	`, len(args)),
+		args...,
+	).Scan(
+		&projectMessage.ProjectID,
+		&projectMessage.Title,
+		&projectMessage.Key,
+		&projectMessage.Workflow,
+		&projectMessage.Visibility,
+		&projectMessage.TenantMode,
+		&projectMessage.DBNameTemplate,
+		&projectMessage.RoleProvider,
+		&projectMessage.SchemaChangeType,
+		&projectMessage.LGTMCheckSetting,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %s", patch.ResourceID)}
+		}
+		return nil, FormatError(err)
+	}
+	projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &projectMessage, nil
+}
+
 func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ResourceID; v != nil {
@@ -647,6 +796,7 @@ func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMe
 			&projectMessage.Title,
 			&projectMessage.Key,
 			&projectMessage.Workflow,
+			&projectMessage.Visibility,
 			&projectMessage.TenantMode,
 			&projectMessage.DBNameTemplate,
 			&projectMessage.RoleProvider,
