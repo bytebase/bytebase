@@ -15,7 +15,6 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/bytebase/bytebase/server/api/auth"
 	"github.com/bytebase/bytebase/server/component/activity"
 )
 
@@ -184,16 +183,6 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal login response").SetInternal(err)
 		}
-		return nil
-	})
-
-	g.POST("/auth/logout", func(c echo.Context) error {
-		removeTokenCookie(c, auth.AccessTokenCookieName)
-		removeTokenCookie(c, auth.RefreshTokenCookieName)
-		removeUserCookie(c)
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
 
