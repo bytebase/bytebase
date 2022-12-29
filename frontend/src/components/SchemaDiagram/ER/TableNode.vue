@@ -37,16 +37,10 @@
             {{ column.name }}
           </div>
         </td>
-        <td class="w-[6rem] text-xs text-gray-400 py-1.5 pr-1.5">
-          <NEllipsis
-            class="w-full text-right"
-            :tooltip="{
-              showArrow: false,
-              contentStyle: tooltipStyle,
-            }"
-          >
-            {{ column.type }}
-          </NEllipsis>
+        <td
+          class="w-[6rem] text-xs text-gray-400 py-1.5 pr-1.5 text-right truncate"
+        >
+          {{ column.type }}
         </td>
       </tr>
     </table>
@@ -55,7 +49,6 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { NEllipsis } from "naive-ui";
 
 import { hashCode } from "@/bbkit/BBUtil";
 import { TableMetadata } from "@/types/proto/store/database";
@@ -68,12 +61,6 @@ const props = withDefaults(
   {}
 );
 const { idOfTable, rectOfTable } = useSchemaDiagramContext();
-
-const tooltipStyle = `
-  max-width: 20rem;
-  white-space: pre-wrap;
-  word-break: break-all
-`;
 
 const COLOR_LIST = [
   "#64748B",
