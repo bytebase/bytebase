@@ -425,6 +425,7 @@ type UserMessage struct {
 	ID            int
 	Email         string
 	Name          string
+	Type          api.PrincipalType
 	PasswordHash  string
 	Role          api.Role
 	MemberDeleted bool
@@ -531,4 +532,80 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	}
 
 	return userMessages, nil
+}
+
+// CreateUser creates an user.
+func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID int) (*UserMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var count int
+	if err := tx.QueryRowContext(ctx,
+		`SELECT COUNT(1) FROM principal WHERE type = $1`,
+		api.EndUser,
+	).Scan(&count); err != nil {
+		return nil, err
+	}
+	role := api.Developer
+	// Grant the member Owner role if there is no existing Owner member.
+	if count == 0 {
+		role = api.Owner
+	}
+	var userID int
+	if err := tx.QueryRowContext(ctx, `
+			INSERT INTO principal (
+				creator_id,
+				updater_id,
+				type,
+				name,
+				email,
+				password_hash
+			)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			RETURNING id
+		`,
+		creatorID,
+		creatorID,
+		create.Type,
+		create.Name,
+		create.Email,
+		create.PasswordHash,
+	).Scan(&userID); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+			INSERT INTO member (
+				creator_id,
+				updater_id,
+				status,
+				role,
+				principal_id
+			)
+			VALUES ($1, $2, $3, $4, $5)
+		`,
+		creatorID,
+		creatorID,
+		api.Active,
+		role,
+		userID,
+	); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return &UserMessage{
+		ID:           userID,
+		Email:        create.Email,
+		Name:         create.Name,
+		Type:         create.Type,
+		PasswordHash: create.PasswordHash,
+		Role:         role,
+	}, nil
 }

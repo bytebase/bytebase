@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/bytebase/bytebase/api"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/server/api/auth"
 	"github.com/bytebase/bytebase/server/component/config"
@@ -35,8 +36,53 @@ func NewAuthService(store *store.Store, secret string, profile *config.Profile) 
 }
 
 // CreateUser creates a user.
-func (*AuthService) CreateUser(_ context.Context, _ *v1pb.CreateUserRequest) (*v1pb.User, error) {
-	return &v1pb.User{}, nil
+func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRequest) (*v1pb.User, error) {
+	if request.User == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
+	}
+	if request.User.Email == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "email must be set")
+	}
+	if request.User.Title == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "user title must be set")
+	}
+	if request.User.Password == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
+	}
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error %v", err)
+	}
+
+	user, err := s.store.CreateUser(ctx, &store.UserMessage{
+		Email:        request.User.Email,
+		Name:         request.User.Title,
+		Type:         api.EndUser,
+		PasswordHash: string(passwordHash),
+	}, api.SystemBotID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create user, error %v", err)
+	}
+	return convertToUser(user), nil
+}
+
+func convertToUser(user *store.UserMessage) *v1pb.User {
+	role := v1pb.UserRole_USER_ROLE_UNSPECIFIED
+	switch user.Role {
+	case api.Owner:
+		role = v1pb.UserRole_USER_ROLE_OWNER
+	case api.DBA:
+		role = v1pb.UserRole_USER_ROLE_DBA
+	case api.Developer:
+		role = v1pb.UserRole_USER_ROLE_DEVELOPER
+	}
+	return &v1pb.User{
+		Name:     fmt.Sprintf("users/%d", user.ID),
+		State:    convertDeletedToState(user.MemberDeleted),
+		Email:    user.Email,
+		Title:    user.Name,
+		UserRole: role,
+	}
 }
 
 // Login is the auth login method.

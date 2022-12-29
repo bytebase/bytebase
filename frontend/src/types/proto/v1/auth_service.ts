@@ -53,8 +53,6 @@ export function userRoleToJSON(object: UserRole): string {
 export interface CreateUserRequest {
   /** The user to create. */
   user?: User;
-  /** If web is set, we will set access token, refresh token, and user to the cookie. */
-  web: boolean;
 }
 
 export interface LoginRequest {
@@ -86,16 +84,13 @@ export interface User {
 }
 
 function createBaseCreateUserRequest(): CreateUserRequest {
-  return { user: undefined, web: false };
+  return { user: undefined };
 }
 
 export const CreateUserRequest = {
   encode(message: CreateUserRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.user !== undefined) {
       User.encode(message.user, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.web === true) {
-      writer.uint32(16).bool(message.web);
     }
     return writer;
   },
@@ -110,9 +105,6 @@ export const CreateUserRequest = {
         case 1:
           message.user = User.decode(reader, reader.uint32());
           break;
-        case 2:
-          message.web = reader.bool();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -122,23 +114,18 @@ export const CreateUserRequest = {
   },
 
   fromJSON(object: any): CreateUserRequest {
-    return {
-      user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
-      web: isSet(object.web) ? Boolean(object.web) : false,
-    };
+    return { user: isSet(object.user) ? User.fromJSON(object.user) : undefined };
   },
 
   toJSON(message: CreateUserRequest): unknown {
     const obj: any = {};
     message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
-    message.web !== undefined && (obj.web = message.web);
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<CreateUserRequest>, I>>(object: I): CreateUserRequest {
     const message = createBaseCreateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
-    message.web = object.web ?? false;
     return message;
   },
 };
