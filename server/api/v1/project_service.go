@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -85,7 +86,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 // UpdateProject updates a project.
 func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.UpdateProjectRequest) (*v1pb.Project, error) {
 	if request.Project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
+		return nil, status.Errorf(codes.InvalidArgument, "project must be set")
 	}
 
 	projectID, err := getProjectID(request.Project.Name)
@@ -148,6 +149,61 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 	}
 
 	projectMsg, err := s.store.UpdateProjectV2(ctx, patch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertProject(projectMsg), nil
+}
+
+// DeleteProject deletes a project.
+func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.DeleteProjectRequest) (*emptypb.Empty, error) {
+	projectID, err := getProjectID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	project, err := s.store.GetProjectV2(ctx, projectID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+	}
+
+	rowStatus := api.Archived
+	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
+		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
+		ResourceID: projectID,
+		RowStatus:  &rowStatus,
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+// UndeleteProject undeletes a project.
+func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.UndeleteProjectRequest) (*v1pb.Project, error) {
+	projectID, err := getProjectID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	project, err := s.store.GetProjectV2(ctx, projectID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+	}
+
+	rowStatus := api.Normal
+	projectMsg, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
+		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
+		ResourceID: projectID,
+		RowStatus:  &rowStatus,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
