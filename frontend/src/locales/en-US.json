@@ -679,6 +679,7 @@
     "host-or-socket": "Host or Socket",
     "your-snowflake-account-name": "your Snowflake account name",
     "port": "Port",
+    "authentication-database": "Authentication Database",
     "instance-name": "Instance Name",
     "instance-name-unique": "The instance name should be unique.",
     "snowflake-web-console": "Snowflake Web Console",

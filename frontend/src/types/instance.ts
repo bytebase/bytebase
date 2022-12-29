@@ -84,7 +84,7 @@ export type Instance = {
   engineVersion: string;
   externalLink?: string;
   srv: boolean;
-  authSource: string;
+  authenticationDatabase: string;
 };
 
 export type InstanceCreate = {
@@ -107,7 +107,7 @@ export type InstanceCreate = {
   // DNS SRV record is only used for MongoDB.
   srv: boolean;
   // For MongoDB, the auth database is used to authenticate the user.
-  authSource: string;
+  authenticationDatabase: string;
 };
 
 export type InstancePatch = {
