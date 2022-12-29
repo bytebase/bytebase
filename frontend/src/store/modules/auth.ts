@@ -67,7 +67,7 @@ export const useAuthStore = defineStore("auth", {
     async logout() {
       const unknownPrincipal = unknown("PRINCIPAL") as Principal;
       try {
-        await axios.post("/api/auth/logout");
+        await axios.post("/v1/auth/logout");
       } finally {
         this.setCurrentUser(unknownPrincipal);
       }
