@@ -3,6 +3,10 @@
     v-if="task.taskCheckRunList.length > 0"
     class="flex items-start space-x-4"
   >
+    <div class="textlabel h-[26px] inline-flex items-center">
+      {{ $t("task.task-checks") }}
+    </div>
+
     <TaskCheckBadgeBar
       :task-check-run-list="task.taskCheckRunList"
       @select-task-check-type="viewCheckRunDetail"
