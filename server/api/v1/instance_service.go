@@ -226,7 +226,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Name)
 	}
 
-	rowStatus := api.Archived
+	rowStatus := api.Normal
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
 		EnvironmentID: environmentID,
