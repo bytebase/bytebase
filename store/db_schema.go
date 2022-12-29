@@ -22,7 +22,7 @@ type DBSchema struct {
 type DBSchemaUpsert struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
-	UpdatorID int
+	UpdaterID int
 
 	// Related fields
 	DatabaseID int
@@ -130,8 +130,8 @@ func (s *Store) UpsertDBSchema(ctx context.Context, upsert DBSchemaUpsert) error
 
 	var raw dbSchemaRaw
 	if err := tx.QueryRowContext(ctx, query,
-		upsert.UpdatorID,
-		upsert.UpdatorID,
+		upsert.UpdaterID,
+		upsert.UpdaterID,
 		upsert.DatabaseID,
 		metadataBytes,
 		upsert.RawDump,
