@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/resources/utils"
 )
 
@@ -42,18 +43,19 @@ func Install(resourceDir string) (string, error) {
 		return "", errors.Wrap(err, "failed to get tarball name and version")
 	}
 
-	mysqlutilDir := path.Join(resourceDir, version)
-	if _, err := os.Stat(mysqlutilDir); err != nil {
+	mongoutilDir := path.Join(resourceDir, version)
+	if _, err := os.Stat(mongoutilDir); err != nil {
 		if !os.IsNotExist(err) {
-			return "", errors.Wrapf(err, "failed to check binary directory path %q", mysqlutilDir)
+			return "", errors.Wrapf(err, "failed to check binary directory path %q", mongoutilDir)
 		}
 		// Install if not exist yet
-		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
+		log.Info("Installing MongoDB utilities...")
+		if err := installImpl(resourceDir, mongoutilDir, tarName, version); err != nil {
 			return "", errors.Wrap(err, "cannot install mongoutil")
 		}
 	}
 
-	return path.Join(mysqlutilDir, "bin"), nil
+	return path.Join(mongoutilDir, "bin"), nil
 }
 
 // installImpl installs mongoutil in resourceDir.
