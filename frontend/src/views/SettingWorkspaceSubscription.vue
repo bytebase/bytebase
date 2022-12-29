@@ -21,7 +21,13 @@
         <dt class="flex text-gray-400">
           {{ $t("subscription.current") }}
           <span
-            v-if="isTrialing"
+            v-if="isExpired"
+            class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-red-100 text-red-800 h-6"
+          >
+            {{ $t("subscription.expired") }}
+          </span>
+          <span
+            v-else-if="isTrialing"
             class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-indigo-100 text-indigo-800 h-6"
           >
             {{ $t("subscription.trialing") }}
@@ -144,7 +150,7 @@ export default defineComponent({
       }
     };
 
-    const { subscription, expireAt, isTrialing } =
+    const { subscription, expireAt, isTrialing, isExpired } =
       storeToRefs(subscriptionStore);
 
     const instanceCount = computed((): number => {
@@ -184,6 +190,7 @@ export default defineComponent({
       canTrial,
       expireAt,
       isTrialing,
+      isExpired,
       currentPlan,
       instanceCount,
       uploadLicense,
