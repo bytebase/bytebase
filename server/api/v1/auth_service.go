@@ -36,7 +36,7 @@ func NewAuthService(store *store.Store, secret string, profile *config.Profile) 
 
 // Login is the auth login method.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
-	user, err := s.store.GetUserByEmailV2(ctx, request.Email)
+	user, err := s.store.GetUserByEmail(ctx, request.Email)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get principal by email %q", request.Email)
 	}

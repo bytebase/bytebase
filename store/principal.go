@@ -438,7 +438,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	}
 	defer tx.Rollback()
 
-	userMessages, err := s.listUserImplV2(ctx, tx, &FindUserMessage{ID: &id, ShowDeleted: true})
+	userMessages, err := s.listUserImpl(ctx, tx, &FindUserMessage{ID: &id, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
@@ -456,15 +456,15 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	return userMessages[0], nil
 }
 
-// GetUserByEmailV2 gets the user by email.
-func (s *Store) GetUserByEmailV2(ctx context.Context, email string) (*UserMessage, error) {
+// GetUserByEmail gets the user by email.
+func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	userMessages, err := s.listUserImplV2(ctx, tx, &FindUserMessage{Email: &email, ShowDeleted: true})
+	userMessages, err := s.listUserImpl(ctx, tx, &FindUserMessage{Email: &email, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +483,7 @@ func (s *Store) GetUserByEmailV2(ctx context.Context, email string) (*UserMessag
 }
 
 // GetUserByEmailV2 gets an instance of Principal.
-func (*Store) listUserImplV2(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
+func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
