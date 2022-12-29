@@ -1,5 +1,5 @@
 CREATE TABLE migration_history (
-    id STRING(36) NOT NULL,
+    id STRING(MAX) NOT NULL,
     created_by STRING(MAX) NOT NULL,
     created_ts INT64 NOT NULL,
     updated_by STRING(MAX) NOT NULL,
