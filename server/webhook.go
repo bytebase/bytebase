@@ -259,7 +259,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		response := &api.VCSSQLReviewResult{}
 		switch repo.VCS.Type {
 		case vcs.GitHubCom:
-			response = convertSQLAdiceToGitHubActionResult(sqlCheckAdvice)
+			response = convertSQLAdviceToGitHubActionResult(sqlCheckAdvice)
 		case vcs.GitLabSelfHost:
 			response = convertSQLAdviceToGitLabCIResult(sqlCheckAdvice)
 		}
@@ -1256,10 +1256,10 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 	}
 }
 
-// convertSQLAdiceToGitHubActionResult will convert SQL advice map to GitHub action output format.
+// convertSQLAdviceToGitHubActionResult will convert SQL advice map to GitHub action output format.
 // GitHub action output message: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
 // nolint:unused
-func convertSQLAdiceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
+func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
 	messageList := []string{}
 	status := advisor.Success
 
