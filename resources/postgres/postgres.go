@@ -79,6 +79,7 @@ func Install(resourceDir string) (string, error) {
 		}
 	}
 	if needInstall {
+		log.Info("Installing PostgreSQL utilities...")
 		// The ordering below made Postgres installation atomic.
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := installInDir(tarName, tmpDir); err != nil {
