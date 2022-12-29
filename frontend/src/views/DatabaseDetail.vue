@@ -395,12 +395,12 @@ const props = defineProps({
   },
 });
 
+const { t } = useI18n();
+const router = useRouter();
 const databaseStore = useDatabaseStore();
 const repositoryStore = useRepositoryStore();
 const dbSchemaStore = useDBSchemaStore();
 const sqlStore = useSQLStore();
-const router = useRouter();
-const { t } = useI18n();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseTabItemList: DatabaseTabItem[] = [
