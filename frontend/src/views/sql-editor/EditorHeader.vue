@@ -24,6 +24,12 @@
             exact-active-class="anchor-link"
             >{{ $t("sheet.self") }}</router-link
           >
+          <router-link
+            to="/setting/audit-log?type=bb.sql-editor.query"
+            class="router-link"
+            exact-active-class="anchor-link"
+            >{{ $t("settings.sidebar.audit-log") }}</router-link
+          >
         </div>
       </div>
     </div>

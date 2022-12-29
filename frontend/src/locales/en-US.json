@@ -291,7 +291,8 @@
     },
     "n-similar-tasks": "({count} similar tasks)",
     "skip": "Skip",
-    "skip-modal-title": "Skip task [{name}]?"
+    "skip-modal-title": "Skip task [{name}]?",
+    "task-checks": "Task checks"
   },
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
