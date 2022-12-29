@@ -115,7 +115,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 // FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
-func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error) {
+func (driver *Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error) {
 	largestBaselineSequence, err := driver.FindLargestSequence(ctx, tx, namespace, true /* baseline */)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sq
 }
 
 // FindLargestSequence will return the largest sequence number.
-func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error) {
+func (*Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error) {
 	findLargestSequenceQuery := `
 		SELECT MAX(sequence) FROM migration_history
 		WHERE namespace = $1`
@@ -164,7 +164,7 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (int64, error) {
+func (*Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (int64, error) {
 	const insertHistoryQuery = `
 	INSERT INTO migration_history (
 		created_by,
@@ -213,7 +213,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
-func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
+func (*Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
 	const updateHistoryAsDoneQuery = `
 	UPDATE
 		migration_history
@@ -228,7 +228,7 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 }
 
 // UpdateHistoryAsFailed will update the migration record as failed.
-func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error {
+func (*Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error {
 	const updateHistoryAsFailedQuery = `
 	UPDATE
 		migration_history
