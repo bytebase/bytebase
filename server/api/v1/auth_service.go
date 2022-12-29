@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/bytebase/bytebase/api"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/server/api/auth"
 	"github.com/bytebase/bytebase/server/component/config"
@@ -37,12 +36,15 @@ func NewAuthService(store *store.Store, secret string, profile *config.Profile) 
 
 // Login is the auth login method.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
-	user, err := s.store.GetPrincipalByEmail(ctx, request.Email)
+	user, err := s.store.GetUserByEmailV2(ctx, request.Email)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get principal by email %q", request.Email)
 	}
 	if user == nil {
-		return nil, status.Errorf(codes.NotFound, "user %q not found", request.Email)
+		return nil, status.Errorf(codes.Unauthenticated, "user %q not found", request.Email)
+	}
+	if user.MemberDeleted {
+		return nil, status.Errorf(codes.Unauthenticated, "user %q has been deactivated by administrators", request.Email)
 	}
 
 	// Compare the stored hashed password, with the hashed version of the password that was received.
@@ -51,26 +53,14 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		return nil, status.Errorf(codes.InvalidArgument, "incorrect password")
 	}
 
-	// Test the status of this user.
-	member, err := s.store.GetMemberByPrincipalID(ctx, user.ID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find user member")
-	}
-	if member == nil {
-		return nil, status.Errorf(codes.NotFound, "member not found for email %q", request.Email)
-	}
-	if member.RowStatus == api.Archived {
-		return nil, status.Errorf(codes.NotFound, "This user %q has been deactivated by administrators", request.Email)
-	}
-
 	var accessToken string
 	if request.Web {
-		token, err := auth.GenerateAccessToken(user, s.profile.Mode, s.secret)
+		token, err := auth.GenerateAccessToken(user.Name, user.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
 		accessToken = token
-		refreshToken, err := auth.GenerateRefreshToken(user, s.profile.Mode, s.secret)
+		refreshToken, err := auth.GenerateRefreshToken(user.Name, user.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
@@ -83,7 +73,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error %v", err)
 		}
 	} else {
-		token, err := auth.GenerateAPIToken(user, s.profile.Mode, s.secret)
+		token, err := auth.GenerateAPIToken(user.Name, user.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}

@@ -550,8 +550,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			data_source.port,
 			data_source.database
 		FROM data_source
-		LEFT JOIN instance
-		ON instance.id = data_source.instance_id
+		LEFT JOIN instance ON instance.id = data_source.instance_id
 		WHERE instance.resource_id = $1`,
 		instanceID,
 	)

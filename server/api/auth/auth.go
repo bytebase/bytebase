@@ -18,7 +18,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	errs "github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/store"
@@ -136,12 +135,15 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "malformed ID %q in the access token", claims.Subject)
 	}
-	user, err := in.store.GetPrincipalByID(ctx, principalID)
+	user, err := in.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "failed to find user ID %q in the access token", principalID)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "user ID %q not exists in the access token", principalID)
+	}
+	if user.MemberDeleted {
+		return nil, status.Errorf(codes.Unauthenticated, "user ID %q has been deactivated by administrators", principalID)
 	}
 
 	if generateToken {
@@ -176,7 +178,7 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 
 			// If we have a valid refresh token, we will generate new access token and refresh token
 			if refreshToken != nil && refreshToken.Valid {
-				if err := generateTokensAndSetCookies(ctx, user, in.mode, in.secret); err != nil {
+				if err := generateTokensAndSetCookies(ctx, user.Name, user.ID, in.mode, in.secret); err != nil {
 					return errs.Wrapf(err, "failed to regenerate token")
 				}
 			}
@@ -239,13 +241,13 @@ type claimsMessage struct {
 }
 
 // generateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
-func generateTokensAndSetCookies(ctx context.Context, user *api.Principal, mode common.ReleaseMode, secret string) error {
-	accessToken, err := GenerateAccessToken(user, mode, secret)
+func generateTokensAndSetCookies(ctx context.Context, userName string, userID int, mode common.ReleaseMode, secret string) error {
+	accessToken, err := GenerateAccessToken(userName, userID, mode, secret)
 	if err != nil {
 		return errs.Wrap(err, "failed to generate access token")
 	}
 	// We generate here a new refresh token and saving it to the cookie.
-	refreshToken, err := GenerateRefreshToken(user, mode, secret)
+	refreshToken, err := GenerateRefreshToken(userName, userID, mode, secret)
 	if err != nil {
 		return errs.Wrap(err, "failed to generate refresh token")
 	}
@@ -253,7 +255,7 @@ func generateTokensAndSetCookies(ctx context.Context, user *api.Principal, mode 
 	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
 		GatewayMetadataAccessTokenKey:  accessToken,
 		GatewayMetadataRefreshTokenKey: refreshToken,
-		GatewayMetadataUserIDKey:       fmt.Sprintf("%d", user.ID),
+		GatewayMetadataUserIDKey:       fmt.Sprintf("%d", userID),
 	})); err != nil {
 		return errs.Wrapf(err, "failed to set grpc header")
 	}
@@ -261,35 +263,35 @@ func generateTokensAndSetCookies(ctx context.Context, user *api.Principal, mode 
 }
 
 // GenerateAPIToken generates an API token.
-func GenerateAPIToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+func GenerateAPIToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(apiTokenDuration)
-	return generateToken(user, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userName, userID, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 // GenerateAccessToken generates an access token for web.
-func GenerateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+func GenerateAccessToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(accessTokenDuration)
-	return generateToken(user, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userName, userID, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 // GenerateRefreshToken generates a refresh token for web.
-func GenerateRefreshToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
+func GenerateRefreshToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(refreshTokenDuration)
-	return generateToken(user, fmt.Sprintf(RefreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userName, userID, fmt.Sprintf(RefreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.
-func generateToken(user *api.Principal, aud string, expirationTime time.Time, secret []byte) (string, error) {
+func generateToken(userName string, userID int, aud string, expirationTime time.Time, secret []byte) (string, error) {
 	// Create the JWT claims, which includes the username and expiry time.
 	claims := &claimsMessage{
-		Name: user.Name,
+		Name: userName,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience: jwt.ClaimStrings{aud},
 			// In JWT, the expiry time is expressed as unix milliseconds.
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    issuer,
-			Subject:   strconv.Itoa(user.ID),
+			Subject:   strconv.Itoa(userID),
 		},
 	}
 
