@@ -68,6 +68,11 @@ export const PROJECT_HOOK_ACTIVITY_ITEM_LIST: () => ProjectWebhookActivityItem[]
       activity: "bb.issue.status.update",
     },
     {
+      title: t("project.webhook.activity-item.issue-stage-status-change.title"),
+      label: t("project.webhook.activity-item.issue-stage-status-change.label"),
+      activity: "bb.pipeline.stage.status.update",
+    },
+    {
       title: t("project.webhook.activity-item.issue-task-status-change.title"),
       label: t("project.webhook.activity-item.issue-task-status-change.label"),
       activity: "bb.pipeline.task.status.update",
