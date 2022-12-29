@@ -38,7 +38,7 @@ func getPrincipalIDContextKey() string {
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
 func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode common.ReleaseMode, secret string) error {
-	accessToken, err := auth.GenerateAccessToken(user, mode, secret)
+	accessToken, err := auth.GenerateAccessToken(user.Name, user.ID, mode, secret)
 	if err != nil {
 		return pkgerrors.Wrap(err, "failed to generate access token")
 	}
@@ -48,7 +48,7 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 	setUserCookie(c, user, cookieExp)
 
 	// We generate here a new refresh token and saving it to the cookie.
-	refreshToken, err := auth.GenerateRefreshToken(user, mode, secret)
+	refreshToken, err := auth.GenerateRefreshToken(user.Name, user.ID, mode, secret)
 	if err != nil {
 		return pkgerrors.Wrap(err, "failed to generate refresh token")
 	}
