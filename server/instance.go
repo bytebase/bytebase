@@ -53,8 +53,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					Host:     instanceCreate.Host,
 					Port:     instanceCreate.Port,
 					Options: api.DataSourceOptions{
-						SRV:        instanceCreate.SRV,
-						AuthSource: instanceCreate.AuthSource,
+						SRV:                    instanceCreate.SRV,
+						AuthenticationDatabase: instanceCreate.AuthenticationDatabase,
 					},
 					Database: instanceCreate.Database,
 				},
