@@ -14,6 +14,9 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
+// serviceAccountAccessKeyPrefix is the prefix for service account access key.
+const serviceAccountAccessKeyPrefix = "bbs_"
+
 func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	g.POST("/principal", func(c echo.Context) error {
 		ctx := c.Request().Context()

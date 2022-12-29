@@ -14,43 +14,15 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server/api/auth"
 	"github.com/bytebase/bytebase/store"
 )
 
 const (
-	issuer                  = "bytebase"
-	accessTokenAudienceFmt  = "bb.user.access.%s"
-	refreshTokenAudienceFmt = "bb.user.refresh.%s"
-
-	// Cookie section.
-	accessTokenCookieName  = "access-token"
-	refreshTokenCookieName = "refresh-token"
-
-	// Signing key section. For now, this is only used for signing, not for verifying since we only
-	// have 1 version. But it will be used to maintain backward compatibility if we change the signing mechanism.
-	keyID = "v1"
-
-	// Expiration section.
-	refreshThresholdDuration = 1 * time.Hour
-	accessTokenDuration      = 24 * time.Hour
-	apiTokenDuration         = 2 * time.Hour
-	refreshTokenDuration     = 7 * 24 * time.Hour
-	// Make cookie expire slightly earlier than the jwt expiration. Client would be logged out if the user
-	// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
-	// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
-	// 1. The access token is about to expire in <<refreshThresholdDuration>>
-	// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
-	cookieExpDuration = refreshTokenDuration - 1*time.Minute
-
 	// Context section
 	// The key name used to store principal id in the context
 	// principal id is extracted from the jwt token subject field.
 	principalIDContextKey = "principal-id"
-
-	// Various access key / token prefix.
-
-	// serviceAccountAccessKeyPrefix is the prefix for service account access key.
-	serviceAccountAccessKeyPrefix = "bbs_"
 )
 
 // Claims creates a struct that will be encoded to a JWT.
@@ -66,61 +38,23 @@ func getPrincipalIDContextKey() string {
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
 func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode common.ReleaseMode, secret string) error {
-	accessToken, err := generateAccessToken(user, mode, secret)
+	accessToken, err := auth.GenerateAccessToken(user, mode, secret)
 	if err != nil {
 		return pkgerrors.Wrap(err, "failed to generate access token")
 	}
 
-	cookieExp := time.Now().Add(cookieExpDuration)
-	setTokenCookie(c, accessTokenCookieName, accessToken, cookieExp)
+	cookieExp := time.Now().Add(auth.CookieExpDuration)
+	setTokenCookie(c, auth.AccessTokenCookieName, accessToken, cookieExp)
 	setUserCookie(c, user, cookieExp)
 
 	// We generate here a new refresh token and saving it to the cookie.
-	refreshToken, err := generateRefreshToken(user, mode, secret)
+	refreshToken, err := auth.GenerateRefreshToken(user, mode, secret)
 	if err != nil {
 		return pkgerrors.Wrap(err, "failed to generate refresh token")
 	}
-	setTokenCookie(c, refreshTokenCookieName, refreshToken, cookieExp)
+	setTokenCookie(c, auth.RefreshTokenCookieName, refreshToken, cookieExp)
 
 	return nil
-}
-
-func generateAccessToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
-	expirationTime := time.Now().Add(accessTokenDuration)
-	return generateToken(user, fmt.Sprintf(accessTokenAudienceFmt, mode), expirationTime, []byte(secret))
-}
-
-func generateRefreshToken(user *api.Principal, mode common.ReleaseMode, secret string) (string, error) {
-	expirationTime := time.Now().Add(refreshTokenDuration)
-	return generateToken(user, fmt.Sprintf(refreshTokenAudienceFmt, mode), expirationTime, []byte(secret))
-}
-
-// Pay attention to this function. It holds the main JWT token generation logic.
-func generateToken(user *api.Principal, aud string, expirationTime time.Time, secret []byte) (string, error) {
-	// Create the JWT claims, which includes the username and expiry time.
-	claims := &Claims{
-		Name: user.Name,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Audience: jwt.ClaimStrings{aud},
-			// In JWT, the expiry time is expressed as unix milliseconds.
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    issuer,
-			Subject:   strconv.Itoa(user.ID),
-		},
-	}
-
-	// Declare the token with the HS256 algorithm used for signing, and the claims.
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = keyID
-
-	// Create the JWT string.
-	tokenString, err := token.SignedString(secret)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
 }
 
 // Here we are creating a new cookie, which will store the valid JWT token.
@@ -184,7 +118,7 @@ func findAccessToken(c echo.Context) (string, error) {
 		return authHeaderParts[1], nil
 	}
 
-	cookie, err := c.Cookie(accessTokenCookieName)
+	cookie, err := c.Cookie(auth.AccessTokenCookieName)
 	if err != nil {
 		return "", err
 	}
@@ -233,15 +167,15 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 			return nil, pkgerrors.Errorf("unexpected access token kid=%v", t.Header["kid"])
 		})
 
-		if !audienceContains(claims.Audience, fmt.Sprintf(accessTokenAudienceFmt, mode)) {
+		if !audienceContains(claims.Audience, fmt.Sprintf(auth.AccessTokenAudienceFmt, mode)) {
 			return echo.NewHTTPError(http.StatusUnauthorized,
 				fmt.Sprintf("Invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 					claims.Audience,
-					fmt.Sprintf(accessTokenAudienceFmt, mode),
+					fmt.Sprintf(auth.AccessTokenAudienceFmt, mode),
 				))
 		}
 
-		generateToken := time.Until(claims.ExpiresAt.Time) < refreshThresholdDuration
+		generateToken := time.Until(claims.ExpiresAt.Time) < auth.RefreshThresholdDuration
 		if err != nil {
 			var ve *jwt.ValidationError
 			if errors.As(err, &ve) {
@@ -273,7 +207,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 
 			if generateToken {
 				generateTokenFunc := func() error {
-					rc, err := c.Cookie(refreshTokenCookieName)
+					rc, err := c.Cookie(auth.RefreshTokenCookieName)
 
 					if err != nil {
 						return echo.NewHTTPError(http.StatusUnauthorized, "Failed to generate access token. Missing refresh token.")
@@ -300,11 +234,11 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to refresh expired token. User Id %d", principalID)).SetInternal(err)
 					}
 
-					if !audienceContains(refreshTokenClaims.Audience, fmt.Sprintf(refreshTokenAudienceFmt, mode)) {
+					if !audienceContains(refreshTokenClaims.Audience, fmt.Sprintf(auth.RefreshTokenAudienceFmt, mode)) {
 						return echo.NewHTTPError(http.StatusUnauthorized,
 							fmt.Sprintf("Invalid refresh token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 								refreshTokenClaims.Audience,
-								fmt.Sprintf(refreshTokenAudienceFmt, mode),
+								fmt.Sprintf(auth.RefreshTokenAudienceFmt, mode),
 							))
 					}
 
