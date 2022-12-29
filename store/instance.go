@@ -1045,8 +1045,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			external_link,
 			instance.row_status AS row_status
 		FROM instance
-		LEFT JOIN environment
-		ON environment.id = instance.environment_id
+		LEFT JOIN environment ON environment.id = instance.environment_id
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -1104,8 +1103,7 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 		SELECT
 			count(1)
 		FROM instance
-		LEFT JOIN environment
-		ON environment.id = instance.environment_id
+		LEFT JOIN environment ON environment.id = instance.environment_id
 		WHERE ` + strings.Join(where, " AND ")
 	var count int
 	if err := tx.QueryRowContext(ctx, query,
