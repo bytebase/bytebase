@@ -15,6 +15,7 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/server/api/auth"
 	"github.com/bytebase/bytebase/server/component/activity"
 )
 
@@ -187,8 +188,8 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 
 	g.POST("/auth/logout", func(c echo.Context) error {
-		removeTokenCookie(c, accessTokenCookieName)
-		removeTokenCookie(c, refreshTokenCookieName)
+		removeTokenCookie(c, auth.AccessTokenCookieName)
+		removeTokenCookie(c, auth.RefreshTokenCookieName)
 		removeUserCookie(c)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
