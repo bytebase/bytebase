@@ -253,22 +253,22 @@
           />
         </div>
 
-        <template v-if="showAuthSource">
+        <template v-if="showAuthenticationDatabase">
           <div class="sm:col-span-1 sm:col-start-1">
             <div class="flex flex-row items-center space-x-2">
-              <label for="authSource" class="textlabel block">
-                Auth Source
+              <label for="authenticationDatabase" class="textlabel block">
+                {{ $t("instance.authentication-database") }}
               </label>
             </div>
             <input
-              id="authSource"
-              name="authSource"
+              id="authenticationDatabase"
+              name="authenticationDatabase"
               type="text"
               class="textfield mt-1 w-full"
               autocomplete="off"
-              placeholder="Auth Source"
-              :value="currentDataSource.options.authSource"
-              @input="handleInstanceAuthSourceInput"
+              placeholder="admin"
+              :value="currentDataSource.options.authenticationDatabase"
+              @input="handleInstanceAuthenticationDatabaseInput"
             />
           </div>
         </template>
@@ -583,7 +583,7 @@ const showSSL = computed((): boolean => {
   );
 });
 
-const showAuthSource = computed((): boolean => {
+const showAuthenticationDatabase = computed((): boolean => {
   return state.instance.engine === "MONGODB";
 });
 
@@ -630,9 +630,9 @@ const handleCurrentDataSourcePasswordInput = (event: Event) => {
   updateInstanceDataSource(currentDataSource.value);
 };
 
-const handleInstanceAuthSourceInput = (event: Event) => {
+const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
   const str = (event.target as HTMLInputElement).value.trim();
-  currentDataSource.value.options.authSource = str;
+  currentDataSource.value.options.authenticationDatabase = str;
   updateInstanceDataSource(currentDataSource.value);
 };
 
@@ -753,7 +753,7 @@ const handleCreateDataSource = (type: DataSourceType) => {
     username: "",
     password: "",
     options: {
-      authSource: "",
+      authenticationDatabase: "",
       srv: false,
     },
   } as DataSource;
@@ -926,7 +926,7 @@ const testConnection = () => {
     port: connectionPort,
     database: dataSource.database,
     srv: dataSource.options.srv,
-    authSource: dataSource.options.authSource,
+    authenticationDatabase: dataSource.options.authenticationDatabase,
   };
 
   if (typeof dataSource.sslCa !== "undefined") {
