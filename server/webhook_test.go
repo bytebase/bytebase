@@ -178,7 +178,7 @@ func TestVCSSQLReview_ConvertSQLAdviceToGitHubActionResult(t *testing.T) {
 		"::warning file=file2.sql,line=1,col=1,endColumn=2,title=naming.table (301)::\"techBook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#301",
 		"::error file=file2.sql,line=4,col=1,endColumn=2,title=naming.index.uk (304)::Unique key in table \"tech_book\" mismatches the naming convention, expect \"^$|^uk_tech_book_id_name$\" but found \"tech_book_id_name\"%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#304",
 	}
-	res := convertSQLAdiceToGitHubActionResult(mockSQLAdviceMap)
+	res := convertSQLAdviceToGitHubActionResult(mockSQLAdviceMap)
 	assert.Equal(t, advisor.Error, res.Status)
 	assert.Equal(t, 4, len(res.Content))
 	assert.Equal(t, expect, res.Content)
