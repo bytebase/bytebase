@@ -42,3 +42,5 @@ export type StageAllTaskStatusPatch = {
 
   updatedTs: number;
 };
+
+export type StageStatusUpdateType = "BEGIN" | "END";
