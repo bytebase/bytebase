@@ -65,7 +65,7 @@ func TestFromStoredVersion(t *testing.T) {
 		{"1.2.3", false, "", "", "should contain '-'"},
 	}
 	for _, tc := range tests {
-		gotUseSemanticVersion, gotVersion, gotSemanticVersionSuffix, err := fromStoredVersion(tc.storedVersion)
+		gotUseSemanticVersion, gotVersion, gotSemanticVersionSuffix, err := FromStoredVersion(tc.storedVersion)
 		if tc.wantErr != "" {
 			require.Contains(t, err.Error(), tc.wantErr)
 			continue
