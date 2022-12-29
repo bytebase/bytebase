@@ -427,7 +427,7 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 		}
 
 		if err := stores.UpsertDBSchema(ctx, store.DBSchemaUpsert{
-			UpdatorID:  api.SystemBotID,
+			UpdaterID:  api.SystemBotID,
 			DatabaseID: database.ID,
 			Metadata:   databaseMetadata,
 			RawDump:    rawDump,

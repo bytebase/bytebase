@@ -70,7 +70,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a Postgres driver.
 func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	// Require username for Postgres, as the guessDSN 1st guesss is to use the username as the connecting database
+	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
 		return nil, errors.Errorf("user must be set")
