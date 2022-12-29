@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
@@ -385,7 +384,7 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *Environm
 	}
 
 	// TODO(d): allow users to set resource_id.
-	resourceID := fmt.Sprintf("environment-%s", uuid.New().String()[:8])
+	resourceID := strings.ToLower(create.Name)
 	// Insert row into database.
 	query := `
 		INSERT INTO environment (

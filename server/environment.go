@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -189,6 +190,18 @@ func (s *Server) updateEnvironment(ctx context.Context, patch *store.Environment
 		if err := api.IsValidEnvironmentName(*v); err != nil {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 		}
+	}
+
+	if v := patch.RowStatus; v != nil && *v == string(api.Archived) {
+		env, err := s.store.GetEnvironmentByID(ctx, patch.ID)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return nil, echo.NewHTTPError(http.StatusNotFound, "Cannot found environment").SetInternal(err)
+			}
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment").SetInternal(err)
+		}
+		name := fmt.Sprintf("archived_%s_%d", env.Name, time.Now().Unix())
+		patch.Name = &name
 	}
 
 	// Ensure the environment has no instance before it's archived.
