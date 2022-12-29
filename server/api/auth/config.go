@@ -9,8 +9,9 @@ const (
 )
 
 var authenticationAllowlistMethods = map[string]bool{
-	"AuthService/Login":  true,
-	"AuthService/Logout": true,
+	"AuthService/Login":      true,
+	"AuthService/Logout":     true,
+	"AuthService/CreateUser": true,
 }
 
 var ownerAndDBAMethods = map[string]bool{
