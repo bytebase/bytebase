@@ -3,11 +3,20 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 
 option go_package = "generated-go/v1";
 
 service AuthService {
+  rpc CreateUser(CreateUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "user"
+    };
+    option (google.api.method_signature) = "user";
+  }
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
       post: "/v1/auth/login"
@@ -20,6 +29,14 @@ service AuthService {
       body: "*"
     };
   }
+}
+
+message CreateUserRequest {
+  // The user to create.
+  User user = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // If web is set, we will set access token, refresh token, and user to the cookie.
+  bool web = 2;
 }
 
 message LoginRequest {
@@ -36,4 +53,16 @@ message LoginResponse {
 }
 
 message LogoutRequest {
+}
+
+message User {
+  // The name of the user.
+  // Format: users/{user}. {user} is a system-generated unique ID.
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string email = 2;
+
+  string title = 3;
+
+  string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
 }

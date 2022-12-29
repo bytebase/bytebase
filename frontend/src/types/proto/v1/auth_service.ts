@@ -4,6 +4,13 @@ import { Empty } from "../google/protobuf/empty";
 
 export const protobufPackage = "bytebase.v1";
 
+export interface CreateUserRequest {
+  /** The user to create. */
+  user?: User;
+  /** If web is set, we will set access token, refresh token, and user to the cookie. */
+  web: boolean;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -17,6 +24,75 @@ export interface LoginResponse {
 
 export interface LogoutRequest {
 }
+
+export interface User {
+  /**
+   * The name of the user.
+   * Format: users/{user}. {user} is a system-generated unique ID.
+   */
+  name: string;
+  email: string;
+  title: string;
+  password: string;
+}
+
+function createBaseCreateUserRequest(): CreateUserRequest {
+  return { user: undefined, web: false };
+}
+
+export const CreateUserRequest = {
+  encode(message: CreateUserRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.user !== undefined) {
+      User.encode(message.user, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.web === true) {
+      writer.uint32(16).bool(message.web);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateUserRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateUserRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.user = User.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.web = reader.bool();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateUserRequest {
+    return {
+      user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
+      web: isSet(object.web) ? Boolean(object.web) : false,
+    };
+  },
+
+  toJSON(message: CreateUserRequest): unknown {
+    const obj: any = {};
+    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
+    message.web !== undefined && (obj.web = message.web);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CreateUserRequest>, I>>(object: I): CreateUserRequest {
+    const message = createBaseCreateUserRequest();
+    message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
+    message.web = object.web ?? false;
+    return message;
+  },
+};
 
 function createBaseLoginRequest(): LoginRequest {
   return { email: "", password: "", web: false };
@@ -171,7 +247,84 @@ export const LogoutRequest = {
   },
 };
 
+function createBaseUser(): User {
+  return { name: "", email: "", title: "", password: "" };
+}
+
+export const User = {
+  encode(message: User, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.email !== "") {
+      writer.uint32(18).string(message.email);
+    }
+    if (message.title !== "") {
+      writer.uint32(26).string(message.title);
+    }
+    if (message.password !== "") {
+      writer.uint32(34).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): User {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUser();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.email = reader.string();
+          break;
+        case 3:
+          message.title = reader.string();
+          break;
+        case 4:
+          message.password = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): User {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      email: isSet(object.email) ? String(object.email) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      password: isSet(object.password) ? String(object.password) : "",
+    };
+  },
+
+  toJSON(message: User): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.email !== undefined && (obj.email = message.email);
+    message.title !== undefined && (obj.title = message.title);
+    message.password !== undefined && (obj.password = message.password);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<User>, I>>(object: I): User {
+    const message = createBaseUser();
+    message.name = object.name ?? "";
+    message.email = object.email ?? "";
+    message.title = object.title ?? "";
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
 export interface AuthService {
+  CreateUser(request: CreateUserRequest): Promise<User>;
   Login(request: LoginRequest): Promise<LoginResponse>;
   Logout(request: LogoutRequest): Promise<Empty>;
 }
@@ -182,9 +335,16 @@ export class AuthServiceClientImpl implements AuthService {
   constructor(rpc: Rpc, opts?: { service?: string }) {
     this.service = opts?.service || "bytebase.v1.AuthService";
     this.rpc = rpc;
+    this.CreateUser = this.CreateUser.bind(this);
     this.Login = this.Login.bind(this);
     this.Logout = this.Logout.bind(this);
   }
+  CreateUser(request: CreateUserRequest): Promise<User> {
+    const data = CreateUserRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CreateUser", data);
+    return promise.then((data) => User.decode(new _m0.Reader(data)));
+  }
+
   Login(request: LoginRequest): Promise<LoginResponse> {
     const data = LoginRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "Login", data);
