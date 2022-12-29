@@ -304,7 +304,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.grpcServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, authProvider.ACLInterceptor),
 	)
-	mux := runtime.NewServeMux()
+	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, &profile))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService))
