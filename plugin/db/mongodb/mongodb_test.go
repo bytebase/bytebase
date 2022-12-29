@@ -44,12 +44,12 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:       "cluster0.sample.mongodb.net",
-				Username:   "bytebase",
-				Password:   "passwd",
-				Database:   "sampleDB",
-				AuthSource: "admin",
-				SRV:        true,
+				Host:                   "cluster0.sample.mongodb.net",
+				Username:               "bytebase",
+				Password:               "passwd",
+				Database:               "sampleDB",
+				AuthenticationDatabase: "admin",
+				SRV:                    true,
 			},
 			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?authSource=admin",
 		},

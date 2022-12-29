@@ -198,21 +198,24 @@
           />
         </div>
 
-        <div v-if="showAuthSource" class="sm:col-span-1 sm:col-start-1">
+        <div
+          v-if="showAuthenticationDatabase"
+          class="sm:col-span-1 sm:col-start-1"
+        >
           <div class="flex flex-row items-center space-x-2">
-            <label for="authSource" class="textlabel block">
-              Auth Source
+            <label for="authenticationDatabase" class="textlabel block">
+              {{ $t("instance.authentication-database") }}
             </label>
           </div>
           <input
-            id="authSource"
-            name="authSource"
+            id="authenticationDatabase"
+            name="authenticationDatabase"
             type="text"
             class="textfield mt-1 w-full"
             autocomplete="off"
             placeholder="admin"
-            :value="state.instance.authSource"
-            @input="handleInstanceAuthSourceInput"
+            :value="state.instance.authenticationDatabase"
+            @input="handleInstanceAuthenticationDatabaseInput"
           />
         </div>
 
@@ -366,7 +369,7 @@ const state = reactive<LocalState>({
     host: isDev() ? "127.0.0.1" : "host.docker.internal",
     username: "",
     srv: false,
-    authSource: "",
+    authenticationDatabase: "",
   },
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
@@ -413,7 +416,7 @@ const showDatabase = computed((): boolean => {
   return state.instance.engine === "POSTGRES";
 });
 
-const showAuthSource = computed((): boolean => {
+const showAuthenticationDatabase = computed((): boolean => {
   return state.instance.engine === "MONGODB";
 });
 
@@ -498,8 +501,11 @@ const handleInstanceDatabaseInput = (event: Event) => {
   updateInstance("database", (event.target as HTMLInputElement).value);
 };
 
-const handleInstanceAuthSourceInput = (event: Event) => {
-  updateInstance("authSource", (event.target as HTMLInputElement).value);
+const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
+  updateInstance(
+    "authenticationDatabase",
+    (event.target as HTMLInputElement).value
+  );
 };
 
 const handleToggleSRV = (on: boolean) => {
@@ -516,7 +522,7 @@ const updateInstance = (field: string, value: string | boolean) => {
     field === "username" ||
     field === "password" ||
     field === "database" ||
-    field === "authSource"
+    field === "authenticationDatabase"
   ) {
     str = (value as string).trim();
   }
@@ -572,7 +578,7 @@ const tryCreate = () => {
     host: instance.host,
     port: instance.port,
     srv: instance.srv,
-    authSource: instance.authSource,
+    authenticationDatabase: instance.authenticationDatabase,
   };
 
   if (showSSL.value) {
@@ -657,7 +663,8 @@ const testConnection = () => {
     useEmptyPassword: false,
     instanceId: undefined,
     srv: instance.srv,
-    authSource: instance.engine === "MONGODB" ? instance.authSource : "",
+    authenticationDatabase:
+      instance.engine === "MONGODB" ? instance.authenticationDatabase : "",
   };
 
   if (showSSL.value) {

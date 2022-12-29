@@ -739,7 +739,8 @@
     "failed-to-connect-instance": "连接到实例失败。",
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "search-instance-name": "搜索实例名称",
-    "grants": "权限"
+    "grants": "权限",
+    "authentication-database": "认证数据库"
   },
   "environment": {
     "select": "选择环境",
