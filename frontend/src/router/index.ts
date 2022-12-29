@@ -1238,43 +1238,45 @@ router.beforeEach((to, from, next) => {
     databaseStore
       .fetchDatabaseById(idFromSlug(databaseSlug))
       .then((database: Database) => {
-        dbSchemaStore.getOrFetchDatabaseMetadataById(database.id).then(() => {
-          if (!dataSourceSlug && !migrationHistorySlug) {
-            next();
-          } else if (dataSourceSlug) {
-            useDataSourceStore()
-              .fetchDataSourceById({
-                dataSourceId: idFromSlug(dataSourceSlug),
-                databaseId: database.id,
-              })
-              .then(() => {
-                next();
-              })
-              .catch((error) => {
-                next({
-                  name: "error.404",
-                  replace: false,
+        dbSchemaStore
+          .getOrFetchDatabaseMetadataById(database.id, true)
+          .then(() => {
+            if (!dataSourceSlug && !migrationHistorySlug) {
+              next();
+            } else if (dataSourceSlug) {
+              useDataSourceStore()
+                .fetchDataSourceById({
+                  dataSourceId: idFromSlug(dataSourceSlug),
+                  databaseId: database.id,
+                })
+                .then(() => {
+                  next();
+                })
+                .catch((error) => {
+                  next({
+                    name: "error.404",
+                    replace: false,
+                  });
+                  throw error;
                 });
-                throw error;
-              });
-          } else if (migrationHistorySlug) {
-            instanceStore
-              .fetchMigrationHistoryById({
-                instanceId: database.instance.id,
-                migrationHistoryId: idFromSlug(migrationHistorySlug),
-              })
-              .then(() => {
-                next();
-              })
-              .catch((error) => {
-                next({
-                  name: "error.404",
-                  replace: false,
+            } else if (migrationHistorySlug) {
+              instanceStore
+                .fetchMigrationHistoryById({
+                  instanceId: database.instance.id,
+                  migrationHistoryId: idFromSlug(migrationHistorySlug),
+                })
+                .then(() => {
+                  next();
+                })
+                .catch((error) => {
+                  next({
+                    name: "error.404",
+                    replace: false,
+                  });
+                  throw error;
                 });
-                throw error;
-              });
-          }
-        });
+            }
+          });
       })
       .catch((error) => {
         next({
