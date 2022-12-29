@@ -306,7 +306,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	}
 
 	return &v1pb.Instance{
-		Name:         fmt.Sprintf("%s%s%s%s", environmentNamePrefix, instance.EnvironmentID, instanceNamePrefix, instance.InstanceID),
+		Name:         fmt.Sprintf("%s%s/%s%s", environmentNamePrefix, instance.EnvironmentID, instanceNamePrefix, instance.InstanceID),
 		Title:        instance.Title,
 		Engine:       engine,
 		ExternalLink: instance.ExternalLink,
