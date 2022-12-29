@@ -74,19 +74,20 @@ export const useAuthStore = defineStore("auth", {
       return unknownPrincipal;
     },
     async signup(signupInfo: SignupInfo) {
-      const newUser = (
-        await axios.post("/api/auth/signup", {
-          data: { type: "signupInfo", attributes: signupInfo },
-        })
-      ).data.data;
+      await axios.post("/api/auth/signup", {
+        data: { type: "signupInfo", attributes: signupInfo },
+      });
 
-      // Refresh the corresponding principal
-      await usePrincipalStore().fetchPrincipalById(newUser.id);
+      const userId = getIntCookie("user");
+      if (userId) {
+        const loggedInUser = await usePrincipalStore().fetchPrincipalById(
+          userId
+        );
 
-      // The conversion relies on the above refresh.
-      const convertedUser = convert(newUser);
-      this.setCurrentUser(convertedUser);
-      return convertedUser;
+        this.setCurrentUser(loggedInUser);
+        return loggedInUser;
+      }
+      return unknown("PRINCIPAL") as Principal;
     },
     async activate(activateInfo: ActivateInfo) {
       const activatedUser = (
