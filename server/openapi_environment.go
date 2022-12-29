@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
-	"time"
 
 	"github.com/labstack/echo/v4"
 
@@ -178,21 +177,11 @@ func (s *Server) deleteEnvironmentByOpenAPI(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Environment ID is not a number: %s", c.Param("environmentID"))).SetInternal(err)
 	}
 
-	env, err := s.store.GetEnvironmentByID(ctx, id)
-	if err != nil {
-		if common.ErrorCode(err) == common.NotFound {
-			return echo.NewHTTPError(http.StatusNotFound, "Cannot found environment").SetInternal(err)
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment").SetInternal(err)
-	}
-
 	rowStatus := string(api.Archived)
-	name := fmt.Sprintf("archived_%s_%d", env.Name, time.Now().Unix())
 	if _, err := s.updateEnvironment(ctx, &store.EnvironmentPatch{
 		ID:        id,
 		UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		RowStatus: &rowStatus,
-		Name:      &name,
 	}); err != nil {
 		return err
 	}
