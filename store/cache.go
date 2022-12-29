@@ -2,16 +2,11 @@ package store
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/gob"
+	"fmt"
+	"sync"
 
-	"github.com/VictoriaMetrics/fastcache"
 	"github.com/pkg/errors"
-)
-
-var (
-	// 32 MiB.
-	cacheSize = 1024 * 1024 * 32
 )
 
 // cacheNamespace is the type of a cache.
@@ -50,51 +45,60 @@ const (
 
 // CacheService implements a cache.
 type CacheService struct {
-	cache *fastcache.Cache
+	sync.Mutex
+	cache map[string][]byte
 }
 
 // newCacheService creates a cache service.
 func newCacheService() *CacheService {
 	return &CacheService{
-		cache: fastcache.New(cacheSize),
+		cache: make(map[string][]byte),
 	}
 }
 
 // FindCache finds the value in cache.
 func (s *CacheService) FindCache(namespace cacheNamespace, id int, entry interface{}) (bool, error) {
-	buf1 := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-	binary.LittleEndian.PutUint64(buf1, uint64(id))
+	key := generateKey(namespace, id)
 
-	buf2, has := s.cache.HasGet(nil, append([]byte(namespace), buf1...))
-	if has {
-		dec := gob.NewDecoder(bytes.NewReader(buf2))
+	s.Lock()
+	defer s.Unlock()
+	value, exists := s.cache[key]
+	if exists {
+		dec := gob.NewDecoder(bytes.NewReader(value))
 		if err := dec.Decode(entry); err != nil {
 			return false, errors.Wrapf(err, "failed to decode entry for cache namespace: %s", namespace)
 		}
 		return true, nil
 	}
-
 	return false, nil
 }
 
 // UpsertCache upserts the value to cache.
 func (s *CacheService) UpsertCache(namespace cacheNamespace, id int, entry interface{}) error {
-	buf1 := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-	binary.LittleEndian.PutUint64(buf1, uint64(id))
+	key := generateKey(namespace, id)
 
-	var buf2 bytes.Buffer
-	enc := gob.NewEncoder(&buf2)
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(entry); err != nil {
 		return errors.Wrapf(err, "failed to encode entry for cache namespace: %s", namespace)
 	}
-	s.cache.Set(append([]byte(namespace), buf1...), buf2.Bytes())
+
+	s.Lock()
+	defer s.Unlock()
+	s.cache[key] = buf.Bytes()
 
 	return nil
 }
 
 // DeleteCache deletes the key from cache.
 func (s *CacheService) DeleteCache(namespace cacheNamespace, id int) {
-	buf1 := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-	binary.LittleEndian.PutUint64(buf1, uint64(id))
-	s.cache.Del(append([]byte(namespace), buf1...))
+	key := generateKey(namespace, id)
+
+	s.Lock()
+	defer s.Unlock()
+	delete(s.cache, key)
+}
+
+func generateKey(namespace cacheNamespace, id int) string {
+	return fmt.Sprintf("%s%d", namespace, id)
 }
