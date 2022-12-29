@@ -37,6 +37,8 @@ const (
 	TiDB Type = "TIDB"
 	// MongoDB is the database type for MongoDB.
 	MongoDB Type = "MONGODB"
+	// Spanner is the database type for Spanner.
+	Spanner Type = "SPANNER"
 
 	// BytebaseDatabase is the database installed in the controlled database server.
 	BytebaseDatabase = "bytebase"
@@ -151,9 +153,9 @@ type InstanceMeta struct {
 // DatabaseMeta is the metadata for a database.
 type DatabaseMeta struct {
 	Name string
-	// CharacterSet isn't supported for ClickHouse, Snowflake, MongoDB.
+	// CharacterSet isn't supported for ClickHouse, Snowflake, MongoDB, Spanner.
 	CharacterSet string
-	// Collation isn't supported for ClickHouse, Snowflake, MongoDB.
+	// Collation isn't supported for ClickHouse, Snowflake, MongoDB, Spanner.
 	Collation string
 }
 
