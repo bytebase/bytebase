@@ -3,11 +3,14 @@ package mongodb
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -18,6 +21,13 @@ var systemCollection = map[string]bool{
 	"system.profile":    true,
 	"system.js":         true,
 	"system.views":      true,
+}
+
+var systemDatabase = map[string]bool{
+	"admin":    true,
+	"config":   true,
+	"local":    true,
+	"bytebase": true,
 }
 
 // UsersInfo is the subset of the mongodb command result of "usersInfo".
@@ -284,6 +294,10 @@ func (driver *Driver) getUserMetaList(ctx context.Context) ([]db.User, error) {
 	}}
 	var commandResult UsersInfo
 	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
+		if isAtlasUnauthorizedError(err) {
+			log.Info("Skip getting user list because the user is not authorized to run the command 'usersInfo' in atlas cluster M0/M2/M5")
+			return nil, nil
+		}
 		return nil, errors.Wrap(err, "cannot run usersInfo command")
 	}
 	var dbUserList []db.User
@@ -302,20 +316,40 @@ func (driver *Driver) getUserMetaList(ctx context.Context) ([]db.User, error) {
 
 // isDatabaseExist returns true if the database exists.
 func (driver *Driver) isDatabaseExist(ctx context.Context, databaseName string) (bool, error) {
-	filter := bson.M{"name": databaseName}
-	databaseList, err := driver.client.ListDatabaseNames(ctx, filter)
+	// We do the filter by hand instead of using the filter option of ListDatabaseNames because we may encounter the following error:
+	// Unallowed argument in listDatabases command: filter
+	databaseList, err := driver.client.ListDatabaseNames(ctx, bson.M{})
 	if err != nil {
 		return false, errors.Wrap(err, "failed to list database names")
 	}
-	return len(databaseList) == 1, nil
+	for _, database := range databaseList {
+		if database == databaseName {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // getNonSystemDatabaseList returns the list of non system databases.
 func (driver *Driver) getNonSystemDatabaseList(ctx context.Context) ([]string, error) {
-	filter := bson.M{
-		"name": bson.M{
-			"$nin": []string{"admin", "config", "local", "bytebase"},
-		},
+	databaseNames, err := driver.client.ListDatabaseNames(ctx, bson.M{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list database names")
 	}
-	return driver.client.ListDatabaseNames(ctx, filter)
+	var nonSystemDatabaseList []string
+	for _, databaseName := range databaseNames {
+		if _, ok := systemDatabase[databaseName]; !ok {
+			nonSystemDatabaseList = append(nonSystemDatabaseList, databaseName)
+		}
+	}
+	return nonSystemDatabaseList, nil
+}
+
+// isAtlasUnauthorizedError returns true if the error is an Atlas unauthorized error.
+func isAtlasUnauthorizedError(err error) bool {
+	commandError, ok := err.(mongo.CommandError)
+	if ok {
+		return commandError.Name == "AtlasError" && commandError.Code == 8000 && strings.Contains(commandError.Message, "Unauthorized")
+	}
+	return strings.Contains(err.Error(), "AtlasError: Unauthorized")
 }
