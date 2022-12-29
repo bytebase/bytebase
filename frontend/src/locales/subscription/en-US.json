@@ -24,6 +24,7 @@
   "cancel": "cancel your subscription",
   "announcement": "You can upgrade, downgrade, or {cancel} anytime. No hidden charges.",
   "trialing": "trialing",
+  "expired": "expired",
   "plan": {
     "title": "Plan",
     "try": "Start free trial",
