@@ -3,7 +3,7 @@
     v-if="task.taskCheckRunList.length > 0"
     class="flex items-start space-x-4"
   >
-    <div class="textinfolabel h-[26px] inline-flex items-center">
+    <div class="textlabel h-[26px] inline-flex items-center">
       {{ $t("task.task-checks") }}
     </div>
 
