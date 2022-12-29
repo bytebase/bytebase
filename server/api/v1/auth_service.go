@@ -35,11 +35,6 @@ func NewAuthService(store *store.Store, secret string, profile *config.Profile) 
 	}
 }
 
-// Signup is the user signup method.
-func (*AuthService) Signup(_ context.Context, _ *v1pb.SignupRequest) (*v1pb.SignupResponse, error) {
-	return &v1pb.SignupResponse{}, nil
-}
-
 // Login is the auth login method.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
 	user, err := s.store.GetPrincipalByEmail(ctx, request.Email)
