@@ -72,15 +72,6 @@ func setTokenCookie(c echo.Context, name, token string, expiration time.Time) {
 	c.SetCookie(cookie)
 }
 
-func removeTokenCookie(c echo.Context, name string) {
-	cookie := new(http.Cookie)
-	cookie.Name = name
-	cookie.Value = ""
-	cookie.Expires = time.Unix(0, 0)
-	cookie.Path = "/"
-	c.SetCookie(cookie)
-}
-
 // Purpose of this cookie is to store the user's id.
 func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 	cookie := new(http.Cookie)
@@ -91,15 +82,6 @@ func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 	// For now, we allow Bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
 	// cookie.Secure = true
 	cookie.SameSite = http.SameSiteStrictMode
-	c.SetCookie(cookie)
-}
-
-func removeUserCookie(c echo.Context) {
-	cookie := new(http.Cookie)
-	cookie.Name = "user"
-	cookie.Value = ""
-	cookie.Expires = time.Unix(0, 0)
-	cookie.Path = "/"
 	c.SetCookie(cookie)
 }
 
