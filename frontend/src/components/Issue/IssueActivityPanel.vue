@@ -352,6 +352,7 @@ import type {
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityTaskStatusUpdatePayload,
+  ActivityStageStatusUpdatePayload,
   ActivityCreate,
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
@@ -625,6 +626,16 @@ const actionIcon = (activity: Activity): ActionIconType => {
         return "avatar"; // stale approval dismissed.
       }
     }
+  } else if (activity.type == "bb.pipeline.stage.status.update") {
+    const payload = activity.payload as ActivityStageStatusUpdatePayload;
+    switch (payload.stageStatusUpdateType) {
+      case "BEGIN": {
+        return "run";
+      }
+      case "END": {
+        return "complete";
+      }
+    }
   } else if (activity.type == "bb.pipeline.task.file.commit") {
     return "commit";
   } else if (activity.type == "bb.pipeline.task.statement.update") {
@@ -642,6 +653,9 @@ const actionSubjectPrefix = (activity: Activity): string => {
   if (activity.creator.id == SYSTEM_BOT_ID) {
     if (activity.type == "bb.pipeline.task.status.update") {
       return `${t("activity.subject-prefix.task")} `;
+    }
+    if (activity.type == "bb.pipeline.stage.status.update") {
+      return `${t("activity.subject-prefix.stage")}`;
     }
   }
   return "";
@@ -665,6 +679,17 @@ const actionSubject = (activity: Activity): ActionSubject => {
           link,
         };
       }
+    }
+    if (activity.type == "bb.pipeline.stage.status.update") {
+      const payload = activity.payload as ActivityStageStatusUpdatePayload;
+      const link = `/issue/${issueSlug(
+        issue.value.name,
+        issue.value.id
+      )}?stage=${payload.stageId}`;
+      return {
+        name: `${payload.stageName}`,
+        link,
+      };
     }
   }
   return {

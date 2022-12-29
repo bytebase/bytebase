@@ -1366,13 +1366,13 @@ func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPat
 		}
 	}
 
-	// every task in the stage completes and this is not the last stage.
-	// create "stage begins" activity.
-	if stageTaskAllDone && stageIndex+1 < len(issue.Pipeline.StageList) {
-		stage := issue.Pipeline.StageList[stageIndex+1]
+	// every task in the stage terminated
+	// create "stage ends" activity.
+	if stageTaskAllTerminated {
+		stage := issue.Pipeline.StageList[stageIndex]
 		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
 			StageID:               stage.ID,
-			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
+			StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
 			IssueName:             issue.Name,
 			StageName:             stage.Name,
 		}
@@ -1394,13 +1394,13 @@ func (s *Scheduler) onTaskPatched(ctx context.Context, issue *api.Issue, taskPat
 		}
 	}
 
-	// every task in the stage terminated
-	// create "stage ends" activity.
-	if stageTaskAllTerminated {
-		stage := issue.Pipeline.StageList[stageIndex]
+	// every task in the stage completes and this is not the last stage.
+	// create "stage begins" activity.
+	if stageTaskAllDone && stageIndex+1 < len(issue.Pipeline.StageList) {
+		stage := issue.Pipeline.StageList[stageIndex+1]
 		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
 			StageID:               stage.ID,
-			StageStatusUpdateType: api.StageStatusUpdateTypeEnd,
+			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
 			IssueName:             issue.Name,
 			StageName:             stage.Name,
 		}

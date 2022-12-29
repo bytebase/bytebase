@@ -7,6 +7,7 @@ import { defineComponent, h, PropType } from "vue";
 import {
   Activity,
   ActivityIssueCommentCreatePayload,
+  ActivityStageStatusUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
   ActivityTaskFileCommitPayload,
   ActivityTaskStatementUpdatePayload,
@@ -108,6 +109,17 @@ const renderActionSentence = () => {
         str += t("activity.sentence.task-name", { name: task.name });
       }
       return str;
+    }
+    case "bb.pipeline.stage.status.update": {
+      const payload = activity.payload as ActivityStageStatusUpdatePayload;
+      switch (payload.stageStatusUpdateType) {
+        case "BEGIN":
+          return t("activity.sentence.started");
+        case "END":
+          return t("activity.sentence.completed");
+        default:
+          return t("activity.sentence.changed");
+      }
     }
     case "bb.pipeline.task.file.commit": {
       const payload = activity.payload as ActivityTaskFileCommitPayload;
