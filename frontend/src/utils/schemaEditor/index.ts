@@ -25,6 +25,17 @@ export const getDataTypeSuggestionList = (engineType: EngineType = "MYSQL") => {
       "JSON",
       "VARCHAR(255)",
     ];
+  } else if (engineType === "POSTGRES") {
+    return [
+      "BOOLEAN",
+      "CHAR(1)",
+      "DATE",
+      "INTEGER",
+      "JSON",
+      "REAL",
+      "SERIAL",
+      "VARCHAR(255)",
+    ];
   }
 
   return [];
