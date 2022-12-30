@@ -525,17 +525,24 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *Environme
 
 // EnvironmentMessage is the mssage for environment.
 type EnvironmentMessage struct {
-	InternalID    int
-	EnvironmentID string
-	Title         string
-	Order         int32
-	Deleted       bool
+	UID        int
+	ResourceID string
+	Title      string
+	Order      int32
+	Deleted    bool
+}
+
+// FindEnvironmentMessage is the message to find environments.
+type FindEnvironmentMessage struct {
+	ResourceID  *string
+	ShowDeleted bool
 }
 
 // UpdateEnvironmentMessage is the message for updating an environment.
 type UpdateEnvironmentMessage struct {
-	Name  *string
-	Order *int32
+	Name   *string
+	Order  *int32
+	Delete *bool
 }
 
 // GetEnvironmentV2 gets environment by resource ID.
@@ -546,7 +553,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 	}
 	defer tx.Rollback()
 
-	environmentMessage, err := getEnvironmentImplV2(ctx, tx, resourceID)
+	environment, err := s.getEnvironmentImplV2(ctx, tx, resourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -555,62 +562,35 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*Envir
 		return nil, FormatError(err)
 	}
 
-	return environmentMessage, nil
+	s.environmentCache[environment.ResourceID] = environment
+	return environment, nil
 }
 
 // ListEnvironmentV2 lists all environment.
-func (s *Store) ListEnvironmentV2(ctx context.Context, showDeleted bool) ([]*EnvironmentMessage, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if !showDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
-	}
-
+func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) ([]*EnvironmentMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	var environmentMessages []*EnvironmentMessage
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			resource_id,
-			name,
-			"order",
-			row_status
-		FROM environment
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
+	environments, err := listEnvironmentImplV2(ctx, tx, find)
 	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var environmentMessage EnvironmentMessage
-		var rowStatus string
-		if err := rows.Scan(
-			&environmentMessage.EnvironmentID,
-			&environmentMessage.Title,
-			&environmentMessage.Order,
-			&rowStatus,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		environmentMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-
-		environmentMessages = append(environmentMessages, &environmentMessage)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return environmentMessages, nil
+	for _, environment := range environments {
+		s.environmentCache[environment.ResourceID] = environment
+	}
+	return environments, nil
 }
 
 // CreateEnvironmentV2 creates an environment.
-func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *EnvironmentMessage, creatorID int) (*EnvironmentMessage, error) {
+func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMessage, creatorID int) (*EnvironmentMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -627,9 +607,9 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *Env
 			)
 			VALUES ($1, $2, $3, $4, $5)
 		`,
-		environmentMessage.EnvironmentID,
-		environmentMessage.Title,
-		environmentMessage.Order,
+		create.ResourceID,
+		create.Title,
+		create.Order,
 		creatorID,
 		creatorID,
 	); err != nil {
@@ -640,12 +620,14 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, environmentMessage *Env
 		return nil, FormatError(err)
 	}
 
-	return &EnvironmentMessage{
-		EnvironmentID: environmentMessage.EnvironmentID,
-		Title:         environmentMessage.Title,
-		Order:         environmentMessage.Order,
-		Deleted:       false,
-	}, nil
+	environment := &EnvironmentMessage{
+		ResourceID: create.ResourceID,
+		Title:      create.Title,
+		Order:      create.Order,
+		Deleted:    false,
+	}
+	s.environmentCache[create.ResourceID] = environment
+	return environment, nil
 }
 
 // UpdateEnvironmentV2 updates an environment.
@@ -657,6 +639,13 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 	if v := patch.Order; v != nil {
 		set, args = append(set, fmt.Sprintf(`"order" = $%d`, len(args)+1)), append(args, *v)
 	}
+	if v := patch.Delete; v != nil {
+		rowStatus := api.Normal
+		if *patch.Delete {
+			rowStatus = api.Archived
+		}
+		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+	}
 	args = append(args, environmentID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -665,7 +654,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 	}
 	defer tx.Rollback()
 
-	var environmentMessage EnvironmentMessage
+	environment := &EnvironmentMessage{}
 	var rowStatus string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE environment
@@ -675,9 +664,9 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		`, len(args)),
 		args...,
 	).Scan(
-		&environmentMessage.EnvironmentID,
-		&environmentMessage.Title,
-		&environmentMessage.Order,
+		&environment.ResourceID,
+		&environment.Title,
+		&environment.Order,
 		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -685,52 +674,45 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		}
 		return nil, FormatError(err)
 	}
-	environmentMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+	environment.Deleted = convertRowStatusToDeleted(rowStatus)
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &environmentMessage, nil
+	s.environmentCache[environment.ResourceID] = environment
+	return environment, nil
 }
 
-// DeleteOrUndeleteEnvironmentV2 deletes or undeletes an environment (archiving).
-func (s *Store) DeleteOrUndeleteEnvironmentV2(ctx context.Context, environmentID string, delete bool, updaterID int) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+func (s *Store) getEnvironmentImplV2(ctx context.Context, tx *Tx, resourceID string) (*EnvironmentMessage, error) {
+	if environment, ok := s.environmentCache[resourceID]; ok {
+		return environment, nil
+	}
+
+	environments, err := listEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{ResourceID: &resourceID})
 	if err != nil {
-		return FormatError(err)
+		return nil, err
 	}
-	defer tx.Rollback()
-
-	rowStatus := api.Normal
-	if delete {
-		rowStatus = api.Archived
+	if len(environments) == 0 {
+		return nil, nil
 	}
-	if _, err := tx.ExecContext(ctx, `
-			UPDATE environment
-			SET
-				row_status = $1,
-				updater_id = $2
-			WHERE resource_id = $3
-		`,
-		rowStatus,
-		updaterID,
-		environmentID,
-	); err != nil {
-		return FormatError(err)
+	if len(environments) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d environments with resource ID %s, expect 1", len(environments), resourceID)}
 	}
-
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
+	return environments[0], nil
 }
 
-func getEnvironmentImplV2(ctx context.Context, tx *Tx, resourceID string) (*EnvironmentMessage, error) {
-	var environmentMessage EnvironmentMessage
-	var rowStatus string
-	if err := tx.QueryRowContext(ctx, `
+func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMessage) ([]*EnvironmentMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
+	var environments []*EnvironmentMessage
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			resource_id,
@@ -738,22 +720,30 @@ func getEnvironmentImplV2(ctx context.Context, tx *Tx, resourceID string) (*Envi
 			"order",
 			row_status
 		FROM environment
-		WHERE resource_id = $1`,
-		resourceID,
-	).Scan(
-		&environmentMessage.InternalID,
-		&environmentMessage.EnvironmentID,
-		&environmentMessage.Title,
-		&environmentMessage.Order,
-		&rowStatus,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
 		return nil, FormatError(err)
 	}
-	environmentMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-	return &environmentMessage, nil
+	defer rows.Close()
+	for rows.Next() {
+		var environment EnvironmentMessage
+		var rowStatus string
+		if err := rows.Scan(
+			&environment.UID,
+			&environment.ResourceID,
+			&environment.Title,
+			&environment.Order,
+			&rowStatus,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		environment.Deleted = convertRowStatusToDeleted(rowStatus)
+
+		environments = append(environments, &environment)
+	}
+	return environments, nil
 }
 
 func convertRowStatusToDeleted(rowStatus string) bool {
