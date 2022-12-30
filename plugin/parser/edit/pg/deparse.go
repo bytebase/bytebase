@@ -148,50 +148,56 @@ func transformAlterTableContext(ctx *DeparseContext, alterTableContext *api.Alte
 		}
 	}
 
-	for _, changeColumnContext := range alterTableContext.ChangeColumnList {
-		if changeColumnContext.OldName != changeColumnContext.NewName {
+	for _, alterColumnContext := range alterTableContext.AlterColumnList {
+		if alterColumnContext.OldName != alterColumnContext.NewName {
 			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.RenameColumnStmt{
 				Table:      table,
-				ColumnName: changeColumnContext.OldName,
-				NewName:    changeColumnContext.NewName,
+				ColumnName: alterColumnContext.OldName,
+				NewName:    alterColumnContext.NewName,
 			})
 		}
-		columnType, err := transformColumnType(changeColumnContext.Type)
-		if err != nil {
-			return errors.Wrap(err, "failed to transform column type")
-		}
-		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AlterColumnTypeStmt{
-			Table:      table,
-			ColumnName: changeColumnContext.NewName,
-			Type:       columnType,
-		})
-		if changeColumnContext.Nullable {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropNotNullStmt{
+		if alterColumnContext.Type != nil {
+			columnType, err := transformColumnType(*alterColumnContext.Type)
+			if err != nil {
+				return errors.Wrap(err, "failed to transform column type")
+			}
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AlterColumnTypeStmt{
 				Table:      table,
-				ColumnName: changeColumnContext.NewName,
-			})
-		} else {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetNotNullStmt{
-				Table:      table,
-				ColumnName: changeColumnContext.NewName,
+				ColumnName: alterColumnContext.NewName,
+				Type:       columnType,
 			})
 		}
-		if changeColumnContext.Default == nil {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropDefaultStmt{
-				Table:      table,
-				ColumnName: changeColumnContext.NewName,
-			})
-		} else {
-			expression := ast.UnconvertedExpressionDef{}
-			expression.SetText(*changeColumnContext.Default)
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetDefaultStmt{
-				Table:      table,
-				ColumnName: changeColumnContext.NewName,
-				Expression: &expression,
-			})
+		if alterColumnContext.Nullable != nil {
+			if *alterColumnContext.Nullable {
+				alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropNotNullStmt{
+					Table:      table,
+					ColumnName: alterColumnContext.NewName,
+				})
+			} else {
+				alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetNotNullStmt{
+					Table:      table,
+					ColumnName: alterColumnContext.NewName,
+				})
+			}
 		}
-		if changeColumnContext.Comment != "" {
-			commemtStmt := fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';", table.Name, changeColumnContext.NewName, changeColumnContext.Comment)
+		if alterColumnContext.DefaultChanged {
+			if alterColumnContext.Default == nil {
+				alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropDefaultStmt{
+					Table:      table,
+					ColumnName: alterColumnContext.NewName,
+				})
+			} else {
+				expression := ast.UnconvertedExpressionDef{}
+				expression.SetText(*alterColumnContext.Default)
+				alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetDefaultStmt{
+					Table:      table,
+					ColumnName: alterColumnContext.NewName,
+					Expression: &expression,
+				})
+			}
+		}
+		if alterColumnContext.Comment != nil {
+			commemtStmt := fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';", table.Name, alterColumnContext.NewName, *alterColumnContext.Comment)
 			ctx.StmtList = append(ctx.StmtList, commemtStmt)
 		}
 	}
@@ -249,7 +255,9 @@ func transformAlterTableContext(ctx *DeparseContext, alterTableContext *api.Alte
 		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &addConstraintSmt)
 	}
 
-	ctx.NodeList = append(ctx.NodeList, alterTableStmt)
+	if len(alterTableStmt.AlterItemList) != 0 {
+		ctx.NodeList = append(ctx.NodeList, alterTableStmt)
+	}
 	return nil
 }
 

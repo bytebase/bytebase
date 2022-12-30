@@ -226,11 +226,7 @@ const project = useProjectStore().getProjectById(
 const isTenantProject = project.tenantMode === "TENANT";
 
 onMounted(() => {
-  if (
-    databaseList.length === 0 ||
-    project.id === UNKNOWN_ID ||
-    databaseEngineType === "unknown"
-  ) {
+  if (databaseList.length === 0 || project.id === UNKNOWN_ID) {
     emit("close");
     return;
   }

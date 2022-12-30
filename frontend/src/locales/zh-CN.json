@@ -1456,6 +1456,9 @@
       "collation": "字符排序规则",
       "comment": "注释"
     },
+    "schema": {
+      "select": "选择 schema"
+    },
     "table-list": "表",
     "table": {
       "select": "选择表",
@@ -1485,6 +1488,7 @@
     },
     "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。",
     "edit-foreign-key": "修改外键",
+    "select-reference-schema": "选择外键的 Schema",
     "select-reference-table": "选择外键的表",
     "select-reference-column": "选择外键的列"
   },

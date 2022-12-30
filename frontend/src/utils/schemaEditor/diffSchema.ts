@@ -22,7 +22,10 @@ export const diffSchema = (
     (table) => table.status === "created"
   );
   for (const table of createdTableList) {
-    const createTableContext = transformTableToCreateTableContext(table);
+    const createTableContext = transformTableToCreateTableContext(
+      schema.name,
+      table
+    );
     const diffColumnListResult = diffColumnList([], table.columnList);
     createTableContext.addColumnList = diffColumnListResult.addColumnList;
     for (const columnId of table.primaryKey.columnIdList) {
@@ -100,6 +103,7 @@ export const diffSchema = (
     ) {
       if (originTable.name !== table.name) {
         renameTableContextList.push({
+          schema: schema.name,
           oldName: originTable.name,
           newName: table.name,
         });
@@ -117,6 +121,7 @@ export const diffSchema = (
         columnListDiffResult.dropColumnList.length > 0
       ) {
         const alterTableContext: AlterTableContext = {
+          schema: schema.name,
           name: table.name,
           ...columnListDiffResult,
           dropPrimaryKey: false,
@@ -238,6 +243,7 @@ export const diffSchema = (
   );
   for (const table of droppedTableList) {
     dropTableContextList.push({
+      schema: schema.name,
       name: table.name,
     });
   }

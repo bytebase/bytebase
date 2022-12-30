@@ -159,6 +159,7 @@ type AlterTableContext struct {
 	ColumnNameList []string `json:"columnNameList"`
 
 	AddColumnList    []*AddColumnContext    `json:"addColumnList"`
+	AlterColumnList  []*AlterColumnContext  `json:"alterColumnList"`
 	ChangeColumnList []*ChangeColumnContext `json:"changeColumnList"`
 	DropColumnList   []*DropColumnContext   `json:"dropColumnList"`
 	// TODO(steven): diff schemas in backend, so we don't need this flag.
@@ -193,7 +194,18 @@ type AddColumnContext struct {
 	Default      *string `json:"default"`
 }
 
-// ChangeColumnContext is the alter table context to change a column.
+// AlterColumnContext is the alter table context to alter a column.
+type AlterColumnContext struct {
+	OldName        string  `json:"oldName"`
+	NewName        string  `json:"newName"`
+	Type           *string `json:"type"`
+	Comment        *string `json:"comment"`
+	Nullable       *bool   `json:"nullable"`
+	DefaultChanged bool    `json:"defaultChanged"`
+	Default        *string `json:"default"`
+}
+
+// ChangeColumnContext is the alter table context to change a column, mainly used in MySQL.
 type ChangeColumnContext struct {
 	OldName      string  `json:"oldName"`
 	NewName      string  `json:"newName"`

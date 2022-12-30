@@ -36,13 +36,26 @@
     <!-- List view -->
     <template v-if="state.selectedTab === 'table-list'">
       <div class="py-2 w-full flex justify-between items-center space-x-2">
-        <button
-          class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:bg-gray-100"
-          @click="handleCreateNewTable"
-        >
-          <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-          {{ $t("schema-editor.actions.create-table") }}
-        </button>
+        <div class="flex flex-row justify-start items-center">
+          <div
+            v-if="shouldShowSchemaSelector"
+            class="ml-2 flex flex-row justify-start items-center mr-3 text-sm"
+          >
+            <span class="mr-1">Schema:</span>
+            <n-select
+              v-model:value="state.selectedSchema"
+              class="min-w-[8rem]"
+              :options="schemaSelectorOptionList"
+            />
+          </div>
+          <button
+            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:bg-gray-100"
+            @click="handleCreateNewTable"
+          >
+            <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+            {{ $t("schema-editor.actions.create-table") }}
+          </button>
+        </div>
       </div>
       <!-- table list -->
       <div
@@ -159,8 +172,9 @@
 </template>
 
 <script lang="ts" setup>
+import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
@@ -211,12 +225,28 @@ const databaseSchema = editorStore.databaseSchemaById.get(
   currentTab.databaseId
 ) as DatabaseSchema;
 const database = databaseSchema.database;
+const databaseEngine = database.instance.engine;
 const schemaList = databaseSchema.schemaList;
 const tableList = computed(() => {
   return (
     schemaList.find((schema) => schema.name === state.selectedSchema)
       ?.tableList ?? []
   );
+});
+
+const shouldShowSchemaSelector = computed(() => {
+  return databaseEngine === "POSTGRES";
+});
+
+const schemaSelectorOptionList = computed(() => {
+  const optionList = [];
+  for (const schema of schemaList) {
+    optionList.push({
+      label: schema.name,
+      value: schema.name,
+    });
+  }
+  return optionList;
 });
 
 const tableHeaderList = computed(() => {
@@ -246,6 +276,12 @@ const tableHeaderList = computed(() => {
       label: t("schema-editor.database.comment"),
     },
   ];
+});
+
+onMounted(() => {
+  if (schemaList.length > 0) {
+    state.selectedSchema = head(schemaList)?.name || "";
+  }
 });
 
 watch(

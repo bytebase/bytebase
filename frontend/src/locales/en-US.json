@@ -1455,6 +1455,9 @@
       "collation": "Collation",
       "comment": "Comment"
     },
+    "schema": {
+      "select": "Select schema"
+    },
     "table-list": "Table List",
     "table": {
       "select": "Select table",
@@ -1484,6 +1487,7 @@
     },
     "tenant-mode-tips": "Changes will be applied to all selected tenant databases after clicking \"Preview issue\".",
     "edit-foreign-key": "Edit foreign key",
+    "select-reference-schema": "Select a schema to reference to",
     "select-reference-table": "Select a table to reference to",
     "select-reference-column": "Select a column to reference to"
   },

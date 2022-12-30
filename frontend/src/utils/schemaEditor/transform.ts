@@ -37,9 +37,11 @@ export const transformColumnToChangeColumnContext = (
 };
 
 export const transformTableToCreateTableContext = (
+  schema: string,
   table: Table
 ): CreateTableContext => {
   return {
+    schema,
     name: defaultTo(table.name, ""),
     engine: defaultTo(table.engine, ""),
     collation: defaultTo(table.collation, ""),

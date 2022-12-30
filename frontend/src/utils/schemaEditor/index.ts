@@ -6,6 +6,7 @@ export const allowUsingSchemaEditor = (databaseList: Database[]): boolean => {
   return databaseList.every((db) => {
     return (
       db.instance.engine === "MYSQL" ||
+      // TODO(steven): remove release guard later.
       (isDev() && db.instance.engine === "POSTGRES")
     );
   });

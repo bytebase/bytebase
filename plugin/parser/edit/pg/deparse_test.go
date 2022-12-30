@@ -77,7 +77,7 @@ func TestDeparseCreateTable(t *testing.T) {
 }
 
 func TestDeparseAlterTable(t *testing.T) {
-	var defaultValue = "0"
+	var defaultType = "TEXT"
 
 	tests := []struct {
 		name         string
@@ -91,35 +91,17 @@ func TestDeparseAlterTable(t *testing.T) {
 				AlterTableList: []*api.AlterTableContext{
 					{
 						Name: "t1",
-						AddColumnList: []*api.AddColumnContext{
+						AlterColumnList: []*api.AlterColumnContext{
 							{
-								Name: "id",
-								Type: "int",
-							},
-							{
-								Name: "id_card",
-								Type: "int",
-							},
-						},
-						DropColumnList: []*api.DropColumnContext{
-							{
-								Name: "name",
-							},
-						},
-						ChangeColumnList: []*api.ChangeColumnContext{
-							{
-								OldName:  "address",
-								NewName:  "address",
-								Type:     "int",
-								Nullable: false,
-								Comment:  "Address",
-								Default:  &defaultValue,
+								OldName: "address",
+								NewName: "address",
+								Type:    &defaultType,
 							},
 						},
 					},
 				},
 			},
-			want: "ALTER TABLE \"t1\"\n    DROP COLUMN \"name\",\n    ADD COLUMN \"id\" integer NOT NULL,\n    ADD COLUMN \"id_card\" integer NOT NULL,\n    ALTER COLUMN \"address\" SET DATA TYPE integer,\n    ALTER COLUMN \"address\" SET NOT NULL,\n    ALTER COLUMN \"address\" SET DEFAULT 0;\nCOMMENT ON COLUMN t1.address IS 'Address';",
+			want: "ALTER TABLE \"t1\"\n    ALTER COLUMN \"address\" SET DATA TYPE text;",
 		},
 	}
 
