@@ -73,7 +73,7 @@
               <span style="color: red">*</span>
             </template>
             <template v-else-if="state.instance.engine == 'SPANNER'">
-              {{ "Project ID and instance ID" }}
+              {{ $t("instance.project-id-and-instance-id") }}
               <span style="color: red">*</span>
               <p class="text-sm text-gray-500 mt-1 mb-2">
                 Don't know where to find project ID and instance ID? Check this
