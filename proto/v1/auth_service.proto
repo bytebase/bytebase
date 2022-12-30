@@ -36,9 +36,6 @@ service AuthService {
 message CreateUserRequest {
   // The user to create.
   User user = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // If web is set, we will set access token, refresh token, and user to the cookie.
-  bool web = 2;
 }
 
 message LoginRequest {
