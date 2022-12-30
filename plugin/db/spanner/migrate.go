@@ -15,7 +15,8 @@ import (
 
 // NeedsSetupMigration checks if it needs to set up migration.
 func (d *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	_, err := d.dbClient.GetDatabase(ctx, &databasepb.GetDatabaseRequest{Name: db.BytebaseDatabase})
+	dsn := d.composeDSNWithDatabase(db.BytebaseDatabase)
+	_, err := d.dbClient.GetDatabase(ctx, &databasepb.GetDatabaseRequest{Name: dsn})
 	if status.Code(err) == codes.NotFound {
 		return true, nil
 	}

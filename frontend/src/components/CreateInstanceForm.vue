@@ -72,6 +72,15 @@
               {{ $t("instance.account-name") }}
               <span style="color: red">*</span>
             </template>
+            <template v-else-if="state.instance.engine == 'SPANNER'">
+              {{ "Project ID and instance ID" }}
+              <span style="color: red">*</span>
+              <p class="text-sm text-gray-500 mt-1 mb-2">
+                Don't know where to find project ID and instance ID? Check this
+                link!
+                <!-- TODO(p0ny): fix the link -->
+              </p>
+            </template>
             <template v-else>
               {{ $t("instance.host-or-socket") }}
               <span style="color: red">*</span>
@@ -85,6 +94,8 @@
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
                 ? $t('instance.your-snowflake-account-name')
+                : state.instance.engine == 'SPANNER'
+                ? 'projects/<projectID>/instances/<instanceID>'
                 : $t('instance.sentence.host.snowflake')
             "
             class="textfield mt-1 w-full"
@@ -100,22 +111,24 @@
           </div>
         </div>
 
-        <div class="sm:col-span-1">
-          <label for="port" class="textlabel block">{{
-            $t("instance.port")
-          }}</label>
-          <input
-            id="port"
-            type="number"
-            name="port"
-            class="textfield mt-1 w-full"
-            :placeholder="defaultPort"
-            :disabled="!allowEdit"
-            :value="state.instance.port"
-            @wheel="handleInstancePortWheelScroll"
-            @input="handleInstancePortInput"
-          />
-        </div>
+        <template v-if="state.instance.engine != 'SPANNER'">
+          <div class="sm:col-span-1">
+            <label for="port" class="textlabel block">{{
+              $t("instance.port")
+            }}</label>
+            <input
+              id="port"
+              type="number"
+              name="port"
+              class="textfield mt-1 w-full"
+              :placeholder="defaultPort"
+              :disabled="!allowEdit"
+              :value="state.instance.port"
+              @wheel="handleInstancePortWheelScroll"
+              @input="handleInstancePortInput"
+            />
+          </div>
+        </template>
 
         <template v-if="state.instance.engine == 'MONGODB'">
           <div class="sm:row-span-1">
@@ -142,30 +155,40 @@
           :engineType="state.instance.engine"
           :dataSourceType="'ADMIN'"
         />
-        <div class="sm:col-span-1 sm:col-start-1">
-          <label for="username" class="textlabel block">{{
-            $t("common.username")
-          }}</label>
-          <!-- For mysql, username can be empty indicating anonymous user.
+
+        <template v-if="state.instance.engine != 'SPANNER'">
+          <div class="sm:col-span-1 sm:col-start-1">
+            <label for="username" class="textlabel block">{{
+              $t("common.username")
+            }}</label>
+            <!-- For mysql, username can be empty indicating anonymous user.
           But it's a very bad practice to use anonymous user for admin operation,
         thus we make it REQUIRED here.-->
-          <input
-            id="username"
-            name="username"
-            type="text"
-            class="textfield mt-1 w-full"
-            :placeholder="
-              state.instance.engine == 'CLICKHOUSE' ? $t('common.default') : ''
-            "
-            :value="state.instance.username"
-            @input="handleInstanceUsernameInput"
-          />
-        </div>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="textfield mt-1 w-full"
+              :placeholder="
+                state.instance.engine == 'CLICKHOUSE'
+                  ? $t('common.default')
+                  : ''
+              "
+              :value="state.instance.username"
+              @input="handleInstanceUsernameInput"
+            />
+          </div>
+        </template>
 
         <div class="sm:col-span-1 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
-              {{ $t("common.password") }}
+              <template v-if="state.instance.engine == 'SPANNER'">
+                {{ $t("common.credentials") }}
+              </template>
+              <template v-else>
+                {{ $t("common.password") }}
+              </template>
             </label>
           </div>
           <input
@@ -174,7 +197,11 @@
             type="text"
             class="textfield mt-1 w-full"
             autocomplete="off"
-            :placeholder="$t('instance.password-write-only')"
+            :placeholder="
+              state.instance.engine == 'SPANNER'
+                ? $t('instance.credentials-write-only')
+                : $t('instance.password-write-only')
+            "
             :value="state.instance.password"
             @input="handleInstancePasswordInput"
           />
@@ -347,6 +374,9 @@ const engineList = computed(() => {
     "CLICKHOUSE",
     "MONGODB",
   ];
+  if (isDev()) {
+    engines.push("SPANNER");
+  }
   return engines;
 });
 
@@ -357,6 +387,7 @@ const EngineIconPath = {
   SNOWFLAKE: new URL("../assets/db-snowflake.png", import.meta.url).href,
   CLICKHOUSE: new URL("../assets/db-clickhouse.png", import.meta.url).href,
   MONGODB: new URL("../assets/db-mongodb.png", import.meta.url).href,
+  SPANNER: new URL("../assets/db-spanner.png", import.meta.url).href,
 };
 
 const state = reactive<LocalState>({
@@ -413,7 +444,9 @@ const showSSL = computed((): boolean => {
 });
 
 const showDatabase = computed((): boolean => {
-  return state.instance.engine === "POSTGRES";
+  return (
+    state.instance.engine === "POSTGRES" || state.instance.engine == "SPANNER"
+  );
 });
 
 const showAuthenticationDatabase = computed((): boolean => {
@@ -458,7 +491,7 @@ watch(showSSL, (ssl) => {
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: EngineType) => {
-  if (engine == "SNOWFLAKE") {
+  if (engine == "SNOWFLAKE" || engine == "SPANNER") {
     if (
       state.instance.host == "127.0.0.1" ||
       state.instance.host == "host.docker.internal"
@@ -593,6 +626,11 @@ const tryCreate = () => {
   if (instance.engine === "MONGODB") {
     connectionInfo.database = instance.database;
   }
+  // Spanner must connect to a specific database.
+  // To test connection, we must set database.
+  if (instance.engine === "SPANNER") {
+    connectionInfo.database = instance.database;
+  }
 
   state.isPingingInstance = true;
   sqlStore
@@ -659,7 +697,7 @@ const testConnection = () => {
     username: instance.username,
     password: instance.password,
     // Use the `database` field only when needed.
-    database: instance.engine === "POSTGRES" ? instance.database : undefined,
+    database: showDatabase.value ? instance.database : undefined,
     useEmptyPassword: false,
     instanceId: undefined,
     srv: instance.srv,
