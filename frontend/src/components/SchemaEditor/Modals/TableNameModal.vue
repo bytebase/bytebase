@@ -86,8 +86,6 @@ onMounted(() => {
     return;
   }
 
-  console.log("props", props.tableId);
-
   const table = editorStore.getTable(
     props.databaseId,
     props.schemaName,
