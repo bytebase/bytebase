@@ -8,7 +8,8 @@ import (
 
 // Instance is the API message for an instance.
 type Instance struct {
-	ID int `jsonapi:"primary,instance"`
+	ID         int `jsonapi:"primary,instance"`
+	ResourceID string
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`

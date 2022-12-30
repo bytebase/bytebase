@@ -73,7 +73,7 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 }
 
 // CreateDataSource creates an instance of DataSource.
-func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSource, error) {
+func (s *Store) CreateDataSource(ctx context.Context, instance *api.Instance, create *api.DataSourceCreate) (*api.DataSource, error) {
 	dataSourceRaw, err := s.createDataSourceRaw(ctx, create)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
@@ -82,6 +82,7 @@ func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCrea
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
 	}
+	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
 	return dataSource, nil
 }
 
@@ -120,7 +121,7 @@ func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([
 }
 
 // PatchDataSource patches an instance of DataSource.
-func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSource, error) {
+func (s *Store) PatchDataSource(ctx context.Context, instance *api.Instance, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	dataSourceRaw, err := s.patchDataSourceRaw(ctx, patch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch DataSource with DataSourcePatch[%+v]", patch)
@@ -129,11 +130,12 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", dataSourceRaw)
 	}
+	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
 	return dataSource, nil
 }
 
 // DeleteDataSource deletes an existing dataSource by ID.
-func (s *Store) DeleteDataSource(ctx context.Context, deleteDataSource *api.DataSourceDelete) error {
+func (s *Store) DeleteDataSource(ctx context.Context, instance *api.Instance, deleteDataSource *api.DataSourceDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
@@ -150,6 +152,7 @@ func (s *Store) DeleteDataSource(ctx context.Context, deleteDataSource *api.Data
 
 	// Invalidate the cache.
 	s.cache.DeleteCache(dataSourceCacheNamespace, deleteDataSource.InstanceID)
+	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
 	return nil
 }
 
