@@ -11,10 +11,10 @@
         :item-list="tableList"
         :placeholder="$t('schema-editor.table.select')"
         :show-prefix-item="true"
-        @select-item="(table: Table) => state.referencedTable = table.newName"
+        @select-item="(table: Table) => state.referencedTableId = table.id"
       >
-        <template #menuItem="{ item: table }">
-          {{ table.newName }}
+        <template #menuItem="{ item }">
+          {{ item.name }}
         </template>
       </BBSelect>
     </div>
@@ -25,10 +25,10 @@
         :item-list="columnList"
         :placeholder="$t('schema-editor.column.select')"
         :show-prefix-item="true"
-        @select-item="(column: Column) => state.referencedColumn = column.newName"
+        @select-item="(column: Column) => state.referencedColumnId = column.id"
       >
         <template #menuItem="{ item }">
-          {{ item.newName }}
+          {{ item.name }}
         </template>
       </BBSelect>
     </div>
@@ -59,15 +59,20 @@
 
 <script lang="ts" setup>
 import { isUndefined } from "lodash-es";
-import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
+import { computed, onMounted, PropType, reactive, watch } from "vue";
 import { DatabaseId, UNKNOWN_ID } from "@/types";
 import { useSchemaEditorStore } from "@/store";
-import { Column, Schema, Table } from "@/types/schemaEditor/atomType";
+import {
+  Column,
+  ForeignKey,
+  Schema,
+  Table,
+} from "@/types/schemaEditor/atomType";
 
 interface LocalState {
   referencedSchema?: string;
-  referencedTable?: string;
-  referencedColumn?: string;
+  referencedTableId?: string;
+  referencedColumnId?: string;
 }
 
 const props = defineProps({
@@ -79,13 +84,13 @@ const props = defineProps({
     type: String as PropType<string>,
     default: "",
   },
-  tableName: {
+  tableId: {
     type: String as PropType<string>,
     default: "",
   },
-  column: {
-    required: true,
-    type: Object as PropType<Column>,
+  columnId: {
+    type: String as PropType<string>,
+    default: "",
   },
 });
 
@@ -102,9 +107,21 @@ const schema = computed(() => {
   return editorStore.getSchema(props.databaseId, props.schemaName) as Schema;
 });
 
+const table = computed(() => {
+  return editorStore.getTable(
+    props.databaseId,
+    props.schemaName,
+    props.tableId
+  );
+});
+
+const propsColumn = computed(() => {
+  return table.value?.columnList.find((column) => column.id === props.columnId);
+});
+
 const foreignKeyList = computed(() => {
   return schema.value?.foreignKeyList.filter(
-    (pk) => pk.table === props.tableName
+    (pk) => pk.tableId === props.tableId
   );
 });
 
@@ -112,36 +129,34 @@ const tableList = computed(() => {
   return (
     editorStore.getSchema(props.databaseId, state.referencedSchema || "")
       ?.tableList || []
-  ).filter((table: Table) => table.newName !== props.tableName);
+  ).filter((table: Table) => table.id !== props.tableId);
 });
 
 const selectedTable = computed(() => {
-  return tableList.value.find(
-    (table) => table.newName === state.referencedTable
-  );
+  return tableList.value.find((table) => table.id === state.referencedTableId);
 });
 
 const columnList = computed(() => {
   return (
     tableList.value
-      .find((item) => item.newName === state.referencedTable)
+      .find((table) => table.id === state.referencedTableId)
       ?.columnList.filter(
         (column) =>
-          column.type.toUpperCase() === props.column.type.toUpperCase()
+          column.type.toUpperCase() === propsColumn.value?.type.toUpperCase()
       ) || []
   );
 });
 
 const selectedColumn = computed(() => {
   return columnList.value.find(
-    (column) => column.newName === state.referencedColumn
+    (column) => column.id === state.referencedColumnId
   );
 });
 
 const foreignKey = computed(() => {
   for (const fk of foreignKeyList.value) {
-    const foundIndex = fk.columnList.findIndex(
-      (columnRef) => columnRef.value === props.column
+    const foundIndex = fk.columnIdList.findIndex(
+      (columnId) => columnId === props.columnId
     );
     if (foundIndex > -1) {
       return fk;
@@ -152,25 +167,26 @@ const foreignKey = computed(() => {
 
 onMounted(() => {
   if (foreignKey.value) {
-    const foundIndex = foreignKey.value.columnList.findIndex(
-      (columnRef) => columnRef.value === props.column
+    const foundIndex = foreignKey.value.columnIdList.findIndex(
+      (columnId) => columnId === props.columnId
     );
     if (foundIndex > -1) {
       state.referencedSchema = foreignKey.value.referencedSchema;
-      state.referencedTable = foreignKey.value.referencedTable;
-      state.referencedColumn = foreignKey.value.referencedColumns[foundIndex];
+      state.referencedTableId = foreignKey.value.referencedTableId;
+      state.referencedColumnId =
+        foreignKey.value.referencedColumnIdList[foundIndex];
     }
   }
 });
 
 watch(
-  () => state.referencedTable,
+  () => state.referencedTableId,
   () => {
     const found = columnList.value.find(
-      (column) => column.newName === state.referencedColumn
+      (column) => column.id === state.referencedColumnId
     );
     if (!found) {
-      state.referencedColumn = undefined;
+      state.referencedColumnId = undefined;
     }
   }
 );
@@ -180,15 +196,12 @@ const handleRemoveFKButtonClick = async () => {
     return;
   }
 
-  const column = schema.value.tableList
-    .find((table) => table.newName === props.tableName)
-    ?.columnList.find((column) => column === props.column) as Column;
-  const index = foreignKey.value.columnList.findIndex(
-    (columnRef) => columnRef.value === column
+  const index = foreignKey.value.columnIdList.findIndex(
+    (columnId) => columnId === propsColumn.value?.id
   );
   if (index > -1) {
-    foreignKey.value.referencedColumns.splice(index, 1);
-    foreignKey.value.columnList.splice(index, 1);
+    foreignKey.value.referencedColumnIdList.splice(index, 1);
+    foreignKey.value.columnIdList.splice(index, 1);
     dismissModal();
   }
 };
@@ -196,29 +209,35 @@ const handleRemoveFKButtonClick = async () => {
 const handleConfirmButtonClick = async () => {
   if (
     isUndefined(state.referencedSchema) ||
-    isUndefined(state.referencedTable) ||
-    isUndefined(state.referencedColumn)
+    isUndefined(state.referencedTableId) ||
+    isUndefined(state.referencedColumnId)
   ) {
     return;
   }
 
-  const column = schema.value.tableList
-    .find((table) => table.newName === props.tableName)
-    ?.columnList.find((column) => column === props.column) as Column;
-
+  const column = propsColumn.value as Column;
   if (isUndefined(foreignKey.value)) {
-    const fk = {
+    const fk: ForeignKey = {
+      // TODO(steven): it's a constraint name and should be unique.
       name: "",
-      table: props.tableName,
-      columnList: [ref(column)],
+      tableId: props.tableId,
+      columnIdList: [column.id],
       referencedSchema: state.referencedSchema,
-      referencedTable: state.referencedTable,
-      referencedColumns: [state.referencedColumn],
+      referencedTableId: state.referencedTableId,
+      referencedColumnIdList: [state.referencedColumnId],
     };
     schema.value.foreignKeyList.push(fk);
   } else {
-    foreignKey.value.referencedColumns.push(state.referencedColumn);
-    foreignKey.value.columnList.push(ref(column));
+    const index = foreignKey.value.columnIdList.findIndex(
+      (columnId) => columnId === column.id
+    );
+    if (index >= 0) {
+      foreignKey.value.referencedColumnIdList[index] = state.referencedColumnId;
+      foreignKey.value.columnIdList[index] = column.id;
+    } else {
+      foreignKey.value.referencedColumnIdList.push(state.referencedColumnId);
+      foreignKey.value.columnIdList.push(column.id);
+    }
   }
   dismissModal();
 };

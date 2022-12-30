@@ -77,7 +77,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
         if (
           item.type === SchemaEditorTabType.TabForTable &&
           item.databaseId === tab.databaseId &&
-          item.tableName === (tab as TableTabContext).tableName
+          item.tableId === (tab as TableTabContext).tableId
         ) {
           return true;
         }
@@ -121,9 +121,9 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
       }
       this.tabState.tabMap.delete(tabId);
     },
-    findTab(databaseId: DatabaseId, tableName?: string) {
+    findTab(databaseId: DatabaseId, tableId?: string) {
       let tabType = SchemaEditorTabType.TabForDatabase;
-      if (tableName !== undefined) {
+      if (tableId !== undefined) {
         tabType = SchemaEditorTabType.TabForTable;
       }
 
@@ -136,7 +136,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
           return true;
         } else if (
           tab.type === SchemaEditorTabType.TabForTable &&
-          tab.tableName === tableName
+          tab.tableId === tableId
         ) {
           return true;
         }
@@ -195,27 +195,27 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
         .get(databaseId)
         ?.originSchemaList.find((schema) => schema.name === schemaName);
     },
-    getTable(databaseId: DatabaseId, schemaName: string, tableName: string) {
+    getTable(databaseId: DatabaseId, schemaName: string, tableId: string) {
       return this.databaseSchemaById
         .get(databaseId)
         ?.schemaList.find((schema) => schema.name === schemaName)
-        ?.tableList.find((table) => table.newName === tableName);
+        ?.tableList.find((table) => table.id === tableId);
     },
     getOriginTable(
       databaseId: DatabaseId,
       schemaName: string,
-      tableName: string
+      tableId: string
     ) {
       return this.databaseSchemaById
         .get(databaseId)
         ?.originSchemaList.find((schema) => schema.name === schemaName)
-        ?.tableList.find((table) => table.newName === tableName);
+        ?.tableList.find((table) => table.id === tableId);
     },
     getTableWithTableTab(tab: TableTabContext) {
       return this.databaseSchemaById
         .get(tab.databaseId)
         ?.schemaList.find((schema) => schema.name === tab.schemaName)
-        ?.tableList?.find((table) => table.newName === tab.tableName);
+        ?.tableList?.find((table) => table.id === tab.tableId);
     },
     dropTable(databaseId: DatabaseId, schemaName: string, table: Table) {
       // Remove table record and close tab for created table.
@@ -224,11 +224,9 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
           .get(databaseId)
           ?.schemaList.find((schema) => schema.name === schemaName)
           ?.tableList as Table[];
-        const index = tableList.findIndex(
-          (item) => item.newName === table.newName
-        );
+        const index = tableList.findIndex((item) => item.id === table.id);
         tableList.splice(index, 1);
-        const tab = this.findTab(databaseId, table.newName);
+        const tab = this.findTab(databaseId, table.id);
         if (tab) {
           this.closeTab(tab.id);
         }
