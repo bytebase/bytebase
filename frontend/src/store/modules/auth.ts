@@ -12,6 +12,7 @@ import {
   unknown,
   PrincipalId,
   AuthProvider,
+  BytebaseLoginInfo,
 } from "@/types";
 import { getIntCookie } from "@/utils";
 import { usePrincipalStore } from "./principal";
@@ -50,15 +51,31 @@ export const useAuthStore = defineStore("auth", {
       return convertedProviderList;
     },
     async login(loginInfo: LoginInfo) {
+      if (loginInfo.authProvider == "BYTEBASE") {
+        await axios.post("/v1/auth/login", {
+          email: (loginInfo.payload as BytebaseLoginInfo).email,
+          password: (loginInfo.payload as BytebaseLoginInfo).password,
+          web: true,
+        });
+        const userId = getIntCookie("user");
+        if (userId) {
+          const loggedInUser = await usePrincipalStore().fetchPrincipalById(
+            userId
+          );
+
+          this.setCurrentUser(loggedInUser);
+          return loggedInUser;
+        }
+        return unknown("PRINCIPAL") as Principal;
+      }
+
       const loggedInUser = (
         await axios.post(`/api/auth/login/${loginInfo.authProvider}`, {
           data: { type: "loginInfo", attributes: loginInfo.payload },
         })
       ).data.data;
-
       // Refresh the corresponding principal
       await usePrincipalStore().fetchPrincipalById(loggedInUser.id);
-
       // The conversion relies on the above refresh.
       const convertedUser = convert(loggedInUser);
       this.setCurrentUser(convertedUser);
