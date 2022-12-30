@@ -20,7 +20,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Username: "",
 				Password: "",
 			},
-			want: "mongodb://localhost:27017",
+			want: "mongodb://localhost:27017/?authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
@@ -30,7 +30,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Password: "",
 				Database: "sampleDB",
 			},
-			want: "mongodb://localhost:27017/sampleDB",
+			want: "mongodb://localhost:27017/sampleDB?authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
@@ -40,7 +40,18 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Database: "sampleDB",
 				SRV:      true,
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB",
+			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?authSource=admin",
+		},
+		{
+			connConfig: db.ConnectionConfig{
+				Host:                   "cluster0.sample.mongodb.net",
+				Username:               "bytebase",
+				Password:               "passwd",
+				Database:               "sampleDB",
+				AuthenticationDatabase: "",
+				SRV:                    true,
+			},
+			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
