@@ -30,10 +30,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseId, UNKNOWN_ID, SchemaEditorTabType } from "@/types";
-import { TableTabContext } from "@/types/schemaEditor";
 import {
   useSchemaEditorStore,
   useNotificationStore,
@@ -61,7 +60,7 @@ const props = defineProps({
     type: String as PropType<string>,
     default: "",
   },
-  tableName: {
+  tableId: {
     type: String as PropType<string | undefined>,
     default: undefined,
   },
@@ -75,11 +74,26 @@ const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
-  tableName: props.tableName || "",
+  tableName: "",
 });
 
 const isCreatingTable = computed(() => {
-  return props.tableName === undefined;
+  return props.tableId === undefined;
+});
+
+onMounted(() => {
+  if (props.tableId === undefined) {
+    return;
+  }
+
+  const table = editorStore.getTable(
+    props.databaseId,
+    props.schemaName,
+    props.tableId
+  );
+  if (table) {
+    state.tableName = table.name;
+  }
 });
 
 const handleTableNameChange = (event: Event) => {
@@ -100,7 +114,7 @@ const handleConfirmButtonClick = async () => {
   const schema = editorStore.databaseSchemaById
     .get(databaseId)
     ?.schemaList.find((schema) => schema.name === props.schemaName) as Schema;
-  const tableNameList = schema.tableList.map((table) => table.newName);
+  const tableNameList = schema.tableList.map((table) => table.name);
   if (tableNameList.includes(state.tableName)) {
     notificationStore.pushNotification({
       module: "bytebase",
@@ -112,62 +126,36 @@ const handleConfirmButtonClick = async () => {
 
   if (isCreatingTable.value) {
     const table = convertTableMetadataToTable(TableMetadata.fromPartial({}));
-    table.oldName = state.tableName;
-    table.newName = state.tableName;
+    table.name = state.tableName;
     table.status = "created";
 
     const column = convertColumnMetadataToColumn(
       ColumnMetadata.fromPartial({})
     );
-    column.oldName = "id";
-    column.newName = "id";
+    column.name = "id";
     column.type = "int";
     column.comment = "ID";
     column.status = "created";
     table.columnList.push(column);
+    table.primaryKey.columnIdList.push(column.id);
 
     schema.tableList.push(table);
-    schema.primaryKeyList.push({
-      table: table.newName,
-      columnList: [],
-    });
     editorStore.addTab({
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForTable,
       databaseId: props.databaseId,
       schemaName: props.schemaName,
-      tableName: table.newName,
+      tableId: table.id,
     });
     dismissModal();
   } else {
     const table = editorStore.getTable(
       props.databaseId,
       props.schemaName,
-      props.tableName ?? ""
+      props.tableId ?? ""
     );
     if (table) {
-      table.newName = state.tableName;
-
-      // TODO(steven): use reactive Ref.
-      // Update reference objects.
-      const tab = editorStore.findTab(
-        databaseId,
-        props.tableName
-      ) as TableTabContext;
-      if (tab) {
-        tab.tableName = table.newName;
-      }
-      const primaryKey = schema.primaryKeyList.find(
-        (pk) => pk.table === props.tableName
-      );
-      if (primaryKey) {
-        primaryKey.table = table.newName;
-      }
-      for (const fk of schema.foreignKeyList) {
-        if (fk.table === props.tableName) {
-          fk.table = table.newName;
-        }
-      }
+      table.name = state.tableName;
     }
     dismissModal();
   }

@@ -298,7 +298,7 @@ const getDatabaseEditListWithSchemaEditor = () => {
       if (!originSchema) {
         continue;
       }
-      const diffSchemaResult = diffSchema(originSchema, schema);
+      const diffSchemaResult = diffSchema(database.id, originSchema, schema);
       if (
         diffSchemaResult.createTableList.length > 0 ||
         diffSchemaResult.alterTableList.length > 0 ||

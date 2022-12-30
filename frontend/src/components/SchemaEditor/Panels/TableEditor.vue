@@ -71,7 +71,7 @@
         <div class="w-full">
           <div
             v-for="(column, index) in table.columnList"
-            :key="`${index}-${column.oldName}`"
+            :key="`${index}-${column.id}`"
             class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
             :class="
               isDroppedColumn(column) &&
@@ -80,7 +80,7 @@
           >
             <div class="table-body-item-container">
               <input
-                v-model="column.newName"
+                v-model="column.name"
                 :disabled="disableAlterColumn(column)"
                 placeholder="column name"
                 class="column-field-input"
@@ -243,8 +243,8 @@
     v-if="state.showEditColumnForeignKeyModal && editForeignKeyColumn"
     :database-id="currentTab.databaseId"
     :schema-name="schema.name"
-    :table-name="table.newName"
-    :column="editForeignKeyColumn"
+    :table-id="table.id"
+    :column-id="editForeignKeyColumn.id"
     @close="state.showEditColumnForeignKeyModal = false"
   />
 </template>
@@ -300,15 +300,9 @@ const schema = computed(() => {
     (schema) => schema.name === currentTab.schemaName
   ) as Schema;
 });
-const primaryKeyColumnList = computed(() => {
-  return (
-    schema.value.primaryKeyList.find((pk) => pk.table === currentTab.tableName)
-      ?.columnList || []
-  );
-});
 const foreignKeyList = computed(() => {
   return schema.value.foreignKeyList.filter(
-    (pk) => pk.table === currentTab.tableName
+    (pk) => pk.tableId === currentTab.tableId
   ) as ForeignKey[];
 });
 
@@ -327,7 +321,7 @@ const allowResetTable = computed(() => {
     isTableChanged(
       currentTab.databaseId,
       currentTab.schemaName,
-      currentTab.tableName
+      currentTab.tableId
     ) || isDroppedTable.value
   );
 });
@@ -397,20 +391,24 @@ watch(
         currentTab.databaseId,
         currentTab.schemaName
       ) as Schema;
-      const diffSchemaResult = diffSchema(originSchema, schema.value);
+      const diffSchemaResult = diffSchema(
+        currentTab.databaseId,
+        originSchema,
+        schema.value
+      );
       const databaseEdit: DatabaseEdit = {
         databaseId: currentTab.databaseId,
         createTableList: diffSchemaResult.createTableList.filter(
-          (context) => context.name === table.value.newName
+          (context) => context.name === table.value.name
         ),
         alterTableList: diffSchemaResult.alterTableList.filter(
-          (context) => context.name === table.value.newName
+          (context) => context.name === table.value.name
         ),
         renameTableList: diffSchemaResult.renameTableList.filter(
-          (context) => context.newName === table.value.newName
+          (context) => context.newName === table.value.name
         ),
         dropTableList: diffSchemaResult.dropTableList.filter(
-          (context) => context.name === table.value.oldName
+          (context) => context.name === table.value.name
         ),
       };
       state.isFetchingDDL = true;
@@ -436,20 +434,14 @@ watch(
 );
 
 const isColumnPrimaryKey = (column: Column): boolean => {
-  for (const columnRef of primaryKeyColumnList.value) {
-    if (columnRef.value === column) {
-      return true;
-    }
-  }
-  return false;
+  return table.value.primaryKey.columnIdList.includes(column.id);
 };
 
 const checkColumnHasForeignKey = (column: Column): boolean => {
-  const columnRefList = flatten(
-    foreignKeyList.value.map((fk) => fk.columnList)
+  const columnIdList = flatten(
+    foreignKeyList.value.map((fk) => fk.columnIdList)
   );
-  const find = columnRefList.find((columnRef) => columnRef.value === column);
-  return find !== undefined;
+  return columnIdList.includes(column.id);
 };
 
 const getReferencedForeignKeyName = (column: Column) => {
@@ -458,21 +450,30 @@ const getReferencedForeignKeyName = (column: Column) => {
   }
   const fk = foreignKeyList.value.find(
     (fk) =>
-      fk.columnList.find((columnRef) => columnRef.value === column) !==
-      undefined
+      fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
   );
-  const index = fk?.columnList.findIndex(
-    (columnRef) => columnRef.value === column
+  const index = fk?.columnIdList.findIndex(
+    (columnId) => columnId === column.id
   );
 
   if (isUndefined(fk) || isUndefined(index) || index < 0) {
     return;
   }
-  const referColumnName = fk.referencedColumns[index];
+  const referencedTable = editorStore.getTable(
+    currentTab.databaseId,
+    fk.referencedSchema,
+    fk.referencedTableId
+  );
+  if (!referencedTable) {
+    return;
+  }
+  const referColumn = referencedTable.columnList.find(
+    (column) => column.id === fk.referencedColumnIdList[index]
+  );
   if (databaseEngine.value === "MYSQL") {
-    return `${fk.referencedTable}(${referColumnName})`;
+    return `${referencedTable.name}(${referColumn?.name})`;
   } else {
-    return `${fk.referencedSchema}.${fk.referencedTable}(${referColumnName})`;
+    return `${fk.referencedSchema}.${referencedTable.name}(${referColumn?.name})`;
   }
 };
 
@@ -487,16 +488,12 @@ const disableAlterColumn = (column: Column): boolean => {
 const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
   if (isPrimaryKey) {
     column.nullable = false;
-    primaryKeyColumnList.value.push(ref(column));
+    table.value.primaryKey.columnIdList.push(column.id);
   } else {
-    const primaryKey = schema.value.primaryKeyList.find(
-      (pk) => pk.table === currentTab.tableName
-    );
-    if (primaryKey) {
-      primaryKey.columnList = primaryKey.columnList.filter(
-        (columnRef) => columnRef.value !== column
+    table.value.primaryKey.columnIdList =
+      table.value.primaryKey.columnIdList.filter(
+        (columnId) => columnId !== column.id
       );
-    }
   }
 };
 
@@ -531,24 +528,21 @@ const handleDropColumn = (column: Column) => {
     table.value.columnList = table.value.columnList.filter(
       (item) => item !== column
     );
-    const primaryKey = schema.value.primaryKeyList.find(
-      (pk) => pk.table === currentTab.tableName
-    );
-    if (primaryKey) {
-      primaryKey.columnList = primaryKey.columnList.filter(
-        (item) => item.value !== column
+    table.value.primaryKey.columnIdList =
+      table.value.primaryKey.columnIdList.filter(
+        (columnId) => columnId !== column.id
       );
-    }
+
     const foreignKeyList = schema.value.foreignKeyList.filter(
-      (fk) => fk.table === currentTab.tableName
+      (fk) => fk.tableId === currentTab.tableId
     );
     for (const foreignKey of foreignKeyList) {
-      const columnRefIndex = foreignKey.columnList.findIndex(
-        (columnRef) => columnRef.value === column
+      const columnRefIndex = foreignKey.columnIdList.findIndex(
+        (columnId) => columnId === column.id
       );
       if (columnRefIndex > -1) {
-        foreignKey.columnList.splice(columnRefIndex, 1);
-        foreignKey.referencedColumns.splice(columnRefIndex, 1);
+        foreignKey.columnIdList.splice(columnRefIndex, 1);
+        foreignKey.referencedColumnIdList.splice(columnRefIndex, 1);
       }
     }
   } else {
@@ -576,58 +570,27 @@ const handleDiscardChanges = () => {
   const originTable = editorStore.getOriginTable(
     currentTab.databaseId,
     currentTab.schemaName,
-    table.value.oldName
+    table.value.id
   );
 
-  const previousName = table.value.newName;
-  table.value.newName = table.value.oldName;
-  table.value.columnList = cloneDeep(originTable?.columnList ?? []);
-  table.value.status = "normal";
-
-  // TODO(steven): use reactive Ref.
-  // Update reference objects.
-  currentTab.tableName = table.value.oldName;
-  const primaryKey = schema.value.primaryKeyList.find(
-    (pk) => pk.table === previousName
-  );
-  if (primaryKey) {
-    const originPrimaryKeyColumnNameList = (
-      originSchema?.primaryKeyList.find(
-        (pk) => pk.table === table.value.oldName
-      )?.columnList || []
-    ).map((columnRef) => columnRef.value.oldName);
-    primaryKey.table = table.value.oldName;
-    primaryKey.columnList = [];
-    for (const column of table.value.columnList) {
-      if (originPrimaryKeyColumnNameList.includes(column.oldName)) {
-        primaryKey.columnList.push(ref(column));
-      }
-    }
+  if (!originTable) {
+    return;
   }
 
+  table.value.name = originTable.name;
+  table.value.columnList = cloneDeep(originTable.columnList);
+  table.value.primaryKey = cloneDeep(originTable.primaryKey);
+  table.value.status = "normal";
+
   schema.value.foreignKeyList = schema.value.foreignKeyList.filter(
-    (fk) => fk.table !== table.value.oldName
+    (fk) => fk.tableId !== table.value.id
   );
   const originForeignKeyList =
     originSchema?.foreignKeyList.filter(
-      (fk) => fk.table === table.value.oldName
+      (fk) => fk.tableId === table.value.id
     ) || [];
   for (const originForeignKey of originForeignKeyList) {
-    const tempForeignKey: ForeignKey = {
-      ...cloneDeep(originForeignKey),
-      columnList: [],
-    };
-    const originColumnNameList = originForeignKey.columnList.map(
-      (columnRef) => columnRef.value.oldName
-    );
-    for (const column of table.value.columnList) {
-      if (originColumnNameList.includes(column.oldName)) {
-        tempForeignKey.columnList.push(ref(column));
-      }
-    }
-    if (tempForeignKey.columnList.length > 0) {
-      schema.value.foreignKeyList.push(tempForeignKey);
-    }
+    schema.value.foreignKeyList.push(cloneDeep(originForeignKey));
   }
 };
 </script>

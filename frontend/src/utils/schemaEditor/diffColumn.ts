@@ -30,7 +30,7 @@ export const diffColumnList = (
   );
   for (const column of changedColumnList) {
     const originColumn = originColumnList.find(
-      (originColumn) => originColumn.oldName === column.oldName
+      (originColumn) => originColumn.id === column.id
     );
     if (isUndefined(originColumn)) {
       continue;
@@ -47,9 +47,12 @@ export const diffColumnList = (
     (column) => column.status === "dropped"
   );
   for (const column of droppedColumnList) {
-    dropColumnContextList.push({
-      name: column.oldName,
-    });
+    const originColumn = originColumnList.find((item) => item.id === column.id);
+    if (originColumn) {
+      dropColumnContextList.push({
+        name: originColumn.name,
+      });
+    }
   }
 
   return {
