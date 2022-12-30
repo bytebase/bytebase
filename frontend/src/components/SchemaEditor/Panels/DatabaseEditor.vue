@@ -64,7 +64,7 @@
         <div class="w-full">
           <div
             v-for="(table, index) in tableList"
-            :key="`${index}-${table.newName}`"
+            :key="`${index}-${table.name}`"
             class="grid grid-cols-[repeat(6,_minmax(0,_1fr))_32px] text-sm even:bg-gray-50"
             :class="
               isDroppedTable(table) && 'text-red-700 !bg-red-50 opacity-70'
@@ -75,7 +75,7 @@
                 class="w-full cursor-pointer leading-6 my-2 hover:text-accent"
               >
                 <span @click="handleTableItemClick(table)">
-                  {{ table.newName }}
+                  {{ table.name }}
                 </span>
               </NEllipsis>
             </div>
@@ -261,7 +261,7 @@ watch(
         if (!originSchema) {
           continue;
         }
-        const diffSchemaResult = diffSchema(originSchema, schema);
+        const diffSchemaResult = diffSchema(database.id, originSchema, schema);
         if (
           diffSchemaResult.createTableList.length > 0 ||
           diffSchemaResult.alterTableList.length > 0 ||
@@ -324,7 +324,7 @@ const handleTableItemClick = (table: Table) => {
     type: SchemaEditorTabType.TabForTable,
     databaseId: database.id,
     schemaName: state.selectedSchema,
-    tableName: table.newName,
+    tableId: table.id,
   });
 };
 

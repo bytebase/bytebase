@@ -19,7 +19,7 @@ export interface TableTabContext {
   type: SchemaEditorTabType.TabForTable;
   databaseId: DatabaseId;
   schemaName: string;
-  tableName: string;
+  tableId: string;
 }
 
 export type TabContext = DatabaseTabContext | TableTabContext;
@@ -71,6 +71,7 @@ export interface AlterTableContext {
   changeColumnList: ChangeColumnContext[];
   dropColumnList: DropColumnContext[];
   dropPrimaryKey: boolean;
+  dropPrimaryKeyList: string[];
   primaryKeyList?: string[];
   dropForeignKeyList: string[];
   addForeignKeyList: AddForeignKeyContext[];
@@ -112,6 +113,7 @@ export interface DropColumnContext {
 
 export interface AddForeignKeyContext {
   columnList: string[];
+  referencedSchema: string;
   referencedTable: string;
   referencedColumnList: string[];
 }

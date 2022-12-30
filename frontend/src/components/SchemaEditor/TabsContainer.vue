@@ -89,7 +89,7 @@ const getTabComputedClassList = (tab: TabContext) => {
       return ["text-green-700"];
     }
 
-    if (isTableChanged(tab.databaseId, tab.schemaName, tab.tableName)) {
+    if (isTableChanged(tab.databaseId, tab.schemaName, tab.tableId)) {
       return ["text-yellow-700"];
     }
   }
@@ -104,7 +104,12 @@ const getTabName = (tab: TabContext) => {
     );
     return `${database?.name || "unknown database"}`;
   } else if (tab.type === SchemaEditorTabType.TabForTable) {
-    return `${tab.tableName}`;
+    const table = editorStore.getTable(
+      tab.databaseId,
+      tab.schemaName,
+      tab.tableId
+    );
+    return `${table?.name || ""}`;
   } else {
     // Should never reach here.
     return "unknown structure";

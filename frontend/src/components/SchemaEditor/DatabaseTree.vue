@@ -42,7 +42,7 @@
     v-if="state.tableNameModalContext !== undefined"
     :database-id="state.tableNameModalContext.databaseId"
     :schema-name="state.tableNameModalContext.schemaName"
-    :table-name="state.tableNameModalContext.tableName"
+    :table-id="state.tableNameModalContext.tableId"
     @close="state.tableNameModalContext = undefined"
   />
 </template>
@@ -63,8 +63,9 @@ import {
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import TableNameModal from "./Modals/TableNameModal.vue";
-import DatabaseIcon from "~icons/heroicons-outline/database";
-import TableIcon from "~icons/heroicons-outline/table";
+import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
+import SchemaIcon from "~icons/heroicons-outline/view-columns";
+import TableIcon from "~icons/heroicons-outline/table-cells";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { isTableChanged } from "./utils/table";
 
@@ -98,7 +99,7 @@ interface TreeNodeForTable extends BaseTreeNode {
   instanceId: InstanceId;
   databaseId: DatabaseId;
   schemaName: string;
-  tableName: string;
+  tableId: string;
 }
 
 type TreeNode =
@@ -119,7 +120,7 @@ interface LocalState {
   tableNameModalContext?: {
     databaseId: DatabaseId;
     schemaName: string;
-    tableName: string | undefined;
+    tableId: string | undefined;
   };
 }
 
@@ -181,7 +182,7 @@ const contextMenuOptions = computed(() => {
   } else if (treeNode.type === "table") {
     const table = schemaList.value
       .find((schema) => schema.name === treeNode.schemaName)
-      ?.tableList.find((table) => table.newName === treeNode.tableName);
+      ?.tableList.find((table) => table.id === treeNode.tableId);
     if (!table) {
       return [];
     }
@@ -302,14 +303,14 @@ watch(
           databaseTreeNode.children = tableList.map((table) => {
             return {
               type: "table",
-              key: `t-${database.id}-${table.newName}`,
-              label: table.newName,
+              key: `t-${database.id}-${table.id}`,
+              label: table.name,
               children: [],
               isLeaf: true,
               instanceId: database.instance.id,
               databaseId: database.id,
               schemaName: "",
-              tableName: table.newName,
+              tableId: table.id,
             };
           });
         }
@@ -336,14 +337,14 @@ watch(
             schemaTreeNode.children = schema.tableList.map((table) => {
               return {
                 type: "table",
-                key: `t-${database.id}-${table.newName}`,
-                label: table.newName,
+                key: `t-${database.id}-${table.id}`,
+                label: table.name,
                 children: [],
                 isLeaf: true,
                 instanceId: database.instance.id,
                 databaseId: database.id,
-                schemaName: "",
-                tableName: table.newName,
+                schemaName: schema.name,
+                tableId: table.id,
               };
             });
           }
@@ -382,7 +383,7 @@ watch(
       if (!expandedKeysRef.value.includes(databaseTreeNodeKey)) {
         expandedKeysRef.value.push(databaseTreeNodeKey);
       }
-      const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableName}`;
+      const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableId}`;
       selectedKeysRef.value = [tableTreeNodeKey];
     }
 
@@ -433,6 +434,10 @@ const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
     return h(DatabaseIcon, {
       class: "w-4 h-auto text-gray-400",
     });
+  } else if (treeNode.type === "schema") {
+    return h(SchemaIcon, {
+      class: "w-4 h-auto text-gray-400",
+    });
   } else if (treeNode.type === "table") {
     return h(TableIcon, {
       class: "w-4 h-auto text-gray-400",
@@ -449,23 +454,23 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
     const table = editorStore.databaseSchemaById
       .get(treeNode.databaseId)
       ?.schemaList.find((schema) => schema.name === treeNode.schemaName)
-      ?.tableList.find(
-        (table) => table.newName === treeNode.tableName
-      ) as Table;
+      ?.tableList.find((table) => table.id === treeNode.tableId);
 
-    if (table.status === "created") {
-      additionalClassList.push("text-green-700");
-    } else if (table.status === "dropped") {
-      additionalClassList.push("text-red-700 line-through");
-    } else {
-      if (
-        isTableChanged(
-          treeNode.databaseId,
-          treeNode.schemaName,
-          treeNode.tableName
-        )
-      ) {
-        additionalClassList.push("text-yellow-700");
+    if (table) {
+      if (table.status === "created") {
+        additionalClassList.push("text-green-700");
+      } else if (table.status === "dropped") {
+        additionalClassList.push("text-red-700 line-through");
+      } else {
+        if (
+          isTableChanged(
+            treeNode.databaseId,
+            treeNode.schemaName,
+            treeNode.tableId
+          )
+        ) {
+          additionalClassList.push("text-yellow-700");
+        }
       }
     }
   }
@@ -577,7 +582,7 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
             type: SchemaEditorTabType.TabForTable,
             databaseId: treeNode.databaseId,
             schemaName: treeNode.schemaName,
-            tableName: treeNode.tableName,
+            tableId: treeNode.tableId,
           });
         }
 
@@ -586,7 +591,7 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
             selectedKeysRef.value = [`d-${treeNode.databaseId}`];
           } else if (treeNode.type === "table") {
             selectedKeysRef.value = [
-              `t-${treeNode.databaseId}-${treeNode.tableId}-${treeNode.label}`,
+              `t-${treeNode.databaseId}-${treeNode.tableId}`,
             ];
           }
           state.shouldRelocateTreeNode = true;
@@ -625,7 +630,7 @@ const handleContextMenuDropdownSelect = async (key: string) => {
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
         schemaName: "",
-        tableName: undefined,
+        tableId: undefined,
       };
     }
   } else if (treeNode?.type === "schema") {
@@ -634,22 +639,20 @@ const handleContextMenuDropdownSelect = async (key: string) => {
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
         schemaName: treeNode.schemaName,
-        tableName: undefined,
+        tableId: undefined,
       };
     }
   } else if (treeNode?.type === "table") {
     const table = editorStore.databaseSchemaById
       .get(treeNode.databaseId)
       ?.schemaList.find((schema) => schema.name === treeNode.schemaName)
-      ?.tableList.find(
-        (table) => table.newName === treeNode.tableName
-      ) as Table;
+      ?.tableList.find((table) => table.id === treeNode.tableId) as Table;
 
     if (key === "rename") {
       state.tableNameModalContext = {
         databaseId: treeNode.databaseId,
         schemaName: treeNode.schemaName,
-        tableName: table.newName,
+        tableId: table.id,
       };
     } else if (key === "drop") {
       editorStore.dropTable(treeNode.databaseId, treeNode.schemaName, table);
