@@ -5,7 +5,8 @@ import { computed, Ref } from "vue";
 import {
   Principal,
   AuthState,
-  LoginInfo,
+  AuthProviderType,
+  VCSLoginInfo,
   SignupInfo,
   ActivateInfo,
   ResourceObject,
@@ -50,28 +51,30 @@ export const useAuthStore = defineStore("auth", {
       this.setAuthProviderList(convertedProviderList);
       return convertedProviderList;
     },
-    async login(loginInfo: LoginInfo) {
-      if (loginInfo.authProvider == "BYTEBASE") {
-        await axios.post("/v1/auth/login", {
-          email: (loginInfo.payload as BytebaseLoginInfo).email,
-          password: (loginInfo.payload as BytebaseLoginInfo).password,
-          web: true,
-        });
-        const userId = getIntCookie("user");
-        if (userId) {
-          const loggedInUser = await usePrincipalStore().fetchPrincipalById(
-            userId
-          );
+    async login(loginInfo: BytebaseLoginInfo) {
+      await axios.post("/v1/auth/login", {
+        email: loginInfo.email,
+        password: loginInfo.password,
+        web: true,
+      });
+      const userId = getIntCookie("user");
+      if (userId) {
+        const loggedInUser = await usePrincipalStore().fetchPrincipalById(
+          userId
+        );
 
-          this.setCurrentUser(loggedInUser);
-          return loggedInUser;
-        }
-        return unknown("PRINCIPAL") as Principal;
+        this.setCurrentUser(loggedInUser);
+        return loggedInUser;
       }
-
+      return unknown("PRINCIPAL") as Principal;
+    },
+    async vcsLogin(
+      authProviderType: AuthProviderType,
+      loginInfo: VCSLoginInfo
+    ) {
       const loggedInUser = (
-        await axios.post(`/api/auth/login/${loginInfo.authProvider}`, {
-          data: { type: "loginInfo", attributes: loginInfo.payload },
+        await axios.post(`/api/auth/login/${authProviderType}`, {
+          data: { type: "loginInfo", attributes: loginInfo },
         })
       ).data.data;
       // Refresh the corresponding principal

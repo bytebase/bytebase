@@ -5,11 +5,6 @@ import { VCSId } from "./id";
 // For now, a single user's auth provider should either belong to GITLAB_SELF_HOST, GITHUB_COM or BYTEBASE
 export type AuthProviderType = "GITLAB_SELF_HOST" | "GITHUB_COM" | "BYTEBASE";
 
-export type LoginInfo = {
-  authProvider: AuthProviderType;
-  payload: VCSLoginInfo | BytebaseLoginInfo;
-};
-
 export type SignupInfo = {
   email: string;
   password: string;
