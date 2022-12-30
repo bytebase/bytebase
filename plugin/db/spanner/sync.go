@@ -27,16 +27,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 			return nil, err
 		}
 
-		match := dsnRegExp.FindStringSubmatch(database.Name)
-		matches := make(map[string]string)
-		for i, name := range dsnRegExp.SubexpNames() {
-			if i != 0 && name != "" {
-				matches[name] = match[i]
-			}
-		}
-		databaseName := matches["DATABASEGROUP"]
+		// database.Name is of the form `projects/<project>/instances/<instance>/databases/<database>`
+		// We use regular expression to extract <database> from it.
+		databaseName := getDatabaseFromDSN(database.Name)
 		if databaseName == "" {
-			return nil, errors.Errorf("failed to parse database name from %s", database.Name)
+			return nil, errors.Errorf("failed to get database name from %s", database.Name)
 		}
 		if excludedDatabaseList[databaseName] {
 			continue

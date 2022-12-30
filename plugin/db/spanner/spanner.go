@@ -146,6 +146,12 @@ func getDSN(host, database string) string {
 	return fmt.Sprintf("%s/databases/%s", host, database)
 }
 
+// get `<database>` from `projects/<project>/instances/<instance>/databases/<database>`.
+func getDatabaseFromDSN(dsn string) string {
+	match := dsnRegExp.FindStringSubmatch(dsn)
+	return match[3]
+}
+
 func splitStatement(statement string) []string {
 	var res []string
 	for _, s := range strings.Split(statement, ";") {
