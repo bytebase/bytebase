@@ -745,7 +745,7 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 // InstanceMessage is the mssage for instance.
 type InstanceMessage struct {
 	EnvironmentID string
-	InstanceID    string
+	ResourceID    string
 	Title         string
 	Engine        db.Type
 	ExternalLink  string
@@ -774,28 +774,36 @@ type FindInstanceMessage struct {
 
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
+	if find.EnvironmentID == nil || find.ResourceID == nil || find.ShowDeleted {
+		return nil, errors.Errorf("environment and resource ID must exist and showDelete must be false for getting an instance")
+	}
+	if instance, ok := s.instanceCache[getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)]; ok {
+		return instance, nil
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	instanceMessages, err := s.listInstanceImplV2(ctx, tx, find)
+	instances, err := s.listInstanceImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
-	if len(instanceMessages) == 0 {
+	if len(instances) == 0 {
 		return nil, nil
 	}
-	if len(instanceMessages) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(instanceMessages), find)}
+	if len(instances) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(instances), find)}
 	}
+	instance := instances[0]
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return instanceMessages[0], nil
+	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	return instance, nil
 }
 
 // ListInstancesV2 lists all instance.
@@ -806,7 +814,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	}
 	defer tx.Rollback()
 
-	instanceMessages, err := s.listInstanceImplV2(ctx, tx, find)
+	instances, err := s.listInstanceImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -815,7 +823,10 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 		return nil, FormatError(err)
 	}
 
-	return instanceMessages, nil
+	for _, instance := range instances {
+		s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	}
+	return instances, nil
 }
 
 // CreateInstanceV2 creates the instance.
@@ -826,11 +837,10 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	}
 	defer tx.Rollback()
 
-	environmentMessage, err := getEnvironmentImplV2(ctx, tx, environmentID)
+	environment, err := s.getEnvironmentImplV2(ctx, tx, environmentID)
 	if err != nil {
 		return nil, err
 	}
-
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO instance (
@@ -845,10 +855,10 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			RETURNING id
 		`,
-		instanceCreate.InstanceID,
+		instanceCreate.ResourceID,
 		creatorID,
 		creatorID,
-		environmentMessage.InternalID,
+		environment.UID,
 		instanceCreate.Title,
 		instanceCreate.Engine,
 		instanceCreate.ExternalLink,
@@ -860,7 +870,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		CreatorID:     creatorID,
 		ProjectID:     api.DefaultProjectID,
 		InstanceID:    instanceID,
-		EnvironmentID: environmentMessage.InternalID,
+		EnvironmentID: environment.UID,
 		Name:          api.AllDatabaseName,
 		CharacterSet:  api.DefaultCharacterSetName,
 		Collation:     api.DefaultCollationName,
@@ -895,14 +905,16 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		return nil, FormatError(err)
 	}
 
-	return &InstanceMessage{
+	instance := &InstanceMessage{
 		EnvironmentID: environmentID,
-		InstanceID:    instanceCreate.InstanceID,
+		ResourceID:    instanceCreate.ResourceID,
 		Title:         instanceCreate.Title,
 		Engine:        instanceCreate.Engine,
 		ExternalLink:  instanceCreate.ExternalLink,
 		DataSources:   instanceCreate.DataSources,
-	}, nil
+	}
+	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	return instance, nil
 }
 
 // UpdateInstanceV2 updates an instance.
@@ -924,14 +936,14 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	defer tx.Rollback()
 
-	environmentMessage, err := getEnvironmentImplV2(ctx, tx, patch.EnvironmentID)
+	environment, err := s.getEnvironmentImplV2(ctx, tx, patch.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
 
-	args = append(args, patch.ResourceID, environmentMessage.InternalID)
+	args = append(args, patch.ResourceID, environment.UID)
 
-	instanceMessage := InstanceMessage{
+	instance := &InstanceMessage{
 		EnvironmentID: patch.EnvironmentID,
 	}
 	var rowStatus string
@@ -951,10 +963,10 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		args...,
 	).Scan(
 		&instanceID,
-		&instanceMessage.InstanceID,
-		&instanceMessage.Title,
-		&instanceMessage.Engine,
-		&instanceMessage.ExternalLink,
+		&instance.ResourceID,
+		&instance.Title,
+		&instance.Engine,
+		&instance.ExternalLink,
 		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -1007,20 +1019,19 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			}
 		}
 	}
-
-	instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-
+	instance.Deleted = convertRowStatusToDeleted(rowStatus)
 	dataSourceList, err := s.listDataSourceV2(ctx, tx, patch.ResourceID)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	instanceMessage.DataSources = dataSourceList
+	instance.DataSources = dataSourceList
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &instanceMessage, nil
+	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	return instance, nil
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
@@ -1058,7 +1069,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		var rowStatus string
 		if err := rows.Scan(
 			&instanceMessage.EnvironmentID,
-			&instanceMessage.InstanceID,
+			&instanceMessage.ResourceID,
 			&instanceMessage.Title,
 			&instanceMessage.Engine,
 			&instanceMessage.ExternalLink,
@@ -1071,7 +1082,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	for _, instanceMessage := range instanceMessages {
-		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceMessage.InstanceID)
+		dataSourceList, err := s.listDataSourceV2(ctx, tx, instanceMessage.ResourceID)
 		if err != nil {
 			return nil, FormatError(err)
 		}
