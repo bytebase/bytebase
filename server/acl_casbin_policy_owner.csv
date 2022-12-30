@@ -73,6 +73,7 @@ p, OWNER, /database/{databaseID}/data-source/{dataSourceID}, GET
 p, OWNER, /database/{databaseID}/data-source/{dataSourceID}, PATCH
 p, OWNER, /database/{databaseID}/data-source/{dataSourceID}, DELETE
 p, OWNER, /issue, POST
+p, OWNER, /issues, POST
 p, OWNER, /issue, GET
 p, OWNER, /issue/{issueID}, GET
 p, OWNER, /issue/{issueID}, PATCH
