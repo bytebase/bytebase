@@ -10,7 +10,7 @@ export const transformColumnToAddColumnContext = (
   column: Column
 ): AddColumnContext => {
   return {
-    name: defaultTo(column.newName, ""),
+    name: defaultTo(column.name, ""),
     type: defaultTo(column.type, ""),
     comment: defaultTo(column.comment, ""),
     nullable: defaultTo(column.nullable, false),
@@ -25,8 +25,8 @@ export const transformColumnToChangeColumnContext = (
   column: Column
 ): ChangeColumnContext => {
   return {
-    oldName: defaultTo(originColumn.oldName, ""),
-    newName: defaultTo(column.newName, ""),
+    oldName: defaultTo(originColumn.name, ""),
+    newName: defaultTo(column.name, ""),
     type: defaultTo(column.type, ""),
     comment: defaultTo(column.comment, ""),
     nullable: defaultTo(column.nullable, false),
@@ -40,7 +40,7 @@ export const transformTableToCreateTableContext = (
   table: Table
 ): CreateTableContext => {
   return {
-    name: defaultTo(table.newName, ""),
+    name: defaultTo(table.name, ""),
     engine: defaultTo(table.engine, ""),
     collation: defaultTo(table.collation, ""),
     comment: defaultTo(table.comment, ""),
