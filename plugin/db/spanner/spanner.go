@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -13,6 +12,8 @@ import (
 	spanner "cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
 	"go.uber.org/zap"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -33,7 +34,7 @@ var (
 
 	createBytebaseDatabaseStatement = `CREATE DATABASE bytebase`
 
-	dsnRegExp = regexp.MustCompile("projects/(?P<PROJECTGROUP>([a-z]|[-.:]|[0-9])+)(/instances/(?P<INSTANCEGROUP>([a-z]|[-]|[0-9])+)(/databases/(?P<DATABASEGROUP>([a-z]|[-]|[_]|[0-9])+))?)?")
+	dsnRegExp = regexp.MustCompile("projects/(?P<PROJECTGROUP>([a-z]|[-.:]|[0-9])+)/instances/(?P<INSTANCEGROUP>([a-z]|[-]|[0-9])+)/databases/(?P<DATABASEGROUP>([a-z]|[-]|[_]|[0-9])+)")
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -147,9 +148,18 @@ func getDSN(host, database string) string {
 }
 
 // get `<database>` from `projects/<project>/instances/<instance>/databases/<database>`.
-func getDatabaseFromDSN(dsn string) string {
+func getDatabaseFromDSN(dsn string) (string, error) {
 	match := dsnRegExp.FindStringSubmatch(dsn)
-	return match[3]
+	if match == nil {
+		return "", errors.New("invalid DSN")
+	}
+	matches := make(map[string]string)
+	for i, name := range dsnRegExp.SubexpNames() {
+		if i != 0 && name != "" {
+			matches[name] = match[i]
+		}
+	}
+	return matches["DATABASEGROUP"], nil
 }
 
 func splitStatement(statement string) []string {

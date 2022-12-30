@@ -29,9 +29,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 
 		// database.Name is of the form `projects/<project>/instances/<instance>/databases/<database>`
 		// We use regular expression to extract <database> from it.
-		databaseName := getDatabaseFromDSN(database.Name)
-		if databaseName == "" {
-			return nil, errors.Errorf("failed to get database name from %s", database.Name)
+		databaseName, err := getDatabaseFromDSN(database.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database name from %s", database.Name)
 		}
 		if excludedDatabaseList[databaseName] {
 			continue
