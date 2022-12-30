@@ -69,6 +69,7 @@ p, DBA, /database/{databaseID}/data-source/{dataSourceID}, GET
 p, DBA, /database/{databaseID}/data-source/{dataSourceID}, PATCH
 p, DBA, /database/{databaseID}/data-source/{dataSourceID}, DELETE
 p, DBA, /issue, POST
+p, DBA, /issues, POST
 p, DBA, /issue, GET
 p, DBA, /issue/{issueID}, GET
 p, DBA, /issue/{issueID}, PATCH
