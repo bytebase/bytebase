@@ -94,7 +94,7 @@
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
                 ? $t('instance.your-snowflake-account-name')
-                : state.instance.engine == 'SPANNER'
+                : state.instance.engine === 'SPANNER'
                 ? 'projects/<projectID>/instances/<instanceID>'
                 : $t('instance.sentence.host.snowflake')
             "
@@ -111,7 +111,7 @@
           </div>
         </div>
 
-        <template v-if="state.instance.engine != 'SPANNER'">
+        <template v-if="state.instance.engine !== 'SPANNER'">
           <div class="sm:col-span-1">
             <label for="port" class="textlabel block">{{
               $t("instance.port")
@@ -156,7 +156,7 @@
           :dataSourceType="'ADMIN'"
         />
 
-        <template v-if="state.instance.engine != 'SPANNER'">
+        <template v-if="state.instance.engine !== 'SPANNER'">
           <div class="sm:col-span-1 sm:col-start-1">
             <label for="username" class="textlabel block">{{
               $t("common.username")
@@ -170,7 +170,7 @@
               type="text"
               class="textfield mt-1 w-full"
               :placeholder="
-                state.instance.engine == 'CLICKHOUSE'
+                state.instance.engine === 'CLICKHOUSE'
                   ? $t('common.default')
                   : ''
               "
@@ -198,7 +198,7 @@
             class="textfield mt-1 w-full"
             autocomplete="off"
             :placeholder="
-              state.instance.engine == 'SPANNER'
+              state.instance.engine === 'SPANNER'
                 ? $t('instance.credentials-write-only')
                 : $t('instance.password-write-only')
             "
@@ -445,7 +445,7 @@ const showSSL = computed((): boolean => {
 
 const showDatabase = computed((): boolean => {
   return (
-    state.instance.engine === "POSTGRES" || state.instance.engine == "SPANNER"
+    state.instance.engine === "POSTGRES" || state.instance.engine === "SPANNER"
   );
 });
 
@@ -491,7 +491,7 @@ watch(showSSL, (ssl) => {
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: EngineType) => {
-  if (engine == "SNOWFLAKE" || engine == "SPANNER") {
+  if (engine === "SNOWFLAKE" || engine === "SPANNER") {
     if (
       state.instance.host == "127.0.0.1" ||
       state.instance.host == "host.docker.internal"

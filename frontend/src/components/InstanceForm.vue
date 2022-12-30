@@ -51,7 +51,7 @@
               {{ $t("instance.account-name") }}
               <span class="text-red-600 mr-2">*</span>
             </template>
-            <template v-else-if="state.instance.engine == 'SPANNER'">
+            <template v-else-if="state.instance.engine === 'SPANNER'">
               {{ $t("instance.project-id-and-instance-id") }}
               <span style="color: red">*</span>
               <p class="text-sm text-gray-500 mt-1 mb-2">
@@ -73,7 +73,7 @@
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
                 ? $t('instance.your-snowflake-account-name')
-                : state.instance.engine == 'SPANNER'
+                : state.instance.engine === 'SPANNER'
                 ? 'projects/<projectID>/instances/<instanceID>'
                 : $t('instance.sentence.host.snowflake')
             "
@@ -89,7 +89,7 @@
             {{ $t("instance.sentence.proxy.snowflake") }}
           </div>
         </div>
-        <template v-if="state.instance.engine != 'SPANNER'">
+        <template v-if="state.instance.engine !== 'SPANNER'">
           <div class="sm:col-span-1">
             <label for="port" class="textlabel block">{{
               $t("instance.port")
@@ -211,7 +211,7 @@
           :dataSourceType="state.currentDataSourceType"
         />
 
-        <template v-if="state.instance.engine != 'SPANNER'">
+        <template v-if="state.instance.engine !== 'SPANNER'">
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
             <label for="username" class="textlabel block">
               {{ $t("common.username") }}
@@ -238,7 +238,7 @@
         <div class="mt-2 sm:col-span-1 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
-              <template v-if="state.instance.engine == 'SPANNER'">
+              <template v-if="state.instance.engine === 'SPANNER'">
                 {{ $t("common.credentials") }}
               </template>
               <template v-else>
@@ -261,7 +261,7 @@
             :placeholder="
               currentDataSource.useEmptyPassword
                 ? $t('instance.no-password')
-                : state.instance.engine == 'SPANNER'
+                : state.instance.engine === 'SPANNER'
                 ? $t('instance.credentials-write-only')
                 : $t('instance.password-write-only')
             "
