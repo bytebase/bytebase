@@ -16,13 +16,13 @@ func GatewayResponseModifier(ctx context.Context, response http.ResponseWriter, 
 	if !ok {
 		return errors.Errorf("failed to get ServerMetadata from context in the gateway response modifier")
 	}
-	processMetadata(md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, response)
-	processMetadata(md, GatewayMetadataRefreshTokenKey, RefreshTokenCookieName, response)
-	processMetadata(md, GatewayMetadataUserIDKey, UserIDCookieName, response)
+	processMetadata(md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, true /* httpOnly */, response)
+	processMetadata(md, GatewayMetadataRefreshTokenKey, RefreshTokenCookieName, true /* httpOnly */, response)
+	processMetadata(md, GatewayMetadataUserIDKey, UserIDCookieName, false /* httpOnly */, response)
 	return nil
 }
 
-func processMetadata(md runtime.ServerMetadata, metadataKey, cookieName string, response http.ResponseWriter) {
+func processMetadata(md runtime.ServerMetadata, metadataKey, cookieName string, httpOnly bool, response http.ResponseWriter) {
 	values := md.HeaderMD.Get(metadataKey)
 	if len(values) == 0 {
 		return
@@ -31,18 +31,18 @@ func processMetadata(md runtime.ServerMetadata, metadataKey, cookieName string, 
 	if value == "" {
 		unsetCookie(response, cookieName)
 	} else {
-		setCookie(response, cookieName, value)
+		setCookie(response, cookieName, value, httpOnly)
 	}
 }
 
-func setCookie(response http.ResponseWriter, key, value string) {
+func setCookie(response http.ResponseWriter, key, value string, httpOnly bool) {
 	http.SetCookie(response, &http.Cookie{
 		Name:    key,
 		Value:   value,
 		Expires: time.Now().Add(CookieExpDuration),
 		Path:    "/",
 		// Http-only helps mitigate the risk of client side script accessing the protected cookie.
-		HttpOnly: true,
+		HttpOnly: httpOnly,
 		// For now, we allow Bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
 		// cookie.Secure = true
 		SameSite: http.SameSiteStrictMode,
