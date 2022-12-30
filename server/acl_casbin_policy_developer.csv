@@ -56,6 +56,7 @@ p, DEVELOPER, /database/{databaseID}/data-source/{dataSourceID}, GET
 p, DEVELOPER, /database/{databaseID}/data-source/{dataSourceID}, PATCH
 p, DEVELOPER, /database/{databaseID}/data-source/{dataSourceID}, DELETE
 p, DEVELOPER, /issue, POST
+p, DEVELOPER, /issues, POST
 p, DEVELOPER, /issue, GET
 p, DEVELOPER, /issue/{issueID}, GET
 p, DEVELOPER, /issue/{issueID}, PATCH
