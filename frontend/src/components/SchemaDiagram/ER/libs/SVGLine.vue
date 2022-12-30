@@ -2,59 +2,69 @@
   <svg
     version="1.1"
     xmlns="http://www.w3.org/2000/svg"
-    class="absolute"
+    class="absolute cursor-pointer"
+    pointer-events="none"
+    :viewBox="[viewBox.x, viewBox.y, viewBox.width, viewBox.height].join(' ')"
     :style="{
-      left: `${bbox.x - AA_OFFSET[0]}px`,
-      top: `${bbox.y - AA_OFFSET[1]}px`,
-      width: `${bbox.width + AA_OFFSET[0] * 2}px`,
-      height: `${bbox.height + AA_OFFSET[1] * 2}px`,
+      left: `${bbox.x + viewBox.x}px`,
+      top: `${bbox.y + viewBox.y}px`,
+      width: `${viewBox.width}px`,
+      height: `${viewBox.height}px`,
     }"
   >
     <path
+      ref="track"
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       :d="svgLine"
-      v-bind="aaProps"
       pointer-events="visibleStroke"
       fill="none"
-      stroke="11.5"
-      stroke-width="11.5"
-      class="opacity-40"
-    ></path>
+      :stroke="hover ? COLORS.GLOW.HOVER : COLORS.GLOW.NORMAL"
+      :stroke-width="GLOW_WIDTH"
+    />
     <path
       v-for="(decorator, i) in svgDecorators"
       :key="i"
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       :d="decorator"
-      v-bind="aaProps"
-      stroke="rgb(40, 40, 40)"
       fill="none"
+      :stroke="hover ? COLORS.LINE.HOVER : COLORS.LINE.NORMAL"
       stroke-width="1"
       pointer-events="visibleStroke"
     />
     <path
+      ref="line"
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       :d="svgLine"
-      v-bind="aaProps"
       pointer-events="visibleStroke"
       fill="none"
-      stroke="rgb(40, 40, 40)"
-      stroke-width="1.5"
-    ></path>
+      :stroke="hover ? COLORS.LINE.HOVER : COLORS.LINE.NORMAL"
+      :stroke-width="hover ? 2 : 1.5"
+    />
   </svg>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { Path } from "../../types";
-import { line as d3Line } from "d3-shape";
+import { computed, ref } from "vue";
+import { Path, Rect } from "../../types";
+import { curveMonotoneX, line as d3Line } from "d3-shape";
 import { calcBBox } from "../../common";
+import { useElementHover } from "@vueuse/core";
 
-// For SVG anti-aliasing, especially a line aligned to the x-axis
-// Just a simple workaround, not perfect.
-const AA_OFFSET = [2.25, 2.25];
+const GLOW_WIDTH = 12;
+const PADDING = GLOW_WIDTH / 2;
+const COLORS = {
+  GLOW: {
+    NORMAL: "transparent",
+    HOVER: "rgba(55,48,163,0.1)",
+  },
+  LINE: {
+    NORMAL: "#1f2937",
+    HOVER: "#4f46e5",
+  },
+};
 
 const props = withDefaults(
   defineProps<{
@@ -66,15 +76,27 @@ const props = withDefaults(
   }
 );
 
+const track = ref<SVGPathElement>();
+const line = ref<SVGPathElement>();
+
+const trackHover = useElementHover(track);
+const lineHover = useElementHover(line);
+const hover = computed(() => trackHover.value || lineHover.value);
+
 const bbox = computed(() => {
   const points = [...props.path];
   props.decorators.forEach((decorator) => points.push(...decorator));
   return calcBBox(points);
 });
 
-const aaProps = computed(() => ({
-  transform: `translate(${AA_OFFSET.join(",")})`,
-}));
+const viewBox = computed((): Rect => {
+  return {
+    x: -PADDING,
+    y: -PADDING,
+    width: Math.max(bbox.value.width, 0) + PADDING * 2,
+    height: Math.max(bbox.value.height, 0) + PADDING * 2,
+  };
+});
 
 const normalize = (x: number, y: number): [number, number] => {
   const dx = bbox.value.x;
@@ -83,7 +105,11 @@ const normalize = (x: number, y: number): [number, number] => {
 };
 
 const svgLine = computed(() => {
-  return d3Line()(props.path.map((p) => normalize(p.x, p.y))) ?? "";
+  return (
+    d3Line().curve(curveMonotoneX)(
+      props.path.map((p) => normalize(p.x, p.y))
+    ) ?? ""
+  );
 });
 
 const svgDecorators = computed(() => {
