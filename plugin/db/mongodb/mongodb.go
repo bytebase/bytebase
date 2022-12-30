@@ -184,12 +184,18 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.Database != "" {
 		connectionURI = fmt.Sprintf("%s/%s", connectionURI, connConfig.Database)
 	}
-	if connConfig.AuthenticationDatabase != "" {
-		if connConfig.Database == "" {
-			connectionURI = fmt.Sprintf("%s/", connectionURI)
-		}
-		connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, connConfig.AuthenticationDatabase)
+	// We use admin as the default authentication database.
+	// https://www.mongodb.com/docs/manual/reference/connection-string/#mongodb-urioption-urioption.authSource
+	authenticationDatabase := connConfig.AuthenticationDatabase
+	if authenticationDatabase == "" {
+		authenticationDatabase = "admin"
 	}
+
+	if connConfig.Database == "" {
+		connectionURI = fmt.Sprintf("%s/", connectionURI)
+	}
+	connectionURI = fmt.Sprintf("%s?authSource=%s", connectionURI, authenticationDatabase)
+
 	return connectionURI
 }
 
