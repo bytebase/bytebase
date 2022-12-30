@@ -65,7 +65,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	d.connCtx = connCtx
 	if config.Database == "" {
 		// try to connect to bytebase
-		dsn := d.composeDSNWithDatabase(db.BytebaseDatabase)
+		dsn := getDSN(d.config.Host, db.BytebaseDatabase)
 		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
 		if status.Code(err) == codes.NotFound {
 			log.Debug(`spanner driver: no database provided, try connecting to "bytebase" database which is not found`, zap.Error(err))
@@ -75,7 +75,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 			d.client = client
 		}
 	} else {
-		dsn := d.composeDSN()
+		dsn := getDSN(d.config.Host, d.config.Database)
 		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
 		if err != nil {
 			return nil, err
@@ -142,12 +142,8 @@ func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interfa
 	panic("not implemented")
 }
 
-func (d *Driver) composeDSN() string {
-	return d.composeDSNWithDatabase(d.config.Database)
-}
-
-func (d *Driver) composeDSNWithDatabase(database string) string {
-	return fmt.Sprintf("%s/databases/%s", d.config.Host, database)
+func getDSN(host, database string) string {
+	return fmt.Sprintf("%s/databases/%s", host, database)
 }
 
 func splitStatement(statement string) []string {
