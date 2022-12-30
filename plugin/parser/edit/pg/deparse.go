@@ -76,7 +76,7 @@ func transformCreateTableContext(ctx *DeparseContext, createTableContext *api.Cr
 
 		// TODO(steven): remove this after our pg parser supports comment stmt.
 		if addColumnContext.Comment != "" {
-			commemtStmt := fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';", table.Name, columnDef.ColumnName, addColumnContext.Comment)
+			commemtStmt := fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s"."%s" IS '%s';`, createTableContext.Schema, table.Name, columnDef.ColumnName, addColumnContext.Comment)
 			ctx.StmtList = append(ctx.StmtList, commemtStmt)
 		}
 	}
@@ -143,7 +143,7 @@ func transformAlterTableContext(ctx *DeparseContext, alterTableContext *api.Alte
 			ColumnList: []*ast.ColumnDef{columnDef},
 		})
 		if addColumnContext.Comment != "" {
-			commemtStmt := fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';", table.Name, columnDef.ColumnName, addColumnContext.Comment)
+			commemtStmt := fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s"."%s" IS '%s';`, table.Schema, table.Name, columnDef.ColumnName, addColumnContext.Comment)
 			ctx.StmtList = append(ctx.StmtList, commemtStmt)
 		}
 	}
@@ -197,7 +197,7 @@ func transformAlterTableContext(ctx *DeparseContext, alterTableContext *api.Alte
 			}
 		}
 		if alterColumnContext.Comment != nil {
-			commemtStmt := fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';", table.Name, alterColumnContext.NewName, *alterColumnContext.Comment)
+			commemtStmt := fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s"."%s" IS '%s';`, table.Schema, table.Name, alterColumnContext.NewName, *alterColumnContext.Comment)
 			ctx.StmtList = append(ctx.StmtList, commemtStmt)
 		}
 	}

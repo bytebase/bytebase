@@ -34,6 +34,7 @@ export const getDataTypeSuggestionList = (engineType: EngineType = "MYSQL") => {
       "JSON",
       "REAL",
       "SERIAL",
+      "TEXT",
       "VARCHAR(255)",
     ];
   }

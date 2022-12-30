@@ -383,6 +383,10 @@ watch(
       if (!expandedKeysRef.value.includes(databaseTreeNodeKey)) {
         expandedKeysRef.value.push(databaseTreeNodeKey);
       }
+      const schemaTreeNodeKey = `s-${currentTab.databaseId}-${currentTab.schemaName}`;
+      if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
+        expandedKeysRef.value.push(schemaTreeNodeKey);
+      }
       const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableId}`;
       selectedKeysRef.value = [tableTreeNodeKey];
     }
@@ -493,13 +497,28 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
 
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
+  const instanceEngine = instanceStore.getInstanceById(
+    treeNode.instanceId
+  ).engine;
+
   if (treeNode.type === "database") {
-    return h(EllipsisIcon, {
-      class: "w-4 h-auto text-gray-600",
-      onClick: (e) => {
-        handleShowDropdown(e, treeNode);
-      },
-    });
+    if (instanceEngine === "MYSQL") {
+      return h(EllipsisIcon, {
+        class: "w-4 h-auto text-gray-600",
+        onClick: (e) => {
+          handleShowDropdown(e, treeNode);
+        },
+      });
+    }
+  } else if (treeNode.type === "schema") {
+    if (instanceEngine === "POSTGRES") {
+      return h(EllipsisIcon, {
+        class: "w-4 h-auto text-gray-600",
+        onClick: (e) => {
+          handleShowDropdown(e, treeNode);
+        },
+      });
+    }
   } else if (treeNode.type === "table") {
     return h(EllipsisIcon, {
       class: "w-4 h-auto text-gray-600",

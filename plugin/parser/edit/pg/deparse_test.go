@@ -38,7 +38,7 @@ func TestDeparseCreateTable(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE \"public\".\"t1\" (\n    \"id\" integer DEFAULT 0 NOT NULL\n);\nCOMMENT ON COLUMN t1.id IS 'ID';",
+			want: "CREATE TABLE \"public\".\"t1\" (\n    \"id\" integer DEFAULT 0 NOT NULL\n);\nCOMMENT ON COLUMN \"public\".\"t1\".\"id\" IS 'ID';",
 		},
 		{
 			name: "create table t1",
