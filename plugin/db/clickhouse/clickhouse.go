@@ -3,6 +3,7 @@ package clickhouse
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -56,6 +57,10 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
+	if tlsConfig == nil {
+		tlsConfig = &tls.Config{}
+	}
+
 	// Default user name is "default".
 	conn := clickhouse.OpenDB(&clickhouse.Options{
 		Addr: []string{addr},
