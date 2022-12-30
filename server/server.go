@@ -71,6 +71,8 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/db/sqlite"
 	// Register mongodb driver.
 	_ "github.com/bytebase/bytebase/plugin/db/mongodb"
+	// Register spanner driver.
+	_ "github.com/bytebase/bytebase/plugin/db/spanner"
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"

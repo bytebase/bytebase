@@ -3,11 +3,22 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
+
+import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service AuthService {
+  rpc CreateUser(CreateUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "user"
+    };
+    option (google.api.method_signature) = "user";
+  }
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
       post: "/v1/auth/login"
@@ -20,6 +31,11 @@ service AuthService {
       body: "*"
     };
   }
+}
+
+message CreateUserRequest {
+  // The user to create.
+  User user = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message LoginRequest {
@@ -36,4 +52,29 @@ message LoginResponse {
 }
 
 message LogoutRequest {
+}
+
+message User {
+  // The name of the user.
+  // Format: users/{user}. {user} is a system-generated unique ID.
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 2;
+
+  string email = 3;
+
+  string title = 4;
+
+  string password = 5 [(google.api.field_behavior) = INPUT_ONLY];
+
+  // The user role will not be respected in the create user request, because the role is controlled by workspace owner.
+  UserRole user_role = 6;
+}
+
+
+enum UserRole {
+  USER_ROLE_UNSPECIFIED = 0;
+  USER_ROLE_OWNER = 1;
+  USER_ROLE_DBA = 2;
+  USER_ROLE_DEVELOPER = 3;
 }

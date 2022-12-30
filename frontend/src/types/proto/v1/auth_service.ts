@@ -1,8 +1,59 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
+import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
+
+export enum UserRole {
+  USER_ROLE_UNSPECIFIED = 0,
+  USER_ROLE_OWNER = 1,
+  USER_ROLE_DBA = 2,
+  USER_ROLE_DEVELOPER = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function userRoleFromJSON(object: any): UserRole {
+  switch (object) {
+    case 0:
+    case "USER_ROLE_UNSPECIFIED":
+      return UserRole.USER_ROLE_UNSPECIFIED;
+    case 1:
+    case "USER_ROLE_OWNER":
+      return UserRole.USER_ROLE_OWNER;
+    case 2:
+    case "USER_ROLE_DBA":
+      return UserRole.USER_ROLE_DBA;
+    case 3:
+    case "USER_ROLE_DEVELOPER":
+      return UserRole.USER_ROLE_DEVELOPER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return UserRole.UNRECOGNIZED;
+  }
+}
+
+export function userRoleToJSON(object: UserRole): string {
+  switch (object) {
+    case UserRole.USER_ROLE_UNSPECIFIED:
+      return "USER_ROLE_UNSPECIFIED";
+    case UserRole.USER_ROLE_OWNER:
+      return "USER_ROLE_OWNER";
+    case UserRole.USER_ROLE_DBA:
+      return "USER_ROLE_DBA";
+    case UserRole.USER_ROLE_DEVELOPER:
+      return "USER_ROLE_DEVELOPER";
+    case UserRole.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface CreateUserRequest {
+  /** The user to create. */
+  user?: User;
+}
 
 export interface LoginRequest {
   email: string;
@@ -17,6 +68,67 @@ export interface LoginResponse {
 
 export interface LogoutRequest {
 }
+
+export interface User {
+  /**
+   * The name of the user.
+   * Format: users/{user}. {user} is a system-generated unique ID.
+   */
+  name: string;
+  state: State;
+  email: string;
+  title: string;
+  password: string;
+  /** The user role will not be respected in the create user request, because the role is controlled by workspace owner. */
+  userRole: UserRole;
+}
+
+function createBaseCreateUserRequest(): CreateUserRequest {
+  return { user: undefined };
+}
+
+export const CreateUserRequest = {
+  encode(message: CreateUserRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.user !== undefined) {
+      User.encode(message.user, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateUserRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateUserRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.user = User.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateUserRequest {
+    return { user: isSet(object.user) ? User.fromJSON(object.user) : undefined };
+  },
+
+  toJSON(message: CreateUserRequest): unknown {
+    const obj: any = {};
+    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CreateUserRequest>, I>>(object: I): CreateUserRequest {
+    const message = createBaseCreateUserRequest();
+    message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
+    return message;
+  },
+};
 
 function createBaseLoginRequest(): LoginRequest {
   return { email: "", password: "", web: false };
@@ -171,7 +283,102 @@ export const LogoutRequest = {
   },
 };
 
+function createBaseUser(): User {
+  return { name: "", state: 0, email: "", title: "", password: "", userRole: 0 };
+}
+
+export const User = {
+  encode(message: User, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.state !== 0) {
+      writer.uint32(16).int32(message.state);
+    }
+    if (message.email !== "") {
+      writer.uint32(26).string(message.email);
+    }
+    if (message.title !== "") {
+      writer.uint32(34).string(message.title);
+    }
+    if (message.password !== "") {
+      writer.uint32(42).string(message.password);
+    }
+    if (message.userRole !== 0) {
+      writer.uint32(48).int32(message.userRole);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): User {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUser();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.state = reader.int32() as any;
+          break;
+        case 3:
+          message.email = reader.string();
+          break;
+        case 4:
+          message.title = reader.string();
+          break;
+        case 5:
+          message.password = reader.string();
+          break;
+        case 6:
+          message.userRole = reader.int32() as any;
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): User {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
+      email: isSet(object.email) ? String(object.email) : "",
+      title: isSet(object.title) ? String(object.title) : "",
+      password: isSet(object.password) ? String(object.password) : "",
+      userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
+    };
+  },
+
+  toJSON(message: User): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.state !== undefined && (obj.state = stateToJSON(message.state));
+    message.email !== undefined && (obj.email = message.email);
+    message.title !== undefined && (obj.title = message.title);
+    message.password !== undefined && (obj.password = message.password);
+    message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<User>, I>>(object: I): User {
+    const message = createBaseUser();
+    message.name = object.name ?? "";
+    message.state = object.state ?? 0;
+    message.email = object.email ?? "";
+    message.title = object.title ?? "";
+    message.password = object.password ?? "";
+    message.userRole = object.userRole ?? 0;
+    return message;
+  },
+};
+
 export interface AuthService {
+  CreateUser(request: CreateUserRequest): Promise<User>;
   Login(request: LoginRequest): Promise<LoginResponse>;
   Logout(request: LogoutRequest): Promise<Empty>;
 }
@@ -182,9 +389,16 @@ export class AuthServiceClientImpl implements AuthService {
   constructor(rpc: Rpc, opts?: { service?: string }) {
     this.service = opts?.service || "bytebase.v1.AuthService";
     this.rpc = rpc;
+    this.CreateUser = this.CreateUser.bind(this);
     this.Login = this.Login.bind(this);
     this.Logout = this.Logout.bind(this);
   }
+  CreateUser(request: CreateUserRequest): Promise<User> {
+    const data = CreateUserRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CreateUser", data);
+    return promise.then((data) => User.decode(new _m0.Reader(data)));
+  }
+
   Login(request: LoginRequest): Promise<LoginResponse> {
     const data = LoginRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "Login", data);
