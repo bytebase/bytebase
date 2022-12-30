@@ -1,10 +1,24 @@
 <template>
   <Canvas>
     <template #desktop>
-      <TableNode v-for="(table, i) in tableList" :key="i" :table="table" />
+      <TableNode
+        v-for="(table, i) in tableList"
+        :key="i"
+        :table="table"
+        :class="initialized ? '' : 'invisible'"
+      />
 
-      <ForeignKeyLine v-for="(fk, i) in foreignKeys" :key="i" :fk="fk" />
+      <template v-if="initialized">
+        <ForeignKeyLine v-for="(fk, i) in foreignKeys" :key="i" :fk="fk" />
+      </template>
     </template>
+
+    <div
+      v-if="!initialized"
+      class="absolute inset-0 bg-white/40 flex items-center justify-center"
+    >
+      <BBSpin />
+    </div>
   </Canvas>
 </template>
 
@@ -23,7 +37,7 @@ import {
   ForeignKey,
 } from "./types";
 import Canvas from "./Canvas";
-import { TableNode, autoLayout, GraphNodeItem } from "./ER";
+import { TableNode, autoLayout, GraphNodeItem, GraphEdgeItem } from "./ER";
 import { provideSchemaDiagramContext } from "./common";
 
 const props = withDefaults(
@@ -34,6 +48,7 @@ const props = withDefaults(
   {}
 );
 
+const initialized = ref(false);
 const zoom = ref(1);
 const position = ref<Position>({ x: 0, y: 0 });
 
@@ -101,16 +116,18 @@ const layout = () => {
           height: item.elem.clientHeight,
         };
         return {
-          ...item,
+          id: item.id,
           size,
-          ports: [],
+          children: [],
         };
       });
-    const edgeList = foreignKeys.value.map((fk) => {
+
+    const edgeList = foreignKeys.value.map<GraphEdgeItem>((fk) => {
+      const { from, to } = fk;
       return {
-        id: `${fk.from.table.name}.${fk.from.column}->${fk.to.table.name}.${fk.to.column}`,
-        from: idOfTable(fk.from.table),
-        to: idOfTable(fk.to.table),
+        id: `${from.table.name}.${from.column}->${to.table.name}.${to.column}`,
+        from: idOfTable(from.table),
+        to: idOfTable(to.table),
       };
     });
     const { rects } = await autoLayout(nodeList, edgeList);
@@ -138,6 +155,7 @@ provideSchemaDiagramContext({
 // autoLayout and fit view at the first time the diagram is mounted.
 onMounted(async () => {
   await layout();
+  initialized.value = true;
   nextTick(() => {
     events.emit("fit-view");
   });
