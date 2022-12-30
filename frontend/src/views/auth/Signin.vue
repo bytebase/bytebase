@@ -187,7 +187,6 @@ import { useRouter } from "vue-router";
 import {
   AuthProvider,
   EmptyAuthProvider,
-  VCSLoginInfo,
   OAuthWindowEventPayload,
   openWindowForOAuth,
 } from "../../types";
