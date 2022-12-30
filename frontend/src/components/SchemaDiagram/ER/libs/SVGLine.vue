@@ -49,7 +49,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { Path } from "../../types";
-import { line as d3Line } from "d3-shape";
+import { curveMonotoneX, line as d3Line } from "d3-shape";
 import { calcBBox } from "../../common";
 
 // For SVG anti-aliasing, especially a line aligned to the x-axis
@@ -83,7 +83,11 @@ const normalize = (x: number, y: number): [number, number] => {
 };
 
 const svgLine = computed(() => {
-  return d3Line()(props.path.map((p) => normalize(p.x, p.y))) ?? "";
+  return (
+    d3Line().curve(curveMonotoneX)(
+      props.path.map((p) => normalize(p.x, p.y))
+    ) ?? ""
+  );
 });
 
 const svgDecorators = computed(() => {
