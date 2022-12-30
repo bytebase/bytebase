@@ -74,10 +74,16 @@ export const useAuthStore = defineStore("auth", {
       return unknownPrincipal;
     },
     async signup(signupInfo: SignupInfo) {
-      await axios.post("/api/auth/signup", {
-        data: { type: "signupInfo", attributes: signupInfo },
+      await axios.post("/v1/users", {
+        email: signupInfo.email,
+        title: signupInfo.name,
+        password: signupInfo.password,
       });
-
+      await axios.post("/v1/auth/login", {
+        email: signupInfo.email,
+        password: signupInfo.password,
+        web: true,
+      });
       const userId = getIntCookie("user");
       if (userId) {
         const loggedInUser = await usePrincipalStore().fetchPrincipalById(
