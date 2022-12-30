@@ -19,7 +19,7 @@
       :d="svgLine"
       pointer-events="visibleStroke"
       fill="none"
-      :stroke="hover ? 'rgba(55,48,163,0.1)' : 'transparent'"
+      :stroke="hover ? COLORS.GLOW.HOVER : COLORS.GLOW.NORMAL"
       :stroke-width="GLOW_WIDTH"
     />
     <path
@@ -29,7 +29,7 @@
       xmlns="http://www.w3.org/2000/svg"
       :d="decorator"
       fill="none"
-      :stroke="hover ? '#4f46e5' : '#1f2937'"
+      :stroke="hover ? COLORS.LINE.HOVER : COLORS.LINE.NORMAL"
       stroke-width="1"
       pointer-events="visibleStroke"
     />
@@ -40,7 +40,7 @@
       :d="svgLine"
       pointer-events="visibleStroke"
       fill="none"
-      :stroke="hover ? '#4f46e5' : '#1f2937'"
+      :stroke="hover ? COLORS.LINE.HOVER : COLORS.LINE.NORMAL"
       :stroke-width="hover ? 2 : 1.5"
     />
   </svg>
@@ -55,6 +55,16 @@ import { useElementHover } from "@vueuse/core";
 
 const GLOW_WIDTH = 12;
 const PADDING = GLOW_WIDTH / 2;
+const COLORS = {
+  GLOW: {
+    NORMAL: "transparent",
+    HOVER: "rgba(55,48,163,0.1)",
+  },
+  LINE: {
+    NORMAL: "#1f2937",
+    HOVER: "#4f46e5",
+  },
+};
 
 const props = withDefaults(
   defineProps<{
