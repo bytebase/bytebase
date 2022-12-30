@@ -188,7 +188,6 @@ import {
   AuthProvider,
   EmptyAuthProvider,
   VCSLoginInfo,
-  LoginInfo,
   OAuthWindowEventPayload,
   openWindowForOAuth,
 } from "../../types";
@@ -251,15 +250,11 @@ export default defineComponent({
       if (payload.error) {
         return;
       }
-      const vcsLoginInfo: VCSLoginInfo = {
-        vcsId: state.activeAuthProvider.id,
-        name: state.activeAuthProvider.name,
-        code: payload.code,
-      };
       authStore
-        .login({
-          authProvider: state.activeAuthProvider.type,
-          payload: vcsLoginInfo,
+        .vcsLogin(state.activeAuthProvider.type, {
+          vcsId: state.activeAuthProvider.id,
+          name: state.activeAuthProvider.name,
+          code: payload.code,
         })
         .then(() => {
           router.push("/");
@@ -267,16 +262,14 @@ export default defineComponent({
     };
 
     const trySignin = () => {
-      const loginInfo: LoginInfo = {
-        authProvider: "BYTEBASE",
-        payload: {
+      authStore
+        .login({
           email: state.email,
           password: state.password,
-        },
-      };
-      authStore.login(loginInfo).then(() => {
-        router.push("/");
-      });
+        })
+        .then(() => {
+          router.push("/");
+        });
     };
 
     const AuthProviderConfig = {
