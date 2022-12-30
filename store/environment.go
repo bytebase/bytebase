@@ -55,7 +55,8 @@ type EnvironmentPatch struct {
 // environmentRaw is the store model for an Environment.
 // Fields have exactly the same meanings as Environment.
 type environmentRaw struct {
-	ID int
+	ID         int
+	ResourceID string
 
 	// Standard fields
 	RowStatus api.RowStatus
@@ -73,7 +74,8 @@ type environmentRaw struct {
 // This is intended to be called when we need to compose an Environment relationship.
 func (raw *environmentRaw) toEnvironment() *api.Environment {
 	return &api.Environment{
-		ID: raw.ID,
+		ID:         raw.ID,
+		ResourceID: raw.ResourceID,
 
 		RowStatus: raw.RowStatus,
 		CreatorID: raw.CreatorID,
@@ -357,6 +359,7 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *EnvironmentPatch
 	if err := s.cache.UpsertCache(environmentCacheNamespace, envRaw.ID, envRaw); err != nil {
 		return nil, err
 	}
+	delete(s.environmentCache, envRaw.ResourceID)
 
 	return envRaw, nil
 }
@@ -395,7 +398,7 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *Environm
 			resource_id
 		)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
+		RETURNING id, resource_id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
 	`
 	var envRaw environmentRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -406,6 +409,7 @@ func (Store) createEnvironmentImpl(ctx context.Context, tx *Tx, create *Environm
 		resourceID,
 	).Scan(
 		&envRaw.ID,
+		&envRaw.ResourceID,
 		&envRaw.RowStatus,
 		&envRaw.CreatorID,
 		&envRaw.CreatedTs,
@@ -438,6 +442,7 @@ func (*Store) findEnvironmentImpl(ctx context.Context, tx *Tx, find *api.Environ
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
+			resource_id,
 			row_status,
 			creator_id,
 			created_ts,
@@ -460,6 +465,7 @@ func (*Store) findEnvironmentImpl(ctx context.Context, tx *Tx, find *api.Environ
 		var environment environmentRaw
 		if err := rows.Scan(
 			&environment.ID,
+			&environment.ResourceID,
 			&environment.RowStatus,
 			&environment.CreatorID,
 			&environment.CreatedTs,
@@ -502,11 +508,12 @@ func (*Store) patchEnvironmentImpl(ctx context.Context, tx *Tx, patch *Environme
 		UPDATE environment
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
+		RETURNING id, resource_id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
 	`, len(args)),
 		args...,
 	).Scan(
 		&environment.ID,
+		&environment.ResourceID,
 		&environment.RowStatus,
 		&environment.CreatorID,
 		&environment.CreatedTs,

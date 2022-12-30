@@ -60,7 +60,8 @@ type InstancePatch struct {
 // instanceRaw is the store model for an Instance.
 // Fields have exactly the same meanings as Instance.
 type instanceRaw struct {
-	ID int
+	ID         int
+	ResourceID string
 
 	// Standard fields
 	RowStatus api.RowStatus
@@ -86,7 +87,8 @@ type instanceRaw struct {
 // This is intended to be called when we need to compose an Instance relationship.
 func (raw *instanceRaw) toInstance() *api.Instance {
 	return &api.Instance{
-		ID: raw.ID,
+		ID:         raw.ID,
+		ResourceID: raw.ResourceID,
 
 		// Standard fields
 		RowStatus: raw.RowStatus,
@@ -166,6 +168,7 @@ func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.I
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
 	}
+	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
 	return instance, nil
 }
 
@@ -210,6 +213,7 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engin
 	rows, err := s.db.db.QueryContext(ctx, `
 		SELECT DISTINCT
 			instance.id,
+			instance.resource_id,
 			instance.row_status,
 			instance.creator_id,
 			instance.created_ts,
@@ -240,6 +244,7 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engin
 		var instanceRaw instanceRaw
 		if err := rows.Scan(
 			&instanceRaw.ID,
+			&instanceRaw.ResourceID,
 			&instanceRaw.RowStatus,
 			&instanceRaw.CreatorID,
 			&instanceRaw.CreatedTs,
@@ -559,7 +564,7 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*i
 			resource_id
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
+		RETURNING id, resource_id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`
 	var instanceRaw instanceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -575,6 +580,7 @@ func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*i
 		resourceID,
 	).Scan(
 		&instanceRaw.ID,
+		&instanceRaw.ResourceID,
 		&instanceRaw.RowStatus,
 		&instanceRaw.CreatorID,
 		&instanceRaw.CreatedTs,
@@ -603,6 +609,7 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
+			resource_id,
 			row_status,
 			creator_id,
 			created_ts,
@@ -631,6 +638,7 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 		var instanceRaw instanceRaw
 		if err := rows.Scan(
 			&instanceRaw.ID,
+			&instanceRaw.ResourceID,
 			&instanceRaw.RowStatus,
 			&instanceRaw.CreatorID,
 			&instanceRaw.CreatedTs,
@@ -690,11 +698,12 @@ func patchInstanceImpl(ctx context.Context, tx *Tx, patch *InstancePatch) (*inst
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
+		RETURNING id, resource_id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
 	`, len(args)),
 		args...,
 	).Scan(
 		&instanceRaw.ID,
+		&instanceRaw.ResourceID,
 		&instanceRaw.RowStatus,
 		&instanceRaw.CreatorID,
 		&instanceRaw.CreatedTs,

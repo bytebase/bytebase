@@ -9,7 +9,8 @@ import (
 
 // Environment is the API message for an environment.
 type Environment struct {
-	ID int `jsonapi:"primary,environment"`
+	ID         int `jsonapi:"primary,environment"`
+	ResourceID string
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`

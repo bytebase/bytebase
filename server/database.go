@@ -511,7 +511,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
 
-		dataSource, err := s.store.CreateDataSource(ctx, dataSourceCreate)
+		dataSource, err := s.store.CreateDataSource(ctx, database.Instance, dataSourceCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
@@ -587,7 +587,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			password := ""
 			dataSourcePatch.Password = &password
 		}
-		dataSourceNew, err := s.store.PatchDataSource(ctx, dataSourcePatch)
+		dataSourceNew, err := s.store.PatchDataSource(ctx, database.Instance, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
@@ -648,7 +648,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, "Data source type is not read only")
 		}
 
-		if err := s.store.DeleteDataSource(ctx, &api.DataSourceDelete{
+		if err := s.store.DeleteDataSource(ctx, database.Instance, &api.DataSourceDelete{
 			ID:         dataSource.ID,
 			InstanceID: database.InstanceID,
 		}); err != nil {
