@@ -22,6 +22,8 @@ var (
 	//go:embed spanner_migration_schema.sql
 	migrationSchema string
 
+  createBytebaseDatabaseStatement = `CREATE DATABASE bytebase`
+
 	_ db.Driver = (*Driver)(nil)
 )
 

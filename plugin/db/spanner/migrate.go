@@ -15,7 +15,7 @@ import (
 
 // NeedsSetupMigration checks if it needs to set up migration.
 func (d *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
-	_, err := d.dbClient.GetDatabase(ctx, &databasepb.GetDatabaseRequest{Name: "bytebase"})
+	_, err := d.dbClient.GetDatabase(ctx, &databasepb.GetDatabaseRequest{Name: db.BytebaseDatabase})
 	if status.Code(err) == codes.NotFound {
 		return true, nil
 	}
@@ -41,7 +41,7 @@ func (d *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	statements := splitStatement(migrationSchema)
 	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
 		Parent:          d.config.Host,
-		CreateStatement: "CREATE DATABASE bytebase",
+		CreateStatement: createBytebaseDatabaseStatement,
 		ExtraStatements: statements,
 	})
 	if err != nil {
