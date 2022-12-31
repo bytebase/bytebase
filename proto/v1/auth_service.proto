@@ -43,6 +43,20 @@ service AuthService {
     option (google.api.method_signature) = "user,update_mask";
   }
 
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=users/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteUser(UndeleteUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:undelete"
+      body: "*"
+    };
+  }
+
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
       post: "/v1/auth/login"
@@ -107,6 +121,18 @@ message UpdateUserRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteUserRequest {
+  // The name of the user to delete.
+  // Format: users/{user}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteUserRequest {
+  // The name of the deleted user.
+  // Format: users/{user}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message LoginRequest {

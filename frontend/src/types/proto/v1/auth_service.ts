@@ -106,6 +106,22 @@ export interface UpdateUserRequest {
   updateMask?: string[];
 }
 
+export interface DeleteUserRequest {
+  /**
+   * The name of the user to delete.
+   * Format: users/{user}
+   */
+  name: string;
+}
+
+export interface UndeleteUserRequest {
+  /**
+   * The name of the deleted user.
+   * Format: users/{user}
+   */
+  name: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -415,6 +431,100 @@ export const UpdateUserRequest = {
   },
 };
 
+function createBaseDeleteUserRequest(): DeleteUserRequest {
+  return { name: "" };
+}
+
+export const DeleteUserRequest = {
+  encode(message: DeleteUserRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteUserRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteUserRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteUserRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteUserRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DeleteUserRequest>, I>>(object: I): DeleteUserRequest {
+    const message = createBaseDeleteUserRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUndeleteUserRequest(): UndeleteUserRequest {
+  return { name: "" };
+}
+
+export const UndeleteUserRequest = {
+  encode(message: UndeleteUserRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UndeleteUserRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUndeleteUserRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UndeleteUserRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: UndeleteUserRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<UndeleteUserRequest>, I>>(object: I): UndeleteUserRequest {
+    const message = createBaseUndeleteUserRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseLoginRequest(): LoginRequest {
   return { email: "", password: "", web: false };
 }
@@ -667,6 +777,8 @@ export interface AuthService {
   ListUsers(request: ListUsersRequest): Promise<ListUsersResponse>;
   CreateUser(request: CreateUserRequest): Promise<User>;
   UpdateUser(request: UpdateUserRequest): Promise<User>;
+  DeleteUser(request: DeleteUserRequest): Promise<Empty>;
+  UndeleteUser(request: UndeleteUserRequest): Promise<User>;
   Login(request: LoginRequest): Promise<LoginResponse>;
   Logout(request: LogoutRequest): Promise<Empty>;
 }
@@ -681,6 +793,8 @@ export class AuthServiceClientImpl implements AuthService {
     this.ListUsers = this.ListUsers.bind(this);
     this.CreateUser = this.CreateUser.bind(this);
     this.UpdateUser = this.UpdateUser.bind(this);
+    this.DeleteUser = this.DeleteUser.bind(this);
+    this.UndeleteUser = this.UndeleteUser.bind(this);
     this.Login = this.Login.bind(this);
     this.Logout = this.Logout.bind(this);
   }
@@ -705,6 +819,18 @@ export class AuthServiceClientImpl implements AuthService {
   UpdateUser(request: UpdateUserRequest): Promise<User> {
     const data = UpdateUserRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "UpdateUser", data);
+    return promise.then((data) => User.decode(new _m0.Reader(data)));
+  }
+
+  DeleteUser(request: DeleteUserRequest): Promise<Empty> {
+    const data = DeleteUserRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "DeleteUser", data);
+    return promise.then((data) => Empty.decode(new _m0.Reader(data)));
+  }
+
+  UndeleteUser(request: UndeleteUserRequest): Promise<User> {
+    const data = UndeleteUserRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UndeleteUser", data);
     return promise.then((data) => User.decode(new _m0.Reader(data)));
   }
 
