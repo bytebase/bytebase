@@ -5,24 +5,36 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	spanner "cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
+	"go.uber.org/zap"
 
+	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var (
 	//go:embed spanner_migration_schema.sql
 	migrationSchema string
 
+	excludedDatabaseList = map[string]bool{
+		"bytebase": true,
+	}
+
 	createBytebaseDatabaseStatement = `CREATE DATABASE bytebase`
+
+	dsnRegExp = regexp.MustCompile("projects/(?P<PROJECTGROUP>([a-z]|[-.:]|[0-9])+)/instances/(?P<INSTANCEGROUP>([a-z]|[-]|[0-9])+)/databases/(?P<DATABASEGROUP>([a-z]|[-]|[_]|[0-9])+)")
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -43,28 +55,49 @@ func newDriver(_ db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-// Open opens a Spanner driver.
+// Open opens a Spanner driver. It must connect to a specific database.
+// If database isn't provided, the driver tries to connect to "bytebase" database.
+// If connecting to "bytebase" also fails, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	dsn := fmt.Sprintf("%s/databases/%s", config.Host, config.Database)
-	client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
-	if err != nil {
-		return nil, err
+	if config.Host == "" {
+		return nil, errors.New("host cannot be empty")
 	}
+	d.config = config
+	d.connCtx = connCtx
+	if config.Database == "" {
+		// try to connect to bytebase
+		dsn := getDSN(d.config.Host, db.BytebaseDatabase)
+		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
+		if status.Code(err) == codes.NotFound {
+			log.Debug(`spanner driver: no database provided, try connecting to "bytebase" database which is not found`, zap.Error(err))
+		} else if err != nil {
+			return nil, err
+		} else {
+			d.client = client
+		}
+	} else {
+		dsn := getDSN(d.config.Host, d.config.Database)
+		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
+		if err != nil {
+			return nil, err
+		}
+		d.client = client
+	}
+
 	dbClient, err := spannerdb.NewDatabaseAdminClient(ctx, option.WithCredentialsJSON([]byte(config.Password)))
 	if err != nil {
 		return nil, err
 	}
 
-	d.client = client
 	d.dbClient = dbClient
-	d.config = config
-	d.connCtx = connCtx
 	return d, nil
 }
 
 // Close closes the driver.
 func (d *Driver) Close(_ context.Context) error {
-	d.client.Close()
+	if d.client != nil {
+		d.client.Close()
+	}
 	return d.dbClient.Close()
 }
 
@@ -108,6 +141,25 @@ func (*Driver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
 // Query queries a SQL statement.
 func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interface{}, error) {
 	panic("not implemented")
+}
+
+func getDSN(host, database string) string {
+	return fmt.Sprintf("%s/databases/%s", host, database)
+}
+
+// get `<database>` from `projects/<project>/instances/<instance>/databases/<database>`.
+func getDatabaseFromDSN(dsn string) (string, error) {
+	match := dsnRegExp.FindStringSubmatch(dsn)
+	if match == nil {
+		return "", errors.New("invalid DSN")
+	}
+	matches := make(map[string]string)
+	for i, name := range dsnRegExp.SubexpNames() {
+		if i != 0 && name != "" {
+			matches[name] = match[i]
+		}
+	}
+	return matches["DATABASEGROUP"], nil
 }
 
 func splitStatement(statement string) []string {
