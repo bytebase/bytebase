@@ -143,6 +143,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 
 // UpdateUser updates a user.
 func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRequest) (*v1pb.User, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if request.User == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
 	}
@@ -161,8 +162,10 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
+	if user.MemberDeleted {
+		return nil, status.Errorf(codes.InvalidArgument, "user %q has been deleted", userID)
+	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	role := ctx.Value(common.RoleContextKey).(api.Role)
 	if principalID != userID && role != api.Owner {
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner or user itself can update the user %d", userID)
@@ -197,6 +200,65 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error %v", err)
+	}
+	return convertToUser(user), nil
+}
+
+// DeleteUser deletes a user.
+func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRequest) (*emptypb.Empty, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	userID, err := getUserID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
+	}
+	if user.MemberDeleted {
+		return nil, status.Errorf(codes.InvalidArgument, "user %q has been deleted", userID)
+	}
+
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	if role != api.Owner {
+		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can delete the user %d", userID)
+	}
+
+	if _, err := s.store.UpdateUser(ctx, userID, &store.UpdateUserMessage{Delete: &deletePatch}, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
+}
+
+// UndeleteUser undeletes a user.
+func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUserRequest) (*v1pb.User, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	userID, err := getUserID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
+	}
+	if !user.MemberDeleted {
+		return nil, status.Errorf(codes.InvalidArgument, "user %q is already active", userID)
+	}
+
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	if role != api.Owner {
+		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can undelete the user %d", userID)
+	}
+
+	user, err = s.store.UpdateUser(ctx, userID, &store.UpdateUserMessage{Delete: &undeletePatch}, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return convertToUser(user), nil
 }
