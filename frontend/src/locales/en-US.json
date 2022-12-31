@@ -27,6 +27,7 @@
     "sign-up": "Sign up",
     "email": "Email",
     "username": "Username",
+    "credentials": "Credentials",
     "password": "Password",
     "activate": "Activate",
     "save": "Save",
@@ -678,6 +679,7 @@
     "account": "Account",
     "name": "Name",
     "host-or-socket": "Host or Socket",
+    "project-id-and-instance-id": "Project ID and instance ID",
     "your-snowflake-account-name": "your Snowflake account name",
     "port": "Port",
     "authentication-database": "Authentication Database",
@@ -725,6 +727,7 @@
       }
     },
     "no-password": "No password",
+    "credentials-write-only": "CREDENTIALS - write only",
     "password-write-only": "YOUR_DB_PWD - write only",
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",

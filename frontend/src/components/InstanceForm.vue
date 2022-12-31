@@ -51,6 +51,15 @@
               {{ $t("instance.account-name") }}
               <span class="text-red-600 mr-2">*</span>
             </template>
+            <template v-else-if="state.instance.engine === 'SPANNER'">
+              {{ $t("instance.project-id-and-instance-id") }}
+              <span style="color: red">*</span>
+              <p class="text-sm text-gray-500 mt-1 mb-2">
+                Don't know where to find project ID and instance ID? Check this
+                link!
+                <!-- TODO(p0ny): fix the link -->
+              </p>
+            </template>
             <template v-else>
               {{ $t("instance.host-or-socket") }}
               <span class="text-red-600 mr-2">*</span>
@@ -64,6 +73,8 @@
             :placeholder="
               state.instance.engine == 'SNOWFLAKE'
                 ? $t('instance.your-snowflake-account-name')
+                : state.instance.engine === 'SPANNER'
+                ? 'projects/<projectID>/instances/<instanceID>'
                 : $t('instance.sentence.host.snowflake')
             "
             class="textfield mt-1 w-full"
@@ -78,24 +89,24 @@
             {{ $t("instance.sentence.proxy.snowflake") }}
           </div>
         </div>
-
-        <div class="sm:col-span-1">
-          <label for="port" class="textlabel block">{{
-            $t("instance.port")
-          }}</label>
-          <input
-            id="port"
-            type="number"
-            name="port"
-            class="textfield mt-1 w-full"
-            :placeholder="defaultPort"
-            :disabled="!allowEdit"
-            :value="adminDataSource.port"
-            @wheel="handleInstancePortWheelScroll"
-            @input="handleInstancePortInput"
-          />
-        </div>
-
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <div class="sm:col-span-1">
+            <label for="port" class="textlabel block">{{
+              $t("instance.port")
+            }}</label>
+            <input
+              id="port"
+              type="number"
+              name="port"
+              class="textfield mt-1 w-full"
+              :placeholder="defaultPort"
+              :disabled="!allowEdit"
+              :value="adminDataSource.port"
+              @wheel="handleInstancePortWheelScroll"
+              @input="handleInstancePortInput"
+            />
+          </div>
+        </template>
         <!--Do not show external link on create to reduce cognitive load-->
         <div class="sm:col-span-3 sm:col-start-1">
           <label for="externallink" class="textlabel inline-flex">
@@ -192,38 +203,47 @@
             />
           </NTab>
         </NTabs>
+
         <CreateDataSourceExample
           className="sm:col-span-3 border-none mt-2"
           :createInstanceFlag="false"
           :engineType="state.instance.engine"
           :dataSourceType="state.currentDataSourceType"
         />
-        <div class="mt-2 sm:col-span-1 sm:col-start-1">
-          <label for="username" class="textlabel block">
-            {{ $t("common.username") }}
-            <span class="text-red-600">*</span>
-          </label>
-          <!-- For mysql, username can be empty indicating anonymous user.
+
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <div class="mt-2 sm:col-span-1 sm:col-start-1">
+            <label for="username" class="textlabel block">
+              {{ $t("common.username") }}
+              <span class="text-red-600">*</span>
+            </label>
+            <!-- For mysql, username can be empty indicating anonymous user.
           But it's a very bad practice to use anonymous user for admin operation,
           thus we make it REQUIRED here.-->
-          <input
-            id="username"
-            name="username"
-            type="text"
-            class="textfield mt-1 w-full"
-            :disabled="!allowEdit"
-            :placeholder="
-              instance.engine == 'CLICKHOUSE' ? $t('common.default') : ''
-            "
-            :value="currentDataSource.username"
-            @input="handleCurrentDataSourceNameInput"
-          />
-        </div>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="textfield mt-1 w-full"
+              :disabled="!allowEdit"
+              :placeholder="
+                instance.engine == 'CLICKHOUSE' ? $t('common.default') : ''
+              "
+              :value="currentDataSource.username"
+              @input="handleCurrentDataSourceNameInput"
+            />
+          </div>
+        </template>
 
         <div class="mt-2 sm:col-span-1 sm:col-start-1">
           <div class="flex flex-row items-center space-x-2">
             <label for="password" class="textlabel block">
-              {{ $t("common.password") }}
+              <template v-if="state.instance.engine === 'SPANNER'">
+                {{ $t("common.credentials") }}
+              </template>
+              <template v-else>
+                {{ $t("common.password") }}
+              </template>
               <span class="text-red-600">*</span>
             </label>
             <BBCheckbox
@@ -241,6 +261,8 @@
             :placeholder="
               currentDataSource.useEmptyPassword
                 ? $t('instance.no-password')
+                : state.instance.engine === 'SPANNER'
+                ? $t('instance.credentials-write-only')
                 : $t('instance.password-write-only')
             "
             :disabled="!allowEdit || currentDataSource.useEmptyPassword"

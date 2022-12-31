@@ -137,7 +137,7 @@ type Table struct {
 	CreateOptions string
 	// Comment isn't supported for SQLite, MongoDB.
 	Comment string
-	// Columnlist isn't supported for MongoDB.
+	// ColumnList isn't supported for MongoDB.
 	ColumnList []Column
 	// IndexList isn't supported for ClickHouse, Snowflake.
 	IndexList []Index

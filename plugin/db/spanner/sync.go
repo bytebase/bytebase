@@ -6,6 +6,8 @@ import (
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"google.golang.org/api/iterator"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -24,7 +26,18 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 		if err != nil {
 			return nil, err
 		}
-		databaseList = append(databaseList, db.DatabaseMeta{Name: database.Name})
+
+		// database.Name is of the form `projects/<project>/instances/<instance>/databases/<database>`
+		// We use regular expression to extract <database> from it.
+		databaseName, err := getDatabaseFromDSN(database.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database name from %s", database.Name)
+		}
+		if excludedDatabaseList[databaseName] {
+			continue
+		}
+
+		databaseList = append(databaseList, db.DatabaseMeta{Name: databaseName})
 	}
 
 	return &db.InstanceMeta{
@@ -34,5 +47,5 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 
 // SyncDBSchema syncs a single database schema.
 func (*Driver) SyncDBSchema(_ context.Context, _ string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
-	panic("not implemented")
+	return nil, nil, errors.New("not implemented")
 }
