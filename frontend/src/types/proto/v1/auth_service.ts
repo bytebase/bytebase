@@ -1,6 +1,7 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
+import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
@@ -50,9 +51,59 @@ export function userRoleToJSON(object: UserRole): string {
   }
 }
 
+export interface GetUserRequest {
+  /**
+   * The name of the user to retrieve.
+   * Format: users/{user}
+   */
+  name: string;
+}
+
+export interface ListUsersRequest {
+  /**
+   * The maximum number of users to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 users will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListUsers` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListUsers` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+  /** Show deleted users if specified. */
+  showDeleted: boolean;
+}
+
+export interface ListUsersResponse {
+  /** The users from the specified publisher. */
+  users: User[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface CreateUserRequest {
   /** The user to create. */
   user?: User;
+}
+
+export interface UpdateUserRequest {
+  /**
+   * The user to update.
+   *
+   * The user's `name` field is used to identify the user to update.
+   * Format: users/{user}
+   */
+  user?: User;
+  /** The list of fields to update. */
+  updateMask?: string[];
 }
 
 export interface LoginRequest {
@@ -82,6 +133,182 @@ export interface User {
   /** The user role will not be respected in the create user request, because the role is controlled by workspace owner. */
   userRole: UserRole;
 }
+
+function createBaseGetUserRequest(): GetUserRequest {
+  return { name: "" };
+}
+
+export const GetUserRequest = {
+  encode(message: GetUserRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetUserRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetUserRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetUserRequest>, I>>(object: I): GetUserRequest {
+    const message = createBaseGetUserRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseListUsersRequest(): ListUsersRequest {
+  return { pageSize: 0, pageToken: "", showDeleted: false };
+}
+
+export const ListUsersRequest = {
+  encode(message: ListUsersRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.pageSize !== 0) {
+      writer.uint32(8).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(18).string(message.pageToken);
+    }
+    if (message.showDeleted === true) {
+      writer.uint32(24).bool(message.showDeleted);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListUsersRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUsersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pageSize = reader.int32();
+          break;
+        case 2:
+          message.pageToken = reader.string();
+          break;
+        case 3:
+          message.showDeleted = reader.bool();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUsersRequest {
+    return {
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
+    };
+  },
+
+  toJSON(message: ListUsersRequest): unknown {
+    const obj: any = {};
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ListUsersRequest>, I>>(object: I): ListUsersRequest {
+    const message = createBaseListUsersRequest();
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    message.showDeleted = object.showDeleted ?? false;
+    return message;
+  },
+};
+
+function createBaseListUsersResponse(): ListUsersResponse {
+  return { users: [], nextPageToken: "" };
+}
+
+export const ListUsersResponse = {
+  encode(message: ListUsersResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.users) {
+      User.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListUsersResponse {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUsersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.users.push(User.decode(reader, reader.uint32()));
+          break;
+        case 2:
+          message.nextPageToken = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUsersResponse {
+    return {
+      users: Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListUsersResponse): unknown {
+    const obj: any = {};
+    if (message.users) {
+      obj.users = message.users.map((e) => e ? User.toJSON(e) : undefined);
+    } else {
+      obj.users = [];
+    }
+    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ListUsersResponse>, I>>(object: I): ListUsersResponse {
+    const message = createBaseListUsersResponse();
+    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
 
 function createBaseCreateUserRequest(): CreateUserRequest {
   return { user: undefined };
@@ -126,6 +353,64 @@ export const CreateUserRequest = {
   fromPartial<I extends Exact<DeepPartial<CreateUserRequest>, I>>(object: I): CreateUserRequest {
     const message = createBaseCreateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateUserRequest(): UpdateUserRequest {
+  return { user: undefined, updateMask: undefined };
+}
+
+export const UpdateUserRequest = {
+  encode(message: UpdateUserRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.user !== undefined) {
+      User.encode(message.user, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateUserRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateUserRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.user = User.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateUserRequest {
+    return {
+      user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateUserRequest): unknown {
+    const obj: any = {};
+    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<UpdateUserRequest>, I>>(object: I): UpdateUserRequest {
+    const message = createBaseUpdateUserRequest();
+    message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
+    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
@@ -378,7 +663,10 @@ export const User = {
 };
 
 export interface AuthService {
+  GetUser(request: GetUserRequest): Promise<User>;
+  ListUsers(request: ListUsersRequest): Promise<ListUsersResponse>;
   CreateUser(request: CreateUserRequest): Promise<User>;
+  UpdateUser(request: UpdateUserRequest): Promise<User>;
   Login(request: LoginRequest): Promise<LoginResponse>;
   Logout(request: LogoutRequest): Promise<Empty>;
 }
@@ -389,13 +677,34 @@ export class AuthServiceClientImpl implements AuthService {
   constructor(rpc: Rpc, opts?: { service?: string }) {
     this.service = opts?.service || "bytebase.v1.AuthService";
     this.rpc = rpc;
+    this.GetUser = this.GetUser.bind(this);
+    this.ListUsers = this.ListUsers.bind(this);
     this.CreateUser = this.CreateUser.bind(this);
+    this.UpdateUser = this.UpdateUser.bind(this);
     this.Login = this.Login.bind(this);
     this.Logout = this.Logout.bind(this);
   }
+  GetUser(request: GetUserRequest): Promise<User> {
+    const data = GetUserRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetUser", data);
+    return promise.then((data) => User.decode(new _m0.Reader(data)));
+  }
+
+  ListUsers(request: ListUsersRequest): Promise<ListUsersResponse> {
+    const data = ListUsersRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "ListUsers", data);
+    return promise.then((data) => ListUsersResponse.decode(new _m0.Reader(data)));
+  }
+
   CreateUser(request: CreateUserRequest): Promise<User> {
     const data = CreateUserRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "CreateUser", data);
+    return promise.then((data) => User.decode(new _m0.Reader(data)));
+  }
+
+  UpdateUser(request: UpdateUserRequest): Promise<User> {
+    const data = UpdateUserRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UpdateUser", data);
     return promise.then((data) => User.decode(new _m0.Reader(data)));
   }
 
