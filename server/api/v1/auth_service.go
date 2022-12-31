@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -140,6 +141,66 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	return convertToUser(user), nil
 }
 
+// UpdateUser updates a user.
+func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRequest) (*v1pb.User, error) {
+	if request.User == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
+	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+
+	userID, err := getUserID(request.User.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	if principalID != userID && role != api.Owner {
+		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner or user itself can update the user %d", userID)
+	}
+
+	patch := &store.UpdateUserMessage{}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "user.email":
+			patch.Email = &request.User.Email
+		case "user.title":
+			patch.Name = &request.User.Title
+		case "user.password":
+			passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to generate password hash, error %v", err)
+			}
+			passwordHashStr := string(passwordHash)
+			patch.PasswordHash = &passwordHashStr
+		case "user.role":
+			if role != api.Owner {
+				return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can update user role")
+			}
+			userRole := convertUserRole(request.User.UserRole)
+			if userRole == api.UnknownRole {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
+			}
+			patch.Role = &userRole
+		}
+	}
+
+	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update user, error %v", err)
+	}
+	return convertToUser(user), nil
+}
+
 func getUserID(name string) (int, error) {
 	if !strings.HasPrefix(name, userNamePrefix) {
 		return 0, errors.Errorf("invalid user name %q", name)
@@ -182,6 +243,18 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserType: userType,
 		UserRole: role,
 	}
+}
+
+func convertUserRole(userRole v1pb.UserRole) api.Role {
+	switch userRole {
+	case v1pb.UserRole_OWNER:
+		return api.Owner
+	case v1pb.UserRole_DBA:
+		return api.DBA
+	case v1pb.UserRole_DEVELOPER:
+		return api.Developer
+	}
+	return api.UnknownRole
 }
 
 // Login is the auth login method.
