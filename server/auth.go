@@ -12,8 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	metricAPI "github.com/bytebase/bytebase/metric"
-	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/server/component/activity"
 )
@@ -182,41 +180,6 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal login response").SetInternal(err)
-		}
-		return nil
-	})
-
-	g.POST("/auth/signup", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		signUp := &api.SignUp{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, signUp); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sign up request").SetInternal(err)
-		}
-
-		user, err := trySignUp(ctx, s, signUp, api.SystemBotID)
-		if err != nil {
-			return err
-		}
-
-		if err := GenerateTokensAndSetCookies(c, user, s.profile.Mode, s.secret); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
-		}
-
-		if user.ID == api.PrincipalIDForFirstUser && s.MetricReporter != nil {
-			s.MetricReporter.Report(&metric.Metric{
-				Name:  metricAPI.FirstPrincipalMetricName,
-				Value: 1,
-				Labels: map[string]interface{}{
-					"email":         user.Email,
-					"name":          user.Name,
-					"lark_notified": false,
-				},
-			})
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sign up response").SetInternal(err)
 		}
 		return nil
 	})
