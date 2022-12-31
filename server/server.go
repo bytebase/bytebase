@@ -301,32 +301,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		XFrameOptions: "DENY",
 	}))
 
-	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
-	s.grpcServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, authProvider.ACLInterceptor),
-	)
-	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
-	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, &profile))
-	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
-	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService))
-	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
-	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterEnvironmentServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterInstanceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
-		return nil, err
-	}
-	if err := v1pb.RegisterProjectServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
-		return nil, err
-	}
-	e.Any("/v1/*", echo.WrapHandler(mux))
-
 	embedFrontend(e)
 	s.e = e
 
@@ -461,6 +435,32 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK!\n")
 	})
+
+	// Setup the gRPC and grpc-gateway.
+	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
+	s.grpcServer = grpc.NewServer(
+		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, authProvider.ACLInterceptor),
+	)
+	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
+	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile))
+	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
+	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService))
+	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
+	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterEnvironmentServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterInstanceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterProjectServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	e.Any("/v1/*", echo.WrapHandler(mux))
 
 	// Register open API routes
 	s.registerOpenAPIRoutes(e, ce, profile)
