@@ -7,9 +7,9 @@ export const protobufPackage = "bytebase.v1";
 
 export enum UserRole {
   USER_ROLE_UNSPECIFIED = 0,
-  USER_ROLE_OWNER = 1,
-  USER_ROLE_DBA = 2,
-  USER_ROLE_DEVELOPER = 3,
+  OWNER = 1,
+  DBA = 2,
+  DEVELOPER = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -19,14 +19,14 @@ export function userRoleFromJSON(object: any): UserRole {
     case "USER_ROLE_UNSPECIFIED":
       return UserRole.USER_ROLE_UNSPECIFIED;
     case 1:
-    case "USER_ROLE_OWNER":
-      return UserRole.USER_ROLE_OWNER;
+    case "OWNER":
+      return UserRole.OWNER;
     case 2:
-    case "USER_ROLE_DBA":
-      return UserRole.USER_ROLE_DBA;
+    case "DBA":
+      return UserRole.DBA;
     case 3:
-    case "USER_ROLE_DEVELOPER":
-      return UserRole.USER_ROLE_DEVELOPER;
+    case "DEVELOPER":
+      return UserRole.DEVELOPER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -38,12 +38,12 @@ export function userRoleToJSON(object: UserRole): string {
   switch (object) {
     case UserRole.USER_ROLE_UNSPECIFIED:
       return "USER_ROLE_UNSPECIFIED";
-    case UserRole.USER_ROLE_OWNER:
-      return "USER_ROLE_OWNER";
-    case UserRole.USER_ROLE_DBA:
-      return "USER_ROLE_DBA";
-    case UserRole.USER_ROLE_DEVELOPER:
-      return "USER_ROLE_DEVELOPER";
+    case UserRole.OWNER:
+      return "OWNER";
+    case UserRole.DBA:
+      return "DBA";
+    case UserRole.DEVELOPER:
+      return "DEVELOPER";
     case UserRole.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

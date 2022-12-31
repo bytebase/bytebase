@@ -263,19 +263,19 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	engine := v1pb.Engine_ENGINE_UNSPECIFIED
 	switch instance.Engine {
 	case db.ClickHouse:
-		engine = v1pb.Engine_ENGINE_CLICKHOUSE
+		engine = v1pb.Engine_CLICKHOUSE
 	case db.MySQL:
-		engine = v1pb.Engine_ENGINE_MYSQL
+		engine = v1pb.Engine_MYSQL
 	case db.Postgres:
-		engine = v1pb.Engine_ENGINE_POSTGRES
+		engine = v1pb.Engine_POSTGRES
 	case db.Snowflake:
-		engine = v1pb.Engine_ENGINE_SNOWFLAKE
+		engine = v1pb.Engine_SNOWFLAKE
 	case db.SQLite:
-		engine = v1pb.Engine_ENGINE_SQLITE
+		engine = v1pb.Engine_SQLITE
 	case db.TiDB:
-		engine = v1pb.Engine_ENGINE_TIDB
+		engine = v1pb.Engine_TIDB
 	case db.MongoDB:
-		engine = v1pb.Engine_ENGINE_MONGODB
+		engine = v1pb.Engine_MONGODB
 	}
 
 	dataSourceList := []*v1pb.DataSource{}
@@ -283,9 +283,9 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		dataSourceType := v1pb.DataSourceType_DATA_SOURCE_UNSPECIFIED
 		switch ds.Type {
 		case api.Admin:
-			dataSourceType = v1pb.DataSourceType_DATA_SOURCE_ADMIN
+			dataSourceType = v1pb.DataSourceType_ADMIN
 		case api.RO:
-			dataSourceType = v1pb.DataSourceType_DATA_SOURCE_RO
+			dataSourceType = v1pb.DataSourceType_READ_ONLY
 		}
 
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
@@ -315,19 +315,19 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
 	var engine db.Type
 	switch instance.Engine {
-	case v1pb.Engine_ENGINE_CLICKHOUSE:
+	case v1pb.Engine_CLICKHOUSE:
 		engine = db.ClickHouse
-	case v1pb.Engine_ENGINE_MYSQL:
+	case v1pb.Engine_MYSQL:
 		engine = db.MySQL
-	case v1pb.Engine_ENGINE_POSTGRES:
+	case v1pb.Engine_POSTGRES:
 		engine = db.Postgres
-	case v1pb.Engine_ENGINE_SNOWFLAKE:
+	case v1pb.Engine_SNOWFLAKE:
 		engine = db.Snowflake
-	case v1pb.Engine_ENGINE_SQLITE:
+	case v1pb.Engine_SQLITE:
 		engine = db.SQLite
-	case v1pb.Engine_ENGINE_TIDB:
+	case v1pb.Engine_TIDB:
 		engine = db.TiDB
-	case v1pb.Engine_ENGINE_MONGODB:
+	case v1pb.Engine_MONGODB:
 		engine = db.MongoDB
 	default:
 		return nil, errors.Errorf("invalid instance engine %v", instance.Engine)
@@ -352,9 +352,9 @@ func convertToDataSourceMessageList(dataSources []*v1pb.DataSource) ([]*store.Da
 	for _, ds := range dataSources {
 		var dsType api.DataSourceType
 		switch ds.Type {
-		case v1pb.DataSourceType_DATA_SOURCE_RO:
+		case v1pb.DataSourceType_READ_ONLY:
 			dsType = api.RO
-		case v1pb.DataSourceType_DATA_SOURCE_ADMIN:
+		case v1pb.DataSourceType_ADMIN:
 			dsType = api.Admin
 		default:
 			return nil, errors.Errorf("invalid data source type %v", ds.Type)

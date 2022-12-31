@@ -74,7 +74,7 @@ message User {
 
 enum UserRole {
   USER_ROLE_UNSPECIFIED = 0;
-  USER_ROLE_OWNER = 1;
-  USER_ROLE_DBA = 2;
-  USER_ROLE_DEVELOPER = 3;
+  OWNER = 1;
+  DBA = 2;
+  DEVELOPER = 3;
 }

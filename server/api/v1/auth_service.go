@@ -111,11 +111,11 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	role := v1pb.UserRole_USER_ROLE_UNSPECIFIED
 	switch user.Role {
 	case api.Owner:
-		role = v1pb.UserRole_USER_ROLE_OWNER
+		role = v1pb.UserRole_OWNER
 	case api.DBA:
-		role = v1pb.UserRole_USER_ROLE_DBA
+		role = v1pb.UserRole_DBA
 	case api.Developer:
-		role = v1pb.UserRole_USER_ROLE_DEVELOPER
+		role = v1pb.UserRole_DEVELOPER
 	}
 	return &v1pb.User{
 		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
