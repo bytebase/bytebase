@@ -520,8 +520,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			principal.id AS user_id,
-			principal.name,
 			principal.email,
+			principal.name,
+			principal.type,
 			principal.password_hash,
 			member.role,
 			member.row_status AS row_status
@@ -539,8 +540,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		var rowStatus string
 		if err := rows.Scan(
 			&userMessage.ID,
-			&userMessage.Name,
 			&userMessage.Email,
+			&userMessage.Name,
+			&userMessage.Type,
 			&userMessage.PasswordHash,
 			&userMessage.Role,
 			&rowStatus,
@@ -579,9 +581,9 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 			INSERT INTO principal (
 				creator_id,
 				updater_id,
-				type,
-				name,
 				email,
+				name,
+				type,
 				password_hash
 			)
 			VALUES ($1, $2, $3, $4, $5, $6)
@@ -589,9 +591,9 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		`,
 		creatorID,
 		creatorID,
-		create.Type,
-		create.Name,
 		create.Email,
+		create.Name,
+		create.Type,
 		create.PasswordHash,
 	).Scan(&userID); err != nil {
 		return nil, FormatError(err)
