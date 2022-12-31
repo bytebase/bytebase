@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
@@ -12,9 +13,12 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/api"
+	metricAPI "github.com/bytebase/bytebase/metric"
+	"github.com/bytebase/bytebase/plugin/metric"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/server/api/auth"
 	"github.com/bytebase/bytebase/server/component/config"
+	"github.com/bytebase/bytebase/server/runner/metricreport"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -23,17 +27,19 @@ const userNamePrefix = "users/"
 // AuthService implements the auth service.
 type AuthService struct {
 	v1pb.UnimplementedAuthServiceServer
-	store   *store.Store
-	secret  string
-	profile *config.Profile
+	store          *store.Store
+	secret         string
+	metricReporter *metricreport.Reporter
+	profile        *config.Profile
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, profile *config.Profile) *AuthService {
+func NewAuthService(store *store.Store, secret string, metricReporter *metricreport.Reporter, profile *config.Profile) *AuthService {
 	return &AuthService{
-		store:   store,
-		secret:  secret,
-		profile: profile,
+		store:          store,
+		secret:         secret,
+		metricReporter: metricReporter,
+		profile:        profile,
 	}
 }
 
@@ -65,6 +71,39 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user, error %v", err)
 	}
+
+	if user.ID == api.PrincipalIDForFirstUser && s.metricReporter != nil {
+		s.metricReporter.Report(&metric.Metric{
+			Name:  metricAPI.FirstPrincipalMetricName,
+			Value: 1,
+			Labels: map[string]interface{}{
+				"email":         user.Email,
+				"name":          user.Name,
+				"lark_notified": false,
+			},
+		})
+	}
+	bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
+		PrincipalID:    user.ID,
+		PrincipalName:  user.Name,
+		PrincipalEmail: user.Email,
+		MemberStatus:   api.Active,
+		Role:           user.Role,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to construct activity payload, error %v", err)
+	}
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   user.ID,
+		ContainerID: user.ID,
+		Type:        api.ActivityMemberCreate,
+		Level:       api.ActivityInfo,
+		Payload:     string(bytes),
+	}
+	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create activity, error %v", err)
+	}
+
 	return convertToUser(user), nil
 }
 
@@ -99,7 +138,6 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if user.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user %q has been deactivated by administrators", request.Email)
 	}
-
 	// Compare the stored hashed password, with the hashed version of the password that was received.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
