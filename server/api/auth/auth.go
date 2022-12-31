@@ -94,6 +94,9 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 		return handler(ctx, req)
 	}
 
+	if accessTokenStr == "" {
+		return nil, status.Errorf(codes.Unauthenticated, "access token not found")
+	}
 	claims := &claimsMessage{}
 	generateToken := false
 	accessToken, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (interface{}, error) {
