@@ -164,10 +164,18 @@ message User {
 
   string password = 5 [(google.api.field_behavior) = INPUT_ONLY];
 
+  UserType user_type = 6;
+
   // The user role will not be respected in the create user request, because the role is controlled by workspace owner.
-  UserRole user_role = 6;
+  UserRole user_role = 7;
 }
 
+enum UserType {
+  USER_TYPE_UNSPECIFIED = 0;
+  USER = 1;
+  SYSTEM_BOT = 2;
+  SERVICE_ACCOUNT = 3;
+}
 
 enum UserRole {
   USER_ROLE_UNSPECIFIED = 0;
