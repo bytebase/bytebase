@@ -27,6 +27,7 @@
     "sign-up": "注册",
     "email": "邮箱",
     "username": "用户名",
+    "credentials": "凭据",
     "password": "密码",
     "activate": "激活",
     "save": "保存",
@@ -678,6 +679,7 @@
     "account": "账户",
     "name": "名称",
     "host-or-socket": "Host 或 Socket",
+    "project-id-and-instance-id": "项目 ID 与实例 ID",
     "your-snowflake-account-name": "您的 Snowflake @:{'instance.account'}@:{'instance.name'}",
     "port": "端口",
     "instance-name": "@:common.instance@:instance.name",
@@ -724,6 +726,7 @@
       }
     },
     "no-password": "无密码",
+    "credentials-write-only": "CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",

@@ -11,7 +11,8 @@ export type EngineType =
   | "POSTGRES"
   | "SNOWFLAKE"
   | "TIDB"
-  | "MONGODB";
+  | "MONGODB"
+  | "SPANNER";
 
 export function defaultCharset(type: EngineType): string {
   switch (type) {
@@ -24,6 +25,8 @@ export function defaultCharset(type: EngineType): string {
     case "POSTGRES":
       return "UTF8";
     case "MONGODB":
+      return "";
+    case "SPANNER":
       return "";
   }
 }
@@ -42,6 +45,8 @@ export function engineName(type: EngineType): string {
       return "TiDB";
     case "MONGODB":
       return "MongoDB";
+    case "SPANNER":
+      return "Spanner";
   }
 }
 
@@ -59,6 +64,8 @@ export function defaultCollation(type: EngineType): string {
     case "POSTGRES":
       return "";
     case "MONGODB":
+      return "";
+    case "SPANNER":
       return "";
   }
 }
