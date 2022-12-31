@@ -27,6 +27,10 @@ func TestServiceRestart(t *testing.T) {
 		vcsProviderCreator: fake.NewGitLab,
 	})
 	a.NoError(err)
+	err = ctl.Signup()
+	a.NoError(err)
+	err = ctl.Login()
+	a.NoError(err)
 
 	projects, err := ctl.getProjects()
 	a.NoError(err)
