@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -11,6 +13,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	metricAPI "github.com/bytebase/bytebase/metric"
@@ -41,6 +45,35 @@ func NewAuthService(store *store.Store, secret string, metricReporter *metricrep
 		metricReporter: metricReporter,
 		profile:        profile,
 	}
+}
+
+// GetUser gets a user.
+func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest) (*v1pb.User, error) {
+	userID, err := getUserID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
+	}
+	return convertToUser(user), nil
+}
+
+// ListUsers lists all users.
+func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
+	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{ShowDeleted: request.ShowDeleted})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list user, error %v", err)
+	}
+	response := &v1pb.ListUsersResponse{}
+	for _, user := range users {
+		response.Users = append(response.Users, convertToUser(user))
+	}
+	return response, nil
 }
 
 // CreateUser creates a user.
@@ -105,6 +138,21 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	return convertToUser(user), nil
+}
+
+func getUserID(name string) (int, error) {
+	if !strings.HasPrefix(name, userNamePrefix) {
+		return 0, errors.Errorf("invalid user name %q", name)
+	}
+	userStr := strings.TrimPrefix(name, userNamePrefix)
+	if userStr == "" {
+		return 0, errors.Errorf("user cannot be empty")
+	}
+	userID, err := strconv.Atoi(userStr)
+	if err != nil {
+		return 0, errors.Errorf("invalid user ID %q", userStr)
+	}
+	return userID, nil
 }
 
 func convertToUser(user *store.UserMessage) *v1pb.User {

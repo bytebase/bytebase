@@ -431,6 +431,26 @@ type UserMessage struct {
 	MemberDeleted bool
 }
 
+// ListUsers list all users.
+func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	userMessages, err := s.listUserImpl(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return userMessages, nil
+}
+
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
