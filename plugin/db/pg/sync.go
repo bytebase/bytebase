@@ -426,15 +426,15 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	defer rows.Close()
 	for rows.Next() {
 		column := &storepb.ColumnMetadata{}
-		var schemaName, tableName, isNullable string
+		var schemaName, tableName, nullable string
 		var defaultStr, collation, udtSchema, udtName, comment sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &isNullable, &collation, &udtSchema, &udtName, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &comment); err != nil {
 			return nil, err
 		}
 		if defaultStr.Valid {
 			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
 		}
-		isNullBool, err := util.ConvertYesNo(isNullable)
+		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
 		}
