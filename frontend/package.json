@@ -77,7 +77,7 @@
     "@types/downloadjs": "1.4.3",
     "@types/js-yaml": "4.0.5",
     "@types/lodash-es": "4.17.6",
-    "@types/node": "18.11.9",
+    "@types/node": "18.11.18",
     "@types/normalize-wheel": "^1.0.1",
     "@types/papaparse": "5.3.5",
     "@types/prettier": "2.7.1",
