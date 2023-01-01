@@ -97,7 +97,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	for columnRows.Next() {
 		var tableName string
 		var defaultStr sql.NullString
-		column := storepb.ColumnMetadata{}
+		column := &storepb.ColumnMetadata{}
 		if err := columnRows.Scan(
 			&tableName,
 			&column.Name,
@@ -111,7 +111,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		if defaultStr.Valid {
 			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
 		}
-		columnMap[tableName] = append(columnMap[tableName], &column)
+		columnMap[tableName] = append(columnMap[tableName], column)
 	}
 	if err := columnRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
