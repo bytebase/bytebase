@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -12,7 +14,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -41,6 +46,35 @@ func NewAuthService(store *store.Store, secret string, metricReporter *metricrep
 		metricReporter: metricReporter,
 		profile:        profile,
 	}
+}
+
+// GetUser gets a user.
+func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest) (*v1pb.User, error) {
+	userID, err := getUserID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
+	}
+	return convertToUser(user), nil
+}
+
+// ListUsers lists all users.
+func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
+	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{ShowDeleted: request.ShowDeleted})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list user, error %v", err)
+	}
+	response := &v1pb.ListUsersResponse{}
+	for _, user := range users {
+		response.Users = append(response.Users, convertToUser(user))
+	}
+	return response, nil
 }
 
 // CreateUser creates a user.
@@ -107,23 +141,182 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	return convertToUser(user), nil
 }
 
+// UpdateUser updates a user.
+func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRequest) (*v1pb.User, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if request.User == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
+	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+
+	userID, err := getUserID(request.User.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
+	}
+	if user.MemberDeleted {
+		return nil, status.Errorf(codes.InvalidArgument, "user %q has been deleted", userID)
+	}
+
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	if principalID != userID && role != api.Owner {
+		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner or user itself can update the user %d", userID)
+	}
+
+	patch := &store.UpdateUserMessage{}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "user.email":
+			patch.Email = &request.User.Email
+		case "user.title":
+			patch.Name = &request.User.Title
+		case "user.password":
+			passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to generate password hash, error %v", err)
+			}
+			passwordHashStr := string(passwordHash)
+			patch.PasswordHash = &passwordHashStr
+		case "user.role":
+			if role != api.Owner {
+				return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can update user role")
+			}
+			userRole := convertUserRole(request.User.UserRole)
+			if userRole == api.UnknownRole {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
+			}
+			patch.Role = &userRole
+		}
+	}
+
+	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update user, error %v", err)
+	}
+	return convertToUser(user), nil
+}
+
+// DeleteUser deletes a user.
+func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRequest) (*emptypb.Empty, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	userID, err := getUserID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
+	}
+	if user.MemberDeleted {
+		return nil, status.Errorf(codes.InvalidArgument, "user %q has been deleted", userID)
+	}
+
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	if role != api.Owner {
+		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can delete the user %d", userID)
+	}
+
+	if _, err := s.store.UpdateUser(ctx, userID, &store.UpdateUserMessage{Delete: &deletePatch}, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
+}
+
+// UndeleteUser undeletes a user.
+func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUserRequest) (*v1pb.User, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	userID, err := getUserID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
+	}
+	if !user.MemberDeleted {
+		return nil, status.Errorf(codes.InvalidArgument, "user %q is already active", userID)
+	}
+
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	if role != api.Owner {
+		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can undelete the user %d", userID)
+	}
+
+	user, err = s.store.UpdateUser(ctx, userID, &store.UpdateUserMessage{Delete: &undeletePatch}, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToUser(user), nil
+}
+
+func getUserID(name string) (int, error) {
+	if !strings.HasPrefix(name, userNamePrefix) {
+		return 0, errors.Errorf("invalid user name %q", name)
+	}
+	userStr := strings.TrimPrefix(name, userNamePrefix)
+	if userStr == "" {
+		return 0, errors.Errorf("user cannot be empty")
+	}
+	userID, err := strconv.Atoi(userStr)
+	if err != nil {
+		return 0, errors.Errorf("invalid user ID %q", userStr)
+	}
+	return userID, nil
+}
+
 func convertToUser(user *store.UserMessage) *v1pb.User {
 	role := v1pb.UserRole_USER_ROLE_UNSPECIFIED
 	switch user.Role {
 	case api.Owner:
-		role = v1pb.UserRole_USER_ROLE_OWNER
+		role = v1pb.UserRole_OWNER
 	case api.DBA:
-		role = v1pb.UserRole_USER_ROLE_DBA
+		role = v1pb.UserRole_DBA
 	case api.Developer:
-		role = v1pb.UserRole_USER_ROLE_DEVELOPER
+		role = v1pb.UserRole_DEVELOPER
+	}
+	userType := v1pb.UserType_USER_TYPE_UNSPECIFIED
+	switch user.Type {
+	case api.EndUser:
+		userType = v1pb.UserType_USER
+	case api.SystemBot:
+		userType = v1pb.UserType_SYSTEM_BOT
+	case api.ServiceAccount:
+		userType = v1pb.UserType_SERVICE_ACCOUNT
 	}
 	return &v1pb.User{
 		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Title:    user.Name,
+		UserType: userType,
 		UserRole: role,
 	}
+}
+
+func convertUserRole(userRole v1pb.UserRole) api.Role {
+	switch userRole {
+	case v1pb.UserRole_OWNER:
+		return api.Owner
+	case v1pb.UserRole_DBA:
+		return api.DBA
+	case v1pb.UserRole_DEVELOPER:
+		return api.Developer
+	}
+	return api.UnknownRole
 }
 
 // Login is the auth login method.

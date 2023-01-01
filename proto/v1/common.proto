@@ -6,6 +6,6 @@ option go_package = "generated-go/v1";
 
 enum State {
   STATE_UNSPECIFIED = 0;
-  STATE_ACTIVE = 1;
-  STATE_DELETED = 2;
+  ACTIVE = 1;
+  DELETED = 2;
 }
