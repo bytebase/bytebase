@@ -14,9 +14,9 @@ var (
 
 func convertDeletedToState(deleted bool) v1pb.State {
 	if deleted {
-		return v1pb.State_STATE_DELETED
+		return v1pb.State_DELETED
 	}
-	return v1pb.State_STATE_ACTIVE
+	return v1pb.State_ACTIVE
 }
 
 func isValidResourceID(resourceID string) bool {

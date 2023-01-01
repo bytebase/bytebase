@@ -149,13 +149,13 @@ message Instance {
 
 enum Engine {
   ENGINE_UNSPECIFIED = 0;
-  ENGINE_CLICKHOUSE = 1;
-  ENGINE_MYSQL = 2;
-  ENGINE_POSTGRES = 3;
-  ENGINE_SNOWFLAKE = 4;
-  ENGINE_SQLITE = 5;
-  ENGINE_TIDB = 6;
-  ENGINE_MONGODB = 7;
+  CLICKHOUSE = 1;
+  MYSQL = 2;
+  POSTGRES = 3;
+  SNOWFLAKE = 4;
+  SQLITE = 5;
+  TIDB = 6;
+  MONGODB = 7;
 }
 
 message DataSource {
@@ -173,6 +173,6 @@ message DataSource {
 
 enum DataSourceType {
   DATA_SOURCE_UNSPECIFIED = 0;
-  DATA_SOURCE_ADMIN = 1;
-  DATA_SOURCE_RO = 2;
+  ADMIN = 1;
+  READ_ONLY = 2;
 }

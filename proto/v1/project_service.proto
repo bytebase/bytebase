@@ -146,8 +146,8 @@ message Project {
 
 enum Workflow {
   WORKFLOW_UNSPECIFIED = 0;
-  WORKFLOW_UI = 1;
-  WORKFLOW_VCS = 2;
+  UI = 1;
+  VCS = 2;
 }
 
 enum Visibility {
@@ -164,21 +164,21 @@ enum TenantMode {
 
 enum RoleProvider {
   ROLE_PROVIDER_UNSPECIFIED = 0;
-  ROLE_PROVIDER_BYTEBASE = 1;
-  ROLE_PROVIDER_GITLAB_SELF_HOST = 2;
-  ROLE_PROVIDER_GITHUB_COM = 3;
+  BYTEBASE = 1;
+  GITLAB_SELF_HOST = 2;
+  GITHUB_COM = 3;
 }
 
 enum SchemaVersion {
   SCHEMA_VERSION_UNSPECIFIED = 0;
-  SCHEMA_VERSION_TIMESTAMP = 1;
-  SCHEMA_VERSION_SEMANTIC = 2;
+  TIMESTAMP = 1;
+  SEMANTIC = 2;
 }
 
 enum SchemaChange {
   SCHEMA_CHANGE_UNSPECIFIED = 0;
-  SCHEMA_CHANGE_DDL = 1;
-  SCHEMA_CHANGE_SDL = 2;
+  DDL = 1;
+  SDL = 2;
 }
 
 

@@ -227,9 +227,9 @@ func convertProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	workflow := v1pb.Workflow_WORKFLOW_UNSPECIFIED
 	switch projectMessage.Workflow {
 	case api.UIWorkflow:
-		workflow = v1pb.Workflow_WORKFLOW_UI
+		workflow = v1pb.Workflow_UI
 	case api.VCSWorkflow:
-		workflow = v1pb.Workflow_WORKFLOW_VCS
+		workflow = v1pb.Workflow_VCS
 	}
 
 	visibility := v1pb.Visibility_VISIBILITY_UNSPECIFIED
@@ -251,19 +251,19 @@ func convertProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	roleProvider := v1pb.RoleProvider_ROLE_PROVIDER_UNSPECIFIED
 	switch projectMessage.RoleProvider {
 	case api.ProjectRoleProviderBytebase:
-		roleProvider = v1pb.RoleProvider_ROLE_PROVIDER_BYTEBASE
+		roleProvider = v1pb.RoleProvider_BYTEBASE
 	case api.ProjectRoleProviderGitHubCom:
-		roleProvider = v1pb.RoleProvider_ROLE_PROVIDER_GITHUB_COM
+		roleProvider = v1pb.RoleProvider_GITHUB_COM
 	case api.ProjectRoleProviderGitLabSelfHost:
-		roleProvider = v1pb.RoleProvider_ROLE_PROVIDER_GITLAB_SELF_HOST
+		roleProvider = v1pb.RoleProvider_GITLAB_SELF_HOST
 	}
 
 	schemaChange := v1pb.SchemaChange_SCHEMA_CHANGE_UNSPECIFIED
 	switch projectMessage.SchemaChangeType {
 	case api.ProjectSchemaChangeTypeDDL:
-		schemaChange = v1pb.SchemaChange_SCHEMA_CHANGE_DDL
+		schemaChange = v1pb.SchemaChange_DDL
 	case api.ProjectSchemaChangeTypeSDL:
-		schemaChange = v1pb.SchemaChange_SCHEMA_CHANGE_SDL
+		schemaChange = v1pb.SchemaChange_SDL
 	}
 
 	lgtmCheck := v1pb.LgtmCheck_LGTM_CHECK_UNSPECIFIED
@@ -295,9 +295,9 @@ func convertProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 func convertToProjectWorkflowType(workflow v1pb.Workflow) (api.ProjectWorkflowType, error) {
 	var w api.ProjectWorkflowType
 	switch workflow {
-	case v1pb.Workflow_WORKFLOW_UI:
+	case v1pb.Workflow_UI:
 		w = api.UIWorkflow
-	case v1pb.Workflow_WORKFLOW_VCS:
+	case v1pb.Workflow_VCS:
 		w = api.VCSWorkflow
 	default:
 		return w, errors.Errorf("invalid workflow %v", workflow)
@@ -334,11 +334,11 @@ func convertToProjectTenantMode(tenantMode v1pb.TenantMode) (api.ProjectTenantMo
 func convertToProjectRoleProvider(roleProvider v1pb.RoleProvider) (api.ProjectRoleProvider, error) {
 	var r api.ProjectRoleProvider
 	switch roleProvider {
-	case v1pb.RoleProvider_ROLE_PROVIDER_BYTEBASE:
+	case v1pb.RoleProvider_BYTEBASE:
 		r = api.ProjectRoleProviderBytebase
-	case v1pb.RoleProvider_ROLE_PROVIDER_GITHUB_COM:
+	case v1pb.RoleProvider_GITHUB_COM:
 		r = api.ProjectRoleProviderGitHubCom
-	case v1pb.RoleProvider_ROLE_PROVIDER_GITLAB_SELF_HOST:
+	case v1pb.RoleProvider_GITLAB_SELF_HOST:
 		r = api.ProjectRoleProviderGitLabSelfHost
 	default:
 		return r, errors.Errorf("invalid role provider %v", roleProvider)
@@ -349,9 +349,9 @@ func convertToProjectRoleProvider(roleProvider v1pb.RoleProvider) (api.ProjectRo
 func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) (api.ProjectSchemaChangeType, error) {
 	var s api.ProjectSchemaChangeType
 	switch schemaChange {
-	case v1pb.SchemaChange_SCHEMA_CHANGE_DDL:
+	case v1pb.SchemaChange_DDL:
 		s = api.ProjectSchemaChangeTypeDDL
-	case v1pb.SchemaChange_SCHEMA_CHANGE_SDL:
+	case v1pb.SchemaChange_SDL:
 		s = api.ProjectSchemaChangeTypeSDL
 	default:
 		return s, errors.Errorf("invalid schema change type %v", schemaChange)
