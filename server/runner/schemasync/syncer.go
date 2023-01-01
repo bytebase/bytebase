@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sort"
 	"sync"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -342,14 +340,14 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 
 	// Sync database schema
-	schema, fkMap, err := driver.SyncDBSchema(ctx, databaseName)
+	databaseMetadata, err := driver.SyncDBSchema(ctx, databaseName)
 	if err != nil {
 		return err
 	}
 
 	// When there are too many databases, this might have performance issue and will
 	// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
-	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, schema.Name)
+	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, databaseMetadata.Name)
 	if err != nil {
 		return err
 	}
@@ -379,9 +377,9 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 			ProjectID:            api.DefaultProjectID,
 			InstanceID:           instance.ID,
 			EnvironmentID:        instance.EnvironmentID,
-			Name:                 schema.Name,
-			CharacterSet:         schema.CharacterSet,
-			Collation:            schema.Collation,
+			Name:                 databaseMetadata.Name,
+			CharacterSet:         databaseMetadata.CharacterSet,
+			Collation:            databaseMetadata.Collation,
 			SchemaVersion:        schemaVersion,
 			LastSuccessfulSyncTs: time.Now().Unix(),
 		}
@@ -396,10 +394,10 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 
 	// Sync database schema
-	return syncDBSchema(ctx, s.store, database, schema, fkMap, driver, force)
+	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
 }
 
-func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Database, schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMetadata, driver db.Driver, force bool) error {
+func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Database, databaseMetadata *storepb.DatabaseMetadata, driver db.Driver, force bool) error {
 	dbSchema, err := stores.GetDBSchema(ctx, database.ID)
 	if err != nil {
 		return err
@@ -408,8 +406,6 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 	if dbSchema != nil {
 		oldDatabaseMetadata = dbSchema.Metadata
 	}
-
-	databaseMetadata := convertDBSchema(schema, fkMap)
 
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
 		rawDump := ""
@@ -436,131 +432,6 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 		}
 	}
 	return nil
-}
-
-func convertDBSchema(schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMetadata) *storepb.DatabaseMetadata {
-	if fkMap == nil {
-		fkMap = make(map[string][]*storepb.ForeignKeyMetadata)
-	}
-	databaseMetadata := &storepb.DatabaseMetadata{
-		Name:         schema.Name,
-		CharacterSet: schema.CharacterSet,
-		Collation:    schema.Collation,
-	}
-
-	schemaNameMap := make(map[string]bool)
-	schemaTableMap := make(map[string][]db.Table)
-	schemaViewMap := make(map[string][]db.View)
-	for _, table := range schema.TableList {
-		schemaNameMap[table.Schema] = true
-		schemaTableMap[table.Schema] = append(schemaTableMap[table.Schema], table)
-	}
-	for _, view := range schema.ViewList {
-		schemaNameMap[view.Schema] = true
-		schemaViewMap[view.Schema] = append(schemaViewMap[view.Schema], view)
-	}
-	var schemaNames []string
-	for schemaName := range schemaNameMap {
-		schemaNames = append(schemaNames, schemaName)
-	}
-	sort.Strings(schemaNames)
-	for _, schemaName := range schemaNames {
-		schemaMetadata := &storepb.SchemaMetadata{
-			Name: schemaName,
-		}
-		tables := schemaTableMap[schemaName]
-		sort.Slice(tables, func(i, j int) bool {
-			return tables[i].ShortName < tables[j].ShortName
-		})
-		for _, table := range tables {
-			tableMetadata := &storepb.TableMetadata{
-				Name:          table.ShortName,
-				Engine:        table.Engine,
-				Collation:     table.Collation,
-				RowCount:      table.RowCount,
-				DataSize:      table.DataSize,
-				DataFree:      table.DataFree,
-				IndexSize:     table.IndexSize,
-				CreateOptions: table.CreateOptions,
-				Comment:       table.Comment,
-				ForeignKeys:   fkMap[table.Name],
-			}
-
-			sort.Slice(table.ColumnList, func(i, j int) bool {
-				return table.ColumnList[i].Position < table.ColumnList[j].Position
-			})
-			for _, column := range table.ColumnList {
-				columnMetadata := &storepb.ColumnMetadata{
-					Name:         column.Name,
-					Position:     int32(column.Position),
-					Nullable:     column.Nullable,
-					Type:         column.Type,
-					CharacterSet: column.CharacterSet,
-					Collation:    column.Collation,
-					Comment:      column.Comment,
-				}
-				if column.Default != nil {
-					columnMetadata.Default = &wrapperspb.StringValue{Value: *column.Default}
-				}
-				tableMetadata.Columns = append(tableMetadata.Columns, columnMetadata)
-			}
-
-			indexMap := make(map[string][]db.Index)
-			for _, expression := range table.IndexList {
-				indexMap[expression.Name] = append(indexMap[expression.Name], expression)
-			}
-			var indexNames []string
-			for indexName := range indexMap {
-				indexNames = append(indexNames, indexName)
-			}
-			sort.Strings(indexNames)
-			for _, indexName := range indexNames {
-				expressionList := indexMap[indexName]
-				sort.Slice(expressionList, func(i, j int) bool {
-					return expressionList[i].Position < expressionList[j].Position
-				})
-				indexMetadata := &storepb.IndexMetadata{
-					Name:    expressionList[0].Name,
-					Type:    expressionList[0].Type,
-					Unique:  expressionList[0].Unique,
-					Primary: expressionList[0].Primary,
-					Visible: expressionList[0].Visible,
-					Comment: expressionList[0].Comment,
-				}
-				for _, expression := range expressionList {
-					indexMetadata.Expressions = append(indexMetadata.Expressions, expression.Expression)
-				}
-				tableMetadata.Indexes = append(tableMetadata.Indexes, indexMetadata)
-			}
-
-			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
-		}
-		views := schemaViewMap[schemaName]
-		sort.Slice(views, func(i, j int) bool {
-			return views[i].ShortName < views[j].ShortName
-		})
-		for _, view := range views {
-			schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
-				Name:       view.ShortName,
-				Definition: view.Definition,
-				Comment:    view.Comment,
-			})
-		}
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, schemaMetadata)
-	}
-
-	sort.Slice(schema.ExtensionList, func(i, j int) bool {
-		return schema.ExtensionList[i].Name < schema.ExtensionList[j].Name
-	})
-	for _, extension := range schema.ExtensionList {
-		databaseMetadata.Extensions = append(databaseMetadata.Extensions, &storepb.ExtensionMetadata{
-			Name:        extension.Name,
-			Schema:      extension.Schema,
-			Version:     extension.Version,
-			Description: extension.Description,
-		})
-	}
-	return databaseMetadata
 }
 
 func equalDatabaseMetadata(x, y *storepb.DatabaseMetadata) bool {

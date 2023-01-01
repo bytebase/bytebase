@@ -123,11 +123,11 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get databases")
+		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
 	schema := db.Schema{
@@ -143,16 +143,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if !found {
-		return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
 	}
 	txn, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer txn.Rollback()
 
@@ -160,7 +160,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	indicesMap := make(map[string][]*indexSchema)
 	indices, err := getIndices(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
 	}
 	for _, idx := range indices {
 		key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
@@ -170,7 +170,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// Table statements.
 	tables, err := getPgTables(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
 	}
 	for _, tbl := range tables {
 		var dbTable db.Table
@@ -213,7 +213,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// View statements.
 	views, err := getViews(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
 	}
 	for _, view := range views {
 		var dbView db.View
@@ -230,21 +230,21 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 	// Extensions.
 	extensions, err := getExtensions(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
 	}
 	schema.ExtensionList = extensions
 
 	// Foreign keys.
 	foreignKeys, err := getPgForeignKeys(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get foreign keys from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get foreign keys from database %q", databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &schema, foreignKeys, err
+	return util.ConvertDBSchema(&schema, foreignKeys), err
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {

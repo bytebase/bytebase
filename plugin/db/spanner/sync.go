@@ -46,6 +46,6 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 }
 
 // SyncDBSchema syncs a single database schema.
-func (*Driver) SyncDBSchema(_ context.Context, _ string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
-	return nil, nil, errors.New("not implemented")
+func (*Driver) SyncDBSchema(_ context.Context, _ string) (*storepb.DatabaseMetadata, error) {
+	return nil, errors.New("not implemented")
 }
