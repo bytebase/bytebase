@@ -318,6 +318,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 				Columns:       columnMap[key],
 				ForeignKeys:   foreignKeysMap[key],
 				Engine:        engine,
+				Collation:     collation,
 				RowCount:      rowCount,
 				DataSize:      dataSize,
 				IndexSize:     indexSize,
