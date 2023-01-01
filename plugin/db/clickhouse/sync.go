@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase/common"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -70,85 +71,75 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+	schemaMetadata := &storepb.SchemaMetadata{
+		Name: "",
+	}
+
 	// Query column info
-	columnWhere := fmt.Sprintf("LOWER(database) = '%s'", strings.ToLower(databaseName))
+	// tableName -> columnList map
+	columnMap := make(map[string][]*storepb.ColumnMetadata)
 	columnQuery := `
-			SELECT
-				database,
-				table,
-				name,
-				position,
-				default_expression,
-				type,
-				comment
-			FROM system.columns
-			WHERE ` + columnWhere
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
+		SELECT
+			table,
+			name,
+			position,
+			default_expression,
+			type,
+			comment
+		FROM system.columns
+		WHERE database = $1
+		ORDER BY table, position`
+	columnRows, err := driver.db.QueryContext(ctx, columnQuery, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
-
-	// dbName/tableName -> columnList map
-	columnMap := make(map[string][]db.Column)
 	for columnRows.Next() {
-		var dbName string
 		var tableName string
-		var column db.Column
+		var defaultStr sql.NullString
+		column := &storepb.ColumnMetadata{}
 		if err := columnRows.Scan(
-			&dbName,
 			&tableName,
 			&column.Name,
 			&column.Position,
-			&column.Default,
+			&defaultStr,
 			&column.Type,
 			&column.Comment,
 		); err != nil {
 			return nil, err
 		}
-
-		key := fmt.Sprintf("%s/%s", dbName, tableName)
-		if tableList, ok := columnMap[key]; ok {
-			columnMap[key] = append(tableList, column)
-		} else {
-			columnMap[key] = append([]db.Column(nil), column)
+		if defaultStr.Valid {
+			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
 		}
+		columnMap[tableName] = append(columnMap[tableName], column)
 	}
 	if err := columnRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 
 	// Query table info
-	tableWhere := fmt.Sprintf("LOWER(database) = '%s'", strings.ToLower(databaseName))
 	tableQuery := `
-			SELECT
-				database,
-				name,
-				engine,
-				IFNULL(total_rows, 0),
-				IFNULL(total_bytes, 0),
-				metadata_modification_time,
-				create_table_query,
-				comment
-			FROM system.tables
-			WHERE ` + tableWhere
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
+		SELECT
+			name,
+			engine,
+			IFNULL(total_rows, 0),
+			IFNULL(total_bytes, 0),
+			metadata_modification_time,
+			create_table_query,
+			comment
+		FROM system.tables
+		WHERE database = $1
+		ORDER BY name`
+	tableRows, err := driver.db.QueryContext(ctx, tableQuery, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
-
-	// dbName -> tableList map
-	tableMap := make(map[string][]db.Table)
-	// dbName -> viewList map
-	viewMap := make(map[string][]db.View)
-
 	for tableRows.Next() {
-		var dbName, name, engine, definition, comment string
+		var name, engine, definition, comment string
 		var rowCount, totalBytes int64
 		var lastUpdatedTime time.Time
 		if err := tableRows.Scan(
-			&dbName,
 			&name,
 			&engine,
 			&rowCount,
@@ -159,53 +150,31 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		); err != nil {
 			return nil, err
 		}
-
-		if engine == "View" {
-			var view db.View
-			view.Name = name
-			view.UpdatedTs = lastUpdatedTime.Unix()
-			view.Definition = definition
-			view.Comment = comment
-			viewMap[dbName] = append(viewMap[dbName], view)
+		if engine != "View" {
+			schemaMetadata.Tables = append(schemaMetadata.Tables, &storepb.TableMetadata{
+				Name:     name,
+				Columns:  columnMap[name],
+				Engine:   engine,
+				RowCount: rowCount,
+				DataSize: totalBytes,
+				Comment:  comment,
+			})
 		} else {
-			var table db.Table
-			table.Type = "BASE TABLE"
-			table.Name = name
-			table.ShortName = name
-			table.Engine = engine
-			table.Comment = comment
-			table.RowCount = rowCount
-			table.DataSize = totalBytes
-			table.UpdatedTs = lastUpdatedTime.Unix()
-			key := fmt.Sprintf("%s/%s", dbName, name)
-			table.ColumnList = columnMap[key]
-			tableMap[dbName] = append(tableMap[dbName], table)
+			schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
+				Name:       name,
+				Definition: definition,
+				Comment:    comment,
+			})
 		}
 	}
 	if err := tableRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	// Query db info
-	databaseWhere := fmt.Sprintf("LOWER(name) = '%s'", strings.ToLower(databaseName))
-	databaseQuery := `
-		SELECT
-			name
-		FROM system.databases
-		WHERE ` + databaseWhere
-	var schema db.Schema
-	if err := driver.db.QueryRowContext(ctx, databaseQuery).Scan(
-		&schema.Name,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
-		}
-		return nil, err
-	}
-	schema.TableList = tableMap[schema.Name]
-	schema.ViewList = viewMap[schema.Name]
-
-	return util.ConvertDBSchema(&schema, nil), nil
+	return &storepb.DatabaseMetadata{
+		Name:    databaseName,
+		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+	}, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {

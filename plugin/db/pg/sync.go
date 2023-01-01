@@ -232,10 +232,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
 	}
-	schema.ExtensionList = extensions
 
 	// Foreign keys.
-	foreignKeys, err := getPgForeignKeys(txn)
+	foreignKeysMap, err := getForeignKeys(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get foreign keys from database %q", databaseName)
 	}
@@ -244,7 +243,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, err
 	}
 
-	return util.ConvertDBSchema(&schema, foreignKeys), err
+	databaseMetadata := util.ConvertDBSchema(&schema)
+	for _, schemaMetadata := range databaseMetadata.Schemas {
+		for _, tableMetadata := range schemaMetadata.Tables {
+			tableMetadata.ForeignKeys = foreignKeysMap[db.TableKey{Schema: schemaMetadata.Name, Table: tableMetadata.Name}]
+		}
+	}
+	databaseMetadata.Extensions = extensions
+	return databaseMetadata, err
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
@@ -316,7 +322,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	return userList, nil
 }
 
-func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, error) {
+func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	query := `
 	SELECT
 		n.nspname AS fk_schema,
@@ -335,7 +341,7 @@ func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, er
 		n.nspname NOT IN('pg_catalog', 'information_schema')
 		AND c.contype = 'f';
 	`
-	ret := make(map[string][]*storepb.ForeignKeyMetadata)
+	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -368,18 +374,13 @@ func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, er
 		if fkMetadata.Columns, fkMetadata.ReferencedColumns, err = getForeignKeyColumnsAndReferencedColumns(fkDefinition); err != nil {
 			return nil, err
 		}
-		key := fmt.Sprintf("%s.%s", fkSchema, fkTable)
-		if info, exists := ret[key]; exists {
-			ret[key] = append(info, &fkMetadata)
-		} else {
-			ret[key] = []*storepb.ForeignKeyMetadata{&fkMetadata}
-		}
+		key := db.TableKey{Schema: fkSchema, Table: fkTable}
+		foreignKeysMap[key] = append(foreignKeysMap[key], &fkMetadata)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	return ret, nil
+	return foreignKeysMap, nil
 }
 
 func convertForeignKeyMatchType(in string) string {
@@ -638,15 +639,16 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 }
 
 // getExtensions gets all extensions of a database.
-func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
-	query := "" +
-		"SELECT e.extname, e.extversion, n.nspname, c.description " +
-		"FROM pg_catalog.pg_extension e " +
-		"LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace " +
-		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass " +
-		"WHERE n.nspname != 'pg_catalog';"
+func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
+	var extensions []*storepb.ExtensionMetadata
 
-	var extensions []db.Extension
+	query := `
+		SELECT e.extname, e.extversion, n.nspname, c.description
+		FROM pg_catalog.pg_extension e
+		LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace
+		LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass
+		WHERE n.nspname != 'pg_catalog'
+		ORDER BY e.extname;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -654,11 +656,11 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var e db.Extension
+		var e storepb.ExtensionMetadata
 		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
 			return nil, err
 		}
-		extensions = append(extensions, e)
+		extensions = append(extensions, &e)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
