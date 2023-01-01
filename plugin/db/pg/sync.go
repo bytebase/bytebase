@@ -234,7 +234,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	// Foreign keys.
-	foreignKeys, err := getPgForeignKeys(txn)
+	foreignKeysMap, err := getPgForeignKeys(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get foreign keys from database %q", databaseName)
 	}
@@ -243,7 +243,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, err
 	}
 
-	databaseMetadata := util.ConvertDBSchema(&schema, foreignKeys)
+	databaseMetadata := util.ConvertDBSchema(&schema, nil)
+	for _, schemaMetadata := range databaseMetadata.Schemas {
+		for _, tableMetadata := range schemaMetadata.Tables {
+			tableMetadata.ForeignKeys = foreignKeysMap[db.TableKey{Schema: schemaMetadata.Name, Table: tableMetadata.Name}]
+		}
+	}
 	databaseMetadata.Extensions = extensions
 	return databaseMetadata, err
 }
@@ -317,7 +322,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	return userList, nil
 }
 
-func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, error) {
+func getPgForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	query := `
 	SELECT
 		n.nspname AS fk_schema,
@@ -336,7 +341,7 @@ func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, er
 		n.nspname NOT IN('pg_catalog', 'information_schema')
 		AND c.contype = 'f';
 	`
-	ret := make(map[string][]*storepb.ForeignKeyMetadata)
+	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -369,18 +374,13 @@ func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, er
 		if fkMetadata.Columns, fkMetadata.ReferencedColumns, err = getForeignKeyColumnsAndReferencedColumns(fkDefinition); err != nil {
 			return nil, err
 		}
-		key := fmt.Sprintf("%s.%s", fkSchema, fkTable)
-		if info, exists := ret[key]; exists {
-			ret[key] = append(info, &fkMetadata)
-		} else {
-			ret[key] = []*storepb.ForeignKeyMetadata{&fkMetadata}
-		}
+		key := db.TableKey{Schema: fkSchema, Table: fkTable}
+		foreignKeysMap[key] = append(foreignKeysMap[key], &fkMetadata)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	return ret, nil
+	return foreignKeysMap, nil
 }
 
 func convertForeignKeyMatchType(in string) string {

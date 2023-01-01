@@ -171,6 +171,12 @@ type Schema struct {
 	ExtensionList []Extension
 }
 
+// TableKey is the map key for table metadata.
+type TableKey struct {
+	Schema string
+	Table  string
+}
+
 var (
 	driversMu sync.RWMutex
 	drivers   = make(map[Type]driverFunc)
