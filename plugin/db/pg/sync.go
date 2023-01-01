@@ -232,7 +232,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
 	}
-	schema.ExtensionList = extensions
 
 	// Foreign keys.
 	foreignKeys, err := getPgForeignKeys(txn)
@@ -244,7 +243,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, err
 	}
 
-	return util.ConvertDBSchema(&schema, foreignKeys), err
+	databaseMetadata := util.ConvertDBSchema(&schema, foreignKeys)
+	databaseMetadata.Extensions = extensions
+	return databaseMetadata, err
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
@@ -638,15 +639,16 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 }
 
 // getExtensions gets all extensions of a database.
-func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
-	query := "" +
-		"SELECT e.extname, e.extversion, n.nspname, c.description " +
-		"FROM pg_catalog.pg_extension e " +
-		"LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace " +
-		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass " +
-		"WHERE n.nspname != 'pg_catalog';"
+func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
+	var extensions []*storepb.ExtensionMetadata
 
-	var extensions []db.Extension
+	query := `
+		SELECT e.extname, e.extversion, n.nspname, c.description
+		FROM pg_catalog.pg_extension e
+		LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace
+		LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass
+		WHERE n.nspname != 'pg_catalog'
+		ORDER BY e.extname;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -654,11 +656,11 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var e db.Extension
+		var e storepb.ExtensionMetadata
 		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
 			return nil, err
 		}
-		extensions = append(extensions, e)
+		extensions = append(extensions, &e)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

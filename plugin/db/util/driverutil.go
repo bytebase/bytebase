@@ -845,17 +845,5 @@ func ConvertDBSchema(schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMe
 		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, schemaMetadata)
 	}
-
-	sort.Slice(schema.ExtensionList, func(i, j int) bool {
-		return schema.ExtensionList[i].Name < schema.ExtensionList[j].Name
-	})
-	for _, extension := range schema.ExtensionList {
-		databaseMetadata.Extensions = append(databaseMetadata.Extensions, &storepb.ExtensionMetadata{
-			Name:        extension.Name,
-			Schema:      extension.Schema,
-			Version:     extension.Version,
-			Description: extension.Description,
-		})
-	}
 	return databaseMetadata
 }
