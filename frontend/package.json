@@ -79,7 +79,7 @@
     "@types/lodash-es": "4.17.6",
     "@types/node": "18.11.18",
     "@types/normalize-wheel": "^1.0.1",
-    "@types/papaparse": "5.3.5",
+    "@types/papaparse": "5.3.7",
     "@types/prettier": "2.7.1",
     "@types/qs": "6.9.7",
     "@types/scrollparent": "^2.0.1",
