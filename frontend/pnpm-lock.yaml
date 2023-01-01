@@ -23,7 +23,7 @@ specifiers:
   '@types/lodash-es': 4.17.6
   '@types/node': 18.11.18
   '@types/normalize-wheel': ^1.0.1
-  '@types/papaparse': 5.3.5
+  '@types/papaparse': 5.3.7
   '@types/prettier': 2.7.1
   '@types/qs': 6.9.7
   '@types/scrollparent': ^2.0.1
@@ -168,7 +168,7 @@ devDependencies:
   '@types/lodash-es': 4.17.6
   '@types/node': 18.11.18
   '@types/normalize-wheel': 1.0.1
-  '@types/papaparse': 5.3.5
+  '@types/papaparse': 5.3.7
   '@types/prettier': 2.7.1
   '@types/qs': 6.9.7
   '@types/scrollparent': 2.0.1
@@ -963,8 +963,8 @@ packages:
     resolution: {integrity: sha512-xFdpkAkikBgqBdG9vIlsqffDV8GpvnPEzs0IUtr1v3BEB97ijsFQ4RXVbUZwjFThhB4MDSTUfvmxUD5PGx0wXA==}
     dev: true
 
-  /@types/papaparse/5.3.5:
-    resolution: {integrity: sha512-R1icl/hrJPFRpuYj9PVG03WBAlghJj4JW9Py5QdR8FFSxaLmZRyu7xYDCCBZIJNfUv3MYaeBbhBoX958mUTAaw==}
+  /@types/papaparse/5.3.7:
+    resolution: {integrity: sha512-f2HKmlnPdCvS0WI33WtCs5GD7X1cxzzS/aduaxSu3I7TbhWlENjSPs6z5TaB9K0J+BH1jbmqTaM+ja5puis4wg==}
     dependencies:
       '@types/node': 18.11.18
     dev: true
