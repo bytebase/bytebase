@@ -856,20 +856,6 @@ func TestConvertDBSchema(t *testing.T) {
 				Comment:    "comment view",
 			},
 		},
-		ExtensionList: []db.Extension{
-			{
-				Name:        "hstore",
-				Version:     "v2021",
-				Schema:      "public",
-				Description: "awesome hstore",
-			},
-			{
-				Name:        "atom",
-				Version:     "v2022",
-				Schema:      "public",
-				Description: "awesome sphere",
-			},
-		},
 	}
 	want := &storepb.DatabaseMetadata{
 		Name:         "db1",
@@ -979,20 +965,6 @@ func TestConvertDBSchema(t *testing.T) {
 						Comment:    "comment view",
 					},
 				},
-			},
-		},
-		Extensions: []*storepb.ExtensionMetadata{
-			{
-				Name:        "atom",
-				Version:     "v2022",
-				Schema:      "public",
-				Description: "awesome sphere",
-			},
-			{
-				Name:        "hstore",
-				Version:     "v2021",
-				Schema:      "public",
-				Description: "awesome hstore",
 			},
 		},
 	}
