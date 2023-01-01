@@ -2,9 +2,12 @@ package clickhouse
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
+
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -68,7 +71,13 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+	schemaMetadata := &storepb.SchemaMetadata{
+		Name: "",
+	}
+
 	// Query column info
+	// tableName -> columnList map
+	columnMap := make(map[string][]*storepb.ColumnMetadata)
 	columnQuery := `
 		SELECT
 			table,
@@ -85,24 +94,24 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
-
-	// tableName -> columnList map
-	columnMap := make(map[string][]db.Column)
 	for columnRows.Next() {
 		var tableName string
-		var column db.Column
+		var defaultStr sql.NullString
+		column := storepb.ColumnMetadata{}
 		if err := columnRows.Scan(
 			&tableName,
 			&column.Name,
 			&column.Position,
-			&column.Default,
+			&defaultStr,
 			&column.Type,
 			&column.Comment,
 		); err != nil {
 			return nil, err
 		}
-
-		columnMap[tableName] = append(columnMap[tableName], column)
+		if defaultStr.Valid {
+			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
+		}
+		columnMap[tableName] = append(columnMap[tableName], &column)
 	}
 	if err := columnRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
@@ -110,26 +119,22 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 
 	// Query table info
 	tableQuery := `
-			SELECT
-				name,
-				engine,
-				IFNULL(total_rows, 0),
-				IFNULL(total_bytes, 0),
-				metadata_modification_time,
-				create_table_query,
-				comment
-			FROM system.tables
-			WHERE database = $1
-			ORDER BY name`
+		SELECT
+			name,
+			engine,
+			IFNULL(total_rows, 0),
+			IFNULL(total_bytes, 0),
+			metadata_modification_time,
+			create_table_query,
+			comment
+		FROM system.tables
+		WHERE database = $1
+		ORDER BY name`
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
-
-	var tableList []db.Table
-	var viewList []*storepb.ViewMetadata
-
 	for tableRows.Next() {
 		var name, engine, definition, comment string
 		var rowCount, totalBytes int64
@@ -145,46 +150,31 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		); err != nil {
 			return nil, err
 		}
-
-		if engine == "View" {
-			viewList = append(viewList, &storepb.ViewMetadata{
+		if engine != "View" {
+			schemaMetadata.Tables = append(schemaMetadata.Tables, &storepb.TableMetadata{
+				Name:     name,
+				Columns:  columnMap[name],
+				Engine:   engine,
+				RowCount: rowCount,
+				DataSize: totalBytes,
+				Comment:  comment,
+			})
+		} else {
+			schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
 				Name:       name,
 				Definition: definition,
 				Comment:    comment,
 			})
-		} else {
-			var table db.Table
-			table.Type = "BASE TABLE"
-			table.Name = name
-			table.ShortName = name
-			table.Engine = engine
-			table.Comment = comment
-			table.RowCount = rowCount
-			table.DataSize = totalBytes
-			table.UpdatedTs = lastUpdatedTime.Unix()
-			table.ColumnList = columnMap[name]
-			tableList = append(tableList, table)
 		}
 	}
 	if err := tableRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	var schema db.Schema
-	schema.Name = databaseName
-	schema.TableList = tableList
-	databaseMetadata := util.ConvertDBSchema(&schema)
-
-	if len(viewList) > 0 {
-		if len(databaseMetadata.Schemas) == 0 {
-			databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-				Name: "",
-			})
-		}
-		databaseMetadata.Schemas[0].Views = viewList
-	}
-
-	return databaseMetadata, nil
+	return &storepb.DatabaseMetadata{
+		Name:    databaseName,
+		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+	}, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
