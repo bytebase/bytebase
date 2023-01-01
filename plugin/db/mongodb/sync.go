@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -78,30 +79,30 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs the database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
 	exist, err := driver.isDatabaseExist(ctx, databaseName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if !exist {
-		return nil, nil, errors.Errorf("database %s does not exist", databaseName)
+		return nil, errors.Errorf("database %s does not exist", databaseName)
 	}
 	schema := db.Schema{}
 	schema.Name = databaseName
 
 	tableList, err := driver.syncAllCollectionSchema(ctx, databaseName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	schema.TableList = tableList
 
 	viewList, err := driver.syncAllViewSchema(ctx, databaseName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	schema.ViewList = viewList
 
-	return &schema, nil, nil
+	return util.ConvertDBSchema(&schema, nil), nil
 }
 
 // syncAllViewSchema returns all views schema of a database.
