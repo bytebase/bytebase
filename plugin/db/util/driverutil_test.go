@@ -856,20 +856,6 @@ func TestConvertDBSchema(t *testing.T) {
 				Comment:    "comment view",
 			},
 		},
-		ExtensionList: []db.Extension{
-			{
-				Name:        "hstore",
-				Version:     "v2021",
-				Schema:      "public",
-				Description: "awesome hstore",
-			},
-			{
-				Name:        "atom",
-				Version:     "v2022",
-				Schema:      "public",
-				Description: "awesome sphere",
-			},
-		},
 	}
 	want := &storepb.DatabaseMetadata{
 		Name:         "db1",
@@ -981,21 +967,7 @@ func TestConvertDBSchema(t *testing.T) {
 				},
 			},
 		},
-		Extensions: []*storepb.ExtensionMetadata{
-			{
-				Name:        "atom",
-				Version:     "v2022",
-				Schema:      "public",
-				Description: "awesome sphere",
-			},
-			{
-				Name:        "hstore",
-				Version:     "v2021",
-				Schema:      "public",
-				Description: "awesome hstore",
-			},
-		},
 	}
-	got := ConvertDBSchema(dbSchema, nil)
+	got := ConvertDBSchema(dbSchema)
 	assert.Equal(t, want, got)
 }

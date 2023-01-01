@@ -346,14 +346,21 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	schema.TableList = tableList
 	schema.ViewList = viewList
 
-	fkMap, err := driver.getForeignKeyList(ctx, databaseName)
+	foreignKeysMap, err := driver.getForeignKeyList(ctx, databaseName)
 	if err != nil {
 		return nil, err
 	}
-	return util.ConvertDBSchema(&schema, fkMap), err
+
+	databaseMetadata := util.ConvertDBSchema(&schema)
+	for _, schemaMetadata := range databaseMetadata.Schemas {
+		for _, tableMetadata := range schemaMetadata.Tables {
+			tableMetadata.ForeignKeys = foreignKeysMap[db.TableKey{Schema: schemaMetadata.Name, Table: tableMetadata.Name}]
+		}
+	}
+	return databaseMetadata, err
 }
 
-func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[string][]*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	fkQuery := `
 		SELECT
 			fks.TABLE_NAME,
@@ -379,7 +386,7 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 		return nil, util.FormatErrorWithQuery(err, fkQuery)
 	}
 	defer fkRows.Close()
-	fkMap := make(map[string][]*storepb.ForeignKeyMetadata)
+	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
 	var buildingFk *storepb.ForeignKeyMetadata
 	var buildingTable string
 	for fkRows.Next() {
@@ -410,11 +417,8 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 				buildingFk.Columns = append(buildingFk.Columns, fk.Columns[0])
 				buildingFk.ReferencedColumns = append(buildingFk.ReferencedColumns, fk.ReferencedColumns[0])
 			} else {
-				if fkList, ok := fkMap[buildingTable]; ok {
-					fkMap[buildingTable] = append(fkList, buildingFk)
-				} else {
-					fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
-				}
+				key := db.TableKey{Schema: "", Table: buildingTable}
+				foreignKeysMap[key] = append(foreignKeysMap[key], buildingFk)
 				buildingTable = tableName
 				buildingFk = &fk
 			}
@@ -425,14 +429,11 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 	}
 
 	if buildingFk != nil {
-		if fkList, ok := fkMap[buildingTable]; ok {
-			fkMap[buildingTable] = append(fkList, buildingFk)
-		} else {
-			fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
-		}
+		key := db.TableKey{Schema: "", Table: buildingTable}
+		foreignKeysMap[key] = append(foreignKeysMap[key], buildingFk)
 	}
 
-	return fkMap, nil
+	return foreignKeysMap, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
