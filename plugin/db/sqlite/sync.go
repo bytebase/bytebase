@@ -118,7 +118,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, err
 	}
 
-	return util.ConvertDBSchema(&schema, nil), nil
+	return util.ConvertDBSchema(&schema), nil
 }
 
 // getTables gets all tables of a database.

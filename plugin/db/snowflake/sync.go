@@ -95,7 +95,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 	schema.TableList, schema.ViewList = tableList, viewList
 
-	return util.ConvertDBSchema(&schema, nil), nil
+	return util.ConvertDBSchema(&schema), nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {

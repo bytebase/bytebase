@@ -735,10 +735,7 @@ func IsAffectedRowsStatement(stmt string) bool {
 }
 
 // ConvertDBSchema converts db schema to database metadata.
-func ConvertDBSchema(schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMetadata) *storepb.DatabaseMetadata {
-	if fkMap == nil {
-		fkMap = make(map[string][]*storepb.ForeignKeyMetadata)
-	}
+func ConvertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
 	databaseMetadata := &storepb.DatabaseMetadata{
 		Name:         schema.Name,
 		CharacterSet: schema.CharacterSet,
@@ -780,7 +777,6 @@ func ConvertDBSchema(schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMe
 				IndexSize:     table.IndexSize,
 				CreateOptions: table.CreateOptions,
 				Comment:       table.Comment,
-				ForeignKeys:   fkMap[table.Name],
 			}
 
 			sort.Slice(table.ColumnList, func(i, j int) bool {
@@ -844,18 +840,6 @@ func ConvertDBSchema(schema *db.Schema, fkMap map[string][]*storepb.ForeignKeyMe
 			})
 		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, schemaMetadata)
-	}
-
-	sort.Slice(schema.ExtensionList, func(i, j int) bool {
-		return schema.ExtensionList[i].Name < schema.ExtensionList[j].Name
-	})
-	for _, extension := range schema.ExtensionList {
-		databaseMetadata.Extensions = append(databaseMetadata.Extensions, &storepb.ExtensionMetadata{
-			Name:        extension.Name,
-			Schema:      extension.Schema,
-			Version:     extension.Version,
-			Description: extension.Description,
-		})
 	}
 	return databaseMetadata
 }
