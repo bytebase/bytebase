@@ -8,8 +8,8 @@ export const protobufPackage = "bytebase.v1";
 
 export enum Workflow {
   WORKFLOW_UNSPECIFIED = 0,
-  WORKFLOW_UI = 1,
-  WORKFLOW_VCS = 2,
+  UI = 1,
+  VCS = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -19,11 +19,11 @@ export function workflowFromJSON(object: any): Workflow {
     case "WORKFLOW_UNSPECIFIED":
       return Workflow.WORKFLOW_UNSPECIFIED;
     case 1:
-    case "WORKFLOW_UI":
-      return Workflow.WORKFLOW_UI;
+    case "UI":
+      return Workflow.UI;
     case 2:
-    case "WORKFLOW_VCS":
-      return Workflow.WORKFLOW_VCS;
+    case "VCS":
+      return Workflow.VCS;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -35,10 +35,10 @@ export function workflowToJSON(object: Workflow): string {
   switch (object) {
     case Workflow.WORKFLOW_UNSPECIFIED:
       return "WORKFLOW_UNSPECIFIED";
-    case Workflow.WORKFLOW_UI:
-      return "WORKFLOW_UI";
-    case Workflow.WORKFLOW_VCS:
-      return "WORKFLOW_VCS";
+    case Workflow.UI:
+      return "UI";
+    case Workflow.VCS:
+      return "VCS";
     case Workflow.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -125,9 +125,9 @@ export function tenantModeToJSON(object: TenantMode): string {
 
 export enum RoleProvider {
   ROLE_PROVIDER_UNSPECIFIED = 0,
-  ROLE_PROVIDER_BYTEBASE = 1,
-  ROLE_PROVIDER_GITLAB_SELF_HOST = 2,
-  ROLE_PROVIDER_GITHUB_COM = 3,
+  BYTEBASE = 1,
+  GITLAB_SELF_HOST = 2,
+  GITHUB_COM = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -137,14 +137,14 @@ export function roleProviderFromJSON(object: any): RoleProvider {
     case "ROLE_PROVIDER_UNSPECIFIED":
       return RoleProvider.ROLE_PROVIDER_UNSPECIFIED;
     case 1:
-    case "ROLE_PROVIDER_BYTEBASE":
-      return RoleProvider.ROLE_PROVIDER_BYTEBASE;
+    case "BYTEBASE":
+      return RoleProvider.BYTEBASE;
     case 2:
-    case "ROLE_PROVIDER_GITLAB_SELF_HOST":
-      return RoleProvider.ROLE_PROVIDER_GITLAB_SELF_HOST;
+    case "GITLAB_SELF_HOST":
+      return RoleProvider.GITLAB_SELF_HOST;
     case 3:
-    case "ROLE_PROVIDER_GITHUB_COM":
-      return RoleProvider.ROLE_PROVIDER_GITHUB_COM;
+    case "GITHUB_COM":
+      return RoleProvider.GITHUB_COM;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -156,12 +156,12 @@ export function roleProviderToJSON(object: RoleProvider): string {
   switch (object) {
     case RoleProvider.ROLE_PROVIDER_UNSPECIFIED:
       return "ROLE_PROVIDER_UNSPECIFIED";
-    case RoleProvider.ROLE_PROVIDER_BYTEBASE:
-      return "ROLE_PROVIDER_BYTEBASE";
-    case RoleProvider.ROLE_PROVIDER_GITLAB_SELF_HOST:
-      return "ROLE_PROVIDER_GITLAB_SELF_HOST";
-    case RoleProvider.ROLE_PROVIDER_GITHUB_COM:
-      return "ROLE_PROVIDER_GITHUB_COM";
+    case RoleProvider.BYTEBASE:
+      return "BYTEBASE";
+    case RoleProvider.GITLAB_SELF_HOST:
+      return "GITLAB_SELF_HOST";
+    case RoleProvider.GITHUB_COM:
+      return "GITHUB_COM";
     case RoleProvider.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -170,8 +170,8 @@ export function roleProviderToJSON(object: RoleProvider): string {
 
 export enum SchemaVersion {
   SCHEMA_VERSION_UNSPECIFIED = 0,
-  SCHEMA_VERSION_TIMESTAMP = 1,
-  SCHEMA_VERSION_SEMANTIC = 2,
+  TIMESTAMP = 1,
+  SEMANTIC = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -181,11 +181,11 @@ export function schemaVersionFromJSON(object: any): SchemaVersion {
     case "SCHEMA_VERSION_UNSPECIFIED":
       return SchemaVersion.SCHEMA_VERSION_UNSPECIFIED;
     case 1:
-    case "SCHEMA_VERSION_TIMESTAMP":
-      return SchemaVersion.SCHEMA_VERSION_TIMESTAMP;
+    case "TIMESTAMP":
+      return SchemaVersion.TIMESTAMP;
     case 2:
-    case "SCHEMA_VERSION_SEMANTIC":
-      return SchemaVersion.SCHEMA_VERSION_SEMANTIC;
+    case "SEMANTIC":
+      return SchemaVersion.SEMANTIC;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -197,10 +197,10 @@ export function schemaVersionToJSON(object: SchemaVersion): string {
   switch (object) {
     case SchemaVersion.SCHEMA_VERSION_UNSPECIFIED:
       return "SCHEMA_VERSION_UNSPECIFIED";
-    case SchemaVersion.SCHEMA_VERSION_TIMESTAMP:
-      return "SCHEMA_VERSION_TIMESTAMP";
-    case SchemaVersion.SCHEMA_VERSION_SEMANTIC:
-      return "SCHEMA_VERSION_SEMANTIC";
+    case SchemaVersion.TIMESTAMP:
+      return "TIMESTAMP";
+    case SchemaVersion.SEMANTIC:
+      return "SEMANTIC";
     case SchemaVersion.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -209,8 +209,8 @@ export function schemaVersionToJSON(object: SchemaVersion): string {
 
 export enum SchemaChange {
   SCHEMA_CHANGE_UNSPECIFIED = 0,
-  SCHEMA_CHANGE_DDL = 1,
-  SCHEMA_CHANGE_SDL = 2,
+  DDL = 1,
+  SDL = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -220,11 +220,11 @@ export function schemaChangeFromJSON(object: any): SchemaChange {
     case "SCHEMA_CHANGE_UNSPECIFIED":
       return SchemaChange.SCHEMA_CHANGE_UNSPECIFIED;
     case 1:
-    case "SCHEMA_CHANGE_DDL":
-      return SchemaChange.SCHEMA_CHANGE_DDL;
+    case "DDL":
+      return SchemaChange.DDL;
     case 2:
-    case "SCHEMA_CHANGE_SDL":
-      return SchemaChange.SCHEMA_CHANGE_SDL;
+    case "SDL":
+      return SchemaChange.SDL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -236,10 +236,10 @@ export function schemaChangeToJSON(object: SchemaChange): string {
   switch (object) {
     case SchemaChange.SCHEMA_CHANGE_UNSPECIFIED:
       return "SCHEMA_CHANGE_UNSPECIFIED";
-    case SchemaChange.SCHEMA_CHANGE_DDL:
-      return "SCHEMA_CHANGE_DDL";
-    case SchemaChange.SCHEMA_CHANGE_SDL:
-      return "SCHEMA_CHANGE_SDL";
+    case SchemaChange.DDL:
+      return "DDL";
+    case SchemaChange.SDL:
+      return "SDL";
     case SchemaChange.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

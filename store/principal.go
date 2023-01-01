@@ -420,6 +420,15 @@ type FindUserMessage struct {
 	ShowDeleted bool
 }
 
+// UpdateUserMessage is the message to update a user.
+type UpdateUserMessage struct {
+	Email        *string
+	Name         *string
+	PasswordHash *string
+	Role         *api.Role
+	Delete       *bool
+}
+
 // UserMessage is the message for an user.
 type UserMessage struct {
 	ID            int
@@ -429,6 +438,26 @@ type UserMessage struct {
 	PasswordHash  string
 	Role          api.Role
 	MemberDeleted bool
+}
+
+// ListUsers list all users.
+func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	userMessages, err := s.listUserImpl(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return userMessages, nil
 }
 
 // GetUserByID gets the user by ID.
@@ -500,8 +529,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			principal.id AS user_id,
-			principal.name,
 			principal.email,
+			principal.name,
+			principal.type,
 			principal.password_hash,
 			member.role,
 			member.row_status AS row_status
@@ -519,8 +549,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		var rowStatus string
 		if err := rows.Scan(
 			&userMessage.ID,
-			&userMessage.Name,
 			&userMessage.Email,
+			&userMessage.Name,
+			&userMessage.Type,
 			&userMessage.PasswordHash,
 			&userMessage.Role,
 			&rowStatus,
@@ -559,9 +590,9 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 			INSERT INTO principal (
 				creator_id,
 				updater_id,
-				type,
-				name,
 				email,
+				name,
+				type,
 				password_hash
 			)
 			VALUES ($1, $2, $3, $4, $5, $6)
@@ -569,9 +600,9 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		`,
 		creatorID,
 		creatorID,
-		create.Type,
-		create.Name,
 		create.Email,
+		create.Name,
+		create.Type,
 		create.PasswordHash,
 	).Scan(&userID); err != nil {
 		return nil, FormatError(err)
@@ -608,4 +639,84 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		PasswordHash: create.PasswordHash,
 		Role:         role,
 	}, nil
+}
+
+// UpdateUser updates a user.
+func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMessage, updaterID int) (*UserMessage, error) {
+	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	if v := patch.Email; v != nil {
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+	}
+	if v := patch.Name; v != nil {
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("name = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+	}
+	if v := patch.PasswordHash; v != nil {
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+	}
+	principalArgs = append(principalArgs, userID)
+
+	memberSet, memberArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	if v := patch.Role; v != nil {
+		memberSet, memberArgs = append(memberSet, fmt.Sprintf("role = $%d", len(memberArgs)+1)), append(memberArgs, *v)
+	}
+	if v := patch.Delete; v != nil {
+		rowStatus := api.Normal
+		if *patch.Delete {
+			rowStatus = api.Archived
+		}
+		memberSet, memberArgs = append(memberSet, fmt.Sprintf(`"row_status" = $%d`, len(memberArgs)+1)), append(memberArgs, rowStatus)
+	}
+	memberArgs = append(memberArgs, userID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	user := &UserMessage{}
+
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+			UPDATE principal
+			SET `+strings.Join(principalSet, ", ")+`
+			WHERE id = $%d
+			RETURNING id, email, name, type, password_hash
+		`, len(principalArgs)),
+		principalArgs...,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Name,
+		&user.Type,
+		&user.PasswordHash,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+	var rowStatus string
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+			UPDATE member
+			SET `+strings.Join(memberSet, ", ")+`
+			WHERE principal_id = $%d
+			RETURNING role, row_status
+		`, len(memberArgs)),
+		memberArgs...,
+	).Scan(
+		&user.Role,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+	user.MemberDeleted = convertRowStatusToDeleted(rowStatus)
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return user, nil
 }

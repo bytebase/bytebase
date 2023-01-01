@@ -30,15 +30,20 @@ func (in *APIAuthInterceptor) ACLInterceptor(ctx context.Context, req interface{
 }
 
 func (in *APIAuthInterceptor) getWorkspaceRole(ctx context.Context, methodName string) (api.Role, error) {
-	if isAuthenticationAllowed(methodName) {
-		return api.Owner, nil
-	}
 	// If RBAC feature is not enabled, all users are treated as OWNER.
 	if !in.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
 		return api.Owner, nil
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalPtr := ctx.Value(common.PrincipalIDContextKey)
+	if principalPtr == nil {
+		if isAuthenticationAllowed(methodName) {
+			return api.Developer, nil
+		}
+		return api.UnknownRole, status.Errorf(codes.PermissionDenied, "principal key doesn't exist in the request context")
+	}
+
+	principalID := principalPtr.(int)
 	member, err := in.store.GetMemberByPrincipalID(ctx, principalID)
 	if err != nil {
 		return api.UnknownRole, status.Errorf(codes.PermissionDenied, "failed to get member for principal %v in processing authorize request.", principalID)
