@@ -67,14 +67,6 @@ type View struct {
 	Comment string
 }
 
-// Extension is the database extension.
-type Extension struct {
-	Name        string
-	Version     string
-	Schema      string
-	Description string
-}
-
 // Index is the database index.
 type Index struct {
 	Name string
@@ -165,10 +157,9 @@ type Schema struct {
 	// CharacterSet isn't supported for ClickHouse, Snowflake, MongoDB.
 	CharacterSet string
 	// Collation isn't supported for ClickHouse, Snowflake, MongoDB.
-	Collation     string
-	TableList     []Table
-	ViewList      []View
-	ExtensionList []Extension
+	Collation string
+	TableList []Table
+	ViewList  []View
 }
 
 // TableKey is the map key for table metadata.
