@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -17,12 +16,10 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // FormatErrorWithQuery will format the error with failed query.
@@ -732,116 +729,6 @@ func IsAffectedRowsStatement(stmt string) bool {
 		}
 	}
 	return false
-}
-
-// ConvertDBSchema converts db schema to database metadata.
-func ConvertDBSchema(schema *db.Schema) *storepb.DatabaseMetadata {
-	databaseMetadata := &storepb.DatabaseMetadata{
-		Name:         schema.Name,
-		CharacterSet: schema.CharacterSet,
-		Collation:    schema.Collation,
-	}
-
-	schemaNameMap := make(map[string]bool)
-	schemaTableMap := make(map[string][]db.Table)
-	schemaViewMap := make(map[string][]db.View)
-	for _, table := range schema.TableList {
-		schemaNameMap[table.Schema] = true
-		schemaTableMap[table.Schema] = append(schemaTableMap[table.Schema], table)
-	}
-	for _, view := range schema.ViewList {
-		schemaNameMap[view.Schema] = true
-		schemaViewMap[view.Schema] = append(schemaViewMap[view.Schema], view)
-	}
-	var schemaNames []string
-	for schemaName := range schemaNameMap {
-		schemaNames = append(schemaNames, schemaName)
-	}
-	sort.Strings(schemaNames)
-	for _, schemaName := range schemaNames {
-		schemaMetadata := &storepb.SchemaMetadata{
-			Name: schemaName,
-		}
-		tables := schemaTableMap[schemaName]
-		sort.Slice(tables, func(i, j int) bool {
-			return tables[i].ShortName < tables[j].ShortName
-		})
-		for _, table := range tables {
-			tableMetadata := &storepb.TableMetadata{
-				Name:          table.ShortName,
-				Engine:        table.Engine,
-				Collation:     table.Collation,
-				RowCount:      table.RowCount,
-				DataSize:      table.DataSize,
-				DataFree:      table.DataFree,
-				IndexSize:     table.IndexSize,
-				CreateOptions: table.CreateOptions,
-				Comment:       table.Comment,
-			}
-
-			sort.Slice(table.ColumnList, func(i, j int) bool {
-				return table.ColumnList[i].Position < table.ColumnList[j].Position
-			})
-			for _, column := range table.ColumnList {
-				columnMetadata := &storepb.ColumnMetadata{
-					Name:         column.Name,
-					Position:     int32(column.Position),
-					Nullable:     column.Nullable,
-					Type:         column.Type,
-					CharacterSet: column.CharacterSet,
-					Collation:    column.Collation,
-					Comment:      column.Comment,
-				}
-				if column.Default != nil {
-					columnMetadata.Default = &wrapperspb.StringValue{Value: *column.Default}
-				}
-				tableMetadata.Columns = append(tableMetadata.Columns, columnMetadata)
-			}
-
-			indexMap := make(map[string][]db.Index)
-			for _, expression := range table.IndexList {
-				indexMap[expression.Name] = append(indexMap[expression.Name], expression)
-			}
-			var indexNames []string
-			for indexName := range indexMap {
-				indexNames = append(indexNames, indexName)
-			}
-			sort.Strings(indexNames)
-			for _, indexName := range indexNames {
-				expressionList := indexMap[indexName]
-				sort.Slice(expressionList, func(i, j int) bool {
-					return expressionList[i].Position < expressionList[j].Position
-				})
-				indexMetadata := &storepb.IndexMetadata{
-					Name:    expressionList[0].Name,
-					Type:    expressionList[0].Type,
-					Unique:  expressionList[0].Unique,
-					Primary: expressionList[0].Primary,
-					Visible: expressionList[0].Visible,
-					Comment: expressionList[0].Comment,
-				}
-				for _, expression := range expressionList {
-					indexMetadata.Expressions = append(indexMetadata.Expressions, expression.Expression)
-				}
-				tableMetadata.Indexes = append(tableMetadata.Indexes, indexMetadata)
-			}
-
-			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
-		}
-		views := schemaViewMap[schemaName]
-		sort.Slice(views, func(i, j int) bool {
-			return views[i].ShortName < views[j].ShortName
-		})
-		for _, view := range views {
-			schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
-				Name:       view.ShortName,
-				Definition: view.Definition,
-				Comment:    view.Comment,
-			})
-		}
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, schemaMetadata)
-	}
-	return databaseMetadata
 }
 
 // ConvertYesNo converts YES/NO to bool.

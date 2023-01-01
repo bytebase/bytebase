@@ -22,14 +22,6 @@ var (
 	}
 )
 
-// indexSchema describes the schema of an index.
-type indexSchema struct {
-	name      string
-	tableName string
-	statement string
-	unique    bool
-}
-
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	version, err := driver.getVersion(ctx)
