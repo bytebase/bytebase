@@ -234,7 +234,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	// Foreign keys.
-	foreignKeysMap, err := getPgForeignKeys(txn)
+	foreignKeysMap, err := getForeignKeys(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get foreign keys from database %q", databaseName)
 	}
@@ -243,7 +243,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, err
 	}
 
-	databaseMetadata := util.ConvertDBSchema(&schema, nil)
+	databaseMetadata := util.ConvertDBSchema(&schema)
 	for _, schemaMetadata := range databaseMetadata.Schemas {
 		for _, tableMetadata := range schemaMetadata.Tables {
 			tableMetadata.ForeignKeys = foreignKeysMap[db.TableKey{Schema: schemaMetadata.Name, Table: tableMetadata.Name}]
@@ -322,7 +322,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	return userList, nil
 }
 
-func getPgForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	query := `
 	SELECT
 		n.nspname AS fk_schema,

@@ -102,7 +102,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 	schema.ViewList = viewList
 
-	return util.ConvertDBSchema(&schema, nil), nil
+	return util.ConvertDBSchema(&schema), nil
 }
 
 // syncAllViewSchema returns all views schema of a database.
