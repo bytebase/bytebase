@@ -543,7 +543,7 @@ func getTableColumns(txn *sql.Tx) (map[string][]*columnSchema, error) {
 		if err := rows.Scan(&tableSchema, &tableName, &columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &udtSchema, &udtName, &comment); err != nil {
 			return nil, err
 		}
-		isNullBool, err := convertBoolFromYesNo(isNullable)
+		isNullBool, err := util.ConvertYesNo(isNullable)
 		if err != nil {
 			return nil, err
 		}
@@ -715,17 +715,6 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 	}
 
 	return indices, nil
-}
-
-func convertBoolFromYesNo(s string) (bool, error) {
-	switch s {
-	case "YES":
-		return true, nil
-	case "NO":
-		return false, nil
-	default:
-		return false, errors.Errorf("unrecognized isNullable type %q", s)
-	}
 }
 
 func getIndexMethodType(stmt string) string {
