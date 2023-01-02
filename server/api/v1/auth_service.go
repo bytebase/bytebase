@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -13,8 +11,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -26,8 +22,6 @@ import (
 	"github.com/bytebase/bytebase/server/runner/metricreport"
 	"github.com/bytebase/bytebase/store"
 )
-
-const userNamePrefix = "users/"
 
 // AuthService implements the auth service.
 type AuthService struct {
@@ -261,21 +255,6 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return convertToUser(user), nil
-}
-
-func getUserID(name string) (int, error) {
-	if !strings.HasPrefix(name, userNamePrefix) {
-		return 0, errors.Errorf("invalid user name %q", name)
-	}
-	userStr := strings.TrimPrefix(name, userNamePrefix)
-	if userStr == "" {
-		return 0, errors.Errorf("user cannot be empty")
-	}
-	userID, err := strconv.Atoi(userStr)
-	if err != nil {
-		return 0, errors.Errorf("invalid user ID %q", userStr)
-	}
-	return userID, nil
 }
 
 func convertToUser(user *store.UserMessage) *v1pb.User {
