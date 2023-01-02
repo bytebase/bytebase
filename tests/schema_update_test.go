@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -1885,8 +1884,8 @@ CREATE TABLE public.book (
 								Name:     "book",
 								DataSize: 8192,
 								Columns: []*storepb.ColumnMetadata{
-									{Name: "id", Position: 1, Default: &wrapperspb.StringValue{Value: ""}, Nullable: true, Type: "integer"},
-									{Name: "name", Position: 2, Default: &wrapperspb.StringValue{Value: ""}, Nullable: true, Type: "text"},
+									{Name: "id", Position: 1, Nullable: true, Type: "integer"},
+									{Name: "name", Position: 2, Nullable: true, Type: "text"},
 								},
 							},
 						},
