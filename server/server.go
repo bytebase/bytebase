@@ -446,6 +446,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
+	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
 	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
@@ -458,6 +459,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterProjectServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterDatabaseServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
