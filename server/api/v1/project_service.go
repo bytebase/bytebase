@@ -43,7 +43,7 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	return convertProject(project), nil
@@ -100,7 +100,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	patch := &store.UpdateProjectMessage{
@@ -169,7 +169,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	rowStatus := api.Archived
@@ -196,7 +196,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	rowStatus := api.Normal

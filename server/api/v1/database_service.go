@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
@@ -47,7 +48,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if database == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "database %q not found", databaseName)
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 	return convertDatabase(database), nil
 }
@@ -98,13 +99,54 @@ func (*DatabaseService) BatchUpdateDatabases(_ context.Context, _ *v1pb.BatchUpd
 }
 
 // GetDatabaseMetadata gets the metadata of a database.
-func (*DatabaseService) GetDatabaseMetadata(_ context.Context, _ *v1pb.GetDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseMetadata not implemented")
+func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb.GetDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
+	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &environmentID,
+		InstanceID:    &instanceID,
+		DatabaseName:  &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertDatabaseMetadata(dbSchema.Metadata), nil
 }
 
 // GetDatabaseSchema gets the schema of a database.
-func (*DatabaseService) GetDatabaseSchema(_ context.Context, _ *v1pb.GetDatabaseSchemaRequest) (*v1pb.DatabaseSchema, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDatabaseSchema not implemented")
+func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.GetDatabaseSchemaRequest) (*v1pb.DatabaseSchema, error) {
+	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &environmentID,
+		InstanceID:    &instanceID,
+		DatabaseName:  &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if dbSchema == nil {
+		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
+	}
+	return &v1pb.DatabaseSchema{Schema: dbSchema.RawDump}, nil
 }
 
 func convertDatabase(database *store.DatabaseMessage) *v1pb.Database {
@@ -148,4 +190,83 @@ func getEnvironmentInstanceDatabaseID(name string) (string, string, string, erro
 		return "", "", "", errors.Errorf("invalid request %q", name)
 	}
 	return sections[1], sections[3], sections[5], nil
+}
+
+func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseMetadata {
+	m := &v1pb.DatabaseMetadata{
+		Name:         metadata.Name,
+		CharacterSet: metadata.CharacterSet,
+		Collation:    metadata.Collation,
+	}
+	for _, schema := range metadata.Schemas {
+		s := &v1pb.SchemaMetadata{
+			Name: schema.Name,
+		}
+		for _, table := range schema.Tables {
+			t := &v1pb.TableMetadata{
+				Name:          table.Name,
+				Engine:        table.Engine,
+				Collation:     table.Collation,
+				RowCount:      table.RowCount,
+				DataSize:      table.DataSize,
+				IndexSize:     table.IndexSize,
+				DataFree:      table.DataFree,
+				CreateOptions: table.CreateOptions,
+				Comment:       table.Comment,
+			}
+			for _, column := range table.Columns {
+				t.Columns = append(t.Columns, &v1pb.ColumnMetadata{
+					Name:         column.Name,
+					Position:     column.Position,
+					Default:      column.Default,
+					Nullable:     column.Nullable,
+					Type:         column.Type,
+					CharacterSet: column.CharacterSet,
+					Collation:    column.Collation,
+					Comment:      column.Comment,
+				})
+			}
+			for _, index := range table.Indexes {
+				t.Indexes = append(t.Indexes, &v1pb.IndexMetadata{
+					Name:        index.Name,
+					Expressions: index.Expressions,
+					Type:        index.Type,
+					Unique:      index.Unique,
+					Primary:     index.Primary,
+					Visible:     index.Visible,
+					Comment:     index.Comment,
+				})
+			}
+			for _, foreignKey := range table.ForeignKeys {
+				t.ForeignKeys = append(t.ForeignKeys, &v1pb.ForeignKeyMetadata{
+					Name:              foreignKey.Name,
+					Columns:           foreignKey.Columns,
+					ReferencedSchema:  foreignKey.ReferencedSchema,
+					ReferencedTable:   foreignKey.ReferencedTable,
+					ReferencedColumns: foreignKey.ReferencedColumns,
+					OnDelete:          foreignKey.OnDelete,
+					OnUpdate:          foreignKey.OnUpdate,
+					MatchType:         foreignKey.MatchType,
+				})
+			}
+			s.Tables = append(s.Tables, t)
+		}
+		for _, view := range schema.Views {
+			s.Views = append(s.Views, &v1pb.ViewMetadata{
+				Name:       view.Name,
+				Definition: view.Definition,
+				Comment:    view.Comment,
+			})
+		}
+		m.Schemas = append(m.Schemas, s)
+	}
+	for _, extension := range metadata.Extensions {
+		m.Extensions = append(m.Extensions, &v1pb.ExtensionMetadata{
+			Name:        extension.Name,
+			Schema:      extension.Schema,
+			Version:     extension.Version,
+			Description: extension.Description,
+		})
+	}
+	return m
 }

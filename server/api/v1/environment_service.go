@@ -46,7 +46,7 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if environment == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 	}
 	return convertEnvironment(environment), nil
 }
@@ -121,7 +121,7 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if environment == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 	}
 	if environment.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
@@ -161,7 +161,7 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if environment == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 	}
 	if environment.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
@@ -195,7 +195,7 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if environment == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q not found", environmentID)
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 	}
 	if !environment.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "environment %q is active", environmentID)
