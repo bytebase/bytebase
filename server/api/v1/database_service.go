@@ -38,13 +38,23 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
 	find := &store.FindDatabaseMessage{}
 	if environmentID != "-" {
 		find.EnvironmentID = &environmentID
 	}
 	if instanceID != "-" {
 		find.InstanceID = &instanceID
+	}
+	if request.Filter != "" {
+		projectFilter, err := getFilter(request.Filter, "project")
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		projectID, err := getProjectID(projectFilter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
+		}
+		find.ProjectID = &projectID
 	}
 	databases, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
