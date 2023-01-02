@@ -83,7 +83,7 @@ message ListProjectsRequest {
 }
 
 message ListProjectsResponse {
-  // The projects from the specified publisher.
+  // The projects from the specified request.
   repeated Project projects = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.

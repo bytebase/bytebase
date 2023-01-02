@@ -72,7 +72,6 @@ service AuthService {
   }
 }
 
-
 message GetUserRequest {
   // The name of the user to retrieve.
   // Format: users/{user}
@@ -98,7 +97,7 @@ message ListUsersRequest {
 }
 
 message ListUsersResponse {
-  // The users from the specified publisher.
+  // The users from the specified request.
   repeated User users = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
