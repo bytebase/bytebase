@@ -83,7 +83,7 @@ message ListEnvironmentsRequest {
 }
 
 message ListEnvironmentsResponse {
-  // The environments from the specified publisher.
+  // The environments from the specified request.
   repeated Environment environments = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.

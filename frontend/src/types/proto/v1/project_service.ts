@@ -320,7 +320,7 @@ export interface ListProjectsRequest {
 }
 
 export interface ListProjectsResponse {
-  /** The projects from the specified publisher. */
+  /** The projects from the specified request. */
   projects: Project[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.

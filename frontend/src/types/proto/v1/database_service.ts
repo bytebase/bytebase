@@ -71,9 +71,8 @@ export interface BatchUpdateDatabasesRequest {
   /**
    * The parent resource shared by all databases being updated.
    * Format: environments/{environment}/instances/{instance}
-   * If this is set, the parent field in the UpdateDatabaseRequest messages
-   * must either be empty or match this field.
    * If the operation spans parents, a dash (-) may be accepted as a wildcard.
+   * We only support updating the project of databases for now.
    */
   parent: string;
   /**
@@ -86,6 +85,22 @@ export interface BatchUpdateDatabasesRequest {
 export interface BatchUpdateDatabasesResponse {
   /** Databases updated. */
   databases: Database[];
+}
+
+export interface GetDatabaseMetadataRequest {
+  /**
+   * The name of the database to retrieve metadata.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   */
+  name: string;
+}
+
+export interface GetDatabaseSchemaRequest {
+  /**
+   * The name of the database to retrieve schema.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   */
+  name: string;
 }
 
 export interface Database {
@@ -115,22 +130,6 @@ export interface Database {
 export interface Database_LabelsEntry {
   key: string;
   value: string;
-}
-
-export interface GetDatabaseMetadataRequest {
-  /**
-   * The name of the database to retrieve metadata.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
-   */
-  name: string;
-}
-
-export interface GetDatabaseSchemaRequest {
-  /**
-   * The name of the database to retrieve schema.
-   * Format: environments/{environment}/instances/{instance}/databases/{database}
-   */
-  name: string;
 }
 
 /** DatabaseMetadata is the metadata for databases. */
@@ -648,6 +647,100 @@ export const BatchUpdateDatabasesResponse = {
   },
 };
 
+function createBaseGetDatabaseMetadataRequest(): GetDatabaseMetadataRequest {
+  return { name: "" };
+}
+
+export const GetDatabaseMetadataRequest = {
+  encode(message: GetDatabaseMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseMetadataRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetDatabaseMetadataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetDatabaseMetadataRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetDatabaseMetadataRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetDatabaseMetadataRequest>, I>>(object: I): GetDatabaseMetadataRequest {
+    const message = createBaseGetDatabaseMetadataRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
+  return { name: "" };
+}
+
+export const GetDatabaseSchemaRequest = {
+  encode(message: GetDatabaseSchemaRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseSchemaRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetDatabaseSchemaRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetDatabaseSchemaRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetDatabaseSchemaRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetDatabaseSchemaRequest>, I>>(object: I): GetDatabaseSchemaRequest {
+    const message = createBaseGetDatabaseSchemaRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseDatabase(): Database {
   return {
     name: "",
@@ -838,100 +931,6 @@ export const Database_LabelsEntry = {
     const message = createBaseDatabase_LabelsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBaseGetDatabaseMetadataRequest(): GetDatabaseMetadataRequest {
-  return { name: "" };
-}
-
-export const GetDatabaseMetadataRequest = {
-  encode(message: GetDatabaseMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseMetadataRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetDatabaseMetadataRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetDatabaseMetadataRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: GetDatabaseMetadataRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  fromPartial<I extends Exact<DeepPartial<GetDatabaseMetadataRequest>, I>>(object: I): GetDatabaseMetadataRequest {
-    const message = createBaseGetDatabaseMetadataRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
-  return { name: "" };
-}
-
-export const GetDatabaseSchemaRequest = {
-  encode(message: GetDatabaseSchemaRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseSchemaRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetDatabaseSchemaRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.name = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetDatabaseSchemaRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
-  },
-
-  toJSON(message: GetDatabaseSchemaRequest): unknown {
-    const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    return obj;
-  },
-
-  fromPartial<I extends Exact<DeepPartial<GetDatabaseSchemaRequest>, I>>(object: I): GetDatabaseSchemaRequest {
-    const message = createBaseGetDatabaseSchemaRequest();
-    message.name = object.name ?? "";
     return message;
   },
 };

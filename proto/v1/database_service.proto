@@ -110,9 +110,8 @@ message UpdateDatabaseRequest {
 message BatchUpdateDatabasesRequest {
   // The parent resource shared by all databases being updated.
   // Format: environments/{environment}/instances/{instance}
-  // If this is set, the parent field in the UpdateDatabaseRequest messages
-  // must either be empty or match this field.
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  // We only support updating the project of databases for now.
   string parent = 1;
 
   // The request message specifying the resources to update.
@@ -124,6 +123,18 @@ message BatchUpdateDatabasesRequest {
 message BatchUpdateDatabasesResponse {
   // Databases updated.
   repeated Database databases = 1;
+}
+
+message GetDatabaseMetadataRequest {
+  // The name of the database to retrieve metadata.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetDatabaseSchemaRequest {
+  // The name of the database to retrieve schema.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Database {
@@ -151,18 +162,6 @@ message Database {
 
   // Labels will be used for deployment and policy control.
   map<string, string> labels = 8;
-}
-
-message GetDatabaseMetadataRequest {
-  // The name of the database to retrieve metadata.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message GetDatabaseSchemaRequest {
-  // The name of the database to retrieve schema.
-  // Format: environments/{environment}/instances/{instance}/databases/{database}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // DatabaseMetadata is the metadata for databases.

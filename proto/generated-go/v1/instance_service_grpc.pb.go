@@ -29,6 +29,9 @@ type InstanceServiceClient interface {
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteInstance(ctx context.Context, in *UndeleteInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	AddDataSource(ctx context.Context, in *AddDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
+	RemoveDataSource(ctx context.Context, in *RemoveDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
+	UpdateDataSource(ctx context.Context, in *UpdateDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 }
 
 type instanceServiceClient struct {
@@ -93,6 +96,33 @@ func (c *instanceServiceClient) UndeleteInstance(ctx context.Context, in *Undele
 	return out, nil
 }
 
+func (c *instanceServiceClient) AddDataSource(ctx context.Context, in *AddDataSourceRequest, opts ...grpc.CallOption) (*Instance, error) {
+	out := new(Instance)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceService/AddDataSource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) RemoveDataSource(ctx context.Context, in *RemoveDataSourceRequest, opts ...grpc.CallOption) (*Instance, error) {
+	out := new(Instance)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceService/RemoveDataSource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, in *UpdateDataSourceRequest, opts ...grpc.CallOption) (*Instance, error) {
+	out := new(Instance)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceService/UpdateDataSource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InstanceServiceServer is the server API for InstanceService service.
 // All implementations must embed UnimplementedInstanceServiceServer
 // for forward compatibility
@@ -103,6 +133,9 @@ type InstanceServiceServer interface {
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error)
 	UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error)
+	AddDataSource(context.Context, *AddDataSourceRequest) (*Instance, error)
+	RemoveDataSource(context.Context, *RemoveDataSourceRequest) (*Instance, error)
+	UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error)
 	mustEmbedUnimplementedInstanceServiceServer()
 }
 
@@ -127,6 +160,15 @@ func (UnimplementedInstanceServiceServer) DeleteInstance(context.Context, *Delet
 }
 func (UnimplementedInstanceServiceServer) UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteInstance not implemented")
+}
+func (UnimplementedInstanceServiceServer) AddDataSource(context.Context, *AddDataSourceRequest) (*Instance, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddDataSource not implemented")
+}
+func (UnimplementedInstanceServiceServer) RemoveDataSource(context.Context, *RemoveDataSourceRequest) (*Instance, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveDataSource not implemented")
+}
+func (UnimplementedInstanceServiceServer) UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
 }
 func (UnimplementedInstanceServiceServer) mustEmbedUnimplementedInstanceServiceServer() {}
 
@@ -249,6 +291,60 @@ func _InstanceService_UndeleteInstance_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InstanceService_AddDataSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddDataSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).AddDataSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.InstanceService/AddDataSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).AddDataSource(ctx, req.(*AddDataSourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_RemoveDataSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveDataSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).RemoveDataSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.InstanceService/RemoveDataSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).RemoveDataSource(ctx, req.(*RemoveDataSourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_UpdateDataSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDataSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).UpdateDataSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.InstanceService/UpdateDataSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).UpdateDataSource(ctx, req.(*UpdateDataSourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InstanceService_ServiceDesc is the grpc.ServiceDesc for InstanceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -279,6 +375,18 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndeleteInstance",
 			Handler:    _InstanceService_UndeleteInstance_Handler,
+		},
+		{
+			MethodName: "AddDataSource",
+			Handler:    _InstanceService_AddDataSource_Handler,
+		},
+		{
+			MethodName: "RemoveDataSource",
+			Handler:    _InstanceService_RemoveDataSource_Handler,
+		},
+		{
+			MethodName: "UpdateDataSource",
+			Handler:    _InstanceService_UpdateDataSource_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -149,7 +149,7 @@ export interface ListInstancesRequest {
 }
 
 export interface ListInstancesResponse {
-  /** The instances from the specified publisher. */
+  /** The instances from the specified request. */
   instances: Instance[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.
@@ -202,6 +202,44 @@ export interface UndeleteInstanceRequest {
    * Format: environments/{environment}/instances/{instance}
    */
   name: string;
+}
+
+export interface AddDataSourceRequest {
+  /**
+   * The name of the instance to add a data source to.
+   * Format: environments/{environment}/instances/{instance}
+   */
+  instance: string;
+  /**
+   * Identified by type.
+   * Only READ_ONLY data source can be added.
+   */
+  dataSources?: DataSource;
+}
+
+export interface RemoveDataSourceRequest {
+  /**
+   * The name of the instance to remove a data source from.
+   * Format: environments/{environment}/instances/{instance}
+   */
+  instance: string;
+  /**
+   * Identified by type.
+   * Only READ_ONLY data source can be removed.
+   */
+  dataSources?: DataSource;
+}
+
+export interface UpdateDataSourceRequest {
+  /**
+   * The name of the instance to update a data source.
+   * Format: environments/{environment}/instances/{instance}
+   */
+  instance: string;
+  /** Identified by type. */
+  dataSources?: DataSource;
+  /** The list of fields to update. */
+  updateMask?: string[];
 }
 
 export interface Instance {
@@ -638,6 +676,198 @@ export const UndeleteInstanceRequest = {
   },
 };
 
+function createBaseAddDataSourceRequest(): AddDataSourceRequest {
+  return { instance: "", dataSources: undefined };
+}
+
+export const AddDataSourceRequest = {
+  encode(message: AddDataSourceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.instance !== "") {
+      writer.uint32(10).string(message.instance);
+    }
+    if (message.dataSources !== undefined) {
+      DataSource.encode(message.dataSources, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AddDataSourceRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAddDataSourceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.instance = reader.string();
+          break;
+        case 2:
+          message.dataSources = DataSource.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AddDataSourceRequest {
+    return {
+      instance: isSet(object.instance) ? String(object.instance) : "",
+      dataSources: isSet(object.dataSources) ? DataSource.fromJSON(object.dataSources) : undefined,
+    };
+  },
+
+  toJSON(message: AddDataSourceRequest): unknown {
+    const obj: any = {};
+    message.instance !== undefined && (obj.instance = message.instance);
+    message.dataSources !== undefined &&
+      (obj.dataSources = message.dataSources ? DataSource.toJSON(message.dataSources) : undefined);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AddDataSourceRequest>, I>>(object: I): AddDataSourceRequest {
+    const message = createBaseAddDataSourceRequest();
+    message.instance = object.instance ?? "";
+    message.dataSources = (object.dataSources !== undefined && object.dataSources !== null)
+      ? DataSource.fromPartial(object.dataSources)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRemoveDataSourceRequest(): RemoveDataSourceRequest {
+  return { instance: "", dataSources: undefined };
+}
+
+export const RemoveDataSourceRequest = {
+  encode(message: RemoveDataSourceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.instance !== "") {
+      writer.uint32(10).string(message.instance);
+    }
+    if (message.dataSources !== undefined) {
+      DataSource.encode(message.dataSources, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RemoveDataSourceRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveDataSourceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.instance = reader.string();
+          break;
+        case 2:
+          message.dataSources = DataSource.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveDataSourceRequest {
+    return {
+      instance: isSet(object.instance) ? String(object.instance) : "",
+      dataSources: isSet(object.dataSources) ? DataSource.fromJSON(object.dataSources) : undefined,
+    };
+  },
+
+  toJSON(message: RemoveDataSourceRequest): unknown {
+    const obj: any = {};
+    message.instance !== undefined && (obj.instance = message.instance);
+    message.dataSources !== undefined &&
+      (obj.dataSources = message.dataSources ? DataSource.toJSON(message.dataSources) : undefined);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<RemoveDataSourceRequest>, I>>(object: I): RemoveDataSourceRequest {
+    const message = createBaseRemoveDataSourceRequest();
+    message.instance = object.instance ?? "";
+    message.dataSources = (object.dataSources !== undefined && object.dataSources !== null)
+      ? DataSource.fromPartial(object.dataSources)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateDataSourceRequest(): UpdateDataSourceRequest {
+  return { instance: "", dataSources: undefined, updateMask: undefined };
+}
+
+export const UpdateDataSourceRequest = {
+  encode(message: UpdateDataSourceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.instance !== "") {
+      writer.uint32(10).string(message.instance);
+    }
+    if (message.dataSources !== undefined) {
+      DataSource.encode(message.dataSources, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateDataSourceRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateDataSourceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.instance = reader.string();
+          break;
+        case 2:
+          message.dataSources = DataSource.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateDataSourceRequest {
+    return {
+      instance: isSet(object.instance) ? String(object.instance) : "",
+      dataSources: isSet(object.dataSources) ? DataSource.fromJSON(object.dataSources) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateDataSourceRequest): unknown {
+    const obj: any = {};
+    message.instance !== undefined && (obj.instance = message.instance);
+    message.dataSources !== undefined &&
+      (obj.dataSources = message.dataSources ? DataSource.toJSON(message.dataSources) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<UpdateDataSourceRequest>, I>>(object: I): UpdateDataSourceRequest {
+    const message = createBaseUpdateDataSourceRequest();
+    message.instance = object.instance ?? "";
+    message.dataSources = (object.dataSources !== undefined && object.dataSources !== null)
+      ? DataSource.fromPartial(object.dataSources)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
 function createBaseInstance(): Instance {
   return { name: "", state: 0, title: "", engine: 0, externalLink: "", dataSources: [] };
 }
@@ -884,6 +1114,9 @@ export interface InstanceService {
   UpdateInstance(request: UpdateInstanceRequest): Promise<Instance>;
   DeleteInstance(request: DeleteInstanceRequest): Promise<Empty>;
   UndeleteInstance(request: UndeleteInstanceRequest): Promise<Instance>;
+  AddDataSource(request: AddDataSourceRequest): Promise<Instance>;
+  RemoveDataSource(request: RemoveDataSourceRequest): Promise<Instance>;
+  UpdateDataSource(request: UpdateDataSourceRequest): Promise<Instance>;
 }
 
 export class InstanceServiceClientImpl implements InstanceService {
@@ -898,6 +1131,9 @@ export class InstanceServiceClientImpl implements InstanceService {
     this.UpdateInstance = this.UpdateInstance.bind(this);
     this.DeleteInstance = this.DeleteInstance.bind(this);
     this.UndeleteInstance = this.UndeleteInstance.bind(this);
+    this.AddDataSource = this.AddDataSource.bind(this);
+    this.RemoveDataSource = this.RemoveDataSource.bind(this);
+    this.UpdateDataSource = this.UpdateDataSource.bind(this);
   }
   GetInstance(request: GetInstanceRequest): Promise<Instance> {
     const data = GetInstanceRequest.encode(request).finish();
@@ -932,6 +1168,24 @@ export class InstanceServiceClientImpl implements InstanceService {
   UndeleteInstance(request: UndeleteInstanceRequest): Promise<Instance> {
     const data = UndeleteInstanceRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "UndeleteInstance", data);
+    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
+  }
+
+  AddDataSource(request: AddDataSourceRequest): Promise<Instance> {
+    const data = AddDataSourceRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "AddDataSource", data);
+    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
+  }
+
+  RemoveDataSource(request: RemoveDataSourceRequest): Promise<Instance> {
+    const data = RemoveDataSourceRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "RemoveDataSource", data);
+    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
+  }
+
+  UpdateDataSource(request: UpdateDataSourceRequest): Promise<Instance> {
+    const data = UpdateDataSourceRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UpdateDataSource", data);
     return promise.then((data) => Instance.decode(new _m0.Reader(data)));
   }
 }

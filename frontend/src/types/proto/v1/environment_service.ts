@@ -35,7 +35,7 @@ export interface ListEnvironmentsRequest {
 }
 
 export interface ListEnvironmentsResponse {
-  /** The environments from the specified publisher. */
+  /** The environments from the specified request. */
   environments: Environment[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.
