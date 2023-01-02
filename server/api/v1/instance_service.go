@@ -254,15 +254,14 @@ func (*InstanceService) UpdateDataSource(_ context.Context, _ *v1pb.UpdateDataSo
 
 func getEnvironmentAndInstanceID(name string) (string, string, error) {
 	// the instance request should be environments/{environment-id}/instances/{instance-id}
-	if !strings.HasPrefix(name, environmentNamePrefix) {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
 	sections := strings.Split(name, "/")
 	if len(sections) != 4 {
 		return "", "", errors.Errorf("invalid request %q", name)
 	}
 
+	if fmt.Sprintf("%s/", sections[0]) != environmentNamePrefix {
+		return "", "", errors.Errorf("invalid request %q", name)
+	}
 	if fmt.Sprintf("%s/", sections[2]) != instanceNamePrefix {
 		return "", "", errors.Errorf("invalid request %q", name)
 	}
@@ -270,7 +269,6 @@ func getEnvironmentAndInstanceID(name string) (string, string, error) {
 	if sections[1] == "" || sections[3] == "" {
 		return "", "", errors.Errorf("invalid request %q", name)
 	}
-
 	return sections[1], sections[3], nil
 }
 

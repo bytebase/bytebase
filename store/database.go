@@ -667,6 +667,37 @@ type FindDatabaseMessage struct {
 	ProjectID     *string
 	EnvironmentID *string
 	InstanceID    *string
+	DatabaseName  *string
+}
+
+// GetDatabaseV2 gets a database.
+func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
+	if find.EnvironmentID == nil || find.InstanceID == nil || find.DatabaseName == nil {
+		return nil, errors.Errorf("environment, instance, and database name must exist for getting a database")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	databases, err := s.listDatabaseImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(databases) == 0 {
+		return nil, nil
+	}
+	if len(databases) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d database with filter %+v, expect 1", len(databases), find)}
+	}
+	database := databases[0]
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return database, nil
 }
 
 // ListDatabases lists all databases.

@@ -3,16 +3,21 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
+
+const databaseNamePrefix = "databases/"
 
 // DatabaseService implements the database service.
 type DatabaseService struct {
@@ -28,8 +33,23 @@ func NewDatabaseService(store *store.Store) *DatabaseService {
 }
 
 // GetDatabase gets a database.
-func (*DatabaseService) GetDatabase(_ context.Context, _ *v1pb.GetDatabaseRequest) (*v1pb.Database, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDatabase not implemented")
+func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetDatabaseRequest) (*v1pb.Database, error) {
+	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &environmentID,
+		InstanceID:    &instanceID,
+		DatabaseName:  &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "database %q not found", databaseName)
+	}
+	return convertDatabase(database), nil
 }
 
 // ListDatabases lists all databases.
@@ -105,4 +125,27 @@ func convertDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		SchemaVersion:      database.SchemaVersion,
 		Labels:             database.Labels,
 	}
+}
+
+func getEnvironmentInstanceDatabaseID(name string) (string, string, string, error) {
+	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database}
+	sections := strings.Split(name, "/")
+	if len(sections) != 6 {
+		return "", "", "", errors.Errorf("invalid request %q", name)
+	}
+
+	if fmt.Sprintf("%s/", sections[0]) != environmentNamePrefix {
+		return "", "", "", errors.Errorf("invalid request %q", name)
+	}
+	if fmt.Sprintf("%s/", sections[2]) != instanceNamePrefix {
+		return "", "", "", errors.Errorf("invalid request %q", name)
+	}
+	if fmt.Sprintf("%s/", sections[4]) != databaseNamePrefix {
+		return "", "", "", errors.Errorf("invalid request %q", name)
+	}
+
+	if sections[1] == "" || sections[3] == "" || sections[5] == "" {
+		return "", "", "", errors.Errorf("invalid request %q", name)
+	}
+	return sections[1], sections[3], sections[5], nil
 }
