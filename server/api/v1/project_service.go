@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -15,8 +14,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
-
-const projectNamePrefix = "projects/"
 
 // ProjectService implements the project service.
 type ProjectService struct {
@@ -43,10 +40,10 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
-	return convertProject(project), nil
+	return convertToProject(project), nil
 }
 
 // ListProjects lists all projects.
@@ -57,7 +54,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 	}
 	response := &v1pb.ListProjectsResponse{}
 	for _, project := range projects {
-		response.Projects = append(response.Projects, convertProject(project))
+		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return response, nil
 }
@@ -81,7 +78,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertProject(project), nil
+	return convertToProject(project), nil
 }
 
 // UpdateProject updates a project.
@@ -100,7 +97,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	patch := &store.UpdateProjectMessage{
@@ -154,7 +151,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertProject(projectMsg), nil
+	return convertToProject(projectMsg), nil
 }
 
 // DeleteProject deletes a project.
@@ -169,7 +166,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	rowStatus := api.Archived
@@ -196,7 +193,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	rowStatus := api.Normal
@@ -209,21 +206,10 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertProject(projectMsg), nil
+	return convertToProject(projectMsg), nil
 }
 
-func getProjectID(name string) (string, error) {
-	if !strings.HasPrefix(name, projectNamePrefix) {
-		return "", errors.Errorf("invalid project name %q", name)
-	}
-	projectID := strings.TrimPrefix(name, projectNamePrefix)
-	if projectID == "" {
-		return "", errors.Errorf("project cannot be empty")
-	}
-	return projectID, nil
-}
-
-func convertProject(projectMessage *store.ProjectMessage) *v1pb.Project {
+func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	workflow := v1pb.Workflow_WORKFLOW_UNSPECIFIED
 	switch projectMessage.Workflow {
 	case api.UIWorkflow:

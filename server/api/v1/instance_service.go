@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,8 +17,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
-
-const instanceNamePrefix = "instances/"
 
 // InstanceService implements the instance service.
 type InstanceService struct {
@@ -51,7 +48,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", instanceID)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	return convertToInstance(instance), nil
 }
@@ -141,7 +138,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Instance.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance.Name)
 	}
 
 	patch := &store.UpdateInstanceMessage{
@@ -189,7 +186,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Name)
 	}
 
 	rowStatus := api.Archived
@@ -220,7 +217,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Name)
 	}
 
 	rowStatus := api.Normal
@@ -250,28 +247,6 @@ func (*InstanceService) RemoveDataSource(_ context.Context, _ *v1pb.RemoveDataSo
 // UpdateDataSource updates a data source of an instance.
 func (*InstanceService) UpdateDataSource(_ context.Context, _ *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
-}
-
-func getEnvironmentAndInstanceID(name string) (string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}
-	if !strings.HasPrefix(name, environmentNamePrefix) {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	sections := strings.Split(name, "/")
-	if len(sections) != 4 {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	if fmt.Sprintf("%s/", sections[2]) != instanceNamePrefix {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	if sections[1] == "" || sections[3] == "" {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	return sections[1], sections[3], nil
 }
 
 func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
