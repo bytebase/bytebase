@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,8 +17,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
-
-const instanceNamePrefix = "instances/"
 
 // InstanceService implements the instance service.
 type InstanceService struct {
@@ -250,26 +247,6 @@ func (*InstanceService) RemoveDataSource(_ context.Context, _ *v1pb.RemoveDataSo
 // UpdateDataSource updates a data source of an instance.
 func (*InstanceService) UpdateDataSource(_ context.Context, _ *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
-}
-
-func getEnvironmentAndInstanceID(name string) (string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}
-	sections := strings.Split(name, "/")
-	if len(sections) != 4 {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	if fmt.Sprintf("%s/", sections[0]) != environmentNamePrefix {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-	if fmt.Sprintf("%s/", sections[2]) != instanceNamePrefix {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	if sections[1] == "" || sections[3] == "" {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-	return sections[1], sections[3], nil
 }
 
 func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {

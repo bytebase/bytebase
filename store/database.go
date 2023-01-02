@@ -732,6 +732,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.DatabaseName; v != nil {
+		where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
+	}
 	var databaseMessages []*DatabaseMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
@@ -794,7 +797,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			}
 			databaseMessage.Labels[keys[i].String] = values[i].String
 		}
-		// databaseMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		databaseMessages = append(databaseMessages, &databaseMessage)
 	}
 

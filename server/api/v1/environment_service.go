@@ -3,13 +3,10 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -17,8 +14,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
-
-const environmentNamePrefix = "environments/"
 
 // EnvironmentService implements the environment service.
 type EnvironmentService struct {
@@ -48,7 +43,7 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 	if environment == nil {
 		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 	}
-	return convertEnvironment(environment), nil
+	return convertToEnvironment(environment), nil
 }
 
 // ListEnvironments lists all environments.
@@ -59,7 +54,7 @@ func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb
 	}
 	response := &v1pb.ListEnvironmentsResponse{}
 	for _, environment := range environments {
-		response.Environments = append(response.Environments, convertEnvironment(environment))
+		response.Environments = append(response.Environments, convertToEnvironment(environment))
 	}
 	return response, nil
 }
@@ -99,7 +94,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertEnvironment(environment), nil
+	return convertToEnvironment(environment), nil
 }
 
 // UpdateEnvironment updates an environment.
@@ -145,7 +140,7 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertEnvironment(environment), nil
+	return convertToEnvironment(environment), nil
 }
 
 // DeleteEnvironment deletes an environment.
@@ -206,21 +201,10 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertEnvironment(environment), nil
+	return convertToEnvironment(environment), nil
 }
 
-func getEnvironmentID(name string) (string, error) {
-	if !strings.HasPrefix(name, environmentNamePrefix) {
-		return "", errors.Errorf("invalid environment name %q", name)
-	}
-	environmentID := strings.TrimPrefix(name, environmentNamePrefix)
-	if environmentID == "" {
-		return "", errors.Errorf("environment cannot be empty")
-	}
-	return environmentID, nil
-}
-
-func convertEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
+func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
 	return &v1pb.Environment{
 		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
 		Title: environment.Title,

@@ -3,22 +3,17 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/api"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
-
-const databaseNamePrefix = "databases/"
 
 // DatabaseService implements the database service.
 type DatabaseService struct {
@@ -50,7 +45,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	return convertDatabase(database), nil
+	return convertToDatabase(database), nil
 }
 
 // ListDatabases lists all databases.
@@ -83,7 +78,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	}
 	response := &v1pb.ListDatabasesResponse{}
 	for _, database := range databases {
-		response.Databases = append(response.Databases, convertDatabase(database))
+		response.Databases = append(response.Databases, convertToDatabase(database))
 	}
 	return response, nil
 }
@@ -100,7 +95,11 @@ func (*DatabaseService) BatchUpdateDatabases(_ context.Context, _ *v1pb.BatchUpd
 
 // GetDatabaseMetadata gets the metadata of a database.
 func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb.GetDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Name)
+	name, err := trimSuffix(request.Name, "/metadata")
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -124,7 +123,11 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 
 // GetDatabaseSchema gets the schema of a database.
 func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.GetDatabaseSchemaRequest) (*v1pb.DatabaseSchema, error) {
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Name)
+	name, err := trimSuffix(request.Name, "/schema")
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -149,7 +152,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	return &v1pb.DatabaseSchema{Schema: dbSchema.RawDump}, nil
 }
 
-func convertDatabase(database *store.DatabaseMessage) *v1pb.Database {
+func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	syncState := v1pb.State_STATE_UNSPECIFIED
 	switch database.SyncState {
 	case api.OK:
@@ -167,29 +170,6 @@ func convertDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		SchemaVersion:      database.SchemaVersion,
 		Labels:             database.Labels,
 	}
-}
-
-func getEnvironmentInstanceDatabaseID(name string) (string, string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database}
-	sections := strings.Split(name, "/")
-	if len(sections) != 6 {
-		return "", "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	if fmt.Sprintf("%s/", sections[0]) != environmentNamePrefix {
-		return "", "", "", errors.Errorf("invalid request %q", name)
-	}
-	if fmt.Sprintf("%s/", sections[2]) != instanceNamePrefix {
-		return "", "", "", errors.Errorf("invalid request %q", name)
-	}
-	if fmt.Sprintf("%s/", sections[4]) != databaseNamePrefix {
-		return "", "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	if sections[1] == "" || sections[3] == "" || sections[5] == "" {
-		return "", "", "", errors.Errorf("invalid request %q", name)
-	}
-	return sections[1], sections[3], sections[5], nil
 }
 
 func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseMetadata {

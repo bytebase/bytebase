@@ -1,7 +1,9 @@
 package v1
 
 import (
+	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -10,11 +12,91 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+const (
+	projectNamePrefix     = "projects/"
+	environmentNamePrefix = "environments/"
+	instanceNamePrefix    = "instances/"
+	databaseNamePrefix    = "databases/"
+	userNamePrefix        = "users/"
+)
+
 var (
 	resourceIDMatcher = regexp.MustCompile("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")
 	deletePatch       = true
 	undeletePatch     = false
 )
+
+func getProjectID(name string) (string, error) {
+	tokens, err := getNameParentTokens(name, projectNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
+}
+
+func getEnvironmentID(name string) (string, error) {
+	tokens, err := getNameParentTokens(name, environmentNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
+}
+
+func getEnvironmentAndInstanceID(name string) (string, string, error) {
+	// the instance request should be environments/{environment-id}/instances/{instance-id}
+	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+func getEnvironmentInstanceDatabaseID(name string) (string, string, string, error) {
+	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database}
+	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseNamePrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
+}
+
+func getUserID(name string) (int, error) {
+	tokens, err := getNameParentTokens(name, userNamePrefix)
+	if err != nil {
+		return 0, err
+	}
+	userID, err := strconv.Atoi(tokens[0])
+	if err != nil {
+		return 0, errors.Errorf("invalid user ID %q", tokens[0])
+	}
+	return userID, nil
+}
+
+func trimSuffix(name, suffix string) (string, error) {
+	if !strings.HasSuffix(name, suffix) {
+		return "", errors.Errorf("invalid request %q with suffix %q", name, suffix)
+	}
+	return strings.TrimRight(name, suffix), nil
+}
+
+func getNameParentTokens(name string, tokenPrefixes ...string) ([]string, error) {
+	parts := strings.Split(name, "/")
+	if len(parts) != 2*len(tokenPrefixes) {
+		return nil, errors.Errorf("invalid request %q", name)
+	}
+
+	var tokens []string
+	for i, tokenPrefix := range tokenPrefixes {
+		if fmt.Sprintf("%s/", parts[2*i]) != tokenPrefix {
+			return nil, errors.Errorf("invalid prefix %q in request %q", tokenPrefix, name)
+		}
+		if parts[2*i+1] == "" {
+			return nil, errors.Errorf("invalid request %q with empty prefix %q", name, tokenPrefix)
+		}
+		tokens = append(tokens, parts[2*i+1])
+	}
+	return tokens, nil
+}
 
 func convertDeletedToState(deleted bool) v1pb.State {
 	if deleted {
