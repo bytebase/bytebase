@@ -1,0 +1,351 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service DatabaseService {
+  rpc GetDatabase(GetDatabaseRequest) returns (Database) {
+    option (google.api.http) = {
+      get: "/v1/{name=environments/*/instances/*/databases/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=environments/*/instances/*}/databases"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
+    option (google.api.http) = {
+      patch: "/v1/{database.name=environments/*/instances/*/databases/*}"
+      body: "database"
+    };
+    option (google.api.method_signature) = "database,update_mask";
+  }
+
+  rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=environments/*/instances/*}/databases:batchUpdate"
+      body: "*"
+    };
+  }
+
+  rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
+    option (google.api.http) = {
+      get: "/v1/{name=environments/*/instances/*/databases/*/metadata}"
+    };
+  }
+
+  rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
+    option (google.api.http) = {
+      get: "/v1/{name=environments/*/instances/*/databases/*/schema}"
+    };
+  }
+}
+
+message GetDatabaseRequest {
+  // The name of the database to retrieve.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListDatabasesRequest {
+  // The parent, which owns this collection of databases.
+  // Format: environments/{environment}/instances/{instance}
+  // Use "environments/-/instances/-" to list all databases from all environments.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of databases to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 databases will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListDatabases` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDatabases` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Filter is used to filter databases returned in the list.
+  // For example, "project = projects/{project}" can be used to list databases in a project.
+  string filter = 4;
+}
+
+message ListDatabasesResponse {
+  // The databases from the specified request.
+  repeated Database databases = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateDatabaseRequest {
+  // The database to update.
+  //
+  // The database's `name` field is used to identify the database to update.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  Database database = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message BatchUpdateDatabasesRequest {
+  // The parent resource shared by all databases being updated.
+  // Format: environments/{environment}/instances/{instance}
+  // If the operation spans parents, a dash (-) may be accepted as a wildcard.
+  // We only support updating the project of databases for now.
+  string parent = 1;
+
+  // The request message specifying the resources to update.
+  // A maximum of 1000 databases can be modified in a batch.
+  repeated UpdateDatabaseRequest requests = 2
+    [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchUpdateDatabasesResponse {
+  // Databases updated.
+  repeated Database databases = 1;
+}
+
+message GetDatabaseMetadataRequest {
+  // The name of the database to retrieve metadata.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetDatabaseSchemaRequest {
+  // The name of the database to retrieve schema.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Database {
+  // The name of the database.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  // {database} is the database name in the instance.
+  string name = 1;
+
+  // The existence of a database on latest sync.
+  State sync_state = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The latest synchronization time.
+  google.protobuf.Timestamp successful_sync_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The project for a database.
+  // Format: projects/{project}
+  string project = 4;
+
+  string character_set = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string collation = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The version of database schema.
+  string schema_version = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Labels will be used for deployment and policy control.
+  map<string, string> labels = 8;
+}
+
+// DatabaseMetadata is the metadata for databases.
+message DatabaseMetadata {
+  string name = 1;
+
+  // The schemas is the list of schemas in a database.
+  repeated SchemaMetadata schemas = 2;
+
+  // The character_set is the character set of a database.
+  string character_set = 3;
+
+  // The collation is the collation of a database.
+  string collation = 4;
+
+  // The extensions is the list of extensions in a database.
+  repeated ExtensionMetadata extensions = 5;
+}
+
+// SchemaMetadata is the metadata for schemas.
+// This is the concept of schema in Postgres, but it's a no-op for MySQL.
+message SchemaMetadata {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The tables is the list of tables in a schema.
+  repeated TableMetadata tables = 2;
+
+  // The views is the list of views in a schema.
+  repeated ViewMetadata views = 3;
+}
+
+// TableMetadata is the metadata for tables.
+message TableMetadata {
+  // The name is the name of a table.
+  string name = 1;
+
+  // The columns is the ordered list of columns in a table.
+  repeated ColumnMetadata columns = 2;
+
+  // The indexes is the list of indexes in a table.
+  repeated IndexMetadata indexes = 3;
+
+  // The engine is the engine of a table.
+  string engine = 4;
+
+  // The collation is the collation of a table.
+  string collation = 5;
+
+  // The row_count is the estimated number of rows of a table.
+  int64 row_count = 6;
+
+  // The data_size is the estimated data size of a table.
+  int64 data_size = 7;
+
+  // The index_size is the estimated index size of a table.
+  int64 index_size = 8;
+
+  // The data_free is the estimated free data size of a table.
+  int64 data_free = 9;
+
+  // The create_options is the create option of a table.
+  string create_options = 10;
+
+  // The comment is the comment of a table.
+  string comment = 11;
+  
+  // The foreign_keys is the list of foreign keys in a table.
+  repeated ForeignKeyMetadata foreign_keys = 12;
+}
+
+// ColumnMetadata is the metadata for columns.
+message ColumnMetadata {
+  // The name is the name of a column.
+  string name = 1;
+
+  // The position is the position in columns.
+  int32 position = 2;
+
+  // The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default.
+  google.protobuf.StringValue default = 3;
+
+  // The nullable is the nullable of a column.
+  bool nullable = 4;
+
+  // The type is the type of a column.
+  string type = 5;
+
+  // The character_set is the character_set of a column.
+  string character_set = 6;
+
+  // The collation is the collation of a column.
+  string collation = 7;
+
+  // The comment is the comment of a column.
+  string comment = 8;
+}
+
+// ViewMetadata is the metadata for views.
+message ViewMetadata {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The definition is the definition of a view.
+  string definition = 2;
+
+  // The comment is the comment of a view.
+  string comment = 3;
+}
+
+// IndexMetadata is the metadata for indexes.
+message IndexMetadata {
+  // The name is the name of an index.
+  string name = 1;
+
+  // The expressions are the ordered columns or expressions of an index.
+  // This could refer to a column or an expression.
+  repeated string expressions = 2;
+
+  // The type is the type of an index.
+  string type = 3;
+
+  // The unique is whether the index is unique.
+  bool unique = 4;
+
+  // The primary is whether the index is a primary key index.
+  bool primary = 5;
+
+  // The visible is whether the index is visible.
+  bool visible = 6;
+
+  // The comment is the comment of an index.
+  string comment = 7;
+}
+
+
+// ExtensionMetadata is the metadata for extensions.
+message ExtensionMetadata {
+  // The name is the name of an extension.
+  string name = 1;
+
+  // The schema is the extension that is installed to. But the extension usage is not limited to the schema.
+  string schema = 2;
+
+  // The version is the version of an extension.
+  string version = 3;
+
+  // The description is the description of an extension.
+  string description = 4;
+}
+
+// ForeignKeyMetadata is the metadata for foreign keys.
+message ForeignKeyMetadata {
+  // The name is the name of a foreign key.
+  string name = 1;
+  
+  // The columns are the ordered referencing columns of a foreign key.
+  repeated string columns = 2;
+  
+  // The referenced_schema is the referenced schema name of a foreign key.
+  // It is an empty string for databases without such concept such as MySQL.
+  string referenced_schema = 3;
+  
+  // The referenced_table is the referenced table name of a foreign key.
+  string referenced_table = 4;
+  
+  // The referenced_columns are the ordered referenced columns of a foreign key.
+  repeated string referenced_columns = 5;
+  
+  // The on_delete is the on delete action of a foreign key.
+  string on_delete = 6;
+
+  // The on_update is the on update action of a foreign key.
+  string on_update = 7;
+  
+  // The match_type is the match type of a foreign key.
+  // The match_type is the PostgreSQL specific field.
+  // It's empty string for other databases.
+  string match_type = 8;
+}
+
+// DatabaseMetadata is the metadata for databases.
+message DatabaseSchema {
+  // The schema dump from database.
+  string schema = 1;
+}

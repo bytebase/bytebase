@@ -125,7 +125,7 @@ export interface ListUsersRequest {
 }
 
 export interface ListUsersResponse {
-  /** The users from the specified publisher. */
+  /** The users from the specified request. */
   users: User[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.

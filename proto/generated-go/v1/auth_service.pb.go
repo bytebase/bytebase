@@ -254,7 +254,7 @@ type ListUsersResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The users from the specified publisher.
+	// The users from the specified request.
 	Users []*User `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
