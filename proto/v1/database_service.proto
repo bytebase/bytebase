@@ -15,6 +15,13 @@ import "v1/common.proto";
 option go_package = "generated-go/v1";
 
 service DatabaseService {
+  rpc GetDatabase(GetDatabaseRequest) returns (Database) {
+    option (google.api.http) = {
+      get: "/v1/{name=environments/*/instances/*/databases/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=environments/*/instances/*}/databases"
@@ -48,6 +55,12 @@ service DatabaseService {
       get: "/v1/{name=environments/*/instances/*/databases/*/schema}"
     };
   }
+}
+
+message GetDatabaseRequest {
+  // The name of the database to retrieve.
+  // Format: environments/{environment}/instances/{instance}/databases/{database}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListDatabasesRequest {

@@ -8,6 +8,14 @@ import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
+export interface GetDatabaseRequest {
+  /**
+   * The name of the database to retrieve.
+   * Format: environments/{environment}/instances/{instance}/databases/{database}
+   */
+  name: string;
+}
+
 export interface ListDatabasesRequest {
   /**
    * The parent, which owns this collection of databases.
@@ -277,6 +285,53 @@ export interface DatabaseSchema {
   /** The schema dump from database. */
   schema: string;
 }
+
+function createBaseGetDatabaseRequest(): GetDatabaseRequest {
+  return { name: "" };
+}
+
+export const GetDatabaseRequest = {
+  encode(message: GetDatabaseRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetDatabaseRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetDatabaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetDatabaseRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: GetDatabaseRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetDatabaseRequest>, I>>(object: I): GetDatabaseRequest {
+    const message = createBaseGetDatabaseRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
 
 function createBaseListDatabasesRequest(): ListDatabasesRequest {
   return { parent: "", pageSize: 0, pageToken: "", filter: "" };
@@ -1776,6 +1831,7 @@ export const DatabaseSchema = {
 };
 
 export interface DatabaseService {
+  GetDatabase(request: GetDatabaseRequest): Promise<Database>;
   ListDatabases(request: ListDatabasesRequest): Promise<ListDatabasesResponse>;
   UpdateDatabase(request: UpdateDatabaseRequest): Promise<Database>;
   BatchUpdateDatabases(request: BatchUpdateDatabasesRequest): Promise<BatchUpdateDatabasesResponse>;
@@ -1789,12 +1845,19 @@ export class DatabaseServiceClientImpl implements DatabaseService {
   constructor(rpc: Rpc, opts?: { service?: string }) {
     this.service = opts?.service || "bytebase.v1.DatabaseService";
     this.rpc = rpc;
+    this.GetDatabase = this.GetDatabase.bind(this);
     this.ListDatabases = this.ListDatabases.bind(this);
     this.UpdateDatabase = this.UpdateDatabase.bind(this);
     this.BatchUpdateDatabases = this.BatchUpdateDatabases.bind(this);
     this.GetDatabaseMetadata = this.GetDatabaseMetadata.bind(this);
     this.GetDatabaseSchema = this.GetDatabaseSchema.bind(this);
   }
+  GetDatabase(request: GetDatabaseRequest): Promise<Database> {
+    const data = GetDatabaseRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetDatabase", data);
+    return promise.then((data) => Database.decode(new _m0.Reader(data)));
+  }
+
   ListDatabases(request: ListDatabasesRequest): Promise<ListDatabasesResponse> {
     const data = ListDatabasesRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "ListDatabases", data);

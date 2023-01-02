@@ -25,6 +25,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type GetDatabaseRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name of the database to retrieve.
+	// Format: environments/{environment}/instances/{instance}/databases/{database}
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *GetDatabaseRequest) Reset() {
+	*x = GetDatabaseRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_database_service_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetDatabaseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDatabaseRequest) ProtoMessage() {}
+
+func (x *GetDatabaseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_database_service_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDatabaseRequest.ProtoReflect.Descriptor instead.
+func (*GetDatabaseRequest) Descriptor() ([]byte, []int) {
+	return file_v1_database_service_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GetDatabaseRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 type ListDatabasesRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -53,7 +102,7 @@ type ListDatabasesRequest struct {
 func (x *ListDatabasesRequest) Reset() {
 	*x = ListDatabasesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[0]
+		mi := &file_v1_database_service_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -66,7 +115,7 @@ func (x *ListDatabasesRequest) String() string {
 func (*ListDatabasesRequest) ProtoMessage() {}
 
 func (x *ListDatabasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[0]
+	mi := &file_v1_database_service_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -79,7 +128,7 @@ func (x *ListDatabasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDatabasesRequest.ProtoReflect.Descriptor instead.
 func (*ListDatabasesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListDatabasesRequest) GetParent() string {
@@ -125,7 +174,7 @@ type ListDatabasesResponse struct {
 func (x *ListDatabasesResponse) Reset() {
 	*x = ListDatabasesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[1]
+		mi := &file_v1_database_service_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -138,7 +187,7 @@ func (x *ListDatabasesResponse) String() string {
 func (*ListDatabasesResponse) ProtoMessage() {}
 
 func (x *ListDatabasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[1]
+	mi := &file_v1_database_service_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -151,7 +200,7 @@ func (x *ListDatabasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDatabasesResponse.ProtoReflect.Descriptor instead.
 func (*ListDatabasesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{1}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ListDatabasesResponse) GetDatabases() []*Database {
@@ -185,7 +234,7 @@ type UpdateDatabaseRequest struct {
 func (x *UpdateDatabaseRequest) Reset() {
 	*x = UpdateDatabaseRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[2]
+		mi := &file_v1_database_service_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -198,7 +247,7 @@ func (x *UpdateDatabaseRequest) String() string {
 func (*UpdateDatabaseRequest) ProtoMessage() {}
 
 func (x *UpdateDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[2]
+	mi := &file_v1_database_service_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -211,7 +260,7 @@ func (x *UpdateDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{2}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *UpdateDatabaseRequest) GetDatabase() *Database {
@@ -247,7 +296,7 @@ type BatchUpdateDatabasesRequest struct {
 func (x *BatchUpdateDatabasesRequest) Reset() {
 	*x = BatchUpdateDatabasesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[3]
+		mi := &file_v1_database_service_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -260,7 +309,7 @@ func (x *BatchUpdateDatabasesRequest) String() string {
 func (*BatchUpdateDatabasesRequest) ProtoMessage() {}
 
 func (x *BatchUpdateDatabasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[3]
+	mi := &file_v1_database_service_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -273,7 +322,7 @@ func (x *BatchUpdateDatabasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateDatabasesRequest.ProtoReflect.Descriptor instead.
 func (*BatchUpdateDatabasesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *BatchUpdateDatabasesRequest) GetParent() string {
@@ -302,7 +351,7 @@ type BatchUpdateDatabasesResponse struct {
 func (x *BatchUpdateDatabasesResponse) Reset() {
 	*x = BatchUpdateDatabasesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[4]
+		mi := &file_v1_database_service_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -315,7 +364,7 @@ func (x *BatchUpdateDatabasesResponse) String() string {
 func (*BatchUpdateDatabasesResponse) ProtoMessage() {}
 
 func (x *BatchUpdateDatabasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[4]
+	mi := &file_v1_database_service_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -328,7 +377,7 @@ func (x *BatchUpdateDatabasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateDatabasesResponse.ProtoReflect.Descriptor instead.
 func (*BatchUpdateDatabasesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *BatchUpdateDatabasesResponse) GetDatabases() []*Database {
@@ -365,7 +414,7 @@ type Database struct {
 func (x *Database) Reset() {
 	*x = Database{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[5]
+		mi := &file_v1_database_service_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -378,7 +427,7 @@ func (x *Database) String() string {
 func (*Database) ProtoMessage() {}
 
 func (x *Database) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[5]
+	mi := &file_v1_database_service_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -391,7 +440,7 @@ func (x *Database) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Database.ProtoReflect.Descriptor instead.
 func (*Database) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Database) GetName() string {
@@ -463,7 +512,7 @@ type GetDatabaseMetadataRequest struct {
 func (x *GetDatabaseMetadataRequest) Reset() {
 	*x = GetDatabaseMetadataRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[6]
+		mi := &file_v1_database_service_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -476,7 +525,7 @@ func (x *GetDatabaseMetadataRequest) String() string {
 func (*GetDatabaseMetadataRequest) ProtoMessage() {}
 
 func (x *GetDatabaseMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[6]
+	mi := &file_v1_database_service_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +538,7 @@ func (x *GetDatabaseMetadataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseMetadataRequest.ProtoReflect.Descriptor instead.
 func (*GetDatabaseMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetDatabaseMetadataRequest) GetName() string {
@@ -512,7 +561,7 @@ type GetDatabaseSchemaRequest struct {
 func (x *GetDatabaseSchemaRequest) Reset() {
 	*x = GetDatabaseSchemaRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[7]
+		mi := &file_v1_database_service_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -525,7 +574,7 @@ func (x *GetDatabaseSchemaRequest) String() string {
 func (*GetDatabaseSchemaRequest) ProtoMessage() {}
 
 func (x *GetDatabaseSchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[7]
+	mi := &file_v1_database_service_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -538,7 +587,7 @@ func (x *GetDatabaseSchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseSchemaRequest.ProtoReflect.Descriptor instead.
 func (*GetDatabaseSchemaRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetDatabaseSchemaRequest) GetName() string {
@@ -568,7 +617,7 @@ type DatabaseMetadata struct {
 func (x *DatabaseMetadata) Reset() {
 	*x = DatabaseMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[8]
+		mi := &file_v1_database_service_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -581,7 +630,7 @@ func (x *DatabaseMetadata) String() string {
 func (*DatabaseMetadata) ProtoMessage() {}
 
 func (x *DatabaseMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[8]
+	mi := &file_v1_database_service_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -594,7 +643,7 @@ func (x *DatabaseMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseMetadata.ProtoReflect.Descriptor instead.
 func (*DatabaseMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DatabaseMetadata) GetName() string {
@@ -651,7 +700,7 @@ type SchemaMetadata struct {
 func (x *SchemaMetadata) Reset() {
 	*x = SchemaMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[9]
+		mi := &file_v1_database_service_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -664,7 +713,7 @@ func (x *SchemaMetadata) String() string {
 func (*SchemaMetadata) ProtoMessage() {}
 
 func (x *SchemaMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[9]
+	mi := &file_v1_database_service_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -677,7 +726,7 @@ func (x *SchemaMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaMetadata.ProtoReflect.Descriptor instead.
 func (*SchemaMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SchemaMetadata) GetName() string {
@@ -736,7 +785,7 @@ type TableMetadata struct {
 func (x *TableMetadata) Reset() {
 	*x = TableMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[10]
+		mi := &file_v1_database_service_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -749,7 +798,7 @@ func (x *TableMetadata) String() string {
 func (*TableMetadata) ProtoMessage() {}
 
 func (x *TableMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[10]
+	mi := &file_v1_database_service_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -762,7 +811,7 @@ func (x *TableMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableMetadata.ProtoReflect.Descriptor instead.
 func (*TableMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *TableMetadata) GetName() string {
@@ -876,7 +925,7 @@ type ColumnMetadata struct {
 func (x *ColumnMetadata) Reset() {
 	*x = ColumnMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[11]
+		mi := &file_v1_database_service_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -889,7 +938,7 @@ func (x *ColumnMetadata) String() string {
 func (*ColumnMetadata) ProtoMessage() {}
 
 func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[11]
+	mi := &file_v1_database_service_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -902,7 +951,7 @@ func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnMetadata.ProtoReflect.Descriptor instead.
 func (*ColumnMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ColumnMetadata) GetName() string {
@@ -978,7 +1027,7 @@ type ViewMetadata struct {
 func (x *ViewMetadata) Reset() {
 	*x = ViewMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[12]
+		mi := &file_v1_database_service_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -991,7 +1040,7 @@ func (x *ViewMetadata) String() string {
 func (*ViewMetadata) ProtoMessage() {}
 
 func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[12]
+	mi := &file_v1_database_service_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1004,7 +1053,7 @@ func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ViewMetadata.ProtoReflect.Descriptor instead.
 func (*ViewMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ViewMetadata) GetName() string {
@@ -1054,7 +1103,7 @@ type IndexMetadata struct {
 func (x *IndexMetadata) Reset() {
 	*x = IndexMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[13]
+		mi := &file_v1_database_service_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1067,7 +1116,7 @@ func (x *IndexMetadata) String() string {
 func (*IndexMetadata) ProtoMessage() {}
 
 func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[13]
+	mi := &file_v1_database_service_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1080,7 +1129,7 @@ func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IndexMetadata.ProtoReflect.Descriptor instead.
 func (*IndexMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *IndexMetadata) GetName() string {
@@ -1151,7 +1200,7 @@ type ExtensionMetadata struct {
 func (x *ExtensionMetadata) Reset() {
 	*x = ExtensionMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[14]
+		mi := &file_v1_database_service_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1164,7 +1213,7 @@ func (x *ExtensionMetadata) String() string {
 func (*ExtensionMetadata) ProtoMessage() {}
 
 func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[14]
+	mi := &file_v1_database_service_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1177,7 +1226,7 @@ func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtensionMetadata.ProtoReflect.Descriptor instead.
 func (*ExtensionMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ExtensionMetadata) GetName() string {
@@ -1238,7 +1287,7 @@ type ForeignKeyMetadata struct {
 func (x *ForeignKeyMetadata) Reset() {
 	*x = ForeignKeyMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[15]
+		mi := &file_v1_database_service_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1251,7 +1300,7 @@ func (x *ForeignKeyMetadata) String() string {
 func (*ForeignKeyMetadata) ProtoMessage() {}
 
 func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[15]
+	mi := &file_v1_database_service_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1264,7 +1313,7 @@ func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ForeignKeyMetadata.ProtoReflect.Descriptor instead.
 func (*ForeignKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ForeignKeyMetadata) GetName() string {
@@ -1336,7 +1385,7 @@ type DatabaseSchema struct {
 func (x *DatabaseSchema) Reset() {
 	*x = DatabaseSchema{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_database_service_proto_msgTypes[16]
+		mi := &file_v1_database_service_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1349,7 +1398,7 @@ func (x *DatabaseSchema) String() string {
 func (*DatabaseSchema) ProtoMessage() {}
 
 func (x *DatabaseSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[16]
+	mi := &file_v1_database_service_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1362,7 +1411,7 @@ func (x *DatabaseSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseSchema.ProtoReflect.Descriptor instead.
 func (*DatabaseSchema) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{16}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DatabaseSchema) GetSchema() string {
@@ -1392,7 +1441,10 @@ var file_v1_database_service_proto_rawDesc = []byte{
 	0x1a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
 	0x66, 0x2f, 0x77, 0x72, 0x61, 0x70, 0x70, 0x65, 0x72, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x1a, 0x0f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x22, 0x88, 0x01, 0x0a, 0x14, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x6f, 0x22, 0x2e, 0x0a, 0x12, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x04, 0xe2, 0x41, 0x01, 0x02, 0x52, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x22, 0x88, 0x01, 0x0a, 0x14, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
 	0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1c, 0x0a, 0x06, 0x70, 0x61,
 	0x72, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x04, 0xe2, 0x41, 0x01, 0x02,
 	0x52, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x70, 0x61, 0x67, 0x65,
@@ -1579,62 +1631,70 @@ var file_v1_database_service_proto_rawDesc = []byte{
 	0x6d, 0x61, 0x74, 0x63, 0x68, 0x54, 0x79, 0x70, 0x65, 0x22, 0x28, 0x0a, 0x0e, 0x44, 0x61, 0x74,
 	0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x16, 0x0a, 0x06, 0x73,
 	0x63, 0x68, 0x65, 0x6d, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x68,
-	0x65, 0x6d, 0x61, 0x32, 0xd3, 0x06, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x94, 0x01, 0x0a, 0x0d, 0x4c, 0x69, 0x73, 0x74,
-	0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61,
-	0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x44,
-	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x3c, 0xda, 0x41, 0x00, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x33, 0x12, 0x31, 0x2f, 0x76, 0x31,
-	0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e,
-	0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
-	0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0xb0,
-	0x01, 0x0a, 0x0e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
-	0x65, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x22, 0x63, 0xda, 0x41,
-	0x14, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2c, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65,
-	0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x46, 0x3a, 0x08, 0x64, 0x61, 0x74,
-	0x61, 0x62, 0x61, 0x73, 0x65, 0x32, 0x3a, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x64, 0x61, 0x74, 0x61,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f,
+	0x65, 0x6d, 0x61, 0x32, 0xdd, 0x07, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x87, 0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
+	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x22,
+	0x40, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x33, 0x12, 0x31,
+	0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f,
 	0x6e, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
 	0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a,
-	0x7d, 0x12, 0xb5, 0x01, 0x0a, 0x14, 0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74,
-	0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0x28, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70,
-	0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x7d, 0x12, 0x94, 0x01, 0x0a, 0x0d, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
+	0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3c, 0xda, 0x41, 0x00, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x33, 0x12, 0x31, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65,
+	0x6e, 0x74, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2f,
+	0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0xb0, 0x01, 0x0a, 0x0e, 0x55, 0x70, 0x64,
+	0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x12, 0x22, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
+	0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x15, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x22, 0x63, 0xda, 0x41, 0x14, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x2c, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x46, 0x3a, 0x08, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x32,
+	0x3a, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x6e,
+	0x61, 0x6d, 0x65, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74, 0x73,
+	0x2f, 0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xb5, 0x01, 0x0a, 0x14,
+	0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x73, 0x12, 0x28, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
 	0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61,
-	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x48, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x42, 0x3a, 0x01, 0x2a, 0x22, 0x3d, 0x2f, 0x76, 0x31, 0x2f,
-	0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d,
-	0x65, 0x6e, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73,
-	0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x3a, 0x62, 0x61,
-	0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x12, 0xa1, 0x01, 0x0a, 0x13, 0x47, 0x65,
-	0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
-	0x61, 0x12, 0x27, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64,
-	0x61, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1d, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
-	0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x22, 0x42, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x3c, 0x12, 0x3a, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x65, 0x6e, 0x76,
-	0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74,
-	0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
-	0x73, 0x2f, 0x2a, 0x2f, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x7d, 0x12, 0x99, 0x01,
-	0x0a, 0x11, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68,
-	0x65, 0x6d, 0x61, 0x12, 0x25, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68,
-	0x65, 0x6d, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
-	0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x22, 0x40, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3a, 0x12,
-	0x38, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72,
-	0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e,
-	0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f,
-	0x2a, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e,
-	0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29,
+	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74,
+	0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x48, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x42, 0x3a, 0x01, 0x2a, 0x22, 0x3d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e,
+	0x74, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x2f, 0x2a,
+	0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64,
+	0x61, 0x74, 0x65, 0x12, 0xa1, 0x01, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x27, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74,
+	0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64,
+	0x61, 0x74, 0x61, 0x22, 0x42, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3c, 0x12, 0x3a, 0x2f, 0x76, 0x31,
+	0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65,
+	0x6e, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f,
+	0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x6d, 0x65,
+	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x7d, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x25, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x22, 0x40, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3a, 0x12, 0x38, 0x2f, 0x76, 0x31, 0x2f, 0x7b,
+	0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74,
+	0x73, 0x2f, 0x2a, 0x2f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f,
+	0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64,
+	0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1649,60 +1709,63 @@ func file_v1_database_service_proto_rawDescGZIP() []byte {
 	return file_v1_database_service_proto_rawDescData
 }
 
-var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_v1_database_service_proto_goTypes = []interface{}{
-	(*ListDatabasesRequest)(nil),         // 0: bytebase.v1.ListDatabasesRequest
-	(*ListDatabasesResponse)(nil),        // 1: bytebase.v1.ListDatabasesResponse
-	(*UpdateDatabaseRequest)(nil),        // 2: bytebase.v1.UpdateDatabaseRequest
-	(*BatchUpdateDatabasesRequest)(nil),  // 3: bytebase.v1.BatchUpdateDatabasesRequest
-	(*BatchUpdateDatabasesResponse)(nil), // 4: bytebase.v1.BatchUpdateDatabasesResponse
-	(*Database)(nil),                     // 5: bytebase.v1.Database
-	(*GetDatabaseMetadataRequest)(nil),   // 6: bytebase.v1.GetDatabaseMetadataRequest
-	(*GetDatabaseSchemaRequest)(nil),     // 7: bytebase.v1.GetDatabaseSchemaRequest
-	(*DatabaseMetadata)(nil),             // 8: bytebase.v1.DatabaseMetadata
-	(*SchemaMetadata)(nil),               // 9: bytebase.v1.SchemaMetadata
-	(*TableMetadata)(nil),                // 10: bytebase.v1.TableMetadata
-	(*ColumnMetadata)(nil),               // 11: bytebase.v1.ColumnMetadata
-	(*ViewMetadata)(nil),                 // 12: bytebase.v1.ViewMetadata
-	(*IndexMetadata)(nil),                // 13: bytebase.v1.IndexMetadata
-	(*ExtensionMetadata)(nil),            // 14: bytebase.v1.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),           // 15: bytebase.v1.ForeignKeyMetadata
-	(*DatabaseSchema)(nil),               // 16: bytebase.v1.DatabaseSchema
-	nil,                                  // 17: bytebase.v1.Database.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),        // 18: google.protobuf.FieldMask
-	(State)(0),                           // 19: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),        // 20: google.protobuf.Timestamp
-	(*wrapperspb.StringValue)(nil),       // 21: google.protobuf.StringValue
+	(*GetDatabaseRequest)(nil),           // 0: bytebase.v1.GetDatabaseRequest
+	(*ListDatabasesRequest)(nil),         // 1: bytebase.v1.ListDatabasesRequest
+	(*ListDatabasesResponse)(nil),        // 2: bytebase.v1.ListDatabasesResponse
+	(*UpdateDatabaseRequest)(nil),        // 3: bytebase.v1.UpdateDatabaseRequest
+	(*BatchUpdateDatabasesRequest)(nil),  // 4: bytebase.v1.BatchUpdateDatabasesRequest
+	(*BatchUpdateDatabasesResponse)(nil), // 5: bytebase.v1.BatchUpdateDatabasesResponse
+	(*Database)(nil),                     // 6: bytebase.v1.Database
+	(*GetDatabaseMetadataRequest)(nil),   // 7: bytebase.v1.GetDatabaseMetadataRequest
+	(*GetDatabaseSchemaRequest)(nil),     // 8: bytebase.v1.GetDatabaseSchemaRequest
+	(*DatabaseMetadata)(nil),             // 9: bytebase.v1.DatabaseMetadata
+	(*SchemaMetadata)(nil),               // 10: bytebase.v1.SchemaMetadata
+	(*TableMetadata)(nil),                // 11: bytebase.v1.TableMetadata
+	(*ColumnMetadata)(nil),               // 12: bytebase.v1.ColumnMetadata
+	(*ViewMetadata)(nil),                 // 13: bytebase.v1.ViewMetadata
+	(*IndexMetadata)(nil),                // 14: bytebase.v1.IndexMetadata
+	(*ExtensionMetadata)(nil),            // 15: bytebase.v1.ExtensionMetadata
+	(*ForeignKeyMetadata)(nil),           // 16: bytebase.v1.ForeignKeyMetadata
+	(*DatabaseSchema)(nil),               // 17: bytebase.v1.DatabaseSchema
+	nil,                                  // 18: bytebase.v1.Database.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),        // 19: google.protobuf.FieldMask
+	(State)(0),                           // 20: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),        // 21: google.protobuf.Timestamp
+	(*wrapperspb.StringValue)(nil),       // 22: google.protobuf.StringValue
 }
 var file_v1_database_service_proto_depIdxs = []int32{
-	5,  // 0: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	5,  // 1: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
-	18, // 2: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	2,  // 3: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
-	5,  // 4: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	19, // 5: bytebase.v1.Database.sync_state:type_name -> bytebase.v1.State
-	20, // 6: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
-	17, // 7: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
-	9,  // 8: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
-	14, // 9: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
-	10, // 10: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
-	12, // 11: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
-	11, // 12: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	13, // 13: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	15, // 14: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
-	21, // 15: bytebase.v1.ColumnMetadata.default:type_name -> google.protobuf.StringValue
-	0,  // 16: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
-	2,  // 17: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
-	3,  // 18: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
-	6,  // 19: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
-	7,  // 20: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
-	1,  // 21: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
-	5,  // 22: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
-	4,  // 23: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
-	8,  // 24: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
-	16, // 25: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
-	21, // [21:26] is the sub-list for method output_type
-	16, // [16:21] is the sub-list for method input_type
+	6,  // 0: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	6,  // 1: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
+	19, // 2: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	3,  // 3: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
+	6,  // 4: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	20, // 5: bytebase.v1.Database.sync_state:type_name -> bytebase.v1.State
+	21, // 6: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
+	18, // 7: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
+	10, // 8: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
+	15, // 9: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
+	11, // 10: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
+	13, // 11: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
+	12, // 12: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	14, // 13: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	16, // 14: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
+	22, // 15: bytebase.v1.ColumnMetadata.default:type_name -> google.protobuf.StringValue
+	0,  // 16: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
+	1,  // 17: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
+	3,  // 18: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
+	4,  // 19: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
+	7,  // 20: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
+	8,  // 21: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
+	6,  // 22: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
+	2,  // 23: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
+	6,  // 24: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
+	5,  // 25: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
+	9,  // 26: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
+	17, // 27: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
+	22, // [22:28] is the sub-list for method output_type
+	16, // [16:22] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
 	16, // [16:16] is the sub-list for extension extendee
 	0,  // [0:16] is the sub-list for field type_name
@@ -1716,7 +1779,7 @@ func file_v1_database_service_proto_init() {
 	file_v1_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_v1_database_service_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListDatabasesRequest); i {
+			switch v := v.(*GetDatabaseRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1728,7 +1791,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListDatabasesResponse); i {
+			switch v := v.(*ListDatabasesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1740,7 +1803,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UpdateDatabaseRequest); i {
+			switch v := v.(*ListDatabasesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1752,7 +1815,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BatchUpdateDatabasesRequest); i {
+			switch v := v.(*UpdateDatabaseRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1764,7 +1827,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BatchUpdateDatabasesResponse); i {
+			switch v := v.(*BatchUpdateDatabasesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1776,7 +1839,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Database); i {
+			switch v := v.(*BatchUpdateDatabasesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1788,7 +1851,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetDatabaseMetadataRequest); i {
+			switch v := v.(*Database); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1800,7 +1863,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetDatabaseSchemaRequest); i {
+			switch v := v.(*GetDatabaseMetadataRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1812,7 +1875,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DatabaseMetadata); i {
+			switch v := v.(*GetDatabaseSchemaRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1824,7 +1887,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SchemaMetadata); i {
+			switch v := v.(*DatabaseMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1836,7 +1899,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableMetadata); i {
+			switch v := v.(*SchemaMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1848,7 +1911,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnMetadata); i {
+			switch v := v.(*TableMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1860,7 +1923,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ViewMetadata); i {
+			switch v := v.(*ColumnMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1872,7 +1935,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*IndexMetadata); i {
+			switch v := v.(*ViewMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1884,7 +1947,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ExtensionMetadata); i {
+			switch v := v.(*IndexMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1896,7 +1959,7 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ForeignKeyMetadata); i {
+			switch v := v.(*ExtensionMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1908,6 +1971,18 @@ func file_v1_database_service_proto_init() {
 			}
 		}
 		file_v1_database_service_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ForeignKeyMetadata); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_database_service_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DatabaseSchema); i {
 			case 0:
 				return &v.state
@@ -1926,7 +2001,7 @@ func file_v1_database_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_database_service_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
