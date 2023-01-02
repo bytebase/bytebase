@@ -240,7 +240,7 @@ type BatchUpdateDatabasesRequest struct {
 	// If the operation spans parents, a dash (-) may be accepted as a wildcard.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The request message specifying the resources to update.
-	// A maximum of 1000 books can be modified in a batch.
+	// A maximum of 1000 databases can be modified in a batch.
 	Requests []*UpdateDatabaseRequest `protobuf:"bytes,2,rep,name=requests,proto3" json:"requests,omitempty"`
 }
 

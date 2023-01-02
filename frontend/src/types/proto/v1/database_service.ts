@@ -70,7 +70,7 @@ export interface BatchUpdateDatabasesRequest {
   parent: string;
   /**
    * The request message specifying the resources to update.
-   * A maximum of 1000 books can be modified in a batch.
+   * A maximum of 1000 databases can be modified in a batch.
    */
   requests: UpdateDatabaseRequest[];
 }

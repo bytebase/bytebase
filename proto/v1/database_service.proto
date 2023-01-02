@@ -103,7 +103,7 @@ message BatchUpdateDatabasesRequest {
   string parent = 1;
 
   // The request message specifying the resources to update.
-  // A maximum of 1000 books can be modified in a batch.
+  // A maximum of 1000 databases can be modified in a batch.
   repeated UpdateDatabaseRequest requests = 2
     [(google.api.field_behavior) = REQUIRED];
 }
