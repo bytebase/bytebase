@@ -8,8 +8,10 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -37,111 +39,92 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 			CONSTRAINT tfk_ibfk_1 FOREIGN KEY (a, b, c) REFERENCES schema1.trd ("A", "B", c)
 		  );
 		`
-		expectedSchema = `
-		{
-			"name":"test_sync_postgresql_schema_db",
-			"schemas":[
-			   {
-				  "name":"public",
-				  "tables":[
-					 {
-						"name":"TFK",
-						"columns":[
-						   {
-							  "name":"a",
-							  "position":1,
-							  "default":"",
-							  "nullable":true,
-							  "type":"integer"
-						   },
-						   {
-							  "name":"b",
-							  "position":2,
-							  "default":"",
-							  "nullable":true,
-							  "type":"integer"
-						   },
-						   {
-							  "name":"c",
-							  "position":3,
-							  "default":"",
-							  "nullable":true,
-							  "type":"integer"
-						   }
-						],
-						"foreignKeys":[
-						   {
-							  "name":"tfk_ibfk_1",
-							  "columns":[
-								 "a",
-								 "b",
-								 "c"
-							  ],
-							  "referencedSchema":"schema1",
-							  "referencedTable":"trd",
-							  "referencedColumns":[
-								 "A",
-								 "B",
-								 "c"
-							  ],
-							  "onDelete":"NO ACTION",
-							  "onUpdate":"NO ACTION",
-							  "matchType":"SIMPLE"
-						   }
-						]
-					 }
-				  ]
-			   },
-			   {
-				  "name":"schema1",
-				  "tables":[
-					 {
-						"name":"trd",
-						"columns":[
-						   {
-							  "name":"A",
-							  "position":1,
-							  "default":"",
-							  "nullable":true,
-							  "type":"integer"
-						   },
-						   {
-							  "name":"B",
-							  "position":2,
-							  "default":"",
-							  "nullable":true,
-							  "type":"integer"
-						   },
-						   {
-							  "name":"c",
-							  "position":3,
-							  "default":"",
-							  "nullable":true,
-							  "type":"integer"
-						   }
-						],
-						"indexes":[
-						   {
-							  "name":"trd_A_B_c_key",
-							  "expressions":[
-								 "\"A\"",
-								 "\"B\"",
-								 "c"
-							  ],
-							  "type":"btree",
-							  "unique":true
-						   }
-						],
-						"indexSize":"8192"
-					 }
-				  ]
-			   }
-			],
-			"characterSet":"UTF8",
-			"collation":"en_US.UTF-8"
-		 }
-		`
 	)
+	wantDatabaseMetadata := &storepb.DatabaseMetadata{
+		Name:         "test_sync_postgresql_schema_db",
+		CharacterSet: "UTF8",
+		Collation:    "en_US.UTF-8",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "TFK",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "a",
+								Position: 1,
+								Nullable: true,
+								Type:     "integer",
+							},
+							{
+								Name:     "b",
+								Position: 2,
+								Nullable: true,
+								Type:     "integer",
+							},
+							{
+								Name:     "c",
+								Position: 3,
+								Nullable: true,
+								Type:     "integer",
+							},
+						},
+						ForeignKeys: []*storepb.ForeignKeyMetadata{
+							{
+								Name:              "tfk_ibfk_1",
+								Columns:           []string{"a", "b", "c"},
+								ReferencedSchema:  "schema1",
+								ReferencedTable:   "trd",
+								ReferencedColumns: []string{"A", "B", "c"},
+								OnDelete:          "NO ACTION",
+								OnUpdate:          "NO ACTION",
+								MatchType:         "SIMPLE",
+							},
+						},
+					},
+				},
+			},
+			{
+				Name: "schema1",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "trd",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "A",
+								Position: 1,
+								Nullable: true,
+								Type:     "integer",
+							},
+							{
+								Name:     "B",
+								Position: 2,
+								Nullable: true,
+								Type:     "integer",
+							},
+							{
+								Name:     "c",
+								Position: 3,
+								Nullable: true,
+								Type:     "integer",
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name: "trd_A_B_c_key",
+								// TODO(rebelice): the expressions should not double double quotes.
+								Expressions: []string{`"A"`, `"B"`, "c"},
+								Type:        "btree",
+								Unique:      true,
+							},
+						},
+						IndexSize: 8192,
+					},
+				},
+			},
+		},
+	}
 
 	t.Parallel()
 	a := require.New(t)
@@ -248,10 +231,8 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	err = protojson.Unmarshal([]byte(metadata), &latestSchemaMetadata)
 	a.NoError(err)
 
-	var expectedSchemaMetadata storepb.DatabaseMetadata
-	err = protojson.Unmarshal([]byte(expectedSchema), &expectedSchemaMetadata)
-	a.NoError(err)
-	a.Equal(&expectedSchemaMetadata, &latestSchemaMetadata)
+	diff := cmp.Diff(wantDatabaseMetadata, &latestSchemaMetadata, protocmp.Transform())
+	a.Equal("", diff)
 }
 
 func TestSyncerForMySQL(t *testing.T) {
