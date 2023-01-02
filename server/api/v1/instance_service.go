@@ -237,12 +237,17 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	return convertToInstance(ins), nil
 }
 
+// AddDataSource adds a data source to an instance.
 func (*InstanceService) AddDataSource(_ context.Context, _ *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddDataSource not implemented")
 }
+
+// RemoveDataSource removes a data source to an instance.
 func (*InstanceService) RemoveDataSource(_ context.Context, _ *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveDataSource not implemented")
 }
+
+// UpdateDataSource updates a data source of an instance.
 func (*InstanceService) UpdateDataSource(_ context.Context, _ *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
 }
