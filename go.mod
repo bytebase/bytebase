@@ -24,6 +24,7 @@ require (
 	github.com/jackc/pgx/v5 v5.1.1
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.1
+	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/pganalyze/pg_query_go/v2 v2.1.2
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
