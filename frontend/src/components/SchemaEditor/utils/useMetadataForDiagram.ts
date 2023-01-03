@@ -69,6 +69,10 @@ export const useMetadataForDiagram = (
           return columnMeta;
         });
 
+        // We don't have indexes other than primary key, so something will lost
+        // here when converting Table back to TableMetadata.
+        // But they will be back soon when editing indexes supported in Schema
+        // Editor.
         tableMeta.indexes = [
           {
             primary: true,
