@@ -345,11 +345,15 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		return err
 	}
 
-	// When there are too many databases, this might have performance issue and will
-	// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
-	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, databaseMetadata.Name)
-	if err != nil {
-		return err
+	var patchSchemaVersion *string
+	if force {
+		// When there are too many databases, this might have performance issue and will
+		// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
+		schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, databaseMetadata.Name)
+		if err != nil {
+			return err
+		}
+		patchSchemaVersion = &schemaVersion
 	}
 
 	var database *api.Database
@@ -361,7 +365,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 			UpdaterID:            api.SystemBotID,
 			SyncStatus:           &syncStatus,
 			LastSuccessfulSyncTs: &ts,
-			SchemaVersion:        &schemaVersion,
+			SchemaVersion:        patchSchemaVersion,
 		}
 		dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
 		if err != nil {
@@ -373,14 +377,15 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		database = dbPatched
 	} else {
 		databaseCreate := &api.DatabaseCreate{
-			CreatorID:            api.SystemBotID,
-			ProjectID:            api.DefaultProjectID,
-			InstanceID:           instance.ID,
-			EnvironmentID:        instance.EnvironmentID,
-			Name:                 databaseMetadata.Name,
-			CharacterSet:         databaseMetadata.CharacterSet,
-			Collation:            databaseMetadata.Collation,
-			SchemaVersion:        schemaVersion,
+			CreatorID:     api.SystemBotID,
+			ProjectID:     api.DefaultProjectID,
+			InstanceID:    instance.ID,
+			EnvironmentID: instance.EnvironmentID,
+			Name:          databaseMetadata.Name,
+			CharacterSet:  databaseMetadata.CharacterSet,
+			Collation:     databaseMetadata.Collation,
+			// We don't sync the schema version on database discovery because it's likely to be empty.
+			SchemaVersion:        "",
 			LastSuccessfulSyncTs: time.Now().Unix(),
 		}
 		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
