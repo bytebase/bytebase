@@ -52,7 +52,7 @@ func getEnvironmentInstanceID(name string) (string, string, error) {
 }
 
 func getEnvironmentInstanceDatabaseID(name string) (string, string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database}
+	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database-id}
 	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseIDPrefix)
 	if err != nil {
 		return "", "", "", err

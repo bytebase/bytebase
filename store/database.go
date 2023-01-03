@@ -667,12 +667,12 @@ type FindDatabaseMessage struct {
 	ProjectID     *string
 	EnvironmentID *string
 	InstanceID    *string
-	DatabaseID    *string
+	DatabaseName  *string
 }
 
 // GetDatabaseV2 gets a database.
 func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
-	if find.EnvironmentID == nil || find.InstanceID == nil || find.DatabaseID == nil {
+	if find.EnvironmentID == nil || find.InstanceID == nil || find.DatabaseName == nil {
 		return nil, errors.Errorf("environment, instance, and database name must exist for getting a database")
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -732,7 +732,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.DatabaseID; v != nil {
+	if v := find.DatabaseName; v != nil {
 		where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
 	}
 	var databaseMessages []*DatabaseMessage
