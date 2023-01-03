@@ -83,6 +83,7 @@ import {
   Schema,
   Table,
 } from "@/types/schemaEditor/atomType";
+import { BBModal, BBSelect } from "@/bbkit";
 
 interface LocalState {
   referencedSchema?: string;
@@ -159,7 +160,9 @@ const tableList = computed(() => {
 });
 
 const selectedTable = computed(() => {
-  return tableList.value.find((table) => table.id === state.referencedTableId);
+  return tableList.value.find(
+    (table: Table) => table.id === state.referencedTableId
+  );
 });
 
 const columnList = computed(() => {
