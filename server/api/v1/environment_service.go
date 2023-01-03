@@ -207,6 +207,7 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
 	return &v1pb.Environment{
 		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
+		Uid:   fmt.Sprintf("%d", environment.UID),
 		Title: environment.Title,
 		Order: environment.Order,
 		State: convertDeletedToState(environment.Deleted),

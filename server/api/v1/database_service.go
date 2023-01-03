@@ -162,6 +162,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	}
 	return &v1pb.Database{
 		Name:               fmt.Sprintf("environments/%s/instances/%s/databases/%s", database.EnvironmentID, database.InstanceID, database.DatabaseName),
+		Uid:                fmt.Sprintf("%d", database.UID),
 		SyncState:          syncState,
 		SuccessfulSyncTime: timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
 		Project:            fmt.Sprintf("%s%s", projectNamePrefix, database.ProjectID),
