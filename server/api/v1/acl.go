@@ -104,8 +104,17 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 	return user, nil
 }
 
-func (*ACLInterceptor) getProjectMember(_ context.Context, _ *store.UserMessage, _ string) (api.Role, error) {
-	return api.Developer, nil
+func (in *ACLInterceptor) getProjectMember(ctx context.Context, user *store.UserMessage, projectID string) (api.Role, error) {
+	projectPolicy, err := in.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
+	if err != nil {
+		return api.UnknownRole, err
+	}
+	for _, member := range projectPolicy.Members {
+		if member.User.ID == user.ID {
+			return member.Role, nil
+		}
+	}
+	return api.UnknownRole, nil
 }
 
 func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req interface{}) ([]string, error) {

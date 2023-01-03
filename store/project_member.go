@@ -595,3 +595,89 @@ func (*Store) deleteProjectMemberImpl(ctx context.Context, tx *Tx, delete *api.P
 	}
 	return nil
 }
+
+// ProjectPolicyMessage is the IAM policy of a project.
+type ProjectPolicyMessage struct {
+	Members []*ProjectMember
+}
+
+// ProjectMember is the IAM policy member of a project.
+type ProjectMember struct {
+	User *UserMessage
+	Role api.Role
+}
+
+// GetProjectPolicyMessage is the message to get project policy.
+type GetProjectPolicyMessage struct {
+	ProjectID *string
+	UID       *int
+}
+
+// GetProjectPolicy gets the IAM policy of a project.
+func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMessage) (*ProjectPolicyMessage, error) {
+	if find.ProjectID == nil && find.UID == nil {
+		return nil, errors.Errorf("GetProjectPolicy must set either resource ID or UID")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	projectPolicy, err := s.getProjectPolicyImp(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return projectPolicy, nil
+}
+
+func (s *Store) getProjectPolicyImp(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*ProjectPolicyMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	projectPolicy := &ProjectPolicyMessage{}
+	rows, err := tx.QueryContext(ctx, `
+			SELECT
+				project_member.principal_id,
+				project_member.role
+			FROM project_member
+			LEFT JOIN project ON project_member.project_id = project.id
+			WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		projectMember := &ProjectMember{
+			User: &UserMessage{},
+		}
+		if err := rows.Scan(
+			&projectMember.User.ID,
+			&projectMember.Role,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		projectPolicy.Members = append(projectPolicy.Members, projectMember)
+	}
+	for _, member := range projectPolicy.Members {
+		user, err := s.GetUserByID(ctx, member.User.ID)
+		if err != nil {
+			return nil, err
+		}
+		member.User = user
+	}
+	return projectPolicy, nil
+}
