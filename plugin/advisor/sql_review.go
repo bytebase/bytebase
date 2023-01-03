@@ -134,7 +134,7 @@ const (
 	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
 	// SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
-	// SchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist
+	// SchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist.
 	SchemaRuleIndexPrimaryKeyTypeAllowlist SQLReviewRuleType = "index.primary-key-type-allowlist"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
