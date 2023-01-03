@@ -425,7 +425,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.registerBookmarkRoutes(apiGroup)
 	s.registerSQLRoutes(apiGroup)
 	s.registerVCSRoutes(apiGroup)
-	s.registerLabelRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
