@@ -140,6 +140,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 
 						alterTable.AlterItemList = append(alterTable.AlterItemList, setDefault)
 					}
+				case pgquery.AlterTableType_AT_AttachPartition:
+					alterTable.AlterItemList = append(alterTable.AlterItemList, &ast.AttachPartitionStmt{
+						Table: alterTable.Table,
+					})
 				}
 			}
 		}
@@ -1122,6 +1126,11 @@ func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
 			}
 			table.ConstraintList = append(table.ConstraintList, cons)
 		}
+	}
+
+	if in.Partspec != nil {
+		// TODO(rebelice): convert the partition definition.
+		table.PartitionDef = &ast.UnconvertedStmt{}
 	}
 	return table, nil
 }

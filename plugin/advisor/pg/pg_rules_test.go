@@ -30,6 +30,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleTableNoFK,
 		advisor.SchemaRuleTableRequirePK,
 		advisor.SchemaRuleColumnDisallowChangeType,
+		advisor.SchemaRuleTableDisallowPartition,
 	}
 
 	for _, rule := range pgRules {
