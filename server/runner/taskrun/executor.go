@@ -283,6 +283,13 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 		return true, nil, errors.Errorf("failed to find linked repository for database %q", task.Database.Name)
 	}
 
+	if _, err := store.PatchDatabase(ctx, &api.DatabasePatch{
+		ID:            *task.DatabaseID,
+		UpdaterID:     api.SystemBotID,
+		SchemaVersion: &mi.Version,
+	}); err != nil {
+		return true, nil, err
+	}
 	// On the presence of schema path template and non-wildcard branch filter, We write back the latest schema after migration for VCS-based projects for
 	// 1) baseline migration for SDL,
 	// 2) all DDL/Ghost migrations.
