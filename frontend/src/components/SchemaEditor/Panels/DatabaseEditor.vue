@@ -157,7 +157,9 @@
       <SchemaDiagram
         :key="currentTab.databaseId"
         :database="database"
-        :table-list="dbSchemaStore.getTableListByDatabaseId(database.id)"
+        :table-list="tableMetadataList"
+        :table-status="tableStatus"
+        :column-status="columnStatus"
       />
     </template>
   </div>
@@ -178,7 +180,6 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
-  useDBSchemaStore,
   useNotificationStore,
   useSchemaEditorStore,
 } from "@/store";
@@ -195,6 +196,7 @@ import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import SchemaDiagram from "@/components/SchemaDiagram";
+import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
 
 type TabType = "table-list" | "schema-diagram" | "raw-sql";
 
@@ -212,7 +214,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
-const dbSchemaStore = useDBSchemaStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   selectedTab: "table-list",
@@ -371,6 +372,9 @@ const handleDropTable = (table: Table) => {
 const handleRestoreTable = (table: Table) => {
   editorStore.restoreTable(table);
 };
+
+const { tableMetadataList, tableStatus, columnStatus } =
+  useMetadataForDiagram(databaseSchema);
 </script>
 
 <style scoped>
