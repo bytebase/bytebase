@@ -3,6 +3,8 @@ package pg
 
 import (
 	"fmt"
+
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
 const (
@@ -31,4 +33,16 @@ func normalizeSchemaName(name string) string {
 		return name
 	}
 	return "public"
+}
+
+func normalizeTableName(table *ast.TableDef, defaultSchema string) string {
+	schema := table.Schema
+	if schema == "" && defaultSchema != "" {
+		schema = defaultSchema
+	}
+
+	if schema == "" {
+		return fmt.Sprintf("%q", table.Name)
+	}
+	return fmt.Sprintf("%q.%q", schema, table.Name)
 }
