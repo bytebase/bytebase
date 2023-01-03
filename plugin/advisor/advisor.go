@@ -257,6 +257,9 @@ const (
 	// PostgreSQLIndexKeyNumberLimit is an advisor type for postgresql index key number limit.
 	PostgreSQLIndexKeyNumberLimit Type = "bb.plugin.advisor.postgresql.index.key-number-limit"
 
+	// PostgreSQLPrimaryKeyTypeAllowlist is an advisor type for postgresql primary key type allowlist.
+	PostgreSQLPrimaryKeyTypeAllowlist Type = "bb.plugin.advisor.postgresql.index.primary-key-type-allowlist"
+
 	// PostgreSQLEncodingAllowlist is an advisor type for PostgreSQL encoding allowlist.
 	PostgreSQLEncodingAllowlist Type = "bb.plugin.advisor.postgresql.charset.allowlist"
 
