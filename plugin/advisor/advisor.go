@@ -271,6 +271,9 @@ const (
 
 	// PostgreSQLColumnDisallowChangingType is an advisor type for PostgreSQL disallow changing column type.
 	PostgreSQLColumnDisallowChangingType Type = "bb.plugin.advisor.postgresql.column.disallow-changing-type"
+
+	// PostgreSQLColumnMaximumCharacterLength is an advisor type for PostgreSQL maximum character length.
+	PostgreSQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.postgresql.column.maximum-character-length"
 )
 
 // Advice is the result of an advisor.
