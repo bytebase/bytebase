@@ -50,7 +50,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Parent)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
