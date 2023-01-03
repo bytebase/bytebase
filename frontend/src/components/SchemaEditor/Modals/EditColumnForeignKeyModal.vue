@@ -74,6 +74,7 @@
 <script lang="ts" setup>
 import { isUndefined } from "lodash-es";
 import { computed, onMounted, PropType, reactive, watch } from "vue";
+import { v1 as uuidv1 } from "uuid";
 import { DatabaseId, DatabaseSchema, UNKNOWN_ID } from "@/types";
 import { useSchemaEditorStore } from "@/store";
 import {
@@ -82,6 +83,7 @@ import {
   Schema,
   Table,
 } from "@/types/schemaEditor/atomType";
+import { BBModal, BBSelect } from "@/bbkit";
 
 interface LocalState {
   referencedSchema?: string;
@@ -154,13 +156,13 @@ const selectedSchema = computed(() => {
 });
 
 const tableList = computed(() => {
-  return (selectedSchema.value?.tableList || []).filter(
-    (table: Table) => table.id !== props.tableId
-  );
+  return selectedSchema.value?.tableList || [];
 });
 
 const selectedTable = computed(() => {
-  return tableList.value.find((table) => table.id === state.referencedTableId);
+  return tableList.value.find(
+    (table: Table) => table.id === state.referencedTableId
+  );
 });
 
 const columnList = computed(() => {
@@ -169,6 +171,7 @@ const columnList = computed(() => {
       .find((table) => table.id === state.referencedTableId)
       ?.columnList.filter(
         (column) =>
+          column.id !== props.columnId &&
           column.type.toUpperCase() === propsColumn.value?.type.toUpperCase()
       ) || []
   );
@@ -245,8 +248,7 @@ const handleConfirmButtonClick = async () => {
   const column = propsColumn.value as Column;
   if (isUndefined(foreignKey.value)) {
     const fk: ForeignKey = {
-      // TODO(steven): it's a constraint name and should be unique.
-      name: "",
+      name: uuidv1(),
       tableId: props.tableId,
       columnIdList: [column.id],
       referencedSchema: state.referencedSchema,
