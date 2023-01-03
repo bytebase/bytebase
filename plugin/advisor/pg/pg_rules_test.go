@@ -33,6 +33,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleTableDisallowPartition,
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
 		advisor.SchemaRuleColumnMaximumCharacterLength,
+		advisor.SchemaRuleStatementDisallowCommit,
 	}
 
 	for _, rule := range pgRules {

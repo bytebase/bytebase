@@ -3098,3 +3098,22 @@ func TestAttachPartition(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestCommit(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `COMMIT;`,
+			want: []ast.Node{
+				&ast.CommitStmt{},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `COMMIT;`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
