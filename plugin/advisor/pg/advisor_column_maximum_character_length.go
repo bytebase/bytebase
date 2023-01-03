@@ -115,7 +115,7 @@ func (checker *columnMaximumCharacterLengthChecker) Visit(in ast.Node) ast.Visit
 			Status:  checker.level,
 			Code:    advisor.CharLengthExceedsLimit,
 			Title:   checker.title,
-			Content: fmt.Sprintf(`The length of the CHAR column "%s" is bigger than %d, please use VARCHAR instead`, columnName, checker.maximum),
+			Content: fmt.Sprintf(`The length of the CHAR column %q in table %s is bigger than %d, please use VARCHAR instead`, columnName, tableName, checker.maximum),
 			Line:    line,
 		})
 	}
