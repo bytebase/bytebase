@@ -683,7 +683,6 @@
     "your-snowflake-account-name": "您的 Snowflake @:{'instance.account'}@:{'instance.name'}",
     "port": "端口",
     "instance-name": "@:common.instance@:instance.name",
-    "instance-name-unique": "@:{'common.instance'}@:{'instance.name'}需要保证唯一性",
     "snowflake-web-console": "Snowflake @:{'instance.web-console'}",
     "external-link": "外部链接",
     "web-console": "Web 控制台",
