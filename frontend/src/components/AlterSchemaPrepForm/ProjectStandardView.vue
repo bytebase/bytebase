@@ -11,7 +11,7 @@
 
     <NCollapse
       class="max-h-[55vh] overflow-y-auto"
-      arrow-placement="right"
+      arrow-placement="left"
       :default-expanded-names="
         databaseListGroupByEnvironment.map((group) => group.environment.id)
       "
@@ -28,7 +28,7 @@
           <label class="flex items-center gap-x-2" @click.stop="">
             <input
               type="checkbox"
-              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-[calc(1rem+1px)]"
+              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-0.5"
               v-bind="
                 getAllSelectionStateForEnvironment(
                   environment,
@@ -66,7 +66,7 @@
           </div>
         </template>
 
-        <div class="relative bg-white rounded-md -space-y-px">
+        <div class="relative bg-white rounded-md -space-y-px px-2">
           <template
             v-for="(database, dbIndex) in databaseListInEnvironment"
             :key="dbIndex"
