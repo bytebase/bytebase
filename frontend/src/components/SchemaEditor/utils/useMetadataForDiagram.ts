@@ -70,10 +70,11 @@ export const useMetadataForDiagram = (
           return columnMeta;
         });
 
-        // We don't have indexes other than primary key, so something will lost
-        // here when converting Table back to TableMetadata.
-        // But they will be back soon when editing indexes supported in Schema
-        // Editor.
+        // We don't have indexes other than primary key in Schema Editor,
+        // so something will lost here when converting Table back to
+        // TableMetadata.
+        // But they will be back soon when editing indexes is supported in
+        // Schema Editor.
         const pk = IndexMetadata.fromPartial({});
         Object.assign(pk, {
           primary: true,
