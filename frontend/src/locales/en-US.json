@@ -1438,6 +1438,7 @@
     "raw-sql": "Raw SQL",
     "actions": {
       "create-schema": "Create Schema",
+      "delete-schema": "Delete Schema",
       "create-table": "New table",
       "rename": "Rename",
       "drop-table": "Drop table",

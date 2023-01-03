@@ -1438,6 +1438,7 @@
     "raw-sql": "SQL 语句",
     "actions": {
       "create-schema": "新建 Schema",
+      "delete-schema": "删除 Schema",
       "create-table": "新建表",
       "rename": "重命名",
       "drop-table": "删除表",

@@ -187,6 +187,16 @@ const contextMenuOptions = computed(() => {
   } else if (treeNode.type === "schema") {
     const options = [];
     if (instanceEngine === "POSTGRES") {
+      const schema = editorStore.databaseSchemaById
+        .get(treeNode.databaseId)
+        ?.schemaList.find((schema) => schema.name === treeNode.schemaName);
+      if (schema?.status === "created") {
+        options.push({
+          key: "delete-schema",
+          label: t("schema-editor.actions.delete-schema"),
+        });
+      }
+
       options.push({
         key: "create-table",
         label: t("schema-editor.actions.create-table"),
@@ -674,6 +684,8 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         schemaName: treeNode.schemaName,
         tableId: undefined,
       };
+    } else if (key === "delete-schema") {
+      editorStore.deleteCreatedSchema(treeNode.databaseId, treeNode.schemaName);
     }
   } else if (treeNode?.type === "table") {
     const table = editorStore.databaseSchemaById

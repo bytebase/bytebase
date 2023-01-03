@@ -221,12 +221,14 @@ const state = reactive<LocalState>({
   statement: "",
 });
 const currentTab = editorStore.currentTab as DatabaseTabContext;
-const databaseSchema = editorStore.databaseSchemaById.get(
-  currentTab.databaseId
-) as DatabaseSchema;
-const database = databaseSchema.database;
+const databaseSchema = computed(() => {
+  return editorStore.databaseSchemaById.get(
+    currentTab.databaseId
+  ) as DatabaseSchema;
+});
+const database = databaseSchema.value.database;
 const databaseEngine = database.instance.engine;
-const schemaList = databaseSchema.schemaList;
+const schemaList = databaseSchema.value.schemaList;
 const tableList = computed(() => {
   return (
     schemaList.find((schema) => schema.name === state.selectedSchema)
@@ -288,8 +290,8 @@ watch(
     if (state.selectedTab === "raw-sql") {
       state.isFetchingDDL = true;
       const databaseEditList: DatabaseEdit[] = [];
-      for (const schema of databaseSchema.schemaList) {
-        const originSchema = databaseSchema.originSchemaList.find(
+      for (const schema of databaseSchema.value.schemaList) {
+        const originSchema = databaseSchema.value.originSchemaList.find(
           (schema) => schema.name === schema.name
         );
         const diffSchemaResult = diffSchema(database.id, originSchema, schema);
@@ -328,6 +330,8 @@ watch(
           statementList.push(databaseEditResult.statement);
         }
         state.statement = statementList.join("\n");
+      } else {
+        state.statement = "";
       }
       state.isFetchingDDL = false;
     }
