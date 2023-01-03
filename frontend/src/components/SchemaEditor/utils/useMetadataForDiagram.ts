@@ -1,7 +1,7 @@
 import { computed, unref } from "vue";
 
 import { Database, DatabaseSchema, MaybeRef } from "@/types";
-import { Column, Schema, Table } from "@/types/schemaEditor/atomType";
+import { Schema, Table } from "@/types/schemaEditor/atomType";
 import { EditStatus } from "@/components/SchemaDiagram";
 import {
   ColumnMetadata,
@@ -9,6 +9,10 @@ import {
   TableMetadata,
 } from "@/types/proto/store/database";
 import { isTableChanged } from "./table";
+
+type MetadataWithEditStatus<T> = T & {
+  $$status: EditStatus;
+};
 
 const statusOfTable = (
   database: Database,
@@ -51,9 +55,9 @@ export const useMetadataForDiagram = (
 
         tableMeta.columns = table.columnList.map((column) => {
           const columnMeta = ColumnMetadata.fromPartial({});
-          Object.defineProperty(columnMeta, "$$column", {
+          Object.defineProperty(columnMeta, "$$status", {
             enumerable: false,
-            value: column,
+            value: column.status,
           });
 
           columnMeta.name = column.name;
@@ -109,16 +113,18 @@ export const useMetadataForDiagram = (
   });
 
   const tableStatus = (tableMeta: TableMetadata): EditStatus => {
-    const status = (tableMeta as any).$$status as EditStatus;
+    const status = (tableMeta as MetadataWithEditStatus<TableMetadata>)
+      .$$status;
     if (typeof status !== "undefined") {
       return status;
     }
     return "normal";
   };
   const columnStatus = (columnMeta: ColumnMetadata): EditStatus => {
-    const column = (columnMeta as any).$$column as Column;
-    if (column) {
-      return column.status;
+    const status = (columnMeta as MetadataWithEditStatus<ColumnMetadata>)
+      .$$status;
+    if (typeof status !== "undefined") {
+      return status;
     }
     return "normal";
   };
