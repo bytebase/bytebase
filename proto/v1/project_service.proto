@@ -130,18 +130,33 @@ message Project {
   // The name of the project.
   // Format: projects/{project}
   string name = 1;
-  State state = 2;
 
-  string title = 3;
-  string key = 4;
-  Workflow workflow = 5;
-  Visibility visibility = 6;
-  TenantMode tenant_mode = 7;
-  string db_name_template = 8;
-  RoleProvider role_provider = 9;
-  SchemaVersion schema_version = 10;
-  SchemaChange schema_change = 11;
-  LgtmCheck lgtm_check = 12;
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  // The title or name of a project. It's not unique within the workspace.
+  string title = 4;
+
+  // The key is a short and upper-case identifier for a project. It's unique within the workspace.
+  string key = 5;
+
+  Workflow workflow = 6;
+
+  Visibility visibility = 7;
+
+  TenantMode tenant_mode = 8;
+
+  string db_name_template = 9;
+
+  RoleProvider role_provider = 10;
+
+  SchemaVersion schema_version = 11;
+
+  SchemaChange schema_change = 12;
+
+  LgtmCheck lgtm_check = 13;
 }
 
 enum Workflow {

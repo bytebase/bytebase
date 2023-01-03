@@ -193,11 +193,18 @@ message Instance {
   // Format: environments/{environment}/instances/{instance}
   string name = 1;
 
-  State state = 2;
-  string title = 3;
-  Engine engine = 4;
-  string external_link = 5;
-  repeated DataSource data_sources = 6;
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  string title = 4;
+
+  Engine engine = 5;
+
+  string external_link = 6;
+
+  repeated DataSource data_sources = 7;
 }
 
 enum Engine {

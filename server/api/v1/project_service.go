@@ -265,6 +265,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 
 	return &v1pb.Project{
 		Name:           fmt.Sprintf("%s%s", projectNamePrefix, projectMessage.ProjectID),
+		Uid:            fmt.Sprintf("%d", projectMessage.UID),
 		Title:          projectMessage.Title,
 		Key:            projectMessage.Key,
 		Workflow:       workflow,

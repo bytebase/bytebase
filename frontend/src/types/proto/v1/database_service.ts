@@ -110,6 +110,8 @@ export interface Database {
    * {database} is the database name in the instance.
    */
   name: string;
+  /** The system-assigned, unique identifier for a resource. */
+  uid: string;
   /** The existence of a database on latest sync. */
   syncState: State;
   /** The latest synchronization time. */
@@ -744,6 +746,7 @@ export const GetDatabaseSchemaRequest = {
 function createBaseDatabase(): Database {
   return {
     name: "",
+    uid: "",
     syncState: 0,
     successfulSyncTime: undefined,
     project: "",
@@ -759,26 +762,29 @@ export const Database = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.uid !== "") {
+      writer.uint32(18).string(message.uid);
+    }
     if (message.syncState !== 0) {
-      writer.uint32(16).int32(message.syncState);
+      writer.uint32(24).int32(message.syncState);
     }
     if (message.successfulSyncTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.successfulSyncTime), writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.successfulSyncTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.project !== "") {
-      writer.uint32(34).string(message.project);
+      writer.uint32(42).string(message.project);
     }
     if (message.characterSet !== "") {
-      writer.uint32(42).string(message.characterSet);
+      writer.uint32(50).string(message.characterSet);
     }
     if (message.collation !== "") {
-      writer.uint32(50).string(message.collation);
+      writer.uint32(58).string(message.collation);
     }
     if (message.schemaVersion !== "") {
-      writer.uint32(58).string(message.schemaVersion);
+      writer.uint32(66).string(message.schemaVersion);
     }
     Object.entries(message.labels).forEach(([key, value]) => {
-      Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(66).fork()).ldelim();
+      Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
     });
     return writer;
   },
@@ -794,27 +800,30 @@ export const Database = {
           message.name = reader.string();
           break;
         case 2:
-          message.syncState = reader.int32() as any;
+          message.uid = reader.string();
           break;
         case 3:
-          message.successfulSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.syncState = reader.int32() as any;
           break;
         case 4:
-          message.project = reader.string();
+          message.successfulSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         case 5:
-          message.characterSet = reader.string();
+          message.project = reader.string();
           break;
         case 6:
-          message.collation = reader.string();
+          message.characterSet = reader.string();
           break;
         case 7:
-          message.schemaVersion = reader.string();
+          message.collation = reader.string();
           break;
         case 8:
-          const entry8 = Database_LabelsEntry.decode(reader, reader.uint32());
-          if (entry8.value !== undefined) {
-            message.labels[entry8.key] = entry8.value;
+          message.schemaVersion = reader.string();
+          break;
+        case 9:
+          const entry9 = Database_LabelsEntry.decode(reader, reader.uint32());
+          if (entry9.value !== undefined) {
+            message.labels[entry9.key] = entry9.value;
           }
           break;
         default:
@@ -828,6 +837,7 @@ export const Database = {
   fromJSON(object: any): Database {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      uid: isSet(object.uid) ? String(object.uid) : "",
       syncState: isSet(object.syncState) ? stateFromJSON(object.syncState) : 0,
       successfulSyncTime: isSet(object.successfulSyncTime) ? fromJsonTimestamp(object.successfulSyncTime) : undefined,
       project: isSet(object.project) ? String(object.project) : "",
@@ -846,6 +856,7 @@ export const Database = {
   toJSON(message: Database): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
     message.syncState !== undefined && (obj.syncState = stateToJSON(message.syncState));
     message.successfulSyncTime !== undefined && (obj.successfulSyncTime = message.successfulSyncTime.toISOString());
     message.project !== undefined && (obj.project = message.project);
@@ -864,6 +875,7 @@ export const Database = {
   fromPartial<I extends Exact<DeepPartial<Database>, I>>(object: I): Database {
     const message = createBaseDatabase();
     message.name = object.name ?? "";
+    message.uid = object.uid ?? "";
     message.syncState = object.syncState ?? 0;
     message.successfulSyncTime = object.successfulSyncTime ?? undefined;
     message.project = object.project ?? "";
