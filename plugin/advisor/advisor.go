@@ -274,6 +274,9 @@ const (
 
 	// PostgreSQLColumnMaximumCharacterLength is an advisor type for PostgreSQL maximum character length.
 	PostgreSQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.postgresql.column.maximum-character-length"
+
+	// PostgreSQLStatementDisallowCommit is an advisor type for PostgreSQL to disallow commit.
+	PostgreSQLStatementDisallowCommit Type = "bb.plugin.advisor.postgresql.statement.disallow-commit"
 )
 
 // Advice is the result of an advisor.

@@ -751,6 +751,10 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			}, nil
 		}
 		// TODO(rebelice): support RENAME ENUM VALUE statements
+	case *pgquery.Node_TransactionStmt:
+		if in.TransactionStmt.Kind == pgquery.TransactionStmtKind_TRANS_STMT_COMMIT {
+			return &ast.CommitStmt{}, nil
+		}
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
