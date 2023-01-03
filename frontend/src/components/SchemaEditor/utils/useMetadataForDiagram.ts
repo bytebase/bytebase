@@ -83,10 +83,10 @@ export const useMetadataForDiagram = (
           ),
         });
         tableMeta.indexes = [pk];
+
         const foreignKeyList = schema.foreignKeyList.filter(
           (fk) => fk.tableId === table.id
         );
-
         tableMeta.foreignKeys = foreignKeyList.map((fk) => {
           // In PostgreSQL, foreign keys can cross different schemas.
           // So we need to search the schemaList here.
