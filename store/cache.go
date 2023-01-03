@@ -39,8 +39,6 @@ const (
 	tierPolicyCacheNamespace cacheNamespace = "pot"
 	// approvalPolicyCacheNamespace is the cache type of approval policy.
 	approvalPolicyCacheNamespace cacheNamespace = "app"
-	// schemaCacheNamespace is the cache type of database schema.
-	schemaCacheNamespace cacheNamespace = "sc"
 )
 
 // CacheService implements a cache.

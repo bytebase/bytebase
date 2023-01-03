@@ -10,6 +10,7 @@ type Store struct {
 
 	environmentCache map[string]*EnvironmentMessage
 	instanceCache    map[string]*InstanceMessage
+	dbSchemaCache    map[int]*DBSchema
 }
 
 // New creates a new instance of Store.
@@ -19,6 +20,7 @@ func New(db *DB) *Store {
 		cache:            newCacheService(),
 		environmentCache: make(map[string]*EnvironmentMessage),
 		instanceCache:    make(map[string]*InstanceMessage),
+		dbSchemaCache:    make(map[int]*DBSchema),
 	}
 }
 
