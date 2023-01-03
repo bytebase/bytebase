@@ -437,8 +437,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, s.licenseService, profile.Mode)
+	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
 	s.grpcServer = grpc.NewServer(
-		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, authProvider.ACLInterceptor),
+		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor),
 	)
 	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile))

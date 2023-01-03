@@ -78,7 +78,7 @@ func New(store *store.Store, secret string, licenseService enterpriseAPI.License
 }
 
 // AuthenticationInterceptor is the unary interceptor for gRPC API.
-func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, request interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "failed to parse metadata from incoming context")
@@ -89,9 +89,8 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 	}
 
 	// TODO(d): skips actuator, GET /subscription request, OpenAPI SQL endpoint.
-	methodName := getShortMethodName(serverInfo.FullMethod)
-	if accessTokenStr == "" && isAuthenticationAllowed(methodName) {
-		return handler(ctx, req)
+	if accessTokenStr == "" && IsAuthenticationAllowed(serverInfo.FullMethod) {
+		return handler(ctx, request)
 	}
 
 	if accessTokenStr == "" {
@@ -198,7 +197,7 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 
 	// Stores principalID into context.
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
-	return handler(childCtx, req)
+	return handler(childCtx, request)
 }
 
 func getTokenFromMetadata(md metadata.MD) (string, string, error) {
