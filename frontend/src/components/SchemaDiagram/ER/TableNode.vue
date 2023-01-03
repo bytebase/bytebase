@@ -1,6 +1,6 @@
 <template>
   <div
-    class="absolute rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-[10]"
+    class="absolute overflow-hidden rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-[10]"
     bb-node-type="table"
     :bb-node-id="idOfTable(table)"
     :bb-status="tableStatus(table)"
