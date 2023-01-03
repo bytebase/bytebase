@@ -149,7 +149,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	if dbSchema == nil {
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
-	return &v1pb.DatabaseSchema{Schema: dbSchema.RawDump}, nil
+	return &v1pb.DatabaseSchema{Schema: string(dbSchema.Schema)}, nil
 }
 
 func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
