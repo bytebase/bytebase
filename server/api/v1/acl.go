@@ -109,9 +109,11 @@ func (in *ACLInterceptor) getProjectMember(ctx context.Context, user *store.User
 	if err != nil {
 		return api.UnknownRole, err
 	}
-	for _, member := range projectPolicy.Members {
-		if member.User.ID == user.ID {
-			return member.Role, nil
+	for _, binding := range projectPolicy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == user.ID {
+				return binding.Role, nil
+			}
 		}
 	}
 	return api.UnknownRole, nil
