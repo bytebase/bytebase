@@ -8,56 +8,19 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// DBSchema is the API message for database schema.
+// DBSchema is the database schema including the metadata and schema (raw dump).
 type DBSchema struct {
 	Metadata *storepb.DatabaseMetadata
-	RawDump  string
-}
-
-// DBSchemaUpsert is the API message for creating a database schema.
-type DBSchemaUpsert struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Related fields
-	DatabaseID int
-
-	// Domain specific fields
-	Metadata *storepb.DatabaseMetadata
-	RawDump  string
-}
-
-type dbSchemaRaw struct {
-	Metadata string
-	RawDump  string
-}
-
-func (raw *dbSchemaRaw) toDBSchema() (*DBSchema, error) {
-	var databaseSchema storepb.DatabaseMetadata
-	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := decoder.Unmarshal([]byte(raw.Metadata), &databaseSchema); err != nil {
-		return nil, err
-	}
-	return &DBSchema{
-		Metadata: &databaseSchema,
-		RawDump:  raw.RawDump,
-	}, nil
+	Schema   []byte
 }
 
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, error) {
-	cachedDBSchema := &DBSchema{}
-	ok, err := s.cache.FindCache(schemaCacheNamespace, databaseID, cachedDBSchema)
-	if err != nil {
-		return nil, err
-	}
-	if ok {
-		return cachedDBSchema, nil
+	if dbSchema, ok := s.dbSchemaCache[databaseID]; ok {
+		return dbSchema, nil
 	}
 
 	// Build WHERE clause.
@@ -70,7 +33,8 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	}
 	defer tx.Rollback()
 
-	var raw dbSchemaRaw
+	dbSchema := &DBSchema{}
+	var metadata []byte
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
 			metadata,
@@ -79,8 +43,8 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	).Scan(
-		&raw.Metadata,
-		&raw.RawDump,
+		&metadata,
+		&dbSchema.Schema,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -91,19 +55,20 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 		return nil, FormatError(err)
 	}
 
-	dbSchema, err := raw.toDBSchema()
-	if err != nil {
+	var databaseSchema storepb.DatabaseMetadata
+	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := decoder.Unmarshal(metadata, &databaseSchema); err != nil {
 		return nil, err
 	}
-	if err := s.cache.UpsertCache(schemaCacheNamespace, databaseID, dbSchema); err != nil {
-		return nil, err
-	}
+	dbSchema.Metadata = &databaseSchema
+
+	s.dbSchemaCache[databaseID] = dbSchema
 	return dbSchema, nil
 }
 
 // UpsertDBSchema upserts a database schema.
-func (s *Store) UpsertDBSchema(ctx context.Context, upsert DBSchemaUpsert) error {
-	metadataBytes, err := protojson.Marshal(upsert.Metadata)
+func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DBSchema, updaterID int) error {
+	metadataBytes, err := protojson.Marshal(dbSchema.Metadata)
 	if err != nil {
 		return err
 	}
@@ -128,29 +93,19 @@ func (s *Store) UpsertDBSchema(ctx context.Context, upsert DBSchemaUpsert) error
 	}
 	defer tx.Rollback()
 
-	var raw dbSchemaRaw
-	if err := tx.QueryRowContext(ctx, query,
-		upsert.UpdaterID,
-		upsert.UpdaterID,
-		upsert.DatabaseID,
+	if _, err := tx.ExecContext(ctx, query,
+		updaterID,
+		updaterID,
+		databaseID,
 		metadataBytes,
-		upsert.RawDump,
-	).Scan(
-		&raw.Metadata,
-		&raw.RawDump,
+		dbSchema.Schema,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return common.FormatDBErrorEmptyRowWithQuery(query)
-		}
 		return FormatError(err)
 	}
 	if err := tx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
-	dbSchema, err := raw.toDBSchema()
-	if err != nil {
-		return err
-	}
-	return s.cache.UpsertCache(schemaCacheNamespace, upsert.DatabaseID, dbSchema)
+	s.dbSchemaCache[databaseID] = dbSchema
+	return nil
 }
