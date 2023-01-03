@@ -23,6 +23,11 @@ func TestDeparseCreateTable(t *testing.T) {
 			name: "create table t1",
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
+				CreateSchemaList: []*api.CreateSchemaContext{
+					{
+						Schema: "public",
+					},
+				},
 				CreateTableList: []*api.CreateTableContext{
 					{
 						Schema: "public",
@@ -38,7 +43,7 @@ func TestDeparseCreateTable(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE \"public\".\"t1\" (\n    \"id\" integer DEFAULT 0 NOT NULL\n);\nCOMMENT ON COLUMN t1.id IS 'ID';",
+			want: "CREATE SCHEMA IF NOT EXISTS \"public\";\nCREATE TABLE \"public\".\"t1\" (\n    \"id\" integer DEFAULT 0 NOT NULL\n);\nCOMMENT ON COLUMN \"public\".\"t1\".\"id\" IS 'ID';",
 		},
 		{
 			name: "create table t1",
@@ -77,7 +82,7 @@ func TestDeparseCreateTable(t *testing.T) {
 }
 
 func TestDeparseAlterTable(t *testing.T) {
-	var defaultValue = "0"
+	var defaultType = "TEXT"
 
 	tests := []struct {
 		name         string
@@ -85,41 +90,41 @@ func TestDeparseAlterTable(t *testing.T) {
 		want         string
 	}{
 		{
-			name: "alter table t1 and add column id, id_card",
+			name: "alter table t1",
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
 				AlterTableList: []*api.AlterTableContext{
 					{
 						Name: "t1",
-						AddColumnList: []*api.AddColumnContext{
+						AlterColumnList: []*api.AlterColumnContext{
 							{
-								Name: "id",
-								Type: "int",
-							},
-							{
-								Name: "id_card",
-								Type: "int",
-							},
-						},
-						DropColumnList: []*api.DropColumnContext{
-							{
-								Name: "name",
-							},
-						},
-						ChangeColumnList: []*api.ChangeColumnContext{
-							{
-								OldName:  "address",
-								NewName:  "address",
-								Type:     "int",
-								Nullable: false,
-								Comment:  "Address",
-								Default:  &defaultValue,
+								OldName: "address",
+								NewName: "address",
+								Type:    &defaultType,
 							},
 						},
 					},
 				},
 			},
-			want: "ALTER TABLE \"t1\"\n    DROP COLUMN \"name\",\n    ADD COLUMN \"id\" integer NOT NULL,\n    ADD COLUMN \"id_card\" integer NOT NULL,\n    ALTER COLUMN \"address\" SET DATA TYPE integer,\n    ALTER COLUMN \"address\" SET NOT NULL,\n    ALTER COLUMN \"address\" SET DEFAULT 0;\nCOMMENT ON COLUMN t1.address IS 'Address';",
+			want: "ALTER TABLE \"t1\"\n    ALTER COLUMN \"address\" SET DATA TYPE text;",
+		},
+		{
+			name: "alter table t2",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				AlterTableList: []*api.AlterTableContext{
+					{
+						Name: "t2",
+						AlterColumnList: []*api.AlterColumnContext{
+							{
+								OldName: "address",
+								NewName: "home_address",
+							},
+						},
+					},
+				},
+			},
+			want: "ALTER TABLE \"t2\"\n    RENAME COLUMN \"address\" TO \"home_address\";",
 		},
 	}
 

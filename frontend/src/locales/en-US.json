@@ -1439,6 +1439,8 @@
     "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
     "actions": {
+      "create-schema": "Create Schema",
+      "delete-schema": "Delete Schema",
       "create-table": "New table",
       "rename": "Rename",
       "drop-table": "Drop table",
@@ -1457,6 +1459,10 @@
       "collation": "Collation",
       "comment": "Comment"
     },
+    "schema": {
+      "select": "Select schema",
+      "name": "Schema Name"
+    },
     "table-list": "Table List",
     "table": {
       "select": "Select table",
@@ -1474,6 +1480,8 @@
     },
     "nothing-changed": "Nothing changed",
     "message": {
+      "invalid-schema-name": "Invalid schema name",
+      "duplicated-schema-name": "Duplicated schema name",
       "invalid-table-name": "Invalid table name",
       "duplicated-table-name": "Duplicated table name",
       "invalid-column-name": "Invalid column name",
@@ -1486,6 +1494,7 @@
     },
     "tenant-mode-tips": "Changes will be applied to all selected tenant databases after clicking \"Preview issue\".",
     "edit-foreign-key": "Edit foreign key",
+    "select-reference-schema": "Select a schema to reference to",
     "select-reference-table": "Select a table to reference to",
     "select-reference-column": "Select a column to reference to"
   },

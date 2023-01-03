@@ -3,6 +3,7 @@ import {
   AddColumnContext,
   DropColumnContext,
   ChangeColumnContext,
+  AlterColumnContext,
 } from "@/types";
 import { Column } from "@/types/schemaEditor/atomType";
 import { diffColumnList } from "./diffColumn";
@@ -13,6 +14,7 @@ it("diff add column list", () => {
     columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
+      alterColumnList: AlterColumnContext[];
       changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
@@ -41,6 +43,7 @@ it("diff add column list", () => {
             default: undefined,
           },
         ],
+        alterColumnList: [],
         changeColumnList: [],
         dropColumnList: [],
       },
@@ -59,6 +62,7 @@ it("diff modify column list", () => {
     columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
+      alterColumnList: AlterColumnContext[];
       changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
@@ -86,6 +90,15 @@ it("diff modify column list", () => {
       ],
       wanted: {
         addColumnList: [],
+        alterColumnList: [
+          {
+            oldName: "id",
+            newName: "id",
+            type: "varchar",
+            nullable: false,
+            defaultChanged: false,
+          },
+        ],
         changeColumnList: [
           {
             oldName: "id",
@@ -115,6 +128,7 @@ it("diff drop column list", () => {
     columnList: Column[];
     wanted: {
       addColumnList: AddColumnContext[];
+      alterColumnList: AlterColumnContext[];
       changeColumnList: ChangeColumnContext[];
       dropColumnList: DropColumnContext[];
     };
@@ -141,6 +155,7 @@ it("diff drop column list", () => {
       ],
       wanted: {
         addColumnList: [],
+        alterColumnList: [],
         changeColumnList: [],
         dropColumnList: [
           {
