@@ -413,9 +413,9 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 	}
 
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
-		rawDump := ""
+		var rawDump []byte
 		if dbSchema != nil {
-			rawDump = dbSchema.RawDump
+			rawDump = dbSchema.Schema
 		}
 		// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
 		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
@@ -424,15 +424,13 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 			if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
 				return err
 			}
-			rawDump = schemaBuf.String()
+			rawDump = schemaBuf.Bytes()
 		}
 
-		if err := stores.UpsertDBSchema(ctx, store.DBSchemaUpsert{
-			UpdaterID:  api.SystemBotID,
-			DatabaseID: database.ID,
-			Metadata:   databaseMetadata,
-			RawDump:    rawDump,
-		}); err != nil {
+		if err := stores.UpsertDBSchema(ctx, database.ID, &store.DBSchema{
+			Metadata: databaseMetadata,
+			Schema:   rawDump,
+		}, api.SystemBotID); err != nil {
 			return err
 		}
 	}
