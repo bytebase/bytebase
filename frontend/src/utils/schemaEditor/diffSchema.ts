@@ -1,6 +1,7 @@
 import { useSchemaEditorStore } from "@/store";
 import {
   AlterTableContext,
+  CreateSchemaContext,
   CreateTableContext,
   DatabaseId,
   DropTableContext,
@@ -13,16 +14,26 @@ import { transformTableToCreateTableContext } from "./transform";
 
 export const diffSchema = (
   databaseId: DatabaseId,
-  originSchema: Schema,
+  originSchema: Schema | undefined,
   schema: Schema
 ) => {
   const editorStore = useSchemaEditorStore();
+  const createSchemaContextList: CreateSchemaContext[] = [];
+  if (schema.status === "created") {
+    createSchemaContextList.push({
+      schema: schema.name,
+    });
+  }
+
   const createTableContextList: CreateTableContext[] = [];
   const createdTableList = schema.tableList.filter(
     (table) => table.status === "created"
   );
   for (const table of createdTableList) {
-    const createTableContext = transformTableToCreateTableContext(table);
+    const createTableContext = transformTableToCreateTableContext(
+      schema.name,
+      table
+    );
     const diffColumnListResult = diffColumnList([], table.columnList);
     createTableContext.addColumnList = diffColumnListResult.addColumnList;
     for (const columnId of table.primaryKey.columnIdList) {
@@ -77,7 +88,7 @@ export const diffSchema = (
     (table) => table.status === "normal"
   );
   for (const table of changedTableList) {
-    const originTable = originSchema.tableList.find(
+    const originTable = originSchema?.tableList.find(
       (originTable) => originTable.id === table.id
     );
     if (!originTable) {
@@ -86,7 +97,7 @@ export const diffSchema = (
 
     const originPrimaryKey = originTable.primaryKey;
     const primaryKey = table.primaryKey;
-    const originForeignKeyList = originSchema.foreignKeyList.filter(
+    const originForeignKeyList = originSchema?.foreignKeyList.filter(
       (fk) => fk.tableId === table.id
     );
     const foreignKeyList = schema.foreignKeyList.filter(
@@ -100,6 +111,7 @@ export const diffSchema = (
     ) {
       if (originTable.name !== table.name) {
         renameTableContextList.push({
+          schema: schema.name,
           oldName: originTable.name,
           newName: table.name,
         });
@@ -117,6 +129,7 @@ export const diffSchema = (
         columnListDiffResult.dropColumnList.length > 0
       ) {
         const alterTableContext: AlterTableContext = {
+          schema: schema.name,
           name: table.name,
           ...columnListDiffResult,
           dropPrimaryKey: false,
@@ -166,7 +179,7 @@ export const diffSchema = (
         // Compose foreign key changes.
         if (!isEqual(originForeignKeyList, foreignKeyList)) {
           for (const foreignKey of foreignKeyList) {
-            const originForeignKey = originForeignKeyList.find(
+            const originForeignKey = originForeignKeyList?.find(
               (fk) => fk.name === foreignKey.name
             );
 
@@ -238,11 +251,13 @@ export const diffSchema = (
   );
   for (const table of droppedTableList) {
     dropTableContextList.push({
+      schema: schema.name,
       name: table.name,
     });
   }
 
   return {
+    createSchemaList: createSchemaContextList,
     createTableList: createTableContextList,
     alterTableList: alterTableContextList,
     renameTableList: renameTableContextList,

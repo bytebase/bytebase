@@ -45,6 +45,12 @@
     :table-id="state.tableNameModalContext.tableId"
     @close="state.tableNameModalContext = undefined"
   />
+
+  <SchemaNameModal
+    v-if="state.schemaNameModalContext !== undefined"
+    :database-id="state.schemaNameModalContext.databaseId"
+    @close="state.schemaNameModalContext = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -117,6 +123,9 @@ interface TreeContextMenu {
 
 interface LocalState {
   shouldRelocateTreeNode: boolean;
+  schemaNameModalContext?: {
+    databaseId: DatabaseId;
+  };
   tableNameModalContext?: {
     databaseId: DatabaseId;
     schemaName: string;
@@ -168,11 +177,26 @@ const contextMenuOptions = computed(() => {
         key: "create-table",
         label: t("schema-editor.actions.create-table"),
       });
+    } else if (instanceEngine === "POSTGRES") {
+      options.push({
+        key: "create-schema",
+        label: t("schema-editor.actions.create-schema"),
+      });
     }
     return options;
   } else if (treeNode.type === "schema") {
     const options = [];
     if (instanceEngine === "POSTGRES") {
+      const schema = editorStore.databaseSchemaById
+        .get(treeNode.databaseId)
+        ?.schemaList.find((schema) => schema.name === treeNode.schemaName);
+      if (schema?.status === "created") {
+        options.push({
+          key: "delete-schema",
+          label: t("schema-editor.actions.delete-schema"),
+        });
+      }
+
       options.push({
         key: "create-table",
         label: t("schema-editor.actions.create-table"),
@@ -383,6 +407,10 @@ watch(
       if (!expandedKeysRef.value.includes(databaseTreeNodeKey)) {
         expandedKeysRef.value.push(databaseTreeNodeKey);
       }
+      const schemaTreeNodeKey = `s-${currentTab.databaseId}-${currentTab.schemaName}`;
+      if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
+        expandedKeysRef.value.push(schemaTreeNodeKey);
+      }
       const tableTreeNodeKey = `t-${currentTab.databaseId}-${currentTab.tableId}`;
       selectedKeysRef.value = [tableTreeNodeKey];
     }
@@ -450,7 +478,15 @@ const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
 const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
   const additionalClassList: string[] = ["select-none"];
 
-  if (treeNode.type === "table") {
+  if (treeNode.type === "schema") {
+    const schema = editorStore.databaseSchemaById
+      .get(treeNode.databaseId)
+      ?.schemaList.find((schema) => schema.name === treeNode.schemaName);
+
+    if (schema && schema.status === "created") {
+      additionalClassList.push("text-green-700");
+    }
+  } else if (treeNode.type === "table") {
     const table = editorStore.databaseSchemaById
       .get(treeNode.databaseId)
       ?.schemaList.find((schema) => schema.name === treeNode.schemaName)
@@ -493,20 +529,23 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
 
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
+  const icon = h(EllipsisIcon, {
+    class: "w-4 h-auto text-gray-600",
+    onClick: (e) => {
+      handleShowDropdown(e, treeNode);
+    },
+  });
+  const instanceEngine = instanceStore.getInstanceById(
+    treeNode.instanceId
+  ).engine;
   if (treeNode.type === "database") {
-    return h(EllipsisIcon, {
-      class: "w-4 h-auto text-gray-600",
-      onClick: (e) => {
-        handleShowDropdown(e, treeNode);
-      },
-    });
+    return icon;
+  } else if (treeNode.type === "schema") {
+    if (instanceEngine === "POSTGRES") {
+      return icon;
+    }
   } else if (treeNode.type === "table") {
-    return h(EllipsisIcon, {
-      class: "w-4 h-auto text-gray-600",
-      onClick: (e) => {
-        handleShowDropdown(e, treeNode);
-      },
-    });
+    return icon;
   }
   return null;
 };
@@ -632,6 +671,10 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         schemaName: "",
         tableId: undefined,
       };
+    } else if (key === "create-schema") {
+      state.schemaNameModalContext = {
+        databaseId: treeNode.databaseId,
+      };
     }
   } else if (treeNode?.type === "schema") {
     if (key === "create-table") {
@@ -641,6 +684,8 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         schemaName: treeNode.schemaName,
         tableId: undefined,
       };
+    } else if (key === "delete-schema") {
+      editorStore.deleteCreatedSchema(treeNode.databaseId, treeNode.schemaName);
     }
   } else if (treeNode?.type === "table") {
     const table = editorStore.databaseSchemaById

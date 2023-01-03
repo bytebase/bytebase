@@ -4,8 +4,22 @@
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
+    <div v-if="shouldShowSchemaSelector" class="w-72">
+      <p class="mb-2">{{ $t("schema-editor.select-reference-schema") }}</p>
+      <BBSelect
+        :selected-item="selectedSchema"
+        :item-list="schemaList"
+        :placeholder="$t('schema-editor.schema.select')"
+        :show-prefix-item="true"
+        @select-item="(schema: Schema) => state.referencedSchema = schema.name"
+      >
+        <template #menuItem="{ item }">
+          {{ item.name }}
+        </template>
+      </BBSelect>
+    </div>
     <div class="w-72">
-      <p class="mb-2">{{ $t("schema-editor.select-reference-table") }}</p>
+      <p class="mt-4 mb-2">{{ $t("schema-editor.select-reference-table") }}</p>
       <BBSelect
         :selected-item="selectedTable"
         :item-list="tableList"
@@ -60,7 +74,7 @@
 <script lang="ts" setup>
 import { isUndefined } from "lodash-es";
 import { computed, onMounted, PropType, reactive, watch } from "vue";
-import { DatabaseId, UNKNOWN_ID } from "@/types";
+import { DatabaseId, DatabaseSchema, UNKNOWN_ID } from "@/types";
 import { useSchemaEditorStore } from "@/store";
 import {
   Column,
@@ -99,6 +113,12 @@ const emit = defineEmits<{
 }>();
 
 const editorStore = useSchemaEditorStore();
+const databaseSchema = editorStore.databaseSchemaById.get(
+  props.databaseId
+) as DatabaseSchema;
+const database = databaseSchema.database;
+const databaseEngine = database.instance.engine;
+const schemaList = databaseSchema.schemaList;
 const state = reactive<LocalState>({
   referencedSchema: props.schemaName,
 });
@@ -125,11 +145,18 @@ const foreignKeyList = computed(() => {
   );
 });
 
+const shouldShowSchemaSelector = computed(() => {
+  return databaseEngine === "POSTGRES";
+});
+
+const selectedSchema = computed(() => {
+  return schemaList.find((schema) => schema.name === state.referencedSchema);
+});
+
 const tableList = computed(() => {
-  return (
-    editorStore.getSchema(props.databaseId, state.referencedSchema || "")
-      ?.tableList || []
-  ).filter((table: Table) => table.id !== props.tableId);
+  return (selectedSchema.value?.tableList || []).filter(
+    (table: Table) => table.id !== props.tableId
+  );
 });
 
 const selectedTable = computed(() => {
