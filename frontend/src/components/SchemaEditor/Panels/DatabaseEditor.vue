@@ -279,9 +279,7 @@ const tableHeaderList = computed(() => {
 });
 
 onMounted(() => {
-  if (schemaList.length > 0) {
-    state.selectedSchema = head(schemaList)?.name || "";
-  }
+  state.selectedSchema = head(schemaList)?.name || "";
 });
 
 watch(

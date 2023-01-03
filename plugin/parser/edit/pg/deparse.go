@@ -150,11 +150,16 @@ func transformAlterTableContext(ctx *DeparseContext, alterTableContext *api.Alte
 
 	for _, alterColumnContext := range alterTableContext.AlterColumnList {
 		if alterColumnContext.OldName != alterColumnContext.NewName {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.RenameColumnStmt{
+			renameColumnStmt := &ast.AlterTableStmt{
+				Table:         table,
+				AlterItemList: []ast.Node{},
+			}
+			renameColumnStmt.AlterItemList = append(renameColumnStmt.AlterItemList, &ast.RenameColumnStmt{
 				Table:      table,
 				ColumnName: alterColumnContext.OldName,
 				NewName:    alterColumnContext.NewName,
 			})
+			ctx.NodeList = append(ctx.NodeList, renameColumnStmt)
 		}
 		if alterColumnContext.Type != nil {
 			columnType, err := transformColumnType(*alterColumnContext.Type)
