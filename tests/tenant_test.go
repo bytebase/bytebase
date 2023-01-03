@@ -1160,7 +1160,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 								Selector: &api.LabelSelector{
 									MatchExpressions: []*api.LabelSelectorRequirement{
 										{
-											Key:      api.EnvironmentKeyName,
+											Key:      api.EnvironmentLabelKey,
 											Operator: api.InOperatorType,
 											Values:   []string{"Test"},
 										},
@@ -1444,7 +1444,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 								Selector: &api.LabelSelector{
 									MatchExpressions: []*api.LabelSelectorRequirement{
 										{
-											Key:      api.EnvironmentKeyName,
+											Key:      api.EnvironmentLabelKey,
 											Operator: api.InOperatorType,
 											Values:   []string{"Test"},
 										},
