@@ -376,8 +376,12 @@ export interface Project {
    * Format: projects/{project}
    */
   name: string;
+  /** The system-assigned, unique identifier for a resource. */
+  uid: string;
   state: State;
+  /** The title or name of a project. It's not unique within the workspace. */
   title: string;
+  /** The key is a short and upper-case identifier for a project. It's unique within the workspace. */
   key: string;
   workflow: Workflow;
   visibility: Visibility;
@@ -782,6 +786,7 @@ export const UndeleteProjectRequest = {
 function createBaseProject(): Project {
   return {
     name: "",
+    uid: "",
     state: 0,
     title: "",
     key: "",
@@ -801,38 +806,41 @@ export const Project = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.uid !== "") {
+      writer.uint32(18).string(message.uid);
+    }
     if (message.state !== 0) {
-      writer.uint32(16).int32(message.state);
+      writer.uint32(24).int32(message.state);
     }
     if (message.title !== "") {
-      writer.uint32(26).string(message.title);
+      writer.uint32(34).string(message.title);
     }
     if (message.key !== "") {
-      writer.uint32(34).string(message.key);
+      writer.uint32(42).string(message.key);
     }
     if (message.workflow !== 0) {
-      writer.uint32(40).int32(message.workflow);
+      writer.uint32(48).int32(message.workflow);
     }
     if (message.visibility !== 0) {
-      writer.uint32(48).int32(message.visibility);
+      writer.uint32(56).int32(message.visibility);
     }
     if (message.tenantMode !== 0) {
-      writer.uint32(56).int32(message.tenantMode);
+      writer.uint32(64).int32(message.tenantMode);
     }
     if (message.dbNameTemplate !== "") {
-      writer.uint32(66).string(message.dbNameTemplate);
+      writer.uint32(74).string(message.dbNameTemplate);
     }
     if (message.roleProvider !== 0) {
-      writer.uint32(72).int32(message.roleProvider);
+      writer.uint32(80).int32(message.roleProvider);
     }
     if (message.schemaVersion !== 0) {
-      writer.uint32(80).int32(message.schemaVersion);
+      writer.uint32(88).int32(message.schemaVersion);
     }
     if (message.schemaChange !== 0) {
-      writer.uint32(88).int32(message.schemaChange);
+      writer.uint32(96).int32(message.schemaChange);
     }
     if (message.lgtmCheck !== 0) {
-      writer.uint32(96).int32(message.lgtmCheck);
+      writer.uint32(104).int32(message.lgtmCheck);
     }
     return writer;
   },
@@ -848,36 +856,39 @@ export const Project = {
           message.name = reader.string();
           break;
         case 2:
-          message.state = reader.int32() as any;
+          message.uid = reader.string();
           break;
         case 3:
-          message.title = reader.string();
+          message.state = reader.int32() as any;
           break;
         case 4:
-          message.key = reader.string();
+          message.title = reader.string();
           break;
         case 5:
-          message.workflow = reader.int32() as any;
+          message.key = reader.string();
           break;
         case 6:
-          message.visibility = reader.int32() as any;
+          message.workflow = reader.int32() as any;
           break;
         case 7:
-          message.tenantMode = reader.int32() as any;
+          message.visibility = reader.int32() as any;
           break;
         case 8:
-          message.dbNameTemplate = reader.string();
+          message.tenantMode = reader.int32() as any;
           break;
         case 9:
-          message.roleProvider = reader.int32() as any;
+          message.dbNameTemplate = reader.string();
           break;
         case 10:
-          message.schemaVersion = reader.int32() as any;
+          message.roleProvider = reader.int32() as any;
           break;
         case 11:
-          message.schemaChange = reader.int32() as any;
+          message.schemaVersion = reader.int32() as any;
           break;
         case 12:
+          message.schemaChange = reader.int32() as any;
+          break;
+        case 13:
           message.lgtmCheck = reader.int32() as any;
           break;
         default:
@@ -891,6 +902,7 @@ export const Project = {
   fromJSON(object: any): Project {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      uid: isSet(object.uid) ? String(object.uid) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       key: isSet(object.key) ? String(object.key) : "",
@@ -908,6 +920,7 @@ export const Project = {
   toJSON(message: Project): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.title !== undefined && (obj.title = message.title);
     message.key !== undefined && (obj.key = message.key);
@@ -925,6 +938,7 @@ export const Project = {
   fromPartial<I extends Exact<DeepPartial<Project>, I>>(object: I): Project {
     const message = createBaseProject();
     message.name = object.name ?? "";
+    message.uid = object.uid ?? "";
     message.state = object.state ?? 0;
     message.title = object.title ?? "";
     message.key = object.key ?? "";

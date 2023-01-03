@@ -143,25 +143,28 @@ message Database {
   // {database} is the database name in the instance.
   string name = 1;
 
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // The existence of a database on latest sync.
-  State sync_state = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  State sync_state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The latest synchronization time.
-  google.protobuf.Timestamp successful_sync_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp successful_sync_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The project for a database.
   // Format: projects/{project}
-  string project = 4;
+  string project = 5;
 
-  string character_set = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string character_set = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string collation = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string collation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The version of database schema.
-  string schema_version = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string schema_version = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Labels will be used for deployment and policy control.
-  map<string, string> labels = 8;
+  map<string, string> labels = 9;
 }
 
 // DatabaseMetadata is the metadata for databases.

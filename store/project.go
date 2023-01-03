@@ -536,6 +536,7 @@ func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*pr
 
 // ProjectMessage is the mssage for project.
 type ProjectMessage struct {
+	UID              int
 	ProjectID        string
 	Title            string
 	Key              string
@@ -630,7 +631,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMess
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO project (
 				creator_id,
 				updater_id,
@@ -646,6 +647,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMess
 				lgtm_check
 			)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			RETURNING id
 		`,
 		creatorID,
 		creatorID,
@@ -659,7 +661,12 @@ func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMess
 		projectMessage.RoleProvider,
 		projectMessage.SchemaChangeType,
 		projectMessage.LGTMCheckSetting,
+	).Scan(
+		&projectMessage.UID,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery("failed to create project")
+		}
 		return nil, FormatError(err)
 	}
 
@@ -715,6 +722,7 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 		SET `+strings.Join(set, ", ")+`
 		WHERE resource_id = $%d
 		RETURNING
+			id,
 			resource_id,
 			name,
 			key,
@@ -729,6 +737,7 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 	`, len(args)),
 		args...,
 	).Scan(
+		&projectMessage.UID,
 		&projectMessage.ProjectID,
 		&projectMessage.Title,
 		&projectMessage.Key,
@@ -767,6 +776,7 @@ func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMe
 	var projectMessages []*ProjectMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
+			id,
 			resource_id,
 			name,
 			key,
@@ -790,8 +800,8 @@ func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMe
 	for rows.Next() {
 		var projectMessage ProjectMessage
 		var rowStatus string
-
 		if err := rows.Scan(
+			&projectMessage.UID,
 			&projectMessage.ProjectID,
 			&projectMessage.Title,
 			&projectMessage.Key,
