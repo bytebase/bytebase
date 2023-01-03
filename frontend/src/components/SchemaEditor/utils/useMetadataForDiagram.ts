@@ -11,7 +11,7 @@ import {
 import { isTableChanged } from "./table";
 
 type MetadataWithEditStatus<T> = T & {
-  $$status: EditStatus;
+  $$status?: EditStatus;
 };
 
 const statusOfTable = (
