@@ -248,6 +248,9 @@ const (
 	// PostgreSQLTableNoFK is an advisor type for PostgreSQL table disallow foreign key.
 	PostgreSQLTableNoFK Type = "bb.plugin.advisor.postgresql.table.no-foreign-key"
 
+	// PostgreSQLTableDisallowPartition is an advisor type for PostgreSQL disallow table partition.
+	PostgreSQLTableDisallowPartition Type = "bb.plugin.advisor.postgresql.table.disallow-partition"
+
 	// PostgreSQLInsertRowLimit is an advisor type for PostgreSQL to limit INSERT rows.
 	PostgreSQLInsertRowLimit Type = "bb.plugin.advisor.postgresql.insert.row-limit"
 
