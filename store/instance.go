@@ -860,9 +860,11 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 				environment_id,
 				name,
 				engine,
-				external_link
+				external_link,
+				host,
+				port
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			RETURNING id
 		`,
 		instanceCreate.ResourceID,
@@ -872,6 +874,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		instanceCreate.Title,
 		instanceCreate.Engine,
 		instanceCreate.ExternalLink,
+		"",
+		"",
 	).Scan(&instanceID); err != nil {
 		return nil, FormatError(err)
 	}
