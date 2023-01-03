@@ -497,35 +497,25 @@ const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
 
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
+  const icon = h(EllipsisIcon, {
+    class: "w-4 h-auto text-gray-600",
+    onClick: (e) => {
+      handleShowDropdown(e, treeNode);
+    },
+  });
   const instanceEngine = instanceStore.getInstanceById(
     treeNode.instanceId
   ).engine;
-
   if (treeNode.type === "database") {
     if (instanceEngine === "MYSQL") {
-      return h(EllipsisIcon, {
-        class: "w-4 h-auto text-gray-600",
-        onClick: (e) => {
-          handleShowDropdown(e, treeNode);
-        },
-      });
+      return icon;
     }
   } else if (treeNode.type === "schema") {
     if (instanceEngine === "POSTGRES") {
-      return h(EllipsisIcon, {
-        class: "w-4 h-auto text-gray-600",
-        onClick: (e) => {
-          handleShowDropdown(e, treeNode);
-        },
-      });
+      return icon;
     }
   } else if (treeNode.type === "table") {
-    return h(EllipsisIcon, {
-      class: "w-4 h-auto text-gray-600",
-      onClick: (e) => {
-        handleShowDropdown(e, treeNode);
-      },
-    });
+    return icon;
   }
   return null;
 };
