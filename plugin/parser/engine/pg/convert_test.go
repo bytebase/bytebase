@@ -59,6 +59,48 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 		{
 			stmt: `
 				CREATE TABLE tech_book(
+					a int,
+					b int
+				)
+				PARTITION BY RANGE (a)
+			`,
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					IfNotExists: false,
+					Name: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							Type:       &ast.Integer{Size: 4},
+						},
+						{
+							ColumnName: "b",
+							Type:       &ast.Integer{Size: 4},
+						},
+					},
+					PartitionDef: &ast.UnconvertedStmt{},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text: `CREATE TABLE tech_book(
+					a int,
+					b int
+				)
+				PARTITION BY RANGE (a)`,
+					LastLine: 6,
+				},
+			},
+			columnLine: [][]int{
+				{3, 4},
+			},
+		},
+		{
+			stmt: `
+				CREATE TABLE tech_book(
 					a char(20),
 					b character(30),
 					c varchar(330),
@@ -3016,6 +3058,38 @@ func TestAlterType(t *testing.T) {
 				{
 
 					Text:     `ALTER TYPE public.bug_status ADD VALUE 'a'`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestAttachPartition(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT`,
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AttachPartitionStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "tech_book",
+							},
+						},
+					},
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT`,
 					LastLine: 1,
 				},
 			},

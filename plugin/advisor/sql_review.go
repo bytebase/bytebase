@@ -805,6 +805,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLTableDisallowPartition, nil
+		case db.Postgres:
+			return PostgreSQLTableDisallowPartition, nil
 		}
 	case SchemaRuleMySQLEngine:
 		if engine == db.MySQL {
