@@ -6,6 +6,7 @@ import { EditStatus } from "@/components/SchemaDiagram";
 import {
   ColumnMetadata,
   ForeignKeyMetadata,
+  IndexMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
 import { isTableChanged } from "./table";
@@ -73,19 +74,15 @@ export const useMetadataForDiagram = (
         // here when converting Table back to TableMetadata.
         // But they will be back soon when editing indexes supported in Schema
         // Editor.
-        tableMeta.indexes = [
-          {
-            primary: true,
-            type: "",
-            unique: true,
-            comment: "",
-            visible: true,
-            name: table.primaryKey.name,
-            expressions: table.primaryKey.columnIdList.map(
-              (id) => table.columnList.find((col) => col.id === id)!.name
-            ),
-          },
-        ];
+        const pk = IndexMetadata.fromPartial({});
+        Object.assign(pk, {
+          primary: true,
+          name: table.primaryKey.name,
+          expressions: table.primaryKey.columnIdList.map(
+            (id) => table.columnList.find((col) => col.id === id)!.name
+          ),
+        });
+        tableMeta.indexes = [pk];
         const foreignKeyList = schema.foreignKeyList.filter(
           (fk) => fk.tableId === table.id
         );
