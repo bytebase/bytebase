@@ -28,13 +28,14 @@ import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
 
 import { Database } from "@/types";
-import { TableMetadata } from "@/types/proto/store/database";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import {
   Position,
   Rect,
   Size,
   SchemaDiagramContext,
   ForeignKey,
+  EditStatus,
 } from "./types";
 import Canvas from "./Canvas";
 import { TableNode, autoLayout, GraphNodeItem, GraphEdgeItem } from "./ER";
@@ -44,8 +45,13 @@ const props = withDefaults(
   defineProps<{
     database: Database;
     tableList: TableMetadata[];
+    tableStatus?: (table: TableMetadata) => EditStatus;
+    columnStatus?: (column: ColumnMetadata) => EditStatus;
   }>(),
-  {}
+  {
+    tableStatus: () => "normal" as EditStatus,
+    columnStatus: () => "normal" as EditStatus,
+  }
 );
 
 const initialized = ref(false);
@@ -124,10 +130,12 @@ const layout = () => {
 
     const edgeList = foreignKeys.value.map<GraphEdgeItem>((fk) => {
       const { from, to } = fk;
+      const fromTableId = idOfTable(from.table);
+      const toTableId = idOfTable(to.table);
       return {
-        id: `${from.table.name}.${from.column}->${to.table.name}.${to.column}`,
-        from: idOfTable(from.table),
-        to: idOfTable(to.table),
+        id: `${fromTableId}.${from.column}->${toTableId}.${to.column}`,
+        from: fromTableId,
+        to: toTableId,
       };
     });
     const { rects } = await autoLayout(nodeList, edgeList);
@@ -149,6 +157,8 @@ provideSchemaDiagramContext({
   rectOfTable,
   render,
   layout,
+  tableStatus: props.tableStatus,
+  columnStatus: props.columnStatus,
   events,
 });
 
