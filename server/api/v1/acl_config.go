@@ -25,6 +25,12 @@ var ownerAndDBAMethods = map[string]bool{
 	"InstanceService/UpdateDataSource":       true,
 }
 
+var projectOwnerMethods = map[string]bool{
+	"ProjectService/UpdateProject":   true,
+	"ProjectService/DeleteProject":   true,
+	"ProjectService/UndeleteProject": true,
+}
+
 var transferDatabaseMethods = map[string]bool{
 	"DatabaseService/UpdateDatabase":       true,
 	"DatabaseService/BatchUpdateDatabases": true,
@@ -32,6 +38,10 @@ var transferDatabaseMethods = map[string]bool{
 
 func isOwnerAndDBAMethod(methodName string) bool {
 	return ownerAndDBAMethods[methodName]
+}
+
+func isProjectOwnerMethod(methodName string) bool {
+	return projectOwnerMethods[methodName]
 }
 
 func isTransferDatabaseMethods(methodName string) bool {

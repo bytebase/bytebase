@@ -59,7 +59,21 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request interface{
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can access method %q", methodName)
 	}
 
-	// TODO(d): implement authorization checks for project resources.
+	if isProjectOwnerMethod(methodName) {
+		projectIDs, err := getProjectIDs(request)
+		if err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		}
+		for _, projectID := range projectIDs {
+			projectRole, err := in.getProjectMember(ctx, user, projectID)
+			if err != nil {
+				return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			}
+			if projectRole != api.Owner {
+				return nil, status.Errorf(codes.PermissionDenied, "only the owner of project %q can access method %q", projectID, methodName)
+			}
+		}
+	}
 
 	if isTransferDatabaseMethods(methodName) {
 		projectIDs, err := in.getTransferDatabaseToProjects(ctx, request)
@@ -117,6 +131,35 @@ func (in *ACLInterceptor) getProjectMember(ctx context.Context, user *store.User
 		}
 	}
 	return api.UnknownRole, nil
+}
+
+func getProjectIDs(req interface{}) ([]string, error) {
+	if request, ok := req.(*v1pb.UpdateProjectRequest); ok {
+		if request.Project == nil {
+			return nil, errors.Errorf("project not found")
+		}
+		projectID, err := getProjectID(request.Project.Name)
+		if err != nil {
+			return nil, err
+		}
+		return []string{projectID}, nil
+	}
+	if request, ok := req.(*v1pb.DeleteProjectRequest); ok {
+		projectID, err := getProjectID(request.Name)
+		if err != nil {
+			return nil, err
+		}
+		return []string{projectID}, nil
+	}
+	if request, ok := req.(*v1pb.UndeleteProjectRequest); ok {
+		projectID, err := getProjectID(request.Name)
+		if err != nil {
+			return nil, err
+		}
+		return []string{projectID}, nil
+	}
+
+	return nil, nil
 }
 
 func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req interface{}) ([]string, error) {
