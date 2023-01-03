@@ -754,6 +754,7 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 // InstanceMessage is the mssage for instance.
 type InstanceMessage struct {
 	EnvironmentID string
+	UID           int
 	ResourceID    string
 	Title         string
 	Engine        db.Type
@@ -917,6 +918,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	instance := &InstanceMessage{
 		EnvironmentID: environmentID,
 		ResourceID:    instanceCreate.ResourceID,
+		UID:           instanceID,
 		Title:         instanceCreate.Title,
 		Engine:        instanceCreate.Engine,
 		ExternalLink:  instanceCreate.ExternalLink,
@@ -956,7 +958,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		EnvironmentID: patch.EnvironmentID,
 	}
 	var rowStatus string
-	var instanceID int
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
@@ -971,7 +972,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		`, len(args)-1, len(args)),
 		args...,
 	).Scan(
-		&instanceID,
+		&instance.UID,
 		&instance.ResourceID,
 		&instance.Title,
 		&instance.Engine,
@@ -987,7 +988,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if patch.DataSources != nil {
 		dbName := api.AllDatabaseName
 		dbFind := &api.DatabaseFind{
-			InstanceID:         &instanceID,
+			InstanceID:         &instance.UID,
 			Name:               &dbName,
 			IncludeAllDatabase: true,
 		}
@@ -1003,14 +1004,14 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		database := databaseList[0]
 
-		if err := s.clearDataSourceImpl(ctx, tx, instanceID, database.ID); err != nil {
+		if err := s.clearDataSourceImpl(ctx, tx, instance.UID, database.ID); err != nil {
 			return nil, err
 		}
 
 		for _, ds := range patch.DataSources {
 			dataSourceCreate := &api.DataSourceCreate{
 				CreatorID:  patch.UpdaterID,
-				InstanceID: instanceID,
+				InstanceID: instance.UID,
 				DatabaseID: database.ID,
 				Name:       ds.Title,
 				Type:       ds.Type,
@@ -1059,6 +1060,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			environment.resource_id as environment_id,
+			instance.id AS instance_uid,
 			instance.resource_id AS resource_id,
 			instance.name AS name,
 			engine,
@@ -1078,6 +1080,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		var rowStatus string
 		if err := rows.Scan(
 			&instanceMessage.EnvironmentID,
+			&instanceMessage.UID,
 			&instanceMessage.ResourceID,
 			&instanceMessage.Title,
 			&instanceMessage.Engine,
