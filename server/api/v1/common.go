@@ -16,7 +16,7 @@ const (
 	projectNamePrefix     = "projects/"
 	environmentNamePrefix = "environments/"
 	instanceNamePrefix    = "instances/"
-	databaseNamePrefix    = "databases/"
+	databaseIDPrefix      = "databases/"
 	userNamePrefix        = "users/"
 )
 
@@ -42,7 +42,7 @@ func getEnvironmentID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-func getEnvironmentAndInstanceID(name string) (string, string, error) {
+func getEnvironmentInstanceID(name string) (string, string, error) {
 	// the instance request should be environments/{environment-id}/instances/{instance-id}
 	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix)
 	if err != nil {
@@ -52,8 +52,8 @@ func getEnvironmentAndInstanceID(name string) (string, string, error) {
 }
 
 func getEnvironmentInstanceDatabaseID(name string) (string, string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database}
-	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseNamePrefix)
+	// the instance request should be environments/{environment-id}/instances/{instance-id}/databases/{database-id}
+	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseIDPrefix)
 	if err != nil {
 		return "", "", "", err
 	}

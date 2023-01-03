@@ -53,6 +53,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListProjectsResponse{}
+	// TODO(d): implement filtering if the caller isn't a member of a project.
 	for _, project := range projects {
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
