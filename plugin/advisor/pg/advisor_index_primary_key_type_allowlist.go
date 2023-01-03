@@ -74,8 +74,7 @@ type indexPrimaryKeyTypeAllowlistChecker struct {
 func (checker *indexPrimaryKeyTypeAllowlistChecker) Visit(in ast.Node) ast.Visitor {
 	var columnList []*ast.ColumnDef
 	columnMap := make(map[string]*ast.ColumnDef)
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
+	if node, ok := in.(*ast.CreateTableStmt); ok {
 		for _, column := range node.ColumnList {
 			columnMap[column.ColumnName] = column
 			if isPKColumn(column) {
