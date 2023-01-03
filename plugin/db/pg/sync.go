@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -21,62 +22,6 @@ type pgDatabaseSchema struct {
 	name     string
 	encoding string
 	collate  string
-}
-
-// tableSchema describes the schema of a pg table.
-type tableSchema struct {
-	schemaName    string
-	name          string
-	tableowner    string
-	comment       string
-	rowCount      int64
-	tableSizeByte int64
-	indexSizeByte int64
-
-	columns     []*columnSchema
-	constraints []*tableConstraint
-}
-
-// columnSchema describes the schema of a pg table column.
-type columnSchema struct {
-	columnName             string
-	dataType               string
-	ordinalPosition        int
-	characterMaximumLength string
-	columnDefault          string
-	isNullable             bool
-	collationName          string
-	comment                string
-}
-
-// tableConstraint describes constraint schema of a pg table.
-type tableConstraint struct {
-	name       string
-	schemaName string
-	tableName  string
-	constraint string
-}
-
-// viewSchema describes the schema of a pg view.
-type viewSchema struct {
-	schemaName string
-	name       string
-	definition string
-	comment    string
-}
-
-// indexSchema describes the schema of a pg index.
-type indexSchema struct {
-	schemaName string
-	name       string
-	tableName  string
-	statement  string
-	unique     bool
-	primary    bool
-	// methodType such as btree.
-	methodType        string
-	columnExpressions []string
-	comment           string
 }
 
 // SyncInstance syncs the instance.
@@ -123,128 +68,78 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get databases")
+		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	schema := db.Schema{
+	databaseMetadata := &storepb.DatabaseMetadata{
 		Name: databaseName,
 	}
 	found := false
 	for _, database := range databases {
 		if database.name == databaseName {
 			found = true
-			schema.CharacterSet = database.encoding
-			schema.Collation = database.collate
+			databaseMetadata.CharacterSet = database.encoding
+			databaseMetadata.Collation = database.collate
 			break
 		}
 	}
 	if !found {
-		return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
 	}
 	txn, err := sqldb.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer txn.Rollback()
 
-	// Index statements.
-	indicesMap := make(map[string][]*indexSchema)
-	indices, err := getIndices(txn)
+	tableMap, err := getTables(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
 	}
-	for _, idx := range indices {
-		key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
-		indicesMap[key] = append(indicesMap[key], idx)
-	}
-
-	// Table statements.
-	tables, err := getPgTables(txn)
+	viewMap, err := getViews(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
 	}
-	for _, tbl := range tables {
-		var dbTable db.Table
-		dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
-		dbTable.Schema = tbl.schemaName
-		dbTable.ShortName = tbl.name
-		dbTable.Type = "BASE TABLE"
-		dbTable.Comment = tbl.comment
-		dbTable.RowCount = tbl.rowCount
-		dbTable.DataSize = tbl.tableSizeByte
-		dbTable.IndexSize = tbl.indexSizeByte
-		for _, col := range tbl.columns {
-			var dbColumn db.Column
-			dbColumn.Name = col.columnName
-			dbColumn.Position = col.ordinalPosition
-			dbColumn.Default = &col.columnDefault
-			dbColumn.Type = col.dataType
-			dbColumn.Nullable = col.isNullable
-			dbColumn.Collation = col.collationName
-			dbColumn.Comment = col.comment
-			dbTable.ColumnList = append(dbTable.ColumnList, dbColumn)
-		}
-		indices := indicesMap[dbTable.Name]
-		for _, idx := range indices {
-			for i, colExp := range idx.columnExpressions {
-				var dbIndex db.Index
-				dbIndex.Name = idx.name
-				dbIndex.Expression = colExp
-				dbIndex.Position = i + 1
-				dbIndex.Type = idx.methodType
-				dbIndex.Unique = idx.unique
-				dbIndex.Primary = idx.primary
-				dbIndex.Comment = idx.comment
-				dbTable.IndexList = append(dbTable.IndexList, dbIndex)
-			}
-		}
-
-		schema.TableList = append(schema.TableList, dbTable)
-	}
-	// View statements.
-	views, err := getViews(txn)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get views from database %q", databaseName)
-	}
-	for _, view := range views {
-		var dbView db.View
-		dbView.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
-		dbView.Schema = view.schemaName
-		dbView.ShortName = view.name
-		// Postgres does not store
-		dbView.CreatedTs = time.Now().Unix()
-		dbView.Definition = view.definition
-		dbView.Comment = view.comment
-
-		schema.ViewList = append(schema.ViewList, dbView)
-	}
-	// Extensions.
 	extensions, err := getExtensions(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
-	}
-	schema.ExtensionList = extensions
-
-	// Foreign keys.
-	foreignKeys, err := getPgForeignKeys(txn)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get foreign keys from database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get extensions from database %q", databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &schema, foreignKeys, err
+	schemaNameMap := make(map[string]bool)
+	for schemaName := range tableMap {
+		schemaNameMap[schemaName] = true
+	}
+	for schemaName := range viewMap {
+		schemaNameMap[schemaName] = true
+	}
+	var schemaNames []string
+	for schemaName := range schemaNameMap {
+		schemaNames = append(schemaNames, schemaName)
+	}
+	sort.Strings(schemaNames)
+	for _, schemaName := range schemaNames {
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+			Name:   schemaName,
+			Tables: tableMap[schemaName],
+			Views:  viewMap[schemaName],
+		})
+	}
+	databaseMetadata.Extensions = extensions
+
+	return databaseMetadata, err
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
@@ -316,7 +211,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	return userList, nil
 }
 
-func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, error) {
+func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	query := `
 	SELECT
 		n.nspname AS fk_schema,
@@ -333,9 +228,10 @@ func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, er
 		JOIN pg_namespace n ON n.oid = c.connamespace
 	WHERE
 		n.nspname NOT IN('pg_catalog', 'information_schema')
-		AND c.contype = 'f';
+		AND c.contype = 'f'
+	ORDER BY fk_schema, fk_table, fk_name;
 	`
-	ret := make(map[string][]*storepb.ForeignKeyMetadata)
+	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -368,18 +264,13 @@ func getPgForeignKeys(txn *sql.Tx) (map[string][]*storepb.ForeignKeyMetadata, er
 		if fkMetadata.Columns, fkMetadata.ReferencedColumns, err = getForeignKeyColumnsAndReferencedColumns(fkDefinition); err != nil {
 			return nil, err
 		}
-		key := fmt.Sprintf("%s.%s", fkSchema, fkTable)
-		if info, exists := ret[key]; exists {
-			ret[key] = append(info, &fkMetadata)
-		} else {
-			ret[key] = []*storepb.ForeignKeyMetadata{&fkMetadata}
-		}
+		key := db.TableKey{Schema: fkSchema, Table: fkTable}
+		foreignKeysMap[key] = append(foreignKeysMap[key], &fkMetadata)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	return ret, nil
+	return foreignKeysMap, nil
 }
 
 func convertForeignKeyMatchType(in string) string {
@@ -452,26 +343,31 @@ func formatTableNameFromRegclass(name string) string {
 }
 
 // getTables gets all tables of a database.
-func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
-	constraints, err := getTableConstraints(txn)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get table constraints")
-	}
-	columns, err := getTableColumns(txn)
+func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
+	columnMap, err := getTableColumns(txn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get table columns")
 	}
+	indexMap, err := getIndexes(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get indices")
+	}
+	foreignKeysMap, err := getForeignKeys(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get foreign keys")
+	}
 
-	var tables []*tableSchema
+	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := `
-	SELECT tbl.schemaname, tbl.tablename, tbl.tableowner,
-		pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-		pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-		GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
-		obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
-	FROM pg_catalog.pg_tables tbl
-	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass
-	WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema');`
+		SELECT tbl.schemaname, tbl.tablename,
+			pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+			pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+			GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
+			obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
+		FROM pg_catalog.pg_tables tbl
+		LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass
+		WHERE tbl.schemaname NOT IN ('pg_catalog', 'information_schema')
+		ORDER BY tbl.schemaname, tbl.tablename;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -479,182 +375,145 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var tbl tableSchema
-		var schemaname, tablename, tableowner string
-		var tableSizeByte, indexSizeByte, rowCountEstimate int64
+		table := &storepb.TableMetadata{}
+		// var tbl tableSchema
+		var schemaName string
 		var comment sql.NullString
-		if err := rows.Scan(&schemaname, &tablename, &tableowner, &tableSizeByte, &indexSizeByte, &rowCountEstimate, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
 			return nil, err
 		}
-		tbl.schemaName = schemaname
-		tbl.name = tablename
-		tbl.tableowner = tableowner
-		tbl.tableSizeByte = tableSizeByte
-		tbl.indexSizeByte = indexSizeByte
-		tbl.rowCount = rowCountEstimate
 		if comment.Valid {
-			tbl.comment = comment.String
+			table.Comment = comment.String
 		}
+		key := db.TableKey{Schema: schemaName, Table: table.Name}
+		table.Columns = columnMap[key]
+		table.Indexes = indexMap[key]
+		table.ForeignKeys = foreignKeysMap[key]
 
-		tables = append(tables, &tbl)
+		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	for _, tbl := range tables {
-		key := fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
-		tbl.constraints = constraints[key]
-		tbl.columns = columns[key]
-	}
-	return tables, nil
+	return tableMap, nil
 }
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx) (map[string][]*columnSchema, error) {
+func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+
 	query := `
-	SELECT
-		cols.table_schema,
-		cols.table_name,
-		cols.column_name,
-		cols.data_type,
-		cols.ordinal_position,
-		cols.character_maximum_length,
-		cols.column_default,
-		cols.is_nullable,
-		cols.collation_name,
-		cols.udt_schema,
-		cols.udt_name,
-		pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
-	FROM INFORMATION_SCHEMA.COLUMNS AS cols
-	WHERE cols.table_schema NOT IN ('pg_catalog', 'information_schema');`
+		SELECT
+			cols.table_schema,
+			cols.table_name,
+			cols.column_name,
+			cols.data_type,
+			cols.ordinal_position,
+			cols.column_default,
+			cols.is_nullable,
+			cols.collation_name,
+			cols.udt_schema,
+			cols.udt_name,
+			pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
+		FROM INFORMATION_SCHEMA.COLUMNS AS cols
+		WHERE cols.table_schema NOT IN ('pg_catalog', 'information_schema')
+		ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
-	columnsMap := make(map[string][]*columnSchema)
 	for rows.Next() {
-		var tableSchema, tableName, columnName, dataType, isNullable string
-		var characterMaximumLength, columnDefault, collationName, udtSchema, udtName, comment sql.NullString
-		var ordinalPosition int
-		if err := rows.Scan(&tableSchema, &tableName, &columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &udtSchema, &udtName, &comment); err != nil {
+		column := &storepb.ColumnMetadata{}
+		var schemaName, tableName, nullable string
+		var defaultStr, collation, udtSchema, udtName, comment sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &comment); err != nil {
 			return nil, err
 		}
-		isNullBool, err := convertBoolFromYesNo(isNullable)
+		if defaultStr.Valid {
+			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
+		}
+		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
 		}
-		c := columnSchema{
-			columnName:             columnName,
-			dataType:               dataType,
-			ordinalPosition:        ordinalPosition,
-			characterMaximumLength: characterMaximumLength.String,
-			columnDefault:          columnDefault.String,
-			isNullable:             isNullBool,
-			collationName:          collationName.String,
-			comment:                comment.String,
-		}
-		switch dataType {
+		column.Nullable = isNullBool
+		switch column.Type {
 		case "USER-DEFINED":
-			c.dataType = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
+			column.Type = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
 		case "ARRAY":
-			c.dataType = udtName.String
+			column.Type = udtName.String
 		}
-		key := fmt.Sprintf("%s.%s", tableSchema, tableName)
-		columnsMap[key] = append(columnsMap[key], &c)
+		column.Collation = collation.String
+		column.Comment = comment.String
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		columnsMap[key] = append(columnsMap[key], column)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
 	return columnsMap, nil
 }
 
-// getTableConstraints gets all table constraints of a database.
-func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
-	query := "" +
-		"SELECT n.nspname, conrelid::regclass, conname, pg_get_constraintdef(c.oid) " +
-		"FROM pg_constraint c " +
-		"JOIN pg_namespace n ON n.oid = c.connamespace " +
-		"WHERE n.nspname NOT IN ('pg_catalog', 'information_schema');"
-	ret := make(map[string][]*tableConstraint)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var constraint tableConstraint
-		if err := rows.Scan(&constraint.schemaName, &constraint.tableName, &constraint.name, &constraint.constraint); err != nil {
-			return nil, err
-		}
-		if strings.Contains(constraint.tableName, ".") {
-			constraint.tableName = constraint.tableName[1+strings.Index(constraint.tableName, "."):]
-		}
-		key := fmt.Sprintf("%s.%s", constraint.schemaName, constraint.tableName)
-		ret[key] = append(ret[key], &constraint)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return ret, nil
-}
-
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx) ([]*viewSchema, error) {
+func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
+	viewMap := make(map[string][]*storepb.ViewMetadata)
+
 	query := `
-	SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views
-	WHERE schemaname NOT IN ('pg_catalog', 'information_schema');`
-	var views []*viewSchema
+		SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views
+		WHERE schemaname NOT IN ('pg_catalog', 'information_schema');`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	for rows.Next() {
-		var view viewSchema
+		view := &storepb.ViewMetadata{}
+		var schemaName string
 		var def, comment sql.NullString
-		if err := rows.Scan(&view.schemaName, &view.name, &def, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &view.Name, &def, &comment); err != nil {
 			return nil, err
 		}
 		// Return error on NULL view definition.
 		// https://github.com/bytebase/bytebase/issues/343
 		if !def.Valid {
-			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
+			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", schemaName, view.Name)
 		}
-		view.definition = def.String
+		view.Definition = def.String
 		if comment.Valid {
-			view.comment = comment.String
+			view.Comment = comment.String
 		}
-		views = append(views, &view)
+
+		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return views, nil
+
+	return viewMap, nil
 }
 
 // getExtensions gets all extensions of a database.
-func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
-	query := "" +
-		"SELECT e.extname, e.extversion, n.nspname, c.description " +
-		"FROM pg_catalog.pg_extension e " +
-		"LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace " +
-		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass " +
-		"WHERE n.nspname != 'pg_catalog';"
+func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
+	var extensions []*storepb.ExtensionMetadata
 
-	var extensions []db.Extension
+	query := `
+		SELECT e.extname, e.extversion, n.nspname, c.description
+		FROM pg_catalog.pg_extension e
+		LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace
+		LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass
+		WHERE n.nspname != 'pg_catalog'
+		ORDER BY e.extname;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	for rows.Next() {
-		var e db.Extension
+		e := &storepb.ExtensionMetadata{}
 		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
 			return nil, err
 		}
@@ -667,63 +526,55 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 	return extensions, nil
 }
 
-// getIndices gets all indices of a database.
-func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
-	query := `
-	SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
-		FROM information_schema.table_constraints
-		WHERE constraint_schema = idx.schemaname
-		AND constraint_name = idx.indexname
-		AND table_schema = idx.schemaname
-		AND table_name = idx.tablename
-		AND constraint_type = 'PRIMARY KEY') AS primary,
-		obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment
-	FROM pg_indexes AS idx WHERE idx.schemaname NOT IN ('pg_catalog', 'information_schema');`
+// getIndexes gets all indices of a database.
+func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
-	var indices []*indexSchema
+	query := `
+		SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
+			FROM information_schema.table_constraints
+			WHERE constraint_schema = idx.schemaname
+			AND constraint_name = idx.indexname
+			AND table_schema = idx.schemaname
+			AND table_name = idx.tablename
+			AND constraint_type = 'PRIMARY KEY') AS primary,
+			obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment
+		FROM pg_indexes AS idx WHERE idx.schemaname NOT IN ('pg_catalog', 'information_schema')
+		ORDER BY idx.schemaname, idx.tablename, idx.indexname;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	for rows.Next() {
-		var idx indexSchema
+		index := &storepb.IndexMetadata{}
+		var schemaName, tableName, statement string
 		var primary sql.NullInt32
 		var comment sql.NullString
-		if err := rows.Scan(&idx.schemaName, &idx.tableName, &idx.name, &idx.statement, &primary, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &tableName, &index.Name, &statement, &primary, &comment); err != nil {
 			return nil, err
 		}
-		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
-		idx.methodType = getIndexMethodType(idx.statement)
-		idx.columnExpressions, err = getIndexColumnExpressions(idx.statement)
+		index.Type = getIndexMethodType(statement)
+		index.Unique = strings.Contains(statement, " UNIQUE INDEX ")
+		index.Expressions, err = getIndexColumnExpressions(statement)
 		if err != nil {
 			return nil, err
 		}
 		if primary.Valid && primary.Int32 == 1 {
-			idx.primary = true
+			index.Primary = true
 		}
 		if comment.Valid {
-			idx.comment = comment.String
+			index.Comment = comment.String
 		}
-		indices = append(indices, &idx)
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		indexMap[key] = append(indexMap[key], index)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return indices, nil
-}
-
-func convertBoolFromYesNo(s string) (bool, error) {
-	switch s {
-	case "YES":
-		return true, nil
-	case "NO":
-		return false, nil
-	default:
-		return false, errors.Errorf("unrecognized isNullable type %q", s)
-	}
+	return indexMap, nil
 }
 
 func getIndexMethodType(stmt string) string {

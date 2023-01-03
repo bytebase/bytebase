@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -594,4 +595,102 @@ func (*Store) deleteProjectMemberImpl(ctx context.Context, tx *Tx, delete *api.P
 		return FormatError(err)
 	}
 	return nil
+}
+
+// IAMPolicyMessage is the IAM policy of a project.
+type IAMPolicyMessage struct {
+	Bindings []*PolicyBinding
+}
+
+// PolicyBinding is the IAM policy binding of a project.
+type PolicyBinding struct {
+	Role    api.Role
+	Members []*UserMessage
+}
+
+// GetProjectPolicyMessage is the message to get project policy.
+type GetProjectPolicyMessage struct {
+	ProjectID *string
+	UID       *int
+}
+
+// GetProjectPolicy gets the IAM policy of a project.
+func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
+	if find.ProjectID == nil && find.UID == nil {
+		return nil, errors.Errorf("GetProjectPolicy must set either resource ID or UID")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	projectPolicy, err := s.getProjectPolicyImp(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return projectPolicy, nil
+}
+
+func (s *Store) getProjectPolicyImp(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	roleMap := make(map[api.Role][]*UserMessage)
+	rows, err := tx.QueryContext(ctx, `
+			SELECT
+				project_member.principal_id,
+				project_member.role
+			FROM project_member
+			LEFT JOIN project ON project_member.project_id = project.id
+			WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var role api.Role
+		member := &UserMessage{}
+		if err := rows.Scan(
+			&member.ID,
+			&role,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		roleMap[role] = append(roleMap[role], member)
+	}
+
+	var roles []api.Role
+	for role := range roleMap {
+		roles = append(roles, role)
+	}
+	sort.Slice(roles, func(i, j int) bool {
+		return string(roles[i]) < string(roles[j])
+	})
+	projectPolicy := &IAMPolicyMessage{}
+	for _, role := range roles {
+		binding := &PolicyBinding{Role: role}
+		for _, member := range roleMap[role] {
+			user, err := s.GetUserByID(ctx, member.ID)
+			if err != nil {
+				return nil, err
+			}
+			binding.Members = append(binding.Members, user)
+		}
+		projectPolicy.Bindings = append(projectPolicy.Bindings, binding)
+	}
+	return projectPolicy, nil
 }

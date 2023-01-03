@@ -730,3 +730,15 @@ func IsAffectedRowsStatement(stmt string) bool {
 	}
 	return false
 }
+
+// ConvertYesNo converts YES/NO to bool.
+func ConvertYesNo(s string) (bool, error) {
+	switch s {
+	case "YES":
+		return true, nil
+	case "NO":
+		return false, nil
+	default:
+		return false, errors.Errorf("unrecognized isNullable type %q", s)
+	}
+}

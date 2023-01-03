@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/plugin/db"
+
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )

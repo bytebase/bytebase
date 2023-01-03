@@ -6,12 +6,27 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
 
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service AuthService {
+  rpc GetUser(GetUserRequest) returns (User) {
+    option (google.api.http) = {
+      get: "/v1/{name=users/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {
+      get: "/v1/users"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
   rpc CreateUser(CreateUserRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/users"
@@ -19,12 +34,36 @@ service AuthService {
     };
     option (google.api.method_signature) = "user";
   }
+
+  rpc UpdateUser(UpdateUserRequest) returns (User) {
+    option (google.api.http) = {
+      patch: "/v1/{user.name=users/*}"
+      body: "user"
+    };
+    option (google.api.method_signature) = "user,update_mask";
+  }
+
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=users/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteUser(UndeleteUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:undelete"
+      body: "*"
+    };
+  }
+
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
       post: "/v1/auth/login"
       body: "*"
     };
   }
+
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/auth/logout"
@@ -33,9 +72,66 @@ service AuthService {
   }
 }
 
+message GetUserRequest {
+  // The name of the user to retrieve.
+  // Format: users/{user}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListUsersRequest {
+  // The maximum number of users to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 users will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListUsers` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListUsers` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted users if specified.
+  bool show_deleted = 3;
+}
+
+message ListUsersResponse {
+  // The users from the specified request.
+  repeated User users = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
 message CreateUserRequest {
   // The user to create.
   User user = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+
+message UpdateUserRequest {
+  // The user to update.
+  //
+  // The user's `name` field is used to identify the user to update.
+  // Format: users/{user}
+  User user = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteUserRequest {
+  // The name of the user to delete.
+  // Format: users/{user}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteUserRequest {
+  // The name of the deleted user.
+  // Format: users/{user}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message LoginRequest {
@@ -67,14 +163,22 @@ message User {
 
   string password = 5 [(google.api.field_behavior) = INPUT_ONLY];
 
+  UserType user_type = 6;
+
   // The user role will not be respected in the create user request, because the role is controlled by workspace owner.
-  UserRole user_role = 6;
+  UserRole user_role = 7;
 }
 
+enum UserType {
+  USER_TYPE_UNSPECIFIED = 0;
+  USER = 1;
+  SYSTEM_BOT = 2;
+  SERVICE_ACCOUNT = 3;
+}
 
 enum UserRole {
   USER_ROLE_UNSPECIFIED = 0;
-  USER_ROLE_OWNER = 1;
-  USER_ROLE_DBA = 2;
-  USER_ROLE_DEVELOPER = 3;
+  OWNER = 1;
+  DBA = 2;
+  DEVELOPER = 3;
 }

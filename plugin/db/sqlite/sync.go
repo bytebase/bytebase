@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -20,14 +21,6 @@ var (
 		bytebaseDatabase: true,
 	}
 )
-
-// indexSchema describes the schema of an index.
-type indexSchema struct {
-	name      string
-	tableName string
-	statement string
-	unique    bool
-}
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
@@ -63,14 +56,18 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	schema := db.Schema{
-		Name: databaseName,
+	schemaMetadata := &storepb.SchemaMetadata{
+		Name: "",
+	}
+	databaseMetadata := &storepb.DatabaseMetadata{
+		Name:    databaseName,
+		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
 	found := false
 	for _, database := range databases {
@@ -80,58 +77,57 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if !found {
-		return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
 	sqldb, err := driver.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get database connection for %q", databaseName)
 	}
 	txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer txn.Rollback()
-	// Index statements.
-	indicesMap := make(map[string][]indexSchema)
-	indices, err := getIndices(txn)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get indices from database %q", databaseName)
-	}
-	for _, idx := range indices {
-		indicesMap[idx.tableName] = append(indicesMap[idx.tableName], idx)
-	}
 
-	tbls, err := getTables(txn, indicesMap)
+	tables, err := getTables(txn)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	schema.TableList = tbls
+	schemaMetadata.Tables = tables
 
 	views, err := getViews(txn)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	schema.ViewList = views
+	schemaMetadata.Views = views
 
 	if err := txn.Commit(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &schema, nil, nil
+	return databaseMetadata, nil
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, error) {
-	var tables []db.Table
-	query := "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
+func getTables(txn *sql.Tx) ([]*storepb.TableMetadata, error) {
+	indexMap, err := getIndices(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get indices")
+	}
+
+	var tableNames []string
+	query := `
+		SELECT
+			name
+		FROM sqlite_schema
+		WHERE type ='table' AND name NOT LIKE 'sqlite_%'
+		ORDER BY name;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
-	var tableNames []string
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
@@ -142,12 +138,12 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
-	for _, name := range tableNames {
-		var tbl db.Table
-		tbl.Name = name
-		tbl.ShortName = name
-		tbl.Type = "BASE TABLE"
 
+	var tables []*storepb.TableMetadata
+	for _, name := range tableNames {
+		table := &storepb.TableMetadata{
+			Name: name,
+		}
 		if err := func() error {
 			// Get columns: cid, name, type, notnull, dflt_value, pk.
 			query := fmt.Sprintf("pragma table_info(%s);", name)
@@ -156,49 +152,75 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 				return err
 			}
 			defer rows.Close()
-
 			for rows.Next() {
-				var col db.Column
-
-				var cid int
-				var notnull, pk bool
-				var name, ctype string
-				var dfltValue sql.NullString
-				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
+				column := &storepb.ColumnMetadata{}
+				var notNull, unusedPk bool
+				var defaultStr sql.NullString
+				if err := rows.Scan(&column.Position, &column.Name, &column.Type, &notNull, &defaultStr, &unusedPk); err != nil {
 					return err
 				}
-				col.Position = cid
-				col.Name = name
-				col.Nullable = !notnull
-				col.Type = ctype
-				if dfltValue.Valid {
-					col.Default = &dfltValue.String
+				column.Nullable = !notNull
+				if defaultStr.Valid {
+					column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
 				}
 
-				tbl.ColumnList = append(tbl.ColumnList, col)
+				table.Columns = append(table.Columns, column)
+				table.Indexes = indexMap[table.Name]
 			}
 			return rows.Err()
 		}(); err != nil {
 			return nil, err
 		}
 
-		for _, idx := range indicesMap[tbl.Name] {
+		tables = append(tables, table)
+	}
+	return tables, nil
+}
+
+// getIndices gets all indices of a database.
+func getIndices(txn *sql.Tx) (map[string][]*storepb.IndexMetadata, error) {
+	indexMap := make(map[string][]*storepb.IndexMetadata)
+	query := `
+		SELECT
+			tbl_name, name, sql
+		FROM sqlite_schema
+		WHERE type ='index' AND name NOT LIKE 'sqlite_%'
+		ORDER BY tbl_name, name;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tableName, statement string
+		index := &storepb.IndexMetadata{}
+		if err := rows.Scan(tableName, &index.Name, &statement); err != nil {
+			return nil, err
+		}
+		index.Unique = strings.Contains(statement, " UNIQUE INDEX ")
+		indexMap[tableName] = append(indexMap[tableName], index)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+
+	for _, indexes := range indexMap {
+		for _, index := range indexes {
 			if err := func() error {
-				query := fmt.Sprintf("pragma index_info(%s);", idx.name)
+				query := fmt.Sprintf("pragma index_info(%s);", index.Name)
 				rows, err := txn.Query(query)
 				if err != nil {
 					return err
 				}
 				defer rows.Close()
 				for rows.Next() {
-					var dbIdx db.Index
-					dbIdx.Name = idx.name
-					dbIdx.Unique = idx.unique
-					var cid string
-					if err := rows.Scan(&dbIdx.Position, &cid, &dbIdx.Expression); err != nil {
+					var unusedPosition int
+					var unusedCid, expression string
+					if err := rows.Scan(&unusedPosition, &unusedCid, &expression); err != nil {
 						return err
 					}
-					tbl.IndexList = append(tbl.IndexList, dbIdx)
+					index.Expressions = append(index.Expressions, expression)
 				}
 				if err := rows.Err(); err != nil {
 					return util.FormatErrorWithQuery(err, query)
@@ -208,55 +230,35 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 				return nil, err
 			}
 		}
-
-		tables = append(tables, tbl)
 	}
-	return tables, nil
+
+	return indexMap, nil
 }
 
-// getIndices gets all indices of a database.
-func getIndices(txn *sql.Tx) ([]indexSchema, error) {
-	var indices []indexSchema
-	query := "SELECT name, tbl_name, sql FROM sqlite_schema WHERE type ='index' AND name NOT LIKE 'sqlite_%';"
+func getViews(txn *sql.Tx) ([]*storepb.ViewMetadata, error) {
+	var views []*storepb.ViewMetadata
+
+	query := `
+		SELECT
+			name, sql
+		FROM sqlite_schema
+		WHERE type ='view' AND name NOT LIKE 'sqlite_%'
+		ORDER BY name;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	for rows.Next() {
-		var idx indexSchema
-		if err := rows.Scan(&idx.name, &idx.tableName, &idx.statement); err != nil {
-			return nil, err
-		}
-		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
-		indices = append(indices, idx)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	return indices, nil
-}
-
-func getViews(txn *sql.Tx) ([]db.View, error) {
-	var views []db.View
-	query := "SELECT name, sql FROM sqlite_schema WHERE type ='view' AND name NOT LIKE 'sqlite_%';"
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var view db.View
+		view := &storepb.ViewMetadata{}
 		if err := rows.Scan(&view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
-		view.ShortName = view.Name
 		views = append(views, view)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
+
 	return views, nil
 }

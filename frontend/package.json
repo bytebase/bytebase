@@ -64,7 +64,7 @@
     "vueuc": "0.4.49"
   },
   "devDependencies": {
-    "@iconify/json": "2.1.146",
+    "@iconify/json": "2.1.159",
     "@intlify/vite-plugin-vue-i18n": "6.0.3",
     "@popperjs/core": "2.11.6",
     "@rollup/plugin-yaml": "4.0.1",
@@ -77,9 +77,9 @@
     "@types/downloadjs": "1.4.3",
     "@types/js-yaml": "4.0.5",
     "@types/lodash-es": "4.17.6",
-    "@types/node": "18.11.9",
+    "@types/node": "18.11.18",
     "@types/normalize-wheel": "^1.0.1",
-    "@types/papaparse": "5.3.5",
+    "@types/papaparse": "5.3.7",
     "@types/prettier": "2.7.1",
     "@types/qs": "6.9.7",
     "@types/scrollparent": "^2.0.1",

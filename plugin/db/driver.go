@@ -50,99 +50,6 @@ type User struct {
 	Grant string
 }
 
-// View is the database view.
-type View struct {
-	Name string
-	// ShortName is the short table name.
-	ShortName string
-	// Schema is the schema name for a table. It should be supported only for Postgres and Snowflake.
-	Schema string
-	// CreatedTs isn't supported for ClickHouse, MongoDB.
-	CreatedTs int64
-	// UpdatedTs isn't supported for MongoDB.
-	UpdatedTs int64
-	// Definition isn't supported for MongoDB.
-	Definition string
-	// Comment isn't supported for MongoDB.
-	Comment string
-}
-
-// Extension is the database extension.
-type Extension struct {
-	Name        string
-	Version     string
-	Schema      string
-	Description string
-}
-
-// Index is the database index.
-type Index struct {
-	Name string
-	// This could refer to a column or an expression.
-	Expression string
-	// Position isn't supported for MongoDB.
-	Position int
-	// Type isn't supported for SQLite, MongoDB.
-	Type   string
-	Unique bool
-	// Primary isn't supported for MongoDB.
-	Primary bool
-	// Visible isn't supported for Postgres, SQLite, MongoDB.
-	Visible bool
-	// Comment isn't supported for SQLite, MongoDB.
-	Comment string
-}
-
-// Column the database table column.
-type Column struct {
-	Name     string
-	Position int
-	Default  *string
-	// Nullable isn't supported for ClickHouse.
-	Nullable bool
-	Type     string
-	// CharacterSet isn't supported for Postgres, ClickHouse, SQLite.
-	CharacterSet string
-	// Collation isn't supported for ClickHouse, SQLite.
-	Collation string
-	// Comment isn't supported for SQLite.
-	Comment string
-}
-
-// Table is the database table.
-type Table struct {
-	// Name is a combination of schema and short name for legacy purpose.
-	Name string
-	// ShortName is the short table name.
-	ShortName string
-	// Schema is the schema name for a table. It should be supported only for Postgres and Snowflake.
-	Schema string
-	// CreatedTs isn't supported for ClickHouse, SQLite, MongoDB.
-	CreatedTs int64
-	// UpdatedTs isn't supported for SQLite, MongoDB.
-	UpdatedTs int64
-	Type      string
-	// Engine isn't supported for Postgres, Snowflake, SQLite, MongoDB.
-	Engine string
-	// Collation isn't supported for Postgres, ClickHouse, Snowflake, SQLite, MongoDB.
-	Collation string
-	RowCount  int64
-	// DataSize isn't supported for SQLite.
-	DataSize int64
-	// IndexSize isn't supported for ClickHouse, Snowflake, SQLite.
-	IndexSize int64
-	// DataFree isn't supported for Postgres, ClickHouse, Snowflake, SQLite, MongoDB.
-	DataFree int64
-	// CreateOptions isn't supported for Postgres, ClickHouse, Snowflake, SQLite, MongoDB.
-	CreateOptions string
-	// Comment isn't supported for SQLite, MongoDB.
-	Comment string
-	// Columnlist isn't supported for MongoDB.
-	ColumnList []Column
-	// IndexList isn't supported for ClickHouse, Snowflake.
-	IndexList []Index
-}
-
 // InstanceMeta is the metadata for an instance.
 type InstanceMeta struct {
 	Version      string
@@ -159,16 +66,10 @@ type DatabaseMeta struct {
 	Collation string
 }
 
-// Schema is the database schema.
-type Schema struct {
-	Name string
-	// CharacterSet isn't supported for ClickHouse, Snowflake, MongoDB.
-	CharacterSet string
-	// Collation isn't supported for ClickHouse, Snowflake, MongoDB.
-	Collation     string
-	TableList     []Table
-	ViewList      []View
-	ExtensionList []Extension
+// TableKey is the map key for table metadata.
+type TableKey struct {
+	Schema string
+	Table  string
 }
 
 var (
@@ -505,7 +406,7 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context, database string) (*Schema, map[string][]*storepb.ForeignKeyMetadata, error)
+	SyncDBSchema(ctx context.Context, database string) (*storepb.DatabaseMetadata, error)
 
 	// Role
 	// CreateRole creates the role.

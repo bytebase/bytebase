@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -78,193 +79,132 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs the database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+	schemaMetadata := &storepb.SchemaMetadata{
+		Name: "",
+	}
+
 	exist, err := driver.isDatabaseExist(ctx, databaseName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if !exist {
-		return nil, nil, errors.Errorf("database %s does not exist", databaseName)
+		return nil, errors.Errorf("database %s does not exist", databaseName)
 	}
-	schema := db.Schema{}
-	schema.Name = databaseName
 
-	tableList, err := driver.syncAllCollectionSchema(ctx, databaseName)
-	if err != nil {
-		return nil, nil, err
-	}
-	schema.TableList = tableList
-
-	viewList, err := driver.syncAllViewSchema(ctx, databaseName)
-	if err != nil {
-		return nil, nil, err
-	}
-	schema.ViewList = viewList
-
-	return &schema, nil, nil
-}
-
-// syncAllViewSchema returns all views schema of a database.
-func (driver *Driver) syncAllViewSchema(ctx context.Context, databaseName string) ([]db.View, error) {
 	database := driver.client.Database(databaseName)
-	viewFilter := bson.M{"type": viewType}
-	viewList, err := database.ListCollectionNames(ctx, viewFilter)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list view names")
-	}
-	var viewSchemaList []db.View
-	for _, viewName := range viewList {
-		view, err := driver.syncViewSchema(ctx, databaseName, viewName)
-		if err != nil {
-			return nil, err
-		}
-		viewSchemaList = append(viewSchemaList, view)
-	}
-	return viewSchemaList, nil
-}
-
-// syncViewSchema returns the view schema.
-func (*Driver) syncViewSchema(_ context.Context, _ string, viewName string) (db.View, error) {
-	var view db.View
-	view.Name = viewName
-	view.ShortName = viewName
-	return view, nil
-}
-
-func (driver *Driver) syncAllCollectionSchema(ctx context.Context, databaseName string) ([]db.Table, error) {
-	database := driver.client.Database(databaseName)
-	collectionFilter := bson.M{"type": collectionType}
-	collectionList, err := database.ListCollectionNames(ctx, collectionFilter)
+	collectionList, err := database.ListCollectionNames(ctx, bson.M{"type": "collection"})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list collection names")
 	}
-	var tableList []db.Table
+	sort.Strings(collectionList)
+
 	for _, collectionName := range collectionList {
 		if systemCollection[collectionName] {
 			continue
 		}
-		table, err := driver.syncCollectionSchema(ctx, databaseName, collectionName)
+
+		collection := database.Collection(collectionName)
+		count, err := collection.EstimatedDocumentCount(ctx)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get estimated document count")
 		}
-		tableList = append(tableList, table)
+		// Get collection data size and total index size in byte.
+		var commandResult bson.M
+		if err := database.RunCommand(ctx, bson.D{{
+			Key:   "collStats",
+			Value: collectionName,
+		}}).Decode(&commandResult); err != nil {
+			return nil, errors.Wrap(err, "cannot run collStats command")
+		}
+		dataSize, ok := commandResult["size"]
+		if !ok {
+			return nil, errors.New("cannot get size from collStats command result")
+		}
+		totalIndexSize, ok := commandResult["totalIndexSize"]
+		if !ok {
+			return nil, errors.New("cannot get totalIndexSize from collStats command result")
+		}
+
+		// Get collection indexes.
+		indexes, err := getIndexes(ctx, collection)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get index schema of collection %s", collectionName)
+		}
+		schemaMetadata.Tables = append(schemaMetadata.Tables, &storepb.TableMetadata{
+			Name:      collectionName,
+			RowCount:  count,
+			DataSize:  int64(dataSize.(int32)),
+			IndexSize: int64(totalIndexSize.(int32)),
+			Indexes:   indexes,
+		})
 	}
-	return tableList, nil
+
+	viewList, err := database.ListCollectionNames(ctx, bson.M{"type": "view"})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list view names")
+	}
+	for _, viewName := range viewList {
+		schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{Name: viewName})
+	}
+
+	return &storepb.DatabaseMetadata{
+		Name:    databaseName,
+		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+	}, nil
 }
 
-// syncCollectionSchema returns the collection schema.
-func (driver *Driver) syncCollectionSchema(ctx context.Context, databaseName string, collectionName string) (db.Table, error) {
-	var table db.Table
-	table.Name = collectionName
-	table.ShortName = collectionName
-	table.Type = collectionType
-
-	// Get estimated document count.
-	database := driver.client.Database(databaseName)
-	collection := database.Collection(collectionName)
-	count, err := collection.EstimatedDocumentCount(ctx)
-	if err != nil {
-		return table, errors.Wrap(err, "failed to get estimated document count")
-	}
-	table.RowCount = count
-
-	// Get collection data size and total index size in byte.
-	dataSize, totalIndexSize, err := driver.getCollectionDataSizeAndIndexSizeInByte(ctx, databaseName, collectionName)
-	if err != nil {
-		return table, errors.Wrapf(err, "failed to get collection size and index size in byte of collection %s", collectionName)
-	}
-	table.DataSize = int64(dataSize)
-	table.IndexSize = int64(totalIndexSize)
-
-	// Get collection index schema.
-	indexList, err := driver.syncAllIndexSchema(ctx, databaseName, collectionName)
-	if err != nil {
-		return table, errors.Wrapf(err, "failed to get index schema of collection %s", collectionName)
-	}
-	table.IndexList = indexList
-
-	// TODO(zp): sync Column schema
-
-	return table, nil
-}
-
-// syncAllIndexSchema returns all indexes schema of a collection.
-func (driver *Driver) syncAllIndexSchema(ctx context.Context, databaseName, collectionName string) ([]db.Index, error) {
-	database := driver.client.Database(databaseName)
-	collection := database.Collection(collectionName)
+// getIndexes returns all indexes schema of a collection.
+// https://www.mongodb.com/docs/manual/reference/command/listIndexes/#output
+func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.IndexMetadata, error) {
 	indexCursor, err := collection.Indexes().List(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list indexes")
 	}
+	indexMap := make(map[string]*storepb.IndexMetadata)
 	defer indexCursor.Close(ctx)
-
-	var indexList []db.Index
 	for indexCursor.Next(ctx) {
 		var indexInfo bson.M
 		if err := indexCursor.Decode(&indexInfo); err != nil {
 			return nil, errors.Wrap(err, "failed to decode index info")
 		}
-		index, err := getIndexSchema(indexInfo)
-		if err != nil {
-			return nil, err
+		name, ok := indexInfo["name"]
+		if !ok {
+			return nil, errors.New("cannot get index name from index info")
 		}
-		indexList = append(indexList, index)
+		indexName := name.(string)
+		key, ok := indexInfo["key"]
+		if !ok {
+			return nil, errors.New("cannot get index key from index info")
+		}
+		expression, err := json.Marshal(key)
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot marshal index key to json")
+		}
+		unique := false
+		if u, ok := indexInfo["unique"]; ok {
+			unique = u.(bool)
+		}
+
+		if _, ok := indexMap[indexName]; !ok {
+			indexMap[indexName] = &storepb.IndexMetadata{
+				Name:   indexName,
+				Unique: unique,
+			}
+		}
+		indexMap[indexName].Expressions = append(indexMap[indexName].Expressions, string(expression))
 	}
 
-	return indexList, nil
-}
-
-// getIndexSchema returns the index schema.
-// https://www.mongodb.com/docs/manual/reference/command/listIndexes/#output
-func getIndexSchema(indexInfo bson.M) (db.Index, error) {
-	var index db.Index
-	indexName, ok := indexInfo["name"]
-	if !ok {
-		return index, errors.New("cannot get index name from index info")
+	var indexes []*storepb.IndexMetadata
+	var indexNames []string
+	for name := range indexMap {
+		indexNames = append(indexNames, name)
 	}
-	index.Name = indexName.(string)
-
-	key, ok := indexInfo["key"]
-	if !ok {
-		return index, errors.New("cannot get index key from index info")
+	sort.Strings(indexNames)
+	for _, name := range indexNames {
+		indexes = append(indexes, indexMap[name])
 	}
-	keystr, err := json.Marshal(key)
-	if err != nil {
-		return index, errors.Wrap(err, "cannot marshal index key to json")
-	}
-	index.Expression = string(keystr)
-
-	unique, ok := indexInfo["unique"]
-	if !ok {
-		// If the unique field is not set, the index is not unique.
-		unique = false
-	}
-	index.Unique = unique.(bool)
-
-	return index, nil
-}
-
-// getCollectionDataSizeAndIndexSizeInByte returns the collection data size and total index size in bytes.
-func (driver *Driver) getCollectionDataSizeAndIndexSizeInByte(ctx context.Context, databaseName string, collectionName string) (int32, int32, error) {
-	database := driver.client.Database(databaseName)
-	command := bson.D{{
-		Key:   "collStats",
-		Value: collectionName,
-	}}
-	var commandResult bson.M
-	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
-		return 0, 0, errors.Wrap(err, "cannot run collStats command")
-	}
-	size, ok := commandResult["size"]
-	if !ok {
-		return 0, 0, errors.New("cannot get size from collStats command result")
-	}
-
-	totalIndexSize, ok := commandResult["totalIndexSize"]
-	if !ok {
-		return 0, 0, errors.New("cannot get totalIndexSize from collStats command result")
-	}
-	return size.(int32), totalIndexSize.(int32), nil
+	return indexes, nil
 }
 
 // getVersion returns the version of mongod or mongos instance.

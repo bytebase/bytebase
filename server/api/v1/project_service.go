@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -15,8 +14,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
-
-const projectNamePrefix = "projects/"
 
 // ProjectService implements the project service.
 type ProjectService struct {
@@ -43,10 +40,10 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
-	return convertProject(project), nil
+	return convertToProject(project), nil
 }
 
 // ListProjects lists all projects.
@@ -56,8 +53,9 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListProjectsResponse{}
+	// TODO(d): implement filtering if the caller isn't a member of a project.
 	for _, project := range projects {
-		response.Projects = append(response.Projects, convertProject(project))
+		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return response, nil
 }
@@ -81,7 +79,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertProject(project), nil
+	return convertToProject(project), nil
 }
 
 // UpdateProject updates a project.
@@ -100,7 +98,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	patch := &store.UpdateProjectMessage{
@@ -154,7 +152,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertProject(projectMsg), nil
+	return convertToProject(projectMsg), nil
 }
 
 // DeleteProject deletes a project.
@@ -169,7 +167,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	rowStatus := api.Archived
@@ -196,7 +194,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q not found", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	rowStatus := api.Normal
@@ -209,27 +207,16 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertProject(projectMsg), nil
+	return convertToProject(projectMsg), nil
 }
 
-func getProjectID(name string) (string, error) {
-	if !strings.HasPrefix(name, projectNamePrefix) {
-		return "", errors.Errorf("invalid project name %q", name)
-	}
-	projectID := strings.TrimPrefix(name, projectNamePrefix)
-	if projectID == "" {
-		return "", errors.Errorf("project cannot be empty")
-	}
-	return projectID, nil
-}
-
-func convertProject(projectMessage *store.ProjectMessage) *v1pb.Project {
+func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	workflow := v1pb.Workflow_WORKFLOW_UNSPECIFIED
 	switch projectMessage.Workflow {
 	case api.UIWorkflow:
-		workflow = v1pb.Workflow_WORKFLOW_UI
+		workflow = v1pb.Workflow_UI
 	case api.VCSWorkflow:
-		workflow = v1pb.Workflow_WORKFLOW_VCS
+		workflow = v1pb.Workflow_VCS
 	}
 
 	visibility := v1pb.Visibility_VISIBILITY_UNSPECIFIED
@@ -251,19 +238,19 @@ func convertProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	roleProvider := v1pb.RoleProvider_ROLE_PROVIDER_UNSPECIFIED
 	switch projectMessage.RoleProvider {
 	case api.ProjectRoleProviderBytebase:
-		roleProvider = v1pb.RoleProvider_ROLE_PROVIDER_BYTEBASE
+		roleProvider = v1pb.RoleProvider_BYTEBASE
 	case api.ProjectRoleProviderGitHubCom:
-		roleProvider = v1pb.RoleProvider_ROLE_PROVIDER_GITHUB_COM
+		roleProvider = v1pb.RoleProvider_GITHUB_COM
 	case api.ProjectRoleProviderGitLabSelfHost:
-		roleProvider = v1pb.RoleProvider_ROLE_PROVIDER_GITLAB_SELF_HOST
+		roleProvider = v1pb.RoleProvider_GITLAB_SELF_HOST
 	}
 
 	schemaChange := v1pb.SchemaChange_SCHEMA_CHANGE_UNSPECIFIED
 	switch projectMessage.SchemaChangeType {
 	case api.ProjectSchemaChangeTypeDDL:
-		schemaChange = v1pb.SchemaChange_SCHEMA_CHANGE_DDL
+		schemaChange = v1pb.SchemaChange_DDL
 	case api.ProjectSchemaChangeTypeSDL:
-		schemaChange = v1pb.SchemaChange_SCHEMA_CHANGE_SDL
+		schemaChange = v1pb.SchemaChange_SDL
 	}
 
 	lgtmCheck := v1pb.LgtmCheck_LGTM_CHECK_UNSPECIFIED
@@ -295,9 +282,9 @@ func convertProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 func convertToProjectWorkflowType(workflow v1pb.Workflow) (api.ProjectWorkflowType, error) {
 	var w api.ProjectWorkflowType
 	switch workflow {
-	case v1pb.Workflow_WORKFLOW_UI:
+	case v1pb.Workflow_UI:
 		w = api.UIWorkflow
-	case v1pb.Workflow_WORKFLOW_VCS:
+	case v1pb.Workflow_VCS:
 		w = api.VCSWorkflow
 	default:
 		return w, errors.Errorf("invalid workflow %v", workflow)
@@ -334,11 +321,11 @@ func convertToProjectTenantMode(tenantMode v1pb.TenantMode) (api.ProjectTenantMo
 func convertToProjectRoleProvider(roleProvider v1pb.RoleProvider) (api.ProjectRoleProvider, error) {
 	var r api.ProjectRoleProvider
 	switch roleProvider {
-	case v1pb.RoleProvider_ROLE_PROVIDER_BYTEBASE:
+	case v1pb.RoleProvider_BYTEBASE:
 		r = api.ProjectRoleProviderBytebase
-	case v1pb.RoleProvider_ROLE_PROVIDER_GITHUB_COM:
+	case v1pb.RoleProvider_GITHUB_COM:
 		r = api.ProjectRoleProviderGitHubCom
-	case v1pb.RoleProvider_ROLE_PROVIDER_GITLAB_SELF_HOST:
+	case v1pb.RoleProvider_GITLAB_SELF_HOST:
 		r = api.ProjectRoleProviderGitLabSelfHost
 	default:
 		return r, errors.Errorf("invalid role provider %v", roleProvider)
@@ -349,9 +336,9 @@ func convertToProjectRoleProvider(roleProvider v1pb.RoleProvider) (api.ProjectRo
 func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) (api.ProjectSchemaChangeType, error) {
 	var s api.ProjectSchemaChangeType
 	switch schemaChange {
-	case v1pb.SchemaChange_SCHEMA_CHANGE_DDL:
+	case v1pb.SchemaChange_DDL:
 		s = api.ProjectSchemaChangeTypeDDL
-	case v1pb.SchemaChange_SCHEMA_CHANGE_SDL:
+	case v1pb.SchemaChange_SDL:
 		s = api.ProjectSchemaChangeTypeSDL
 	default:
 		return s, errors.Errorf("invalid schema change type %v", schemaChange)

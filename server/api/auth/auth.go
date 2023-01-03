@@ -78,13 +78,7 @@ func New(store *store.Store, secret string, licenseService enterpriseAPI.License
 }
 
 // AuthenticationInterceptor is the unary interceptor for gRPC API.
-func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	// TODO(d): skips actuator, GET /subscription request, OpenAPI SQL endpoint.
-	methodName := getShortMethodName(serverInfo.FullMethod)
-	if isAuthenticationAllowed(methodName) {
-		return handler(ctx, req)
-	}
-
+func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, request interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "failed to parse metadata from incoming context")
@@ -94,6 +88,14 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
+	// TODO(d): skips actuator, GET /subscription request, OpenAPI SQL endpoint.
+	if accessTokenStr == "" && IsAuthenticationAllowed(serverInfo.FullMethod) {
+		return handler(ctx, request)
+	}
+
+	if accessTokenStr == "" {
+		return nil, status.Errorf(codes.Unauthenticated, "access token not found")
+	}
 	claims := &claimsMessage{}
 	generateToken := false
 	accessToken, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (interface{}, error) {
@@ -195,7 +197,7 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 
 	// Stores principalID into context.
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
-	return handler(childCtx, req)
+	return handler(childCtx, request)
 }
 
 func getTokenFromMetadata(md metadata.MD) (string, string, error) {
@@ -223,7 +225,7 @@ func getTokenFromMetadata(md metadata.MD) (string, string, error) {
 	if accessToken != "" && refreshToken != "" {
 		return accessToken, refreshToken, nil
 	}
-	return "", "", errs.Errorf("access token not found from metadata")
+	return "", "", nil
 }
 
 func audienceContains(audience jwt.ClaimStrings, token string) bool {

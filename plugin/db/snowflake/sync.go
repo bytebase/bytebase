@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
+
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -63,19 +66,19 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
 	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	schema := db.Schema{
+	databaseMetadata := &storepb.DatabaseMetadata{
 		Name: databaseName,
 	}
 	found := false
@@ -86,16 +89,34 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 		}
 	}
 	if !found {
-		return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
-	tableList, viewList, err := driver.syncTableSchema(ctx, databaseName)
+	tableMap, viewMap, err := driver.getTableSchema(ctx, databaseName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	schema.TableList, schema.ViewList = tableList, viewList
+	schemaNameMap := make(map[string]bool)
+	for schemaName := range tableMap {
+		schemaNameMap[schemaName] = true
+	}
+	for schemaName := range viewMap {
+		schemaNameMap[schemaName] = true
+	}
+	var schemaNames []string
+	for schemaName := range schemaNameMap {
+		schemaNames = append(schemaNames, schemaName)
+	}
+	sort.Strings(schemaNames)
+	for _, schemaName := range schemaNames {
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+			Name:   schemaName,
+			Tables: tableMap[schemaName],
+			Views:  viewMap[schemaName],
+		})
+	}
 
-	return &schema, nil, nil
+	return databaseMetadata, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
@@ -160,17 +181,19 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	return userList, nil
 }
 
-func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]db.Table, []db.View, error) {
+func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ViewMetadata, error) {
+	tableMap, viewMap := make(map[string][]*storepb.TableMetadata), make(map[string][]*storepb.ViewMetadata)
+
 	// Query table info
 	var excludedSchemaList []string
-
 	// Skip all system schemas.
 	for k := range systemSchemas {
 		excludedSchemaList = append(excludedSchemaList, fmt.Sprintf("'%s'", k))
 	}
 	excludeWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
 
-	// Query column info
+	// Query column info.
+	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 	columnQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_SCHEMA,
@@ -184,21 +207,17 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 			IFNULL(COLLATION_NAME, ''),
 			IFNULL(COMMENT, '')
 		FROM %s.INFORMATION_SCHEMA.COLUMNS
-		WHERE %s`, database, excludeWhere)
+		WHERE %s
+		ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION`, database, excludeWhere)
 	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
-
-	// schemaName.tableName -> columnList map
-	columnMap := make(map[string][]db.Column)
 	for columnRows.Next() {
-		var schemaName string
-		var tableName string
-		var nullable string
+		var schemaName, tableName, nullable string
 		var defaultStr sql.NullString
-		var column db.Column
+		column := &storepb.ColumnMetadata{}
 		if err := columnRows.Scan(
 			&schemaName,
 			&tableName,
@@ -213,12 +232,16 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		); err != nil {
 			return nil, nil, err
 		}
-
 		if defaultStr.Valid {
-			column.Default = &defaultStr.String
+			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
 		}
+		isNullBool, err := util.ConvertYesNo(nullable)
+		if err != nil {
+			return nil, nil, err
+		}
+		column.Nullable = isNullBool
 
-		key := fmt.Sprintf("%s.%s", schemaName, tableName)
+		key := db.TableKey{Schema: schemaName, Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
 	}
 	if err := columnRows.Err(); err != nil {
@@ -229,30 +252,23 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		SELECT
 			TABLE_SCHEMA,
 			TABLE_NAME,
-			DATE_PART(EPOCH_SECOND, CREATED),
-			DATE_PART(EPOCH_SECOND, LAST_ALTERED),
-			TABLE_TYPE,
 			ROW_COUNT,
 			BYTES,
 			IFNULL(COMMENT, '')
 		FROM %s.INFORMATION_SCHEMA.TABLES
-		WHERE TABLE_TYPE = 'BASE TABLE' AND %s`, database, excludeWhere)
+		WHERE TABLE_TYPE = 'BASE TABLE' AND %s
+		ORDER BY TABLE_SCHEMA, TABLE_NAME`, database, excludeWhere)
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
-
-	var tables []db.Table
 	for tableRows.Next() {
-		var schemaName, tableName string
-		var table db.Table
+		var schemaName string
+		table := &storepb.TableMetadata{}
 		if err := tableRows.Scan(
 			&schemaName,
-			&tableName,
-			&table.CreatedTs,
-			&table.UpdatedTs,
-			&table.Type,
+			&table.Name,
 			&table.RowCount,
 			&table.DataSize,
 			&table.Comment,
@@ -260,61 +276,43 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 			return nil, nil, err
 		}
 
-		table.Name = fmt.Sprintf("%s.%s", schemaName, tableName)
-		table.Schema = schemaName
-		table.ShortName = tableName
-		table.ColumnList = columnMap[table.Name]
-		tables = append(tables, table)
+		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
 	if err := tableRows.Err(); err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
 	viewQuery := fmt.Sprintf(`
-	SELECT
-		TABLE_SCHEMA,
-		TABLE_NAME,
-		DATE_PART(EPOCH_SECOND, CREATED),
-		DATE_PART(EPOCH_SECOND, LAST_ALTERED),
-		IFNULL(VIEW_DEFINITION, ''),
-		IFNULL(COMMENT, '')
-	FROM %s.INFORMATION_SCHEMA.VIEWS
-	WHERE %s`, database, excludeWhere)
+		SELECT
+			TABLE_SCHEMA,
+			TABLE_NAME,
+			IFNULL(VIEW_DEFINITION, ''),
+			IFNULL(COMMENT, '')
+		FROM %s.INFORMATION_SCHEMA.VIEWS
+		WHERE %s
+		ORDER BY TABLE_SCHEMA, TABLE_NAME`, database, excludeWhere)
 	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 	defer viewRows.Close()
-
-	var views []db.View
 	for viewRows.Next() {
-		var schemaName, viewName string
-		var createdTs, updatedTs sql.NullInt64
-		var view db.View
+		view := &storepb.ViewMetadata{}
+		var schemaName string
 		if err := viewRows.Scan(
 			&schemaName,
-			&viewName,
-			&createdTs,
-			&updatedTs,
+			&view.Name,
 			&view.Definition,
 			&view.Comment,
 		); err != nil {
 			return nil, nil, err
 		}
-		view.Name = fmt.Sprintf("%s.%s", schemaName, viewName)
-		view.Schema = schemaName
-		view.ShortName = viewName
-		if createdTs.Valid {
-			view.CreatedTs = createdTs.Int64
-		}
-		if updatedTs.Valid {
-			view.UpdatedTs = updatedTs.Int64
-		}
-		views = append(views, view)
+
+		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
 	if err := viewRows.Err(); err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 
-	return tables, views, nil
+	return tableMap, viewMap, nil
 }

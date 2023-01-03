@@ -32,7 +32,8 @@
     </div>
     <div class="table-schema--meta text-gray-500 text-sm">
       <div class="pb-1">
-        <span>{{ table.rowCount }} rows</span>
+        <span class="mr-1">{{ $t("database.row-count-est") }}</span>
+        <span>{{ table.rowCount }}</span>
       </div>
       <div class="flex justify-between items-center w-full text-xs py-2">
         <div class="table-schema--content-column">

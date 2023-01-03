@@ -24,6 +24,12 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 		NodeList: []ast.Node{},
 		StmtList: []string{},
 	}
+	for _, createSchemaContext := range databaseEdit.CreateSchemaList {
+		err := transformCreateSchemaContext(ctx, createSchemaContext)
+		if err != nil {
+			return "", err
+		}
+	}
 	for _, createTableContext := range databaseEdit.CreateTableList {
 		err := transformCreateTableContext(ctx, createTableContext)
 		if err != nil {
@@ -55,6 +61,15 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 	return strings.Join(stmtList, "\n"), nil
 }
 
+func transformCreateSchemaContext(ctx *DeparseContext, createSchemaContext *api.CreateSchemaContext) error {
+	createSchemaStmt := &ast.CreateSchemaStmt{
+		Name:        createSchemaContext.Schema,
+		IfNotExists: true,
+	}
+	ctx.NodeList = append(ctx.NodeList, createSchemaStmt)
+	return nil
+}
+
 func transformCreateTableContext(ctx *DeparseContext, createTableContext *api.CreateTableContext) error {
 	table := ast.TableDef{
 		Type:   ast.TableTypeBaseTable,
@@ -76,7 +91,7 @@ func transformCreateTableContext(ctx *DeparseContext, createTableContext *api.Cr
 
 		// TODO(steven): remove this after our pg parser supports comment stmt.
 		if addColumnContext.Comment != "" {
-			commemtStmt := fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';", table.Name, columnDef.ColumnName, addColumnContext.Comment)
+			commemtStmt := fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s"."%s" IS '%s';`, createTableContext.Schema, table.Name, columnDef.ColumnName, addColumnContext.Comment)
 			ctx.StmtList = append(ctx.StmtList, commemtStmt)
 		}
 	}
@@ -143,55 +158,66 @@ func transformAlterTableContext(ctx *DeparseContext, alterTableContext *api.Alte
 			ColumnList: []*ast.ColumnDef{columnDef},
 		})
 		if addColumnContext.Comment != "" {
-			commemtStmt := fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';", table.Name, columnDef.ColumnName, addColumnContext.Comment)
+			commemtStmt := fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s"."%s" IS '%s';`, table.Schema, table.Name, columnDef.ColumnName, addColumnContext.Comment)
 			ctx.StmtList = append(ctx.StmtList, commemtStmt)
 		}
 	}
 
-	for _, changeColumnContext := range alterTableContext.ChangeColumnList {
-		if changeColumnContext.OldName != changeColumnContext.NewName {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.RenameColumnStmt{
+	for _, alterColumnContext := range alterTableContext.AlterColumnList {
+		if alterColumnContext.OldName != alterColumnContext.NewName {
+			renameColumnStmt := &ast.AlterTableStmt{
+				Table:         table,
+				AlterItemList: []ast.Node{},
+			}
+			renameColumnStmt.AlterItemList = append(renameColumnStmt.AlterItemList, &ast.RenameColumnStmt{
 				Table:      table,
-				ColumnName: changeColumnContext.OldName,
-				NewName:    changeColumnContext.NewName,
+				ColumnName: alterColumnContext.OldName,
+				NewName:    alterColumnContext.NewName,
+			})
+			ctx.NodeList = append(ctx.NodeList, renameColumnStmt)
+		}
+		if alterColumnContext.Type != nil {
+			columnType, err := transformColumnType(*alterColumnContext.Type)
+			if err != nil {
+				return errors.Wrap(err, "failed to transform column type")
+			}
+			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AlterColumnTypeStmt{
+				Table:      table,
+				ColumnName: alterColumnContext.NewName,
+				Type:       columnType,
 			})
 		}
-		columnType, err := transformColumnType(changeColumnContext.Type)
-		if err != nil {
-			return errors.Wrap(err, "failed to transform column type")
+		if alterColumnContext.Nullable != nil {
+			if *alterColumnContext.Nullable {
+				alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropNotNullStmt{
+					Table:      table,
+					ColumnName: alterColumnContext.NewName,
+				})
+			} else {
+				alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetNotNullStmt{
+					Table:      table,
+					ColumnName: alterColumnContext.NewName,
+				})
+			}
 		}
-		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.AlterColumnTypeStmt{
-			Table:      table,
-			ColumnName: changeColumnContext.NewName,
-			Type:       columnType,
-		})
-		if changeColumnContext.Nullable {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropNotNullStmt{
-				Table:      table,
-				ColumnName: changeColumnContext.NewName,
-			})
-		} else {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetNotNullStmt{
-				Table:      table,
-				ColumnName: changeColumnContext.NewName,
-			})
+		if alterColumnContext.DefaultChanged {
+			if alterColumnContext.Default == nil {
+				alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropDefaultStmt{
+					Table:      table,
+					ColumnName: alterColumnContext.NewName,
+				})
+			} else {
+				expression := ast.UnconvertedExpressionDef{}
+				expression.SetText(*alterColumnContext.Default)
+				alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetDefaultStmt{
+					Table:      table,
+					ColumnName: alterColumnContext.NewName,
+					Expression: &expression,
+				})
+			}
 		}
-		if changeColumnContext.Default == nil {
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.DropDefaultStmt{
-				Table:      table,
-				ColumnName: changeColumnContext.NewName,
-			})
-		} else {
-			expression := ast.UnconvertedExpressionDef{}
-			expression.SetText(*changeColumnContext.Default)
-			alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &ast.SetDefaultStmt{
-				Table:      table,
-				ColumnName: changeColumnContext.NewName,
-				Expression: &expression,
-			})
-		}
-		if changeColumnContext.Comment != "" {
-			commemtStmt := fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';", table.Name, changeColumnContext.NewName, changeColumnContext.Comment)
+		if alterColumnContext.Comment != nil {
+			commemtStmt := fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s"."%s" IS '%s';`, table.Schema, table.Name, alterColumnContext.NewName, *alterColumnContext.Comment)
 			ctx.StmtList = append(ctx.StmtList, commemtStmt)
 		}
 	}
@@ -249,7 +275,9 @@ func transformAlterTableContext(ctx *DeparseContext, alterTableContext *api.Alte
 		alterTableStmt.AlterItemList = append(alterTableStmt.AlterItemList, &addConstraintSmt)
 	}
 
-	ctx.NodeList = append(ctx.NodeList, alterTableStmt)
+	if len(alterTableStmt.AlterItemList) != 0 {
+		ctx.NodeList = append(ctx.NodeList, alterTableStmt)
+	}
 	return nil
 }
 

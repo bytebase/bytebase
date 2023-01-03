@@ -27,6 +27,7 @@
     "sign-up": "注册",
     "email": "邮箱",
     "username": "用户名",
+    "credentials": "凭据",
     "password": "密码",
     "activate": "激活",
     "save": "保存",
@@ -678,10 +679,10 @@
     "account": "账户",
     "name": "名称",
     "host-or-socket": "Host 或 Socket",
+    "project-id-and-instance-id": "项目 ID 与实例 ID",
     "your-snowflake-account-name": "您的 Snowflake @:{'instance.account'}@:{'instance.name'}",
     "port": "端口",
     "instance-name": "@:common.instance@:instance.name",
-    "instance-name-unique": "@:{'common.instance'}@:{'instance.name'}需要保证唯一性",
     "snowflake-web-console": "Snowflake @:{'instance.web-console'}",
     "external-link": "外部链接",
     "web-console": "Web 控制台",
@@ -724,6 +725,7 @@
       }
     },
     "no-password": "无密码",
+    "credentials-write-only": "CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
@@ -1437,6 +1439,8 @@
     "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
     "raw-sql": "SQL 语句",
     "actions": {
+      "create-schema": "新建 Schema",
+      "delete-schema": "删除 Schema",
       "create-table": "新建表",
       "rename": "重命名",
       "drop-table": "删除表",
@@ -1456,6 +1460,10 @@
       "collation": "字符排序规则",
       "comment": "注释"
     },
+    "schema": {
+      "select": "选择 schema",
+      "name": "Schema 名称"
+    },
     "table-list": "表",
     "table": {
       "select": "选择表",
@@ -1473,6 +1481,8 @@
     },
     "nothing-changed": "无任何改动",
     "message": {
+      "invalid-schema-name": "无效的 Schema 名称",
+      "duplicated-schema-name": "重复的 Schema 名称",
       "invalid-table-name": "无效的表名",
       "duplicated-table-name": "重复的表名",
       "invalid-column-name": "无效的列名",
@@ -1485,6 +1495,7 @@
     },
     "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。",
     "edit-foreign-key": "修改外键",
+    "select-reference-schema": "选择外键的 Schema",
     "select-reference-table": "选择外键的表",
     "select-reference-column": "选择外键的列"
   },

@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
+
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -84,34 +87,37 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, map[string][]*storepb.ForeignKeyMetadata, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
+	schemaMetadata := &storepb.SchemaMetadata{
+		Name: "",
+	}
+
 	// Query MySQL version
 	version, err := driver.getVersion(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	isMySQL8 := strings.HasPrefix(version, "8.0")
 
-	// Query index info
-	indexWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) = '%s'", strings.ToLower(databaseName))
+	// Query index info.
+	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
 	indexQuery := `
-			SELECT
-				TABLE_SCHEMA,
-				TABLE_NAME,
-				INDEX_NAME,
-				COLUMN_NAME,
-				'',
-				SEQ_IN_INDEX,
-				INDEX_TYPE,
-				CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
-				1,
-				INDEX_COMMENT
-			FROM information_schema.STATISTICS
-			WHERE ` + indexWhere
+		SELECT
+			TABLE_NAME,
+			INDEX_NAME,
+			COLUMN_NAME,
+			'',
+			SEQ_IN_INDEX,
+			INDEX_TYPE,
+			CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
+			1,
+			INDEX_COMMENT
+		FROM information_schema.STATISTICS
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
 	if isMySQL8 {
 		indexQuery = `
 			SELECT
-				TABLE_SCHEMA,
 				TABLE_NAME,
 				INDEX_NAME,
 				COLUMN_NAME,
@@ -122,90 +128,85 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 				CASE IS_VISIBLE WHEN 'YES' THEN 1 ELSE 0 END,
 				INDEX_COMMENT
 			FROM information_schema.STATISTICS
-			WHERE ` + indexWhere
+			WHERE TABLE_SCHEMA = ?
+			ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
 	}
-	indexRows, err := driver.db.QueryContext(ctx, indexQuery)
+	indexRows, err := driver.db.QueryContext(ctx, indexQuery, databaseName)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, indexQuery)
+		return nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
 	defer indexRows.Close()
-
-	// dbName/tableName -> indexList map
-	indexMap := make(map[string][]db.Index)
 	for indexRows.Next() {
-		var dbName string
-		var tableName string
+		var tableName, indexName, indexType, comment, expression string
 		var columnName sql.NullString
-		var expression sql.NullString
-		var index db.Index
+		var expressionName sql.NullString
+		var position int
+		var unique, visible bool
 		if err := indexRows.Scan(
-			&dbName,
 			&tableName,
-			&index.Name,
+			&indexName,
 			&columnName,
-			&expression,
-			&index.Position,
-			&index.Type,
-			&index.Unique,
-			&index.Visible,
-			&index.Comment,
+			&expressionName,
+			&position,
+			&indexType,
+			&unique,
+			&visible,
+			&comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-
 		if columnName.Valid {
-			index.Expression = columnName.String
-		} else if expression.Valid {
-			index.Expression = expression.String
+			expression = columnName.String
+		} else if expressionName.Valid {
+			expression = expressionName.String
 		}
 
-		if index.Name == "PRIMARY" {
-			index.Primary = true
+		key := db.TableKey{Schema: "", Table: tableName}
+		if _, ok := indexMap[key]; !ok {
+			indexMap[key] = make(map[string]*storepb.IndexMetadata)
 		}
-
-		key := fmt.Sprintf("%s/%s", dbName, tableName)
-		if indexList, ok := indexMap[key]; ok {
-			indexMap[key] = append(indexList, index)
-		} else {
-			indexMap[key] = []db.Index{index}
+		if _, ok := indexMap[key][indexName]; !ok {
+			indexMap[key][indexName] = &storepb.IndexMetadata{
+				Name:    indexName,
+				Type:    indexType,
+				Unique:  unique,
+				Primary: indexName == "PRIMARY",
+				Visible: visible,
+				Comment: comment,
+			}
 		}
+		indexMap[key][indexName].Expressions = append(indexMap[key][indexName].Expressions, expression)
 	}
 	if err := indexRows.Err(); err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, indexQuery)
+		return nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
 
-	// Query column info
-	columnWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) = '%s'", strings.ToLower(databaseName))
+	// Query column info.
+	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 	columnQuery := `
-			SELECT
-				TABLE_SCHEMA,
-				TABLE_NAME,
-				IFNULL(COLUMN_NAME, ''),
-				ORDINAL_POSITION,
-				COLUMN_DEFAULT,
-				IS_NULLABLE,
-				COLUMN_TYPE,
-				IFNULL(CHARACTER_SET_NAME, ''),
-				IFNULL(COLLATION_NAME, ''),
-				COLUMN_COMMENT
-			FROM information_schema.COLUMNS
-			WHERE ` + columnWhere
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
+		SELECT
+			TABLE_NAME,
+			IFNULL(COLUMN_NAME, ''),
+			ORDINAL_POSITION,
+			COLUMN_DEFAULT,
+			IS_NULLABLE,
+			COLUMN_TYPE,
+			IFNULL(CHARACTER_SET_NAME, ''),
+			IFNULL(COLLATION_NAME, ''),
+			COLUMN_COMMENT
+		FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME, ORDINAL_POSITION`
+	columnRows, err := driver.db.QueryContext(ctx, columnQuery, databaseName)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
+		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
-
-	// dbName/tableName -> columnList map
-	columnMap := make(map[string][]db.Column)
 	for columnRows.Next() {
-		var dbName string
-		var tableName string
-		var nullable string
+		column := &storepb.ColumnMetadata{}
+		var tableName, nullable string
 		var defaultStr sql.NullString
-		var column db.Column
 		if err := columnRows.Scan(
-			&dbName,
 			&tableName,
 			&column.Name,
 			&column.Position,
@@ -216,188 +217,167 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			&column.Collation,
 			&column.Comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-
 		if defaultStr.Valid {
-			column.Default = &defaultStr.String
+			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
 		}
-		// TODO(d): use convertBoolFromYesNo() if possible.
-		if nullable == "YES" {
-			column.Nullable = true
+		isNullBool, err := util.ConvertYesNo(nullable)
+		if err != nil {
+			return nil, err
 		}
+		column.Nullable = isNullBool
 
-		key := fmt.Sprintf("%s/%s", dbName, tableName)
-		if tableList, ok := columnMap[key]; ok {
-			columnMap[key] = append(tableList, column)
-		} else {
-			columnMap[key] = []db.Column{column}
-		}
+		key := db.TableKey{Schema: "", Table: tableName}
+		columnMap[key] = append(columnMap[key], column)
 	}
 	if err := columnRows.Err(); err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
+		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 
-	// Query table info
-	tableWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) = '%s'", strings.ToLower(databaseName))
-	tableQuery := `
-			SELECT
-				TABLE_SCHEMA,
-				TABLE_NAME,
-				IFNULL(UNIX_TIMESTAMP(CREATE_TIME), 0),
-				IFNULL(UNIX_TIMESTAMP(UPDATE_TIME), 0),
-				TABLE_TYPE,
-				IFNULL(ENGINE, ''),
-				IFNULL(TABLE_COLLATION, ''),
-				IFNULL(TABLE_ROWS, 0),
-				IFNULL(DATA_LENGTH, 0),
-				IFNULL(INDEX_LENGTH, 0),
-				IFNULL(DATA_FREE, 0),
-				IFNULL(CREATE_OPTIONS, ''),
-				IFNULL(TABLE_COMMENT, '')
-			FROM information_schema.TABLES
-			WHERE ` + tableWhere
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
+	// Query view info.
+	viewMap := make(map[db.TableKey]*storepb.ViewMetadata)
+	viewQuery := `
+		SELECT
+			TABLE_NAME,
+			VIEW_DEFINITION
+		FROM information_schema.VIEWS
+		WHERE TABLE_SCHEMA = ?`
+	viewRows, err := driver.db.QueryContext(ctx, viewQuery, databaseName)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
+		return nil, util.FormatErrorWithQuery(err, viewQuery)
+	}
+	defer viewRows.Close()
+	for viewRows.Next() {
+		view := &storepb.ViewMetadata{}
+		if err := viewRows.Scan(
+			&view.Name,
+			&view.Definition,
+		); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: "", Table: view.Name}
+		viewMap[key] = view
+	}
+	if err := viewRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, viewQuery)
+	}
+
+	// Query foreign key info.
+	foreignKeysMap, err := driver.getForeignKeyList(ctx, databaseName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query table info.
+	tableQuery := `
+		SELECT
+			TABLE_NAME,
+			TABLE_TYPE,
+			IFNULL(ENGINE, ''),
+			IFNULL(TABLE_COLLATION, ''),
+			IFNULL(TABLE_ROWS, 0),
+			IFNULL(DATA_LENGTH, 0),
+			IFNULL(INDEX_LENGTH, 0),
+			IFNULL(DATA_FREE, 0),
+			IFNULL(CREATE_OPTIONS, ''),
+			IFNULL(TABLE_COMMENT, '')
+		FROM information_schema.TABLES
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME`
+	tableRows, err := driver.db.QueryContext(ctx, tableQuery, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
-
-	// dbName -> tableList map
-	tableMap := make(map[string][]db.Table)
-	type ViewInfo struct {
-		createdTs int64
-		updatedTs int64
-		comment   string
-	}
-	// dbName/viewName -> ViewInfo
-	viewInfoMap := make(map[string]ViewInfo)
 	for tableRows.Next() {
-		var dbName string
+		var tableName, tableType, engine, collation, createOptions, comment string
+		var rowCount, dataSize, indexSize, dataFree int64
 		// Workaround TiDB bug https://github.com/pingcap/tidb/issues/27970
 		var tableCollation sql.NullString
-		var table db.Table
 		if err := tableRows.Scan(
-			&dbName,
-			&table.Name,
-			&table.CreatedTs,
-			&table.UpdatedTs,
-			&table.Type,
-			&table.Engine,
-			&tableCollation,
-			&table.RowCount,
-			&table.DataSize,
-			&table.IndexSize,
-			&table.DataFree,
-			&table.CreateOptions,
-			&table.Comment,
+			&tableName,
+			&tableType,
+			&engine,
+			&collation,
+			&rowCount,
+			&dataSize,
+			&indexSize,
+			&dataFree,
+			&createOptions,
+			&comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		table.ShortName = table.Name
 
-		switch table.Type {
+		key := db.TableKey{Schema: "", Table: tableName}
+		switch tableType {
 		case baseTableType:
+			tableMetadata := &storepb.TableMetadata{
+				Name:          tableName,
+				Columns:       columnMap[key],
+				ForeignKeys:   foreignKeysMap[key],
+				Engine:        engine,
+				Collation:     collation,
+				RowCount:      rowCount,
+				DataSize:      dataSize,
+				IndexSize:     indexSize,
+				DataFree:      dataFree,
+				CreateOptions: createOptions,
+				Comment:       comment,
+			}
 			if tableCollation.Valid {
-				table.Collation = tableCollation.String
+				tableMetadata.Collation = tableCollation.String
+			}
+			var indexNames []string
+			if indexes, ok := indexMap[key]; ok {
+				for indexName := range indexes {
+					indexNames = append(indexNames, indexName)
+				}
+				sort.Strings(indexNames)
+				for _, indexName := range indexNames {
+					tableMetadata.Indexes = append(tableMetadata.Indexes, indexes[indexName])
+				}
 			}
 
-			key := fmt.Sprintf("%s/%s", dbName, table.Name)
-			table.ColumnList = columnMap[key]
-			table.IndexList = indexMap[key]
-
-			if tableList, ok := tableMap[dbName]; ok {
-				tableMap[dbName] = append(tableList, table)
-			} else {
-				tableMap[dbName] = []db.Table{table}
-			}
+			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
 		case viewTableType:
-			viewInfoMap[fmt.Sprintf("%s/%s", dbName, table.Name)] = ViewInfo{
-				createdTs: table.CreatedTs,
-				updatedTs: table.UpdatedTs,
-				comment:   table.Comment,
+			if view, ok := viewMap[key]; ok {
+				view.Comment = comment
+				schemaMetadata.Views = append(schemaMetadata.Views, view)
 			}
 		}
 	}
 	if err := tableRows.Err(); err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
+		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	// Query view info
-	viewWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) = '%s'", strings.ToLower(databaseName))
-	viewQuery := `
-			SELECT
-				TABLE_SCHEMA,
-				TABLE_NAME,
-				VIEW_DEFINITION
-			FROM information_schema.VIEWS
-			WHERE ` + viewWhere
-	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
-	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
+	databaseMetadata := &storepb.DatabaseMetadata{
+		Name:    databaseName,
+		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
-	defer viewRows.Close()
-
-	// dbName -> viewList map
-	viewMap := make(map[string][]db.View)
-	for viewRows.Next() {
-		var dbName string
-		var view db.View
-		if err := viewRows.Scan(
-			&dbName,
-			&view.Name,
-			&view.Definition,
-		); err != nil {
-			return nil, nil, err
-		}
-		view.ShortName = view.Name
-
-		info := viewInfoMap[fmt.Sprintf("%s/%s", dbName, view.Name)]
-		view.CreatedTs = info.createdTs
-		view.UpdatedTs = info.updatedTs
-		view.Comment = info.comment
-
-		if viewList, ok := viewMap[dbName]; ok {
-			viewMap[dbName] = append(viewList, view)
-		} else {
-			viewMap[dbName] = []db.View{view}
-		}
-	}
-	if err := viewRows.Err(); err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
-	}
-
-	// Query db info
-	databaseWhere := fmt.Sprintf("LOWER(SCHEMA_NAME) = '%s'", strings.ToLower(databaseName))
+	// Query db info.
 	databaseQuery := `
 		SELECT
-			SCHEMA_NAME,
 			DEFAULT_CHARACTER_SET_NAME,
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
-		WHERE ` + databaseWhere
-	var schema db.Schema
-	if err := driver.db.QueryRowContext(ctx, databaseQuery).Scan(
-		&schema.Name,
-		&schema.CharacterSet,
-		&schema.Collation); err != nil {
+		WHERE SCHEMA_NAME = ?`
+	if err := driver.db.QueryRowContext(ctx, databaseQuery, databaseName).Scan(
+		&databaseMetadata.CharacterSet,
+		&databaseMetadata.Collation,
+	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
+			return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 		}
-		return nil, nil, err
+		return nil, err
 	}
-	schema.TableList = tableMap[schema.Name]
-	schema.ViewList = viewMap[schema.Name]
 
-	fkMap, err := driver.getForeignKeyList(ctx, databaseName)
-	if err != nil {
-		return nil, nil, err
-	}
-	return &schema, fkMap, err
+	return databaseMetadata, err
 }
 
-func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[string][]*storepb.ForeignKeyMetadata, error) {
-	fkQuery := fmt.Sprintf(`
+func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+	fkQuery := `
 		SELECT
 			fks.TABLE_NAME,
 			fks.CONSTRAINT_NAME,
@@ -413,16 +393,16 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 			ON fks.CONSTRAINT_SCHEMA = kcu.TABLE_SCHEMA
 				AND fks.TABLE_NAME = kcu.TABLE_NAME
 				AND fks.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-		WHERE LOWER(fks.CONSTRAINT_SCHEMA) = '%s'
+		WHERE LOWER(fks.CONSTRAINT_SCHEMA) = ?
 		ORDER BY fks.TABLE_NAME, fks.CONSTRAINT_NAME, kcu.ORDINAL_POSITION;
-	`, strings.ToLower(databaseName))
+	`
 
-	fkRows, err := driver.db.QueryContext(ctx, fkQuery)
+	fkRows, err := driver.db.QueryContext(ctx, fkQuery, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, fkQuery)
 	}
 	defer fkRows.Close()
-	fkMap := make(map[string][]*storepb.ForeignKeyMetadata)
+	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
 	var buildingFk *storepb.ForeignKeyMetadata
 	var buildingTable string
 	for fkRows.Next() {
@@ -453,11 +433,8 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 				buildingFk.Columns = append(buildingFk.Columns, fk.Columns[0])
 				buildingFk.ReferencedColumns = append(buildingFk.ReferencedColumns, fk.ReferencedColumns[0])
 			} else {
-				if fkList, ok := fkMap[buildingTable]; ok {
-					fkMap[buildingTable] = append(fkList, buildingFk)
-				} else {
-					fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
-				}
+				key := db.TableKey{Schema: "", Table: buildingTable}
+				foreignKeysMap[key] = append(foreignKeysMap[key], buildingFk)
 				buildingTable = tableName
 				buildingFk = &fk
 			}
@@ -468,14 +445,11 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 	}
 
 	if buildingFk != nil {
-		if fkList, ok := fkMap[buildingTable]; ok {
-			fkMap[buildingTable] = append(fkList, buildingFk)
-		} else {
-			fkMap[buildingTable] = []*storepb.ForeignKeyMetadata{buildingFk}
-		}
+		key := db.TableKey{Schema: "", Table: buildingTable}
+		foreignKeysMap[key] = append(foreignKeysMap[key], buildingFk)
 	}
 
-	return fkMap, nil
+	return foreignKeysMap, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {

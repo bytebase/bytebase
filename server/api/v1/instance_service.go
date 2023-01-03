@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,8 +17,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 	"github.com/bytebase/bytebase/store"
 )
-
-const instanceNamePrefix = "instances/"
 
 // InstanceService implements the instance service.
 type InstanceService struct {
@@ -38,7 +35,7 @@ func NewInstanceService(store *store.Store, licenseService enterpriseAPI.License
 
 // GetInstance gets an instance.
 func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInstanceRequest) (*v1pb.Instance, error) {
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -51,7 +48,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", instanceID)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	return convertToInstance(instance), nil
 }
@@ -128,7 +125,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
 
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Instance.Name)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -141,7 +138,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Instance.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance.Name)
 	}
 
 	patch := &store.UpdateInstanceMessage{
@@ -176,7 +173,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -189,7 +186,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Name)
 	}
 
 	rowStatus := api.Archived
@@ -207,7 +204,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 
 // UndeleteInstance undeletes an instance.
 func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.UndeleteInstanceRequest) (*v1pb.Instance, error) {
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -220,7 +217,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "instance %q not found", request.Name)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Name)
 	}
 
 	rowStatus := api.Normal
@@ -237,45 +234,38 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	return convertToInstance(ins), nil
 }
 
-func getEnvironmentAndInstanceID(name string) (string, string, error) {
-	// the instance request should be environments/{environment-id}/instances/{instance-id}
-	if !strings.HasPrefix(name, environmentNamePrefix) {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
+// AddDataSource adds a data source to an instance.
+func (*InstanceService) AddDataSource(_ context.Context, _ *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddDataSource not implemented")
+}
 
-	sections := strings.Split(name, "/")
-	if len(sections) != 4 {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
+// RemoveDataSource removes a data source to an instance.
+func (*InstanceService) RemoveDataSource(_ context.Context, _ *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveDataSource not implemented")
+}
 
-	if fmt.Sprintf("%s/", sections[2]) != instanceNamePrefix {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	if sections[1] == "" || sections[3] == "" {
-		return "", "", errors.Errorf("invalid request %q", name)
-	}
-
-	return sections[1], sections[3], nil
+// UpdateDataSource updates a data source of an instance.
+func (*InstanceService) UpdateDataSource(_ context.Context, _ *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
 }
 
 func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	engine := v1pb.Engine_ENGINE_UNSPECIFIED
 	switch instance.Engine {
 	case db.ClickHouse:
-		engine = v1pb.Engine_ENGINE_CLICKHOUSE
+		engine = v1pb.Engine_CLICKHOUSE
 	case db.MySQL:
-		engine = v1pb.Engine_ENGINE_MYSQL
+		engine = v1pb.Engine_MYSQL
 	case db.Postgres:
-		engine = v1pb.Engine_ENGINE_POSTGRES
+		engine = v1pb.Engine_POSTGRES
 	case db.Snowflake:
-		engine = v1pb.Engine_ENGINE_SNOWFLAKE
+		engine = v1pb.Engine_SNOWFLAKE
 	case db.SQLite:
-		engine = v1pb.Engine_ENGINE_SQLITE
+		engine = v1pb.Engine_SQLITE
 	case db.TiDB:
-		engine = v1pb.Engine_ENGINE_TIDB
+		engine = v1pb.Engine_TIDB
 	case db.MongoDB:
-		engine = v1pb.Engine_ENGINE_MONGODB
+		engine = v1pb.Engine_MONGODB
 	}
 
 	dataSourceList := []*v1pb.DataSource{}
@@ -283,9 +273,9 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		dataSourceType := v1pb.DataSourceType_DATA_SOURCE_UNSPECIFIED
 		switch ds.Type {
 		case api.Admin:
-			dataSourceType = v1pb.DataSourceType_DATA_SOURCE_ADMIN
+			dataSourceType = v1pb.DataSourceType_ADMIN
 		case api.RO:
-			dataSourceType = v1pb.DataSourceType_DATA_SOURCE_RO
+			dataSourceType = v1pb.DataSourceType_READ_ONLY
 		}
 
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
@@ -315,19 +305,19 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
 	var engine db.Type
 	switch instance.Engine {
-	case v1pb.Engine_ENGINE_CLICKHOUSE:
+	case v1pb.Engine_CLICKHOUSE:
 		engine = db.ClickHouse
-	case v1pb.Engine_ENGINE_MYSQL:
+	case v1pb.Engine_MYSQL:
 		engine = db.MySQL
-	case v1pb.Engine_ENGINE_POSTGRES:
+	case v1pb.Engine_POSTGRES:
 		engine = db.Postgres
-	case v1pb.Engine_ENGINE_SNOWFLAKE:
+	case v1pb.Engine_SNOWFLAKE:
 		engine = db.Snowflake
-	case v1pb.Engine_ENGINE_SQLITE:
+	case v1pb.Engine_SQLITE:
 		engine = db.SQLite
-	case v1pb.Engine_ENGINE_TIDB:
+	case v1pb.Engine_TIDB:
 		engine = db.TiDB
-	case v1pb.Engine_ENGINE_MONGODB:
+	case v1pb.Engine_MONGODB:
 		engine = db.MongoDB
 	default:
 		return nil, errors.Errorf("invalid instance engine %v", instance.Engine)
@@ -352,9 +342,9 @@ func convertToDataSourceMessageList(dataSources []*v1pb.DataSource) ([]*store.Da
 	for _, ds := range dataSources {
 		var dsType api.DataSourceType
 		switch ds.Type {
-		case v1pb.DataSourceType_DATA_SOURCE_RO:
+		case v1pb.DataSourceType_READ_ONLY:
 			dsType = api.RO
-		case v1pb.DataSourceType_DATA_SOURCE_ADMIN:
+		case v1pb.DataSourceType_ADMIN:
 			dsType = api.Admin
 		default:
 			return nil, errors.Errorf("invalid data source type %v", ds.Type)

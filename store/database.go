@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"strings"
 
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
@@ -263,7 +264,7 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	// The value of bb.environment is identical to the name of the environment.
 
 	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   api.EnvironmentKeyName,
+		Key:   api.EnvironmentLabelKey,
 		Value: db.Instance.Environment.Name,
 	})
 
@@ -643,4 +644,161 @@ func (*Store) patchDatabaseImpl(ctx context.Context, tx *Tx, patch *api.Database
 		databaseRaw.SourceBackupID = int(nullSourceBackupID.Int64)
 	}
 	return &databaseRaw, nil
+}
+
+// DatabaseMessage is the message for database.
+type DatabaseMessage struct {
+	UID           int
+	ProjectID     string
+	EnvironmentID string
+	InstanceID    string
+
+	DatabaseName         string
+	CharacterSet         string
+	Collation            string
+	SyncState            api.SyncStatus
+	SuccessfulSyncTimeTs int64
+	SchemaVersion        string
+	Labels               map[string]string
+}
+
+// FindDatabaseMessage is the message for finding databases.
+type FindDatabaseMessage struct {
+	ProjectID     *string
+	EnvironmentID *string
+	InstanceID    *string
+	DatabaseName  *string
+}
+
+// GetDatabaseV2 gets a database.
+func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
+	if find.EnvironmentID == nil || find.InstanceID == nil || find.DatabaseName == nil {
+		return nil, errors.Errorf("environment, instance, and database name must exist for getting a database")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	databases, err := s.listDatabaseImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(databases) == 0 {
+		return nil, nil
+	}
+	if len(databases) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d database with filter %+v, expect 1", len(databases), find)}
+	}
+	database := databases[0]
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return database, nil
+}
+
+// ListDatabases lists all databases.
+func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	databases, err := s.listDatabaseImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return databases, nil
+}
+
+func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.EnvironmentID; v != nil {
+		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.InstanceID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.DatabaseName; v != nil {
+		where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
+	}
+	var databaseMessages []*DatabaseMessage
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		SELECT
+			db.id,
+			project.resource_id AS project_id,
+			environment.resource_id AS environment_id,
+			instance.resource_id AS instance_id,
+			db.name,
+			db.character_set,
+			db.collation,
+			db.sync_status,
+			db.last_successful_sync_ts,
+			db.schema_version,
+			ARRAY_AGG (
+				db_label.key
+			) keys,
+			ARRAY_AGG (
+				db_label.value
+			) values
+		FROM db
+		LEFT JOIN project ON db.project_id = project.id
+		LEFT JOIN instance ON db.instance_id = instance.id
+		LEFT JOIN environment ON instance.environment_id = environment.id
+		LEFT JOIN db_label ON db.id = db_label.database_id
+		WHERE %s
+		GROUP BY db.id, project.resource_id, environment.resource_id, instance.resource_id`, strings.Join(where, " AND ")),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		databaseMessage := DatabaseMessage{
+			Labels: make(map[string]string),
+		}
+		var keys, values []sql.NullString
+		if err := rows.Scan(
+			&databaseMessage.UID,
+			&databaseMessage.ProjectID,
+			&databaseMessage.EnvironmentID,
+			&databaseMessage.InstanceID,
+			&databaseMessage.DatabaseName,
+			&databaseMessage.CharacterSet,
+			&databaseMessage.Collation,
+			&databaseMessage.SyncState,
+			&databaseMessage.SuccessfulSyncTimeTs,
+			&databaseMessage.SchemaVersion,
+			pq.Array(&keys),
+			pq.Array(&values),
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if len(keys) != len(values) {
+			return nil, errors.Errorf("invalid length of database label keys and values")
+		}
+		for i := 0; i < len(keys); i++ {
+			if !keys[i].Valid || !values[i].Valid {
+				continue
+			}
+			databaseMessage.Labels[keys[i].String] = values[i].String
+		}
+		databaseMessages = append(databaseMessages, &databaseMessage)
+	}
+
+	return databaseMessages, nil
 }

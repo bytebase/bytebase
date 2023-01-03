@@ -95,7 +95,7 @@ CREATE TABLE book3 (
 					Selector: &api.LabelSelector{
 						MatchExpressions: []*api.LabelSelectorRequirement{
 							{
-								Key:      api.EnvironmentKeyName,
+								Key:      api.EnvironmentLabelKey,
 								Operator: api.InOperatorType,
 								Values:   []string{"Test"},
 							},
@@ -113,7 +113,7 @@ CREATE TABLE book3 (
 					Selector: &api.LabelSelector{
 						MatchExpressions: []*api.LabelSelectorRequirement{
 							{
-								Key:      api.EnvironmentKeyName,
+								Key:      api.EnvironmentLabelKey,
 								Operator: api.InOperatorType,
 								Values:   []string{"Prod"},
 							},
@@ -137,11 +137,11 @@ type controller struct {
 	vcsProvider    fake.VCSProvider
 	feishuProvider *fake.Feishu
 
-	rootURL    string
-	apiURL     string
-	vcsURL     string
-	openAPIURL string
-	feishuURL  string
+	rootURL   string
+	apiURL    string
+	vcsURL    string
+	v1APIURL  string
+	feishuURL string
 }
 
 type config struct {
@@ -244,13 +244,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 	ctl.server = server
 	ctl.profile = profile
 
-	if err := ctl.start(ctx, serverPort); err != nil {
-		return err
-	}
-	if err := ctl.Signup(); err != nil {
-		return err
-	}
-	return ctl.Login()
+	return ctl.start(ctx, serverPort)
 }
 
 // GetTestProfile will return a profile for testing.
@@ -336,7 +330,7 @@ func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreat
 func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
-	ctl.openAPIURL = fmt.Sprintf("http://localhost:%d/v1", port)
+	ctl.v1APIURL = fmt.Sprintf("http://localhost:%d/v1", port)
 
 	errChan := make(chan error, 1)
 
@@ -429,38 +423,28 @@ func waitForFeishuStart(f *fake.Feishu, errChan <-chan error) error {
 
 func (ctl *controller) waitForHealthz() error {
 	begin := time.Now()
-	ticker := time.NewTicker(100 * time.Microsecond)
+	ticker := time.NewTicker(1 * time.Second)
 	timer := time.NewTimer(5 * time.Second)
 	defer ticker.Stop()
 	defer timer.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			healthzURL := "/healthz"
-			gURL := fmt.Sprintf("%s%s", ctl.rootURL, healthzURL)
-			req, err := http.NewRequest(http.MethodGet, gURL, nil)
+			gURL := fmt.Sprintf("%s/auth/login", ctl.v1APIURL)
+			req, err := http.NewRequest(http.MethodPost, gURL, nil)
 			if err != nil {
-				log.Error("Fail to create a new GET request", zap.String("URL", gURL), zap.Error(err))
+				log.Error("Fail to create a new POST request", zap.String("URL", gURL), zap.Error(err))
 				continue
 			}
-
 			resp, err := ctl.client.Do(req)
 			if err != nil {
-				log.Error("Fail to send a GET request", zap.String("URL", gURL), zap.Error(err))
+				log.Error("Fail to send a POST request", zap.String("URL", gURL), zap.Error(err))
 				continue
 			}
-
-			if resp.StatusCode != http.StatusOK {
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					log.Error("Failed to read http response body", zap.Error(err))
-				}
-				log.Error("http response error", zap.Int("status_code", resp.StatusCode), zap.ByteString("body", body))
+			if resp.StatusCode == http.StatusServiceUnavailable {
 				continue
 			}
-
 			return nil
-
 		case end := <-timer.C:
 			return errors.Errorf("cannot wait for healthz in duration: %v", end.Sub(begin).Seconds())
 		}
@@ -520,7 +504,7 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 
 // postOpenAPI sends a openAPI POST request.
 func (ctl *controller) postOpenAPI(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.openAPIURL, shortURL)
+	url := fmt.Sprintf("%s%s", ctl.v1APIURL, shortURL)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "fail to create a new POST request(%q)", url)
@@ -607,12 +591,20 @@ func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, e
 
 // Signup will signup user demo@example.com and caches its cookie.
 func (ctl *controller) Signup() error {
-	if _, err := ctl.client.Post(
-		fmt.Sprintf("%s/auth/signup", ctl.apiURL),
+	resp, err := ctl.client.Post(
+		fmt.Sprintf("%s/users", ctl.v1APIURL),
 		"",
-		strings.NewReader(`{"data":{"type":"signupInfo","attributes":{"email":"demo@example.com","password":"1024","name":"demo"}}}`),
-	); err != nil {
+		strings.NewReader(`{"email":"demo@example.com","password":"1024","title":"demo"}`),
+	)
+	if err != nil {
 		return errors.Wrap(err, "fail to post login request")
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read body")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("failed to create user with status %v body %s", resp.Status, body)
 	}
 	return nil
 }
@@ -620,9 +612,9 @@ func (ctl *controller) Signup() error {
 // Login will login as user demo@example.com and caches its cookie.
 func (ctl *controller) Login() error {
 	resp, err := ctl.client.Post(
-		fmt.Sprintf("%s/auth/login/BYTEBASE", ctl.apiURL),
+		fmt.Sprintf("%s/auth/login", ctl.v1APIURL),
 		"",
-		strings.NewReader(`{"data":{"type":"loginInfo","attributes":{"email":"demo@example.com","password":"1024"}}}`))
+		strings.NewReader(`{"email":"demo@example.com","password":"1024","web": true}`))
 	if err != nil {
 		return errors.Wrap(err, "fail to post login request")
 	}
