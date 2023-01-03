@@ -27,8 +27,8 @@
         :bb-column-name="column.name"
         :bb-status="columnStatus(column)"
         :class="[
-          isDroppedColumn(column) && 'text-red-700 bg-red-50 line-through',
-          isCreatedColumn(column) && 'text-green-700 bg-green-50',
+          isColumnDropped(column) && 'text-red-700 bg-red-50 line-through',
+          isColumnCreated(column) && 'text-green-700 bg-green-50',
         ]"
       >
         <td class="w-5 py-1.5">
@@ -108,11 +108,11 @@ const isTableChanged = computed(() => {
   return tableStatus(props.table) === "changed";
 });
 
-const isDroppedColumn = (column: ColumnMetadata) => {
+const isColumnDropped = (column: ColumnMetadata) => {
   return columnStatus(column) === "dropped";
 };
 
-const isCreatedColumn = (column: ColumnMetadata) => {
+const isColumnCreated = (column: ColumnMetadata) => {
   return columnStatus(column) === "created";
 };
 
