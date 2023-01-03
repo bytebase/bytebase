@@ -185,6 +185,16 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
 
       return this.databaseSchemaById.get(databaseId)!.schemaList;
     },
+    // We only allow to delete the new created schema.
+    deleteCreatedSchema(databaseId: DatabaseId, schemaName: string) {
+      const databaseSchema = this.databaseSchemaById.get(databaseId);
+      if (databaseSchema) {
+        databaseSchema.schemaList =
+          this.databaseSchemaById
+            .get(databaseId)
+            ?.schemaList.filter((schema) => schema.name !== schemaName) || [];
+      }
+    },
     getSchema(databaseId: DatabaseId, schemaName: string) {
       return this.databaseSchemaById
         .get(databaseId)

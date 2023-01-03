@@ -398,6 +398,7 @@ watch(
       );
       const databaseEdit: DatabaseEdit = {
         databaseId: currentTab.databaseId,
+        createSchemaList: [],
         createTableList: diffSchemaResult.createTableList.filter(
           (context) => context.name === table.value.name
         ),
