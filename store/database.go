@@ -264,7 +264,7 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	// The value of bb.environment is identical to the name of the environment.
 
 	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   api.EnvironmentKeyName,
+		Key:   api.EnvironmentLabelKey,
 		Value: db.Instance.Environment.Name,
 	})
 

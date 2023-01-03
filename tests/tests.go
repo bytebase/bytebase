@@ -95,7 +95,7 @@ CREATE TABLE book3 (
 					Selector: &api.LabelSelector{
 						MatchExpressions: []*api.LabelSelectorRequirement{
 							{
-								Key:      api.EnvironmentKeyName,
+								Key:      api.EnvironmentLabelKey,
 								Operator: api.InOperatorType,
 								Values:   []string{"Test"},
 							},
@@ -113,7 +113,7 @@ CREATE TABLE book3 (
 					Selector: &api.LabelSelector{
 						MatchExpressions: []*api.LabelSelectorRequirement{
 							{
-								Key:      api.EnvironmentKeyName,
+								Key:      api.EnvironmentLabelKey,
 								Operator: api.InOperatorType,
 								Values:   []string{"Prod"},
 							},

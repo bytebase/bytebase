@@ -211,7 +211,7 @@ func marshalLabels(labelMap map[string]string, environmentName string) (string, 
 		})
 	}
 	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   api.EnvironmentKeyName,
+		Key:   api.EnvironmentLabelKey,
 		Value: environmentName,
 	})
 

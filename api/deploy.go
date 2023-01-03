@@ -125,15 +125,15 @@ func ValidateAndGetDeploymentSchedule(payload string) (*DeploymentSchedule, erro
 			default:
 				return nil, common.Errorf(common.Invalid, "expression key %q has invalid operator %q", e.Key, e.Operator)
 			}
-			if e.Key == EnvironmentKeyName {
+			if e.Key == EnvironmentLabelKey {
 				hasEnv = true
 				if e.Operator != InOperatorType || len(e.Values) != 1 {
-					return nil, common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", EnvironmentKeyName, InOperatorType)
+					return nil, common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", EnvironmentLabelKey, InOperatorType)
 				}
 			}
 		}
 		if !hasEnv {
-			return nil, common.Errorf(common.Invalid, "deployment should contain %q label", EnvironmentKeyName)
+			return nil, common.Errorf(common.Invalid, "deployment should contain %q label", EnvironmentLabelKey)
 		}
 	}
 	return schedule, nil

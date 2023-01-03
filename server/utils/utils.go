@@ -239,7 +239,7 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, environmentName s
 
 	// check label key & value availability
 	for _, label := range labelList {
-		if label.Key == api.EnvironmentKeyName {
+		if label.Key == api.EnvironmentLabelKey {
 			environmentValue = &label.Value
 			continue
 		}
@@ -247,10 +247,10 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, environmentName s
 
 	// Environment label must exist and is immutable.
 	if environmentValue == nil {
-		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentKeyName)
+		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentLabelKey)
 	}
 	if environmentName != *environmentValue {
-		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, *environmentValue)
+		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentLabelKey, environmentName, *environmentValue)
 	}
 
 	return nil

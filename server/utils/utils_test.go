@@ -24,7 +24,7 @@ func TestValidateDatabaseLabelList(t *testing.T) {
 					Value: "earth",
 				},
 				{
-					Key:   api.EnvironmentKeyName,
+					Key:   api.EnvironmentLabelKey,
 					Value: "Dev",
 				},
 			},
@@ -50,7 +50,7 @@ func TestValidateDatabaseLabelList(t *testing.T) {
 					Value: "earth",
 				},
 				{
-					Key:   api.EnvironmentKeyName,
+					Key:   api.EnvironmentLabelKey,
 					Value: "Prod",
 				},
 			},
