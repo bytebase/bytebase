@@ -134,6 +134,8 @@ const (
 	SchemaRuleIndexTypeNoBlob SQLReviewRuleType = "index.type-no-blob"
 	// SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
+	// SchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist
+	SchemaRuleIndexPrimaryKeyTypeAllowlist SQLReviewRuleType = "index.primary-key-type-allowlist"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
@@ -241,7 +243,7 @@ func (rule *SQLReviewRule) Validate() error {
 		if _, err := UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist:
+	case SchemaRuleColumnTypeDisallowList, SchemaRuleCharsetAllowlist, SchemaRuleCollationAllowlist, SchemaRuleIndexPrimaryKeyTypeAllowlist:
 		if _, err := UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
 			return err
 		}
@@ -862,6 +864,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexTypeNoBlob, nil
+		}
+	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
+		if engine == db.Postgres {
+			return PostgreSQLPrimaryKeyTypeAllowlist, nil
 		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
