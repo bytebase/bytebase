@@ -248,6 +248,8 @@ export interface Instance {
    * Format: environments/{environment}/instances/{instance}
    */
   name: string;
+  /** The system-assigned, unique identifier for a resource. */
+  uid: string;
   state: State;
   title: string;
   engine: Engine;
@@ -869,7 +871,7 @@ export const UpdateDataSourceRequest = {
 };
 
 function createBaseInstance(): Instance {
-  return { name: "", state: 0, title: "", engine: 0, externalLink: "", dataSources: [] };
+  return { name: "", uid: "", state: 0, title: "", engine: 0, externalLink: "", dataSources: [] };
 }
 
 export const Instance = {
@@ -877,20 +879,23 @@ export const Instance = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.uid !== "") {
+      writer.uint32(18).string(message.uid);
+    }
     if (message.state !== 0) {
-      writer.uint32(16).int32(message.state);
+      writer.uint32(24).int32(message.state);
     }
     if (message.title !== "") {
-      writer.uint32(26).string(message.title);
+      writer.uint32(34).string(message.title);
     }
     if (message.engine !== 0) {
-      writer.uint32(32).int32(message.engine);
+      writer.uint32(40).int32(message.engine);
     }
     if (message.externalLink !== "") {
-      writer.uint32(42).string(message.externalLink);
+      writer.uint32(50).string(message.externalLink);
     }
     for (const v of message.dataSources) {
-      DataSource.encode(v!, writer.uint32(50).fork()).ldelim();
+      DataSource.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -906,18 +911,21 @@ export const Instance = {
           message.name = reader.string();
           break;
         case 2:
-          message.state = reader.int32() as any;
+          message.uid = reader.string();
           break;
         case 3:
-          message.title = reader.string();
+          message.state = reader.int32() as any;
           break;
         case 4:
-          message.engine = reader.int32() as any;
+          message.title = reader.string();
           break;
         case 5:
-          message.externalLink = reader.string();
+          message.engine = reader.int32() as any;
           break;
         case 6:
+          message.externalLink = reader.string();
+          break;
+        case 7:
           message.dataSources.push(DataSource.decode(reader, reader.uint32()));
           break;
         default:
@@ -931,6 +939,7 @@ export const Instance = {
   fromJSON(object: any): Instance {
     return {
       name: isSet(object.name) ? String(object.name) : "",
+      uid: isSet(object.uid) ? String(object.uid) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
@@ -942,6 +951,7 @@ export const Instance = {
   toJSON(message: Instance): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.uid !== undefined && (obj.uid = message.uid);
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.title !== undefined && (obj.title = message.title);
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
@@ -957,6 +967,7 @@ export const Instance = {
   fromPartial<I extends Exact<DeepPartial<Instance>, I>>(object: I): Instance {
     const message = createBaseInstance();
     message.name = object.name ?? "";
+    message.uid = object.uid ?? "";
     message.state = object.state ?? 0;
     message.title = object.title ?? "";
     message.engine = object.engine ?? 0;
