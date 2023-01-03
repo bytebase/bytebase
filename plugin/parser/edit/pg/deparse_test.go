@@ -23,6 +23,11 @@ func TestDeparseCreateTable(t *testing.T) {
 			name: "create table t1",
 			databaseEdit: &api.DatabaseEdit{
 				DatabaseID: api.UnknownID,
+				CreateSchemaList: []*api.CreateSchemaContext{
+					{
+						Schema: "public",
+					},
+				},
 				CreateTableList: []*api.CreateTableContext{
 					{
 						Schema: "public",
@@ -38,7 +43,7 @@ func TestDeparseCreateTable(t *testing.T) {
 					},
 				},
 			},
-			want: "CREATE TABLE \"public\".\"t1\" (\n    \"id\" integer DEFAULT 0 NOT NULL\n);\nCOMMENT ON COLUMN \"public\".\"t1\".\"id\" IS 'ID';",
+			want: "CREATE SCHEMA IF NOT EXISTS \"public\";\nCREATE TABLE \"public\".\"t1\" (\n    \"id\" integer DEFAULT 0 NOT NULL\n);\nCOMMENT ON COLUMN \"public\".\"t1\".\"id\" IS 'ID';",
 		},
 		{
 			name: "create table t1",

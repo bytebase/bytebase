@@ -24,6 +24,12 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 		NodeList: []ast.Node{},
 		StmtList: []string{},
 	}
+	for _, createSchemaContext := range databaseEdit.CreateSchemaList {
+		err := transformCreateSchemaContext(ctx, createSchemaContext)
+		if err != nil {
+			return "", err
+		}
+	}
 	for _, createTableContext := range databaseEdit.CreateTableList {
 		err := transformCreateTableContext(ctx, createTableContext)
 		if err != nil {
@@ -53,6 +59,15 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 	}
 	stmtList = append(stmtList, ctx.StmtList...)
 	return strings.Join(stmtList, "\n"), nil
+}
+
+func transformCreateSchemaContext(ctx *DeparseContext, createSchemaContext *api.CreateSchemaContext) error {
+	createSchemaStmt := &ast.CreateSchemaStmt{
+		Name:        createSchemaContext.Schema,
+		IfNotExists: true,
+	}
+	ctx.NodeList = append(ctx.NodeList, createSchemaStmt)
+	return nil
 }
 
 func transformCreateTableContext(ctx *DeparseContext, createTableContext *api.CreateTableContext) error {

@@ -1437,6 +1437,7 @@
     "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
     "actions": {
+      "create-schema": "Create Schema",
       "create-table": "New table",
       "rename": "Rename",
       "drop-table": "Drop table",
@@ -1456,7 +1457,8 @@
       "comment": "Comment"
     },
     "schema": {
-      "select": "Select schema"
+      "select": "Select schema",
+      "name": "Schema Name"
     },
     "table-list": "Table List",
     "table": {
@@ -1475,6 +1477,8 @@
     },
     "nothing-changed": "Nothing changed",
     "message": {
+      "invalid-schema-name": "Invalid schema name",
+      "duplicated-schema-name": "Duplicated schema name",
       "invalid-table-name": "Invalid table name",
       "duplicated-table-name": "Duplicated table name",
       "invalid-column-name": "Invalid column name",

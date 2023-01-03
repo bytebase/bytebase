@@ -129,10 +129,16 @@ type DatabasePatch struct {
 type DatabaseEdit struct {
 	DatabaseID int `json:"databaseId"`
 
-	CreateTableList []*CreateTableContext `json:"createTableList"`
-	AlterTableList  []*AlterTableContext  `json:"alterTableList"`
-	RenameTableList []*RenameTableContext `json:"renameTableList"`
-	DropTableList   []*DropTableContext   `json:"dropTableList"`
+	CreateSchemaList []*CreateSchemaContext `json:"createSchemaList"`
+	CreateTableList  []*CreateTableContext  `json:"createTableList"`
+	AlterTableList   []*AlterTableContext   `json:"alterTableList"`
+	RenameTableList  []*RenameTableContext  `json:"renameTableList"`
+	DropTableList    []*DropTableContext    `json:"dropTableList"`
+}
+
+// CreateSchemaContext is the edit database context to create a schema.
+type CreateSchemaContext struct {
+	Schema string `json:"schema"`
 }
 
 // CreateTableContext is the edit database context to create a table.

@@ -291,11 +291,9 @@ const getDatabaseEditListWithSchemaEditor = () => {
       const originSchema = databaseSchema.originSchemaList.find(
         (schema) => schema.name === schema.name
       );
-      if (!originSchema) {
-        continue;
-      }
       const diffSchemaResult = diffSchema(database.id, originSchema, schema);
       if (
+        diffSchemaResult.createSchemaList.length > 0 ||
         diffSchemaResult.createTableList.length > 0 ||
         diffSchemaResult.alterTableList.length > 0 ||
         diffSchemaResult.renameTableList.length > 0 ||
@@ -330,10 +328,12 @@ const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
         });
         return;
       }
-      databaseEditMap.set(
-        databaseEdit.databaseId,
+      const previousStatement =
+        databaseEditMap.get(databaseEdit.databaseId) || "";
+      const statement = `${previousStatement}${previousStatement && "\n"}${
         databaseEditResult.statement
-      );
+      }`;
+      databaseEditMap.set(databaseEdit.databaseId, statement);
     }
   }
   return databaseEditMap;

@@ -45,6 +45,12 @@
     :table-id="state.tableNameModalContext.tableId"
     @close="state.tableNameModalContext = undefined"
   />
+
+  <SchemaNameModal
+    v-if="state.schemaNameModalContext !== undefined"
+    :database-id="state.schemaNameModalContext.databaseId"
+    @close="state.schemaNameModalContext = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -117,6 +123,9 @@ interface TreeContextMenu {
 
 interface LocalState {
   shouldRelocateTreeNode: boolean;
+  schemaNameModalContext?: {
+    databaseId: DatabaseId;
+  };
   tableNameModalContext?: {
     databaseId: DatabaseId;
     schemaName: string;
@@ -167,6 +176,11 @@ const contextMenuOptions = computed(() => {
       options.push({
         key: "create-table",
         label: t("schema-editor.actions.create-table"),
+      });
+    } else if (instanceEngine === "POSTGRES") {
+      options.push({
+        key: "create-schema",
+        label: t("schema-editor.actions.create-schema"),
       });
     }
     return options;
@@ -454,7 +468,15 @@ const renderPrefix = ({ option: treeNode }: { option: TreeNode }) => {
 const renderLabel = ({ option: treeNode }: { option: TreeNode }) => {
   const additionalClassList: string[] = ["select-none"];
 
-  if (treeNode.type === "table") {
+  if (treeNode.type === "schema") {
+    const schema = editorStore.databaseSchemaById
+      .get(treeNode.databaseId)
+      ?.schemaList.find((schema) => schema.name === treeNode.schemaName);
+
+    if (schema && schema.status === "created") {
+      additionalClassList.push("text-green-700");
+    }
+  } else if (treeNode.type === "table") {
     const table = editorStore.databaseSchemaById
       .get(treeNode.databaseId)
       ?.schemaList.find((schema) => schema.name === treeNode.schemaName)
@@ -507,9 +529,7 @@ const renderSuffix = ({ option: treeNode }: { option: TreeNode }) => {
     treeNode.instanceId
   ).engine;
   if (treeNode.type === "database") {
-    if (instanceEngine === "MYSQL") {
-      return icon;
-    }
+    return icon;
   } else if (treeNode.type === "schema") {
     if (instanceEngine === "POSTGRES") {
       return icon;
@@ -640,6 +660,10 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         databaseId: treeNode.databaseId,
         schemaName: "",
         tableId: undefined,
+      };
+    } else if (key === "create-schema") {
+      state.schemaNameModalContext = {
+        databaseId: treeNode.databaseId,
       };
     }
   } else if (treeNode?.type === "schema") {

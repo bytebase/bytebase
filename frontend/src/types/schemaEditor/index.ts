@@ -46,10 +46,15 @@ export interface SchemaEditorState {
 export interface DatabaseEdit {
   databaseId: DatabaseId;
 
+  createSchemaList: CreateSchemaContext[];
   createTableList: CreateTableContext[];
   alterTableList: AlterTableContext[];
   renameTableList: RenameTableContext[];
   dropTableList: DropTableContext[];
+}
+
+export interface CreateSchemaContext {
+  schema: string;
 }
 
 export interface CreateTableContext {
