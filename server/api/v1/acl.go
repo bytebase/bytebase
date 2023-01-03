@@ -8,6 +8,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
@@ -36,67 +38,108 @@ func NewACLInterceptor(store *store.Store, secret string, licenseService enterpr
 
 // ACLInterceptor is the unary interceptor for gRPC API.
 func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	role, err := in.getWorkspaceRole(ctx, serverInfo.FullMethod)
+	user, err := in.getUser(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
+	if auth.IsAuthenticationAllowed(serverInfo.FullMethod) {
+		return handler(ctx, request)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
+	}
+	// Store workspace role into context.
+	childCtx := context.WithValue(ctx, common.RoleContextKey, user.Role)
+	if isOwnerOrDBA(user) {
+		return handler(childCtx, request)
+	}
 
 	methodName := getShortMethodName(serverInfo.FullMethod)
-	if role == api.Developer && isOwnerAndDBAMethod(methodName) {
+	if isOwnerAndDBAMethod(methodName) {
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can access method %q", methodName)
 	}
 
 	// TODO(d): implement authorization checks for project resources.
 
-	// TODO(d): check ToProject for database transfer.
 	if isTransferDatabaseMethods(methodName) {
-		_, err := in.getTransferDatabaseToProjects(ctx, request)
+		projectIDs, err := in.getTransferDatabaseToProjects(ctx, request)
 		if err != nil {
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
+		for _, projectID := range projectIDs {
+			projectRole, err := in.getProjectMember(ctx, user, projectID)
+			if err != nil {
+				return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			}
+			if projectRole != api.Owner {
+				return nil, status.Errorf(codes.PermissionDenied, "only project owner can transfer database to project %q", projectID)
+			}
+		}
 	}
 
-	// Stores principalID into context.
-	childCtx := context.WithValue(ctx, common.RoleContextKey, role)
 	return handler(childCtx, request)
 }
 
-func (in *ACLInterceptor) getWorkspaceRole(ctx context.Context, fullMethodName string) (api.Role, error) {
-	// If RBAC feature is not enabled, all users are treated as OWNER.
-	if !in.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
-		return api.Owner, nil
-	}
-
+func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, error) {
 	principalPtr := ctx.Value(common.PrincipalIDContextKey)
 	if principalPtr == nil {
-		if auth.IsAuthenticationAllowed(fullMethodName) {
-			return api.UnknownRole, nil
-		}
-		return api.UnknownRole, status.Errorf(codes.PermissionDenied, "principal key doesn't exist in the request context")
+		return nil, nil
 	}
-
 	principalID := principalPtr.(int)
 	user, err := in.store.GetUserByID(ctx, principalID)
 	if err != nil {
-		return api.UnknownRole, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)
+		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)
 	}
 	if user == nil {
-		return api.UnknownRole, status.Errorf(codes.PermissionDenied, "member not found for user %v in processing authorize request.", principalID)
+		return nil, status.Errorf(codes.PermissionDenied, "member not found for user %v in processing authorize request.", principalID)
 	}
 	if user.MemberDeleted {
-		return api.UnknownRole, status.Errorf(codes.PermissionDenied, "the user %v has been deactivated by the admin.", principalID)
+		return nil, status.Errorf(codes.PermissionDenied, "the user %v has been deactivated by the admin.", principalID)
 	}
-	return user.Role, nil
+
+	// If RBAC feature is not enabled, all users are treated as OWNER.
+	if in.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
+		user.Role = api.Owner
+	}
+	return user, nil
 }
 
-func (*ACLInterceptor) getTransferDatabaseToProjects(_ context.Context, request interface{}) ([]string, error) {
-	// projectMap := make(map[string]bool)
-	if updateDatabaseRequest, ok := request.(*v1pb.UpdateDatabaseRequest); ok {
-		if !hasPath(updateDatabaseRequest.UpdateMask, "database.project") {
-			return nil, nil
-		}
+func (*ACLInterceptor) getProjectMember(_ context.Context, _ *store.UserMessage, _ string) (api.Role, error) {
+	return api.Developer, nil
+}
+
+func (in *ACLInterceptor) getTransferDatabaseToProjects(ctx context.Context, req interface{}) ([]string, error) {
+	var requests []*v1pb.UpdateDatabaseRequest
+	if request, ok := req.(*v1pb.UpdateDatabaseRequest); ok {
+		requests = append(requests, request)
 	}
-	return nil, nil
+	if request, ok := req.(*v1pb.BatchUpdateDatabasesRequest); ok {
+		requests = request.Requests
+	}
+
+	projectIDMap := make(map[string]bool)
+	for _, request := range requests {
+		if !hasPath(request.UpdateMask, "database.project") || request.Database == nil {
+			continue
+		}
+		environmentID, instanceID, databaseID, err := getEnvironmentInstanceDatabaseID(request.Database.Name)
+		if err != nil {
+			return nil, err
+		}
+		database, err := in.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &environmentID, InstanceID: &instanceID, DatabaseID: &databaseID})
+		if err != nil {
+			return nil, err
+		}
+		if database == nil {
+			return nil, errors.Errorf("database %q not found", request.Database.Name)
+		}
+		projectIDMap[database.ProjectID] = true
+	}
+	var projectIDs []string
+	for projectID := range projectIDMap {
+		projectIDs = append(projectIDs, projectID)
+	}
+	return projectIDs, nil
 }
 
 func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {

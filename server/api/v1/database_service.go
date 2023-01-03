@@ -30,27 +30,27 @@ func NewDatabaseService(store *store.Store) *DatabaseService {
 
 // GetDatabase gets a database.
 func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetDatabaseRequest) (*v1pb.Database, error) {
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Name)
+	environmentID, instanceID, databaseID, err := getEnvironmentInstanceDatabaseID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		EnvironmentID: &environmentID,
 		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		DatabaseID:    &databaseID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseID)
 	}
 	return convertToDatabase(database), nil
 }
 
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Parent)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -99,20 +99,20 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(name)
+	environmentID, instanceID, databaseID, err := getEnvironmentInstanceDatabaseID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		EnvironmentID: &environmentID,
 		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		DatabaseID:    &databaseID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseID)
 	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
@@ -127,27 +127,27 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(name)
+	environmentID, instanceID, databaseID, err := getEnvironmentInstanceDatabaseID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		EnvironmentID: &environmentID,
 		InstanceID:    &instanceID,
-		DatabaseName:  &databaseName,
+		DatabaseID:    &databaseID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseID)
 	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if dbSchema == nil {
-		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
+		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseID)
 	}
 	return &v1pb.DatabaseSchema{Schema: dbSchema.RawDump}, nil
 }

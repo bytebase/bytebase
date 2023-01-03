@@ -1,6 +1,11 @@
 package v1
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/store"
+)
 
 const (
 	apiPackagePrefix = "/bytebase.v1."
@@ -36,4 +41,8 @@ func isTransferDatabaseMethods(methodName string) bool {
 // getShortMethodName gets the short method name from v1 API.
 func getShortMethodName(fullMethod string) string {
 	return strings.TrimPrefix(fullMethod, apiPackagePrefix)
+}
+
+func isOwnerOrDBA(user *store.UserMessage) bool {
+	return user.Role == api.Owner || user.Role == api.DBA
 }

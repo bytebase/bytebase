@@ -35,7 +35,7 @@ func NewInstanceService(store *store.Store, licenseService enterpriseAPI.License
 
 // GetInstance gets an instance.
 func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInstanceRequest) (*v1pb.Instance, error) {
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -125,7 +125,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
 
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Instance.Name)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -173,7 +173,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -204,7 +204,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 
 // UndeleteInstance undeletes an instance.
 func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.UndeleteInstanceRequest) (*v1pb.Instance, error) {
-	environmentID, instanceID, err := getEnvironmentAndInstanceID(request.Name)
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
