@@ -97,13 +97,17 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
+		ResourceID:  &projectID,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
 	}
 
 	patch := &store.UpdateProjectMessage{
@@ -168,13 +172,17 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
+		ResourceID:  &projectID,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
 	}
 
 	rowStatus := api.Archived
@@ -205,6 +213,9 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+	if !project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", projectID)
 	}
 
 	rowStatus := api.Normal

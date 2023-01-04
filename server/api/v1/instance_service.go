@@ -134,12 +134,16 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
+		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance.Name)
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance.Name)
 	}
 
 	patch := &store.UpdateInstanceMessage{
@@ -182,12 +186,16 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
+		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Name)
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
 	}
 
 	rowStatus := api.Archived
@@ -220,6 +228,9 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Name)
+	}
+	if !instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", request.Name)
 	}
 
 	rowStatus := api.Normal

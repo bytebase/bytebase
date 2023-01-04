@@ -115,7 +115,8 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 	}
 
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
+		ResourceID:  &environmentID,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -160,7 +161,8 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 	}
 
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
+		ResourceID:  &environmentID,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
