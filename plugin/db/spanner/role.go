@@ -3,30 +3,32 @@ package spanner
 import (
 	"context"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
-// CreateRole creates a role.
-func (*Driver) CreateRole(_ context.Context, _ *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
-	panic("not implemented")
+// CreateRole creates the role.
+func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
+	return nil, errors.Errorf("create role for spanner is not implemented yet")
 }
 
-// UpdateRole updates a role.
-func (*Driver) UpdateRole(_ context.Context, _ string, _ *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
-	panic("not implemented")
+// UpdateRole updates the role.
+func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
+	return nil, errors.Errorf("update role for spanner is not implemented yet")
 }
 
-// FindRole finds the role.
-func (*Driver) FindRole(_ context.Context, _ string) (*v1pb.DatabaseRole, error) {
-	panic("not implemented")
+// FindRole finds the role by name.
+func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, error) {
+	return nil, errors.Errorf("find role for spanner is not implemented yet")
 }
 
-// ListRole lists the roles.
-func (*Driver) ListRole(_ context.Context) ([]*v1pb.DatabaseRole, error) {
-	panic("not implemented")
+// ListRole lists the role.
+func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
+	return nil, errors.Errorf("list role for spanner is not implemented yet")
 }
 
-// DeleteRole deletes the role.
+// DeleteRole deletes the role by name.
 func (*Driver) DeleteRole(_ context.Context, _ string) error {
-	panic("not implemented")
+	return errors.Errorf("delete role for spanner is not implemented yet")
 }
