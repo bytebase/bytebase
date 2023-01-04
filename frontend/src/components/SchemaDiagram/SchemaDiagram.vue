@@ -44,19 +44,32 @@ import { provideSchemaDiagramContext } from "./common";
 const props = withDefaults(
   defineProps<{
     database: Database;
+    editable?: boolean;
     tableList: TableMetadata[];
     tableStatus?: (table: TableMetadata) => EditStatus;
     columnStatus?: (column: ColumnMetadata) => EditStatus;
   }>(),
   {
+    editable: false,
     tableStatus: () => "normal" as EditStatus,
     columnStatus: () => "normal" as EditStatus,
   }
 );
 
+const emit = defineEmits<{
+  (event: "edit-table", table: TableMetadata): void;
+  (
+    event: "edit-column",
+    table: TableMetadata,
+    column: ColumnMetadata,
+    target: "name" | "type"
+  ): void;
+}>();
+
 const initialized = ref(false);
 const zoom = ref(1);
 const position = ref<Position>({ x: 0, y: 0 });
+const panning = ref(false);
 
 const render = () => {
   nextTick(() => {
@@ -148,11 +161,17 @@ const layout = () => {
 };
 
 events.on("layout", layout);
+events.on("edit-table", (table) => emit("edit-table", table));
+events.on("edit-column", ({ table, column, target }) =>
+  emit("edit-column", table, column, target)
+);
 
 provideSchemaDiagramContext({
   tableList: computed(() => props.tableList),
+  editable: computed(() => props.editable),
   zoom,
   position,
+  panning,
   idOfTable,
   rectOfTable,
   render,
