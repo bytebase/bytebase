@@ -115,6 +115,7 @@ export const convertSchemaMetadataToSchema = (
   const foreignKeyList: ForeignKey[] = [];
 
   for (const tableMetadata of schemaMetadata.tables) {
+    // Don't display ghost table in Schema Editor.
     if (isGhostTable(tableMetadata)) {
       continue;
     }
