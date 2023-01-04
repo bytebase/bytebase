@@ -187,6 +187,11 @@ const contextMenuOptions = computed(() => {
   } else if (treeNode.type === "schema") {
     const options = [];
     if (instanceEngine === "POSTGRES") {
+      options.push({
+        key: "create-table",
+        label: t("schema-editor.actions.create-table"),
+      });
+
       const schema = editorStore.databaseSchemaById
         .get(treeNode.databaseId)
         ?.schemaList.find((schema) => schema.name === treeNode.schemaName);
@@ -196,11 +201,6 @@ const contextMenuOptions = computed(() => {
           label: t("schema-editor.actions.delete-schema"),
         });
       }
-
-      options.push({
-        key: "create-table",
-        label: t("schema-editor.actions.create-table"),
-      });
     }
     return options;
   } else if (treeNode.type === "table") {
@@ -277,17 +277,26 @@ onMounted(async () => {
   if (databaseTreeNodeList.length === 1) {
     const node = databaseTreeNodeList[0];
     await loadSubTree(node);
-    expandedKeysRef.value.push(node.key);
-    editorStore.addTab({
-      id: generateUniqueTabId(),
-      type: SchemaEditorTabType.TabForDatabase,
-      databaseId: node.databaseId,
-    });
+    const schemaList = await editorStore.fetchSchemaListByDatabaseId(
+      node.databaseId
+    );
+    if (schemaList.length !== 0) {
+      expandedKeysRef.value.push(node.key);
+      editorStore.addTab({
+        id: generateUniqueTabId(),
+        type: SchemaEditorTabType.TabForDatabase,
+        databaseId: node.databaseId,
+      });
+    }
   }
 });
 
 watch(
-  [() => tableList.value, () => databaseDataLoadedSet.value],
+  [
+    () => schemaList.value,
+    () => tableList.value,
+    () => databaseDataLoadedSet.value,
+  ],
   () => {
     const databaseTreeNodeList: TreeNodeForDatabase[] = [];
     for (const treeNode of treeDataRef.value) {
@@ -615,6 +624,12 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
           } else {
             expandedKeysRef.value.push(treeNode.key);
           }
+          editorStore.addTab({
+            id: generateUniqueTabId(),
+            type: SchemaEditorTabType.TabForDatabase,
+            databaseId: treeNode.databaseId,
+            selectedSchemaName: treeNode.schemaName,
+          });
         } else if (treeNode.type === "table") {
           editorStore.addTab({
             id: generateUniqueTabId(),

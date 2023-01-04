@@ -49,7 +49,8 @@
             />
           </div>
           <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:bg-gray-100"
+            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="!allowCreateTable"
             @click="handleCreateNewTable"
           >
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
@@ -176,7 +177,7 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
@@ -221,10 +222,10 @@ const state = reactive<LocalState>({
   isFetchingDDL: false,
   statement: "",
 });
-const currentTab = editorStore.currentTab as DatabaseTabContext;
+const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
 const databaseSchema = computed(() => {
   return editorStore.databaseSchemaById.get(
-    currentTab.databaseId
+    currentTab.value.databaseId
   ) as DatabaseSchema;
 });
 const database = databaseSchema.value.database;
@@ -239,6 +240,13 @@ const tableList = computed(() => {
 
 const shouldShowSchemaSelector = computed(() => {
   return databaseEngine === "POSTGRES";
+});
+
+const allowCreateTable = computed(() => {
+  if (databaseEngine === "POSTGRES") {
+    return schemaList.length > 0 && state.selectedSchema !== "";
+  }
+  return true;
 });
 
 const schemaSelectorOptionList = computed(() => {
@@ -281,9 +289,19 @@ const tableHeaderList = computed(() => {
   ];
 });
 
-onMounted(() => {
-  state.selectedSchema = head(schemaList)?.name || "";
-});
+watch(
+  [() => currentTab.value.selectedSchemaName],
+  () => {
+    if (currentTab.value.selectedSchemaName) {
+      state.selectedSchema = currentTab.value.selectedSchemaName;
+    } else {
+      state.selectedSchema = head(schemaList)?.name || "";
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 
 watch(
   () => state.selectedTab,
