@@ -28,8 +28,12 @@
 <script lang="ts" setup>
 import { PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseId, UNKNOWN_ID } from "@/types";
-import { useSchemaEditorStore, useNotificationStore } from "@/store";
+import { DatabaseId, SchemaEditorTabType, UNKNOWN_ID } from "@/types";
+import {
+  useSchemaEditorStore,
+  useNotificationStore,
+  generateUniqueTabId,
+} from "@/store";
 import { SchemaMetadata } from "@/types/proto/store/database";
 import { convertSchemaMetadataToSchema } from "@/types/schemaEditor/atomType";
 
@@ -91,6 +95,12 @@ const handleConfirmButtonClick = async () => {
   schema.name = state.schemaName;
   schema.status = "created";
   databaseSchema.schemaList.push(schema);
+  editorStore.addTab({
+    id: generateUniqueTabId(),
+    type: SchemaEditorTabType.TabForDatabase,
+    databaseId: databaseId,
+    selectedSchemaName: schema.name,
+  });
   dismissModal();
 };
 
