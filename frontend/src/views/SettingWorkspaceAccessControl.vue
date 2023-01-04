@@ -234,7 +234,7 @@ const handleRemove = async (policy: Policy) => {
 
   state.isUpdating = true;
   try {
-    policyStore.deletePolicyByDatabaseAndType({
+    await policyStore.deletePolicyByDatabaseAndType({
       databaseId: policy.resourceId,
       type: "bb.policy.access-control",
     });
