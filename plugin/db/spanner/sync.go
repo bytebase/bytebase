@@ -31,6 +31,12 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 			return nil, err
 		}
 
+		// filter out databases using postgresql dialect which are not supported currently
+		// TODO(p0ny): remove this after supporting postgresql dialect
+		if database.DatabaseDialect == databasepb.DatabaseDialect_POSTGRESQL {
+			continue
+		}
+
 		// database.Name is of the form `projects/<project>/instances/<instance>/databases/<database>`
 		// We use regular expression to extract <database> from it.
 		databaseName, err := getDatabaseFromDSN(database.Name)
@@ -153,7 +159,7 @@ func getColumn(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tab
       ORDINAL_POSITION,
       COLUMN_DEFAULT,
       IS_NULLABLE = 'YES',
-      SPANNER_TYPE,
+      SPANNER_TYPE
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA NOT IN ('INFORMATION_SCHEMA', 'SPANNER_SYS')
     ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION
