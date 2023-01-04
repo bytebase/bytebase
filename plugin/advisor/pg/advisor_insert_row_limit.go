@@ -87,12 +87,14 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 
 	n, ok := node.(*ast.InsertStmt)
 	if ok {
+		// For INSERT INTO ... VALUES ... statements, use parser only.
 		if len(n.ValueList) > 0 {
 			if len(n.ValueList) > checker.maxRow {
 				code = advisor.InsertTooManyRows
 				rows = int64(len(n.ValueList))
 			}
 		} else if checker.driver != nil {
+			// For INSERT INTO ... SELECT statements, use EXPLAIN.
 			res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
 			if err != nil {
 				checker.adviceList = append(checker.adviceList, advisor.Advice{
