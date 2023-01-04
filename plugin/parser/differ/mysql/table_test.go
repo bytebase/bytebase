@@ -54,6 +54,13 @@ func TestTable(t *testing.T) {
 				"ALTER TABLE `book` DROP FOREIGN KEY `fk_price_id`;\n\n" +
 				"ALTER TABLE `book` DROP COLUMN `price_id`;\n\n",
 		},
+		// Ignore ghost del table.
+		{
+			old: "CREATE TABLE `~students_1672309664_del`(id INT, name VARCHAR(255), PRIMARY KEY(id));" +
+				"CREATE TABLE `book`(id INT, price INT, PRIMARY KEY(id));",
+			new:  "CREATE TABLE `book`(id INT, price INT, PRIMARY KEY(id));",
+			want: "",
+		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
 }

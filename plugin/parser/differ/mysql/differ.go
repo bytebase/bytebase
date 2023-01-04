@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -31,9 +32,18 @@ var (
 	_ differ.SchemaDiffer = (*SchemaDiffer)(nil)
 )
 
+var (
+	tableNameRegexpNeedFilter = map[*regexp.Regexp]bool{}
+)
+
 func init() {
 	differ.Register(bbparser.MySQL, &SchemaDiffer{})
 	differ.Register(bbparser.TiDB, &SchemaDiffer{})
+
+	// Compile the regexp.
+	// Filter out ghost del table.
+	ghostDelTableRegexp := regexp.MustCompile(`^~.+_\d+_del$`)
+	tableNameRegexpNeedFilter[ghostDelTableRegexp] = true
 }
 
 const (
@@ -92,7 +102,7 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 	var dropNodeList []ast.Node
 	var viewStmts []*ast.CreateViewStmt
 
-	oldTableMap := buildTableMap(oldNodes)
+	oldTableMap := buildTableMap(oldNodes, tableNameRegexpNeedFilter)
 	oldViewMap := buildViewMap(oldNodes)
 	newViewMap := buildViewMap(newNodes)
 	var newViewList []*ast.CreateViewStmt
@@ -101,6 +111,9 @@ func (*SchemaDiffer) SchemaDiff(oldStmt, newStmt string) (string, error) {
 		switch newStmt := node.(type) {
 		case *ast.CreateTableStmt:
 			tableName := newStmt.Table.Name.O
+			if matchFilterRegexp(tableName, tableNameRegexpNeedFilter) {
+				continue
+			}
 			oldStmt, ok := oldTableMap[tableName]
 			if !ok {
 				stmt := *newStmt
@@ -560,17 +573,29 @@ func writeNodeStatementList(w io.Writer, ns []ast.Node, flags format.RestoreFlag
 }
 
 // buildTableMap returns a map of table name to create table statements.
-func buildTableMap(nodes []ast.StmtNode) map[string]*ast.CreateTableStmt {
+func buildTableMap(nodes []ast.StmtNode, filterRegexp map[*regexp.Regexp]bool) map[string]*ast.CreateTableStmt {
 	tableMap := make(map[string]*ast.CreateTableStmt)
 	for _, node := range nodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
 			tableName := stmt.Table.Name.String()
+			if matchFilterRegexp(tableName, filterRegexp) {
+				continue
+			}
 			tableMap[tableName] = stmt
 		default:
 		}
 	}
 	return tableMap
+}
+
+func matchFilterRegexp(name string, filterRegexp map[*regexp.Regexp]bool) bool {
+	for re := range filterRegexp {
+		if re.MatchString(name) {
+			return true
+		}
+	}
+	return false
 }
 
 // buildViewMap returns a map of view name to create view statements.

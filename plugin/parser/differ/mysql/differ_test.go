@@ -6,6 +6,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMatchFilterRegexp(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		// Match ghost del table.
+		{
+			name: "~students_1672309664_del",
+			want: true,
+		},
+	}
+
+	a := require.New(t)
+	for _, test := range tests {
+		a.Equal(test.want, matchFilterRegexp(test.name, tableNameRegexpNeedFilter))
+	}
+}
+
 func TestExtractUnsupportObjNameAndType(t *testing.T) {
 	tests := []struct {
 		stmt     string
