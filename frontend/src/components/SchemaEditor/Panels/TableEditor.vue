@@ -52,6 +52,7 @@
 
       <!-- column table -->
       <div
+        id="table-editor-container"
         ref="tableEditorContainerRef"
         class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
       >
@@ -96,7 +97,7 @@
                 v-model="column.type"
                 :disabled="disableAlterColumn(column)"
                 placeholder="column type"
-                class="column-field-input !pr-8"
+                class="column-field-input column-type-input !pr-8"
                 type="text"
               />
               <NDropdown

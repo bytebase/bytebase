@@ -54,7 +54,7 @@ import { fitView } from "./libs/fitView";
 const canvas = ref<Element>();
 const desktop = ref<Element>();
 
-const { tableList, rectOfTable, zoom, position, events } =
+const { tableList, rectOfTable, zoom, position, panning, events } =
   useSchemaDiagramContext();
 
 const zoomCenter = ref<Position>({ x: 0.5, y: 0.5 });
@@ -100,11 +100,16 @@ const handleZoom = (delta: number, center: Position = { x: 0.5, y: 0.5 }) => {
 const handlePan = (x: number, y: number) => {
   position.value.x += x;
   position.value.y += y;
+  panning.value = true;
+};
+const handlePanEnd = () => {
+  panning.value = false;
 };
 
 useDraggable(canvas, {
   exact: false,
   onPan: handlePan,
+  onEnd: handlePanEnd,
 });
 
 useEventListener(
