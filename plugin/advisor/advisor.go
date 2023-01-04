@@ -277,6 +277,9 @@ const (
 
 	// PostgreSQLStatementDisallowCommit is an advisor type for PostgreSQL to disallow commit.
 	PostgreSQLStatementDisallowCommit Type = "bb.plugin.advisor.postgresql.statement.disallow-commit"
+
+	// PostgreSQLStatementDMLDryRun is an advisor type for PostgreSQL DML dry run.
+	PostgreSQLStatementDMLDryRun Type = "bb.plugin.advisor.postgresql.statement.dml-dry-run"
 )
 
 // Advice is the result of an advisor.

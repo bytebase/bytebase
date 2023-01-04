@@ -208,6 +208,11 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 				IndexName: in.RenameStmt.Relation.Relname,
 				NewName:   in.RenameStmt.Newname,
 			}, nil
+		case pgquery.ObjectType_OBJECT_SCHEMA:
+			return &ast.RenameSchemaStmt{
+				Schema:  in.RenameStmt.Subname,
+				NewName: in.RenameStmt.Newname,
+			}, nil
 		}
 	case *pgquery.Node_IndexStmt:
 		indexDef := &ast.IndexDef{

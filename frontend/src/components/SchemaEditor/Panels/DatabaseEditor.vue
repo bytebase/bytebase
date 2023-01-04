@@ -161,6 +161,9 @@
         :table-list="tableMetadataList"
         :table-status="tableStatus"
         :column-status="columnStatus"
+        :editable="true"
+        @edit-table="tryEditTable"
+        @edit-column="tryEditColumn"
       />
     </template>
   </div>
@@ -177,7 +180,7 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
@@ -198,6 +201,7 @@ import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import SchemaDiagram from "@/components/SchemaDiagram";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 
 type TabType = "table-list" | "schema-diagram" | "raw-sql";
 
@@ -290,16 +294,22 @@ const tableHeaderList = computed(() => {
 });
 
 watch(
-  [() => currentTab.value.selectedSchemaName],
+  [() => currentTab.value, () => schemaList],
   () => {
-    if (currentTab.value.selectedSchemaName) {
+    const schemaNameList = schemaList.map((schema) => schema.name);
+    if (
+      currentTab.value &&
+      currentTab.value.selectedSchemaName &&
+      schemaNameList.includes(currentTab.value.selectedSchemaName)
+    ) {
       state.selectedSchema = currentTab.value.selectedSchemaName;
     } else {
-      state.selectedSchema = head(schemaList)?.name || "";
+      state.selectedSchema = head(schemaNameList) || "";
     }
   },
   {
     immediate: true,
+    deep: true,
   }
 );
 
@@ -311,7 +321,7 @@ watch(
       const databaseEditList: DatabaseEdit[] = [];
       for (const schema of databaseSchema.value.schemaList) {
         const originSchema = databaseSchema.value.originSchemaList.find(
-          (schema) => schema.name === schema.name
+          (originSchema) => originSchema.name === schema.name
         );
         const diffSchemaResult = diffSchema(database.id, originSchema, schema);
         if (
@@ -391,8 +401,40 @@ const handleRestoreTable = (table: Table) => {
   editorStore.restoreTable(table);
 };
 
-const { tableMetadataList, tableStatus, columnStatus } =
-  useMetadataForDiagram(databaseSchema);
+const {
+  tableMetadataList,
+  tableStatus,
+  columnStatus,
+  editableTable,
+  editableColumn,
+} = useMetadataForDiagram(databaseSchema);
+
+const tryEditTable = (tableMeta: TableMetadata) => {
+  const table = editableTable(tableMeta);
+  if (table) {
+    handleTableItemClick(table);
+  }
+};
+
+const tryEditColumn = (
+  tableMeta: TableMetadata,
+  columnMeta: ColumnMetadata,
+  target: "name" | "type"
+) => {
+  const table = editableTable(tableMeta);
+  const column = editableColumn(columnMeta);
+  if (table && column) {
+    handleTableItemClick(table);
+    nextTick(() => {
+      const container = document.querySelector("#table-editor-container");
+      const input = container?.querySelector(
+        `.column-${column.id} .column-${target}-input`
+      ) as HTMLInputElement | undefined;
+
+      input?.focus();
+    });
+  }
+};
 </script>
 
 <style scoped>

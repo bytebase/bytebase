@@ -3117,3 +3117,25 @@ func TestCommit(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestRenameSchema(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `ALTER SCHEMA s1 RENAME TO s2`,
+			want: []ast.Node{
+				&ast.RenameSchemaStmt{
+					Schema:  "s1",
+					NewName: "s2",
+				},
+			},
+			statementList: []parser.SingleSQL{
+				{
+					Text:     `ALTER SCHEMA s1 RENAME TO s2`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}

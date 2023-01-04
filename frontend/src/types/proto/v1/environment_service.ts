@@ -6,6 +6,45 @@ import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
+export enum EnvironmentTier {
+  ENVIRONMENT_TIER_UNSPECIFIED = 0,
+  PROTECTED = 1,
+  UNPROTECTED = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function environmentTierFromJSON(object: any): EnvironmentTier {
+  switch (object) {
+    case 0:
+    case "ENVIRONMENT_TIER_UNSPECIFIED":
+      return EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
+    case 1:
+    case "PROTECTED":
+      return EnvironmentTier.PROTECTED;
+    case 2:
+    case "UNPROTECTED":
+      return EnvironmentTier.UNPROTECTED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return EnvironmentTier.UNRECOGNIZED;
+  }
+}
+
+export function environmentTierToJSON(object: EnvironmentTier): string {
+  switch (object) {
+    case EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED:
+      return "ENVIRONMENT_TIER_UNSPECIFIED";
+    case EnvironmentTier.PROTECTED:
+      return "PROTECTED";
+    case EnvironmentTier.UNPROTECTED:
+      return "UNPROTECTED";
+    case EnvironmentTier.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetEnvironmentRequest {
   /**
    * The name of the environment to retrieve.
@@ -96,6 +135,7 @@ export interface Environment {
   state: State;
   title: string;
   order: number;
+  tier: EnvironmentTier;
 }
 
 function createBaseGetEnvironmentRequest(): GetEnvironmentRequest {
@@ -493,7 +533,7 @@ export const UndeleteEnvironmentRequest = {
 };
 
 function createBaseEnvironment(): Environment {
-  return { name: "", uid: "", state: 0, title: "", order: 0 };
+  return { name: "", uid: "", state: 0, title: "", order: 0, tier: 0 };
 }
 
 export const Environment = {
@@ -512,6 +552,9 @@ export const Environment = {
     }
     if (message.order !== 0) {
       writer.uint32(40).int32(message.order);
+    }
+    if (message.tier !== 0) {
+      writer.uint32(48).int32(message.tier);
     }
     return writer;
   },
@@ -538,6 +581,9 @@ export const Environment = {
         case 5:
           message.order = reader.int32();
           break;
+        case 6:
+          message.tier = reader.int32() as any;
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -553,6 +599,7 @@ export const Environment = {
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       title: isSet(object.title) ? String(object.title) : "",
       order: isSet(object.order) ? Number(object.order) : 0,
+      tier: isSet(object.tier) ? environmentTierFromJSON(object.tier) : 0,
     };
   },
 
@@ -563,6 +610,7 @@ export const Environment = {
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.title !== undefined && (obj.title = message.title);
     message.order !== undefined && (obj.order = Math.round(message.order));
+    message.tier !== undefined && (obj.tier = environmentTierToJSON(message.tier));
     return obj;
   },
 
@@ -573,6 +621,7 @@ export const Environment = {
     message.state = object.state ?? 0;
     message.title = object.title ?? "";
     message.order = object.order ?? 0;
+    message.tier = object.tier ?? 0;
     return message;
   },
 };

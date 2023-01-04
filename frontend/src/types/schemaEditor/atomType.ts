@@ -112,7 +112,6 @@ export const convertSchemaMetadataToSchema = (
   schemaMetadata: SchemaMetadata
 ): Schema => {
   const tableList: Table[] = [];
-  const foreignKeyList: ForeignKey[] = [];
 
   for (const tableMetadata of schemaMetadata.tables) {
     // Don't display ghost table in Schema Editor.
@@ -124,60 +123,82 @@ export const convertSchemaMetadataToSchema = (
     tableList.push(table);
   }
 
-  for (const tableMetadata of schemaMetadata.tables) {
-    const table = tableList.find((table) => table.name === tableMetadata.name);
-    if (!table) {
-      continue;
-    }
-
-    for (const foreignKeyMetadata of tableMetadata.foreignKeys) {
-      // TODO(steven): remove this after backend return unique fk.
-      if (
-        foreignKeyList.map((fk) => fk.name).includes(foreignKeyMetadata.name)
-      ) {
-        continue;
-      }
-      const referencedTable = tableList.find(
-        (table) => table.name === foreignKeyMetadata.referencedTable
-      );
-      if (!referencedTable) {
-        continue;
-      }
-
-      const fk: ForeignKey = {
-        name: foreignKeyMetadata.name,
-        tableId: table.id,
-        columnIdList: [],
-        referencedSchema: foreignKeyMetadata.referencedSchema,
-        referencedTableId: referencedTable.id,
-        referencedColumnIdList: [],
-      };
-
-      for (const columnName of foreignKeyMetadata.columns) {
-        const column = table.columnList.find(
-          (column) => column.name === columnName
-        );
-        if (column) {
-          fk.columnIdList.push(column.id);
-        }
-      }
-      for (const referencedColumnName of foreignKeyMetadata.referencedColumns) {
-        const referencedColumn = referencedTable.columnList.find(
-          (column) => column.name === referencedColumnName
-        );
-        if (referencedColumn) {
-          fk.referencedColumnIdList.push(referencedColumn.id);
-        }
-      }
-
-      foreignKeyList.push(fk);
-    }
-  }
-
   return {
     name: schemaMetadata.name,
     tableList: tableList,
-    foreignKeyList: foreignKeyList,
+    foreignKeyList: [],
     status: "normal",
   };
+};
+
+export const convertSchemaMetadataList = (
+  schemaMetadataList: SchemaMetadata[]
+) => {
+  // Compose all tables of each schema.
+  const schemaList: Schema[] = schemaMetadataList.map((schemaMetadata) =>
+    convertSchemaMetadataToSchema(schemaMetadata)
+  );
+
+  // Build foreign keys for schema and referenced schema.
+  for (const schemaMetadata of schemaMetadataList) {
+    const schema = schemaList.find(
+      (schema) => schema.name === schemaMetadata.name
+    );
+    if (!schema) {
+      continue;
+    }
+
+    const tableList = schema.tableList;
+    const foreignKeyList: ForeignKey[] = [];
+    for (const tableMetadata of schemaMetadata.tables) {
+      const table = tableList.find(
+        (table) => table.name === tableMetadata.name
+      );
+      if (!table) {
+        continue;
+      }
+
+      for (const foreignKeyMetadata of tableMetadata.foreignKeys) {
+        const referencedSchema = schemaList.find(
+          (schema) => schema.name === foreignKeyMetadata.referencedSchema
+        );
+        const referencedTable = referencedSchema?.tableList.find(
+          (table) => table.name === foreignKeyMetadata.referencedTable
+        );
+        if (!referencedSchema || !referencedTable) {
+          continue;
+        }
+
+        const fk: ForeignKey = {
+          name: foreignKeyMetadata.name,
+          tableId: table.id,
+          columnIdList: [],
+          referencedSchema: foreignKeyMetadata.referencedSchema,
+          referencedTableId: referencedTable.id,
+          referencedColumnIdList: [],
+        };
+        for (const columnName of foreignKeyMetadata.columns) {
+          const column = table.columnList.find(
+            (column) => column.name === columnName
+          );
+          if (column) {
+            fk.columnIdList.push(column.id);
+          }
+        }
+        for (const referencedColumnName of foreignKeyMetadata.referencedColumns) {
+          const referencedColumn = referencedTable.columnList.find(
+            (column) => column.name === referencedColumnName
+          );
+          if (referencedColumn) {
+            fk.referencedColumnIdList.push(referencedColumn.id);
+          }
+        }
+
+        foreignKeyList.push(fk);
+      }
+    }
+    schema.foreignKeyList = foreignKeyList;
+  }
+
+  return schemaList;
 };

@@ -130,6 +130,8 @@ type DatabaseEdit struct {
 	DatabaseID int `json:"databaseId"`
 
 	CreateSchemaList []*CreateSchemaContext `json:"createSchemaList"`
+	RenameSchemaList []*RenameSchemaContext `json:"renameSchemaList"`
+	DropSchemaList   []*DropSchemaContext   `json:"dropSchemaList"`
 	CreateTableList  []*CreateTableContext  `json:"createTableList"`
 	AlterTableList   []*AlterTableContext   `json:"alterTableList"`
 	RenameTableList  []*RenameTableContext  `json:"renameTableList"`
@@ -138,6 +140,17 @@ type DatabaseEdit struct {
 
 // CreateSchemaContext is the edit database context to create a schema.
 type CreateSchemaContext struct {
+	Schema string `json:"schema"`
+}
+
+// RenameSchemaContext is the edit database context to rename a schema.
+type RenameSchemaContext struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
+}
+
+// DropSchemaContext is the edit database context to drop a schema.
+type DropSchemaContext struct {
 	Schema string `json:"schema"`
 }
 

@@ -36,7 +36,9 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -111,7 +113,9 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -129,6 +133,9 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 			patch.Name = &request.Environment.Title
 		case "environment.order":
 			patch.Order = &request.Environment.Order
+		case "environment.tier":
+			protected := request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED
+			patch.Protected = &protected
 		}
 	}
 
@@ -151,7 +158,10 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID:  &environmentID,
+		ShowDeleted: true,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -185,7 +195,10 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID:  &environmentID,
+		ShowDeleted: true,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -205,11 +218,16 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 }
 
 func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
+	tier := v1pb.EnvironmentTier_UNPROTECTED
+	if environment.Protected {
+		tier = v1pb.EnvironmentTier_PROTECTED
+	}
 	return &v1pb.Environment{
 		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
 		Uid:   fmt.Sprintf("%d", environment.UID),
+		State: convertDeletedToState(environment.Deleted),
 		Title: environment.Title,
 		Order: environment.Order,
-		State: convertDeletedToState(environment.Deleted),
+		Tier:  tier,
 	}
 }
