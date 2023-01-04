@@ -4,7 +4,9 @@ import {
   CreateSchemaContext,
   CreateTableContext,
   DatabaseId,
+  DropSchemaContext,
   DropTableContext,
+  RenameSchemaContext,
   RenameTableContext,
 } from "@/types";
 import { Schema } from "@/types/schemaEditor/atomType";
@@ -19,8 +21,20 @@ export const diffSchema = (
 ) => {
   const editorStore = useSchemaEditorStore();
   const createSchemaContextList: CreateSchemaContext[] = [];
+  const renameSchemaContextList: RenameSchemaContext[] = [];
+  const dropSchemaContextList: DropSchemaContext[] = [];
+  if (originSchema && originSchema.name !== schema.name) {
+    renameSchemaContextList.push({
+      oldName: originSchema.name,
+      newName: schema.name,
+    });
+  }
   if (schema.status === "created") {
     createSchemaContextList.push({
+      schema: schema.name,
+    });
+  } else if (schema.status === "dropped") {
+    dropSchemaContextList.push({
       schema: schema.name,
     });
   }
@@ -46,12 +60,16 @@ export const diffSchema = (
       (fk) => fk.tableId === table.id
     );
     for (const foreignKey of foreignKeyList) {
+      const referencedSchema = editorStore.getSchema(
+        databaseId,
+        foreignKey.referencedSchemaId
+      );
       const referencedTable = editorStore.getTable(
         databaseId,
-        foreignKey.referencedSchema,
+        foreignKey.referencedSchemaId,
         foreignKey.referencedTableId
       );
-      if (referencedTable) {
+      if (referencedSchema && referencedTable) {
         const columnNameList: string[] = [];
         const referencedColumnNameList: string[] = [];
         for (const columnId of foreignKey.columnIdList) {
@@ -73,7 +91,7 @@ export const diffSchema = (
 
         createTableContext.addForeignKeyList.push({
           columnList: columnNameList,
-          referencedSchema: foreignKey.referencedSchema,
+          referencedSchema: referencedSchema.name,
           referencedTable: referencedTable.name,
           referencedColumnList: referencedColumnNameList,
         });
@@ -196,7 +214,7 @@ export const diffSchema = (
               ) {
                 const referencedSchema = editorStore.getSchema(
                   databaseId,
-                  foreignKey.referencedSchema
+                  foreignKey.referencedSchemaId
                 );
                 const referencedTable = referencedSchema?.tableList.find(
                   (table) => table.id === foreignKey.referencedTableId
@@ -258,6 +276,8 @@ export const diffSchema = (
 
   return {
     createSchemaList: createSchemaContextList,
+    renameSchemaList: renameSchemaContextList,
+    dropSchemaList: dropSchemaContextList,
     createTableList: createTableContextList,
     alterTableList: alterTableContextList,
     renameTableList: renameTableContextList,

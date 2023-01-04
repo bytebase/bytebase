@@ -43,7 +43,7 @@
           >
             <span class="mr-1">Schema:</span>
             <n-select
-              v-model:value="state.selectedSchema"
+              v-model:value="state.selectedSchemaId"
               class="min-w-[8rem]"
               :options="schemaSelectorOptionList"
             />
@@ -171,7 +171,7 @@
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
     :database-id="state.tableNameModalContext.databaseId"
-    :schema-name="state.tableNameModalContext.schemaName"
+    :schema-id="state.tableNameModalContext.schemaId"
     :table-name="state.tableNameModalContext.tableName"
     @close="state.tableNameModalContext = undefined"
   />
@@ -207,12 +207,12 @@ type TabType = "table-list" | "schema-diagram" | "raw-sql";
 
 interface LocalState {
   selectedTab: TabType;
-  selectedSchema: string;
+  selectedSchemaId: string;
   isFetchingDDL: boolean;
   statement: string;
   tableNameModalContext?: {
     databaseId: DatabaseId;
-    schemaName: string;
+    schemaId: string;
     tableName: string | undefined;
   };
 }
@@ -222,7 +222,7 @@ const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   selectedTab: "table-list",
-  selectedSchema: "",
+  selectedSchemaId: "",
   isFetchingDDL: false,
   statement: "",
 });
@@ -234,12 +234,16 @@ const databaseSchema = computed(() => {
 });
 const database = databaseSchema.value.database;
 const databaseEngine = database.instance.engine;
-const schemaList = databaseSchema.value.schemaList;
-const tableList = computed(() => {
-  return (
-    schemaList.find((schema) => schema.name === state.selectedSchema)
-      ?.tableList ?? []
+const schemaList = computed(() => {
+  return databaseSchema.value.schemaList;
+});
+const selectedSchema = computed(() => {
+  return schemaList.value.find(
+    (schema) => schema.id === state.selectedSchemaId
   );
+});
+const tableList = computed(() => {
+  return selectedSchema.value?.tableList ?? [];
 });
 
 const shouldShowSchemaSelector = computed(() => {
@@ -248,17 +252,21 @@ const shouldShowSchemaSelector = computed(() => {
 
 const allowCreateTable = computed(() => {
   if (databaseEngine === "POSTGRES") {
-    return schemaList.length > 0 && state.selectedSchema !== "";
+    return (
+      schemaList.value.length > 0 &&
+      selectedSchema.value &&
+      selectedSchema.value.status !== "dropped"
+    );
   }
   return true;
 });
 
 const schemaSelectorOptionList = computed(() => {
   const optionList = [];
-  for (const schema of schemaList) {
+  for (const schema of schemaList.value) {
     optionList.push({
       label: schema.name,
-      value: schema.name,
+      value: schema.id,
     });
   }
   return optionList;
@@ -296,15 +304,15 @@ const tableHeaderList = computed(() => {
 watch(
   [() => currentTab.value, () => schemaList],
   () => {
-    const schemaNameList = schemaList.map((schema) => schema.name);
+    const schemaIdList = schemaList.value.map((schema) => schema.id);
     if (
       currentTab.value &&
-      currentTab.value.selectedSchemaName &&
-      schemaNameList.includes(currentTab.value.selectedSchemaName)
+      currentTab.value.selectedSchemaId &&
+      schemaIdList.includes(currentTab.value.selectedSchemaId)
     ) {
-      state.selectedSchema = currentTab.value.selectedSchemaName;
+      state.selectedSchemaId = currentTab.value.selectedSchemaId;
     } else {
-      state.selectedSchema = head(schemaNameList) || "";
+      state.selectedSchemaId = head(schemaIdList) || "";
     }
   },
   {
@@ -321,11 +329,13 @@ watch(
       const databaseEditList: DatabaseEdit[] = [];
       for (const schema of databaseSchema.value.schemaList) {
         const originSchema = databaseSchema.value.originSchemaList.find(
-          (originSchema) => originSchema.name === schema.name
+          (originSchema) => originSchema.id === schema.id
         );
         const diffSchemaResult = diffSchema(database.id, originSchema, schema);
         if (
           diffSchemaResult.createSchemaList.length > 0 ||
+          diffSchemaResult.renameSchemaList.length > 0 ||
+          diffSchemaResult.dropSchemaList.length > 0 ||
           diffSchemaResult.createTableList.length > 0 ||
           diffSchemaResult.alterTableList.length > 0 ||
           diffSchemaResult.renameTableList.length > 0 ||
@@ -376,11 +386,16 @@ const handleChangeTab = (tab: TabType) => {
 };
 
 const handleCreateNewTable = () => {
-  state.tableNameModalContext = {
-    databaseId: database.id,
-    schemaName: state.selectedSchema,
-    tableName: undefined,
-  };
+  const selectedSchema = schemaList.value.find(
+    (schema) => schema.id === state.selectedSchemaId
+  );
+  if (selectedSchema) {
+    state.tableNameModalContext = {
+      databaseId: database.id,
+      schemaId: selectedSchema.id,
+      tableName: undefined,
+    };
+  }
 };
 
 const handleTableItemClick = (table: Table) => {
@@ -388,17 +403,17 @@ const handleTableItemClick = (table: Table) => {
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
     databaseId: database.id,
-    schemaName: state.selectedSchema,
+    schemaId: state.selectedSchemaId,
     tableId: table.id,
   });
 };
 
 const handleDropTable = (table: Table) => {
-  editorStore.dropTable(database.id, state.selectedSchema, table);
+  editorStore.dropTable(database.id, state.selectedSchemaId, table.id);
 };
 
 const handleRestoreTable = (table: Table) => {
-  editorStore.restoreTable(table);
+  editorStore.restoreTable(database.id, state.selectedSchemaId, table.id);
 };
 
 const {

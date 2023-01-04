@@ -4,12 +4,12 @@ import { DatabaseId } from "@/types";
 
 export const isTableChanged = (
   databaseId: DatabaseId,
-  schemaName: string,
+  schemaId: string,
   tableId: string
 ): boolean => {
   const editorStore = useSchemaEditorStore();
-  const originSchema = editorStore.getOriginSchema(databaseId, schemaName);
-  const schema = editorStore.getSchema(databaseId, schemaName);
+  const originSchema = editorStore.getOriginSchema(databaseId, schemaId);
+  const schema = editorStore.getSchema(databaseId, schemaId);
   const table = schema?.tableList.find((table) => table.id === tableId);
   const originTable = originSchema?.tableList.find(
     (table) => table.id === tableId

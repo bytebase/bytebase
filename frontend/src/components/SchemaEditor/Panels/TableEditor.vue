@@ -27,8 +27,8 @@
       <div class="w-full py-2 flex flex-row justify-between items-center">
         <div>
           <button
-            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80"
-            :disabled="isDroppedTable"
+            class="flex flex-row justify-center items-center border px-3 py-1 leading-6 text-sm text-gray-700 rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="disableChangeTable"
             @click="handleAddColumn"
           >
             <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
@@ -181,19 +181,20 @@
                 class="column-field-text italic text-gray-400 !w-auto"
                 >EMPTY</span
               >
-              <span
-                class="foreign-key-edit-button hidden cursor-pointer hover:opacity-80"
+              <button
+                class="foreign-key-edit-button hidden cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="disableAlterColumn(column)"
                 @click="handleEditColumnForeignKey(column)"
               >
                 <heroicons:pencil-square class="w-4 h-auto text-gray-400" />
-              </span>
+              </button>
             </div>
             <div class="w-full flex justify-start items-center">
               <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
                 <template #trigger>
                   <button
-                    :disabled="isDroppedTable"
-                    class="text-gray-500 cursor-pointer hover:opacity-80"
+                    :disabled="disableChangeTable"
+                    class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
                     @click="handleDropColumn(column)"
                   >
                     <heroicons:trash class="w-4 h-auto" />
@@ -204,8 +205,8 @@
               <n-tooltip v-else trigger="hover">
                 <template #trigger>
                   <button
-                    class="text-gray-500 cursor-pointer hover:opacity-80"
-                    :disabled="isDroppedTable"
+                    class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                    :disabled="disableChangeTable"
                     @click="handleRestoreColumn(column)"
                   >
                     <heroicons:arrow-uturn-left class="w-4 h-auto" />
@@ -245,7 +246,7 @@
   <EditColumnForeignKeyModal
     v-if="state.showEditColumnForeignKeyModal && editForeignKeyColumn"
     :database-id="currentTab.databaseId"
-    :schema-name="schema.name"
+    :schema-id="schema.id"
     :table-id="table.id"
     :column-id="editForeignKeyColumn.id"
     @close="state.showEditColumnForeignKeyModal = false"
@@ -300,7 +301,7 @@ const state = reactive<LocalState>({
 const table = ref(editorStore.getTableWithTableTab(currentTab) as Table);
 const schema = computed(() => {
   return databaseSchema.schemaList.find(
-    (schema) => schema.name === currentTab.schemaName
+    (schema) => schema.id === currentTab.schemaId
   ) as Schema;
 });
 const foreignKeyList = computed(() => {
@@ -311,6 +312,10 @@ const foreignKeyList = computed(() => {
 
 const tableEditorContainerRef = ref<HTMLDivElement>();
 const editForeignKeyColumn = ref<Column>();
+
+const isDroppedSchema = computed(() => {
+  return schema.value.status === "dropped";
+});
 
 const isDroppedTable = computed(() => {
   return table.value.status === "dropped";
@@ -324,7 +329,7 @@ const allowResetTable = computed(() => {
   return (
     isTableChanged(
       currentTab.databaseId,
-      currentTab.schemaName,
+      currentTab.schemaId,
       currentTab.tableId
     ) || isDroppedTable.value
   );
@@ -393,7 +398,7 @@ watch(
     if (state.selectedTab === "raw-sql") {
       const originSchema = editorStore.getOriginSchema(
         currentTab.databaseId,
-        currentTab.schemaName
+        currentTab.schemaId
       ) as Schema;
       const diffSchemaResult = diffSchema(
         currentTab.databaseId,
@@ -403,6 +408,8 @@ watch(
       const databaseEdit: DatabaseEdit = {
         databaseId: currentTab.databaseId,
         createSchemaList: [],
+        renameSchemaList: [],
+        dropSchemaList: [],
         createTableList: diffSchemaResult.createTableList.filter(
           (context) => context.name === table.value.name
         ),
@@ -464,9 +471,13 @@ const getReferencedForeignKeyName = (column: Column) => {
   if (isUndefined(fk) || isUndefined(index) || index < 0) {
     return;
   }
+  const referencedSchema = editorStore.getSchema(
+    currentTab.databaseId,
+    fk.referencedSchemaId
+  );
   const referencedTable = editorStore.getTable(
     currentTab.databaseId,
-    fk.referencedSchema,
+    fk.referencedSchemaId,
     fk.referencedTableId
   );
   if (!referencedTable) {
@@ -478,7 +489,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   if (databaseEngine.value === "MYSQL") {
     return `${referencedTable.name}(${referColumn?.name})`;
   } else {
-    return `${fk.referencedSchema}.${referencedTable.name}(${referColumn?.name})`;
+    return `${referencedSchema?.name}.${referencedTable.name}(${referColumn?.name})`;
   }
 };
 
@@ -486,8 +497,14 @@ const isDroppedColumn = (column: Column): boolean => {
   return column.status === "dropped";
 };
 
+const disableChangeTable = (): boolean => {
+  return isDroppedSchema.value || isDroppedTable.value;
+};
+
 const disableAlterColumn = (column: Column): boolean => {
-  return isDroppedTable.value || isDroppedColumn(column);
+  return (
+    isDroppedSchema.value || isDroppedTable.value || isDroppedColumn(column)
+  );
 };
 
 const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
@@ -577,11 +594,11 @@ const handleDiscardChanges = () => {
 
   const originSchema = editorStore.getOriginSchema(
     currentTab.databaseId,
-    currentTab.schemaName
+    currentTab.schemaId
   );
   const originTable = editorStore.getOriginTable(
     currentTab.databaseId,
-    currentTab.schemaName,
+    currentTab.schemaId,
     table.value.id
   );
 
