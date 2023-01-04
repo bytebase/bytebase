@@ -290,16 +290,22 @@ const tableHeaderList = computed(() => {
 });
 
 watch(
-  [() => currentTab.value.selectedSchemaName],
+  [() => currentTab.value, () => schemaList],
   () => {
-    if (currentTab.value.selectedSchemaName) {
+    const schemaNameList = schemaList.map((schema) => schema.name);
+    if (
+      currentTab.value &&
+      currentTab.value.selectedSchemaName &&
+      schemaNameList.includes(currentTab.value.selectedSchemaName)
+    ) {
       state.selectedSchema = currentTab.value.selectedSchemaName;
     } else {
-      state.selectedSchema = head(schemaList)?.name || "";
+      state.selectedSchema = head(schemaNameList) || "";
     }
   },
   {
     immediate: true,
+    deep: true,
   }
 );
 
@@ -311,7 +317,7 @@ watch(
       const databaseEditList: DatabaseEdit[] = [];
       for (const schema of databaseSchema.value.schemaList) {
         const originSchema = databaseSchema.value.originSchemaList.find(
-          (schema) => schema.name === schema.name
+          (originSchema) => originSchema.name === schema.name
         );
         const diffSchemaResult = diffSchema(database.id, originSchema, schema);
         if (

@@ -13,6 +13,7 @@ import {
 } from "@/types";
 import { DatabaseEditResult } from "@/types/schemaEditor";
 import {
+  convertSchemaMetadataList,
   convertSchemaMetadataToSchema,
   Table,
 } from "@/types/schemaEditor/atomType";
@@ -171,9 +172,7 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
           databaseId,
           true
         );
-      const schemaList = schemaMetadataList.map((schemaMetadata) =>
-        convertSchemaMetadataToSchema(schemaMetadata)
-      );
+      const schemaList = convertSchemaMetadataList(schemaMetadataList);
       if (schemaList.length === 0 && database.instance.engine === "MYSQL") {
         schemaList.push(
           convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}))
@@ -196,6 +195,20 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
           this.databaseSchemaById
             .get(databaseId)
             ?.schemaList.filter((schema) => schema.name !== schemaName) || [];
+
+        // Close related tabs.
+        for (const tab of this.tabList) {
+          if (tab.databaseId !== databaseId) {
+            continue;
+          }
+
+          if (
+            tab.type === SchemaEditorTabType.TabForTable &&
+            tab.schemaName === schemaName
+          ) {
+            this.closeTab(tab.id);
+          }
+        }
       }
     },
     getSchema(databaseId: DatabaseId, schemaName: string) {

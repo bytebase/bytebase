@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts" setup>
-import { escape, isUndefined } from "lodash-es";
+import { escape, head, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -204,8 +204,9 @@ const contextMenuOptions = computed(() => {
     }
     return options;
   } else if (treeNode.type === "table") {
-    const table = schemaList.value
-      .find((schema) => schema.name === treeNode.schemaName)
+    const table = editorStore.databaseSchemaById
+      .get(treeNode.databaseId)
+      ?.schemaList.find((schema) => schema.name === treeNode.schemaName)
       ?.tableList.find((table) => table.id === treeNode.tableId);
     if (!table) {
       return [];
@@ -280,8 +281,10 @@ onMounted(async () => {
     const schemaList = await editorStore.fetchSchemaListByDatabaseId(
       node.databaseId
     );
-    if (schemaList.length !== 0) {
-      expandedKeysRef.value.push(node.key);
+    expandedKeysRef.value.push(node.key);
+    const schema = head(schemaList);
+    if (schemaList.length === 1 && schema) {
+      expandedKeysRef.value.push(`s-${node.databaseId}-${schema.name}`);
       editorStore.addTab({
         id: generateUniqueTabId(),
         type: SchemaEditorTabType.TabForDatabase,
@@ -409,8 +412,13 @@ watch(
     }
 
     if (currentTab.type === SchemaEditorTabType.TabForDatabase) {
-      const key = `d-${currentTab.databaseId}`;
-      selectedKeysRef.value = [key];
+      if (currentTab.selectedSchemaName) {
+        const key = `s-${currentTab.databaseId}-${currentTab.selectedSchemaName}`;
+        selectedKeysRef.value = [key];
+      } else {
+        const key = `d-${currentTab.databaseId}`;
+        selectedKeysRef.value = [key];
+      }
     } else if (currentTab.type === SchemaEditorTabType.TabForTable) {
       const databaseTreeNodeKey = `d-${currentTab.databaseId}`;
       if (!expandedKeysRef.value.includes(databaseTreeNodeKey)) {
@@ -615,13 +623,10 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
             databaseId: treeNode.databaseId,
           });
         } else if (treeNode.type === "schema") {
-          // Toggle schema tree node expanded status.
           const index = expandedKeysRef.value.findIndex(
             (key) => key === treeNode.key
           );
-          if (index >= 0) {
-            expandedKeysRef.value.splice(index, 1);
-          } else {
+          if (index < 0) {
             expandedKeysRef.value.push(treeNode.key);
           }
           editorStore.addTab({
@@ -643,6 +648,10 @@ const nodeProps = ({ option: treeNode }: { option: TreeNode }) => {
         nextTick(() => {
           if (treeNode.type === "database") {
             selectedKeysRef.value = [`d-${treeNode.databaseId}`];
+          } else if (treeNode.type === "schema") {
+            selectedKeysRef.value = [
+              `s-${treeNode.databaseId}-${treeNode.schemaName}`,
+            ];
           } else if (treeNode.type === "table") {
             selectedKeysRef.value = [
               `t-${treeNode.databaseId}-${treeNode.tableId}`,
