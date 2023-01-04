@@ -90,12 +90,12 @@ func transformRenameSchemaContext(ctx *DeparseContext, renameSchemaContext *api.
 }
 
 func transformDropSchemaContext(ctx *DeparseContext, dropSchemaContext *api.DropSchemaContext) error {
-	dropSchemaListStmt := &ast.DropSchemaStmt{
+	dropSchemaStmt := &ast.DropSchemaStmt{
 		SchemaList: []string{dropSchemaContext.Schema},
 		IfExists:   true,
 		Behavior:   ast.DropBehaviorNone,
 	}
-	ctx.NodeList = append(ctx.NodeList, dropSchemaListStmt)
+	ctx.NodeList = append(ctx.NodeList, dropSchemaStmt)
 	return nil
 }
 
