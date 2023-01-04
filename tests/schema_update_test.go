@@ -1598,7 +1598,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.Equal(emptySQLReview.Content, res.Content)
 
 			// create the SQL review policy then re-trigger the VCS SQL review.
-			policyPayload, err := prodTemplateSQLReviewPolicy()
+			policyPayload, err := prodTemplateSQLReviewPolicyForPostgreSQL()
 			a.NoError(err)
 
 			_, err = ctl.upsertPolicy(api.PolicyUpsert{

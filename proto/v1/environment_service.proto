@@ -139,4 +139,12 @@ message Environment {
   string title = 4;
 
   int32 order = 5;
+
+  EnvironmentTier tier = 6;
+}
+
+enum EnvironmentTier {
+  ENVIRONMENT_TIER_UNSPECIFIED = 0;
+  PROTECTED = 1;
+  UNPROTECTED = 2;
 }

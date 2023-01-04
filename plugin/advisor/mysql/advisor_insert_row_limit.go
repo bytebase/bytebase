@@ -95,7 +95,7 @@ func (checker *insertRowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 				})
 			}
 		} else if checker.driver != nil {
-			res, err := query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
+			res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text()))
 			if err != nil {
 				checker.adviceList = append(checker.adviceList, advisor.Advice{
 					Status:  checker.level,
