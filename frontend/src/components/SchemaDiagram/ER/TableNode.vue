@@ -10,7 +10,7 @@
     }"
   >
     <h3
-      class="font-medium leading-6 text-white truncate px-2 py-2 rounded-t-md flex items-center justify-center gap-x-1"
+      class="group font-medium leading-6 text-white truncate px-2 py-2 rounded-t-md flex items-center justify-center gap-x-1 relative"
       :style="{
         'background-color': tableColor,
       }"
@@ -19,6 +19,14 @@
       <span v-if="isTableCreated" class="text-xs">(Created)</span>
       <span v-if="isTableDropped" class="text-xs">(Dropped)</span>
       <span v-if="isTableChanged" class="text-xs">(Changed)</span>
+
+      <button
+        v-if="editable"
+        class="invisible group-hover:visible absolute right-1 hover:bg-gray-200 hover:text-main p-0.5 rounded"
+        @click="events.emit('edit-table', table)"
+      >
+        <heroicons-outline:pencil class="w-4 h-4" />
+      </button>
     </h3>
     <table class="w-full text-sm table-fixed">
       <tr
@@ -27,6 +35,7 @@
         :bb-column-name="column.name"
         :bb-status="columnStatus(column)"
         :class="[
+          editable && 'cursor-pointer',
           isColumnDropped(column) && 'text-red-700 bg-red-50 line-through',
           isColumnCreated(column) && 'text-green-700 bg-green-50',
         ]"
@@ -42,14 +51,24 @@
           />
         </td>
         <td class="w-auto text-xs py-1.5">
-          <div class="whitespace-pre-wrap break-words pr-1.5">
+          <div
+            class="whitespace-pre-wrap break-words pr-1.5"
+            :class="editable && 'hover:!text-accent'"
+            @click="handleClickColumn(column, 'name')"
+          >
             {{ column.name }}
           </div>
         </td>
         <td
-          class="w-[6rem] text-xs text-gray-400 py-1.5 pr-1.5 text-right truncate"
+          class="w-[6rem] text-xs text-gray-400 py-1.5 text-right"
+          @click="handleClickColumn(column, 'type')"
         >
-          {{ column.type }}
+          <div
+            class="truncate pr-1.5"
+            :class="editable && 'hover:!text-accent'"
+          >
+            {{ column.type }}
+          </div>
         </td>
       </tr>
     </table>
@@ -69,8 +88,15 @@ const props = withDefaults(
   }>(),
   {}
 );
-const { idOfTable, rectOfTable, tableStatus, columnStatus } =
-  useSchemaDiagramContext();
+const {
+  editable,
+  idOfTable,
+  rectOfTable,
+  tableStatus,
+  columnStatus,
+  panning,
+  events,
+} = useSchemaDiagramContext();
 
 const COLOR_LIST = [
   "#64748B",
@@ -114,6 +140,12 @@ const isColumnDropped = (column: ColumnMetadata) => {
 
 const isColumnCreated = (column: ColumnMetadata) => {
   return columnStatus(column) === "created";
+};
+
+const handleClickColumn = (column: ColumnMetadata, target: "name" | "type") => {
+  if (!editable.value) return;
+  if (panning.value) return;
+  events.emit("edit-column", { table: props.table, column, target });
 };
 
 const position = computed(() => rectOfTable(props.table));

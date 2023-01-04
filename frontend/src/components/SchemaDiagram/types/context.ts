@@ -11,10 +11,12 @@ import { EditStatus } from "./edit";
 export type SchemaDiagramContext = {
   // Props
   tableList: Ref<TableMetadata[]>;
+  editable: Ref<boolean>;
 
   // States
   zoom: Ref<number>;
   position: Ref<Position>;
+  panning: Ref<boolean>;
 
   // Methods
   idOfTable: (table: TableMetadata) => string;
@@ -31,5 +33,11 @@ export type SchemaDiagramContext = {
     render: undefined;
     layout: undefined;
     "fit-view": undefined;
+    "edit-table": TableMetadata;
+    "edit-column": {
+      table: TableMetadata;
+      column: ColumnMetadata;
+      target: "name" | "type";
+    };
   }>;
 };
