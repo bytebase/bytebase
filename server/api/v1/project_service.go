@@ -37,7 +37,7 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID:  &projectID,
-		ShowDeleted: request.ShowDeleted,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

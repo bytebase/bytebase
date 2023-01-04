@@ -83,9 +83,6 @@ message GetInstanceRequest {
   // The name of the instance to retrieve.
   // Format: environments/{environment}/instances/{instance}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // Show deleted instance if specified.
-  bool show_deleted = 2;
 }
 
 message ListInstancesRequest {

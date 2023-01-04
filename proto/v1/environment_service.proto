@@ -62,9 +62,6 @@ message GetEnvironmentRequest {
   // The name of the environment to retrieve.
   // Format: environments/{environment}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // Show deleted environment if specified.
-  bool show_deleted = 2;
 }
 
 message ListEnvironmentsRequest {

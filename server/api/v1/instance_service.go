@@ -43,7 +43,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   request.ShowDeleted,
+		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

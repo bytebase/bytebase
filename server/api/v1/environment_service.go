@@ -38,7 +38,7 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 	}
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 		ResourceID:  &environmentID,
-		ShowDeleted: request.ShowDeleted,
+		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

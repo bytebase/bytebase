@@ -12,8 +12,6 @@ export interface GetEnvironmentRequest {
    * Format: environments/{environment}
    */
   name: string;
-  /** Show deleted environment if specified. */
-  showDeleted: boolean;
 }
 
 export interface ListEnvironmentsRequest {
@@ -101,16 +99,13 @@ export interface Environment {
 }
 
 function createBaseGetEnvironmentRequest(): GetEnvironmentRequest {
-  return { name: "", showDeleted: false };
+  return { name: "" };
 }
 
 export const GetEnvironmentRequest = {
   encode(message: GetEnvironmentRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.showDeleted === true) {
-      writer.uint32(16).bool(message.showDeleted);
     }
     return writer;
   },
@@ -125,9 +120,6 @@ export const GetEnvironmentRequest = {
         case 1:
           message.name = reader.string();
           break;
-        case 2:
-          message.showDeleted = reader.bool();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -137,23 +129,18 @@ export const GetEnvironmentRequest = {
   },
 
   fromJSON(object: any): GetEnvironmentRequest {
-    return {
-      name: isSet(object.name) ? String(object.name) : "",
-      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
-    };
+    return { name: isSet(object.name) ? String(object.name) : "" };
   },
 
   toJSON(message: GetEnvironmentRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<GetEnvironmentRequest>, I>>(object: I): GetEnvironmentRequest {
     const message = createBaseGetEnvironmentRequest();
     message.name = object.name ?? "";
-    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
