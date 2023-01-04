@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // RoleAttribute is the attribute string for role.
@@ -55,7 +55,7 @@ type roleFind struct {
 }
 
 // CreateRole will create the PG role.
-func (driver *Driver) CreateRole(ctx context.Context, upsert *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
+func (driver *Driver) CreateRole(ctx context.Context, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (driver *Driver) CreateRole(ctx context.Context, upsert *v1pb.DatabaseRoleU
 }
 
 // UpdateRole will alter the PG role.
-func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
+func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (driver *Driver) UpdateRole(ctx context.Context, roleName string, upsert *v
 }
 
 // FindRole will find the PG role by name.
-func (driver *Driver) FindRole(ctx context.Context, roleName string) (*v1pb.DatabaseRole, error) {
+func (driver *Driver) FindRole(ctx context.Context, roleName string) (*db.DatabaseRoleMessage, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func (driver *Driver) FindRole(ctx context.Context, roleName string) (*v1pb.Data
 }
 
 // ListRole lists the role.
-func (driver *Driver) ListRole(ctx context.Context) ([]*v1pb.DatabaseRole, error) {
+func (driver *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (driver *Driver) DeleteRole(ctx context.Context, roleName string) error {
 	return nil
 }
 
-func findRoleImpl(ctx context.Context, txn *sql.Tx, find *roleFind) ([]*v1pb.DatabaseRole, error) {
+func findRoleImpl(ctx context.Context, txn *sql.Tx, find *roleFind) ([]*db.DatabaseRoleMessage, error) {
 	where := []string{}
 	if v := find.Name; v != nil {
 		where = append(where, fmt.Sprintf("r.rolname = '%s'", *v))
@@ -198,12 +198,12 @@ func findRoleImpl(ctx context.Context, txn *sql.Tx, find *roleFind) ([]*v1pb.Dat
 	}
 	defer rows.Close()
 
-	var roleList []*v1pb.DatabaseRole
+	var roleList []*db.DatabaseRoleMessage
 
 	for rows.Next() {
 		inherit := false
-		role := &v1pb.DatabaseRole{
-			Attribute: &v1pb.DatabaseRoleAttribute{},
+		role := &db.DatabaseRoleMessage{
+			Attribute: &db.DatabaseRoleAttributeMessage{},
 		}
 
 		if err := rows.Scan(
@@ -231,7 +231,7 @@ func findRoleImpl(ctx context.Context, txn *sql.Tx, find *roleFind) ([]*v1pb.Dat
 	return roleList, nil
 }
 
-func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *v1pb.DatabaseRoleUpsert) error {
+func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *db.DatabaseRoleUpsertMessage) error {
 	statement := fmt.Sprintf(`CREATE ROLE "%s" %s;`, upsert.Name, convertToAttributeStatement(upsert))
 	if _, err := txn.ExecContext(ctx, statement); err != nil {
 		return util.FormatErrorWithQuery(err, statement)
@@ -240,7 +240,7 @@ func createRoleImpl(ctx context.Context, txn *sql.Tx, upsert *v1pb.DatabaseRoleU
 	return nil
 }
 
-func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *v1pb.DatabaseRoleUpsert) error {
+func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *db.DatabaseRoleUpsertMessage) error {
 	if roleName != upsert.Name {
 		renameStatement := fmt.Sprintf(`ALTER ROLE "%s" RENAME TO "%s";`, roleName, upsert.Name)
 		if _, err := txn.ExecContext(ctx, renameStatement); err != nil {
@@ -261,7 +261,7 @@ func alterRoleImpl(ctx context.Context, txn *sql.Tx, roleName string, upsert *v1
 	return nil
 }
 
-func convertToAttributeStatement(r *v1pb.DatabaseRoleUpsert) string {
+func convertToAttributeStatement(r *db.DatabaseRoleUpsertMessage) string {
 	attributeList := []string{}
 
 	if r.Attribute != nil {
