@@ -447,6 +447,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService))
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store))
+	v1pb.RegisterDatabaseRoleServiceServer(s.grpcServer, v1.NewDatabaseRoleService(s.store, dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir)))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
 	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
@@ -462,6 +463,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterDatabaseServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterDatabaseRoleServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
@@ -491,16 +495,6 @@ func (s *Server) registerOpenAPIRoutes(e *echo.Echo, ce *casbin.Enforcer, prof c
 	}
 	e.POST("/v1/sql/advise", s.sqlCheckController)
 	e.POST("/v1/sql/schema/diff", schemaDiff)
-	e.POST("/v1/instance", s.createInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.GET("/v1/instance", s.listInstance, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.GET("/v1/instance/:instanceID", s.getInstanceByID, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.PATCH("/v1/instance/:instanceID", s.updateInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.DELETE("/v1/instance/:instanceID", s.deleteInstanceByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.GET("/v1/instance/:instanceID/role", s.listDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.POST("/v1/instance/:instanceID/role", s.createDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.GET("/v1/instance/:instanceID/role/:roleName", s.getDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.PATCH("/v1/instance/:instanceID/role/:roleName", s.updateDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
-	e.DELETE("/v1/instance/:instanceID/role/:roleName", s.deleteDatabaseRole, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.PATCH("/v1/instances/:instanceName/databases/:database", s.updateInstanceDatabase, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.POST("/v1/issues", s.createIssueByOpenAPI, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)
 	e.GET("/v1/environment", s.listEnvironment, jwtMiddlewareFunc, aclMiddlewareFunc, metricMiddlewareFunc)

@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/db"
 	database "github.com/bytebase/bytebase/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var (
@@ -324,22 +323,22 @@ func (*MockDriver) Restore(_ context.Context, _ io.Reader) error {
 }
 
 // CreateRole creates the role.
-func (*MockDriver) CreateRole(_ context.Context, _ *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
+func (*MockDriver) CreateRole(_ context.Context, _ *database.DatabaseRoleUpsertMessage) (*database.DatabaseRoleMessage, error) {
 	return nil, nil
 }
 
 // UpdateRole updates the role.
-func (*MockDriver) UpdateRole(_ context.Context, _ string, _ *v1pb.DatabaseRoleUpsert) (*v1pb.DatabaseRole, error) {
+func (*MockDriver) UpdateRole(_ context.Context, _ string, _ *database.DatabaseRoleUpsertMessage) (*database.DatabaseRoleMessage, error) {
 	return nil, nil
 }
 
 // FindRole finds the role by name.
-func (*MockDriver) FindRole(_ context.Context, _ string) (*v1pb.DatabaseRole, error) {
+func (*MockDriver) FindRole(_ context.Context, _ string) (*database.DatabaseRoleMessage, error) {
 	return nil, nil
 }
 
 // ListRole lists the role.
-func (*MockDriver) ListRole(_ context.Context) ([]*v1pb.DatabaseRole, error) {
+func (*MockDriver) ListRole(_ context.Context) ([]*database.DatabaseRoleMessage, error) {
 	return nil, nil
 }
 
