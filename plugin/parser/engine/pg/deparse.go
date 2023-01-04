@@ -1262,7 +1262,7 @@ func deparseFunctionSignature(function *ast.FunctionDef, buf *strings.Builder) e
 	return buf.WriteByte(')')
 }
 
-func deparseRenameSchema(ctx parser.DeparseContext, in *ast.RenameSchemaStmt, buf *strings.Builder) error {
+func deparseRenameSchema(_ parser.DeparseContext, in *ast.RenameSchemaStmt, buf *strings.Builder) error {
 	if _, err := buf.WriteString("ALTER SCHEMA "); err != nil {
 		return err
 	}
