@@ -556,6 +556,9 @@ type UpdateEnvironmentMessage struct {
 
 // GetEnvironmentV2 gets environment by resource ID.
 func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
+	// We will always return the resource regardless of its deleted state.
+	find.ShowDeleted = true
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

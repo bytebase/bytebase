@@ -269,6 +269,10 @@ func (s *InstanceRoleService) getEnvironmentAndInstance(ctx context.Context, env
 	if environment == nil {
 		return nil, nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 	}
+	// We don't allow access even for the read API because the API will call user instances without using Bytebase metadata.
+	if environment.Deleted {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
+	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
@@ -279,6 +283,9 @@ func (s *InstanceRoleService) getEnvironmentAndInstance(ctx context.Context, env
 	}
 	if instance == nil {
 		return nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	if instance.Deleted {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", instanceID)
 	}
 
 	return environment, instance, nil

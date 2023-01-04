@@ -784,6 +784,9 @@ type FindInstanceMessage struct {
 
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
+	// We will always return the resource regardless of its deleted state.
+	find.ShowDeleted = true
+
 	if find.EnvironmentID == nil || find.ResourceID == nil {
 		return nil, errors.Errorf("environment and resource ID must exist and showDelete must be false for getting an instance")
 	}
