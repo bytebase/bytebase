@@ -8,7 +8,8 @@ export const protobufPackage = "bytebase.v1";
 export interface GetRoleRequest {
   /**
    * The name of the role to retrieve.
-   * Format: environments/{environment}/instances/{instance}/roles
+   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * The role name is the unique name for the role.
    */
   name: string;
 }
@@ -61,7 +62,7 @@ export interface UpdateRoleRequest {
    * The role to update.
    *
    * The role's `name`, `environment` and `instance` field is used to identify the role to update.
-   * Format: environments/{environment}/instances/{instance}/roles/{role}
+   * Format: environments/{environment}/instances/{instance}/roles/{role name}
    */
   role?: DatabaseRole;
   /** The list of fields to update. */
@@ -71,7 +72,7 @@ export interface UpdateRoleRequest {
 export interface DeleteRoleRequest {
   /**
    * The name of the role to delete.
-   * Format: environments/{environment}/instances/{instance}/roles/{role}
+   * Format: environments/{environment}/instances/{instance}/roles/{role name}
    */
   name: string;
 }
@@ -79,7 +80,7 @@ export interface DeleteRoleRequest {
 export interface UndeleteRoleRequest {
   /**
    * The name of the deleted role.
-   * Format: environments/{environment}/instances/{instance}/roles/{role}
+   * Format: environments/{environment}/instances/{instance}/roles/{role name}
    */
   name: string;
 }
@@ -106,7 +107,8 @@ export interface DatabaseRoleAttribute {
 export interface DatabaseRole {
   /**
    * The name of the role.
-   * Format: environments/{environment}/instances/{instance}/roles/{role}
+   * Format: environments/{environment}/instances/{instance}/roles/{role name}
+   * The role name is the unique name for the role.
    */
   name: string;
   /** The role unique name. */
@@ -732,7 +734,7 @@ export const DatabaseRole = {
   },
 };
 
-export interface DatabaseRoleService {
+export interface InstanceRoleService {
   GetRole(request: GetRoleRequest): Promise<DatabaseRole>;
   ListRoles(request: ListRolesRequest): Promise<ListRolesResponse>;
   CreateRole(request: CreateRoleRequest): Promise<DatabaseRole>;
@@ -741,11 +743,11 @@ export interface DatabaseRoleService {
   UndeleteRole(request: UndeleteRoleRequest): Promise<DatabaseRole>;
 }
 
-export class DatabaseRoleServiceClientImpl implements DatabaseRoleService {
+export class InstanceRoleServiceClientImpl implements InstanceRoleService {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.DatabaseRoleService";
+    this.service = opts?.service || "bytebase.v1.InstanceRoleService";
     this.rpc = rpc;
     this.GetRole = this.GetRole.bind(this);
     this.ListRoles = this.ListRoles.bind(this);

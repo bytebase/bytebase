@@ -17,7 +17,7 @@ const (
 	environmentNamePrefix = "environments/"
 	instanceNamePrefix    = "instances/"
 	databaseIDPrefix      = "databases/"
-	databaseRolePrefix    = "roles/"
+	instanceRolePrefix    = "roles/"
 	userNamePrefix        = "users/"
 )
 
@@ -54,7 +54,7 @@ func getEnvironmentInstanceID(name string) (string, string, error) {
 
 func getEnvironmentInstanceRoleID(name string) (string, string, string, error) {
 	// the instance request should be environments/{environment-id}/instances/{instance-id}/roles/{role-name}
-	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, databaseRolePrefix)
+	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, instanceRolePrefix)
 	if err != nil {
 		return "", "", "", err
 	}

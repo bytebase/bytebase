@@ -12,7 +12,7 @@ import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
-service DatabaseRoleService {
+service InstanceRoleService {
   rpc GetRole(GetRoleRequest) returns (DatabaseRole) {
     option (google.api.http) = {
       get: "/v1/{name=environments/*/instances/*/roles/*}"
@@ -60,7 +60,8 @@ service DatabaseRoleService {
 
 message GetRoleRequest {
   // The name of the role to retrieve.
-  // Format: environments/{environment}/instances/{instance}/roles
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // The role name is the unique name for the role.
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -105,7 +106,7 @@ message UpdateRoleRequest {
   // The role to update.
   //
   // The role's `name`, `environment` and `instance` field is used to identify the role to update.
-  // Format: environments/{environment}/instances/{instance}/roles/{role}
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
   DatabaseRole role = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -114,13 +115,13 @@ message UpdateRoleRequest {
 
 message DeleteRoleRequest {
   // The name of the role to delete.
-  // Format: environments/{environment}/instances/{instance}/roles/{role}
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UndeleteRoleRequest {
   // The name of the deleted role.
-  // Format: environments/{environment}/instances/{instance}/roles/{role}
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -151,14 +152,15 @@ message DatabaseRoleAttribute {
 // DatabaseRole is the API message for database role.
 message DatabaseRole {
   // The name of the role.
-  // Format: environments/{environment}/instances/{instance}/roles/{role}
+  // Format: environments/{environment}/instances/{instance}/roles/{role name}
+  // The role name is the unique name for the role.
   string name = 1;
 
   // The role unique name.
   string title = 2;
 
   // The role password.
-  optional string password = 3;
+  optional string password = 3 [(google.api.field_behavior) = INPUT_ONLY];
 
   // The connection count limit for this role.
   optional int32 connection_limit = 4;

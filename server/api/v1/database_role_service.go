@@ -17,23 +17,23 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// DatabaseRoleService implements the database role service.
-type DatabaseRoleService struct {
-	v1pb.UnimplementedDatabaseRoleServiceServer
+// InstanceRoleService implements the database role service.
+type InstanceRoleService struct {
+	v1pb.UnimplementedInstanceRoleServiceServer
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 }
 
-// NewDatabaseRoleService creates a new DatabaseRoleService.
-func NewDatabaseRoleService(store *store.Store, dbFactory *dbfactory.DBFactory) *DatabaseRoleService {
-	return &DatabaseRoleService{
+// NewInstanceRoleService creates a new InstanceRoleService.
+func NewInstanceRoleService(store *store.Store, dbFactory *dbfactory.DBFactory) *InstanceRoleService {
+	return &InstanceRoleService{
 		store:     store,
 		dbFactory: dbFactory,
 	}
 }
 
 // GetRole gets an role.
-func (s *DatabaseRoleService) GetRole(ctx context.Context, request *v1pb.GetRoleRequest) (*v1pb.DatabaseRole, error) {
+func (s *InstanceRoleService) GetRole(ctx context.Context, request *v1pb.GetRoleRequest) (*v1pb.DatabaseRole, error) {
 	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -69,7 +69,7 @@ func (s *DatabaseRoleService) GetRole(ctx context.Context, request *v1pb.GetRole
 }
 
 // ListRoles lists all roles in an instance.
-func (s *DatabaseRoleService) ListRoles(ctx context.Context, request *v1pb.ListRolesRequest) (*v1pb.ListRolesResponse, error) {
+func (s *InstanceRoleService) ListRoles(ctx context.Context, request *v1pb.ListRolesRequest) (*v1pb.ListRolesResponse, error) {
 	environmentID, instanceID, err := getEnvironmentInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -106,7 +106,7 @@ func (s *DatabaseRoleService) ListRoles(ctx context.Context, request *v1pb.ListR
 }
 
 // CreateRole creates an role.
-func (s *DatabaseRoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRequest) (*v1pb.DatabaseRole, error) {
+func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRequest) (*v1pb.DatabaseRole, error) {
 	if request.Role == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "role must be set")
 	}
@@ -160,7 +160,7 @@ func (s *DatabaseRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 }
 
 // UpdateRole updates an role.
-func (s *DatabaseRoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.DatabaseRole, error) {
+func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.DatabaseRole, error) {
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
@@ -228,7 +228,7 @@ func (s *DatabaseRoleService) UpdateRole(ctx context.Context, request *v1pb.Upda
 }
 
 // DeleteRole deletes an role.
-func (s *DatabaseRoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRequest) (*emptypb.Empty, error) {
+func (s *InstanceRoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRequest) (*emptypb.Empty, error) {
 	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -255,11 +255,11 @@ func (s *DatabaseRoleService) DeleteRole(ctx context.Context, request *v1pb.Dele
 }
 
 // UndeleteRole undeletes an role.
-func (*DatabaseRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRoleRequest) (*v1pb.DatabaseRole, error) {
+func (*InstanceRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRoleRequest) (*v1pb.DatabaseRole, error) {
 	return nil, status.Errorf(codes.Unimplemented, "Undelete role is not supported")
 }
 
-func (s *DatabaseRoleService) getEnvironmentAndInstance(ctx context.Context, environmentID, instanceID string) (*store.EnvironmentMessage, *store.InstanceMessage, error) {
+func (s *InstanceRoleService) getEnvironmentAndInstance(ctx context.Context, environmentID, instanceID string) (*store.EnvironmentMessage, *store.InstanceMessage, error) {
 	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, err.Error())
