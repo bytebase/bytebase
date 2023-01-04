@@ -187,68 +187,83 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
 
       return this.databaseSchemaById.get(databaseId)!.schemaList;
     },
-    // We only allow to delete the new created schema.
-    deleteCreatedSchema(databaseId: DatabaseId, schemaName: string) {
-      const databaseSchema = this.databaseSchemaById.get(databaseId);
-      if (databaseSchema) {
-        databaseSchema.schemaList =
-          this.databaseSchemaById
-            .get(databaseId)
-            ?.schemaList.filter((schema) => schema.name !== schemaName) || [];
+    getSchema(databaseId: DatabaseId, schemaId: string) {
+      return this.databaseSchemaById
+        .get(databaseId)
+        ?.schemaList.find((schema) => schema.id === schemaId);
+    },
+    getOriginSchema(databaseId: DatabaseId, schemaId: string) {
+      return this.databaseSchemaById
+        .get(databaseId)
+        ?.originSchemaList.find((schema) => schema.id === schemaId);
+    },
+    dropSchema(databaseId: DatabaseId, schemaId: string) {
+      const schema = this.getSchema(databaseId, schemaId);
+      if (!schema) {
+        return;
+      }
 
-        // Close related tabs.
-        for (const tab of this.tabList) {
-          if (tab.databaseId !== databaseId) {
-            continue;
-          }
+      if (schema.status === "created") {
+        const databaseSchema = this.databaseSchemaById.get(databaseId);
+        if (databaseSchema) {
+          databaseSchema.schemaList =
+            this.databaseSchemaById
+              .get(databaseId)
+              ?.schemaList.filter((schema) => schema.id !== schemaId) || [];
 
-          if (
-            tab.type === SchemaEditorTabType.TabForTable &&
-            tab.schemaName === schemaName
-          ) {
-            this.closeTab(tab.id);
+          // Close related tabs.
+          for (const tab of this.tabList) {
+            if (tab.databaseId !== databaseId) {
+              continue;
+            }
+
+            if (
+              tab.type === SchemaEditorTabType.TabForTable &&
+              tab.schemaId === schemaId
+            ) {
+              this.closeTab(tab.id);
+            }
           }
         }
+      } else {
+        schema.status = "dropped";
       }
     },
-    getSchema(databaseId: DatabaseId, schemaName: string) {
-      return this.databaseSchemaById
-        .get(databaseId)
-        ?.schemaList.find((schema) => schema.name === schemaName);
+    restoreSchema(databaseId: DatabaseId, schemaId: string) {
+      const schema = this.getSchema(databaseId, schemaId);
+      if (!schema) {
+        return;
+      }
+
+      schema.status = "normal";
     },
-    getOriginSchema(databaseId: DatabaseId, schemaName: string) {
-      return this.databaseSchemaById
-        .get(databaseId)
-        ?.originSchemaList.find((schema) => schema.name === schemaName);
+    getTable(databaseId: DatabaseId, schemaId: string, tableId: string) {
+      return this.getSchema(databaseId, schemaId)?.tableList.find(
+        (table) => table.id === tableId
+      );
     },
-    getTable(databaseId: DatabaseId, schemaName: string, tableId: string) {
-      return this.databaseSchemaById
-        .get(databaseId)
-        ?.schemaList.find((schema) => schema.name === schemaName)
-        ?.tableList.find((table) => table.id === tableId);
-    },
-    getOriginTable(
-      databaseId: DatabaseId,
-      schemaName: string,
-      tableId: string
-    ) {
-      return this.databaseSchemaById
-        .get(databaseId)
-        ?.originSchemaList.find((schema) => schema.name === schemaName)
-        ?.tableList.find((table) => table.id === tableId);
+    getOriginTable(databaseId: DatabaseId, schemaId: string, tableId: string) {
+      return this.getOriginSchema(databaseId, schemaId)?.tableList.find(
+        (table) => table.id === tableId
+      );
     },
     getTableWithTableTab(tab: TableTabContext) {
       return this.databaseSchemaById
         .get(tab.databaseId)
-        ?.schemaList.find((schema) => schema.name === tab.schemaName)
+        ?.schemaList.find((schema) => schema.id === tab.schemaId)
         ?.tableList?.find((table) => table.id === tab.tableId);
     },
-    dropTable(databaseId: DatabaseId, schemaName: string, table: Table) {
+    dropTable(databaseId: DatabaseId, schemaId: string, tableId: string) {
+      const table = this.getTable(databaseId, schemaId, tableId);
+      if (!table) {
+        return;
+      }
+
       // Remove table record and close tab for created table.
       if (table.status === "created") {
         const tableList = this.databaseSchemaById
           .get(databaseId)
-          ?.schemaList.find((schema) => schema.name === schemaName)
+          ?.schemaList.find((schema) => schema.id === schemaId)
           ?.tableList as Table[];
         const index = tableList.findIndex((item) => item.id === table.id);
         tableList.splice(index, 1);
@@ -260,7 +275,12 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
         table.status = "dropped";
       }
     },
-    restoreTable(table: Table) {
+    restoreTable(databaseId: DatabaseId, schemaId: string, tableId: string) {
+      const table = this.getTable(databaseId, schemaId, tableId);
+      if (!table) {
+        return;
+      }
+
       table.status = "normal";
     },
     async postDatabaseEdit(databaseEdit: DatabaseEdit) {

@@ -56,7 +56,7 @@ const props = defineProps({
     type: Number as PropType<DatabaseId>,
     default: UNKNOWN_ID,
   },
-  schemaName: {
+  schemaId: {
     type: String as PropType<string>,
     default: "",
   },
@@ -88,7 +88,7 @@ onMounted(() => {
 
   const table = editorStore.getTable(
     props.databaseId,
-    props.schemaName,
+    props.schemaId,
     props.tableId
   );
   if (table) {
@@ -111,9 +111,8 @@ const handleConfirmButtonClick = async () => {
   }
 
   const databaseId = props.databaseId;
-  const schema = editorStore.databaseSchemaById
-    .get(databaseId)
-    ?.schemaList.find((schema) => schema.name === props.schemaName) as Schema;
+  const schema = editorStore.getSchema(databaseId, props.schemaId) as Schema;
+  console.log("props.schemaId", props.schemaId);
   const tableNameList = schema.tableList.map((table) => table.name);
   if (tableNameList.includes(state.tableName)) {
     notificationStore.pushNotification({
@@ -144,21 +143,20 @@ const handleConfirmButtonClick = async () => {
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForTable,
       databaseId: props.databaseId,
-      schemaName: props.schemaName,
+      schemaId: props.schemaId,
       tableId: table.id,
     });
-    dismissModal();
   } else {
     const table = editorStore.getTable(
       props.databaseId,
-      props.schemaName,
+      props.schemaId,
       props.tableId ?? ""
     );
     if (table) {
       table.name = state.tableName;
     }
-    dismissModal();
   }
+  dismissModal();
 };
 
 const dismissModal = () => {

@@ -42,12 +42,13 @@ export interface ForeignKey {
   name: string;
   tableId: string;
   columnIdList: string[];
-  referencedSchema: string;
+  referencedSchemaId: string;
   referencedTableId: string;
   referencedColumnIdList: string[];
 }
 
 export interface Schema {
+  id: string;
   // It should be an empty string for MySQL/TiDB.
   name: string;
   tableList: Table[];
@@ -124,6 +125,7 @@ export const convertSchemaMetadataToSchema = (
   }
 
   return {
+    id: uuidv1(),
     name: schemaMetadata.name,
     tableList: tableList,
     foreignKeyList: [],
@@ -173,7 +175,7 @@ export const convertSchemaMetadataList = (
           name: foreignKeyMetadata.name,
           tableId: table.id,
           columnIdList: [],
-          referencedSchema: foreignKeyMetadata.referencedSchema,
+          referencedSchemaId: referencedSchema.id,
           referencedTableId: referencedTable.id,
           referencedColumnIdList: [],
         };
