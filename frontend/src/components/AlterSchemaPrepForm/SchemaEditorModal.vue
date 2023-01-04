@@ -2,7 +2,6 @@
   <BBModal
     :title="$t('database.alter-schema')"
     class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
-    :esc-closable="false"
     @close="dismissModal"
   >
     <div
@@ -227,6 +226,11 @@ const isTenantProject = project.tenantMode === "TENANT";
 
 onMounted(() => {
   if (databaseList.length === 0 || project.id === UNKNOWN_ID) {
+    notificationStore.pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Invalid database list",
+    });
     emit("close");
     return;
   }
