@@ -913,6 +913,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLStatementDMLDryRun, nil
+		case db.Postgres:
+			return PostgreSQLStatementDMLDryRun, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == db.Postgres {

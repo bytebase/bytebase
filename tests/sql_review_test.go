@@ -294,7 +294,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	policyPayload, err := prodTemplateSQLReviewPolicy()
+	policyPayload, err := prodTemplateSQLReviewPolicyForPostgreSQL()
 	a.NoError(err)
 
 	_, err = ctl.upsertPolicy(api.PolicyUpsert{
@@ -1023,7 +1023,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	policyPayload, err := prodTemplateSQLReviewPolicy()
+	policyPayload, err := prodTemplateSQLReviewPolicyForMySQL()
 	a.NoError(err)
 
 	_, err = ctl.upsertPolicy(api.PolicyUpsert{
