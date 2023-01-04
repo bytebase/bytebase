@@ -148,8 +148,7 @@ func (ctl *controller) GetSQLReviewResult(id int) ([]api.TaskCheckResult, error)
 	return nil, nil
 }
 
-// prodTemplateSQLReviewPolicy returns the default SQL review policy.
-func prodTemplateSQLReviewPolicy() (string, error) {
+func prodTemplateSQLReviewPolicyForPostgreSQL() (string, error) {
 	policy := advisor.SQLReviewPolicy{
 		Name: "Prod",
 		RuleList: []*advisor.SQLReviewRule{
@@ -361,6 +360,226 @@ func prodTemplateSQLReviewPolicy() (string, error) {
 		},
 	}
 
+	return templateSQLReviewPolicy(policy)
+}
+
+func prodTemplateSQLReviewPolicyForMySQL() (string, error) {
+	policy := advisor.SQLReviewPolicy{
+		Name: "Prod",
+		RuleList: []*advisor.SQLReviewRule{
+			// Engine
+			{
+				Type:  advisor.SchemaRuleMySQLEngine,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			// Naming
+			{
+				Type:  advisor.SchemaRuleTableNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIDXNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRulePKNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleUKNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleFKNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleAutoIncrementColumnNaming,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// Statement
+			{
+				Type:  advisor.SchemaRuleStatementNoSelectAll,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementRequireWhere,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementNoLeadingWildcardLike,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowCommit,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDisallowOrderBy,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementMergeAlterTable,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertRowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementAffectedRowLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleStatementDMLDryRun,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			// TABLE
+			{
+				Type:  advisor.SchemaRuleTableRequirePK,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableNoFK,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableDropNamingConvention,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableCommentConvention,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleTableDisallowPartition,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// COLUMN
+			{
+				Type:  advisor.SchemaRuleRequiredColumn,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnNotNull,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowChangeType,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnSetDefaultForNotNull,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowChange,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowChangingOrder,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnCommentConvention,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementMustInteger,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnTypeDisallowList,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnDisallowSetCharset,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnMaximumCharacterLength,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementInitialValue,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleCurrentTimeColumnCountLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleColumnRequireDefault,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// SCHEMA
+			{
+				Type:  advisor.SchemaRuleSchemaBackwardCompatibility,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// DATABASE
+			{
+				Type:  advisor.SchemaRuleDropEmptyDatabase,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			// INDEX
+			{
+				Type:  advisor.SchemaRuleIndexNoDuplicateColumn,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexKeyNumberLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexPKTypeLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexTypeNoBlob,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleIndexTotalNumberLimit,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			// SYSTEM
+			{
+				Type:  advisor.SchemaRuleCharsetAllowlist,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  advisor.SchemaRuleCollationAllowlist,
+				Level: advisor.SchemaRuleLevelWarning,
+			},
+		},
+	}
+
+	return templateSQLReviewPolicy(policy)
+}
+
+// templateSQLReviewPolicy returns the default SQL review policy.
+func templateSQLReviewPolicy(policy advisor.SQLReviewPolicy) (string, error) {
 	for _, rule := range policy.RuleList {
 		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule.Type)
 		if err != nil {
