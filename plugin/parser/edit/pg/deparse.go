@@ -84,8 +84,8 @@ func transformCreateSchemaContext(ctx *DeparseContext, createSchemaContext *api.
 
 func transformRenameSchemaContext(ctx *DeparseContext, renameSchemaContext *api.RenameSchemaContext) error {
 	// TODO(steven): support rename schema with our pg parser.
-	commemtStmt := fmt.Sprintf(`ALTER SCHEMA "%s" RENAME TO "%s";`, renameSchemaContext.OldName, renameSchemaContext.NewName)
-	ctx.StmtList = append(ctx.StmtList, commemtStmt)
+	alterSchemaStmt := fmt.Sprintf(`ALTER SCHEMA "%s" RENAME TO "%s";`, renameSchemaContext.OldName, renameSchemaContext.NewName)
+	ctx.StmtList = append(ctx.StmtList, alterSchemaStmt)
 	return nil
 }
 
