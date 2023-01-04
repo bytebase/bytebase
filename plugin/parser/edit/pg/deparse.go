@@ -30,6 +30,18 @@ func (*SchemaEditor) DeparseDatabaseEdit(databaseEdit *api.DatabaseEdit) (string
 			return "", err
 		}
 	}
+	for _, renameSchemaContext := range databaseEdit.RenameSchemaList {
+		err := transformRenameSchemaContext(ctx, renameSchemaContext)
+		if err != nil {
+			return "", err
+		}
+	}
+	for _, dropSchemaContext := range databaseEdit.DropSchemaList {
+		err := transformDropSchemaContext(ctx, dropSchemaContext)
+		if err != nil {
+			return "", err
+		}
+	}
 	for _, createTableContext := range databaseEdit.CreateTableList {
 		err := transformCreateTableContext(ctx, createTableContext)
 		if err != nil {
@@ -67,6 +79,23 @@ func transformCreateSchemaContext(ctx *DeparseContext, createSchemaContext *api.
 		IfNotExists: true,
 	}
 	ctx.NodeList = append(ctx.NodeList, createSchemaStmt)
+	return nil
+}
+
+func transformRenameSchemaContext(ctx *DeparseContext, renameSchemaContext *api.RenameSchemaContext) error {
+	// TODO(steven): support rename schema with our pg parser.
+	commemtStmt := fmt.Sprintf(`ALTER SCHEMA "%s" RENAME TO "%s";`, renameSchemaContext.OldName, renameSchemaContext.NewName)
+	ctx.StmtList = append(ctx.StmtList, commemtStmt)
+	return nil
+}
+
+func transformDropSchemaContext(ctx *DeparseContext, dropSchemaContext *api.DropSchemaContext) error {
+	dropSchemaListStmt := &ast.DropSchemaStmt{
+		SchemaList: []string{dropSchemaContext.Schema},
+		IfExists:   true,
+		Behavior:   ast.DropBehaviorNone,
+	}
+	ctx.NodeList = append(ctx.NodeList, dropSchemaListStmt)
 	return nil
 }
 
