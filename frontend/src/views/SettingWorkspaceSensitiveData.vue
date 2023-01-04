@@ -18,7 +18,9 @@
           {{ item.table }}
         </div>
         <div class="bb-grid-cell">
-          {{ item.database.name }}
+          <router-link :to="`/db/${databaseSlug(item.database)}`">
+            {{ item.database.name }}
+          </router-link>
         </div>
         <div class="bb-grid-cell gap-x-1">
           <InstanceEngineIcon :instance="item.database.instance" />
@@ -200,7 +202,7 @@ const COLUMN_LIST = computed((): BBGridColumn[] => [
   },
   {
     title: t("common.updated-at"),
-    width: { md: "minmax(auto, 6rem)" },
+    width: { md: "minmax(auto, 8rem)" },
     class: "hidden md:flex",
   },
   {
