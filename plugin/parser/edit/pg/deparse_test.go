@@ -11,6 +11,78 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
+func TestDeparseRenameSchema(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "renmae schema public",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				RenameSchemaList: []*api.RenameSchemaContext{
+					{
+						OldName: "public",
+						NewName: "private",
+					},
+				},
+			},
+			want: "ALTER SCHEMA \"public\" RENAME TO \"private\";",
+		},
+	}
+
+	postgresEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := postgresEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
+func TestDeparseDropSchema(t *testing.T) {
+	tests := []struct {
+		name         string
+		databaseEdit *api.DatabaseEdit
+		want         string
+	}{
+		{
+			name: "drop schema public",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				DropSchemaList: []*api.DropSchemaContext{
+					{
+						Schema: "public",
+					},
+				},
+			},
+			want: "DROP SCHEMA IF EXISTS \"public\";",
+		},
+		{
+			name: "drop schema public and t1",
+			databaseEdit: &api.DatabaseEdit{
+				DatabaseID: api.UnknownID,
+				DropSchemaList: []*api.DropSchemaContext{
+					{
+						Schema: "public",
+					},
+					{
+						Schema: "t1",
+					},
+				},
+			},
+			want: "DROP SCHEMA IF EXISTS \"public\";\nDROP SCHEMA IF EXISTS \"t1\";",
+		},
+	}
+
+	postgresEditor := &SchemaEditor{}
+	for _, test := range tests {
+		stmt, err := postgresEditor.DeparseDatabaseEdit(test.databaseEdit)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, stmt)
+	}
+}
+
 func TestDeparseCreateTable(t *testing.T) {
 	var defaultValue = "0"
 
