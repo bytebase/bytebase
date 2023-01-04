@@ -152,11 +152,6 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (string, error) {
 	policy := advisor.SQLReviewPolicy{
 		Name: "Prod",
 		RuleList: []*advisor.SQLReviewRule{
-			// Engine
-			{
-				Type:  advisor.SchemaRuleMySQLEngine,
-				Level: advisor.SchemaRuleLevelError,
-			},
 			// Naming
 			{
 				Type:  advisor.SchemaRuleTableNaming,
@@ -182,10 +177,6 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (string, error) {
 				Type:  advisor.SchemaRuleFKNaming,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
-			{
-				Type:  advisor.SchemaRuleAutoIncrementColumnNaming,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
 			// Statement
 			{
 				Type:  advisor.SchemaRuleStatementNoSelectAll,
@@ -204,10 +195,6 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (string, error) {
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementDisallowLimit,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
 				Type:  advisor.SchemaRuleStatementDisallowOrderBy,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
@@ -216,24 +203,8 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (string, error) {
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  advisor.SchemaRuleStatementInsertRowLimit,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleStatementInsertMustSpecifyColumn,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
 				Type:  advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleStatementAffectedRowLimit,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleStatementDMLDryRun,
-				Level: advisor.SchemaRuleLevelError,
 			},
 			// TABLE
 			{
@@ -267,10 +238,6 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (string, error) {
 			},
 			{
 				Type:  advisor.SchemaRuleColumnDisallowChangeType,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
-			{
-				Type:  advisor.SchemaRuleColumnSetDefaultForNotNull,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
