@@ -271,10 +271,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			dbSchema = newDBSchema
 		}
 
-		isQueryRawDump := c.QueryParam("metadata") == ""
-		if isQueryRawDump {
+		isQuerySchema := c.QueryParam("metadata") == ""
+		if isQuerySchema {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
-			if _, err := c.Response().Write([]byte(dbSchema.RawDump)); err != nil {
+			if _, err := c.Response().Write([]byte(dbSchema.Schema)); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
 			}
 		} else {

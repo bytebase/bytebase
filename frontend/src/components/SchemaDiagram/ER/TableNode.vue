@@ -1,26 +1,35 @@
 <template>
   <div
-    class="absolute rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-[10]"
+    class="absolute overflow-hidden rounded-md shadow-lg border-b border-gray-200 bg-white w-[16rem] divide-y z-[10]"
     bb-node-type="table"
     :bb-node-id="idOfTable(table)"
+    :bb-status="tableStatus(table)"
     :style="{
       left: `${position.x}px`,
       top: `${position.y}px`,
     }"
   >
     <h3
-      class="font-medium leading-6 text-white text-center truncate px-2 py-2 rounded-t-md"
+      class="font-medium leading-6 text-white truncate px-2 py-2 rounded-t-md flex items-center justify-center gap-x-1"
       :style="{
         'background-color': tableColor,
       }"
     >
-      {{ table.name }}
+      <span :class="[isTableDropped && 'line-through']">{{ table.name }}</span>
+      <span v-if="isTableCreated" class="text-xs">(Created)</span>
+      <span v-if="isTableDropped" class="text-xs">(Dropped)</span>
+      <span v-if="isTableChanged" class="text-xs">(Changed)</span>
     </h3>
     <table class="w-full text-sm table-fixed">
       <tr
         v-for="(column, i) in table.columns"
         :key="i"
         :bb-column-name="column.name"
+        :bb-status="columnStatus(column)"
+        :class="[
+          isColumnDropped(column) && 'text-red-700 bg-red-50 line-through',
+          isColumnCreated(column) && 'text-green-700 bg-green-50',
+        ]"
       >
         <td class="w-5 py-1.5">
           <heroicons-outline:key
@@ -51,7 +60,7 @@
 import { computed } from "vue";
 
 import { hashCode } from "@/bbkit/BBUtil";
-import { TableMetadata } from "@/types/proto/store/database";
+import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import { useSchemaDiagramContext, isPrimaryKey, isIndex } from "../common";
 
 const props = withDefaults(
@@ -60,7 +69,8 @@ const props = withDefaults(
   }>(),
   {}
 );
-const { idOfTable, rectOfTable } = useSchemaDiagramContext();
+const { idOfTable, rectOfTable, tableStatus, columnStatus } =
+  useSchemaDiagramContext();
 
 const COLOR_LIST = [
   "#64748B",
@@ -85,6 +95,26 @@ const tableColor = computed(() => {
   const index = (hashCode(props.table.name) & 0xfffffff) % COLOR_LIST.length;
   return COLOR_LIST[index];
 });
+
+const isTableDropped = computed(() => {
+  return tableStatus(props.table) === "dropped";
+});
+
+const isTableCreated = computed(() => {
+  return tableStatus(props.table) === "created";
+});
+
+const isTableChanged = computed(() => {
+  return tableStatus(props.table) === "changed";
+});
+
+const isColumnDropped = (column: ColumnMetadata) => {
+  return columnStatus(column) === "dropped";
+};
+
+const isColumnCreated = (column: ColumnMetadata) => {
+  return columnStatus(column) === "created";
+};
 
 const position = computed(() => rectOfTable(props.table));
 </script>
