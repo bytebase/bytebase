@@ -784,7 +784,10 @@ type FindInstanceMessage struct {
 
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
-	if find.EnvironmentID == nil || find.ResourceID == nil || find.ShowDeleted {
+	// We will always return the resource regardless of its deleted state.
+	find.ShowDeleted = true
+
+	if find.EnvironmentID == nil || find.ResourceID == nil {
 		return nil, errors.Errorf("environment and resource ID must exist and showDelete must be false for getting an instance")
 	}
 	if instance, ok := s.instanceCache[getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)]; ok {
@@ -847,7 +850,9 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	}
 	defer tx.Rollback()
 
-	environment, err := s.getEnvironmentImplV2(ctx, tx, environmentID)
+	environment, err := s.getEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -951,7 +956,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	defer tx.Rollback()
 
-	environment, err := s.getEnvironmentImplV2(ctx, tx, patch.EnvironmentID)
+	environment, err := s.getEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{
+		ResourceID: &patch.EnvironmentID,
+	})
 	if err != nil {
 		return nil, err
 	}

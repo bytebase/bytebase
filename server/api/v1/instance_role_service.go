@@ -260,12 +260,18 @@ func (*InstanceRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRole
 }
 
 func (s *InstanceRoleService) getEnvironmentAndInstance(ctx context.Context, environmentID, instanceID string) (*store.EnvironmentMessage, *store.InstanceMessage, error) {
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if environment == nil {
 		return nil, nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+	}
+	// We don't allow access even for the read API because the API will call user instances without using Bytebase metadata.
+	if environment.Deleted {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
@@ -277,6 +283,9 @@ func (s *InstanceRoleService) getEnvironmentAndInstance(ctx context.Context, env
 	}
 	if instance == nil {
 		return nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	if instance.Deleted {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", instanceID)
 	}
 
 	return environment, instance, nil
