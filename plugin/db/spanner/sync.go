@@ -191,7 +191,6 @@ func getColumn(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tab
 		columnsMap[key] = append(columnsMap[key], column)
 	}
 	return columnsMap, nil
-
 }
 
 func getIndex(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.TableKey][]*storepb.IndexMetadata, error) {
