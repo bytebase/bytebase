@@ -19,7 +19,7 @@ import (
 )
 
 func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (bool, error) {
-	dsn := getDSN(d.config.Host, db.BytebaseDatabase)
+	dsn := getDSN(d.config.Host, databaseName)
 	_, err := d.dbClient.GetDatabase(ctx, &databasepb.GetDatabaseRequest{Name: dsn})
 	if status.Code(err) == codes.NotFound {
 		return true, nil
