@@ -96,6 +96,11 @@ func deparse(context parser.DeparseContext, in ast.Node, buf *strings.Builder) e
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.RenameSchemaStmt:
+		if err := deparseRenameSchema(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
 }
@@ -1255,6 +1260,19 @@ func deparseFunctionSignature(function *ast.FunctionDef, buf *strings.Builder) e
 		}
 	}
 	return buf.WriteByte(')')
+}
+
+func deparseRenameSchema(ctx parser.DeparseContext, in *ast.RenameSchemaStmt, buf *strings.Builder) error {
+	if _, err := buf.WriteString("ALTER SCHEMA "); err != nil {
+		return err
+	}
+	if err := writeSurrounding(buf, in.Schema, `"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" RENAME TO "); err != nil {
+		return err
+	}
+	return writeSurrounding(buf, in.NewName, `"`)
 }
 
 func deparseAlterType(ctx parser.DeparseContext, in *ast.AlterTypeStmt, buf *strings.Builder) error {

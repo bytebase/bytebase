@@ -64,6 +64,7 @@ func TestDeparse(t *testing.T) {
 		// Schema
 		"test_create_schema_data.yaml",
 		"test_drop_schema_data.yaml",
+		"test_rename_schema_data.yaml",
 		// Index
 		"test_create_index_data.yaml",
 		"test_drop_index_data.yaml",
