@@ -87,8 +87,8 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 
 	n, ok := node.(*ast.InsertStmt)
 	if ok {
-		// For INSERT INTO ... VALUES ... statements, use parser only.
 		if len(n.ValueList) > 0 {
+			// For INSERT INTO ... VALUES ... statements, use parser only.
 			if len(n.ValueList) > checker.maxRow {
 				code = advisor.InsertTooManyRows
 				rows = int64(len(n.ValueList))
