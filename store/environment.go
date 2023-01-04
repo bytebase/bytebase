@@ -553,14 +553,14 @@ type UpdateEnvironmentMessage struct {
 }
 
 // GetEnvironmentV2 gets environment by resource ID.
-func (s *Store) GetEnvironmentV2(ctx context.Context, resourceID string) (*EnvironmentMessage, error) {
+func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	environment, err := s.getEnvironmentImplV2(ctx, tx, resourceID)
+	environment, err := s.getEnvironmentImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -691,12 +691,12 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 	return environment, nil
 }
 
-func (s *Store) getEnvironmentImplV2(ctx context.Context, tx *Tx, resourceID string) (*EnvironmentMessage, error) {
-	if environment, ok := s.environmentCache[resourceID]; ok {
+func (s *Store) getEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
+	if environment, ok := s.environmentCache[*find.ResourceID]; ok {
 		return environment, nil
 	}
 
-	environments, err := listEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{ResourceID: &resourceID})
+	environments, err := listEnvironmentImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -704,7 +704,7 @@ func (s *Store) getEnvironmentImplV2(ctx context.Context, tx *Tx, resourceID str
 		return nil, nil
 	}
 	if len(environments) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d environments with resource ID %s, expect 1", len(environments), resourceID)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d environments with resource ID %s, expect 1", len(environments), *find.ResourceID)}
 	}
 	return environments[0], nil
 }

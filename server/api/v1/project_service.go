@@ -35,7 +35,10 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	project, err := s.store.GetProjectV2(ctx, projectID)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID:  &projectID,
+		ShowDeleted: request.ShowDeleted,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -93,7 +96,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	project, err := s.store.GetProjectV2(ctx, projectID)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -162,7 +167,9 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	project, err := s.store.GetProjectV2(ctx, projectID)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -189,7 +196,10 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	project, err := s.store.GetProjectV2(ctx, projectID)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

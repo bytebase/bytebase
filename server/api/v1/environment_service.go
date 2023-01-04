@@ -36,7 +36,10 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID:  &environmentID,
+		ShowDeleted: request.ShowDeleted,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -111,7 +114,9 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -151,7 +156,9 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -185,7 +192,10 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID:  &environmentID,
+		ShowDeleted: true,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

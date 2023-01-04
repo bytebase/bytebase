@@ -62,6 +62,9 @@ message GetProjectRequest {
   // The name of the project to retrieve.
   // Format: projects/{project}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+   // Show deleted project if specified.
+  bool show_deleted = 2;
 }
 
 message ListProjectsRequest {

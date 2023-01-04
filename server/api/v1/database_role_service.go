@@ -260,7 +260,9 @@ func (*InstanceRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRole
 }
 
 func (s *InstanceRoleService) getEnvironmentAndInstance(ctx context.Context, environmentID, instanceID string) (*store.EnvironmentMessage, *store.InstanceMessage, error) {
-	environment, err := s.store.GetEnvironmentV2(ctx, environmentID)
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, err.Error())
 	}

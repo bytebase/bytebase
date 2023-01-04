@@ -120,6 +120,8 @@ export interface GetInstanceRequest {
    * Format: environments/{environment}/instances/{instance}
    */
   name: string;
+  /** Show deleted instance if specified. */
+  showDeleted: boolean;
 }
 
 export interface ListInstancesRequest {
@@ -271,13 +273,16 @@ export interface DataSource {
 }
 
 function createBaseGetInstanceRequest(): GetInstanceRequest {
-  return { name: "" };
+  return { name: "", showDeleted: false };
 }
 
 export const GetInstanceRequest = {
   encode(message: GetInstanceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.showDeleted === true) {
+      writer.uint32(16).bool(message.showDeleted);
     }
     return writer;
   },
@@ -292,6 +297,9 @@ export const GetInstanceRequest = {
         case 1:
           message.name = reader.string();
           break;
+        case 2:
+          message.showDeleted = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -301,18 +309,23 @@ export const GetInstanceRequest = {
   },
 
   fromJSON(object: any): GetInstanceRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
+    };
   },
 
   toJSON(message: GetInstanceRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<GetInstanceRequest>, I>>(object: I): GetInstanceRequest {
     const message = createBaseGetInstanceRequest();
     message.name = object.name ?? "";
+    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
