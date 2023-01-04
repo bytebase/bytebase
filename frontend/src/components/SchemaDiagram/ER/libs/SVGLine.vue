@@ -10,6 +10,7 @@
       top: `${bbox.y + viewBox.y}px`,
       width: `${viewBox.width}px`,
       height: `${viewBox.height}px`,
+      'z-index': hover ? 1 : 0,
     }"
   >
     <path
@@ -31,7 +32,7 @@
       fill="none"
       :stroke="hover ? COLORS.LINE.HOVER : COLORS.LINE.NORMAL"
       stroke-width="1"
-      pointer-events="visibleStroke"
+      pointer-events="none"
     />
     <path
       ref="line"
