@@ -74,6 +74,11 @@ func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string
 
 // FindMigrationHistoryList finds the migration history list.
 func (d *Driver) FindMigrationHistoryList(ctx context.Context, find *db.MigrationHistoryFind) ([]*db.MigrationHistory, error) {
+	defer func(db string) {
+		if err := d.switchDatabase(ctx, db); err != nil {
+			log.Error("failed to switch back database for spanner driver", zap.String("database", db), zap.Error(err))
+		}
+	}(d.dbName)
 	if err := d.switchDatabase(ctx, db.BytebaseDatabase); err != nil {
 		return nil, err
 	}
