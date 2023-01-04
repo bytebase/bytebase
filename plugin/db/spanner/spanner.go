@@ -49,6 +49,8 @@ type Driver struct {
 	connCtx  db.ConnectionContext
 	client   *spanner.Client
 	dbClient *spannerdb.DatabaseAdminClient
+
+	dbName string
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -66,6 +68,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	d.connCtx = connCtx
 	if config.Database == "" {
 		// try to connect to bytebase
+		d.dbName = db.BytebaseDatabase
 		dsn := getDSN(d.config.Host, db.BytebaseDatabase)
 		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
 		if status.Code(err) == codes.NotFound {
@@ -76,6 +79,7 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 			d.client = client
 		}
 	} else {
+		d.dbName = d.config.Database
 		dsn := getDSN(d.config.Host, d.config.Database)
 		client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(config.Password)))
 		if err != nil {
@@ -91,6 +95,23 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 
 	d.dbClient = dbClient
 	return d, nil
+}
+
+func (d *Driver) switchDatabase(ctx context.Context, dbName string) error {
+	if d.dbName == dbName {
+		return nil
+	}
+	if d.client != nil {
+		d.client.Close()
+	}
+	dsn := getDSN(d.config.Host, dbName)
+	client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(d.config.Password)))
+	if err != nil {
+		return err
+	}
+	d.client = client
+	d.dbName = dbName
+	return nil
 }
 
 // Close closes the driver.
