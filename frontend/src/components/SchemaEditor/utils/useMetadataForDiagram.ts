@@ -1,7 +1,7 @@
 import { computed, unref } from "vue";
 
 import { Database, DatabaseSchema, MaybeRef } from "@/types";
-import { Schema, Table } from "@/types/schemaEditor/atomType";
+import { Column, Schema, Table } from "@/types/schemaEditor/atomType";
 import { EditStatus } from "@/components/SchemaDiagram";
 import {
   ColumnMetadata,
@@ -11,8 +11,9 @@ import {
 } from "@/types/proto/store/database";
 import { isTableChanged } from "./table";
 
-type MetadataWithEditStatus<T> = T & {
+type MetadataWithEditStatus<T, E> = T & {
   $$status?: EditStatus;
+  $$edit?: E;
 };
 
 const statusOfTable = (
@@ -46,6 +47,10 @@ export const useMetadataForDiagram = (
           enumerable: false,
           value: statusOfTable(database, schema, table),
         });
+        Object.defineProperty(tableMeta, "$$edit", {
+          enumerable: false,
+          value: table,
+        });
 
         tableMeta.name = table.name;
         tableMeta.engine = table.engine;
@@ -59,6 +64,10 @@ export const useMetadataForDiagram = (
           Object.defineProperty(columnMeta, "$$status", {
             enumerable: false,
             value: column.status,
+          });
+          Object.defineProperty(columnMeta, "$$edit", {
+            enumerable: false,
+            value: column,
           });
 
           columnMeta.name = column.name;
@@ -117,7 +126,7 @@ export const useMetadataForDiagram = (
   });
 
   const tableStatus = (tableMeta: TableMetadata): EditStatus => {
-    const status = (tableMeta as MetadataWithEditStatus<TableMetadata>)
+    const status = (tableMeta as MetadataWithEditStatus<TableMetadata, Table>)
       .$$status;
     if (typeof status !== "undefined") {
       return status;
@@ -125,17 +134,31 @@ export const useMetadataForDiagram = (
     return "normal";
   };
   const columnStatus = (columnMeta: ColumnMetadata): EditStatus => {
-    const status = (columnMeta as MetadataWithEditStatus<ColumnMetadata>)
-      .$$status;
+    const status = (
+      columnMeta as MetadataWithEditStatus<ColumnMetadata, Column>
+    ).$$status;
     if (typeof status !== "undefined") {
       return status;
     }
     return "normal";
+  };
+  const editableTable = (tableMeta: TableMetadata) => {
+    const table = (tableMeta as MetadataWithEditStatus<TableMetadata, Table>)
+      .$$edit;
+    return table;
+  };
+  const editableColumn = (columnMeta: ColumnMetadata) => {
+    const column = (
+      columnMeta as MetadataWithEditStatus<ColumnMetadata, Column>
+    ).$$edit;
+    return column;
   };
 
   return {
     tableMetadataList,
     tableStatus,
     columnStatus,
+    editableTable,
+    editableColumn,
   };
 };
