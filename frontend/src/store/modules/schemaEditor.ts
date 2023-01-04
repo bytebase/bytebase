@@ -85,10 +85,13 @@ export const useSchemaEditorStore = defineStore("SchemaEditor", {
       });
 
       if (tabCache !== undefined) {
-        tab = tabCache;
-      } else {
-        this.tabState.tabMap.set(tab.id, tab);
+        tab = {
+          ...tabCache,
+          ...tab,
+          id: tabCache.id,
+        };
       }
+      this.tabState.tabMap.set(tab.id, tab);
 
       if (setAsCurrentTab) {
         this.setCurrentTab(tab.id);
