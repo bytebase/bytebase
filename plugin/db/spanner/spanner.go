@@ -50,6 +50,7 @@ type Driver struct {
 	client   *spanner.Client
 	dbClient *spannerdb.DatabaseAdminClient
 
+	// dbName is the currently connected database name.
 	dbName string
 }
 
