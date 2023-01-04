@@ -112,7 +112,6 @@ const handleConfirmButtonClick = async () => {
 
   const databaseId = props.databaseId;
   const schema = editorStore.getSchema(databaseId, props.schemaId) as Schema;
-  console.log("props.schemaId", props.schemaId);
   const tableNameList = schema.tableList.map((table) => table.name);
   if (tableNameList.includes(state.tableName)) {
     notificationStore.pushNotification({
