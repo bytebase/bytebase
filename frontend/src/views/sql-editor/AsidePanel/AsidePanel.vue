@@ -1,13 +1,29 @@
 <template>
   <div class="aside-panel h-full">
-    <n-tabs type="segment" default-value="databases" class="h-full">
-      <n-tab-pane name="databases" :tab="$t('common.databases')">
+    <n-tabs v-model:value="tab" type="segment" class="h-full">
+      <n-tab-pane name="projects" :tab="$t('common.projects')">
         <Splitpanes
           horizontal
           class="default-theme"
           :dbl-click-splitter="false"
         >
-          <Pane :size="databasePaneSize"><DatabaseTree /></Pane>
+          <Pane :size="databasePaneSize">
+            <DatabaseTree />
+          </Pane>
+          <Pane :size="FULL_HEIGHT - databasePaneSize">
+            <TableSchema @close-pane="handleCloseTableSchemaPane" />
+          </Pane>
+        </Splitpanes>
+      </n-tab-pane>
+      <n-tab-pane name="instances" :tab="$t('common.instances')">
+        <Splitpanes
+          horizontal
+          class="default-theme"
+          :dbl-click-splitter="false"
+        >
+          <Pane :size="databasePaneSize">
+            <DatabaseTree />
+          </Pane>
           <Pane :size="FULL_HEIGHT - databasePaneSize">
             <TableSchema @close-pane="handleCloseTableSchemaPane" />
           </Pane>
@@ -21,18 +37,23 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, ref, watchEffect } from "vue";
 import { isUndefined } from "lodash-es";
-import { computed } from "vue";
+
 import { useConnectionTreeStore } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import TableSchema from "./TableSchema.vue";
 import { Splitpanes, Pane } from "splitpanes";
+import { ConnectionTreeMode } from "@/types";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
 
+const tab = ref<"projects" | "instances" | "history">("projects");
+
 const connectionTreeStore = useConnectionTreeStore();
+
 const databasePaneSize = computed(() => {
   if (!isUndefined(connectionTreeStore.selectedTableAtom)) {
     return DATABASE_PANE_SIZE;
@@ -43,6 +64,14 @@ const databasePaneSize = computed(() => {
 const handleCloseTableSchemaPane = () => {
   connectionTreeStore.selectedTableAtom = undefined;
 };
+watchEffect(() => {
+  if (tab.value === "projects") {
+    connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
+  }
+  if (tab.value === "instances") {
+    connectionTreeStore.tree.mode = ConnectionTreeMode.INSTANCE;
+  }
+});
 </script>
 
 <style scoped>
