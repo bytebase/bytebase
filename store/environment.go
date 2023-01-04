@@ -728,7 +728,9 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 	// Invalid the cache and read the value again.
 	delete(s.environmentCache, environmentID)
 
-	return s.GetEnvironmentV2(ctx, environmentID)
+	return s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
 }
 
 func (s *Store) getEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
