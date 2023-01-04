@@ -24,11 +24,11 @@ func TestDeparseRenameSchema(t *testing.T) {
 				RenameSchemaList: []*api.RenameSchemaContext{
 					{
 						OldName: "public",
-						NewName: "private",
+						NewName: "protected",
 					},
 				},
 			},
-			want: "ALTER SCHEMA \"public\" RENAME TO \"private\";",
+			want: "ALTER SCHEMA \"public\" RENAME TO \"protected\";",
 		},
 	}
 

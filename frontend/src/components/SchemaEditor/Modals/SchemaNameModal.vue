@@ -1,6 +1,10 @@
 <template>
   <BBModal
-    :title="$t('schema-editor.actions.create-schema')"
+    :title="
+      isCreatingSchema
+        ? $t('schema-editor.actions.create-schema')
+        : $t('schema-editor.actions.rename')
+    "
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
@@ -19,14 +23,14 @@
         {{ $t("common.cancel") }}
       </button>
       <button class="btn-primary" @click="handleConfirmButtonClick">
-        {{ $t("common.create") }}
+        {{ isCreatingSchema ? $t("common.create") : $t("common.save") }}
       </button>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive } from "vue";
+import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseId, SchemaEditorTabType, UNKNOWN_ID } from "@/types";
 import {
@@ -48,6 +52,10 @@ const props = defineProps({
     type: Number as PropType<DatabaseId>,
     default: UNKNOWN_ID,
   },
+  schemaId: {
+    type: String as PropType<string | undefined>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -59,6 +67,21 @@ const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   schemaName: "",
+});
+
+const isCreatingSchema = computed(() => {
+  return props.schemaId === undefined;
+});
+
+onMounted(() => {
+  if (props.schemaId === undefined) {
+    return;
+  }
+
+  const schema = editorStore.getSchema(props.databaseId, props.schemaId);
+  if (schema) {
+    state.schemaName = schema.name;
+  }
 });
 
 const handleSchemaNameChange = (event: Event) => {
@@ -91,16 +114,28 @@ const handleConfirmButtonClick = async () => {
     return;
   }
 
-  const schema = convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}));
-  schema.name = state.schemaName;
-  schema.status = "created";
-  databaseSchema.schemaList.push(schema);
-  editorStore.addTab({
-    id: generateUniqueTabId(),
-    type: SchemaEditorTabType.TabForDatabase,
-    databaseId: databaseId,
-    selectedSchemaName: schema.name,
-  });
+  if (isCreatingSchema.value) {
+    const schema = convertSchemaMetadataToSchema(
+      SchemaMetadata.fromPartial({})
+    );
+    schema.name = state.schemaName;
+    schema.status = "created";
+    databaseSchema.schemaList.push(schema);
+    editorStore.addTab({
+      id: generateUniqueTabId(),
+      type: SchemaEditorTabType.TabForDatabase,
+      databaseId: databaseId,
+      selectedSchemaId: schema.id,
+    });
+  } else {
+    const schema = editorStore.getSchema(
+      props.databaseId,
+      props.schemaId ?? ""
+    );
+    if (schema) {
+      schema.name = state.schemaName;
+    }
+  }
   dismissModal();
 };
 
