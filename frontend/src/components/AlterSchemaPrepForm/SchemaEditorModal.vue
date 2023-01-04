@@ -293,11 +293,13 @@ const getDatabaseEditListWithSchemaEditor = () => {
 
     for (const schema of databaseSchema.schemaList) {
       const originSchema = databaseSchema.originSchemaList.find(
-        (originSchema) => originSchema.name === schema.name
+        (originSchema) => originSchema.id === schema.id
       );
       const diffSchemaResult = diffSchema(database.id, originSchema, schema);
       if (
         diffSchemaResult.createSchemaList.length > 0 ||
+        diffSchemaResult.renameSchemaList.length > 0 ||
+        diffSchemaResult.dropSchemaList.length > 0 ||
         diffSchemaResult.createTableList.length > 0 ||
         diffSchemaResult.alterTableList.length > 0 ||
         diffSchemaResult.renameTableList.length > 0 ||

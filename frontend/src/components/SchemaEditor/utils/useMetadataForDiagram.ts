@@ -101,7 +101,7 @@ export const useMetadataForDiagram = (
           // In PostgreSQL, foreign keys can cross different schemas.
           // So we need to search the schemaList here.
           const refSchema = schemaList.find(
-            (schema) => schema.name === fk.referencedSchema
+            (schema) => schema.id === fk.referencedSchemaId
           )!;
           const refTable = refSchema.tableList.find(
             (table) => table.id === fk.referencedTableId

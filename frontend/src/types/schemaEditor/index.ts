@@ -11,7 +11,7 @@ export interface DatabaseTabContext {
   id: string;
   type: SchemaEditorTabType.TabForDatabase;
   databaseId: DatabaseId;
-  selectedSchemaName?: string;
+  selectedSchemaId?: string;
 }
 
 // Tab context for editing table.
@@ -19,7 +19,7 @@ export interface TableTabContext {
   id: string;
   type: SchemaEditorTabType.TabForTable;
   databaseId: DatabaseId;
-  schemaName: string;
+  schemaId: string;
   tableId: string;
 }
 
@@ -48,6 +48,8 @@ export interface DatabaseEdit {
   databaseId: DatabaseId;
 
   createSchemaList: CreateSchemaContext[];
+  renameSchemaList: RenameSchemaContext[];
+  dropSchemaList: DropSchemaContext[];
   createTableList: CreateTableContext[];
   alterTableList: AlterTableContext[];
   renameTableList: RenameTableContext[];
@@ -55,6 +57,15 @@ export interface DatabaseEdit {
 }
 
 export interface CreateSchemaContext {
+  schema: string;
+}
+
+export interface RenameSchemaContext {
+  oldName: string;
+  newName: string;
+}
+
+export interface DropSchemaContext {
   schema: string;
 }
 

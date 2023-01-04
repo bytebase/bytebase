@@ -11,7 +11,7 @@
         :item-list="schemaList"
         :placeholder="$t('schema-editor.schema.select')"
         :show-prefix-item="true"
-        @select-item="(schema: Schema) => state.referencedSchema = schema.name"
+        @select-item="(schema: Schema) => state.referencedSchemaId = schema.id"
       >
         <template #menuItem="{ item }">
           {{ item.name }}
@@ -86,7 +86,7 @@ import {
 import { BBModal, BBSelect } from "@/bbkit";
 
 interface LocalState {
-  referencedSchema?: string;
+  referencedSchemaId?: string;
   referencedTableId?: string;
   referencedColumnId?: string;
 }
@@ -96,7 +96,7 @@ const props = defineProps({
     type: Number as PropType<DatabaseId>,
     default: UNKNOWN_ID,
   },
-  schemaName: {
+  schemaId: {
     type: String as PropType<string>,
     default: "",
   },
@@ -122,19 +122,15 @@ const database = databaseSchema.database;
 const databaseEngine = database.instance.engine;
 const schemaList = databaseSchema.schemaList;
 const state = reactive<LocalState>({
-  referencedSchema: props.schemaName,
+  referencedSchemaId: props.schemaId,
 });
 
 const schema = computed(() => {
-  return editorStore.getSchema(props.databaseId, props.schemaName) as Schema;
+  return editorStore.getSchema(props.databaseId, props.schemaId) as Schema;
 });
 
 const table = computed(() => {
-  return editorStore.getTable(
-    props.databaseId,
-    props.schemaName,
-    props.tableId
-  );
+  return editorStore.getTable(props.databaseId, props.schemaId, props.tableId);
 });
 
 const propsColumn = computed(() => {
@@ -152,7 +148,7 @@ const shouldShowSchemaSelector = computed(() => {
 });
 
 const selectedSchema = computed(() => {
-  return schemaList.find((schema) => schema.name === state.referencedSchema);
+  return schemaList.find((schema) => schema.id === state.referencedSchemaId);
 });
 
 const tableList = computed(() => {
@@ -201,7 +197,7 @@ onMounted(() => {
       (columnId) => columnId === props.columnId
     );
     if (foundIndex > -1) {
-      state.referencedSchema = foreignKey.value.referencedSchema;
+      state.referencedSchemaId = foreignKey.value.referencedSchemaId;
       state.referencedTableId = foreignKey.value.referencedTableId;
       state.referencedColumnId =
         foreignKey.value.referencedColumnIdList[foundIndex];
@@ -238,7 +234,7 @@ const handleRemoveFKButtonClick = async () => {
 
 const handleConfirmButtonClick = async () => {
   if (
-    isUndefined(state.referencedSchema) ||
+    isUndefined(state.referencedSchemaId) ||
     isUndefined(state.referencedTableId) ||
     isUndefined(state.referencedColumnId)
   ) {
@@ -251,7 +247,7 @@ const handleConfirmButtonClick = async () => {
       name: uuidv1(),
       tableId: props.tableId,
       columnIdList: [column.id],
-      referencedSchema: state.referencedSchema,
+      referencedSchemaId: state.referencedSchemaId,
       referencedTableId: state.referencedTableId,
       referencedColumnIdList: [state.referencedColumnId],
     };

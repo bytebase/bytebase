@@ -1440,8 +1440,8 @@
     "sync-sql-from-schema-editor": "Sync SQL from Schema Editor",
     "raw-sql": "Raw SQL",
     "actions": {
-      "create-schema": "Create Schema",
-      "delete-schema": "Delete Schema",
+      "create-schema": "Create schema",
+      "drop-schema": "Drop schema",
       "create-table": "New table",
       "rename": "Rename",
       "drop-table": "Drop table",

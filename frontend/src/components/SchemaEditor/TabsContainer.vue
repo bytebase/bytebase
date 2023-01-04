@@ -89,7 +89,7 @@ const getTabComputedClassList = (tab: TabContext) => {
       return ["text-green-700"];
     }
 
-    if (isTableChanged(tab.databaseId, tab.schemaName, tab.tableId)) {
+    if (isTableChanged(tab.databaseId, tab.schemaId, tab.tableId)) {
       return ["text-yellow-700"];
     }
   }
@@ -106,7 +106,7 @@ const getTabName = (tab: TabContext) => {
   } else if (tab.type === SchemaEditorTabType.TabForTable) {
     const table = editorStore.getTable(
       tab.databaseId,
-      tab.schemaName,
+      tab.schemaId,
       tab.tableId
     );
     return `${table?.name || ""}`;
