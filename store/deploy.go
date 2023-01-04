@@ -74,19 +74,19 @@ func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID in
 }
 
 func (s *Store) getDefaultDeploymentConfig(ctx context.Context, projectID int) (*deploymentConfigRaw, error) {
-	normalRowStatus := api.Normal
-	environmentList, err := s.FindEnvironment(ctx, &api.EnvironmentFind{RowStatus: &normalRowStatus})
+	environmentList, err := s.ListEnvironmentV2(ctx, &FindEnvironmentMessage{})
 	if err != nil {
 		return nil, err
 	}
 	scheduleList := api.DeploymentSchedule{}
 	for _, environment := range environmentList {
 		scheduleList.Deployments = append(scheduleList.Deployments, &api.Deployment{
-			Name: fmt.Sprintf("%s Stage", environment.Name),
+			Name: fmt.Sprintf("%s Stage", environment.Title),
 			Spec: &api.DeploymentSpec{
 				Selector: &api.LabelSelector{
 					MatchExpressions: []*api.LabelSelectorRequirement{
-						{Key: "bb.environment", Operator: api.InOperatorType, Values: []string{environment.Name}},
+						// TODO(d): use environment ID for the label.
+						{Key: "bb.environment", Operator: api.InOperatorType, Values: []string{environment.Title}},
 					},
 				},
 			},

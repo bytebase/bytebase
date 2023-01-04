@@ -8,19 +8,21 @@ type Store struct {
 	db    *DB
 	cache *CacheService
 
-	environmentCache map[string]*EnvironmentMessage
-	instanceCache    map[string]*InstanceMessage
-	dbSchemaCache    map[int]*DBSchema
+	environmentCache   map[string]*EnvironmentMessage
+	environmentIDCache map[int]*EnvironmentMessage
+	instanceCache      map[string]*InstanceMessage
+	dbSchemaCache      map[int]*DBSchema
 }
 
 // New creates a new instance of Store.
 func New(db *DB) *Store {
 	return &Store{
-		db:               db,
-		cache:            newCacheService(),
-		environmentCache: make(map[string]*EnvironmentMessage),
-		instanceCache:    make(map[string]*InstanceMessage),
-		dbSchemaCache:    make(map[int]*DBSchema),
+		db:                 db,
+		cache:              newCacheService(),
+		environmentCache:   make(map[string]*EnvironmentMessage),
+		environmentIDCache: make(map[int]*EnvironmentMessage),
+		instanceCache:      make(map[string]*InstanceMessage),
+		dbSchemaCache:      make(map[int]*DBSchema),
 	}
 }
 
