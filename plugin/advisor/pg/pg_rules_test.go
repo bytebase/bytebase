@@ -34,6 +34,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
 		advisor.SchemaRuleColumnMaximumCharacterLength,
 		advisor.SchemaRuleStatementDisallowCommit,
+		advisor.SchemaRuleStatementDMLDryRun,
 	}
 
 	for _, rule := range pgRules {
