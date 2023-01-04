@@ -573,16 +573,16 @@ type UpdateProjectMessage struct {
 }
 
 // GetProjectV2 gets project by resource ID.
-func (s *Store) GetProjectV2(ctx context.Context, resourceID string) (*ProjectMessage, error) {
+func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
+	// We will always return the resource regardless of its deleted state.
+	find.ShowDeleted = true
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	find := &FindProjectMessage{
-		ResourceID: &resourceID,
-	}
 	projects, err := s.listProjectImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
