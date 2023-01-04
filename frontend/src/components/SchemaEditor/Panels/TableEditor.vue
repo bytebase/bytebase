@@ -52,6 +52,7 @@
 
       <!-- column table -->
       <div
+        ref="tableEditorContainerRef"
         class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
       >
         <!-- column table header -->
@@ -73,17 +74,18 @@
             v-for="(column, index) in table.columnList"
             :key="`${index}-${column.id}`"
             class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
-            :class="
+            :class="[
               isDroppedColumn(column) &&
-              'text-red-700 cursor-not-allowed !bg-red-50 opacity-70'
-            "
+                'text-red-700 cursor-not-allowed !bg-red-50 opacity-70',
+              `column-${column.id}`,
+            ]"
           >
             <div class="table-body-item-container">
               <input
                 v-model="column.name"
                 :disabled="disableAlterColumn(column)"
                 placeholder="column name"
-                class="column-field-input"
+                class="column-field-input column-name-input"
                 type="text"
               />
             </div>
@@ -251,7 +253,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isUndefined, flatten } from "lodash-es";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useNotificationStore, useSchemaEditorStore } from "@/store/modules";
 import { TableTabContext } from "@/types";
@@ -306,6 +308,7 @@ const foreignKeyList = computed(() => {
   ) as ForeignKey[];
 });
 
+const tableEditorContainerRef = ref<HTMLDivElement>();
 const editForeignKeyColumn = ref<Column>();
 
 const isDroppedTable = computed(() => {
@@ -506,6 +509,13 @@ const handleAddColumn = () => {
   const column = convertColumnMetadataToColumn(ColumnMetadata.fromPartial({}));
   column.status = "created";
   table.value.columnList.push(column);
+  nextTick(() => {
+    (
+      tableEditorContainerRef.value?.querySelector(
+        `.column-${column.id} .column-name-input`
+      ) as HTMLInputElement
+    )?.focus();
+  });
 };
 
 const handleColumnDefaultFieldChange = (

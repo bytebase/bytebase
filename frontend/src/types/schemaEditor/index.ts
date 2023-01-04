@@ -11,6 +11,7 @@ export interface DatabaseTabContext {
   id: string;
   type: SchemaEditorTabType.TabForDatabase;
   databaseId: DatabaseId;
+  selectedSchemaName?: string;
 }
 
 // Tab context for editing table.
