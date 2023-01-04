@@ -1,3 +1,4 @@
+import { isGhostTable } from "@/utils";
 import { v1 as uuidv1 } from "uuid";
 import {
   ColumnMetadata,
@@ -114,6 +115,11 @@ export const convertSchemaMetadataToSchema = (
   const foreignKeyList: ForeignKey[] = [];
 
   for (const tableMetadata of schemaMetadata.tables) {
+    // Don't display ghost table in Schema Editor.
+    if (isGhostTable(tableMetadata)) {
+      continue;
+    }
+
     const table = convertTableMetadataToTable(tableMetadata);
     tableList.push(table);
   }
