@@ -129,6 +129,9 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 			patch.Name = &request.Environment.Title
 		case "environment.order":
 			patch.Order = &request.Environment.Order
+		case "environment.tier":
+			protected := request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED
+			patch.Protected = &protected
 		}
 	}
 
@@ -205,11 +208,16 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 }
 
 func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
+	tier := v1pb.EnvironmentTier_UNPROTECTED
+	if environment.Protected {
+		tier = v1pb.EnvironmentTier_PROTECTED
+	}
 	return &v1pb.Environment{
 		Name:  fmt.Sprintf("%s%s", environmentNamePrefix, environment.ResourceID),
 		Uid:   fmt.Sprintf("%d", environment.UID),
 		Title: environment.Title,
 		Order: environment.Order,
 		State: convertDeletedToState(environment.Deleted),
+		Tier:  tier,
 	}
 }
