@@ -328,6 +328,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *api.Database,
 		SyncStatus:           &syncStatus,
 		LastSuccessfulSyncTs: &ts,
 		SchemaVersion:        patchSchemaVersion,
+		// TODO(d): update CharacterSet and Collation.
 	}
 	database, err = s.store.PatchDatabase(ctx, databasePatch)
 	if err != nil {
