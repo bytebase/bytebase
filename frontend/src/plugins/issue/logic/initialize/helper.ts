@@ -5,11 +5,16 @@ import {
   IssueCreate,
   Principal,
   SYSTEM_BOT_ID,
+  Task,
   TaskDatabaseSchemaUpdatePayload,
   UNKNOWN_ID,
 } from "@/types";
 import { useActuatorStore, useCurrentUser, useIssueStore } from "@/store";
-import { BuildNewIssueContext, VALIDATE_ONLY_SQL } from "../common";
+import {
+  BuildNewIssueContext,
+  ESTABLISH_BASELINE_SQL,
+  VALIDATE_ONLY_SQL,
+} from "../common";
 
 export class IssueCreateHelper {
   issueCreate: IssueCreate | null;
@@ -102,11 +107,7 @@ export class IssueCreateHelper {
         name: stage.name,
         environmentId: stage.environment.id,
         taskList: stage.taskList.map((task) => {
-          const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
-          // if we are using VALIDATE_ONLY_SQL, set it back to empty
-          // otherwise keep it as-is
-          const statement =
-            payload.statement === VALIDATE_ONLY_SQL ? "" : payload.statement;
+          const statement = defaultStatementOfTask(task);
           return {
             name: task.name,
             status: task.status,
@@ -138,3 +139,14 @@ export class IssueCreateHelper {
     return issueCreate;
   }
 }
+
+const defaultStatementOfTask = (task: Task) => {
+  if (task.type === "bb.task.database.schema.baseline") {
+    return ESTABLISH_BASELINE_SQL;
+  }
+
+  // if we are using VALIDATE_ONLY_SQL, set it back to empty
+  // otherwise keep it as-is
+  const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
+  return payload.statement === VALIDATE_ONLY_SQL ? "" : payload.statement;
+};
