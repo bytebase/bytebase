@@ -268,6 +268,8 @@ export interface DataSource {
   host: string;
   port: string;
   database: string;
+  srv: boolean;
+  authenticationDatabase: string;
 }
 
 function createBaseGetInstanceRequest(): GetInstanceRequest {
@@ -989,6 +991,8 @@ function createBaseDataSource(): DataSource {
     host: "",
     port: "",
     database: "",
+    srv: false,
+    authenticationDatabase: "",
   };
 }
 
@@ -1023,6 +1027,12 @@ export const DataSource = {
     }
     if (message.database !== "") {
       writer.uint32(82).string(message.database);
+    }
+    if (message.srv === true) {
+      writer.uint32(88).bool(message.srv);
+    }
+    if (message.authenticationDatabase !== "") {
+      writer.uint32(98).string(message.authenticationDatabase);
     }
     return writer;
   },
@@ -1064,6 +1074,12 @@ export const DataSource = {
         case 10:
           message.database = reader.string();
           break;
+        case 11:
+          message.srv = reader.bool();
+          break;
+        case 12:
+          message.authenticationDatabase = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1084,6 +1100,8 @@ export const DataSource = {
       host: isSet(object.host) ? String(object.host) : "",
       port: isSet(object.port) ? String(object.port) : "",
       database: isSet(object.database) ? String(object.database) : "",
+      srv: isSet(object.srv) ? Boolean(object.srv) : false,
+      authenticationDatabase: isSet(object.authenticationDatabase) ? String(object.authenticationDatabase) : "",
     };
   },
 
@@ -1099,6 +1117,8 @@ export const DataSource = {
     message.host !== undefined && (obj.host = message.host);
     message.port !== undefined && (obj.port = message.port);
     message.database !== undefined && (obj.database = message.database);
+    message.srv !== undefined && (obj.srv = message.srv);
+    message.authenticationDatabase !== undefined && (obj.authenticationDatabase = message.authenticationDatabase);
     return obj;
   },
 
@@ -1114,6 +1134,8 @@ export const DataSource = {
     message.host = object.host ?? "";
     message.port = object.port ?? "";
     message.database = object.database ?? "";
+    message.srv = object.srv ?? false;
+    message.authenticationDatabase = object.authenticationDatabase ?? "";
     return message;
   },
 };
