@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strings"
 
 	"github.com/lib/pq"
@@ -66,19 +65,6 @@ func (raw *databaseRaw) toDatabase() *api.Database {
 		SyncStatus:           raw.SyncStatus,
 		LastSuccessfulSyncTs: raw.LastSuccessfulSyncTs,
 	}
-}
-
-// CreateDatabase creates an instance of Database.
-func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) (*api.Database, error) {
-	databaseRaw, err := s.createDatabaseRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Database with DatabaseCreate[%+v]", create)
-	}
-	database, err := s.composeDatabase(ctx, databaseRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Database with databaseRaw[%+v]", databaseRaw)
-	}
-	return database, nil
 }
 
 // FindDatabase finds a list of Database instances.
@@ -277,66 +263,6 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	return db, nil
 }
 
-// createDatabaseRaw creates a new database.
-func (s *Store) createDatabaseRaw(ctx context.Context, create *api.DatabaseCreate) (*databaseRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	database, err := s.createDatabaseRawTx(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return database, nil
-}
-
-// createDatabaseRawTx creates a database with a transaction.
-func (s *Store) createDatabaseRawTx(ctx context.Context, tx *Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
-	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, create.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-
-	databaseRaw, err := s.createDatabaseImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	// Enable automatic backup setting based on backup plan policy.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset && databaseRaw.Name != api.AllDatabaseName {
-		backupSettingUpsert := &api.BackupSettingUpsert{
-			UpdaterID:         api.SystemBotID,
-			DatabaseID:        databaseRaw.ID,
-			Enabled:           true,
-			Hour:              rand.Intn(24),
-			RetentionPeriodTs: 7 * 24 * 3600,
-			HookURL:           "",
-		}
-		switch backupPlanPolicy.Schedule {
-		case api.BackupPlanPolicyScheduleDaily:
-			backupSettingUpsert.DayOfWeek = -1
-		case api.BackupPlanPolicyScheduleWeekly:
-			backupSettingUpsert.DayOfWeek = rand.Intn(7)
-		}
-		if _, err := s.upsertBackupSettingImpl(ctx, tx, backupSettingUpsert); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := s.cache.UpsertCache(databaseCacheNamespace, databaseRaw.ID, databaseRaw); err != nil {
-		return nil, err
-	}
-
-	return databaseRaw, nil
-}
-
 // findDatabaseRaw retrieves a list of databases based on find.
 func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -422,72 +348,6 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 	}
 
 	return database, nil
-}
-
-// createDatabaseImpl creates a new database.
-func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
-	// Insert row into database.
-	query := `
-		INSERT INTO db (
-			creator_id,
-			updater_id,
-			instance_id,
-			project_id,
-			name,
-			character_set,
-			"collation",
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'OK', $8, $9)
-		RETURNING
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			instance_id,
-			project_id,
-			name,
-			character_set,
-			"collation",
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-	`
-	var databaseRaw databaseRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.InstanceID,
-		create.ProjectID,
-		create.Name,
-		create.CharacterSet,
-		create.Collation,
-		create.LastSuccessfulSyncTs,
-		create.SchemaVersion,
-	).Scan(
-		&databaseRaw.ID,
-		&databaseRaw.CreatorID,
-		&databaseRaw.CreatedTs,
-		&databaseRaw.UpdaterID,
-		&databaseRaw.UpdatedTs,
-		&databaseRaw.InstanceID,
-		&databaseRaw.ProjectID,
-		&databaseRaw.Name,
-		&databaseRaw.CharacterSet,
-		&databaseRaw.Collation,
-		&databaseRaw.SyncStatus,
-		&databaseRaw.LastSuccessfulSyncTs,
-		&databaseRaw.SchemaVersion,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &databaseRaw, nil
 }
 
 func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
