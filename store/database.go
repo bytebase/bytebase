@@ -720,23 +720,20 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	return databases, nil
 }
 
-// CreateDatabaseDefault creates a new database with charset, collation only.
+// CreateDatabaseDefault creates a new database with charset, collation only in the default project.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) error {
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
-	if err != nil {
-		return err
-	}
 	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{EnvironmentID: &create.EnvironmentID, ResourceID: &create.InstanceID})
 	if err != nil {
 		return err
 	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.Rollback()
 
-	if _, err := s.createDatabaseDefaultImpl(ctx, tx, project.UID, instance.UID, create.DatabaseName, create.CharacterSet, create.Collation); err != nil {
+	if _, err := s.createDatabaseDefaultImpl(ctx, tx, instance.UID, create); err != nil {
 		return err
 	}
 
@@ -747,9 +744,9 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	return nil
 }
 
-// createDatabaseDefault only creates a default database with charset, collation only.
+// createDatabaseDefault only creates a default database with charset, collation only in the default project.
 // This method only takes system UIDs so that it should not use DatabaseMessage as create parameter.
-func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID, instanceUID int, databaseName, characterSet, collation string) (int, error) {
+func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID int, create *DatabaseMessage) (int, error) {
 	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
 	query := `
 		INSERT INTO db (
@@ -772,13 +769,13 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 		api.SystemBotID,
 		api.SystemBotID,
 		instanceUID,
-		projectUID,
-		databaseName,
-		characterSet,
-		collation,
+		api.DefaultProjectID,
+		create.DatabaseName,
+		create.CharacterSet,
+		create.Collation,
 		api.OK,
-		0,
-		"", /* schema version */
+		0,  /* last_successful_sync_ts */
+		"", /* schema_version */
 		api.SystemBotID,
 	).Scan(
 		&databaseUID,
