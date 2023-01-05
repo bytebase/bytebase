@@ -174,7 +174,7 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, sequence int, pr
 
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 	defer tx.Rollback()
 

@@ -206,7 +206,7 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, sequence int, pr
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
-func (d *Driver) UpdateHistoryAsDone(ctx context.Context, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
+func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
 	const updateHistoryAsDoneQuery = `
 		ALTER TABLE
 			bytebase.migration_history
@@ -216,12 +216,12 @@ func (d *Driver) UpdateHistoryAsDone(ctx context.Context, migrationDurationNs in
 		` + "`schema` = $3" + `
 		WHERE id = $4
 	`
-	_, err := d.db.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, insertedID)
+	_, err := driver.db.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, insertedID)
 	return err
 }
 
 // UpdateHistoryAsFailed will update the migration record as failed.
-func (d *Driver) UpdateHistoryAsFailed(ctx context.Context, migrationDurationNs int64, insertedID int64) error {
+func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, migrationDurationNs int64, insertedID int64) error {
 	const updateHistoryAsFailedQuery = `
 		ALTER TABLE
 			bytebase.migration_history
@@ -230,7 +230,7 @@ func (d *Driver) UpdateHistoryAsFailed(ctx context.Context, migrationDurationNs 
 			execution_duration_ns = $2
 		WHERE id = $3
 	`
-	_, err := d.db.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, insertedID)
+	_, err := driver.db.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, insertedID)
 	return err
 }
 
