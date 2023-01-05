@@ -84,7 +84,7 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 
 	terminated, result, err := cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, task.Instance, task.Database.Name, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, task.Database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Instance.Name),
 			zap.String("databaseName", task.Database.Name),
