@@ -226,6 +226,9 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 	if err != nil {
 		return nil, err
 	}
+	if environment == nil {
+		return nil, nil
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)

@@ -90,6 +90,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 			ResourceID: request.EnvironmentId,
 			Title:      request.Environment.Title,
 			Order:      request.Environment.Order,
+			Protected:  request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED,
 		},
 		principalID,
 	)
