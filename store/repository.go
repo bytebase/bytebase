@@ -289,6 +289,8 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 	if _, err := s.updateProjectImplV2(ctx, tx, update); err != nil {
 		return nil, err
 	}
+	delete(s.projectCache, create.ProjectResourceID)
+	delete(s.projectIDCache, create.ProjectID)
 
 	var repository repositoryRaw
 	// Insert row into database.

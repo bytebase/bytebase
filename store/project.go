@@ -398,6 +398,7 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 	return project, nil
 }
 
+// WARNING: calling updateProjectImplV2 from other store library has to invalidate the cache.
 func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessage) (*ProjectMessage, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
 	if v := patch.Title; v != nil {
