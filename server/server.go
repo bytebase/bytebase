@@ -125,7 +125,7 @@ type Server struct {
 	licenseService enterpriseAPI.LicenseService
 
 	// SchemaVersion is the bytebase's schema version
-	SchemaVersion semver.Version
+	SchemaVersion *semver.Version
 
 	profile         config.Profile
 	e               *echo.Echo
@@ -267,7 +267,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
 	}
-	s.SchemaVersion = *schemaVer
+	s.SchemaVersion = schemaVer
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
