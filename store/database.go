@@ -535,6 +535,7 @@ type UpdateDatabaseMessage struct {
 	SuccessfulSyncTimeTs *int64
 	SchemaVersion        *string
 	Labels               *map[string]string
+	SourceBackupID       *int
 }
 
 // FindDatabaseMessage is the message for finding databases.

@@ -44,7 +44,6 @@ func (s *Server) updateInstanceDatabase(c echo.Context) error {
 	}
 	database := databases[0]
 
-	var patchProjectID *int
 	if instanceDatabasePatch.Project != nil {
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: instanceDatabasePatch.Project})
 		if err != nil {
@@ -53,11 +52,16 @@ func (s *Server) updateInstanceDatabase(c echo.Context) error {
 		if project == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "project %q not found", *instanceDatabasePatch.Project)
 		}
-		patchProjectID = &project.UID
-	}
-	updaterID := c.Get(getPrincipalIDContextKey()).(int)
-	if _, err := s.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: updaterID, ProjectID: patchProjectID}); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Failed to patch database project").SetInternal(err)
+
+		updaterID := c.Get(getPrincipalIDContextKey()).(int)
+		if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+			EnvironmentID: database.Instance.Environment.ResourceID,
+			InstanceID:    database.Instance.ResourceID,
+			DatabaseName:  database.Name,
+			ProjectID:     &project.ResourceID,
+		}, updaterID); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to patch database project").SetInternal(err)
+		}
 	}
 	return c.JSON(http.StatusOK, "")
 }
