@@ -158,7 +158,8 @@
       <SchemaDiagram
         :key="currentTab.databaseId"
         :database="database"
-        :table-list="tableMetadataList"
+        :database-metadata="databaseMetadata"
+        :schema-status="schemaStatus"
         :table-status="tableStatus"
         :column-status="columnStatus"
         :editable="true"
@@ -206,7 +207,11 @@ import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import SchemaDiagram from "@/components/SchemaDiagram";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
+import {
+  ColumnMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/store/database";
 
 type TabType = "table-list" | "schema-diagram" | "raw-sql";
 
@@ -424,39 +429,49 @@ const handleRestoreTable = (table: Table) => {
 };
 
 const {
-  tableMetadataList,
+  databaseMetadata,
+  schemaStatus,
   tableStatus,
   columnStatus,
+  editableSchema,
   editableTable,
   editableColumn,
 } = useMetadataForDiagram(databaseSchema);
 
-const tryEditTable = (tableMeta: TableMetadata) => {
+const tryEditTable = async (
+  schemaMeta: SchemaMetadata,
+  tableMeta: TableMetadata
+) => {
+  const schema = editableSchema(schemaMeta);
   const table = editableTable(tableMeta);
-  if (table) {
+  if (schema && table) {
+    console.log("schema", schema.name, schema.id);
+    state.selectedSchemaId = schema.id;
+    await nextTick();
     handleTableItemClick(table);
   }
 };
 
-const tryEditColumn = (
+const tryEditColumn = async (
+  schemaMeta: SchemaMetadata,
   tableMeta: TableMetadata,
   columnMeta: ColumnMetadata,
   target: "name" | "type"
 ) => {
+  const schema = editableSchema(schemaMeta);
   const table = editableTable(tableMeta);
   const column = editableColumn(columnMeta);
-  if (table && column) {
-    handleTableItemClick(table);
-    nextTick(() => {
-      const container = document.querySelector("#table-editor-container");
-      const input = container?.querySelector(
-        `.column-${column.id} .column-${target}-input`
-      ) as HTMLInputElement | undefined;
-      if (input) {
-        input.focus();
-        scrollIntoView(input);
-      }
-    });
+  if (schema && table && column) {
+    await tryEditTable(schemaMeta, tableMeta);
+    await nextTick();
+    const container = document.querySelector("#table-editor-container");
+    const input = container?.querySelector(
+      `.column-${column.id} .column-${target}-input`
+    ) as HTMLInputElement | undefined;
+    if (input) {
+      input.focus();
+      scrollIntoView(input);
+    }
   }
 };
 </script>

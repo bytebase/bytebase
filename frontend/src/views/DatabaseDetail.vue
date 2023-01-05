@@ -311,7 +311,9 @@
     <div class="w-[80vw] h-full">
       <SchemaDiagram
         :database="database"
-        :table-list="dbSchemaStore.getTableListByDatabaseId(database.id)"
+        :database-metadata="
+          dbSchemaStore.getDatabaseMetadataByDatabaseId(database.id)
+        "
       />
     </div>
   </BBModal>

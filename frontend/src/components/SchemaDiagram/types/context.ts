@@ -1,7 +1,11 @@
 import { Ref } from "vue";
 import type Emittery from "emittery";
 
-import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
+import {
+  ColumnMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/store/database";
 import { Position, Rect } from "./geometry";
 import { EditStatus } from "./edit";
 
@@ -25,6 +29,7 @@ export type SchemaDiagramContext = {
   render: () => void;
   // auto-layout all components
   layout: () => void;
+  schemaStatus: (schema: SchemaMetadata) => EditStatus;
   tableStatus: (table: TableMetadata) => EditStatus;
   columnStatus: (column: ColumnMetadata) => EditStatus;
 
@@ -33,8 +38,9 @@ export type SchemaDiagramContext = {
     render: undefined;
     layout: undefined;
     "fit-view": undefined;
-    "edit-table": TableMetadata;
+    "edit-table": { schema: SchemaMetadata; table: TableMetadata };
     "edit-column": {
+      schema: SchemaMetadata;
       table: TableMetadata;
       column: ColumnMetadata;
       target: "name" | "type";

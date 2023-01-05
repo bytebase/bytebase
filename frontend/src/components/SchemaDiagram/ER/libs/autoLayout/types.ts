@@ -8,6 +8,7 @@ import type {
 export type GraphChildNodeItem = { id: string; size: Size; pos: Position };
 
 export type GraphNodeItem = {
+  group: string;
   id: string;
   size: Size;
   children: GraphChildNodeItem[]; // not used yet
