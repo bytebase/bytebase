@@ -720,6 +720,74 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	return databases, nil
 }
 
+// CreateDatabaseDefault creates a new database with charset, collation only.
+func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) error {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
+	if err != nil {
+		return err
+	}
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{EnvironmentID: &create.EnvironmentID, ResourceID: &create.InstanceID})
+	if err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if _, err := s.createDatabaseDefaultImpl(ctx, tx, project.UID, instance.UID, create.DatabaseName, create.CharacterSet, create.Collation); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
+}
+
+// createDatabaseDefault only creates a default database with charset, collation only.
+// This method only takes system UIDs so that it should not use DatabaseMessage as create parameter.
+func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID, instanceUID int, databaseName, characterSet, collation string) (int, error) {
+	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
+	query := `
+		INSERT INTO db (
+			creator_id,
+			updater_id,
+			instance_id,
+			project_id,
+			name,
+			character_set,
+			"collation",
+			sync_status,
+			last_successful_sync_ts,
+			schema_version
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		ON CONFLICT (instance_id, name) DO UPDATE SET updater_id = $11
+		RETURNING id`
+	var databaseUID int
+	if err := tx.QueryRowContext(ctx, query,
+		api.SystemBotID,
+		api.SystemBotID,
+		instanceUID,
+		projectUID,
+		databaseName,
+		characterSet,
+		collation,
+		api.OK,
+		0,
+		"", /* schema version */
+		api.SystemBotID,
+	).Scan(
+		&databaseUID,
+	); err != nil {
+		return 0, FormatError(err)
+	}
+	return databaseUID, nil
+}
+
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
