@@ -6,7 +6,7 @@
       <span
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
-          state.selectedTab === 'column-list' &&
+          state.selectedSubtab === 'column-list' &&
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('column-list')"
@@ -15,7 +15,7 @@
       <span
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
-          state.selectedTab === 'raw-sql' &&
+          state.selectedSubtab === 'raw-sql' &&
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('raw-sql')"
@@ -23,7 +23,7 @@
       >
     </div>
 
-    <template v-if="state.selectedTab === 'column-list'">
+    <template v-if="state.selectedSubtab === 'column-list'">
       <div class="w-full py-2 flex flex-row justify-between items-center">
         <div>
           <button
@@ -221,7 +221,7 @@
       </div>
     </template>
     <div
-      v-else-if="state.selectedTab === 'raw-sql'"
+      v-else-if="state.selectedSubtab === 'raw-sql'"
       class="w-full h-full overflow-y-auto"
     >
       <div
@@ -281,10 +281,10 @@ import { isTableChanged } from "../utils/table";
 import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 
-type TabType = "column-list" | "raw-sql";
+type SubtabType = "column-list" | "raw-sql";
 
 interface LocalState {
-  selectedTab: TabType;
+  selectedSubtab: SubtabType;
   isFetchingDDL: boolean;
   statement: string;
   showEditColumnForeignKeyModal: boolean;
@@ -293,26 +293,27 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
-const currentTab = editorStore.currentTab as TableTabContext;
+const currentTab = computed(() => editorStore.currentTab as TableTabContext);
 const databaseSchema = editorStore.databaseSchemaById.get(
-  currentTab.databaseId
+  currentTab.value.databaseId
 )!;
 const state = reactive<LocalState>({
-  selectedTab: "column-list",
+  selectedSubtab:
+    (currentTab.value.selectedSubtab as SubtabType) || "column-list",
   isFetchingDDL: false,
   statement: "",
   showEditColumnForeignKeyModal: false,
 });
 
-const table = ref(editorStore.getTableWithTableTab(currentTab) as Table);
+const table = ref(editorStore.getTableWithTableTab(currentTab.value) as Table);
 const schema = computed(() => {
   return databaseSchema.schemaList.find(
-    (schema) => schema.id === currentTab.schemaId
+    (schema) => schema.id === currentTab.value.schemaId
   ) as Schema;
 });
 const foreignKeyList = computed(() => {
   return schema.value.foreignKeyList.filter(
-    (pk) => pk.tableId === currentTab.tableId
+    (pk) => pk.tableId === currentTab.value.tableId
   ) as ForeignKey[];
 });
 
@@ -334,9 +335,9 @@ const allowResetTable = computed(() => {
 
   return (
     isTableChanged(
-      currentTab.databaseId,
-      currentTab.schemaId,
-      currentTab.tableId
+      currentTab.value.databaseId,
+      currentTab.value.schemaId,
+      currentTab.value.tableId
     ) || isDroppedTable.value
   );
 });
@@ -399,20 +400,21 @@ const dataDefaultOptions = [
 ];
 
 watch(
-  () => state.selectedTab,
+  () => state.selectedSubtab,
   async () => {
-    if (state.selectedTab === "raw-sql") {
+    currentTab.value.selectedSubtab = state.selectedSubtab;
+    if (state.selectedSubtab === "raw-sql") {
       const originSchema = editorStore.getOriginSchema(
-        currentTab.databaseId,
-        currentTab.schemaId
+        currentTab.value.databaseId,
+        currentTab.value.schemaId
       ) as Schema;
       const diffSchemaResult = diffSchema(
-        currentTab.databaseId,
+        currentTab.value.databaseId,
         originSchema,
         schema.value
       );
       const databaseEdit: DatabaseEdit = {
-        databaseId: currentTab.databaseId,
+        databaseId: currentTab.value.databaseId,
         createSchemaList: [],
         renameSchemaList: [],
         dropSchemaList: [],
@@ -448,6 +450,9 @@ watch(
       state.statement = databaseEditResult.statement;
       state.isFetchingDDL = false;
     }
+  },
+  {
+    immediate: true,
   }
 );
 
@@ -478,11 +483,11 @@ const getReferencedForeignKeyName = (column: Column) => {
     return;
   }
   const referencedSchema = editorStore.getSchema(
-    currentTab.databaseId,
+    currentTab.value.databaseId,
     fk.referencedSchemaId
   );
   const referencedTable = editorStore.getTable(
-    currentTab.databaseId,
+    currentTab.value.databaseId,
     fk.referencedSchemaId,
     fk.referencedTableId
   );
@@ -525,8 +530,8 @@ const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
   }
 };
 
-const handleChangeTab = (tab: TabType) => {
-  state.selectedTab = tab;
+const handleChangeTab = (tab: SubtabType) => {
+  state.selectedSubtab = tab;
 };
 
 const handleAddColumn = () => {
@@ -569,11 +574,11 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
   }
 
   const referencedSchema = editorStore.getSchema(
-    currentTab.databaseId,
+    currentTab.value.databaseId,
     fk.referencedSchemaId
   );
   const referencedTable = editorStore.getTable(
-    currentTab.databaseId,
+    currentTab.value.databaseId,
     fk.referencedSchemaId,
     fk.referencedTableId
   );
@@ -587,7 +592,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
   editorStore.addTab({
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
-    databaseId: currentTab.databaseId,
+    databaseId: currentTab.value.databaseId,
     schemaId: referencedSchema.id,
     tableId: referencedTable.id,
   });
@@ -620,7 +625,7 @@ const handleDropColumn = (column: Column) => {
       );
 
     const foreignKeyList = schema.value.foreignKeyList.filter(
-      (fk) => fk.tableId === currentTab.tableId
+      (fk) => fk.tableId === currentTab.value.tableId
     );
     for (const foreignKey of foreignKeyList) {
       const columnRefIndex = foreignKey.columnIdList.findIndex(
@@ -650,12 +655,12 @@ const handleDiscardChanges = () => {
   }
 
   const originSchema = editorStore.getOriginSchema(
-    currentTab.databaseId,
-    currentTab.schemaId
+    currentTab.value.databaseId,
+    currentTab.value.schemaId
   );
   const originTable = editorStore.getOriginTable(
-    currentTab.databaseId,
-    currentTab.schemaId,
+    currentTab.value.databaseId,
+    currentTab.value.schemaId,
     table.value.id
   );
 

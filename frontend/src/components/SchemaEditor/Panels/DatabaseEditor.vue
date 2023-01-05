@@ -6,7 +6,7 @@
       <span
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
-          state.selectedTab === 'table-list' &&
+          state.selectedSubtab === 'table-list' &&
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('table-list')"
@@ -15,7 +15,7 @@
       <span
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
-          state.selectedTab === 'raw-sql' &&
+          state.selectedSubtab === 'raw-sql' &&
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('raw-sql')"
@@ -25,7 +25,7 @@
         v-if="isDev"
         class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none"
         :class="
-          state.selectedTab === 'schema-diagram' &&
+          state.selectedSubtab === 'schema-diagram' &&
           'bg-white border-gray-300 text-gray-800'
         "
         @click="handleChangeTab('schema-diagram')"
@@ -34,7 +34,7 @@
     </div>
 
     <!-- List view -->
-    <template v-if="state.selectedTab === 'table-list'">
+    <template v-if="state.selectedSubtab === 'table-list'">
       <div class="py-2 w-full flex justify-between items-center space-x-2">
         <div class="flex flex-row justify-start items-center">
           <div
@@ -133,7 +133,7 @@
       </div>
     </template>
     <div
-      v-else-if="state.selectedTab === 'raw-sql'"
+      v-else-if="state.selectedSubtab === 'raw-sql'"
       class="w-full h-full overflow-y-auto"
     >
       <div
@@ -154,7 +154,7 @@
         </div>
       </template>
     </div>
-    <template v-else-if="state.selectedTab === 'schema-diagram'">
+    <template v-else-if="state.selectedSubtab === 'schema-diagram'">
       <SchemaDiagram
         :key="currentTab.databaseId"
         :database="database"
@@ -208,10 +208,10 @@ import SchemaDiagram from "@/components/SchemaDiagram";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 
-type TabType = "table-list" | "schema-diagram" | "raw-sql";
+type SubtabType = "table-list" | "schema-diagram" | "raw-sql";
 
 interface LocalState {
-  selectedTab: TabType;
+  selectedSubtab: SubtabType;
   selectedSchemaId: string;
   isFetchingDDL: boolean;
   statement: string;
@@ -225,13 +225,14 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useSchemaEditorStore();
 const notificationStore = useNotificationStore();
+const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
 const state = reactive<LocalState>({
-  selectedTab: "table-list",
+  selectedSubtab:
+    (currentTab.value.selectedSubtab as SubtabType) || "table-list",
   selectedSchemaId: "",
   isFetchingDDL: false,
   statement: "",
 });
-const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
 const databaseSchema = computed(() => {
   return editorStore.databaseSchemaById.get(
     currentTab.value.databaseId
@@ -327,9 +328,10 @@ watch(
 );
 
 watch(
-  () => state.selectedTab,
+  () => state.selectedSubtab,
   async () => {
-    if (state.selectedTab === "raw-sql") {
+    currentTab.value.selectedSubtab = state.selectedSubtab;
+    if (state.selectedSubtab === "raw-sql") {
       state.isFetchingDDL = true;
       const databaseEditList: DatabaseEdit[] = [];
       for (const schema of databaseSchema.value.schemaList) {
@@ -381,6 +383,9 @@ watch(
       }
       state.isFetchingDDL = false;
     }
+  },
+  {
+    immediate: true,
   }
 );
 
@@ -388,8 +393,8 @@ const isDroppedTable = (table: Table) => {
   return table.status === "dropped";
 };
 
-const handleChangeTab = (tab: TabType) => {
-  state.selectedTab = tab;
+const handleChangeTab = (tab: SubtabType) => {
+  state.selectedSubtab = tab;
 };
 
 const handleCreateNewTable = () => {
