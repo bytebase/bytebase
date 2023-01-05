@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/utils"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
@@ -633,7 +634,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}
 
 	// Find project.
-	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
@@ -642,7 +643,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
-	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, *project)
+	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, project)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create task list of creating database")
 	}
@@ -761,13 +762,13 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		}
 	}
 
-	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 	}
-	deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, project.ID)
+	deployConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, project.UID)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", project.ID)).SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", project.UID)).SetInternal(err)
 	}
 	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
 	if err != nil {
@@ -1031,7 +1032,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 }
 
 // createDatabaseCreateTaskList returns the task list for create database.
-func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project api.Project) ([]api.TaskCreate, error) {
+func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project *store.ProjectMessage) ([]api.TaskCreate, error) {
 	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
 		return nil, err
 	}
@@ -1074,7 +1075,7 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		return nil, err
 	}
 	payload := api.TaskDatabaseCreatePayload{
-		ProjectID:    project.ID,
+		ProjectID:    project.UID,
 		CharacterSet: c.CharacterSet,
 		TableName:    c.TableName,
 		Collation:    c.Collation,
@@ -1112,11 +1113,11 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to find the instance with ID %d", c.CreateDatabaseCtx.InstanceID)
 		}
-		project, err := s.store.GetProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to find the project with ID %d", projectID)
 		}
-		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, *targetInstance, *project)
+		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, *targetInstance, project)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
 		}

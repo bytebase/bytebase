@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/server/utils"
+	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -107,7 +108,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			var ps []*api.Project
 			principalID := *queryUser
 			for _, project := range projectList {
-				if api.HasActiveProjectMembership(principalID, project) {
+				projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+				if err != nil {
+					return err
+				}
+				if hasActiveProjectMembership(principalID, projectPolicy) {
 					ps = append(ps, project)
 				}
 			}
@@ -226,12 +231,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
-		project, err := s.store.GetProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
+		}
+		if project.Deleted {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %d is deleted", projectID))
 		}
 
 		repositoryCreate := &api.RepositoryCreate{
@@ -432,12 +440,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch linked repository request").SetInternal(err)
 		}
 
-		project, err := s.store.GetProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
+		}
+		if project.Deleted {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %d is deleted", projectID))
 		}
 
 		if repoPatch.FilePathTemplate != nil {
@@ -547,7 +558,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
-		project, err := s.store.GetProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
@@ -625,7 +636,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	g.PATCH("/project/:id/deployment", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		projectID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
@@ -636,14 +647,14 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		deploymentConfigUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		project, err := s.store.GetProjectByID(ctx, id)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
 		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
-		deploymentConfigUpsert.ProjectID = id
+		deploymentConfigUpsert.ProjectID = projectID
 
 		deploymentConfig, err := s.store.UpsertDeploymentConfig(ctx, deploymentConfigUpsert)
 		if err != nil {
@@ -659,28 +670,31 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	g.GET("/project/:id/deployment", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("id"))
+		projectID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		project, err := s.store.GetProjectByID(ctx, id)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
 		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
+		}
+		if project.Deleted {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %d is deleted", projectID))
 		}
 
 		// DeploymentConfig is never nil.
-		deploymentConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, id)
+		deploymentConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, projectID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", projectID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, &deploymentConfig); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get deployment configuration response: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get deployment configuration response: %v", projectID)).SetInternal(err)
 		}
 		return nil
 	})
@@ -693,15 +707,18 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		project, err := s.store.GetProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Project not found: %d", projectID)).SetInternal(err)
 		}
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found by ID: %d", projectID))
 		}
-		if project.WorkflowType != api.VCSWorkflow {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
+		if project.Deleted {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %s is deleted", project.Title))
+		}
+		if project.Workflow != api.VCSWorkflow {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.Workflow, api.VCSWorkflow))
 		}
 
 		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{ProjectID: &projectID})
@@ -844,7 +861,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			vscSheetType := api.SheetForSQL
 			sheetFind := &api.SheetFind{
 				Name:      &sheetInfo.SheetName,
-				ProjectID: &project.ID,
+				ProjectID: &project.UID,
 				Source:    &sheetSource,
 				Type:      &vscSheetType,
 			}
@@ -1245,4 +1262,16 @@ func isBranchNotFound(ctx context.Context, vcs *api.VCS, accessToken, refreshTok
 		return true, nil
 	}
 	return false, err
+}
+
+// hasActiveProjectMembership returns whether a principal has active membership in a project.
+func hasActiveProjectMembership(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
+	for _, binding := range projectPolicy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == principalID {
+				return true
+			}
+		}
+	}
+	return false
 }

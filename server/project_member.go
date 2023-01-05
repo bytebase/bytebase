@@ -17,6 +17,7 @@ import (
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/utils"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
@@ -28,15 +29,15 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		project, err := s.store.GetProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
 		}
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
 		}
-		if project.WorkflowType != api.VCSWorkflow {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
+		if project.Workflow != api.VCSWorkflow {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.Workflow, api.VCSWorkflow))
 		}
 
 		// fetch project member from VCS
