@@ -98,7 +98,8 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 		updaterID,
 		databaseID,
 		metadataBytes,
-		dbSchema.Schema,
+		// Convert to string because []byte{} is null which violates db schema constraints.
+		string(dbSchema.Schema),
 	); err != nil {
 		return FormatError(err)
 	}
