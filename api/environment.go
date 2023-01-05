@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -40,21 +39,7 @@ type EnvironmentCreate struct {
 
 // EnvironmentFind is the API message for finding environments.
 type EnvironmentFind struct {
-	ID *int
-
-	// Standard fields
 	RowStatus *RowStatus
-
-	// Domain specific fields
-	Name *string
-}
-
-func (find *EnvironmentFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
 }
 
 // placeholderRegexp is the regexp for placeholder.
@@ -86,13 +71,4 @@ type EnvironmentPatch struct {
 	// Domain specific fields
 	Name  *string `jsonapi:"attr,name"`
 	Order *int    `jsonapi:"attr,order"`
-}
-
-// EnvironmentDelete is the API message for deleting an environment.
-type EnvironmentDelete struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterID int
 }

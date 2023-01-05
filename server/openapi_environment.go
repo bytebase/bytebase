@@ -23,9 +23,6 @@ func (s *Server) listEnvironment(c echo.Context) error {
 	find := &api.EnvironmentFind{
 		RowStatus: &rowStatus,
 	}
-	if name := c.QueryParam("name"); name != "" {
-		find.Name = &name
-	}
 
 	envList, err := s.store.FindEnvironment(ctx, find)
 	if err != nil {
@@ -75,13 +72,9 @@ func (s *Server) createEnvironmentByOpenAPI(c echo.Context) error {
 	creatorID := c.Get(getPrincipalIDContextKey()).(int)
 
 	env, err := s.createEnvironment(ctx, &store.EnvironmentCreate{
-		CreatorID:              creatorID,
-		EnvironmentTierPolicy:  upsert.EnvironmentTierPolicy,
-		PipelineApprovalPolicy: upsert.PipelineApprovalPolicy,
-		BackupPlanPolicy:       upsert.BackupPlanPolicy,
-		SQLReviewPolicy:        upsert.SQLReviewPolicy,
-		Name:                   *upsert.Name,
-		Order:                  upsert.Order,
+		CreatorID: creatorID,
+		Name:      *upsert.Name,
+		Order:     upsert.Order,
 	})
 	if err != nil {
 		return err
@@ -134,29 +127,11 @@ func (s *Server) updateEnvironmentByOpenAPI(c echo.Context) error {
 	if err := json.Unmarshal(body, upsert); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch environment request").SetInternal(err)
 	}
-
-	if err := s.validateEnvironmentPolicy(api.PolicyTypePipelineApproval, upsert.PipelineApprovalPolicy); err != nil {
-		return err
-	}
-	if err := s.validateEnvironmentPolicy(api.PolicyTypeBackupPlan, upsert.BackupPlanPolicy); err != nil {
-		return err
-	}
-	if err := s.validateEnvironmentPolicy(api.PolicyTypeEnvironmentTier, upsert.EnvironmentTierPolicy); err != nil {
-		return err
-	}
-	if err := s.validateEnvironmentPolicy(api.PolicyTypeSQLReview, upsert.SQLReviewPolicy); err != nil {
-		return err
-	}
-
 	env, err := s.updateEnvironment(ctx, &store.EnvironmentPatch{
-		ID:                     id,
-		UpdaterID:              c.Get(getPrincipalIDContextKey()).(int),
-		EnvironmentTierPolicy:  upsert.EnvironmentTierPolicy,
-		PipelineApprovalPolicy: upsert.PipelineApprovalPolicy,
-		BackupPlanPolicy:       upsert.BackupPlanPolicy,
-		SQLReviewPolicy:        upsert.SQLReviewPolicy,
-		Name:                   upsert.Name,
-		Order:                  upsert.Order,
+		ID:        id,
+		UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+		Name:      upsert.Name,
+		Order:     upsert.Order,
 	})
 	if err != nil {
 		return err

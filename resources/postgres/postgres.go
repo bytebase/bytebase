@@ -96,7 +96,7 @@ func Install(resourceDir string) (string, error) {
 
 // Start starts a postgres database instance.
 // If port is 0, then it will choose a random unused port.
-func Start(port int, binDir string, dataDir string) (err error) {
+func Start(port int, binDir, dataDir string, serverLog bool) (err error) {
 	pgbin := filepath.Join(binDir, "pg_ctl")
 
 	// See -p -k -h option definitions in the link below.
@@ -116,8 +116,10 @@ func Start(port int, binDir string, dataDir string) (err error) {
 		}
 	}
 
-	// Suppress log spam
-	p.Stdout = nil
+	// It's useful to log the SQL statement errors from Postgres in developer environment.
+	if serverLog {
+		p.Stdout = os.Stdout
+	}
 	p.Stderr = os.Stderr
 	if err := p.Run(); err != nil {
 		return errors.Wrapf(err, "failed to start postgres %q", p.String())

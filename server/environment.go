@@ -155,22 +155,27 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 }
 
 func (s *Server) createEnvironment(ctx context.Context, create *store.EnvironmentCreate) (*api.Environment, error) {
-	normalRowStatus := api.Normal
-	envFind := &api.EnvironmentFind{
-		RowStatus: &normalRowStatus,
+	if err := api.IsValidEnvironmentName(create.Name); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 	}
-	envList, err := s.store.FindEnvironment(ctx, envFind)
+
+	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{ShowDeleted: true})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to find environment list").SetInternal(err)
 	}
-
 	maximumEnvironmentLimit := s.licenseService.GetPlanLimitValue(api.PlanLimitMaximumEnvironment)
-	if int64(len(envList)) >= maximumEnvironmentLimit {
+	if int64(len(environments)) >= maximumEnvironmentLimit {
 		return nil, echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("Current plan can create up to %d environments.", maximumEnvironmentLimit))
 	}
-
-	if err := api.IsValidEnvironmentName(create.Name); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
+	order := 0
+	for _, envenvironment := range environments {
+		if int(envenvironment.Order) > order {
+			order = int(envenvironment.Order)
+		}
+	}
+	if create.Order == nil {
+		order++
+		create.Order = &order
 	}
 
 	env, err := s.store.CreateEnvironment(ctx, create)
