@@ -5,15 +5,29 @@ import { Column, Schema, Table } from "@/types/schemaEditor/atomType";
 import { EditStatus } from "@/components/SchemaDiagram";
 import {
   ColumnMetadata,
+  DatabaseMetadata,
   ForeignKeyMetadata,
   IndexMetadata,
+  SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
 import { isTableChanged } from "./table";
+import { isSchemaChanged } from "./schema";
 
 type MetadataWithEditStatus<T, E> = T & {
   $$status?: EditStatus;
   $$edit?: E;
+};
+
+const statusOfSchema = (database: Database, schema: Schema) => {
+  const { status } = schema;
+  if (status === "created" || status === "dropped") {
+    return status;
+  }
+  if (isSchemaChanged(database.id, schema.id)) {
+    return "changed";
+  }
+  return "normal";
 };
 
 const statusOfTable = (
@@ -25,7 +39,7 @@ const statusOfTable = (
   if (status === "created" || status === "dropped") {
     return status;
   }
-  if (isTableChanged(database.id, schema.name, table.id)) {
+  if (isTableChanged(database.id, schema.id, table.id)) {
     return "changed";
   }
 
@@ -35,13 +49,25 @@ const statusOfTable = (
 export const useMetadataForDiagram = (
   databaseSchema: MaybeRef<DatabaseSchema>
 ) => {
-  const tableMetadataList = computed(() => {
+  const databaseMetadata = computed(() => {
     const { database, schemaList } = unref(databaseSchema);
+    const databaseMeta = DatabaseMetadata.fromPartial({});
+    databaseMeta.name = database.name;
+    databaseMeta.collation = database.collation;
+    databaseMeta.characterSet = database.characterSet;
+    databaseMeta.schemas = schemaList.map((schema) => {
+      const schemaMeta = SchemaMetadata.fromPartial({});
+      Object.defineProperty(schemaMeta, "$$status", {
+        enumerable: false,
+        value: statusOfSchema(database, schema),
+      });
+      Object.defineProperty(schemaMeta, "$$edit", {
+        enumerable: false,
+        value: schema,
+      });
 
-    return unref(schemaList).flatMap((schema) => {
-      const { tableList } = schema;
-
-      return tableList.map((table) => {
+      schemaMeta.name = schema.name;
+      schemaMeta.tables = schema.tableList.map((table) => {
         const tableMeta = TableMetadata.fromPartial({});
         Object.defineProperty(tableMeta, "$$status", {
           enumerable: false,
@@ -122,9 +148,20 @@ export const useMetadataForDiagram = (
         });
         return tableMeta;
       });
+      return schemaMeta;
     });
+
+    return databaseMeta;
   });
 
+  const schemaStatus = (schemaMeta: SchemaMetadata): EditStatus => {
+    const status = (schemaMeta as MetadataWithEditStatus<SchemaMetadata, Table>)
+      .$$status;
+    if (typeof status !== "undefined") {
+      return status;
+    }
+    return "normal";
+  };
   const tableStatus = (tableMeta: TableMetadata): EditStatus => {
     const status = (tableMeta as MetadataWithEditStatus<TableMetadata, Table>)
       .$$status;
@@ -142,6 +179,12 @@ export const useMetadataForDiagram = (
     }
     return "normal";
   };
+  const editableSchema = (schemaMeta: SchemaMetadata) => {
+    const schema = (
+      schemaMeta as MetadataWithEditStatus<SchemaMetadata, Schema>
+    ).$$edit;
+    return schema;
+  };
   const editableTable = (tableMeta: TableMetadata) => {
     const table = (tableMeta as MetadataWithEditStatus<TableMetadata, Table>)
       .$$edit;
@@ -155,9 +198,11 @@ export const useMetadataForDiagram = (
   };
 
   return {
-    tableMetadataList,
+    databaseMetadata,
+    schemaStatus,
     tableStatus,
     columnStatus,
+    editableSchema,
     editableTable,
     editableColumn,
   };

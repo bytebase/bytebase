@@ -43,11 +43,11 @@ const calcFitRect = (content: Rect, view: Rect, zoomRange: number[]) => {
     const targetZoom = targetWidth / content.width;
     const zoom = minmax(targetZoom, zoomRange[0], zoomRange[1]);
     const targetSize = {
-      width: targetWidth,
+      width: content.width * zoom,
       height: content.height * zoom,
     };
     const targetPos = {
-      x: -contentMarginLeft * zoom,
+      x: (view.width - targetSize.width) / 2 - contentMarginLeft * zoom,
       y: (view.height - targetSize.height) / 2 - contentMarginTop * zoom,
     };
 
@@ -60,11 +60,11 @@ const calcFitRect = (content: Rect, view: Rect, zoomRange: number[]) => {
     const zoom = minmax(targetZoom, zoomRange[0], zoomRange[1]);
     const targetSize = {
       width: content.width * zoom,
-      height: targetHeight,
+      height: content.height * zoom,
     };
     const targetPos = {
       x: (view.width - targetSize.width) / 2 - contentMarginLeft * zoom,
-      y: -contentMarginTop * zoom,
+      y: (view.height - targetSize.height) / 2 - contentMarginTop * zoom,
     };
     const rect = { ...targetSize, ...targetPos };
     return { zoom, rect };
