@@ -160,6 +160,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	// TODO(d): create activity for project transfer.
 
 	return convertToProject(projectMsg), nil
 }

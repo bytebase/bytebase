@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerSheetRoutes(g *echo.Group) {
@@ -43,18 +44,22 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetCreate.ProjectID = database.ProjectID
 		}
 
-		project, err := s.store.GetProjectByID(ctx, sheetCreate.ProjectID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheetCreate.ProjectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %d", sheetCreate.ProjectID)).SetInternal(err)
 		}
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))
 		}
+		projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return err
+		}
 
 		role := c.Get(getRoleContextKey()).(api.Role)
 		if role != api.Owner && role != api.DBA {
 			// Non-workspace Owner or DBA can only create sheet into the project where she has the membership.
-			if !api.HasActiveProjectMembership(currentPrincipalID, project) {
+			if !hasActiveProjectMembership(currentPrincipalID, projectPolicy) {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Must be a project member to create new sheet")
 			}
 		}
