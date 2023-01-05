@@ -1348,7 +1348,8 @@
     "ssl-connection": "SSL Connection",
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
-    "delete-read-only-data-source": "Delete read-only data source"
+    "delete-read-only-data-source": "Delete read-only data source",
+    "connection-string-schema": "Connection String Schema"
   },
   "setting": {
     "project": {
