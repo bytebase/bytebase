@@ -103,7 +103,9 @@ const handlePan = (x: number, y: number) => {
   panning.value = true;
 };
 const handlePanEnd = () => {
-  panning.value = false;
+  requestAnimationFrame(() => {
+    panning.value = false;
+  });
 };
 
 useDraggable(canvas, {
