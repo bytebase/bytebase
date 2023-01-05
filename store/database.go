@@ -668,13 +668,11 @@ type FindDatabaseMessage struct {
 	EnvironmentID *string
 	InstanceID    *string
 	DatabaseName  *string
+	UID           *int
 }
 
 // GetDatabaseV2 gets a database.
 func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
-	if find.EnvironmentID == nil || find.InstanceID == nil || find.DatabaseName == nil {
-		return nil, errors.Errorf("environment, instance, and database name must exist for getting a database")
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -726,6 +724,9 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	if err != nil {
 		return err
 	}
+	if instance == nil {
+		return errors.Errorf("instance %q not found", create.InstanceID)
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -745,7 +746,6 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 }
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
-// This method only takes system UIDs so that it should not use DatabaseMessage as create parameter.
 func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID int, create *DatabaseMessage) (int, error) {
 	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
 	query := `
@@ -762,7 +762,8 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 			schema_version
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		ON CONFLICT (instance_id, name) DO UPDATE SET updater_id = $11
+		ON CONFLICT (instance_id, name) DO UPDATE SET
+			updater_id = EXCLUDED.updater_id
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
@@ -776,13 +777,81 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		api.OK,
 		0,  /* last_successful_sync_ts */
 		"", /* schema_version */
-		api.SystemBotID,
 	).Scan(
 		&databaseUID,
 	); err != nil {
 		return 0, FormatError(err)
 	}
 	return databaseUID, nil
+}
+
+// UpsertDatabase upserts a database.
+func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.Errorf("project %q not found", create.ProjectID)
+	}
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{EnvironmentID: &create.EnvironmentID, ResourceID: &create.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", create.InstanceID)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
+	query := `
+		INSERT INTO db (
+			creator_id,
+			updater_id,
+			instance_id,
+			project_id,
+			name,
+			character_set,
+			"collation",
+			sync_status,
+			last_successful_sync_ts,
+			schema_version
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		ON CONFLICT (instance_id, name) DO UPDATE SET
+			project_id = EXCLUDED.project_id,
+			name = EXCLUDED.name,
+			character_set = EXCLUDED.character_set,
+			"collation" = EXCLUDED.collation,
+			schema_version = EXCLUDED.schema_version
+		RETURNING id`
+	var databaseUID int
+	if err := tx.QueryRowContext(ctx, query,
+		api.SystemBotID,
+		api.SystemBotID,
+		instance.UID,
+		project.UID,
+		create.DatabaseName,
+		create.CharacterSet,
+		create.Collation,
+		api.OK,
+		create.SuccessfulSyncTimeTs,
+		create.SchemaVersion,
+	).Scan(
+		&databaseUID,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
@@ -799,6 +868,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	if v := find.DatabaseName; v != nil {
 		where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
 	}
 	var databaseMessages []*DatabaseMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
