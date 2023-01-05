@@ -445,7 +445,6 @@ const tryEditTable = async (
   const schema = editableSchema(schemaMeta);
   const table = editableTable(tableMeta);
   if (schema && table) {
-    console.log("schema", schema.name, schema.id);
     state.selectedSchemaId = schema.id;
     await nextTick();
     handleTableItemClick(table);
