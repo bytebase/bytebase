@@ -17,8 +17,6 @@ const (
 	principalCacheNamespace cacheNamespace = "p"
 	// environmentCacheNamespace is the cache type of environments.
 	environmentCacheNamespace cacheNamespace = "e"
-	// projectCacheNamespace is the cache type of projects.
-	projectCacheNamespace cacheNamespace = "r"
 	// projectMemberCacheNamespace is the cache type of project members.
 	projectMemberCacheNamespace cacheNamespace = "pm"
 	// instanceCacheNamespace is the cache type of instances.

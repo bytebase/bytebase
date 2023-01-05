@@ -51,7 +51,7 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 
 // ListProjects lists all projects.
 func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListProjectsRequest) (*v1pb.ListProjectsResponse, error) {
-	projects, err := s.store.ListProjectV2(ctx, request.ShowDeleted)
+	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -185,11 +185,10 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
 	}
 
-	rowStatus := api.Archived
 	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
 		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
 		ResourceID: projectID,
-		RowStatus:  &rowStatus,
+		Delete:     &deletePatch,
 	}); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -218,11 +217,10 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", projectID)
 	}
 
-	rowStatus := api.Normal
 	projectMsg, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
 		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
 		ResourceID: projectID,
-		RowStatus:  &rowStatus,
+		Delete:     &undeletePatch,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

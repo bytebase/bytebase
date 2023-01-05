@@ -83,12 +83,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.GET("/project", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		projectFind := &api.ProjectFind{}
+		var queryUser *int
 		if userIDStr := c.QueryParam("user"); userIDStr != "" {
 			userID, err := strconv.Atoi(userIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query parameter user is not a number: %s", userIDStr)).SetInternal(err)
 			}
-			projectFind.PrincipalID = &userID
+			queryUser = &userID
 		}
 
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
@@ -100,22 +101,21 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
 		}
 
-		var activeProjectList []*api.Project
-		// If principalID is passed, We will filter those projects with the current principal having the role provider
+		// If principalID is passed, we will filter those projects with the current principal having the role provider
 		// different from the project's current role provider.
-		if projectFind.PrincipalID != nil {
-			principalID := *projectFind.PrincipalID
+		if queryUser != nil {
+			var ps []*api.Project
+			principalID := *queryUser
 			for _, project := range projectList {
 				if api.HasActiveProjectMembership(principalID, project) {
-					activeProjectList = append(activeProjectList, project)
+					ps = append(ps, project)
 				}
 			}
-		} else {
-			activeProjectList = projectList
+			projectList = ps
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, activeProjectList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, projectList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal project list response").SetInternal(err)
 		}
 		return nil
@@ -226,9 +226,18 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
+		project, err := s.store.GetProjectByID(ctx, projectID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
+		}
+
 		repositoryCreate := &api.RepositoryCreate{
-			ProjectID: projectID,
-			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+			ProjectID:         projectID,
+			ProjectResourceID: project.ResourceID,
+			CreatorID:         c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create linked repository request").SetInternal(err)
@@ -246,14 +255,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// This avoids to a certain extent that the creation succeeds but does not work.
 		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, errors.Wrap(err, "Invalid base directory and filepath template combination").Error()))
-		}
-
-		project, err := s.store.GetProjectByID(ctx, projectID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
-		}
-		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
 
 		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
@@ -546,6 +547,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
+		project, err := s.store.GetProjectByID(ctx, projectID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
+		}
 
 		repositoryFind := &api.RepositoryFind{
 			ProjectID: &projectID,
@@ -572,8 +580,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		repositoryDelete := &api.RepositoryDelete{
-			ProjectID: projectID,
-			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
+			ProjectID:         projectID,
+			ProjectResourceID: project.ResourceID,
+			DeleterID:         c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := s.store.DeleteRepository(ctx, repositoryDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete repository for project ID: %d", projectID)).SetInternal(err)

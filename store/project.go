@@ -14,129 +14,104 @@ import (
 	"github.com/bytebase/bytebase/metric"
 )
 
-// projectRaw is the store model for a Project.
-// Fields have exactly the same meanings as Project.
-type projectRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus api.RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Domain specific fields
-	Name             string
-	Key              string
-	WorkflowType     api.ProjectWorkflowType
-	Visibility       api.ProjectVisibility
-	TenantMode       api.ProjectTenantMode
-	DBNameTemplate   string
-	RoleProvider     api.ProjectRoleProvider
-	SchemaChangeType api.ProjectSchemaChangeType
-	LGTMCheckSetting api.LGTMCheckSetting
-}
-
-// toProject creates an instance of Project based on the projectRaw.
-// This is intended to be called when we need to compose a Project relationship.
-func (raw *projectRaw) toProject() *api.Project {
-	return &api.Project{
-		ID: raw.ID,
-
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		Name:             raw.Name,
-		Key:              raw.Key,
-		WorkflowType:     raw.WorkflowType,
-		Visibility:       raw.Visibility,
-		TenantMode:       raw.TenantMode,
-		DBNameTemplate:   raw.DBNameTemplate,
-		RoleProvider:     raw.RoleProvider,
-		SchemaChangeType: raw.SchemaChangeType,
-		LGTMCheckSetting: raw.LGTMCheckSetting,
-	}
-}
-
 // GetProjectByID gets an instance of Project.
 func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error) {
-	find := &api.ProjectFind{ID: &id}
-	projectRaw, err := s.getProjectRaw(ctx, find)
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &id})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Project with ID %d", id)
 	}
-	if projectRaw == nil {
+	if project == nil {
 		return nil, nil
 	}
-	project, err := s.composeProject(ctx, projectRaw)
+	composedProject, err := s.composeProject(ctx, project)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", projectRaw)
+		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
 	}
-	return project, nil
-}
-
-// GetProjectByKey gets an instance of Project by the unique key.
-func (s *Store) GetProjectByKey(ctx context.Context, key string) (*api.Project, error) {
-	find := &api.ProjectFind{Key: &key}
-	projectRaw, err := s.getProjectRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Project with key %s", key)
-	}
-	if projectRaw == nil {
-		return nil, nil
-	}
-	project, err := s.composeProject(ctx, projectRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", projectRaw)
-	}
-	return project, nil
+	return composedProject, nil
 }
 
 // FindProject finds a list of Project instances.
 func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.Project, error) {
-	projectRawList, err := s.findProjectRaw(ctx, find)
+	v2Find := &FindProjectMessage{ShowDeleted: true}
+	projects, err := s.ListProjectV2(ctx, v2Find)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Project list with ProjectFind[%+v]", find)
+		return nil, errors.Wrapf(err, "failed to find Project list with ProjectFind[%+v]", v2Find)
 	}
-	var projectList []*api.Project
-	for _, raw := range projectRawList {
-		project, err := s.composeProject(ctx, raw)
+	var composedProjects []*api.Project
+	for _, project := range projects {
+		composedProject, err := s.composeProject(ctx, project)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", raw)
+			return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
 		}
-		projectList = append(projectList, project)
+		if find.RowStatus != nil && composedProject.RowStatus != *find.RowStatus {
+			continue
+		}
+		composedProjects = append(composedProjects, composedProject)
 	}
-	return projectList, nil
+	return composedProjects, nil
 }
 
 // CreateProject creates an instance of Project.
 func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*api.Project, error) {
-	projectRaw, err := s.createProjectRaw(ctx, create)
+	project, err := s.CreateProjectV2(ctx, &ProjectMessage{
+		ProjectID:        fmt.Sprintf("project-%s", uuid.New().String()[:8]),
+		Title:            create.Name,
+		Key:              create.Key,
+		TenantMode:       create.TenantMode,
+		DBNameTemplate:   create.DBNameTemplate,
+		RoleProvider:     create.RoleProvider,
+		SchemaChangeType: create.SchemaChangeType,
+	}, create.CreatorID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Project with ProjectCreate[%+v]", create)
 	}
-	project, err := s.composeProject(ctx, projectRaw)
+	composedProject, err := s.composeProject(ctx, project)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", projectRaw)
+		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
 	}
-	return project, nil
+	return composedProject, nil
 }
 
 // PatchProject patches an instance of Project.
 func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
-	projectRaw, err := s.patchProjectRaw(ctx, patch)
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &patch.ID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project %d", patch.ID)
+	}
+	v2Update := &UpdateProjectMessage{
+		UpdaterID:        patch.UpdaterID,
+		ResourceID:       project.ProjectID,
+		Title:            patch.Name,
+		Key:              patch.Key,
+		TenantMode:       patch.TenantMode,
+		DBNameTemplate:   patch.DBNameTemplate,
+		LGTMCheckSetting: patch.LGTMCheckSetting,
+	}
+	if patch.WorkflowType != nil {
+		v := api.ProjectWorkflowType(*patch.WorkflowType)
+		v2Update.Workflow = &v
+	}
+	if patch.RoleProvider != nil {
+		v := api.ProjectRoleProvider(*patch.WorkflowType)
+		v2Update.RoleProvider = &v
+	}
+	if patch.SchemaChangeType != nil {
+		v := api.ProjectSchemaChangeType(*patch.WorkflowType)
+		v2Update.SchemaChangeType = &v
+	}
+	if patch.RowStatus != nil {
+		deleted := *patch.RowStatus == string(api.Archived)
+		v2Update.Delete = &deleted
+	}
+	project, err = s.UpdateProjectV2(ctx, v2Update)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Project with ProjectPatch %#v", patch)
 	}
-	project, err := s.composeProject(ctx, projectRaw)
+	composedProject, err := s.composeProject(ctx, project)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", projectRaw)
+		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
 	}
-	return project, nil
+	return composedProject, nil
 }
 
 // CountProjectGroupByTenantModeAndWorkflow counts the number of projects and group by tenant mode and workflow type.
@@ -173,370 +148,45 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	return res, nil
 }
 
-//
-// private functions
-//
+func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*api.Project, error) {
+	composedProject := &api.Project{
+		ID:               project.UID,
+		ResourceID:       project.ProjectID,
+		RowStatus:        api.Normal,
+		CreatorID:        api.SystemBotID,
+		UpdaterID:        api.SystemBotID,
+		Name:             project.Title,
+		Key:              project.Key,
+		WorkflowType:     project.Workflow,
+		Visibility:       project.Visibility,
+		TenantMode:       project.TenantMode,
+		DBNameTemplate:   project.DBNameTemplate,
+		RoleProvider:     project.RoleProvider,
+		SchemaChangeType: project.SchemaChangeType,
+		LGTMCheckSetting: project.LGTMCheckSetting,
+	}
+	if project.Deleted {
+		composedProject.RowStatus = api.Archived
+	}
 
-func (s *Store) composeProject(ctx context.Context, raw *projectRaw) (*api.Project, error) {
-	project := raw.toProject()
-
-	creator, err := s.GetPrincipalByID(ctx, project.CreatorID)
+	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
 	if err != nil {
 		return nil, err
 	}
-	project.Creator = creator
+	composedProject.Creator = bot
+	composedProject.Updater = bot
 
-	updater, err := s.GetPrincipalByID(ctx, project.UpdaterID)
+	// TODO(d): migrate FindProjectMember to v2.
+	projectMemberList, err := s.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &project.UID})
 	if err != nil {
 		return nil, err
 	}
-	project.Updater = updater
-
-	projectMemberList, err := s.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &project.ID})
-	if err != nil {
-		return nil, err
-	}
-	project.ProjectMemberList = projectMemberList
-
-	return project, nil
-}
-
-// createProjectRaw creates a new project.
-func (s *Store) createProjectRaw(ctx context.Context, create *api.ProjectCreate) (*projectRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	projectRaw, err := createProjectImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(projectCacheNamespace, projectRaw.ID, projectRaw); err != nil {
-		return nil, err
-	}
-
-	return projectRaw, nil
-}
-
-// findProjectRaw retrieves a list of projects based on find.
-func (s *Store) findProjectRaw(ctx context.Context, find *api.ProjectFind) ([]*projectRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findProjectImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if err == nil {
-		for _, project := range list {
-			if err := s.cache.UpsertCache(projectCacheNamespace, project.ID, project); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return list, nil
-}
-
-// getProjectRaw retrieves a single project based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*projectRaw, error) {
-	if find.ID != nil {
-		project := &projectRaw{}
-		has, err := s.cache.FindCache(projectCacheNamespace, *find.ID, project)
-		if err != nil {
-			return nil, err
-		}
-		if has {
-			return project, nil
-		}
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findProjectImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d projects with filter %+v, expect 1", len(list), find)}
-	}
-	if err := s.cache.UpsertCache(projectCacheNamespace, list[0].ID, list[0]); err != nil {
-		return nil, err
-	}
-	return list[0], nil
-}
-
-// patchProjectRaw updates an existing project by ID.
-// Returns ENOTFOUND if project does not exist.
-func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch) (*projectRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	project, err := patchProjectImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(projectCacheNamespace, project.ID, project); err != nil {
-		return nil, err
-	}
-
-	return project, nil
-}
-
-// patchProjectRawTx updates an existing project by ID.
-// Returns ENOTFOUND if project does not exist.
-func (s *Store) patchProjectRawTx(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*projectRaw, error) {
-	project, err := patchProjectImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(projectCacheNamespace, project.ID, project); err != nil {
-		return nil, err
-	}
-
-	return project, nil
-}
-
-// createProjectImpl creates a new project.
-func createProjectImpl(ctx context.Context, tx *Tx, create *api.ProjectCreate) (*projectRaw, error) {
-	if create.RoleProvider == "" {
-		create.RoleProvider = api.ProjectRoleProviderBytebase
-	}
-	if create.SchemaChangeType == "" {
-		create.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
-	}
-	// TODO(d): allow users to set resource_id.
-	resourceID := fmt.Sprintf("project-%s", uuid.New().String()[:8])
-	query := `
-		INSERT INTO project (
-			creator_id,
-			updater_id,
-			name,
-			key,
-			workflow_type,
-			visibility,
-			tenant_mode,
-			db_name_template,
-			role_provider,
-			schema_change_type,
-			lgtm_check,
-			resource_id
-		)
-		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7, $8, $9, $10)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type, lgtm_check
-	`
-	var project projectRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.Name,
-		strings.ToUpper(create.Key),
-		create.TenantMode,
-		create.DBNameTemplate,
-		create.RoleProvider,
-		create.SchemaChangeType,
-		api.GetDefaultLGTMCheckSetting(),
-		resourceID,
-	).Scan(
-		&project.ID,
-		&project.RowStatus,
-		&project.CreatorID,
-		&project.CreatedTs,
-		&project.UpdaterID,
-		&project.UpdatedTs,
-		&project.Name,
-		&project.Key,
-		&project.WorkflowType,
-		&project.Visibility,
-		&project.TenantMode,
-		&project.DBNameTemplate,
-		&project.RoleProvider,
-		&project.SchemaChangeType,
-		&project.LGTMCheckSetting,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &project, nil
-}
-
-func findProjectImpl(ctx context.Context, tx *Tx, find *api.ProjectFind) ([]*projectRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Key; v != nil {
-		where, args = append(where, fmt.Sprintf("key = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.RowStatus; v != nil {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Name; v != nil {
-		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.PrincipalID; v != nil {
-		where, args = append(where, fmt.Sprintf("id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			row_status,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			name,
-			key,
-			workflow_type,
-			visibility,
-			tenant_mode,
-			db_name_template,
-			role_provider,
-			schema_change_type,
-			lgtm_check
-		FROM project
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into projectRawList.
-	var projectRawList []*projectRaw
-	for rows.Next() {
-		var project projectRaw
-		if err := rows.Scan(
-			&project.ID,
-			&project.RowStatus,
-			&project.CreatorID,
-			&project.CreatedTs,
-			&project.UpdaterID,
-			&project.UpdatedTs,
-			&project.Name,
-			&project.Key,
-			&project.WorkflowType,
-			&project.Visibility,
-			&project.TenantMode,
-			&project.DBNameTemplate,
-			&project.RoleProvider,
-			&project.SchemaChangeType,
-			&project.LGTMCheckSetting,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		projectRawList = append(projectRawList, &project)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return projectRawList, nil
-}
-
-// patchProjectImpl updates a project by ID. Returns the new state of the project after update.
-func patchProjectImpl(ctx context.Context, tx *Tx, patch *api.ProjectPatch) (*projectRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
-	}
-	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Key; v != nil {
-		set, args = append(set, fmt.Sprintf("key = $%d", len(args)+1)), append(args, strings.ToUpper(*v))
-	}
-	if v := patch.TenantMode; v != nil {
-		set, args = append(set, fmt.Sprintf("tenant_mode = $%d", len(args)+1)), append(args, strings.ToUpper(string(*v)))
-	}
-	if v := patch.DBNameTemplate; v != nil {
-		set, args = append(set, fmt.Sprintf("db_name_template = $%d", len(args)+1)), append(args, strings.ToUpper(string(*v)))
-	}
-	if v := patch.WorkflowType; v != nil {
-		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.RoleProvider; v != nil {
-		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SchemaChangeType; v != nil {
-		set, args = append(set, fmt.Sprintf("schema_change_type = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.LGTMCheckSetting; v != nil {
-		set, args = append(set, fmt.Sprintf("lgtm_check = $%d", len(args)+1)), append(args, *v)
-	}
-	args = append(args, patch.ID)
-
-	// Execute update query with RETURNING.
-	var project projectRaw
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE project
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider, schema_change_type, lgtm_check
-	`, len(args)),
-		args...,
-	).Scan(
-		&project.ID,
-		&project.RowStatus,
-		&project.CreatorID,
-		&project.CreatedTs,
-		&project.UpdaterID,
-		&project.UpdatedTs,
-		&project.Name,
-		&project.Key,
-		&project.WorkflowType,
-		&project.Visibility,
-		&project.TenantMode,
-		&project.DBNameTemplate,
-		&project.RoleProvider,
-		&project.SchemaChangeType,
-		&project.LGTMCheckSetting,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	return &project, nil
+	composedProject.ProjectMemberList = projectMemberList
+	return composedProject, nil
 }
 
 // ProjectMessage is the mssage for project.
 type ProjectMessage struct {
-	UID              int
 	ProjectID        string
 	Title            string
 	Key              string
@@ -547,11 +197,16 @@ type ProjectMessage struct {
 	RoleProvider     api.ProjectRoleProvider
 	SchemaChangeType api.ProjectSchemaChangeType
 	LGTMCheckSetting api.LGTMCheckSetting
-	Deleted          bool
+	// The following fields are output only and not used for create().
+	UID     int
+	Deleted bool
 }
 
 // FindProjectMessage is the message for finding projects.
 type FindProjectMessage struct {
+	// We should only set either UID or ResourceID.
+	// Deprecate UID later once we fully migrate to ResourceID.
+	UID         *int
 	ResourceID  *string
 	ShowDeleted bool
 }
@@ -569,7 +224,7 @@ type UpdateProjectMessage struct {
 	RoleProvider     *api.ProjectRoleProvider
 	SchemaChangeType *api.ProjectSchemaChangeType
 	LGTMCheckSetting *api.LGTMCheckSetting
-	RowStatus        *api.RowStatus
+	Delete           *bool
 }
 
 // GetProjectV2 gets project by resource ID.
@@ -602,16 +257,14 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 }
 
 // ListProjectV2 lists all projects.
-func (s *Store) ListProjectV2(ctx context.Context, showDeleted bool) ([]*ProjectMessage, error) {
+func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	projects, err := s.listProjectImplV2(ctx, tx, &FindProjectMessage{
-		ShowDeleted: showDeleted,
-	})
+	projects, err := s.listProjectImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -625,6 +278,20 @@ func (s *Store) ListProjectV2(ctx context.Context, showDeleted bool) ([]*Project
 
 // CreateProjectV2 creates a project.
 func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMessage, creatorID int) (*ProjectMessage, error) {
+	// TODO(d): consider moving these defaults to somewhere else.
+	if projectMessage.RoleProvider == "" {
+		projectMessage.RoleProvider = api.ProjectRoleProviderBytebase
+	}
+	if projectMessage.SchemaChangeType == "" {
+		projectMessage.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
+	}
+	if projectMessage.Visibility == "" {
+		projectMessage.Visibility = api.Public
+	}
+	if projectMessage.Workflow == "" {
+		projectMessage.Workflow = api.UIWorkflow
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -685,6 +352,19 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 	}
 	defer tx.Rollback()
 
+	project, err := s.updateProjectImplV2(ctx, tx, patch)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return project, nil
+}
+
+func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessage) (*ProjectMessage, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -692,8 +372,12 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 	if v := patch.Key; v != nil {
 		set, args = append(set, fmt.Sprintf("key = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	if v := patch.Delete; v != nil {
+		rowStatus := api.Normal
+		if *patch.Delete {
+			rowStatus = api.Archived
+		}
+		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
 	if v := patch.TenantMode; v != nil {
 		set, args = append(set, fmt.Sprintf("tenant_mode = $%d", len(args)+1)), append(args, *v)
@@ -715,7 +399,7 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 	}
 	args = append(args, patch.ResourceID)
 
-	var projectMessage ProjectMessage
+	projectMessage := &ProjectMessage{}
 	var rowStatus string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project
@@ -756,18 +440,16 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 		return nil, FormatError(err)
 	}
 	projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &projectMessage, nil
+	return projectMessage, nil
 }
 
 func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
