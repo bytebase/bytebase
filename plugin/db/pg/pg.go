@@ -440,7 +440,9 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 // SwitchDatabase switches the connected database.
 func (driver *Driver) SwitchDatabase(_ context.Context, dbName string) (func() error, error) {
 	if dbName == driver.databaseName {
-		noop := func() error { return nil }
+		noop := func() error {
+			return nil
+		}
 		return noop, nil
 	}
 

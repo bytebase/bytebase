@@ -101,7 +101,9 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 // SwitchDatabase switches the connected database.
 func (d *Driver) SwitchDatabase(ctx context.Context, dbName string) (func() error, error) {
 	if d.dbName == dbName {
-		noop := func() error { return nil }
+		noop := func() error {
+			return nil
+		}
 		return noop, nil
 	}
 
