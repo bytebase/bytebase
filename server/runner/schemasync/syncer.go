@@ -154,7 +154,7 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 				)
 				// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
 				// We don't force dump database schema because it's rarely changed till the metadata is changed.
-				if err := s.SyncDatabaseSchema(ctx, instance, database.Name, false /* force */); err != nil {
+				if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 					log.Debug("Failed to sync database schema",
 						zap.Int("instanceID", instance.ID),
 						zap.String("instanceName", instance.Name),
@@ -175,12 +175,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 	}
 	defer driver.Close(ctx)
 
-	return s.syncInstanceSchema(ctx, instance, driver)
-}
-
-// syncInstanceSchema syncs the instance and all database metadata first without diving into the deep structure of each database.
-func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance, driver db.Driver) ([]string, error) {
-	// Sync instance metadata.
 	instanceMeta, err := driver.SyncInstance(ctx)
 	if err != nil {
 		return nil, err
@@ -237,72 +231,53 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		}
 	}
 
-	// Compare the stored db info with the just synced db schema.
-	// Case 1: If item appears in both stored db info and the synced db metadata, then it's a no-op. We rely on syncDatabaseSchema() later to sync its details.
-	// Case 2: If item only appears in the synced schema and not in the stored db, then we CREATE the database record in the stored db.
-	// Case 3: Conversely, if item only appears in the stored db, but not in the synced schema, then we MARK the record as NOT_FOUND.
-	//   	   We don't delete the entry because:
-	//   	   1. This entry has already been associated with other entities, we can't simply delete it.
-	//   	   2. The deletion in the schema might be a mistake, so it's better to surface as NOT_FOUND to let user review it.
-	databaseFind := &api.DatabaseFind{
-		InstanceID: &instance.ID,
-	}
-	dbList, err := s.store.FindDatabase(ctx, databaseFind)
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
 	}
 	for _, databaseMetadata := range instanceMeta.DatabaseList {
-		databaseName := databaseMetadata.Name
-
-		var matchedDb *api.Database
-		for _, db := range dbList {
-			if db.Name == databaseName {
-				matchedDb = db
+		exist := false
+		for _, database := range databases {
+			if database.DatabaseName == databaseMetadata.Name {
+				exist = true
 				break
 			}
 		}
-		if matchedDb != nil {
-			// Case 1, appear in both the Bytebase metadata and the synced database metadata.
-			// We rely on syncDatabaseSchema() to sync the database details.
-			continue
-		}
-		// Case 2, only appear in the synced db schema.
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:            api.SystemBotID,
-			ProjectID:            api.DefaultProjectID,
-			InstanceID:           instance.ID,
-			EnvironmentID:        instance.EnvironmentID,
-			Name:                 databaseName,
-			CharacterSet:         databaseMetadata.CharacterSet,
-			Collation:            databaseMetadata.Collation,
-			LastSuccessfulSyncTs: 0,
-		}
-		if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return nil, errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
+		if !exist {
+			databaseCreate := &api.DatabaseCreate{
+				CreatorID:     api.SystemBotID,
+				ProjectID:     api.DefaultProjectID,
+				InstanceID:    instance.ID,
+				EnvironmentID: instance.EnvironmentID,
+				Name:          databaseMetadata.Name,
+				CharacterSet:  databaseMetadata.CharacterSet,
+				Collation:     databaseMetadata.Collation,
 			}
-			return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
+			if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
+				if common.ErrorCode(err) == common.Conflict {
+					return nil, errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
+				}
+				return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
+			}
 		}
 	}
 
-	// Case 3, only appear in the Bytebase metadata
-	for _, db := range dbList {
-		found := false
+	for _, database := range databases {
+		exist := false
 		for _, databaseMetadata := range instanceMeta.DatabaseList {
-			if db.Name == databaseMetadata.Name {
-				found = true
+			if database.DatabaseName == databaseMetadata.Name {
+				exist = true
 				break
 			}
 		}
-		if !found {
+		if !exist {
 			syncStatus := api.NotFound
 			ts := time.Now().Unix()
 			databasePatch := &api.DatabasePatch{
-				ID:                   db.ID,
+				ID:                   database.UID,
 				UpdaterID:            api.SystemBotID,
 				SyncStatus:           &syncStatus,
 				LastSuccessfulSyncTs: &ts,
-				// SchemaVersion will not be over-written.
 			}
 			database, err := s.store.PatchDatabase(ctx, databasePatch)
 			if err != nil {
@@ -318,29 +293,18 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 	for _, database := range instanceMeta.DatabaseList {
 		databaseList = append(databaseList, database.Name)
 	}
-
 	return databaseList, nil
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string, force bool) error {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *api.Database, force bool) error {
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return err
 	}
 	defer driver.Close(ctx)
-
-	databaseFind := &api.DatabaseFind{
-		InstanceID: &instance.ID,
-		Name:       &databaseName,
-	}
-	matchedDb, err := s.store.GetDatabase(ctx, databaseFind)
-	if err != nil {
-		return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
-	}
-
 	// Sync database schema
-	databaseMetadata, err := driver.SyncDBSchema(ctx, databaseName)
+	databaseMetadata, err := driver.SyncDBSchema(ctx, database.Name)
 	if err != nil {
 		return err
 	}
@@ -356,49 +320,24 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		patchSchemaVersion = &schemaVersion
 	}
 
-	var database *api.Database
-	if matchedDb != nil {
-		syncStatus := api.OK
-		ts := time.Now().Unix()
-		databasePatch := &api.DatabasePatch{
-			ID:                   matchedDb.ID,
-			UpdaterID:            api.SystemBotID,
-			SyncStatus:           &syncStatus,
-			LastSuccessfulSyncTs: &ts,
-			SchemaVersion:        patchSchemaVersion,
+	syncStatus := api.OK
+	ts := time.Now().Unix()
+	databasePatch := &api.DatabasePatch{
+		ID:                   database.ID,
+		UpdaterID:            api.SystemBotID,
+		SyncStatus:           &syncStatus,
+		LastSuccessfulSyncTs: &ts,
+		SchemaVersion:        patchSchemaVersion,
+		// TODO(d): update CharacterSet and Collation.
+	}
+	database, err = s.store.PatchDatabase(ctx, databasePatch)
+	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return errors.Errorf("failed to sync database for instance: %s. Database not found: %v", database.Instance.Name, database.Name)
 		}
-		dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return errors.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
-			}
-			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, matchedDb.Name)
-		}
-		database = dbPatched
-	} else {
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     api.SystemBotID,
-			ProjectID:     api.DefaultProjectID,
-			InstanceID:    instance.ID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          databaseMetadata.Name,
-			CharacterSet:  databaseMetadata.CharacterSet,
-			Collation:     databaseMetadata.Collation,
-			// We don't sync the schema version on database discovery because it's likely to be empty.
-			SchemaVersion:        "",
-			LastSuccessfulSyncTs: time.Now().Unix(),
-		}
-		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-			}
-			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
-		}
-		database = createdDatabase
+		return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", database.Instance.Name, database.Name)
 	}
 
-	// Sync database schema
 	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
 }
 

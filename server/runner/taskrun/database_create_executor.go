@@ -213,7 +213,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		return true, nil, err
 	}
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, instance, database.Name, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", instance.Name),
 			zap.String("databaseName", database.Name),
