@@ -279,15 +279,18 @@ func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPat
 // createRepositoryImpl creates a new repository.
 func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.RepositoryCreate) (*repositoryRaw, error) {
 	// Updates the project workflow_type to "VCS"
-	workflowType := string(api.VCSWorkflow)
-	projectPatch := api.ProjectPatch{
-		ID:           create.ProjectID,
-		UpdaterID:    create.CreatorID,
-		WorkflowType: &workflowType,
+	// TODO(d): ideally, we should not update project fields on repository changes.
+	workflowType := api.VCSWorkflow
+	update := &UpdateProjectMessage{
+		UpdaterID:  create.CreatorID,
+		ResourceID: create.ProjectResourceID,
+		Workflow:   &workflowType,
 	}
-	if _, err := s.patchProjectRawTx(ctx, tx, &projectPatch); err != nil {
+	if _, err := s.updateProjectImplV2(ctx, tx, update); err != nil {
 		return nil, err
 	}
+	delete(s.projectCache, create.ProjectResourceID)
+	delete(s.projectIDCache, create.ProjectID)
 
 	var repository repositoryRaw
 	// Insert row into database.
@@ -558,17 +561,17 @@ func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.Reposi
 // deleteRepositoryImpl permanently deletes a repository by ID.
 func (s *Store) deleteRepositoryImpl(ctx context.Context, tx *Tx, delete *api.RepositoryDelete) error {
 	// Updates the project workflow_type to "UI"
-	workflowType := string(api.UIWorkflow)
-	projectPatch := api.ProjectPatch{
-		ID:           delete.ProjectID,
-		UpdaterID:    delete.DeleterID,
-		WorkflowType: &workflowType,
+	// TODO(d): ideally, we should not update project fields on repository changes.
+	workflowType := api.UIWorkflow
+	update := &UpdateProjectMessage{
+		UpdaterID:  delete.DeleterID,
+		ResourceID: delete.ProjectResourceID,
+		Workflow:   &workflowType,
 	}
-	if _, err := s.patchProjectRawTx(ctx, tx, &projectPatch); err != nil {
+	if _, err := s.updateProjectImplV2(ctx, tx, update); err != nil {
 		return err
 	}
 
-	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = $1`, delete.ProjectID); err != nil {
 		return FormatError(err)
 	}

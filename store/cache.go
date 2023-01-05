@@ -15,8 +15,6 @@ type cacheNamespace string
 const (
 	// principalCacheNamespace is the cache type of principals.
 	principalCacheNamespace cacheNamespace = "p"
-	// projectCacheNamespace is the cache type of projects.
-	projectCacheNamespace cacheNamespace = "r"
 	// projectMemberCacheNamespace is the cache type of project members.
 	projectMemberCacheNamespace cacheNamespace = "pm"
 	// instanceCacheNamespace is the cache type of instances.
