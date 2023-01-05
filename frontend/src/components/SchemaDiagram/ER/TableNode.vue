@@ -22,9 +22,7 @@
         <span class="-mx-1">.</span>
       </template>
       <span :class="[isTableDropped && 'line-through']">{{ table.name }}</span>
-      <span v-if="isTableCreated" class="text-xs">(Created)</span>
-      <span v-else-if="isTableDropped" class="text-xs">(Dropped)</span>
-      <span v-else-if="isTableChanged" class="text-xs">(Changed)</span>
+      <span v-if="tableStatusText">({{ tableStatusText }})</span>
 
       <button
         v-if="editable"
@@ -170,6 +168,13 @@ const handleClickColumn = (column: ColumnMetadata, target: "name" | "type") => {
     target,
   });
 };
+
+const tableStatusText = computed(() => {
+  if (isTableCreated.value) return "Created";
+  if (isTableDropped.value) return "Dropped";
+  if (isTableChanged.value) return "Changed";
+  return "";
+});
 
 const position = computed(() => rectOfTable(props.table));
 </script>
