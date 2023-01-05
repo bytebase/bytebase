@@ -57,7 +57,8 @@ const (
 
 // Project is the API message for a project.
 type Project struct {
-	ID int `jsonapi:"primary,project"`
+	ID         int `jsonapi:"primary,project"`
+	ResourceID string
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
@@ -112,12 +113,6 @@ type ProjectFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
-
-	// Domain specific fields
-	Name *string
-	// If present, will only find project containing PrincipalID as an active member
-	PrincipalID *int
-	Key         *string
 }
 
 func (find *ProjectFind) String() string {

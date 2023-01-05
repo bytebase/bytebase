@@ -15,15 +15,19 @@
         'background-color': tableColor,
       }"
     >
+      <template v-if="schema.name !== ''">
+        <span :class="[isTableDropped && 'line-through']">
+          {{ schema.name }}
+        </span>
+        <span class="-mx-1">.</span>
+      </template>
       <span :class="[isTableDropped && 'line-through']">{{ table.name }}</span>
-      <span v-if="isTableCreated" class="text-xs">(Created)</span>
-      <span v-if="isTableDropped" class="text-xs">(Dropped)</span>
-      <span v-if="isTableChanged" class="text-xs">(Changed)</span>
+      <span v-if="tableStatusText">({{ tableStatusText }})</span>
 
       <button
         v-if="editable"
         class="invisible group-hover:visible absolute right-1 hover:bg-gray-200 hover:text-main p-0.5 rounded"
-        @click="events.emit('edit-table', table)"
+        @click="events.emit('edit-table', { schema, table })"
       >
         <heroicons-outline:pencil class="w-4 h-4" />
       </button>
@@ -59,13 +63,11 @@
             {{ column.name }}
           </div>
         </td>
-        <td
-          class="w-[6rem] text-xs text-gray-400 py-1.5 text-right"
-          @click="handleClickColumn(column, 'type')"
-        >
+        <td class="w-[6rem] text-xs text-gray-400 py-1.5 text-right">
           <div
             class="truncate pr-1.5"
             :class="editable && 'hover:!text-accent'"
+            @click="handleClickColumn(column, 'type')"
           >
             {{ column.type }}
           </div>
@@ -79,11 +81,16 @@
 import { computed } from "vue";
 
 import { hashCode } from "@/bbkit/BBUtil";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
+import {
+  ColumnMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/store/database";
 import { useSchemaDiagramContext, isPrimaryKey, isIndex } from "../common";
 
 const props = withDefaults(
   defineProps<{
+    schema: SchemaMetadata;
     table: TableMetadata;
   }>(),
   {}
@@ -92,6 +99,7 @@ const {
   editable,
   idOfTable,
   rectOfTable,
+  schemaStatus,
   tableStatus,
   columnStatus,
   panning,
@@ -123,11 +131,17 @@ const tableColor = computed(() => {
 });
 
 const isTableDropped = computed(() => {
-  return tableStatus(props.table) === "dropped";
+  return (
+    schemaStatus(props.schema) === "dropped" ||
+    tableStatus(props.table) === "dropped"
+  );
 });
 
 const isTableCreated = computed(() => {
-  return tableStatus(props.table) === "created";
+  return (
+    schemaStatus(props.schema) === "created" ||
+    tableStatus(props.table) === "created"
+  );
 });
 
 const isTableChanged = computed(() => {
@@ -145,8 +159,20 @@ const isColumnCreated = (column: ColumnMetadata) => {
 const handleClickColumn = (column: ColumnMetadata, target: "name" | "type") => {
   if (!editable.value) return;
   if (panning.value) return;
-  events.emit("edit-column", { table: props.table, column, target });
+  events.emit("edit-column", {
+    schema: props.schema,
+    table: props.table,
+    column,
+    target,
+  });
 };
+
+const tableStatusText = computed(() => {
+  if (isTableCreated.value) return "Created";
+  if (isTableDropped.value) return "Dropped";
+  if (isTableChanged.value) return "Changed";
+  return "";
+});
 
 const position = computed(() => rectOfTable(props.table));
 </script>

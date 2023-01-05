@@ -1,12 +1,15 @@
 <template>
   <Canvas>
     <template #desktop>
-      <TableNode
-        v-for="(table, i) in tableList"
-        :key="i"
-        :table="table"
-        :class="initialized ? '' : 'invisible'"
-      />
+      <template v-for="(schema, i) in schemaList" :key="`schema-${i}`">
+        <TableNode
+          v-for="table in schema.tables"
+          :key="idOfTable(table)"
+          :schema="schema"
+          :table="table"
+          :class="initialized ? '' : 'invisible'"
+        />
+      </template>
 
       <template v-if="initialized">
         <ForeignKeyLine v-for="(fk, i) in foreignKeys" :key="i" :fk="fk" />
@@ -23,12 +26,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
 
 import { Database } from "@/types";
-import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
+import {
+  ColumnMetadata,
+  DatabaseMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/store/database";
 import {
   Position,
   Rect,
@@ -44,28 +52,37 @@ import { provideSchemaDiagramContext } from "./common";
 const props = withDefaults(
   defineProps<{
     database: Database;
+    databaseMetadata: DatabaseMetadata;
     editable?: boolean;
-    tableList: TableMetadata[];
+    schemaStatus?: (schema: SchemaMetadata) => EditStatus;
     tableStatus?: (table: TableMetadata) => EditStatus;
     columnStatus?: (column: ColumnMetadata) => EditStatus;
   }>(),
   {
     editable: false,
+    schemaStatus: () => "normal" as EditStatus,
     tableStatus: () => "normal" as EditStatus,
     columnStatus: () => "normal" as EditStatus,
   }
 );
 
 const emit = defineEmits<{
-  (event: "edit-table", table: TableMetadata): void;
+  (event: "edit-table", schema: SchemaMetadata, table: TableMetadata): void;
   (
     event: "edit-column",
+    schema: SchemaMetadata,
     table: TableMetadata,
     column: ColumnMetadata,
     target: "name" | "type"
   ): void;
 }>();
 
+const schemaList = computed(() => {
+  return props.databaseMetadata.schemas;
+});
+const tableList = computed(() => {
+  return schemaList.value.flatMap((schema) => schema.tables);
+});
 const initialized = ref(false);
 const zoom = ref(1);
 const position = ref<Position>({ x: 0, y: 0 });
@@ -81,22 +98,32 @@ const events: SchemaDiagramContext["events"] = new Emittery();
 const tableIds = ref(new WeakMap<TableMetadata, string>());
 const rectsByTableId = ref(new Map<string, Rect>());
 const foreignKeys = computed((): ForeignKey[] => {
-  const find = (t: string, c: string) => {
-    const table = props.tableList.find((table) => table.name === t)!;
+  const find = (s: string, t: string, c: string) => {
+    const schema = props.databaseMetadata.schemas.find(
+      (schema) => schema.name === s
+    )!;
+    const table = schema.tables.find((table) => table.name === t)!;
     const column = c;
-    return { table, column };
+    return { schema, table, column };
   };
   const fks: ForeignKey[] = [];
-  props.tableList.forEach((table) => {
-    table.foreignKeys.forEach((fkMetadata) => {
-      const { columns, referencedTable, referencedColumns } = fkMetadata;
-      for (let i = 0; i < columns.length; i++) {
-        fks.push({
-          from: { table, column: columns[i] },
-          to: find(referencedTable, referencedColumns[i]),
-          metadata: fkMetadata,
-        });
-      }
+  schemaList.value.forEach((schema) => {
+    schema.tables.forEach((table) => {
+      table.foreignKeys.forEach((fkMetadata) => {
+        const {
+          columns,
+          referencedSchema,
+          referencedTable,
+          referencedColumns,
+        } = fkMetadata;
+        for (let i = 0; i < columns.length; i++) {
+          fks.push({
+            from: { schema, table, column: columns[i] },
+            to: find(referencedSchema, referencedTable, referencedColumns[i]),
+            metadata: fkMetadata,
+          });
+        }
+      });
     });
   });
 
@@ -118,15 +145,18 @@ const rectOfTable = (table: TableMetadata): Rect => {
 
 const layout = () => {
   return nextTick(async () => {
-    const nodeList = props.tableList
-      .map((table) => {
-        const id = idOfTable(table);
-        const elem = document.querySelector(`[bb-node-id="${id}"]`)!;
-        return {
-          table,
-          id,
-          elem,
-        };
+    const nodeList = schemaList.value
+      .flatMap((schema) => {
+        return schema.tables.map((table) => {
+          const id = idOfTable(table);
+          const elem = document.querySelector(`[bb-node-id="${id}"]`)!;
+          return {
+            group: `schema-${schema.name}`,
+            table,
+            id,
+            elem,
+          };
+        });
       })
       .filter((item) => !!item.elem)
       .map<GraphNodeItem>((item) => {
@@ -135,6 +165,7 @@ const layout = () => {
           height: item.elem.clientHeight,
         };
         return {
+          group: item.group,
           id: item.id,
           size,
           children: [],
@@ -146,7 +177,7 @@ const layout = () => {
       const fromTableId = idOfTable(from.table);
       const toTableId = idOfTable(to.table);
       return {
-        id: `${fromTableId}.${from.column}->${toTableId}.${to.column}`,
+        id: `${from.schema.name}.${fromTableId}.${from.column}->${to.schema.name}.${toTableId}.${to.column}`,
         from: fromTableId,
         to: toTableId,
       };
@@ -161,13 +192,15 @@ const layout = () => {
 };
 
 events.on("layout", layout);
-events.on("edit-table", (table) => emit("edit-table", table));
-events.on("edit-column", ({ table, column, target }) =>
-  emit("edit-column", table, column, target)
+events.on("edit-table", ({ schema, table }) =>
+  emit("edit-table", schema, table)
+);
+events.on("edit-column", ({ schema, table, column, target }) =>
+  emit("edit-column", schema, table, column, target)
 );
 
 provideSchemaDiagramContext({
-  tableList: computed(() => props.tableList),
+  tableList: computed(() => tableList.value),
   editable: computed(() => props.editable),
   zoom,
   position,
@@ -176,17 +209,22 @@ provideSchemaDiagramContext({
   rectOfTable,
   render,
   layout,
+  schemaStatus: props.schemaStatus,
   tableStatus: props.tableStatus,
   columnStatus: props.columnStatus,
   events,
 });
 
 // autoLayout and fit view at the first time the diagram is mounted.
-onMounted(async () => {
-  await layout();
-  initialized.value = true;
-  nextTick(() => {
-    events.emit("fit-view");
-  });
-});
+watch(
+  () => props.databaseMetadata,
+  async () => {
+    await layout();
+    initialized.value = true;
+    nextTick(() => {
+      events.emit("fit-view");
+    });
+  },
+  { immediate: true }
+);
 </script>

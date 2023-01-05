@@ -12,6 +12,7 @@ export interface DatabaseTabContext {
   type: SchemaEditorTabType.TabForDatabase;
   databaseId: DatabaseId;
   selectedSchemaId?: string;
+  selectedSubtab?: string;
 }
 
 // Tab context for editing table.
@@ -21,6 +22,7 @@ export interface TableTabContext {
   databaseId: DatabaseId;
   schemaId: string;
   tableId: string;
+  selectedSubtab?: string;
 }
 
 export type TabContext = DatabaseTabContext | TableTabContext;
