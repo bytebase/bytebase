@@ -66,6 +66,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	return nil
 }
 
+// FindLargestVersionSinceBaselineAndLargestSequence will find the largest version since last baseline or branch and the largest sequence number.
 func (driver *Driver) FindLargestVersionSinceBaselineAndLargestSequence(ctx context.Context, namespace string) (*string, int, error) {
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {

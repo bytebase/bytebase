@@ -244,6 +244,7 @@ func (driver *Driver) FindLargestSequence(ctx context.Context, namespace string,
 	return 0, nil
 }
 
+// FindLargestVersionSinceBaselineAndLargestSequence will find the largest version since last baseline or branch and the largest sequence number.
 func (driver *Driver) FindLargestVersionSinceBaselineAndLargestSequence(ctx context.Context, namespace string) (*string, int, error) {
 	version, err := driver.FindLargestVersionSinceBaseline(ctx, namespace)
 	if err != nil {

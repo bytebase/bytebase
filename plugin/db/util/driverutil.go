@@ -137,8 +137,8 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 type MigrationExecutor interface {
 	db.Driver
 	// FindLargestVersionSinceBaselineAndLargestSequence will
-	// find the largest version since last baseline or branch.
-	// return the largest sequence number, 0 if we haven't applied any migration for this namespace.
+	// - find the largest version since last baseline or branch.
+	// - return the largest sequence number, 0 if we haven't applied any migration for this namespace.
 	FindLargestVersionSinceBaselineAndLargestSequence(ctx context.Context, namespace string) (*string, int, error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
 	InsertPendingHistory(ctx context.Context, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error)
