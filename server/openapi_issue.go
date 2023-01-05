@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) createIssueByOpenAPI(c echo.Context) error {
@@ -26,17 +27,17 @@ func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Malformed create instance request").SetInternal(err)
 	}
 
-	project, err := s.store.GetProjectByKey(ctx, create.ProjectKey)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &create.ProjectID})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with key %s", create.ProjectKey)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with key %s", create.ProjectID)).SetInternal(err)
 	}
 	if project == nil {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found project with key %s", create.ProjectKey))
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot found project with key %s", create.ProjectID))
 	}
 
 	issueType := api.IssueDatabaseDataUpdate
 	migrationList := []*api.MigrationDetail{}
-	dbList, err := s.findProjectDatabases(ctx, project.ID, create.Database, create.Environment)
+	dbList, err := s.findProjectDatabases(ctx, project.UID, create.Database, create.Environment)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list database").SetInternal(err)
 	}
@@ -65,7 +66,7 @@ func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 
 	issueCreate := &api.IssueCreate{
 		CreatorID:             c.Get(getPrincipalIDContextKey()).(int),
-		ProjectID:             project.ID,
+		ProjectID:             project.UID,
 		Name:                  create.Name,
 		Type:                  issueType,
 		Description:           create.Description,
