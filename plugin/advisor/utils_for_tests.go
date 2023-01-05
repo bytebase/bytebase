@@ -237,6 +237,12 @@ func (*MockDriver) GetType() database.Type {
 	return database.Type("MOCK")
 }
 
+// SwitchDatabase switches the connected database.
+func (*MockDriver) SwitchDatabase(context.Context, string) (func() error, error) {
+	noop := func() error { return nil }
+	return noop, nil
+}
+
 // GetDBConnection implements the Driver interface.
 func (*MockDriver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 	return nil, nil
