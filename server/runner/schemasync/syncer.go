@@ -245,14 +245,13 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 		}
 		if !exist {
 			databaseCreate := &api.DatabaseCreate{
-				CreatorID:            api.SystemBotID,
-				ProjectID:            api.DefaultProjectID,
-				InstanceID:           instance.ID,
-				EnvironmentID:        instance.EnvironmentID,
-				Name:                 databaseMetadata.Name,
-				CharacterSet:         databaseMetadata.CharacterSet,
-				Collation:            databaseMetadata.Collation,
-				LastSuccessfulSyncTs: 0,
+				CreatorID:     api.SystemBotID,
+				ProjectID:     api.DefaultProjectID,
+				InstanceID:    instance.ID,
+				EnvironmentID: instance.EnvironmentID,
+				Name:          databaseMetadata.Name,
+				CharacterSet:  databaseMetadata.CharacterSet,
+				Collation:     databaseMetadata.Collation,
 			}
 			if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
 				if common.ErrorCode(err) == common.Conflict {
