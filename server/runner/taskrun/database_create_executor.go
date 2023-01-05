@@ -70,7 +70,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 	defer driver.Close(ctx)
 
-	project, err := exec.store.GetProjectByID(ctx, payload.ProjectID)
+	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &payload.ProjectID})
 	if err != nil {
 		return true, nil, errors.Errorf("failed to find project with ID %d", payload.ProjectID)
 	}
@@ -249,18 +249,18 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, instance *api.Instance, project *api.Project) (string, string, error) {
+func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, instance *api.Instance, project *store.ProjectMessage) (string, string, error) {
 	// Find all databases in the project.
 	dbList, err := store.FindDatabase(ctx, &api.DatabaseFind{
-		ProjectID: &project.ID,
+		ProjectID: &project.UID,
 	})
 	if err != nil {
-		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.ID)
+		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
 	}
 
-	deployConfig, err := store.GetDeploymentConfigByProjectID(ctx, project.ID)
+	deployConfig, err := store.GetDeploymentConfigByProjectID(ctx, project.UID)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.ID)
+		return "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
 	}
 	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(deployConfig.Payload)
 	if err != nil {

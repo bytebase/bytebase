@@ -265,18 +265,18 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, store *store.Store, activityManager *activity.Manager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
 	databaseName := task.Database.Name
-	issue, err := findIssueByTask(ctx, store, task)
+	issue, err := findIssueByTask(ctx, stores, task)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		log.Error("failed to find containing issue", zap.Error(err))
 	}
-	project, err := store.GetProjectByID(ctx, task.Database.ProjectID)
+	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{UID: &task.Database.ProjectID})
 	if err != nil {
 		return true, nil, err
 	}
-	repo, err := store.GetRepository(ctx, &api.RepositoryFind{
+	repo, err := stores.GetRepository(ctx, &api.RepositoryFind{
 		ProjectID: &task.Database.ProjectID,
 	})
 	if err != nil {
@@ -284,7 +284,7 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 	}
 
 	if mi.Type == db.Migrate || mi.Type == db.MigrateSDL {
-		if _, err := store.PatchDatabase(ctx, &api.DatabasePatch{
+		if _, err := stores.PatchDatabase(ctx, &api.DatabasePatch{
 			ID:            *task.DatabaseID,
 			UpdaterID:     api.SystemBotID,
 			SchemaVersion: &mi.Version,
@@ -345,7 +345,7 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
-		vcs, err := store.GetVCSByID(ctx, repo.VCSID)
+		vcs, err := stores.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
 			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
@@ -359,7 +359,7 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", profile.ExternalURL, api.IssueSlug(issue), task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, store, repo, vcsPushEvent, mi, repo.BranchFilter, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, repo.BranchFilter, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -407,7 +407,7 @@ func postMigration(ctx context.Context, store *store.Store, activityManager *act
 	}
 
 	// Remove schema drift anomalies.
-	if err := store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
+	if err := stores.ArchiveAnomaly(ctx, &api.AnomalyArchive{
 		DatabaseID: task.DatabaseID,
 		Type:       api.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
