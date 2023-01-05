@@ -162,14 +162,15 @@ const selectedTable = computed(() => {
 });
 
 const columnList = computed(() => {
-  return (
-    tableList.value
-      .find((table) => table.id === state.referencedTableId)
-      ?.columnList.filter(
-        (column) =>
-          column.id !== props.columnId &&
-          column.type.toUpperCase() === propsColumn.value?.type.toUpperCase()
-      ) || []
+  if (!selectedTable.value) {
+    return [];
+  }
+
+  return selectedTable.value.columnList.filter(
+    (column) =>
+      column.id !== props.columnId &&
+      column.type.toUpperCase() === propsColumn.value?.type.toUpperCase() &&
+      selectedTable.value?.primaryKey.columnIdList.includes(column.id)
   );
 });
 
