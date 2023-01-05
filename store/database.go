@@ -707,6 +707,9 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	); err != nil {
 		return nil, FormatError(err)
 	}
+	if err := s.setDatabaseLabels(ctx, tx, databaseUID, create.Labels, api.SystemBotID); err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -798,4 +801,108 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 
 	return databaseMessages, nil
+}
+
+func (s *Store) setDatabaseLabels(ctx context.Context, tx *Tx, databaseUID int, labels map[string]string, updaterID int) error {
+	oldLabels, err := s.getDatabaseLabels(ctx, tx, databaseUID)
+	if err != nil {
+		return err
+	}
+	upserts := make(map[string]string)
+	var deleteKeys []string
+	for key, value := range labels {
+		// We will skip writing the system label, environment.
+		if key == api.EnvironmentLabelKey {
+			continue
+		}
+		if oldValue, ok := oldLabels[key]; !ok || oldValue != value {
+			upserts[key] = value
+		}
+	}
+	for key := range oldLabels {
+		if _, ok := labels[key]; !ok {
+			deleteKeys = append(deleteKeys, key)
+		}
+	}
+	if err := s.upsertLabels(ctx, tx, databaseUID, upserts, updaterID); err != nil {
+		return err
+	}
+	return s.deleteLabels(ctx, tx, databaseUID, deleteKeys)
+}
+
+func (*Store) upsertLabels(ctx context.Context, tx *Tx, databaseUID int, labels map[string]string, updaterID int) error {
+	query := `
+		INSERT INTO db_label (
+			row_status,
+			creator_id,
+			updater_id,
+			database_id,
+			key,
+			value
+		)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT(database_id, key) DO UPDATE SET
+			row_status = excluded.row_status,
+			updater_id = excluded.updater_id,
+			value = excluded.value
+	`
+	for key, value := range labels {
+		if _, err := tx.ExecContext(ctx, query,
+			api.Normal,
+			updaterID,
+			updaterID,
+			databaseUID,
+			key,
+			value,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (*Store) deleteLabels(ctx context.Context, tx *Tx, databaseUID int, keys []string) error {
+	query := `
+		DELETE FROM db_label
+		WHERE database_id = $1 AND key = $2
+	`
+	for _, key := range keys {
+		if _, err := tx.ExecContext(ctx, query,
+			databaseUID,
+			key,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (*Store) getDatabaseLabels(ctx context.Context, tx *Tx, databaseUID int) (map[string]string, error) {
+	labels := make(map[string]string)
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			key,
+			value
+		FROM db_label
+		WHERE database_id = $1`,
+		databaseUID,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(
+			&key,
+			&value,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		labels[key] = value
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return labels, nil
 }
