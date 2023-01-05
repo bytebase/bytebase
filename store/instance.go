@@ -1043,6 +1043,10 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				Host:       ds.Host,
 				Port:       ds.Port,
 				Database:   ds.Database,
+				Options: api.DataSourceOptions{
+					SRV:                    ds.SRV,
+					AuthenticationDatabase: ds.AuthenticationDatabase,
+				},
 			}
 			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 				return nil, err
