@@ -260,25 +260,6 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	var tx *sql.Tx
-	// We don't use transaction for MongoDB for the following reasons:
-	// 1. MongoDB support transaction only in replica set mode or shard cluster mode. But we need to
-	// support standalone mode as well. https://stackoverflow.com/a/51462024/19075342
-	// 2. We use mongodb driver, it has not implemented the SQL interface. So we can't use the same code.
-	if executor.GetType() != db.MongoDB {
-		// We use transaction here for the RDBMS.
-		sqldb, err := executor.GetDBConnection(ctx, databaseName)
-		if err != nil {
-			return -1, err
-		}
-		// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
-		tx, err = sqldb.BeginTx(ctx, nil)
-		if err != nil {
-			return -1, err
-		}
-		defer tx.Rollback()
-	}
-
 	version, largestSequence, err := executor.FindLargestVersionSinceBaselineAndLargestSequence(ctx, m.Namespace)
 	if err != nil {
 		return -1, err
@@ -299,36 +280,12 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		return -1, err
 	}
 
-	if executor.GetType() != db.MongoDB {
-		if err := tx.Commit(); err != nil {
-			return -1, err
-		}
-	}
-
 	return insertedID, nil
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
 func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
-
-	var tx *sql.Tx
-	// We don't use transaction for MongoDB for the following reasons:
-	// 1. MongoDB support transaction only in replica set mode or shard cluster mode. But we need to
-	// support standalone mode as well. https://stackoverflow.com/a/51462024/19075342
-	// 2. We use mongodb driver, it had not implment the sql interface. So we can't use the same code.
-	if executor.GetType() != db.MongoDB {
-		sqldb, err := executor.GetDBConnection(ctx, databaseName)
-		if err != nil {
-			return err
-		}
-		tx, err = sqldb.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-	}
-
 	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
 		err = executor.UpdateHistoryAsDone(ctx, migrationDurationNs, updatedSchema, migrationHistoryID)
@@ -336,12 +293,8 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 		// Otherwise, update the migration history as 'FAILED', execution_duration.
 		err = executor.UpdateHistoryAsFailed(ctx, migrationDurationNs, migrationHistoryID)
 	}
-
 	if err != nil {
 		return err
-	}
-	if executor.GetType() != db.MongoDB {
-		return tx.Commit()
 	}
 	return nil
 }
