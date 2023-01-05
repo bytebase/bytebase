@@ -127,16 +127,34 @@
           </div>
         </template>
 
-        <template v-if="state.instance.engine == 'MONGODB'">
-          <div class="sm:row-span-1">
-            <div class="ml-1">
-              <BBCheckbox
-                title="DNS SRV Record"
-                :value="state.instance.srv"
-                @toggle="handleToggleSRV"
-              />
-            </div></div
-        ></template>
+        <div
+          v-if="state.instance.engine === 'MONGODB'"
+          class="sm:col-span-4 sm:col-start-1"
+        >
+          <label
+            for="connectionStringSchema"
+            class="textlabel flex flex-row items-center"
+          >
+            {{ $t("data-source.connection-string-schema") }}
+          </label>
+          <label
+            v-for="type in mongodbConnectionStringSchemata"
+            :key="type"
+            class="radio h-7"
+          >
+            <input
+              type="radio"
+              class="btn"
+              name="connectionStringSchema"
+              :value="type"
+              :checked="type === mongodbConnectionStringSchemata[0]"
+              @change="handleMongodbConnectionStringSchemaChange"
+            />
+            <span class="label">
+              {{ type }}
+            </span>
+          </label>
+        </div>
       </div>
 
       <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
@@ -405,6 +423,8 @@ const state = reactive<LocalState>({
   isCreatingInstance: false,
 });
 
+const mongodbConnectionStringSchemata = ["mongodb://", "mongodb+srv://"];
+
 const isCreatingEmbeddedInstance = ref(false);
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
 const embeddedPostgresInstance = ref<Partial<InstanceCreate>>();
@@ -538,8 +558,17 @@ const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
   );
 };
 
-const handleToggleSRV = (on: boolean) => {
-  updateInstance("srv", on);
+const handleMongodbConnectionStringSchemaChange = (event: Event) => {
+  switch ((event.target as HTMLInputElement).value) {
+    case "mongodb://":
+      state.instance.srv = false;
+      break;
+    case "mongodb+srv://":
+      state.instance.srv = true;
+      break;
+    default:
+      state.instance.srv = false;
+  }
 };
 
 const updateInstance = (field: string, value: string | boolean) => {
