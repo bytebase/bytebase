@@ -4,7 +4,8 @@ package ast
 type InsertStmt struct {
 	dml
 
-	Table     *TableDef
-	ValueList [][]ExpressionNode
-	Select    *SelectStmt
+	Table      *TableDef
+	ColumnList []string
+	ValueList  [][]ExpressionNode
+	Select     *SelectStmt
 }
