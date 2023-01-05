@@ -180,6 +180,7 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
+import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -445,8 +446,10 @@ const tryEditColumn = (
       const input = container?.querySelector(
         `.column-${column.id} .column-${target}-input`
       ) as HTMLInputElement | undefined;
-
-      input?.focus();
+      if (input) {
+        input.focus();
+        scrollIntoView(input);
+      }
     });
   }
 };

@@ -1102,8 +1102,7 @@
     },
     "table": {
       "key": "@:common.key",
-      "name": "@:common.name",
-      "created-at": "创建于"
+      "name": "@:common.name"
     },
     "create-modal": {
       "project-name": "@:{'common.project'}@:{'common.name'}",

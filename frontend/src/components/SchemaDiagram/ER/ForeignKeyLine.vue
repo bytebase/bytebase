@@ -1,7 +1,7 @@
 <template>
   <SVGLine
     :path="path"
-    :decorators="[]"
+    :decorators="[startManyArrow]"
     :bb-edge-from="`${fk.from.table.name}.${fk.from.column}`"
     :bb-edge-to="`${fk.to.table.name}.${fk.to.column}`"
     :bb-fk-name="fk.metadata.name"
@@ -119,6 +119,26 @@ const generateLine = (src: Rect, se: Direction, dest: Rect, de: Direction) => {
   const dc = grow(dp, de, GROWTH_LEN); // destination corner
   return [sp, sc, dc, dp];
 };
+const startManyArrow = computed((): Path => {
+  if (path.value.length < 2) return [];
+  /**
+   * Create a "fork"-like line to indicate "to-many" relationship
+   *       m
+   *     /
+   * q--c--p
+   *     \
+   *       n
+   */
+  const p = path.value[0];
+  const q = path.value[1];
+  const dir = Math.sign(q.x - p.x);
+  const h = 12;
+  const v = 6;
+  const m = { x: p.x, y: p.y + v };
+  const c = { x: p.x + h * dir, y: p.y };
+  const n = { x: p.x, y: p.y - v };
+  return [m, c, n];
+});
 
 const updatePath = () => {
   const { from, to } = props.fk;

@@ -1102,8 +1102,7 @@
     },
     "table": {
       "key": "@:common.key",
-      "name": "@:common.name",
-      "created-at": "Created At"
+      "name": "@:common.name"
     },
     "create-modal": {
       "project-name": "@:common.project @:common.name",
