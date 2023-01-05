@@ -259,13 +259,19 @@ const state = reactive<LocalState>({
 const currentUser = useCurrentUser();
 const dbSchemaStore = useDBSchemaStore();
 
-const databaseEngine = props.database.instance.engine as EngineType;
-const hasSchemaProperty =
-  databaseEngine === "POSTGRES" || databaseEngine === "SNOWFLAKE";
+const databaseEngine = computed(() => {
+  return props.database.instance.engine as EngineType;
+});
+
+const hasSchemaProperty = computed(() => {
+  return (
+    databaseEngine.value === "POSTGRES" || databaseEngine.value === "SNOWFLAKE"
+  );
+});
 
 const prepareDatabaseMetadata = async () => {
   await dbSchemaStore.getOrFetchDatabaseMetadataById(props.database.id);
-  if (hasSchemaProperty && schemaList.value.length > 0) {
+  if (hasSchemaProperty.value && schemaList.value.length > 0) {
     state.selectedSchemaName = head(schemaList.value)?.name || "";
   }
 };
@@ -298,7 +304,7 @@ const schemaNameList = computed(() => {
 });
 
 const tableList = computed(() => {
-  if (hasSchemaProperty) {
+  if (hasSchemaProperty.value) {
     return (
       schemaList.value.find(
         (schema) => schema.name === state.selectedSchemaName
@@ -309,7 +315,7 @@ const tableList = computed(() => {
 });
 
 const viewList = computed(() => {
-  if (hasSchemaProperty) {
+  if (hasSchemaProperty.value) {
     return (
       schemaList.value.find(
         (schema) => schema.name === state.selectedSchemaName
