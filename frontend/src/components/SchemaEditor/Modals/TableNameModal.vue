@@ -37,6 +37,7 @@ import {
   useSchemaEditorStore,
   useNotificationStore,
   generateUniqueTabId,
+  useDatabaseStore,
 } from "@/store";
 import { ColumnMetadata, TableMetadata } from "@/types/proto/store/database";
 import {
@@ -111,6 +112,8 @@ const handleConfirmButtonClick = async () => {
   }
 
   const databaseId = props.databaseId;
+  const database = useDatabaseStore().getDatabaseById(databaseId);
+  const instanceEngine = database.instance.engine;
   const schema = editorStore.getSchema(databaseId, props.schemaId) as Schema;
   const tableNameList = schema.tableList.map((table) => table.name);
   if (tableNameList.includes(state.tableName)) {
@@ -131,7 +134,11 @@ const handleConfirmButtonClick = async () => {
       ColumnMetadata.fromPartial({})
     );
     column.name = "id";
-    column.type = "int";
+    if (instanceEngine === "POSTGRES") {
+      column.type = "integer";
+    } else {
+      column.type = "int";
+    }
     column.comment = "ID";
     column.status = "created";
     table.columnList.push(column);

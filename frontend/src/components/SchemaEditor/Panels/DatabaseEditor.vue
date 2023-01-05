@@ -197,7 +197,11 @@ import {
 } from "@/types";
 import { Table } from "@/types/schemaEditor/atomType";
 import { bytesToString } from "@/utils";
-import { diffSchema } from "@/utils/schemaEditor/diffSchema";
+import {
+  checkHasSchemaChanges,
+  diffSchema,
+  mergeDiffResults,
+} from "@/utils/schemaEditor/diffSchema";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import SchemaDiagram from "@/components/SchemaDiagram";
@@ -333,19 +337,21 @@ watch(
           (originSchema) => originSchema.id === schema.id
         );
         const diffSchemaResult = diffSchema(database.id, originSchema, schema);
-        if (
-          diffSchemaResult.createSchemaList.length > 0 ||
-          diffSchemaResult.renameSchemaList.length > 0 ||
-          diffSchemaResult.dropSchemaList.length > 0 ||
-          diffSchemaResult.createTableList.length > 0 ||
-          diffSchemaResult.alterTableList.length > 0 ||
-          diffSchemaResult.renameTableList.length > 0 ||
-          diffSchemaResult.dropTableList.length > 0
-        ) {
-          databaseEditList.push({
-            databaseId: database.id,
-            ...diffSchemaResult,
-          });
+        if (checkHasSchemaChanges(diffSchemaResult)) {
+          const index = databaseEditList.findIndex(
+            (edit) => edit.databaseId === database.id
+          );
+          if (index !== -1) {
+            databaseEditList[index] = {
+              databaseId: database.id,
+              ...mergeDiffResults([diffSchemaResult, databaseEditList[index]]),
+            };
+          } else {
+            databaseEditList.push({
+              databaseId: database.id,
+              ...diffSchemaResult,
+            });
+          }
         }
       }
 
