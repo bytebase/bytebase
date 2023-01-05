@@ -152,8 +152,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 
 	// Some postgres server default behavior is to use username as the database name if not specified,
 	// while some postgres server explicitly requires the database name to be present (e.g. render.com).
-	// Thus we explicitly guess username as the database name at first.
-	guesses := []string{username, "bytebase", "postgres", "template1"}
+	guesses := []string{"postgres", "bytebase", username, "template1"}
 	//  dsn+" dbname=bytebase"
 	for _, guessDatabase := range guesses {
 		guessDSN := fmt.Sprintf("%s dbname=%s", dsn, guessDatabase)
