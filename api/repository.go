@@ -64,8 +64,9 @@ type RepositoryCreate struct {
 	CreatorID int
 
 	// Related fields
-	VCSID     int `jsonapi:"attr,vcsId"`
-	ProjectID int
+	VCSID             int `jsonapi:"attr,vcsId"`
+	ProjectID         int
+	ProjectResourceID string
 
 	// Domain specific fields
 	Name               string `jsonapi:"attr,name"`
@@ -138,7 +139,8 @@ type RepositoryDelete struct {
 	// Related fields
 	// When deleting the repository, we need to update the corresponding project workflow type to "UI",
 	// thus we use ProjectID here.
-	ProjectID int
+	ProjectID         int
+	ProjectResourceID string
 
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.

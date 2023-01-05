@@ -7,7 +7,7 @@ import (
 // IssueCreate is the API message for creating an issue.
 type IssueCreate struct {
 	// Related fields
-	ProjectKey  string `json:"projectKey"`
+	ProjectID   string `json:"projectID"`
 	Database    string `json:"database"`
 	Environment string `json:"environment"`
 

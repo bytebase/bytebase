@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) updateInstanceDatabase(c echo.Context) error {
@@ -45,15 +46,14 @@ func (s *Server) updateInstanceDatabase(c echo.Context) error {
 
 	var patchProjectID *int
 	if instanceDatabasePatch.Project != nil {
-		projects, err := s.store.FindProject(ctx, &api.ProjectFind{Name: instanceDatabasePatch.Project})
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: instanceDatabasePatch.Project})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find project").SetInternal(err)
 		}
-		if len(projects) != 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, "Found %v projects with name %q but expecting one", len(projects), *instanceDatabasePatch.Project)
+		if project == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "project %q not found", *instanceDatabasePatch.Project)
 		}
-		project := projects[0]
-		patchProjectID = &project.ID
+		patchProjectID = &project.UID
 	}
 	updaterID := c.Get(getPrincipalIDContextKey()).(int)
 	if _, err := s.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: updaterID, ProjectID: patchProjectID}); err != nil {
