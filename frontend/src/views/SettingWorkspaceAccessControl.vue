@@ -4,7 +4,7 @@
       <i18n-t
         tag="div"
         keypath="settings.access-control.description"
-        class="textinfolabel max-w-xl"
+        class="textinfolabel"
       >
         <template #link>
           <LearnMoreLink
