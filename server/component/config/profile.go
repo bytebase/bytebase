@@ -53,7 +53,7 @@ type Profile struct {
 	// FeishuAPIURL is the URL of Feishu API server.
 	FeishuAPIURL string
 
-	// Version is the bytebase's version
+	// Version is the bytebase's server version
 	Version string
 	// Git commit hash of the build
 	GitCommit string
