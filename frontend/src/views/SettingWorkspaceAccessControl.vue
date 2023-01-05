@@ -1,9 +1,17 @@
 <template>
   <div class="w-full mt-4 space-y-4">
     <div class="flex justify-between">
-      <div class="textinfolabel max-w-xl">
-        {{ $t("settings.access-control.description") }}
-      </div>
+      <i18n-t
+        tag="div"
+        keypath="settings.access-control.description"
+        class="textinfolabel max-w-xl"
+      >
+        <template #link>
+          <LearnMoreLink
+            url="https://www.bytebase.com/docs/administration/database-access-control"
+          />
+        </template>
+      </i18n-t>
 
       <div>
         <button
@@ -19,7 +27,7 @@
     <div class="relative min-h-[12rem]">
       <BBTable
         :column-list="COLUMN_LIST"
-        :data-source="state.policyList"
+        :data-source="activePolicyList"
         :show-header="true"
         :left-bordered="true"
         :right-bordered="true"
@@ -80,7 +88,7 @@
       </BBTable>
 
       <div
-        v-if="!state.isLoading && state.policyList.length === 0"
+        v-if="!state.isLoading && activePolicyList.length === 0"
         class="w-full flex flex-col py-6 justify-start items-center"
       >
         <heroicons-outline:inbox class="w-12 h-auto text-gray-500" />
@@ -88,6 +96,76 @@
           $t("common.no-data")
         }}</span>
       </div>
+
+      <template v-if="inactivePolicyList.length > 0">
+        <div class="text-lg mt-6 mb-1">
+          {{ $t("settings.access-control.inactive-rules") }}
+        </div>
+        <div class="textinfolabel max-w-xl mb-4">
+          {{ $t("settings.access-control.inactive-rules-description") }}
+        </div>
+        <BBTable
+          :column-list="COLUMN_LIST"
+          :data-source="inactivePolicyList"
+          :show-header="true"
+          :left-bordered="true"
+          :right-bordered="true"
+          :row-clickable="false"
+        >
+          <template #body="{ rowData: policy }: { rowData: Policy }">
+            <BBTableCell class="w-[25%]" :left-padding="4">
+              <div class="flex items-center space-x-2">
+                <span>{{ databaseOfPolicy(policy).name }}</span>
+              </div>
+            </BBTableCell>
+            <BBTableCell class="w-[15%]">
+              {{ projectName(databaseOfPolicy(policy).project) }}
+            </BBTableCell>
+            <BBTableCell class="w-[15%]">
+              <div class="flex items-center">
+                {{
+                  environmentName(databaseOfPolicy(policy).instance.environment)
+                }}
+                <ProtectedEnvironmentIcon
+                  class="ml-1"
+                  :environment="databaseOfPolicy(policy).instance.environment"
+                />
+              </div>
+            </BBTableCell>
+            <BBTableCell class="w-[15%]">
+              <div class="flex flex-row items-center space-x-1">
+                <InstanceEngineIcon
+                  :instance="databaseOfPolicy(policy).instance"
+                />
+                <span class="flex-1 whitespace-pre-wrap">
+                  {{ instanceName(databaseOfPolicy(policy).instance) }}
+                </span>
+              </div>
+            </BBTableCell>
+            <BBTableCell>
+              {{ humanizeTs(policy.updatedTs) }}
+            </BBTableCell>
+            <BBTableCell>
+              <div class="flex items-center justify-center">
+                <NPopconfirm @positive-click="handleRemove(policy)">
+                  <template #trigger>
+                    <button
+                      :disabled="!allowAdmin"
+                      class="w-5 h-5 p-0.5 bg-white hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                    >
+                      <heroicons-outline:trash />
+                    </button>
+                  </template>
+
+                  <div class="whitespace-nowrap">
+                    {{ $t("settings.access-control.remove-policy-tips") }}
+                  </div>
+                </NPopconfirm>
+              </div>
+            </BBTableCell>
+          </template>
+        </BBTable>
+      </template>
 
       <div
         v-if="state.isLoading || state.isUpdating"
@@ -111,6 +189,7 @@
   >
     <AddRuleForm
       :policy-list="state.policyList"
+      :database-list="state.databaseList"
       @cancel="state.showAddRuleModal = false"
       @add="handleAddRule"
     />
@@ -121,6 +200,7 @@
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { NPopconfirm } from "naive-ui";
+import { uniq } from "lodash-es";
 
 import {
   featureToRef,
@@ -132,13 +212,13 @@ import {
   AccessControlPolicyPayload,
   Database,
   DatabaseId,
+  DEFAULT_PROJECT_ID,
   Policy,
   PolicyUpsert,
 } from "@/types";
 import { BBTableColumn } from "@/bbkit/types";
 import { hasWorkspacePermission } from "@/utils";
 import AddRuleForm from "@/components/AccessControl/AddRuleForm.vue";
-import { uniq } from "lodash-es";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -146,6 +226,7 @@ interface LocalState {
   isLoading: boolean;
   isUpdating: boolean;
   policyList: Policy[];
+  databaseList: Database[];
 }
 
 const { t } = useI18n();
@@ -155,6 +236,7 @@ const state = reactive<LocalState>({
   isLoading: false,
   isUpdating: false,
   policyList: [],
+  databaseList: [],
 });
 const databaseStore = useDatabaseStore();
 const policyStore = usePolicyStore();
@@ -172,6 +254,20 @@ const databaseOfPolicy = (policy: Policy) => {
   return databaseStore.getDatabaseById(policy.resourceId as DatabaseId);
 };
 
+const activePolicyList = computed(() => {
+  return state.policyList.filter(
+    (policy) =>
+      databaseOfPolicy(policy).instance.environment.tier === "PROTECTED"
+  );
+});
+
+const inactivePolicyList = computed(() => {
+  return state.policyList.filter(
+    (policy) =>
+      databaseOfPolicy(policy).instance.environment.tier === "UNPROTECTED"
+  );
+});
+
 const prepareList = async () => {
   state.isLoading = true;
 
@@ -180,8 +276,19 @@ const prepareList = async () => {
     "DATABASE"
   );
 
+  const allDatabaseList = await databaseStore.fetchDatabaseList();
+  state.databaseList = allDatabaseList
+    .filter((db) => db.instance.environment.tier === "PROTECTED")
+    .filter((db) => db.project.id !== DEFAULT_PROJECT_ID);
+
+  // For some policy related databases that are not in the state.databaseList,
+  // fetch them.
   const databaseIdList = uniq(
-    policyList.map((policy) => policy.resourceId as DatabaseId)
+    policyList
+      .map((policy) => policy.resourceId as DatabaseId)
+      .filter((databaseId) =>
+        state.databaseList.findIndex((db) => db.id === databaseId)
+      )
   );
 
   Promise.all(
@@ -189,6 +296,7 @@ const prepareList = async () => {
       databaseStore.getOrFetchDatabaseById(databaseId)
     )
   );
+
   state.policyList = policyList;
 
   state.isLoading = false;
