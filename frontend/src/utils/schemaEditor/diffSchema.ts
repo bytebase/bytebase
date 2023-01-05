@@ -14,11 +14,21 @@ import { isEqual, isUndefined } from "lodash-es";
 import { diffColumnList } from "./diffColumn";
 import { transformTableToCreateTableContext } from "./transform";
 
+interface DiffResult {
+  createSchemaList: CreateSchemaContext[];
+  renameSchemaList: RenameSchemaContext[];
+  dropSchemaList: DropSchemaContext[];
+  createTableList: CreateTableContext[];
+  alterTableList: AlterTableContext[];
+  renameTableList: RenameTableContext[];
+  dropTableList: DropTableContext[];
+}
+
 export const diffSchema = (
   databaseId: DatabaseId,
   originSchema: Schema | undefined,
   schema: Schema
-) => {
+): DiffResult => {
   const editorStore = useSchemaEditorStore();
   const createSchemaContextList: CreateSchemaContext[] = [];
   const renameSchemaContextList: RenameSchemaContext[] = [];
@@ -282,5 +292,29 @@ export const diffSchema = (
     alterTableList: alterTableContextList,
     renameTableList: renameTableContextList,
     dropTableList: dropTableContextList,
+  };
+};
+
+export const checkHasSchemaChanges = (diffResult: DiffResult): boolean => {
+  return (
+    diffResult.createSchemaList.length > 0 ||
+    diffResult.renameSchemaList.length > 0 ||
+    diffResult.dropSchemaList.length > 0 ||
+    diffResult.createTableList.length > 0 ||
+    diffResult.alterTableList.length > 0 ||
+    diffResult.renameTableList.length > 0 ||
+    diffResult.dropTableList.length > 0
+  );
+};
+
+export const mergeDiffResults = (diffResults: DiffResult[]): DiffResult => {
+  return {
+    createSchemaList: diffResults.map((item) => item.createSchemaList).flat(),
+    renameSchemaList: diffResults.map((item) => item.renameSchemaList).flat(),
+    dropSchemaList: diffResults.map((item) => item.dropSchemaList).flat(),
+    createTableList: diffResults.map((item) => item.createTableList).flat(),
+    alterTableList: diffResults.map((item) => item.alterTableList).flat(),
+    renameTableList: diffResults.map((item) => item.renameTableList).flat(),
+    dropTableList: diffResults.map((item) => item.dropTableList).flat(),
   };
 };

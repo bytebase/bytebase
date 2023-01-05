@@ -536,6 +536,9 @@ type DataSourceMessage struct {
 	Host     string
 	Port     string
 	Database string
+	// Flatten data source options.
+	SRV                    bool
+	AuthenticationDatabase string
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -551,7 +554,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			data_source.ssl_ca,
 			data_source.host,
 			data_source.port,
-			data_source.database
+			data_source.database,
+			data_source.options
 		FROM data_source
 		LEFT JOIN instance ON instance.id = data_source.instance_id
 		WHERE instance.resource_id = $1`,
@@ -561,6 +565,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		return nil, FormatError(err)
 	}
 	defer rows.Close()
+	var dataSourceOptions api.DataSourceOptions
 	for rows.Next() {
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
@@ -574,9 +579,12 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			&dataSourceMessage.Host,
 			&dataSourceMessage.Port,
 			&dataSourceMessage.Database,
+			&dataSourceOptions,
 		); err != nil {
 			return nil, FormatError(err)
 		}
+		dataSourceMessage.SRV = dataSourceOptions.SRV
+		dataSourceMessage.AuthenticationDatabase = dataSourceOptions.AuthenticationDatabase
 
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}

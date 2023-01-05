@@ -175,7 +175,7 @@
         </div>
       </div>
 
-      <div class="mt-6 px-6">
+      <div v-if="shouldShowColumnTable" class="mt-6 px-6">
         <div class="text-lg leading-6 font-medium text-main mb-4">
           {{ $t("database.columns") }}
         </div>
@@ -242,9 +242,15 @@ export default defineComponent({
     const database = computed(() => {
       return databaseStore.getDatabaseById(databaseId);
     });
+    const instanceEngine = computed(() => {
+      return database.value.instance.engine;
+    });
     const hasSchemaProperty = computed(
-      () => database.value.instance.engine === "POSTGRES"
+      () => instanceEngine.value === "POSTGRES"
     );
+    const shouldShowColumnTable = computed(() => {
+      return instanceEngine.value !== "MONGODB";
+    });
     const getTableName = (tableName: string) => {
       if (hasSchemaProperty.value) {
         return `"${schemaName}"."${tableName}"`;
@@ -299,6 +305,7 @@ export default defineComponent({
       bytesToString,
       isGhostTable,
       sensitiveDataList,
+      shouldShowColumnTable,
     };
   },
 });

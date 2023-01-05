@@ -857,6 +857,10 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	if err != nil {
 		return nil, err
 	}
+	if environment == nil {
+		return nil, common.Errorf(common.NotFound, "environment %s not found", environmentID)
+	}
+
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO instance (
@@ -964,6 +968,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if err != nil {
 		return nil, err
 	}
+	if environment == nil {
+		return nil, common.Errorf(common.NotFound, "environment %s not found", patch.EnvironmentID)
+	}
 
 	args = append(args, patch.ResourceID, environment.UID)
 
@@ -1036,6 +1043,10 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				Host:       ds.Host,
 				Port:       ds.Port,
 				Database:   ds.Database,
+				Options: api.DataSourceOptions{
+					SRV:                    ds.SRV,
+					AuthenticationDatabase: ds.AuthenticationDatabase,
+				},
 			}
 			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
 				return nil, err
