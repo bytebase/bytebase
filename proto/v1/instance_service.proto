@@ -229,6 +229,8 @@ message DataSource {
   string host = 8;
   string port = 9;
   string database = 10;
+  bool srv = 11;
+  string authentication_database = 12;
 }
 
 enum DataSourceType {

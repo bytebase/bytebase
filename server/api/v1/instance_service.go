@@ -296,12 +296,14 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 			Type:     dataSourceType,
 			Username: ds.Username,
 			// We don't return the password on reads.
-			SslCa:    ds.SslCa,
-			SslCert:  ds.SslCert,
-			SslKey:   ds.SslKey,
-			Host:     ds.Host,
-			Port:     ds.Port,
-			Database: ds.Database,
+			SslCa:                  ds.SslCa,
+			SslCert:                ds.SslCert,
+			SslKey:                 ds.SslKey,
+			Host:                   ds.Host,
+			Port:                   ds.Port,
+			Database:               ds.Database,
+			Srv:                    ds.SRV,
+			AuthenticationDatabase: ds.AuthenticationDatabase,
 		})
 	}
 
