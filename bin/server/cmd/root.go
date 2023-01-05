@@ -285,7 +285,7 @@ func start() {
 	if profile.ExternalURL == common.ExternalURLDocsLink {
 		externalAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", common.ExternalURLDocsLink)
 	}
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started on port %d", profile.Version, flags.port), externalAddr)
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s (schema version %s) has started on port %d", profile.Version, s.SchemaVersion, flags.port), externalAddr)
 
 	// Execute program.
 	if err := s.Run(ctx, flags.port); err != nil {

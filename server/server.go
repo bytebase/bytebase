@@ -13,6 +13,7 @@ import (
 	// embed will embeds the acl policy.
 	_ "embed"
 
+	"github.com/blang/semver/v4"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
@@ -122,6 +123,9 @@ type Server struct {
 	ActivityManager *activity.Manager
 
 	licenseService enterpriseAPI.LicenseService
+
+	// SchemaVersion is the bytebase's schema version
+	SchemaVersion semver.Version
 
 	profile         config.Profile
 	e               *echo.Echo
@@ -252,17 +256,18 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoDataDir, profile.Mode)
 	}
 
-	// New store.DB instance that represents the db connection.
+	// Connect to the instance that stores bytebase's own metadata.
 	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot new db")
+		return nil, errors.Wrap(err, "cannot connect metadb")
 	}
 
-	// Open the database that stores bytebase's own metadata connection.
-	if err = storeDB.Open(ctx); err != nil {
+	schemaVer, err := storeDB.Open(ctx)
+	if err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
-		return nil, errors.Wrap(err, "cannot open db")
+		return nil, errors.Wrap(err, "cannot open metadb")
 	}
+	s.SchemaVersion = *schemaVer
 
 	s.stateCfg = &state.State{
 		InstanceDatabaseSyncChan:       make(chan *api.Instance, 100),
