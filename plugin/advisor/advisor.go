@@ -257,6 +257,9 @@ const (
 	// PostgreSQLInsertMustSpecifyColumn is an advisor type for PostgreSQL to enforce column specified.
 	PostgreSQLInsertMustSpecifyColumn Type = "bb.plugin.advisor.postgresql.insert.must-specify-column"
 
+	// PostgreSQLInsertDisallowOrderByRand is an advisor type for PostgreSQL to disallow order by rand in INSERT statements.
+	PostgreSQLInsertDisallowOrderByRand Type = "bb.plugin.advisor.postgresql.insert.disallow-order-by-rand"
+
 	// PostgreSQLIndexKeyNumberLimit is an advisor type for postgresql index key number limit.
 	PostgreSQLIndexKeyNumberLimit Type = "bb.plugin.advisor.postgresql.index.key-number-limit"
 
