@@ -297,17 +297,20 @@ func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]
 // CreateProjectV2 creates a project.
 func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, creatorID int) (*ProjectMessage, error) {
 	// TODO(d): consider moving these defaults to somewhere else.
+	if create.Workflow == "" {
+		create.Workflow = api.UIWorkflow
+	}
+	if create.Visibility == "" {
+		create.Visibility = api.Public
+	}
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
 	if create.SchemaChangeType == "" {
 		create.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
 	}
-	if create.Visibility == "" {
-		create.Visibility = api.Public
-	}
-	if create.Workflow == "" {
-		create.Workflow = api.UIWorkflow
+	if create.LGTMCheckSetting.Value == "" {
+		create.LGTMCheckSetting = api.GetDefaultLGTMCheckSetting()
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
