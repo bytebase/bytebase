@@ -11,6 +11,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 //go:embed dist/assets/*
@@ -52,8 +54,8 @@ func oauthRedirectURL(externalURL string) string {
 }
 
 func oauthErrorMessage(externalURL string) string {
-	if profile.ExternalURL == externalURLPlaceholder {
-		return fmt.Sprintf("Failed to exchange OAuth token. You have not configured --external-url, please follow %s", externalURLPlaceholder)
+	if externalURL == common.ExternalURLDocsLink {
+		return fmt.Sprintf("Failed to exchange OAuth token. You have not configured --external-url, please follow %s", common.ExternalURLDocsLink)
 	}
 	return fmt.Sprintf("Failed to exchange OAuth token. Make sure --external-url %s matches your browser host. Note that if you are not using port 80 or 443, you should also specify the port such as --external-url=http://host:port", externalURL)
 }
