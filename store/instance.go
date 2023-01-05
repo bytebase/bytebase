@@ -857,6 +857,10 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	if err != nil {
 		return nil, err
 	}
+	if environment == nil {
+		return nil, common.Errorf(common.NotFound, "environment %s not found", environmentID)
+	}
+
 	var instanceID int
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO instance (
@@ -963,6 +967,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	})
 	if err != nil {
 		return nil, err
+	}
+	if environment == nil {
+		return nil, common.Errorf(common.NotFound, "environment %s not found", patch.EnvironmentID)
 	}
 
 	args = append(args, patch.ResourceID, environment.UID)
