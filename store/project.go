@@ -54,7 +54,7 @@ func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.
 // CreateProject creates an instance of Project.
 func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*api.Project, error) {
 	project, err := s.CreateProjectV2(ctx, &ProjectMessage{
-		ProjectID:        fmt.Sprintf("project-%s", uuid.New().String()[:8]),
+		ResourceID:       fmt.Sprintf("project-%s", uuid.New().String()[:8]),
 		Title:            create.Name,
 		Key:              create.Key,
 		TenantMode:       create.TenantMode,
@@ -80,7 +80,7 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 	}
 	v2Update := &UpdateProjectMessage{
 		UpdaterID:        patch.UpdaterID,
-		ResourceID:       project.ProjectID,
+		ResourceID:       project.ResourceID,
 		Title:            patch.Name,
 		Key:              patch.Key,
 		TenantMode:       patch.TenantMode,
@@ -151,7 +151,7 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*api.Project, error) {
 	composedProject := &api.Project{
 		ID:               project.UID,
-		ResourceID:       project.ProjectID,
+		ResourceID:       project.ResourceID,
 		RowStatus:        api.Normal,
 		CreatorID:        api.SystemBotID,
 		UpdaterID:        api.SystemBotID,
@@ -187,7 +187,7 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 
 // ProjectMessage is the mssage for project.
 type ProjectMessage struct {
-	ProjectID        string
+	ResourceID       string
 	Title            string
 	Key              string
 	Workflow         api.ProjectWorkflowType
@@ -229,6 +229,17 @@ type UpdateProjectMessage struct {
 
 // GetProjectV2 gets project by resource ID.
 func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
+	if find.ResourceID != nil {
+		if project, ok := s.projectCache[*find.ResourceID]; ok {
+			return project, nil
+		}
+	}
+	if find.UID != nil {
+		if project, ok := s.projectIDCache[*find.UID]; ok {
+			return project, nil
+		}
+	}
+
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
@@ -248,11 +259,14 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 	if len(projects) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(projects), find)}
 	}
+	project := projects[0]
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
+	s.projectCache[project.ResourceID] = project
+	s.projectIDCache[project.UID] = project
 	return projects[0], nil
 }
 
@@ -273,23 +287,27 @@ func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]
 		return nil, FormatError(err)
 	}
 
+	for _, project := range projects {
+		s.projectCache[project.ResourceID] = project
+		s.projectIDCache[project.UID] = project
+	}
 	return projects, nil
 }
 
 // CreateProjectV2 creates a project.
-func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMessage, creatorID int) (*ProjectMessage, error) {
+func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, creatorID int) (*ProjectMessage, error) {
 	// TODO(d): consider moving these defaults to somewhere else.
-	if projectMessage.RoleProvider == "" {
-		projectMessage.RoleProvider = api.ProjectRoleProviderBytebase
+	if create.RoleProvider == "" {
+		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
-	if projectMessage.SchemaChangeType == "" {
-		projectMessage.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
+	if create.SchemaChangeType == "" {
+		create.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
 	}
-	if projectMessage.Visibility == "" {
-		projectMessage.Visibility = api.Public
+	if create.Visibility == "" {
+		create.Visibility = api.Public
 	}
-	if projectMessage.Workflow == "" {
-		projectMessage.Workflow = api.UIWorkflow
+	if create.Workflow == "" {
+		create.Workflow = api.UIWorkflow
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -298,6 +316,18 @@ func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMess
 	}
 	defer tx.Rollback()
 
+	project := &ProjectMessage{
+		ResourceID:       create.ResourceID,
+		Title:            create.Title,
+		Key:              create.Key,
+		Workflow:         create.Workflow,
+		Visibility:       create.Visibility,
+		TenantMode:       create.TenantMode,
+		DBNameTemplate:   create.DBNameTemplate,
+		RoleProvider:     create.RoleProvider,
+		SchemaChangeType: create.SchemaChangeType,
+		LGTMCheckSetting: create.LGTMCheckSetting,
+	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO project (
 				creator_id,
@@ -318,18 +348,18 @@ func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMess
 		`,
 		creatorID,
 		creatorID,
-		projectMessage.ProjectID,
-		projectMessage.Title,
-		projectMessage.Key,
-		projectMessage.Workflow,
-		projectMessage.Visibility,
-		projectMessage.TenantMode,
-		projectMessage.DBNameTemplate,
-		projectMessage.RoleProvider,
-		projectMessage.SchemaChangeType,
-		projectMessage.LGTMCheckSetting,
+		create.ResourceID,
+		create.Title,
+		create.Key,
+		create.Workflow,
+		create.Visibility,
+		create.TenantMode,
+		create.DBNameTemplate,
+		create.RoleProvider,
+		create.SchemaChangeType,
+		create.LGTMCheckSetting,
 	).Scan(
-		&projectMessage.UID,
+		&project.UID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery("failed to create project")
@@ -341,7 +371,9 @@ func (s *Store) CreateProjectV2(ctx context.Context, projectMessage *ProjectMess
 		return nil, FormatError(err)
 	}
 
-	return projectMessage, nil
+	s.projectCache[project.ResourceID] = project
+	s.projectIDCache[project.UID] = project
+	return project, nil
 }
 
 // UpdateProjectV2 updates a project.
@@ -361,6 +393,8 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 		return nil, FormatError(err)
 	}
 
+	s.projectCache[project.ResourceID] = project
+	s.projectIDCache[project.UID] = project
 	return project, nil
 }
 
@@ -399,7 +433,7 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 	}
 	args = append(args, patch.ResourceID)
 
-	projectMessage := &ProjectMessage{}
+	project := &ProjectMessage{}
 	var rowStatus string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project
@@ -421,17 +455,17 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 	`, len(args)),
 		args...,
 	).Scan(
-		&projectMessage.UID,
-		&projectMessage.ProjectID,
-		&projectMessage.Title,
-		&projectMessage.Key,
-		&projectMessage.Workflow,
-		&projectMessage.Visibility,
-		&projectMessage.TenantMode,
-		&projectMessage.DBNameTemplate,
-		&projectMessage.RoleProvider,
-		&projectMessage.SchemaChangeType,
-		&projectMessage.LGTMCheckSetting,
+		&project.UID,
+		&project.ResourceID,
+		&project.Title,
+		&project.Key,
+		&project.Workflow,
+		&project.Visibility,
+		&project.TenantMode,
+		&project.DBNameTemplate,
+		&project.RoleProvider,
+		&project.SchemaChangeType,
+		&project.LGTMCheckSetting,
 		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -439,8 +473,8 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 		}
 		return nil, FormatError(err)
 	}
-	projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-	return projectMessage, nil
+	project.Deleted = convertRowStatusToDeleted(rowStatus)
+	return project, nil
 }
 
 func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
@@ -484,7 +518,7 @@ func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMe
 		var rowStatus string
 		if err := rows.Scan(
 			&projectMessage.UID,
-			&projectMessage.ProjectID,
+			&projectMessage.ResourceID,
 			&projectMessage.Title,
 			&projectMessage.Key,
 			&projectMessage.Workflow,
