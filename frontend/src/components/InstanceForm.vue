@@ -292,16 +292,34 @@
           </div>
         </template>
 
-        <template v-if="state.instance.engine == 'MONGODB'">
-          <div class="mt-2 sm:col-span-1 sm:col-start-1">
-            <div class="lex flex-row items-center space-x-2">
-              <BBCheckbox
-                title="DNS SRV Record"
-                :value="currentDataSource.options.srv"
-                @toggle="handleToggleSRV"
-              />
-            </div></div
-        ></template>
+        <div
+          v-if="state.instance.engine === 'MONGODB'"
+          class="sm:col-span-4 sm:col-start-1"
+        >
+          <label
+            for="connectionStringSchema"
+            class="textlabel flex flex-row items-center"
+          >
+            {{ $t("data-source.connection-string-schema") }}
+          </label>
+          <label
+            v-for="type in mongodbConnectionStringSchemaList"
+            :key="type"
+            class="radio h-7"
+          >
+            <input
+              type="radio"
+              class="btn"
+              name="connectionStringSchema"
+              :value="type"
+              :checked="type === currentMongoDBConnectionSchema"
+              @change="handleMongodbConnectionStringSchemaChange"
+            />
+            <span class="label">
+              {{ type }}
+            </span>
+          </label>
+        </div>
 
         <template v-if="state.currentDataSourceType === 'RO'">
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
@@ -510,6 +528,14 @@ const state = reactive<State>({
   showFeatureModal: false,
 });
 
+const mongodbConnectionStringSchemaList = ["mongodb", "mongodb+srv"];
+
+const currentMongoDBConnectionSchema = computed(() => {
+  return currentDataSource.value.options.srv === false
+    ? mongodbConnectionStringSchemaList[0]
+    : mongodbConnectionStringSchemaList[1];
+});
+
 const allowEdit = computed(() => {
   return (
     state.instance.rowStatus == "NORMAL" &&
@@ -655,8 +681,17 @@ const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
   updateInstanceDataSource(currentDataSource.value);
 };
 
-const handleToggleSRV = (on: boolean) => {
-  currentDataSource.value.options.srv = on;
+const handleMongodbConnectionStringSchemaChange = (event: Event) => {
+  switch ((event.target as HTMLInputElement).value) {
+    case mongodbConnectionStringSchemaList[0]:
+      currentDataSource.value.options.srv = false;
+      break;
+    case mongodbConnectionStringSchemaList[1]:
+      currentDataSource.value.options.srv = true;
+      break;
+    default:
+      currentDataSource.value.options.srv = false;
+  }
   updateInstanceDataSource(currentDataSource.value);
 };
 
