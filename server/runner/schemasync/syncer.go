@@ -244,20 +244,15 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 			}
 		}
 		if !exist {
-			databaseCreate := &api.DatabaseCreate{
-				CreatorID:     api.SystemBotID,
-				ProjectID:     api.DefaultProjectID,
-				InstanceID:    instance.ID,
-				EnvironmentID: instance.EnvironmentID,
-				Name:          databaseMetadata.Name,
+			// Create the database in the default project.
+			if err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
+				EnvironmentID: instance.Environment.ResourceID,
+				InstanceID:    instance.ResourceID,
+				DatabaseName:  databaseMetadata.Name,
 				CharacterSet:  databaseMetadata.CharacterSet,
 				Collation:     databaseMetadata.Collation,
-			}
-			if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
-				if common.ErrorCode(err) == common.Conflict {
-					return nil, errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-				}
-				return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
+			}); err != nil {
+				return nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.Name, databaseMetadata.Name)
 			}
 		}
 	}
