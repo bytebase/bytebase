@@ -156,7 +156,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, store *sto
 	}
 
 	// Sync database schema after restore is completed.
-	if err := schemaSyncer.SyncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name, true /* force */); err != nil {
+	if err := schemaSyncer.SyncDatabaseSchema(ctx, targetDatabase, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", targetDatabase.Instance.Name),
 			zap.String("databaseName", targetDatabase.Name),

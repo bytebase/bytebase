@@ -219,7 +219,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		if dbSchema == nil {
 			// TODO(d): make SyncDatabaseSchema return the updated database schema.
-			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database.Instance, database.Name, true /* force */); err != nil {
+			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database schema for database ID %v", id)).SetInternal(err)
 			}
 			newDBSchema, err := s.store.GetDBSchema(ctx, id)

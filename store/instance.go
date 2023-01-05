@@ -378,8 +378,6 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 		InstanceID:    instance.ID,
 		EnvironmentID: instance.EnvironmentID,
 		Name:          api.AllDatabaseName,
-		CharacterSet:  api.DefaultCharacterSetName,
-		Collation:     api.DefaultCollationName,
 	}
 	allDatabase, err := s.createDatabaseRawTx(ctx, tx, databaseCreate)
 	if err != nil {
@@ -896,8 +894,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		InstanceID:    instanceID,
 		EnvironmentID: environment.UID,
 		Name:          api.AllDatabaseName,
-		CharacterSet:  api.DefaultCharacterSetName,
-		Collation:     api.DefaultCollationName,
 	}
 	allDatabase, err := s.createDatabaseRawTx(ctx, tx, databaseCreate)
 	if err != nil {
