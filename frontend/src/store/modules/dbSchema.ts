@@ -55,6 +55,12 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       }
       return this.getSchemaListByDatabaseId(databaseId);
     },
+    getDatabaseMetadataByDatabaseId(databaseId: DatabaseId): DatabaseMetadata {
+      return (
+        this.databaseMetadataById.get(databaseId) ??
+        DatabaseMetadata.fromPartial({})
+      );
+    },
     getSchemaListByDatabaseId(databaseId: DatabaseId): SchemaMetadata[] {
       const databaseMetadata = this.databaseMetadataById.get(databaseId);
       if (!databaseMetadata) {
