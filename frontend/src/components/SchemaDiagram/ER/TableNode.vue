@@ -10,7 +10,7 @@
     }"
   >
     <h3
-      class="group font-medium leading-6 text-white truncate px-2 py-2 rounded-t-md flex items-center justify-center gap-x-1 relative"
+      class="group font-medium leading-6 text-white px-2 py-2 rounded-t-md gap-x-1 relative text-center whitespace-pre-wrap break-words"
       :style="{
         'background-color': tableColor,
       }"
@@ -19,19 +19,22 @@
         <span :class="[isTableDropped && 'line-through']">
           {{ schema.name }}
         </span>
-        <span class="-mx-1">.</span>
+        <span>.</span>
       </template>
       <span :class="[isTableDropped && 'line-through']">{{ table.name }}</span>
-      <span v-if="tableStatusText">({{ tableStatusText }})</span>
+      <span v-if="tableStatusText" class="ml-1 text-sm">
+        ({{ tableStatusText }})
+      </span>
 
       <button
         v-if="editable"
-        class="invisible group-hover:visible absolute right-1 hover:bg-gray-200 hover:text-main p-0.5 rounded"
+        class="invisible group-hover:visible absolute top-[50%] -mt-2 right-1 text-main bg-white/70 hover:bg-gray-200 p-0.5 rounded"
         @click="events.emit('edit-table', { schema, table })"
       >
         <heroicons-outline:pencil class="w-4 h-4" />
       </button>
     </h3>
+
     <table class="w-full text-sm table-fixed">
       <tr
         v-for="(column, i) in table.columns"
