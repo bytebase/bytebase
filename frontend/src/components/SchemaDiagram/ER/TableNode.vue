@@ -63,13 +63,11 @@
             {{ column.name }}
           </div>
         </td>
-        <td
-          class="w-[6rem] text-xs text-gray-400 py-1.5 text-right"
-          @click="handleClickColumn(column, 'type')"
-        >
+        <td class="w-[6rem] text-xs text-gray-400 py-1.5 text-right">
           <div
             class="truncate pr-1.5"
             :class="editable && 'hover:!text-accent'"
+            @click="handleClickColumn(column, 'type')"
           >
             {{ column.type }}
           </div>
