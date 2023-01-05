@@ -95,7 +95,7 @@ func transformDropSchemaContext(ctx *DeparseContext, dropSchemaContext *api.Drop
 	dropSchemaStmt := &ast.DropSchemaStmt{
 		SchemaList: []string{dropSchemaContext.Schema},
 		IfExists:   true,
-		Behavior:   ast.DropBehaviorNone,
+		Behavior:   ast.DropBehaviorCascade,
 	}
 	ctx.NodeList = append(ctx.NodeList, dropSchemaStmt)
 	return nil
