@@ -108,7 +108,7 @@
               <heroicons-solid:terminal class="w-5 h-5" />
             </dd>
             <dd
-              v-if="isDev"
+              v-if="isDev && hasSchemaDiagramFeature"
               class="flex items-center text-sm md:mr-4 textlabel cursor-pointer hover:text-accent"
               @click.prevent="state.showSchemaDiagram = true"
             >
@@ -311,7 +311,9 @@
     <div class="w-[80vw] h-full">
       <SchemaDiagram
         :database="database"
-        :table-list="dbSchemaStore.getTableListByDatabaseId(database.id)"
+        :database-metadata="
+          dbSchemaStore.getDatabaseMetadataByDatabaseId(database.id)
+        "
       />
     </div>
   </BBModal>
@@ -425,6 +427,10 @@ const currentUser = useCurrentUser();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
+});
+
+const hasSchemaDiagramFeature = computed((): boolean => {
+  return database.value.instance.engine !== "MONGODB";
 });
 
 const accessControlPolicy = usePolicyByDatabaseAndType(
