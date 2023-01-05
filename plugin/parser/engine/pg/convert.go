@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -1203,6 +1204,26 @@ func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 			return nil, err
 		}
 		selectStmt.SubqueryList = append(selectStmt.SubqueryList, subqueryList...)
+	}
+
+	// Convert ORDER BY clause.
+	for _, itemNode := range in.SortClause {
+		item, ok := itemNode.Node.(*pgquery.Node_SortBy)
+		if !ok {
+			return nil, parser.NewConvertErrorf("expected SortBy but found %t", itemNode.Node)
+		}
+		expression, _, _, err := convertExpressionNode(item.SortBy.Node)
+		if err != nil {
+			return nil, err
+		}
+
+		text, err := pgquery.DeparseNode(pgquery.DeparseTypeExpr, item.SortBy.Node)
+		if err != nil {
+			fmt.Printf("itemNode %t %v", itemNode.Node, item)
+			return nil, err
+		}
+		expression.SetText(text)
+		selectStmt.OrderByClause = append(selectStmt.OrderByClause, &ast.ByItemDef{Expression: expression})
 	}
 	return selectStmt, nil
 }
