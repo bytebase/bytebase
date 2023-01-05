@@ -154,7 +154,7 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 				)
 				// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
 				// We don't force dump database schema because it's rarely changed till the metadata is changed.
-				if err := s.SyncDatabaseSchema(ctx, instance, database.Name, false /* force */); err != nil {
+				if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 					log.Debug("Failed to sync database schema",
 						zap.Int("instanceID", instance.ID),
 						zap.String("instanceName", instance.Name),
@@ -323,24 +323,14 @@ func (s *Syncer) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string, force bool) error {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *api.Database, force bool) error {
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
 	if err != nil {
 		return err
 	}
 	defer driver.Close(ctx)
-
-	databaseFind := &api.DatabaseFind{
-		InstanceID: &instance.ID,
-		Name:       &databaseName,
-	}
-	matchedDb, err := s.store.GetDatabase(ctx, databaseFind)
-	if err != nil {
-		return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
-	}
-
 	// Sync database schema
-	databaseMetadata, err := driver.SyncDBSchema(ctx, databaseName)
+	databaseMetadata, err := driver.SyncDBSchema(ctx, database.Name)
 	if err != nil {
 		return err
 	}
@@ -356,49 +346,23 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		patchSchemaVersion = &schemaVersion
 	}
 
-	var database *api.Database
-	if matchedDb != nil {
-		syncStatus := api.OK
-		ts := time.Now().Unix()
-		databasePatch := &api.DatabasePatch{
-			ID:                   matchedDb.ID,
-			UpdaterID:            api.SystemBotID,
-			SyncStatus:           &syncStatus,
-			LastSuccessfulSyncTs: &ts,
-			SchemaVersion:        patchSchemaVersion,
+	syncStatus := api.OK
+	ts := time.Now().Unix()
+	databasePatch := &api.DatabasePatch{
+		ID:                   database.ID,
+		UpdaterID:            api.SystemBotID,
+		SyncStatus:           &syncStatus,
+		LastSuccessfulSyncTs: &ts,
+		SchemaVersion:        patchSchemaVersion,
+	}
+	database, err = s.store.PatchDatabase(ctx, databasePatch)
+	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return errors.Errorf("failed to sync database for instance: %s. Database not found: %v", database.Instance.Name, database.Name)
 		}
-		dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return errors.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
-			}
-			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, matchedDb.Name)
-		}
-		database = dbPatched
-	} else {
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     api.SystemBotID,
-			ProjectID:     api.DefaultProjectID,
-			InstanceID:    instance.ID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          databaseMetadata.Name,
-			CharacterSet:  databaseMetadata.CharacterSet,
-			Collation:     databaseMetadata.Collation,
-			// We don't sync the schema version on database discovery because it's likely to be empty.
-			SchemaVersion:        "",
-			LastSuccessfulSyncTs: time.Now().Unix(),
-		}
-		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return errors.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-			}
-			return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to import new database: %s", instance.Name, databaseCreate.Name)
-		}
-		database = createdDatabase
+		return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", database.Instance.Name, database.Name)
 	}
 
-	// Sync database schema
 	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
 }
 
