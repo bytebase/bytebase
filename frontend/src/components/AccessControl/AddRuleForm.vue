@@ -50,7 +50,7 @@
       <i18n-t
         keypath="settings.access-control.no-database-in-protected-environment"
         tag="div"
-        class="text-sm leading-6 text-gray-500 max-w-[14rem] whitespace-pre-wrap text-center"
+        class="text-sm leading-6 text-gray-500 max-w-[15rem] whitespace-pre-wrap text-center"
       >
         <template #protected_environment>
           <a
@@ -59,6 +59,9 @@
             target="__BLANK"
           >
             {{ $t("environment.protected-environment") }}
+            <heroicons-outline:external-link
+              class="inline-block w-4 h-4 -mt-0.5 mr-0.5"
+            />
           </a>
         </template>
       </i18n-t>
