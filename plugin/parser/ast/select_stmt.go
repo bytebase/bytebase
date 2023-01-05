@@ -32,8 +32,9 @@ type SelectStmt struct {
 	RQuery *SelectStmt
 
 	// SELECT fields
-	FieldList   []ExpressionNode
-	WhereClause ExpressionNode
+	FieldList     []ExpressionNode
+	WhereClause   ExpressionNode
+	OrderByClause []*ByItemDef
 
 	// TODO(rebelice): support all expression and remove them.
 	// We define them because we cannot convert all expression now.
@@ -43,4 +44,11 @@ type SelectStmt struct {
 	PatternLikeList []*PatternLikeDef
 	// SubqueryList is the list of the subquery nodes.
 	SubqueryList []*SubqueryDef
+}
+
+// ByItemDef is the struct for item in order by or group by.
+type ByItemDef struct {
+	node
+
+	Expression ExpressionNode
 }
