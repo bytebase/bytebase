@@ -97,7 +97,7 @@ func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoDataDir string, readon
 }
 
 // Open opens the database connection.
-func (db *DB) Open(ctx context.Context) (err error) {
+func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err error) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
@@ -106,7 +106,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		dbdriver.ConnectionContext{},
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var databaseName string
@@ -121,46 +121,51 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		// The database storing metadata is the same as user name.
 		db.db, err = d.GetDBConnection(ctx, databaseName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to connect to database %q which may not be setup yet", databaseName)
+			return nil, errors.Wrapf(err, "failed to connect to database %q which may not be setup yet", databaseName)
 		}
-		return nil
+
+		ver, err := getLatestVersion(ctx, d, databaseName)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get current schema version")
+		}
+		return ver, nil
 	}
 
 	// We are also using our own migration core to manage our own schema's migration history.
 	// So here we will create a "bytebase" database to store the migration history if the target
 	// db instance does not have one yet.
 	if err := d.SetupMigrationIfNeeded(ctx); err != nil {
-		return err
+		return nil, err
 	}
 
 	verBefore, err := getLatestVersion(ctx, d, databaseName)
 	if err != nil {
-		return errors.Wrap(err, "failed to get current schema version")
+		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
 	if err := migrate(ctx, d, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
-		return errors.Wrap(err, "failed to migrate")
+		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
 	verAfter, err := getLatestVersion(ctx, d, databaseName)
 	if err != nil {
-		return errors.Wrap(err, "failed to get current schema version")
+		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
 	db.db, err = d.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to connect to database %q", db.connCfg.Username)
+		return nil, errors.Wrapf(err, "failed to connect to database %q", db.connCfg.Username)
 	}
 
 	// Set the max open connections so that we won't exceed the connection limit of metaDB.
 	// The limit is the max connections minus connections reserved for superuser.
 	var maxConns, reservedConns int
 	if err := db.db.QueryRowContext(ctx, `SHOW max_connections`).Scan(&maxConns); err != nil {
-		return errors.Wrap(err, "failed to get max_connections from metaDB")
+		return nil, errors.Wrap(err, "failed to get max_connections from metaDB")
 	}
 	if err := db.db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
-		return errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
+		return nil, errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
 	}
 	maxOpenConns := maxConns - reservedConns
 	if maxOpenConns > 50 {
@@ -170,13 +175,13 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	db.db.SetMaxOpenConns(maxOpenConns)
 
 	if err := db.setupDemoData(); err != nil {
-		return errors.Wrapf(err, "failed to setup demo data."+
+		return nil, errors.Wrapf(err, "failed to setup demo data."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
 			" directory under the same directory where the Bytebase binary resides. and restart again to let"+
 			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help")
 	}
 
-	return nil
+	return verAfter, nil
 }
 
 // getLatestVersion returns the latest schema version in semantic versioning format.
