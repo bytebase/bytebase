@@ -172,7 +172,8 @@
             >
               <span
                 v-if="checkColumnHasForeignKey(column)"
-                class="column-field-text !w-auto"
+                class="column-field-text cursor-pointer !w-auto hover:opacity-80"
+                @click="gotoForeignKeyReferencedTable(column)"
               >
                 {{ getReferencedForeignKeyName(column) }}
               </span>
@@ -255,12 +256,17 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isUndefined, flatten } from "lodash-es";
+import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore, useSchemaEditorStore } from "@/store/modules";
+import {
+  generateUniqueTabId,
+  useNotificationStore,
+  useSchemaEditorStore,
+} from "@/store/modules";
 import { TableTabContext } from "@/types";
 import { ColumnMetadata } from "@/types/proto/store/database";
-import { DatabaseEdit } from "@/types/schemaEditor";
+import { DatabaseEdit, SchemaEditorTabType } from "@/types/schemaEditor";
 import {
   Column,
   Table,
@@ -497,9 +503,9 @@ const isDroppedColumn = (column: Column): boolean => {
   return column.status === "dropped";
 };
 
-const disableChangeTable = (): boolean => {
+const disableChangeTable = computed(() => {
   return isDroppedSchema.value || isDroppedTable.value;
-};
+});
 
 const disableAlterColumn = (column: Column): boolean => {
   return (
@@ -545,6 +551,57 @@ const handleColumnDefaultFieldChange = (
   } else if (defaultString === "EMPTY") {
     column.default = "";
   }
+};
+
+const gotoForeignKeyReferencedTable = (column: Column) => {
+  if (!checkColumnHasForeignKey(column)) {
+    return;
+  }
+  const fk = foreignKeyList.value.find(
+    (fk) =>
+      fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
+  );
+  const index = fk?.columnIdList.findIndex(
+    (columnId) => columnId === column.id
+  );
+  if (isUndefined(fk) || isUndefined(index) || index < 0) {
+    return;
+  }
+
+  const referencedSchema = editorStore.getSchema(
+    currentTab.databaseId,
+    fk.referencedSchemaId
+  );
+  const referencedTable = editorStore.getTable(
+    currentTab.databaseId,
+    fk.referencedSchemaId,
+    fk.referencedTableId
+  );
+  const referColumn = referencedTable?.columnList.find(
+    (column) => column.id === fk.referencedColumnIdList[index]
+  );
+  if (!referencedSchema || !referencedTable || !referColumn) {
+    return;
+  }
+
+  editorStore.addTab({
+    id: generateUniqueTabId(),
+    type: SchemaEditorTabType.TabForTable,
+    databaseId: currentTab.databaseId,
+    schemaId: referencedSchema.id,
+    tableId: referencedTable.id,
+  });
+
+  nextTick(() => {
+    const container = document.querySelector("#table-editor-container");
+    const input = container?.querySelector(
+      `.column-${referColumn.id} .column-name-input`
+    ) as HTMLInputElement | undefined;
+    if (input) {
+      input.focus();
+      scrollIntoView(input);
+    }
+  });
 };
 
 const handleEditColumnForeignKey = (column: Column) => {
