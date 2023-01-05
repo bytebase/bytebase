@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strings"
 
 	"github.com/lib/pq"
@@ -66,19 +65,6 @@ func (raw *databaseRaw) toDatabase() *api.Database {
 		SyncStatus:           raw.SyncStatus,
 		LastSuccessfulSyncTs: raw.LastSuccessfulSyncTs,
 	}
-}
-
-// CreateDatabase creates an instance of Database.
-func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) (*api.Database, error) {
-	databaseRaw, err := s.createDatabaseRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Database with DatabaseCreate[%+v]", create)
-	}
-	database, err := s.composeDatabase(ctx, databaseRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Database with databaseRaw[%+v]", databaseRaw)
-	}
-	return database, nil
 }
 
 // FindDatabase finds a list of Database instances.
@@ -277,66 +263,6 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	return db, nil
 }
 
-// createDatabaseRaw creates a new database.
-func (s *Store) createDatabaseRaw(ctx context.Context, create *api.DatabaseCreate) (*databaseRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	database, err := s.createDatabaseRawTx(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return database, nil
-}
-
-// createDatabaseRawTx creates a database with a transaction.
-func (s *Store) createDatabaseRawTx(ctx context.Context, tx *Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
-	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, create.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-
-	databaseRaw, err := s.createDatabaseImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	// Enable automatic backup setting based on backup plan policy.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset && databaseRaw.Name != api.AllDatabaseName {
-		backupSettingUpsert := &api.BackupSettingUpsert{
-			UpdaterID:         api.SystemBotID,
-			DatabaseID:        databaseRaw.ID,
-			Enabled:           true,
-			Hour:              rand.Intn(24),
-			RetentionPeriodTs: 7 * 24 * 3600,
-			HookURL:           "",
-		}
-		switch backupPlanPolicy.Schedule {
-		case api.BackupPlanPolicyScheduleDaily:
-			backupSettingUpsert.DayOfWeek = -1
-		case api.BackupPlanPolicyScheduleWeekly:
-			backupSettingUpsert.DayOfWeek = rand.Intn(7)
-		}
-		if _, err := s.upsertBackupSettingImpl(ctx, tx, backupSettingUpsert); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := s.cache.UpsertCache(databaseCacheNamespace, databaseRaw.ID, databaseRaw); err != nil {
-		return nil, err
-	}
-
-	return databaseRaw, nil
-}
-
 // findDatabaseRaw retrieves a list of databases based on find.
 func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -422,72 +348,6 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 	}
 
 	return database, nil
-}
-
-// createDatabaseImpl creates a new database.
-func (*Store) createDatabaseImpl(ctx context.Context, tx *Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
-	// Insert row into database.
-	query := `
-		INSERT INTO db (
-			creator_id,
-			updater_id,
-			instance_id,
-			project_id,
-			name,
-			character_set,
-			"collation",
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'OK', $8, $9)
-		RETURNING
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			instance_id,
-			project_id,
-			name,
-			character_set,
-			"collation",
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-	`
-	var databaseRaw databaseRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.InstanceID,
-		create.ProjectID,
-		create.Name,
-		create.CharacterSet,
-		create.Collation,
-		create.LastSuccessfulSyncTs,
-		create.SchemaVersion,
-	).Scan(
-		&databaseRaw.ID,
-		&databaseRaw.CreatorID,
-		&databaseRaw.CreatedTs,
-		&databaseRaw.UpdaterID,
-		&databaseRaw.UpdatedTs,
-		&databaseRaw.InstanceID,
-		&databaseRaw.ProjectID,
-		&databaseRaw.Name,
-		&databaseRaw.CharacterSet,
-		&databaseRaw.Collation,
-		&databaseRaw.SyncStatus,
-		&databaseRaw.LastSuccessfulSyncTs,
-		&databaseRaw.SchemaVersion,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &databaseRaw, nil
 }
 
 func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
@@ -668,13 +528,11 @@ type FindDatabaseMessage struct {
 	EnvironmentID *string
 	InstanceID    *string
 	DatabaseName  *string
+	UID           *int
 }
 
 // GetDatabaseV2 gets a database.
 func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
-	if find.EnvironmentID == nil || find.InstanceID == nil || find.DatabaseName == nil {
-		return nil, errors.Errorf("environment, instance, and database name must exist for getting a database")
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -720,6 +578,142 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	return databases, nil
 }
 
+// CreateDatabaseDefault creates a new database with charset, collation only in the default project.
+func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) error {
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{EnvironmentID: &create.EnvironmentID, ResourceID: &create.InstanceID})
+	if err != nil {
+		return err
+	}
+	if instance == nil {
+		return errors.Errorf("instance %q not found", create.InstanceID)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if _, err := s.createDatabaseDefaultImpl(ctx, tx, instance.UID, create); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
+}
+
+// createDatabaseDefault only creates a default database with charset, collation only in the default project.
+func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID int, create *DatabaseMessage) (int, error) {
+	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
+	query := `
+		INSERT INTO db (
+			creator_id,
+			updater_id,
+			instance_id,
+			project_id,
+			name,
+			character_set,
+			"collation",
+			sync_status,
+			last_successful_sync_ts,
+			schema_version
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		ON CONFLICT (instance_id, name) DO UPDATE SET
+			updater_id = EXCLUDED.updater_id
+		RETURNING id`
+	var databaseUID int
+	if err := tx.QueryRowContext(ctx, query,
+		api.SystemBotID,
+		api.SystemBotID,
+		instanceUID,
+		api.DefaultProjectID,
+		create.DatabaseName,
+		create.CharacterSet,
+		create.Collation,
+		api.OK,
+		0,  /* last_successful_sync_ts */
+		"", /* schema_version */
+	).Scan(
+		&databaseUID,
+	); err != nil {
+		return 0, FormatError(err)
+	}
+	return databaseUID, nil
+}
+
+// UpsertDatabase upserts a database.
+func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.Errorf("project %q not found", create.ProjectID)
+	}
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{EnvironmentID: &create.EnvironmentID, ResourceID: &create.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", create.InstanceID)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
+	query := `
+		INSERT INTO db (
+			creator_id,
+			updater_id,
+			instance_id,
+			project_id,
+			name,
+			character_set,
+			"collation",
+			sync_status,
+			last_successful_sync_ts,
+			schema_version
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		ON CONFLICT (instance_id, name) DO UPDATE SET
+			project_id = EXCLUDED.project_id,
+			name = EXCLUDED.name,
+			character_set = EXCLUDED.character_set,
+			"collation" = EXCLUDED.collation,
+			schema_version = EXCLUDED.schema_version
+		RETURNING id`
+	var databaseUID int
+	if err := tx.QueryRowContext(ctx, query,
+		api.SystemBotID,
+		api.SystemBotID,
+		instance.UID,
+		project.UID,
+		create.DatabaseName,
+		create.CharacterSet,
+		create.Collation,
+		api.OK,
+		create.SuccessfulSyncTimeTs,
+		create.SchemaVersion,
+	).Scan(
+		&databaseUID,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
+}
+
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
@@ -734,6 +728,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	if v := find.DatabaseName; v != nil {
 		where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
 	}
 	var databaseMessages []*DatabaseMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
