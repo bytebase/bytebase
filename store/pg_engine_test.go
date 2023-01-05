@@ -150,7 +150,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 	err = postgres.InitDB(pgBinDir, pgDataDir, pgUser)
 	require.NoError(t, err)
-	err = postgres.Start(pgPort, pgBinDir, pgDataDir)
+	err = postgres.Start(pgPort, pgBinDir, pgDataDir, false /* serverLog */)
 	require.NoError(t, err)
 
 	ctx := context.Background()

@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/differ"
+	"github.com/bytebase/bytebase/store"
 )
 
 var (
@@ -75,6 +76,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Cannot format request body").SetInternal(err)
 	}
 
+	// EnvironmentName is the environment resource ID.
 	if request.EnvironmentName == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
 	}
@@ -124,13 +126,11 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		catalog = newCatalogService(advisorDBType)
 	}
 
-	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
-		Name: &request.EnvironmentName,
-	})
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &request.EnvironmentName})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", request.EnvironmentName)).SetInternal(err)
 	}
-	if len(envList) != 1 {
+	if environment == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", request.EnvironmentName))
 	}
 
@@ -139,7 +139,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		advisorDBType,
 		"utf8mb4",
 		"utf8mb4_general_ci",
-		envList[0].ID,
+		environment.UID,
 		request.Statement,
 		catalog,
 		connection,

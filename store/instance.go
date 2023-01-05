@@ -850,6 +850,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	}
 	defer tx.Rollback()
 
+	// TODO(d): use the same query for environment.
 	environment, err := s.getEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{
 		ResourceID: &environmentID,
 	})
@@ -956,6 +957,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	defer tx.Rollback()
 
+	// TODO(d): use the same query for environment.
 	environment, err := s.getEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{
 		ResourceID: &patch.EnvironmentID,
 	})

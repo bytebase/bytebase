@@ -64,7 +64,8 @@ func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (
 
 // connectEmbed starts the embed postgres server and returns an instance of store.DB.
 func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoDataDir, version string, mode common.ReleaseMode) (*DB, error) {
-	if err := postgres.Start(datastorePort, m.binDir, m.pgDataDir); err != nil {
+	serverLog := mode == common.ReleaseModeDev
+	if err := postgres.Start(datastorePort, m.binDir, m.pgDataDir, serverLog); err != nil {
 		return nil, err
 	}
 	// mark pgStarted if start successfully, used in Close()

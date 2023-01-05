@@ -67,22 +67,22 @@ func (s *Scanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 
-				envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{})
+				environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
 				if err != nil {
 					log.Error("Failed to retrieve instance list", zap.Error(err))
 					return
 				}
 
 				backupPlanPolicyMap := make(map[int]*api.BackupPlanPolicy)
-				for _, env := range envList {
-					policy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, env.ID)
+				for _, environment := range environments {
+					policy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, environment.UID)
 					if err != nil {
 						log.Error("Failed to retrieve backup policy",
-							zap.String("environment", env.Name),
+							zap.String("environment", environment.Title),
 							zap.Error(err))
 						return
 					}
-					backupPlanPolicyMap[env.ID] = policy
+					backupPlanPolicyMap[environment.UID] = policy
 				}
 
 				rowStatus := api.Normal
@@ -97,16 +97,12 @@ func (s *Scanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				for _, instance := range instanceList {
 					foundEnv := false
-					for _, env := range envList {
-						if env.ID == instance.EnvironmentID {
-							if env.RowStatus == api.Normal {
-								instance.Environment = env
-							}
+					for _, environment := range environments {
+						if environment.UID == instance.EnvironmentID {
 							foundEnv = true
 							break
 						}
 					}
-
 					if !foundEnv {
 						continue
 					}
