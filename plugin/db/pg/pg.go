@@ -188,8 +188,8 @@ func (*Driver) GetType() db.Type {
 }
 
 // GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
-	if err := driver.switchDatabase(database); err != nil {
+func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
+	if _, err := driver.SwitchDatabase(ctx, database); err != nil {
 		return nil, err
 	}
 	return driver.db, nil
@@ -437,19 +437,49 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 	return util.Query(ctx, db.Postgres, driver.db, statement, queryContext)
 }
 
-func (driver *Driver) switchDatabase(dbName string) error {
+// SwitchDatabase switches the connected database.
+func (driver *Driver) SwitchDatabase(_ context.Context, dbName string) (func() error, error) {
+	if dbName == driver.databaseName {
+		noop := func() error { return nil }
+		return noop, nil
+	}
+
+	switchBack := func() func() error {
+		driver := driver
+		dbName := driver.databaseName
+
+		return func() error {
+			if dbName == driver.databaseName {
+				return nil
+			}
+			if driver.db != nil {
+				if err := driver.db.Close(); err != nil {
+					return err
+				}
+			}
+			dsn := driver.baseDSN + " dbname=" + dbName
+			db, err := sql.Open(driverName, dsn)
+			if err != nil {
+				return err
+			}
+			driver.db = db
+			driver.databaseName = dbName
+			return nil
+		}
+	}()
+
 	if driver.db != nil {
 		if err := driver.db.Close(); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	dsn := driver.baseDSN + " dbname=" + dbName
 	db, err := sql.Open(driverName, dsn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	driver.db = db
 	driver.databaseName = dbName
-	return nil
+	return switchBack, err
 }

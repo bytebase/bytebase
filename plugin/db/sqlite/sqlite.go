@@ -71,6 +71,12 @@ func (*Driver) GetType() db.Type {
 	return db.SQLite
 }
 
+// SwitchDatabase switches the connected database.
+func (*Driver) SwitchDatabase(context.Context, string) (func() error, error) {
+	noop := func() error { return nil }
+	return noop, nil
+}
+
 // GetDBConnection gets a database connection.
 // If database is empty, we will get a connect to in-memory database.
 func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {

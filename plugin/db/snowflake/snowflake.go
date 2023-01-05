@@ -103,6 +103,12 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
+// SwitchDatabase switches the connected database.
+func (*Driver) SwitchDatabase(context.Context, string) (func() error, error) {
+	noop := func() error { return nil }
+	return noop, nil
+}
+
 // GetType returns the database type.
 func (*Driver) GetType() db.Type {
 	return db.Snowflake

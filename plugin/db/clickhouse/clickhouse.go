@@ -106,6 +106,12 @@ func (*Driver) GetType() db.Type {
 	return db.ClickHouse
 }
 
+// SwitchDatabase switches the connected database.
+func (*Driver) SwitchDatabase(context.Context, string) (func() error, error) {
+	noop := func() error { return nil }
+	return noop, nil
+}
+
 // GetDBConnection gets a database connection.
 func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
 	return driver.db, nil

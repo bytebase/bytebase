@@ -260,6 +260,18 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
+	switchBack, err := executor.SwitchDatabase(ctx, databaseName)
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		if nerr := switchBack(); nerr != nil {
+			if err == nil {
+				err = nerr
+			}
+		}
+	}()
+
 	version, largestSequence, err := executor.FindLargestVersionSinceBaselineAndLargestSequence(ctx, m.Namespace)
 	if err != nil {
 		return -1, err
@@ -285,6 +297,17 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
 func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
+	switchBack, err := executor.SwitchDatabase(ctx, databaseName)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if nerr := switchBack(); nerr != nil {
+			if err == nil {
+				err = nerr
+			}
+		}
+	}()
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.

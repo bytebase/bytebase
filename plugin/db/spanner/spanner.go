@@ -98,21 +98,46 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	return d, nil
 }
 
-func (d *Driver) switchDatabase(ctx context.Context, dbName string) error {
+// SwitchDatabase switches the connected database.
+func (d *Driver) SwitchDatabase(ctx context.Context, dbName string) (func() error, error) {
 	if d.dbName == dbName {
-		return nil
+		noop := func() error { return nil }
+		return noop, nil
 	}
+
+	switchBack := func() func() error {
+		d := d
+		dbName := d.dbName
+
+		return func() error {
+			if dbName == d.dbName {
+				return nil
+			}
+			if d.client != nil {
+				d.client.Close()
+			}
+			dsn := getDSN(d.config.Host, dbName)
+			client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(d.config.Password)))
+			if err != nil {
+				return err
+			}
+			d.client = client
+			d.dbName = dbName
+			return nil
+		}
+	}()
+
 	if d.client != nil {
 		d.client.Close()
 	}
 	dsn := getDSN(d.config.Host, dbName)
 	client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(d.config.Password)))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	d.client = client
 	d.dbName = dbName
-	return nil
+	return switchBack, nil
 }
 
 // Close closes the driver.

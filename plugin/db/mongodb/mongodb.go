@@ -75,6 +75,12 @@ func (*Driver) GetType() db.Type {
 	return db.MongoDB
 }
 
+// SwitchDatabase switches the connected database.
+func (*Driver) SwitchDatabase(context.Context, string) (func() error, error) {
+	noop := func() error { return nil }
+	return noop, nil
+}
+
 // GetDBConnection returns a database connection.
 // It always return nil because it has not implemented the SQL interface, and we always return error, it's caller's responsibility to
 // avoid calling this function for MongoDB.
