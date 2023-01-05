@@ -136,17 +136,16 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 // MigrationExecutor is an adapter for ExecuteMigration().
 type MigrationExecutor interface {
 	db.Driver
-	// FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
-	FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error)
-	// FindLargestSequence will return the largest sequence number.
-	// Returns 0 if we haven't applied any migration for this namespace.
-	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
+	// FindLargestVersionSinceBaselineAndLargestSequence will
+	// find the largest version since last baseline or branch.
+	// return the largest sequence number, 0 if we haven't applied any migration for this namespace.
+	FindLargestVersionSinceBaselineAndLargestSequence(ctx context.Context, namespace string) (*string, int, error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error)
+	InsertPendingHistory(ctx context.Context, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error)
 	// UpdateHistoryAsDone will update the migration record as done.
-	UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error
+	UpdateHistoryAsDone(ctx context.Context, migrationDurationNs int64, updatedSchema string, insertedID int64) error
 	// UpdateHistoryAsFailed will update the migration record as failed.
-	UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error
+	UpdateHistoryAsFailed(ctx context.Context, migrationDurationNs int64, insertedID int64) error
 }
 
 // ExecuteMigration will execute the database migration.
@@ -280,15 +279,13 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		defer tx.Rollback()
 	}
 
-	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
+	version, largestSequence, err := executor.FindLargestVersionSinceBaselineAndLargestSequence(ctx, m.Namespace)
 	if err != nil {
 		return -1, err
 	}
 
 	// Check if there is any higher version already been applied since the last baseline or branch.
-	if version, err := executor.FindLargestVersionSinceBaseline(ctx, tx, m.Namespace); err != nil {
-		return -1, err
-	} else if version != nil && len(*version) > 0 && *version >= m.Version {
+	if version != nil && len(*version) > 0 && *version >= m.Version {
 		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
 		return -1, common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
 	}
@@ -298,7 +295,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
+	if insertedID, err = executor.InsertPendingHistory(ctx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
 		return -1, err
 	}
 
@@ -334,10 +331,10 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 
 	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-		err = executor.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, updatedSchema, migrationHistoryID)
+		err = executor.UpdateHistoryAsDone(ctx, migrationDurationNs, updatedSchema, migrationHistoryID)
 	} else {
 		// Otherwise, update the migration history as 'FAILED', execution_duration.
-		err = executor.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, migrationHistoryID)
+		err = executor.UpdateHistoryAsFailed(ctx, migrationDurationNs, migrationHistoryID)
 	}
 
 	if err != nil {

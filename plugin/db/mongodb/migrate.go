@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	// embed will embeds the migration schema.
@@ -198,7 +197,7 @@ func convertMigrationHistory(history MigrationHistory) (db.MigrationHistory, err
 }
 
 // FindLargestSequence finds the largest sequence, return 0 if not found.
-func (driver *Driver) FindLargestSequence(ctx context.Context, _ *sql.Tx, namespace string, baseline bool) (int, error) {
+func (driver *Driver) FindLargestSequence(ctx context.Context, namespace string, baseline bool) (int, error) {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 	filter := bson.M{
 		"namespace": namespace,
@@ -245,10 +244,22 @@ func (driver *Driver) FindLargestSequence(ctx context.Context, _ *sql.Tx, namesp
 	return 0, nil
 }
 
+func (driver *Driver) FindLargestVersionSinceBaselineAndLargestSequence(ctx context.Context, namespace string) (*string, int, error) {
+	version, err := driver.FindLargestVersionSinceBaseline(ctx, namespace)
+	if err != nil {
+		return nil, 0, err
+	}
+	largestSequence, err := driver.FindLargestSequence(ctx, namespace, false)
+	if err != nil {
+		return nil, 0, err
+	}
+	return version, largestSequence, nil
+}
+
 // FindLargestVersionSinceBaseline will find the largest version since last baseline or branch.
-func (driver *Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sql.Tx, namespace string) (*string, error) {
+func (driver *Driver) FindLargestVersionSinceBaseline(ctx context.Context, namespace string) (*string, error) {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
-	largestBaselineSeuqence, err := driver.FindLargestSequence(ctx, tx, namespace, true /* baseline */)
+	largestBaselineSeuqence, err := driver.FindLargestSequence(ctx, namespace, true /* baseline */)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +305,7 @@ func (driver *Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *s
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, sequence int, _ string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error) {
+func (driver *Driver) InsertPendingHistory(ctx context.Context, sequence int, _ string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error) {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 
 	retryTimes := 3
@@ -347,7 +358,7 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
-func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrationDurationNs int64, _ string, insertedID int64) error {
+func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, migrationDurationNs int64, _ string, insertedID int64) error {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 	filter := bson.M{
 		"id": insertedID,
@@ -370,7 +381,7 @@ func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrat
 }
 
 // UpdateHistoryAsFailed will update the migration record as failed.
-func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, _ *sql.Tx, migrationDurationNs int64, insertedID int64) error {
+func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, migrationDurationNs int64, insertedID int64) error {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 	filter := bson.M{
 		"id": insertedID,
