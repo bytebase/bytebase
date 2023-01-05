@@ -8,5 +8,6 @@ var authenticationAllowlistMethods = map[string]bool{
 
 // IsAuthenticationAllowed returns whether the method is exempted from authentication.
 func IsAuthenticationAllowed(fullMethodName string) bool {
+	// TODO(d): skips actuator, GET /subscription request, OpenAPI SQL endpoint.
 	return authenticationAllowlistMethods[fullMethodName]
 }
