@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+// NormalizeStatement limit the max length of the statements.
+func NormalizeStatement(statement string) string {
+	maxLength := 1000
+	if len(statement) > maxLength {
+		return statement[:maxLength] + "..."
+	}
+	return statement
+}
+
 // Query runs the EXPLAIN or SELECT statements for advisors.
 func Query(ctx context.Context, connection *sql.DB, statement string) ([]interface{}, error) {
 	tx, err := connection.BeginTx(ctx, &sql.TxOptions{})

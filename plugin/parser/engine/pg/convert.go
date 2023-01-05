@@ -583,6 +583,14 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			Table: convertRangeVarToTableName(in.InsertStmt.Relation, ast.TableTypeBaseTable),
 		}
 
+		for _, columnNode := range in.InsertStmt.Cols {
+			if column, ok := columnNode.Node.(*pgquery.Node_ResTarget); ok {
+				insertStmt.ColumnList = append(insertStmt.ColumnList, column.ResTarget.Name)
+			} else {
+				return nil, parser.NewConvertErrorf("expected ResTarget but found %t", columnNode.Node)
+			}
+		}
+
 		if in.InsertStmt.SelectStmt != nil {
 			if selectNode, ok := in.InsertStmt.SelectStmt.Node.(*pgquery.Node_SelectStmt); ok {
 				// PG parser will parse the value list as a SELECT statement.
