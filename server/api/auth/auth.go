@@ -88,13 +88,22 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
-	// TODO(d): skips actuator, GET /subscription request, OpenAPI SQL endpoint.
-	if accessTokenStr == "" && IsAuthenticationAllowed(serverInfo.FullMethod) {
-		return handler(ctx, request)
+	principalID, err := in.authenticate(ctx, accessTokenStr, refreshTokenStr)
+	if err != nil {
+		if IsAuthenticationAllowed(serverInfo.FullMethod) {
+			return handler(ctx, request)
+		}
+		return nil, err
 	}
 
+	// Stores principalID into context.
+	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+	return handler(childCtx, request)
+}
+
+func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr, refreshTokenStr string) (int, error) {
 	if accessTokenStr == "" {
-		return nil, status.Errorf(codes.Unauthenticated, "access token not found")
+		return 0, status.Errorf(codes.Unauthenticated, "access token not found")
 	}
 	claims := &claimsMessage{}
 	generateToken := false
@@ -115,15 +124,15 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 			// If expiration error is the only error, we will clear the err
 			// and generate new access token and refresh token
 			if refreshTokenStr == "" {
-				return nil, status.Errorf(codes.Unauthenticated, "access token is expired")
+				return 0, status.Errorf(codes.Unauthenticated, "access token is expired")
 			}
 			generateToken = true
 		} else {
-			return nil, status.Errorf(codes.Unauthenticated, "failed to parse claim")
+			return 0, status.Errorf(codes.Unauthenticated, "failed to parse claim")
 		}
 	}
 	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.mode)) {
-		return nil, status.Errorf(codes.Unauthenticated,
+		return 0, status.Errorf(codes.Unauthenticated,
 			"invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 			claims.Audience,
 			fmt.Sprintf(AccessTokenAudienceFmt, in.mode),
@@ -135,17 +144,17 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 
 	principalID, err := strconv.Atoi(claims.Subject)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "malformed ID %q in the access token", claims.Subject)
+		return 0, status.Errorf(codes.Unauthenticated, "malformed ID %q in the access token", claims.Subject)
 	}
 	user, err := in.store.GetUserByID(ctx, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "failed to find user ID %q in the access token", principalID)
+		return 0, status.Errorf(codes.Unauthenticated, "failed to find user ID %q in the access token", principalID)
 	}
 	if user == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "user ID %q not exists in the access token", principalID)
+		return 0, status.Errorf(codes.Unauthenticated, "user ID %q not exists in the access token", principalID)
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.Unauthenticated, "user ID %q has been deactivated by administrators", principalID)
+		return 0, status.Errorf(codes.Unauthenticated, "user ID %q has been deactivated by administrators", principalID)
 	}
 
 	if generateToken {
@@ -191,13 +200,10 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 		// It may happen that we still have a valid access token, but we encounter issue when trying to generate new token
 		// In such case, we won't return the error.
 		if err := generateTokenFunc(); err != nil && !accessToken.Valid {
-			return nil, status.Errorf(codes.Unauthenticated, err.Error())
+			return 0, status.Errorf(codes.Unauthenticated, err.Error())
 		}
 	}
-
-	// Stores principalID into context.
-	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
-	return handler(childCtx, request)
+	return principalID, nil
 }
 
 func getTokenFromMetadata(md metadata.MD) (string, string, error) {
