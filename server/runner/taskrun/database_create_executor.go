@@ -170,8 +170,10 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 	// Set database labels, except bb.environment is immutable and must match instance environment.
 	var labels []*api.DatabaseLabel
-	if err := json.Unmarshal([]byte(payload.Labels), &labels); err != nil {
-		return true, nil, err
+	if payload.Labels != "" {
+		if err := json.Unmarshal([]byte(payload.Labels), &labels); err != nil {
+			return true, nil, err
+		}
 	}
 	if _, err := exec.store.SetDatabaseLabelList(ctx, labels, database.UID, api.SystemBotID); err != nil {
 		return true, nil, err
