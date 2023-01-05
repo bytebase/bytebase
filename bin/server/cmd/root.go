@@ -56,8 +56,6 @@ ________________________________________________________________________________
 ╚═════╝    ╚═╝   ╚══════╝
 
 `
-	// The placeholder page to instruct user how to configure --external-url.
-	externalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )
 
 // -----------------------------------Global constant END------------------------------------------
@@ -120,7 +118,7 @@ func init() {
 	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
 	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
 	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
-	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", externalURLPlaceholder, "the external URL where user visits Bytebase, must start with http:// or https://")
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", common.ExternalURLDocsLink, "the external URL where user visits Bytebase, must start with http:// or https://")
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
@@ -284,8 +282,8 @@ func start() {
 	}
 
 	externalAddr := profile.ExternalURL
-	if profile.ExternalURL == externalURLPlaceholder {
-		externalAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", externalURLPlaceholder)
+	if profile.ExternalURL == common.ExternalURLDocsLink {
+		externalAddr = fmt.Sprintf("!!! You have not set --external-url. If you want to make Bytebase\n!!! externally accessible, follow:\n\n%s", common.ExternalURLDocsLink)
 	}
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started on port %d", profile.Version, flags.port), externalAddr)
 
