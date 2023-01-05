@@ -18,12 +18,16 @@ import {
   usePolicyStore,
   useConnectionTreeStore,
 } from "@/store";
-import type { Instance, Database, Connection, ConnectionAtom } from "@/types";
+import {
+  Database,
+  Connection,
+  ConnectionAtom,
+  ConnectionTreeMode,
+} from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
 import {
   emptyConnection,
   idFromSlug,
-  mapConnectionAtom,
   sheetSlug as makeSheetSlug,
   connectionSlug as makeConnectionSlug,
   isSheetReadable,
@@ -35,7 +39,6 @@ import {
 import { useI18n } from "vue-i18n";
 
 type LocalState = {
-  instanceList: Instance[];
   databaseList: Database[];
 };
 
@@ -44,7 +47,6 @@ const router = useRouter();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
-  instanceList: [],
   databaseList: [],
 });
 
@@ -65,7 +67,7 @@ const prepareAccessControlPolicy = async () => {
     );
 };
 
-const prepareAccessibleConnectionByProject = async () => {
+const prepareAccessibleDatabaseList = async () => {
   // It will also be called when user logout
   if (currentUser.value.id === UNKNOWN_ID) {
     return;
@@ -96,47 +98,80 @@ const prepareAccessibleConnectionByProject = async () => {
       }
       return true;
     });
-  state.instanceList = uniqBy(
-    databaseList.map((db) => db.instance),
-    (instance) => instance.id
-  );
   state.databaseList = databaseList;
 };
 
-const prepareSQLEditorContext = async () => {
-  let connectionTree: ConnectionAtom[] = [];
+const prepareConnectionTree = async () => {
+  if (connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE) {
+    const { databaseList } = state;
+    const instanceList = uniqBy(
+      databaseList.map((db) => db.instance),
+      (instance) => instance.id
+    );
+    const connectionTree = instanceList.map((instance) => {
+      const node = connectionTreeStore.mapAtom(instance, "instance", 0);
+      return node;
+    });
 
-  const { instanceList, databaseList } = state;
-  const instanceMapper = mapConnectionAtom("instance", 0);
-  connectionTree = instanceList.map((instance) => {
-    const node = instanceMapper(instance);
-    return node;
-  });
+    for (const instance of instanceList) {
+      const instanceItem = connectionTree.find(
+        (item: ConnectionAtom) => item.id === instance.id
+      )!;
 
-  for (const instance of instanceList) {
-    const instanceItem = connectionTree.find(
-      (item: ConnectionAtom) => item.id === instance.id
-    )!;
-
-    const databaseMapper = mapConnectionAtom("database", instance.id);
-    instanceItem.children = databaseList
-      .filter((db) => db.instance.id === instance.id)
-      .map((db) => {
-        const node = databaseMapper(db);
-        node.disabled = !isDatabaseAccessible(
-          db,
-          connectionTreeStore.accessControlPolicyList,
-          currentUser.value
-        );
-        if (node.disabled) {
-          // If a database node is not accessible
-          // it's not expandable either.
-          node.isLeaf = true;
-        }
-        return node;
-      });
-
+      instanceItem.children = databaseList
+        .filter((db) => db.instance.id === instance.id)
+        .map((db) => {
+          const node = connectionTreeStore.mapAtom(db, "database", instance.id);
+          node.disabled = !isDatabaseAccessible(
+            db,
+            connectionTreeStore.accessControlPolicyList,
+            currentUser.value
+          );
+          if (node.disabled) {
+            // If a database node is not accessible
+            // it's not expandable either.
+            node.isLeaf = true;
+          }
+          return node;
+        });
+    }
     connectionTreeStore.tree.data = connectionTree;
+  } else {
+    const { databaseList } = state;
+    const projectList = uniqBy(
+      databaseList.map((db) => db.project),
+      (project) => project.id
+    );
+
+    const projectAtomList = projectList.map((project) => {
+      const node = connectionTreeStore.mapAtom(project, "project", 0);
+      return node;
+    });
+
+    projectAtomList.forEach((projectAtom) => {
+      projectAtom.children = databaseList
+        .filter((db) => db.project.id === projectAtom.id)
+        .map((db) => {
+          const node = connectionTreeStore.mapAtom(
+            db,
+            "database",
+            projectAtom.id
+          );
+          node.disabled = !isDatabaseAccessible(
+            db,
+            connectionTreeStore.accessControlPolicyList,
+            currentUser.value
+          );
+          if (node.disabled) {
+            // If a database node is not accessible
+            // it's not expandable either.
+            node.isLeaf = true;
+          }
+          return node;
+        });
+    });
+
+    connectionTreeStore.tree.data = projectAtomList;
   }
 
   // Won't fetch tableList for every database here.
@@ -330,10 +365,12 @@ onMounted(async () => {
   if (connectionTreeStore.tree.state === ConnectionTreeState.UNSET) {
     connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
     await prepareAccessControlPolicy();
-    await prepareAccessibleConnectionByProject();
-    await prepareSQLEditorContext();
+    await prepareAccessibleDatabaseList();
+    await prepareConnectionTree();
     connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
   }
+
+  watch(() => connectionTreeStore.tree.mode, prepareConnectionTree);
 
   watch(currentUser, (user) => {
     if (user.id === UNKNOWN_ID) {

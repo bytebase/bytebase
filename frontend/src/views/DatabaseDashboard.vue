@@ -7,7 +7,7 @@
       />
 
       <div class="flex items-center space-x-4">
-        <NTooltip>
+        <NTooltip v-if="canVisitUnassignedDatabases">
           <template #trigger>
             <router-link
               :to="{
@@ -65,7 +65,11 @@ import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
 } from "../types";
-import { filterDatabaseByKeyword, sortDatabaseList } from "../utils";
+import {
+  filterDatabaseByKeyword,
+  hasWorkspacePermission,
+  sortDatabaseList,
+} from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
   useCurrentUser,
@@ -109,6 +113,13 @@ export default defineComponent({
     const currentUser = useCurrentUser();
 
     const environmentList = useEnvironmentList(["NORMAL"]);
+
+    const canVisitUnassignedDatabases = computed(() => {
+      return hasWorkspacePermission(
+        "bb.permission.workspace.manage-database",
+        currentUser.value.role
+      );
+    });
 
     onMounted(() => {
       // Focus on the internal search field when mounted
@@ -184,6 +195,7 @@ export default defineComponent({
       filteredList,
       selectEnvironment,
       changeSearchText,
+      canVisitUnassignedDatabases,
     };
   },
 });
