@@ -522,6 +522,21 @@ type DatabaseMessage struct {
 	Labels               map[string]string
 }
 
+// UpdateDatabaseMessage is the mssage for updating a database.
+type UpdateDatabaseMessage struct {
+	EnvironmentID string
+	InstanceID    string
+	DatabaseName  string
+
+	ProjectID            *string
+	CharacterSet         *string
+	Collation            *string
+	SyncState            *api.SyncStatus
+	SuccessfulSyncTimeTs *int64
+	SchemaVersion        *string
+	Labels               *map[string]string
+}
+
 // FindDatabaseMessage is the message for finding databases.
 type FindDatabaseMessage struct {
 	ProjectID     *string
@@ -715,6 +730,70 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
+}
+
+// UpdateDatabase updates a database.
+func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage, updaterID int) (*DatabaseMessage, error) {
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{EnvironmentID: &patch.EnvironmentID, ResourceID: &patch.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
+	if v := patch.ProjectID; v != nil {
+		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: patch.ProjectID})
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, project.UID)
+	}
+	if v := patch.CharacterSet; v != nil {
+		set, args = append(set, fmt.Sprintf("character_set = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Collation; v != nil {
+		set, args = append(set, fmt.Sprintf(`"collation" = $%d`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.SyncState; v != nil {
+		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SuccessfulSyncTimeTs; v != nil {
+		set, args = append(set, fmt.Sprintf("last_successful_sync_ts = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SchemaVersion; v != nil {
+		set, args = append(set, fmt.Sprintf("schema_version = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, instance.UID, patch.DatabaseName)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+	var databaseUID int
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+		UPDATE db
+		SET `+strings.Join(set, ", ")+`
+		WHERE instance_id = $%d AND name = $%d
+		RETURNING id
+	`, len(set)+1, len(set)+2),
+		args...,
+	).Scan(
+		&databaseUID,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+	if patch.Labels != nil {
+		if err := s.setDatabaseLabels(ctx, tx, databaseUID, *(patch.Labels), updaterID); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
+	if err != nil {
+		return nil, err
+	}
+	return database, nil
 }
 
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {

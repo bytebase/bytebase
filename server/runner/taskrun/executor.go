@@ -284,12 +284,13 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}
 
 	if mi.Type == db.Migrate || mi.Type == db.MigrateSDL {
-		if _, err := stores.PatchDatabase(ctx, &api.DatabasePatch{
-			ID:            *task.DatabaseID,
-			UpdaterID:     api.SystemBotID,
+		if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+			EnvironmentID: task.Database.Instance.Environment.ResourceID,
+			InstanceID:    task.Database.Instance.ResourceID,
+			DatabaseName:  databaseName,
 			SchemaVersion: &mi.Version,
-		}); err != nil {
-			return true, nil, err
+		}, api.SystemBotID); err != nil {
+			return true, nil, errors.Errorf("failed to update database %q for instance %q", databaseName, task.Database.Instance.Name)
 		}
 	}
 	// On the presence of schema path template and non-wildcard branch filter, We write back the latest schema after migration for VCS-based projects for

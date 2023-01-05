@@ -16,7 +16,6 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -267,19 +266,13 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 		}
 		if !exist {
 			syncStatus := api.NotFound
-			ts := time.Now().Unix()
-			databasePatch := &api.DatabasePatch{
-				ID:                   database.UID,
-				UpdaterID:            api.SystemBotID,
-				SyncStatus:           &syncStatus,
-				LastSuccessfulSyncTs: &ts,
-			}
-			database, err := s.store.PatchDatabase(ctx, databasePatch)
-			if err != nil {
-				if common.ErrorCode(err) == common.NotFound {
-					return nil, errors.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
-				}
-				return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", instance.Name, database.Name)
+			if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+				EnvironmentID: instance.Environment.ResourceID,
+				InstanceID:    instance.ResourceID,
+				DatabaseName:  database.DatabaseName,
+				SyncState:     &syncStatus,
+			}, api.SystemBotID); err != nil {
+				return nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.Name)
 			}
 		}
 	}
@@ -317,20 +310,17 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *api.Database,
 
 	syncStatus := api.OK
 	ts := time.Now().Unix()
-	databasePatch := &api.DatabasePatch{
-		ID:                   database.ID,
-		UpdaterID:            api.SystemBotID,
-		SyncStatus:           &syncStatus,
-		LastSuccessfulSyncTs: &ts,
+	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		EnvironmentID:        database.Instance.Environment.ResourceID,
+		InstanceID:           database.Instance.ResourceID,
+		DatabaseName:         database.Name,
+		SyncState:            &syncStatus,
+		SuccessfulSyncTimeTs: &ts,
 		SchemaVersion:        patchSchemaVersion,
-		// TODO(d): update CharacterSet and Collation.
-	}
-	database, err = s.store.PatchDatabase(ctx, databasePatch)
-	if err != nil {
-		if common.ErrorCode(err) == common.NotFound {
-			return errors.Errorf("failed to sync database for instance: %s. Database not found: %v", database.Instance.Name, database.Name)
-		}
-		return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to update database: %s", database.Instance.Name, database.Name)
+		CharacterSet:         &databaseMetadata.CharacterSet,
+		Collation:            &databaseMetadata.Collation,
+	}, api.SystemBotID); err != nil {
+		return errors.Errorf("failed to update database %q for instance %q", database.Name, database.Instance.Name)
 	}
 
 	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
