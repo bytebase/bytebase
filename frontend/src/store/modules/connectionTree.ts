@@ -6,18 +6,26 @@ import {
   Connection,
   Policy,
   ConnectionAtom,
+  ConnectionTreeMode,
+  ConnectionAtomType,
+  Project,
+  Instance,
+  Database,
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { emptyConnection } from "@/utils";
 import { useDBSchemaStore } from "./dbSchema";
+import { TableMetadata } from "@/types/proto/store/database";
+import { has, uniqueId } from "lodash-es";
 
 export const useConnectionTreeStore = defineStore("connectionTree", () => {
   // states
   const accessControlPolicyList = ref<Policy[]>([]);
   const tree = reactive({
     data: [] as ConnectionAtom[],
+    mode: ConnectionTreeMode.PROJECT,
     state: ConnectionTreeState.UNSET,
   });
   const expandedTreeNodeKeys = ref<string[]>([]);
@@ -68,6 +76,25 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
       return { instanceId: UNKNOWN_ID, databaseId: UNKNOWN_ID };
     }
   };
+  // utilities
+  const mapAtom = (
+    item: Project | Instance | Database | TableMetadata,
+    type: ConnectionAtomType,
+    parentId: number
+  ) => {
+    const id =
+      type !== "table" && has(item, "id") ? (item as any).id : uniqueId();
+    const key = `${type}-${id}`;
+    const connectionAtom: ConnectionAtom = {
+      parentId,
+      id,
+      key,
+      label: item.name,
+      type,
+      isLeaf: type === "table",
+    };
+    return connectionAtom;
+  };
 
   return {
     accessControlPolicyList,
@@ -76,6 +103,7 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
     selectedTableAtom,
     fetchConnectionByInstanceIdAndDatabaseId,
     fetchConnectionByInstanceId,
+    mapAtom,
   };
 });
 

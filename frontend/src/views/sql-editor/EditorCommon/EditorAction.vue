@@ -6,7 +6,9 @@
         :disabled="isEmptyStatement || isExecutingSQL"
         @click="handleRunQuery"
       >
-        <mdi:play class="h-5 w-5" /> {{ $t("common.run") }} (⌘+⏎)
+        <mdi:play class="h-5 w-5" />
+        {{ showRunSelected ? $t("sql-editor.run-selected") : $t("common.run") }}
+        (⌘+⏎)
       </NButton>
       <NButton
         :disabled="isEmptyStatement || isExecutingSQL"
@@ -97,6 +99,13 @@ const selectedInstanceEngine = computed(() => {
 
 const showSheetsFeature = computed(() => {
   return tabStore.currentTab.mode === TabMode.ReadOnly;
+});
+
+const showRunSelected = computed(() => {
+  return (
+    tabStore.currentTab.mode === TabMode.ReadOnly &&
+    !!tabStore.currentTab.selectedStatement
+  );
 });
 
 const allowSave = computed(() => {

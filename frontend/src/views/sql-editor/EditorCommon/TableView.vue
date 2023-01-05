@@ -10,6 +10,7 @@
     >
       <div class="flex flex-row justify-start items-center mr-2">
         <NInput
+          v-if="showSearchFeature"
           v-model:value="state.search"
           class="max-w-xs"
           type="text"
@@ -114,6 +115,13 @@ const instanceStore = useInstanceStore();
 
 const state = reactive<State>({
   search: "",
+});
+
+const showSearchFeature = computed(() => {
+  const instance = instanceStore.getInstanceById(
+    tabStore.currentTab.connection.instanceId
+  );
+  return instance.engine !== "MONGODB";
 });
 
 const naiveUIConfig = computed(() => {
