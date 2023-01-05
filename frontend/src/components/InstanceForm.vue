@@ -312,12 +312,7 @@
               class="btn"
               name="connectionStringSchema"
               :value="type"
-              :checked="
-                type ===
-                (currentDataSource.options.srv === false
-                  ? mongodbConnectionStringSchemata[0]
-                  : mongodbConnectionStringSchemata[1])
-              "
+              :checked="type === currentMongoDBConnectionSchema"
               @change="handleMongodbConnectionStringSchemaChange"
             />
             <span class="label">
@@ -534,6 +529,12 @@ const state = reactive<State>({
 });
 
 const mongodbConnectionStringSchemata = ["mongodb", "mongodb+srv"];
+
+const currentMongoDBConnectionSchema = computed(() => {
+  return currentDataSource.value.options.srv === false
+    ? mongodbConnectionStringSchemata[0]
+    : mongodbConnectionStringSchemata[1];
+});
 
 const allowEdit = computed(() => {
   return (
