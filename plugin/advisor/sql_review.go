@@ -891,6 +891,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLInsertDisallowOrderByRand, nil
+		case db.Postgres:
+			return PostgreSQLInsertDisallowOrderByRand, nil
 		}
 	case SchemaRuleStatementDisallowLimit:
 		switch engine {

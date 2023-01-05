@@ -54,6 +54,11 @@ func newUnconvertedDataType(name []string, text string) *ast.UnconvertedDataType
 	return tp
 }
 
+func newExpression(expression ast.ExpressionNode, text string) ast.ExpressionNode {
+	expression.SetText(text)
+	return expression
+}
+
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
@@ -1571,7 +1576,7 @@ func TestPGNotNullStmt(t *testing.T) {
 func TestPGSelectStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+			stmt: "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1 ORDER BY t.a, random()",
 			want: []ast.Node{
 				&ast.SelectStmt{
 					SetOperation: ast.SetOperationTypeNone,
@@ -1592,6 +1597,17 @@ func TestPGSelectStmt(t *testing.T) {
 							ColumnName: "*",
 						},
 					},
+					OrderByClause: []*ast.ByItemDef{
+						{
+							Expression: newExpression(&ast.ColumnNameDef{
+								Table:      &ast.TableDef{Name: "t"},
+								ColumnName: "a",
+							}, "t.a"),
+						},
+						{
+							Expression: newExpression(&ast.UnconvertedExpressionDef{}, "random()"),
+						},
+					},
 					SubqueryList: []*ast.SubqueryDef{
 						{
 							Select: &ast.SelectStmt{
@@ -1609,7 +1625,7 @@ func TestPGSelectStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1",
+					Text:     "SELECT public.t.a, t.*, t1.* FROM (SELECT * FROM t) t, t1 ORDER BY t.a, random()",
 					LastLine: 1,
 				},
 			},
