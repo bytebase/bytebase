@@ -56,7 +56,7 @@ func TestDeparseDropSchema(t *testing.T) {
 					},
 				},
 			},
-			want: "DROP SCHEMA IF EXISTS \"public\";",
+			want: "DROP SCHEMA IF EXISTS \"public\" CASCADE;",
 		},
 		{
 			name: "drop schema public and t1",
@@ -71,7 +71,7 @@ func TestDeparseDropSchema(t *testing.T) {
 					},
 				},
 			},
-			want: "DROP SCHEMA IF EXISTS \"public\";\nDROP SCHEMA IF EXISTS \"t1\";",
+			want: "DROP SCHEMA IF EXISTS \"public\" CASCADE;\nDROP SCHEMA IF EXISTS \"t1\" CASCADE;",
 		},
 	}
 
