@@ -533,7 +533,7 @@ const state = reactive<State>({
   showFeatureModal: false,
 });
 
-const mongodbConnectionStringSchemata = ["mongodb://", "mongodb+srv://"];
+const mongodbConnectionStringSchemata = ["mongodb", "mongodb+srv"];
 
 const allowEdit = computed(() => {
   return (

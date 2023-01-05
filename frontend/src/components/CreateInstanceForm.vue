@@ -423,7 +423,7 @@ const state = reactive<LocalState>({
   isCreatingInstance: false,
 });
 
-const mongodbConnectionStringSchemata = ["mongodb://", "mongodb+srv://"];
+const mongodbConnectionStringSchemata = ["mongodb", "mongodb+srv"];
 
 const isCreatingEmbeddedInstance = ref(false);
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
