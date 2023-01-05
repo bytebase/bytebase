@@ -1431,7 +1431,8 @@
     "admin-mode": {
       "self": "Admin mode"
     },
-    "read-only-mode-not-allowed": "Instance {instance} is not accessible in read-only mode."
+    "read-only-mode-not-allowed": "Instance {instance} is not accessible in read-only mode.",
+    "run-selected": "Run selected"
   },
   "schema-editor": {
     "self": "Schema Editor",

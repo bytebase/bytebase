@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="connectionTreeStore.tree.state === ConnectionTreeState.LOADED"
-    class="databases-tree p-2 space-y-2 h-full"
+    class="databases-tree p-2 space-y-2 h-full flex flex-col"
   >
     <div class="databases-tree--input">
       <n-input
@@ -13,8 +13,8 @@
         </template>
       </n-input>
     </div>
-    <div class="databases-tree--tree overflow-y-auto">
-      <n-tree
+    <div class="databases-tree--tree flex-1 overflow-y-auto">
+      <NTree
         block-line
         :data="treeData"
         :pattern="searchPattern"
@@ -27,17 +27,18 @@
         :on-load="loadSubTree"
         :on-update:expanded-keys="updateExpandedKeys"
       />
-      <n-dropdown
-        placement="bottom-start"
-        trigger="manual"
-        :x="dropdownPosition.x"
-        :y="dropdownPosition.y"
-        :options="dropdownOptions"
-        :show="showDropdown"
-        :on-clickoutside="handleClickoutside"
-        @select="handleSelect"
-      />
     </div>
+
+    <NDropdown
+      placement="bottom-start"
+      trigger="manual"
+      :x="dropdownPosition.x"
+      :y="dropdownPosition.y"
+      :options="dropdownOptions"
+      :show="showDropdown"
+      :on-clickoutside="handleClickoutside"
+      @select="handleSelect"
+    />
   </div>
   <div v-else class="flex justify-center items-center h-full">
     <BBSpin :title="$t('sql-editor.loading-databases')" />
@@ -45,12 +46,10 @@
 </template>
 
 <script lang="ts" setup>
-import { escape } from "lodash-es";
-import type { DropdownOption } from "naive-ui";
 import { ref, computed, h, nextTick, watch } from "vue";
+import { NTree, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { stringify } from "qs";
-import ConnectedIcon from "~icons/heroicons-outline/lightning-bolt";
 
 import type {
   ConnectionAtom,
@@ -65,24 +64,18 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useDBSchemaStore,
-  useInstanceStore,
   useIsLoggedIn,
   useTabStore,
 } from "@/store";
 import {
   emptyConnection,
-  getHighlightHTMLByKeyWords,
   hasWorkspacePermission,
   isDescendantOf,
   isSimilarTab,
-  mapConnectionAtom,
 } from "@/utils";
 import { generateTableItem } from "./utils";
 import { scrollIntoViewIfNeeded } from "@/bbkit/BBUtil";
-import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
-import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database";
-import HeroiconsOutlineTable from "~icons/heroicons-outline/table";
-import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
+import { Prefix, Label, Suffix } from "./TreeNode";
 
 type Position = {
   x: number;
@@ -95,7 +88,6 @@ type DropdownOptionWithConnectionAtom = DropdownOption & {
 
 const { t } = useI18n();
 
-const instanceStore = useInstanceStore();
 const databaseStore = useDatabaseStore();
 const connectionTreeStore = useConnectionTreeStore();
 const dbSchemaStore = useDBSchemaStore();
@@ -111,34 +103,39 @@ const dropdownPosition = ref<Position>({
 });
 const dropdownContext = ref<ConnectionAtom>();
 const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
-  if (!dropdownContext.value) {
+  const atom = dropdownContext.value;
+  if (!atom) {
     return [];
-  } else if (dropdownContext.value.type === "table") {
+  }
+  if (atom.type === "project") {
+    return [];
+  }
+  if (atom.type === "table") {
     return [
       {
         key: "alter-table",
         label: t("sql-editor.alter-table"),
-        item: dropdownContext.value,
+        item: atom,
       },
     ];
   } else {
     // Don't show any context menu actions for disabled
     // instances/databases
-    if (dropdownContext.value.disabled) {
+    if (atom.disabled) {
       return [];
     }
     const items = [
       {
         key: "connect",
         label: t("sql-editor.connect"),
-        item: dropdownContext.value,
+        item: atom,
       },
     ];
     if (allowAdmin.value) {
       items.push({
         key: "connect-in-admin-mode",
         label: t("sql-editor.connect-in-admin-mode"),
-        item: dropdownContext.value,
+        item: atom,
       });
     }
     return items;
@@ -174,6 +171,11 @@ const setConnection = (
   }
 ) => {
   if (option) {
+    if (option.type === "project") {
+      // Not connectable to a project
+      return;
+    }
+
     const target: CoreTabInfo = {
       connection: emptyConnection(),
       ...extra,
@@ -194,17 +196,20 @@ const setConnection = (
       conn.instanceId = option.id;
     } else if (option.type === "database") {
       // If selected item is database node
-      const instanceId = option.parentId;
-      conn.instanceId = instanceId;
-      conn.databaseId = option.id;
+      const database = databaseStore.getDatabaseById(option.id);
+      conn.instanceId = database.instance.id;
+      conn.databaseId = database.id;
     } else if (option.type === "table") {
       // If selected item is table node
       const databaseId = option.parentId;
-      const databaseInfo = databaseStore.getDatabaseById(databaseId);
-      const instanceId = databaseInfo.instance.id;
+      const database = databaseStore.getDatabaseById(databaseId);
+      const instanceId = database.instance.id;
       conn.instanceId = instanceId;
       conn.databaseId = databaseId;
-      connectionTreeStore.selectedTableAtom = option;
+      if (database.instance.engine !== "MONGODB") {
+        // A MongoDB connection has no schema, so it shouldn't be clickable.
+        connectionTreeStore.selectedTableAtom = option;
+      }
     }
 
     connect();
@@ -213,94 +218,43 @@ const setConnection = (
 
 // dynamic render the highlight keywords
 // and render the selected table node in bold font
-const renderLabel = ({ option }: { option: ConnectionAtom }) => {
-  const classes = ["truncate"];
-  const emphasize = () => {
-    classes.push("font-bold");
-  };
 
-  if (option.type === "table") {
-    if (option === connectionTreeStore.selectedTableAtom) {
-      emphasize();
-    }
-  }
-
-  return h("span", {
-    // render an unique id for every node
-    // for auto scroll to the node when tab switches
-    id: `tree-node-label-${option.type}-${option.id}`,
-    innerHTML: getHighlightHTMLByKeyWords(
-      escape(option.label),
-      escape(searchPattern.value)
-    ),
-    class: classes,
-  });
+const renderLabel = ({ option }: { option: TreeOption }) => {
+  const atom = option as any as ConnectionAtom;
+  return h(Label, { atom, keyword: searchPattern.value ?? "" });
 };
 
 // Render icons before nodes.
-const renderPrefix = ({ option }: { option: ConnectionAtom }) => {
-  if (option.type === "instance") {
-    const instanceId = option.id;
-    const instance = instanceStore.getInstanceById(instanceId);
-    const children = [
-      h(InstanceEngineIcon, {
-        instance,
-      }),
-      h(ProtectedEnvironmentIcon, {
-        environment: instance.environment,
-        class: "w-4 h-4 text-inherit",
-      }),
-      h(
-        "span",
-        {
-          class: ["text-sm", !option.disabled && "text-gray-500"],
-        },
-        `(${instance.environment.name})`
-      ),
-    ];
-
-    return h("span", { class: "flex items-center gap-x-1" }, children);
-  } else if (option.type === "database") {
-    return h(HeroiconsOutlineDatabase, {
-      class: "w-4 h-4",
-    });
-  } else if (option.type === "table") {
-    return h(HeroiconsOutlineTable, {
-      class: "w-4 h-4",
-    });
-  }
-  return null;
+const renderPrefix = ({ option }: { option: TreeOption }) => {
+  const atom = option as any as ConnectionAtom;
+  return h(Prefix, { atom });
 };
 
 // Render a 'connected' icon in the right of the node
 // if it matches the current tab's connection
-const renderSuffix = ({ option }: { option: ConnectionAtom }) => {
-  const renderConnectedIcon = () => {
-    return h(ConnectedIcon, {
-      class: "w-4 h-4",
-    });
-  };
-  const { instanceId, databaseId } = tabStore.currentTab.connection;
-  if (option.type === "database") {
-    if (option.id === databaseId) {
-      return renderConnectedIcon();
-    }
-  }
-  if (option.type === "instance") {
-    if (databaseId === UNKNOWN_ID && option.id === instanceId) {
-      return renderConnectedIcon();
-    }
-  }
+const renderSuffix = ({ option }: { option: TreeOption }) => {
+  const atom = option as any as ConnectionAtom;
+  return h(Suffix, { atom });
 };
 
-const loadSubTree = async (item: ConnectionAtom): Promise<void> => {
+const loadSubTree = async (option: TreeOption): Promise<void> => {
+  const item = option as any as ConnectionAtom;
   if (item.type === "database") {
+    const database = databaseStore.getDatabaseById(item.id);
     const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
       item.id as DatabaseId
     );
 
-    const mapper = mapConnectionAtom("table", item.id);
-    item.children = tableList.map((table) => generateTableItem(mapper(table)));
+    item.children = tableList.map((table) => {
+      const node = generateTableItem(
+        connectionTreeStore.mapAtom(table, "table", item.id)
+      );
+      if (database.instance.engine === "MONGODB") {
+        node.disabled = true;
+      }
+
+      return node;
+    });
     if (item.children.length === 0) {
       // No tables in the db
       item.isLeaf = true;
@@ -349,22 +303,34 @@ const handleClickoutside = () => {
   showDropdown.value = false;
 };
 
-const nodeProps = ({ option }: { option: ConnectionAtom }) => {
+const maybeExpandKey = (key: string) => {
+  const keys = connectionTreeStore.expandedTreeNodeKeys;
+  if (!keys.includes(key)) {
+    keys.push(key);
+  }
+};
+
+const nodeProps = ({ option }: { option: TreeOption }) => {
+  const atom = option as any as ConnectionAtom;
   return {
     onClick(e: MouseEvent) {
-      if (option.disabled) return;
+      if (atom.disabled) return;
 
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
-        setConnection(option);
+        if (atom.type === "project") {
+          maybeExpandKey(`project-${atom.id}`);
+        } else {
+          setConnection(atom);
+        }
       }
     },
     onContextmenu(e: MouseEvent) {
       e.preventDefault();
       showDropdown.value = false;
-      if (option && option.key) {
-        dropdownContext.value = option;
+      if (atom && atom.key) {
+        dropdownContext.value = atom;
       }
 
       nextTick().then(() => {
@@ -416,18 +382,14 @@ watch(
       return;
     }
 
-    const maybeExpandKey = (key: string) => {
-      const keys = connectionTreeStore.expandedTreeNodeKeys;
-      if (!keys.includes(key)) {
-        keys.push(key);
-      }
-    };
-
     if (instanceId !== UNKNOWN_ID) {
       maybeExpandKey(`instance-${instanceId}`);
     }
     if (databaseId !== UNKNOWN_ID) {
       maybeExpandKey(`database-${databaseId}`);
+      const db = databaseStore.getDatabaseById(databaseId);
+      const projectId = db.project.id;
+      maybeExpandKey(`project-${projectId}`);
     }
 
     scrollToConnectedNode(instanceId, databaseId);
@@ -436,7 +398,7 @@ watch(
 );
 </script>
 
-<style>
+<style postcss>
 .databases-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
 }
@@ -452,11 +414,5 @@ watch(
 .databases-tree .n-tree-node--selected,
 .databases-tree .n-tree-node--selected:hover {
   background-color: var(--n-node-color-active) !important;
-}
-</style>
-
-<style scoped>
-.databases-tree--tree {
-  height: calc(100% - 40px);
 }
 </style>
