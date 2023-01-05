@@ -10,9 +10,12 @@
     @click-row="clickTable"
   >
     <template #body="{ rowData: table }">
-      <BBTableCell :left-padding="4">
+      <BBTableCell v-if="hasSchemaProperty" :left-padding="4" class="w-[10%]">
+        {{ schemaName }}
+      </BBTableCell>
+      <BBTableCell :left-padding="hasSchemaProperty ? 2 : 4">
         <div class="flex items-center space-x-2">
-          <EllipsisText>{{ getTableName(table.name) }}</EllipsisText>
+          <EllipsisText>{{ table.name }}</EllipsisText>
           <BBBadge
             v-if="isGhostTable(table)"
             text="gh-ost"
@@ -95,16 +98,12 @@ export default defineComponent({
     const hasSchemaProperty =
       isPostgres || props.database.instance.engine === "SNOWFLAKE";
 
-    const getTableName = (tableName: string) => {
-      if (hasSchemaProperty) {
-        return `"${props.schemaName}"."${tableName}"`;
-      }
-      return tableName;
-    };
-
     const columnList = computed(() => {
-      if (isPostgres) {
+      if (hasSchemaProperty) {
         return [
+          {
+            title: t("common.schema"),
+          },
           {
             title: t("common.name"),
           },
@@ -180,7 +179,7 @@ export default defineComponent({
       hasReservedTables,
       mixedTableList,
       isGhostTable,
-      getTableName,
+      hasSchemaProperty,
     };
   },
 });
