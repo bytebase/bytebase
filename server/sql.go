@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -822,7 +823,11 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, r
 	}
 
 	// Only project member can access database.
-	if !api.HasActiveProjectMembership(principalID, database.Project) {
+	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.Project.ResourceID})
+	if err != nil {
+		return false, err
+	}
+	if !hasActiveProjectMembership(principalID, projectPolicy) {
 		return false, nil
 	}
 

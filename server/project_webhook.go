@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
+	"github.com/gosimple/slug"
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	webhookPlugin "github.com/bytebase/bytebase/plugin/webhook"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
@@ -164,7 +166,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		project, err := s.store.GetProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
@@ -194,12 +196,12 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 				ActivityType: string(api.ActivityIssueCreate),
 				Title:        fmt.Sprintf("Test webhook %q", webhook.Name),
 				Description:  "This is a test",
-				Link:         fmt.Sprintf("%s/project/%s/webhook/%s", s.profile.ExternalURL, api.ProjectSlug(project), api.ProjectWebhookSlug(webhook)),
+				Link:         fmt.Sprintf("%s/project/%s/webhook/%s", s.profile.ExternalURL, getProjectSlug(project), api.ProjectWebhookSlug(webhook)),
 				CreatorID:    api.SystemBotID,
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",
 				CreatedTs:    time.Now().Unix(),
-				Project:      &webhookPlugin.Project{Name: project.Name},
+				Project:      &webhookPlugin.Project{Name: project.Title},
 			},
 		)
 
@@ -213,4 +215,9 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+// getProjectSlug is the slug formatter for Project.
+func getProjectSlug(project *store.ProjectMessage) string {
+	return fmt.Sprintf("%s-%d", slug.Make(project.Title), project.UID)
 }

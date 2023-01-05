@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,8 +19,8 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
-	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/utils"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -139,12 +140,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, please go to SQL editor to unbind them first", len(sheetList)))
 			}
 
-			toProject, err := s.store.GetProjectByID(ctx, *dbPatch.ProjectID)
+			toProject, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: dbPatch.ProjectID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", *dbPatch.ProjectID)).SetInternal(err)
 			}
 			if toProject == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
+			}
+			if toProject.Deleted {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %q is deleted", *dbPatch.ProjectID))
 			}
 		}
 
@@ -180,52 +184,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		// Create transferring database project activity.
 		if dbPatch.ProjectID != nil {
-			bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
-				DatabaseID:   dbPatched.ID,
-				DatabaseName: dbPatched.Name,
-			})
-			if err == nil {
-				dbExisting.Project, err = s.store.GetProjectByID(ctx, dbExisting.ProjectID)
-				if err == nil {
-					activityCreate := &api.ActivityCreate{
-						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-						ContainerID: dbExisting.ProjectID,
-						Type:        api.ActivityProjectDatabaseTransfer,
-						Level:       api.ActivityInfo,
-						Comment:     fmt.Sprintf("Transferred out database %q to project %q.", dbPatched.Name, dbPatched.Project.Name),
-						Payload:     string(bytes),
-					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
-				}
-
-				if err != nil {
-					log.Warn("Failed to create project activity after transferring database",
-						zap.Int("database_id", dbPatched.ID),
-						zap.String("database_name", dbPatched.Name),
-						zap.Int("old_project_id", dbExisting.ProjectID),
-						zap.Int("new_project_id", dbPatched.ProjectID),
-						zap.Error(err))
-				}
-
-				{
-					activityCreate := &api.ActivityCreate{
-						CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-						ContainerID: dbPatched.ProjectID,
-						Type:        api.ActivityProjectDatabaseTransfer,
-						Level:       api.ActivityInfo,
-						Comment:     fmt.Sprintf("Transferred in database %q from project %q.", dbExisting.Name, dbExisting.Project.Name),
-						Payload:     string(bytes),
-					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
-					if err != nil {
-						log.Warn("Failed to create project activity after transferring database",
-							zap.Int("database_id", dbPatched.ID),
-							zap.String("database_name", dbPatched.Name),
-							zap.Int("old_project_id", dbExisting.ProjectID),
-							zap.Int("new_project_id", dbPatched.ProjectID),
-							zap.Error(err))
-					}
-				}
+			updaterID := c.Get(getPrincipalIDContextKey()).(int)
+			if err := createTransferProjectActivity(ctx, s.store, dbPatched, dbExisting.ProjectID, updaterID); err != nil {
+				log.Error("failed to create project transfer activity", zap.Error(err))
 			}
 		}
 
@@ -710,4 +671,53 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func createTransferProjectActivity(ctx context.Context, stores *store.Store, database *api.Database, existingProjectID, updaterID int) error {
+	existingProject, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{UID: &existingProjectID})
+	if err != nil {
+		return err
+	}
+
+	bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
+		DatabaseID:   database.ID,
+		DatabaseName: database.Name,
+	})
+	if err != nil {
+		return err
+	}
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   updaterID,
+		ContainerID: existingProjectID,
+		Type:        api.ActivityProjectDatabaseTransfer,
+		Level:       api.ActivityInfo,
+		Comment:     fmt.Sprintf("Transferred out database %q to project %q.", database.Name, database.Project.Name),
+		Payload:     string(bytes),
+	}
+	if _, err := stores.CreateActivity(ctx, activityCreate); err != nil {
+		log.Warn("Failed to create project activity after transferring database",
+			zap.Int("database_id", database.ID),
+			zap.String("database_name", database.Name),
+			zap.Int("old_project_id", existingProjectID),
+			zap.Int("new_project_id", database.ProjectID),
+			zap.Error(err))
+	}
+
+	activityCreate = &api.ActivityCreate{
+		CreatorID:   updaterID,
+		ContainerID: database.ProjectID,
+		Type:        api.ActivityProjectDatabaseTransfer,
+		Level:       api.ActivityInfo,
+		Comment:     fmt.Sprintf("Transferred in database %q from project %q.", database.Name, existingProject.Title),
+		Payload:     string(bytes),
+	}
+	if _, err := stores.CreateActivity(ctx, activityCreate); err != nil {
+		log.Warn("Failed to create project activity after transferring database",
+			zap.Int("database_id", database.ID),
+			zap.String("database_name", database.Name),
+			zap.Int("old_project_id", existingProjectID),
+			zap.Int("new_project_id", database.ProjectID),
+			zap.Error(err))
+	}
+	return nil
 }
