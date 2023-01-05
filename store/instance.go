@@ -372,14 +372,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 	}
 
 	// Create * database
-	databaseCreate := &api.DatabaseCreate{
-		CreatorID:     create.CreatorID,
-		ProjectID:     api.DefaultProjectID,
-		InstanceID:    instance.ID,
-		EnvironmentID: instance.EnvironmentID,
-		Name:          api.AllDatabaseName,
-	}
-	allDatabase, err := s.createDatabaseRawTx(ctx, tx, databaseCreate)
+	allDatabaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instance.ID, &DatabaseMessage{DatabaseName: api.AllDatabaseName})
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +381,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 		dataSourceCreate := &api.DataSourceCreate{
 			CreatorID:  create.CreatorID,
 			InstanceID: instance.ID,
-			DatabaseID: allDatabase.ID,
+			DatabaseID: allDatabaseUID,
 			Name:       dataSource.Name,
 			Type:       dataSource.Type,
 			Username:   dataSource.Username,
@@ -888,14 +881,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		return nil, FormatError(err)
 	}
 
-	databaseCreate := &api.DatabaseCreate{
-		CreatorID:     creatorID,
-		ProjectID:     api.DefaultProjectID,
-		InstanceID:    instanceID,
-		EnvironmentID: environment.UID,
-		Name:          api.AllDatabaseName,
-	}
-	allDatabase, err := s.createDatabaseRawTx(ctx, tx, databaseCreate)
+	allDatabaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instanceID, &DatabaseMessage{DatabaseName: api.AllDatabaseName})
 	if err != nil {
 		return nil, err
 	}
@@ -904,7 +890,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		dataSourceCreate := &api.DataSourceCreate{
 			CreatorID:  creatorID,
 			InstanceID: instanceID,
-			DatabaseID: allDatabase.ID,
+			DatabaseID: allDatabaseUID,
 			Name:       ds.Title,
 			Type:       ds.Type,
 			Username:   ds.Username,

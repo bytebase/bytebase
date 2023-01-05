@@ -154,47 +154,33 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		return true, nil, err
 	}
 
-	// If the database creation statement executed successfully,
-	// then we will create a database entry immediately
-	// instead of waiting for the next schema sync cycle to sync over this newly created database.
-	// This is for 2 reasons:
-	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
-	// sync will place the synced db into the default project.
-	// 2. Allow user to see the created database right away.
-	database, err := exec.store.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &task.InstanceID, Name: &payload.DatabaseName})
+	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:            project.ResourceID,
+		EnvironmentID:        instance.Environment.ResourceID,
+		InstanceID:           instance.ResourceID,
+		DatabaseName:         payload.DatabaseName,
+		CharacterSet:         payload.CharacterSet,
+		Collation:            payload.Collation,
+		SyncState:            api.OK,
+		SuccessfulSyncTimeTs: time.Now().Unix(),
+		SchemaVersion:        schemaVersion,
+	})
 	if err != nil {
 		return true, nil, err
 	}
-	if database == nil {
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:            api.SystemBotID,
-			ProjectID:            payload.ProjectID,
-			InstanceID:           task.InstanceID,
-			EnvironmentID:        instance.EnvironmentID,
-			Name:                 payload.DatabaseName,
-			CharacterSet:         payload.CharacterSet,
-			Collation:            payload.Collation,
-			LastSuccessfulSyncTs: time.Now().Unix(),
-			Labels:               &payload.Labels,
-			SchemaVersion:        schemaVersion,
-		}
-		createdDatabase, err := exec.store.CreateDatabase(ctx, databaseCreate)
-		if err != nil {
-			return true, nil, err
-		}
-		database = createdDatabase
-	} else {
-		// The database didn't exist before the current run so there was a race condition between sync schema and migration execution.
-		// We need to update the project ID from the default project to the target project.
-		updatedDatabase, err := exec.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: api.SystemBotID, ProjectID: &payload.ProjectID})
-		if err != nil {
-			return true, nil, err
-		}
-		database = updatedDatabase
-	}
 	// Set database labels, except bb.environment is immutable and must match instance environment.
-	if err := utils.SetDatabaseLabels(ctx, exec.store, payload.Labels, database, database.CreatorID, false); err != nil {
-		return true, nil, errors.Errorf("failed to record database labels after creating database %v", database.ID)
+	var labels []*api.DatabaseLabel
+	if payload.Labels != "" {
+		if err := json.Unmarshal([]byte(payload.Labels), &labels); err != nil {
+			return true, nil, err
+		}
+	}
+	if _, err := exec.store.SetDatabaseLabelList(ctx, labels, database.UID, api.SystemBotID); err != nil {
+		return true, nil, err
+	}
+	composedDatabase, err := exec.store.GetDatabase(ctx, &api.DatabaseFind{ID: &database.UID})
+	if err != nil {
+		return true, nil, err
 	}
 
 	// After the task related database entry created successfully,
@@ -206,17 +192,17 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	taskDatabaseIDPatch := &api.TaskPatch{
 		ID:         task.ID,
 		UpdaterID:  api.SystemBotID,
-		DatabaseID: &database.ID,
+		DatabaseID: &database.UID,
 		Statement:  &statement,
 	}
 	if _, err := exec.store.PatchTask(ctx, taskDatabaseIDPatch); err != nil {
 		return true, nil, err
 	}
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, composedDatabase, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", instance.Name),
-			zap.String("databaseName", database.Name),
+			zap.String("databaseName", database.DatabaseName),
 			zap.Error(err),
 		)
 	}
