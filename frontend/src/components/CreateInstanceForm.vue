@@ -138,7 +138,7 @@
             {{ $t("data-source.connection-string-schema") }}
           </label>
           <label
-            v-for="type in mongodbConnectionStringSchemata"
+            v-for="type in mongodbConnectionStringSchemaList"
             :key="type"
             class="radio h-7"
           >
@@ -147,7 +147,7 @@
               class="btn"
               name="connectionStringSchema"
               :value="type"
-              :checked="type === mongodbConnectionStringSchemata[0]"
+              :checked="type === mongodbConnectionStringSchemaList[0]"
               @change="handleMongodbConnectionStringSchemaChange"
             />
             <span class="label">
@@ -423,7 +423,7 @@ const state = reactive<LocalState>({
   isCreatingInstance: false,
 });
 
-const mongodbConnectionStringSchemata = ["mongodb", "mongodb+srv"];
+const mongodbConnectionStringSchemaList = ["mongodb", "mongodb+srv"];
 
 const isCreatingEmbeddedInstance = ref(false);
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.

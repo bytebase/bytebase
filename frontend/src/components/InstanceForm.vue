@@ -303,7 +303,7 @@
             {{ $t("data-source.connection-string-schema") }}
           </label>
           <label
-            v-for="type in mongodbConnectionStringSchemata"
+            v-for="type in mongodbConnectionStringSchemaList"
             :key="type"
             class="radio h-7"
           >
@@ -528,12 +528,12 @@ const state = reactive<State>({
   showFeatureModal: false,
 });
 
-const mongodbConnectionStringSchemata = ["mongodb", "mongodb+srv"];
+const mongodbConnectionStringSchemaList = ["mongodb", "mongodb+srv"];
 
 const currentMongoDBConnectionSchema = computed(() => {
   return currentDataSource.value.options.srv === false
-    ? mongodbConnectionStringSchemata[0]
-    : mongodbConnectionStringSchemata[1];
+    ? mongodbConnectionStringSchemaList[0]
+    : mongodbConnectionStringSchemaList[1];
 });
 
 const allowEdit = computed(() => {
@@ -683,10 +683,10 @@ const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
 
 const handleMongodbConnectionStringSchemaChange = (event: Event) => {
   switch ((event.target as HTMLInputElement).value) {
-    case mongodbConnectionStringSchemata[0]:
+    case mongodbConnectionStringSchemaList[0]:
       currentDataSource.value.options.srv = false;
       break;
-    case mongodbConnectionStringSchemata[1]:
+    case mongodbConnectionStringSchemaList[1]:
       currentDataSource.value.options.srv = true;
       break;
     default:
