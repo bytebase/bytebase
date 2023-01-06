@@ -51,19 +51,6 @@ func (raw *memberRaw) toMember() *api.Member {
 	}
 }
 
-// CreateMember creates an instance of Member.
-func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*api.Member, error) {
-	memberRaw, err := s.createMemberRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Member with MemberCreate[%+v]", create)
-	}
-	member, err := s.composeMember(ctx, memberRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Member with memberRaw[%+v]", memberRaw)
-	}
-	return member, nil
-}
-
 // FindMember finds a list of Member instances.
 func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
 	memberRawList, err := s.findMemberRaw(ctx, find)
@@ -125,6 +112,9 @@ func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.M
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose Member with memberRaw[%+v]", memberRaw)
 	}
+
+	// Invalidate the user cache for role update.
+	delete(s.userIDCache, memberRaw.PrincipalID)
 	return member, nil
 }
 
@@ -161,34 +151,8 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 	return res, nil
 }
 
-//
 // private functions
 //
-
-// createMemberRaw creates a new member.
-func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (*memberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	member, err := createMemberImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(memberCacheNamespace, member.PrincipalID, member); err != nil {
-		return nil, err
-	}
-
-	return member, nil
-}
-
 // findMemberRaw retrieves a list of memberRaw instances.
 func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) ([]*memberRaw, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -295,46 +259,6 @@ func (s *Store) composeMember(ctx context.Context, raw *memberRaw) (*api.Member,
 	member.Principal = principal
 
 	return member, nil
-}
-
-// createMemberImpl creates a new member.
-func createMemberImpl(ctx context.Context, tx *Tx, create *api.MemberCreate) (*memberRaw, error) {
-	// Insert row into database.
-	query := `
-		INSERT INTO member (
-			creator_id,
-			updater_id,
-			status,
-			role,
-			principal_id
-		)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
-	`
-	var memberRaw memberRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.Status,
-		create.Role,
-		create.PrincipalID,
-	).Scan(
-		&memberRaw.ID,
-		&memberRaw.RowStatus,
-		&memberRaw.CreatorID,
-		&memberRaw.CreatedTs,
-		&memberRaw.UpdaterID,
-		&memberRaw.UpdatedTs,
-		&memberRaw.Status,
-		&memberRaw.Role,
-		&memberRaw.PrincipalID,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &memberRaw, nil
 }
 
 func findMemberImpl(ctx context.Context, tx *Tx, find *api.MemberFind) ([]*memberRaw, error) {

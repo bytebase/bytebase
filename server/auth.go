@@ -162,14 +162,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		// test the status of this user
-		member, err := s.store.GetMemberByPrincipalID(ctx, user.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
+		if user == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user not found: %s", user.Email))
 		}
-		if member == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Member not found: %s", user.Email))
-		}
-		if member.RowStatus == api.Archived {
+		if user.MemberDeleted {
 			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
 		}
 
