@@ -57,8 +57,9 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 
 // GetDatabase gets an instance of Database.
 func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	// We don't have caller for searching IncludeAllDatabase.
-	v2Find := &FindDatabaseMessage{}
+	v2Find := &FindDatabaseMessage{
+		ShowDeleted: true,
+	}
 	if find.InstanceID != nil {
 		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: find.InstanceID})
 		if err != nil {
@@ -278,6 +279,9 @@ type FindDatabaseMessage struct {
 	InstanceID    *string
 	DatabaseName  *string
 	UID           *int
+	// When this is used, we will return databases from archived instances or environments.
+	// This is used for existing tasks with archived databases.
+	ShowDeleted bool
 
 	// TODO(d): deprecate this field when we migrate all datasource to v1 store.
 	IncludeAllDatabase bool
@@ -581,9 +585,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
 	}
-	// Don't return databases from deleted environments or instances.
-	where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
-	where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
 
 	var databaseMessages []*DatabaseMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
