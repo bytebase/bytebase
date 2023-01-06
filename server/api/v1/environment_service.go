@@ -240,6 +240,9 @@ func (s *EnvironmentService) GetEnvironmentPolicy(ctx context.Context, request *
 	if environment == nil {
 		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
 	}
+	if environment.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
+	}
 
 	resourceType := api.PolicyResourceTypeEnvironment
 	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
@@ -272,6 +275,9 @@ func (s *EnvironmentService) ListEnvironmentPolicies(ctx context.Context, reques
 	}
 	if environment == nil {
 		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+	}
+	if environment.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
 	}
 
 	resourceType := api.PolicyResourceTypeEnvironment

@@ -69,7 +69,7 @@ service EnvironmentService {
     option (google.api.http) = {
     get: "/v1/{parent=environments/*}/policies"
     };
-    option (google.api.method_signature) = "name";
+    option (google.api.method_signature) = "";
   }
 }
 

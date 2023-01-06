@@ -262,6 +262,87 @@ func (*InstanceService) UpdateDataSource(_ context.Context, _ *v1pb.UpdateDataSo
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
 }
 
+// GetInstancePolicy gets a policy in a specific instance.
+func (s *InstanceService) GetInstancePolicy(ctx context.Context, request *v1pb.GetPolicyRequest) (*v1pb.Policy, error) {
+	tokens, err := getNameParentTokens(request.Name, environmentNamePrefix, instanceNamePrefix, policyNamePrefix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	environmentID := tokens[0]
+	instanceID := tokens[1]
+	policyType, err := convertPolicyType(tokens[2])
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", instanceID)
+	}
+
+	resourceType := api.PolicyResourceTypeInstance
+	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &resourceType,
+		Type:         &policyType,
+		ResourceUID:  &instance.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if policy == nil {
+		return nil, status.Errorf(codes.NotFound, "policy %q not found", request.Name)
+	}
+
+	return convertToPolicy(convertToInstance(instance).Name, policy), nil
+}
+
+// ListInstancePolicies lists policies in a specific instance.
+func (s *InstanceService) ListInstancePolicies(ctx context.Context, request *v1pb.ListPoliciesRequest) (*v1pb.ListPoliciesResponse, error) {
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", instanceID)
+	}
+
+	resourceType := api.PolicyResourceTypeInstance
+	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &instance.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	prefix := convertToInstance(instance).Name
+	response := &v1pb.ListPoliciesResponse{}
+	for _, policy := range policies {
+		response.Policies = append(response.Policies, convertToPolicy(prefix, policy))
+	}
+	return response, nil
+}
+
 func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	engine := v1pb.Engine_ENGINE_UNSPECIFIED
 	switch instance.Engine {

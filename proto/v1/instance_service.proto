@@ -9,6 +9,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 
 import "v1/common.proto";
+import "v1/policy.proto";
 
 option go_package = "generated-go/v1";
 
@@ -76,6 +77,20 @@ service InstanceService {
       post: "/v1/{instance=environments/*/instances/*}:updateDataSource"
       body: "*"
     };
+  }
+
+  rpc GetInstancePolicy(GetPolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+    get: "/v1/{name=environments/*/instances/*/policies/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+   rpc ListInstancePolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
+    option (google.api.http) = {
+    get: "/v1/{parent=environments/*/instances/*}/policies"
+    };
+    option (google.api.method_signature) = "";
   }
 }
 
