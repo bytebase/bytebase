@@ -202,7 +202,7 @@ func (*Driver) GetType() db.Type {
 }
 
 // GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
+func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if err := driver.switchDatabase(database); err != nil {
 		return nil, err
 	}

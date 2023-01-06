@@ -100,10 +100,10 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 
 // ForkOpen opens another database in the same instance.
 // This is used to connect to the database where the migration_history table resides.
-func (driver *Driver) ForkOpen(ctx context.Context, database string) (db.Driver, error) {
-	connCfg := driver.config
+func (d *Driver) ForkOpen(ctx context.Context, database string) (db.Driver, error) {
+	connCfg := d.config
 	connCfg.Database = database
-	fork, err := newDriver(db.DriverConfig{}).Open(ctx, "", connCfg, driver.connCtx)
+	fork, err := newDriver(db.DriverConfig{}).Open(ctx, "", connCfg, d.connCtx)
 	if err != nil {
 		return nil, err
 	}
