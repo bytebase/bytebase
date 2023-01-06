@@ -393,6 +393,17 @@ type FindDatabaseMessage struct {
 
 // GetDatabaseV2 gets a database.
 func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
+	if find.EnvironmentID != nil && find.InstanceID != nil && find.DatabaseName != nil {
+		if database, ok := s.databaseCache[getDatabaseCacheKey(*find.EnvironmentID, *find.InstanceID, *find.DatabaseName)]; ok {
+			return database, nil
+		}
+	}
+	if find.UID != nil {
+		if database, ok := s.databaseIDCache[*find.UID]; ok {
+			return database, nil
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -415,6 +426,8 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 		return nil, FormatError(err)
 	}
 
+	s.databaseCache[getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName)] = database
+	s.databaseIDCache[database.UID] = database
 	return database, nil
 }
 
@@ -435,6 +448,10 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		return nil, FormatError(err)
 	}
 
+	for _, database := range databases {
+		s.databaseCache[getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName)] = database
+		s.databaseIDCache[database.UID] = database
+	}
 	return databases, nil
 }
 
@@ -454,7 +471,8 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	}
 	defer tx.Rollback()
 
-	if _, err := s.createDatabaseDefaultImpl(ctx, tx, instance.UID, create); err != nil {
+	databaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instance.UID, create)
+	if err != nil {
 		return err
 	}
 
@@ -462,6 +480,10 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 		return FormatError(err)
 	}
 
+	// Update the cache.
+	if _, err = s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID}); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -574,6 +596,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		return nil, err
 	}
 
+	// Update the cache.
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
@@ -634,6 +657,8 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
+
+	// Update the cache.
 	database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 	if err != nil {
 		return nil, err
