@@ -709,6 +709,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
 	}
+	where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+
 	var databaseMessages []*DatabaseMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
