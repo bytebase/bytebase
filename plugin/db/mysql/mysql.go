@@ -130,12 +130,19 @@ func (driver *Driver) GetType() db.Type {
 	return driver.dbType
 }
 
-// SwitchDatabase switches the connected database.
-func (*Driver) SwitchDatabase(context.Context, string) (func() error, error) {
-	noop := func() error {
-		return nil
+// ForkOpen opens another database in the same instance.
+// This is used to connect to the database where the migration_history table resides.
+func (driver *Driver) ForkOpen(ctx context.Context, database string) (db.Driver, error) {
+	connCfg := driver.connCfg
+	connCfg.Database = database
+	fork, err := newDriver(db.DriverConfig{
+		DbBinDir:  driver.dbBinDir,
+		BinlogDir: driver.binlogDir,
+	}).Open(ctx, driver.dbType, connCfg, driver.connectionCtx)
+	if err != nil {
+		return nil, err
 	}
-	return noop, nil
+	return fork, nil
 }
 
 // GetDBConnection gets a database connection.

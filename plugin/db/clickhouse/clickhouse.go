@@ -35,6 +35,7 @@ func init() {
 
 // Driver is the ClickHouse driver.
 type Driver struct {
+	config        db.ConnectionConfig
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
 
@@ -86,9 +87,22 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 
 	driver.dbType = dbType
 	driver.db = conn
+	driver.config = config
 	driver.connectionCtx = connCtx
 
 	return driver, nil
+}
+
+// ForkOpen opens another database in the same instance.
+// This is used to connect to the database where the migration_history table resides.
+func (driver *Driver) ForkOpen(ctx context.Context, database string) (db.Driver, error) {
+	connCfg := driver.config
+	connCfg.Database = database
+	fork, err := newDriver(db.DriverConfig{}).Open(ctx, driver.dbType, connCfg, driver.connectionCtx)
+	if err != nil {
+		return nil, err
+	}
+	return fork, nil
 }
 
 // Close closes the driver.
@@ -104,14 +118,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 // GetType returns the database type.
 func (*Driver) GetType() db.Type {
 	return db.ClickHouse
-}
-
-// SwitchDatabase switches the connected database.
-func (*Driver) SwitchDatabase(context.Context, string) (func() error, error) {
-	noop := func() error {
-		return nil
-	}
-	return noop, nil
 }
 
 // GetDBConnection gets a database connection.

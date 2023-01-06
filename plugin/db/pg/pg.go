@@ -113,6 +113,20 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 	return driver, nil
 }
 
+// ForkOpen opens another database in the same instance.
+// This is used to connect to the database where the migration_history table resides.
+func (driver *Driver) ForkOpen(ctx context.Context, database string) (db.Driver, error) {
+	connCfg := driver.config
+	connCfg.Database = database
+	fork, err := newDriver(db.DriverConfig{
+		DbBinDir: driver.dbBinDir,
+	}).Open(ctx, "", connCfg, driver.connectionCtx)
+	if err != nil {
+		return nil, err
+	}
+	return fork, nil
+}
+
 // guessDSN will guess a valid DB connection and its database name.
 func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslKey string) (string, string, error) {
 	// dbname is guessed if not specified.
@@ -189,7 +203,7 @@ func (*Driver) GetType() db.Type {
 
 // GetDBConnection gets a database connection.
 func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
-	if _, err := driver.SwitchDatabase(ctx, database); err != nil {
+	if err := driver.switchDatabase(database); err != nil {
 		return nil, err
 	}
 	return driver.db, nil
@@ -437,51 +451,19 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 	return util.Query(ctx, db.Postgres, driver.db, statement, queryContext)
 }
 
-// SwitchDatabase switches the connected database.
-func (driver *Driver) SwitchDatabase(_ context.Context, dbName string) (func() error, error) {
-	if dbName == driver.databaseName {
-		noop := func() error {
-			return nil
-		}
-		return noop, nil
-	}
-
-	switchBack := func() func() error {
-		driver := driver
-		dbName := driver.databaseName
-
-		return func() error {
-			if dbName == driver.databaseName {
-				return nil
-			}
-			if driver.db != nil {
-				if err := driver.db.Close(); err != nil {
-					return err
-				}
-			}
-			dsn := driver.baseDSN + " dbname=" + dbName
-			db, err := sql.Open(driverName, dsn)
-			if err != nil {
-				return err
-			}
-			driver.db = db
-			driver.databaseName = dbName
-			return nil
-		}
-	}()
-
+func (driver *Driver) switchDatabase(dbName string) error {
 	if driver.db != nil {
 		if err := driver.db.Close(); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	dsn := driver.baseDSN + " dbname=" + dbName
 	db, err := sql.Open(driverName, dsn)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	driver.db = db
 	driver.databaseName = dbName
-	return switchBack, err
+	return nil
 }

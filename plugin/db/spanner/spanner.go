@@ -98,48 +98,16 @@ func (d *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionConfig
 	return d, nil
 }
 
-// SwitchDatabase switches the connected database.
-func (d *Driver) SwitchDatabase(ctx context.Context, dbName string) (func() error, error) {
-	if d.dbName == dbName {
-		noop := func() error {
-			return nil
-		}
-		return noop, nil
-	}
-
-	switchBack := func() func() error {
-		d := d
-		dbName := d.dbName
-
-		return func() error {
-			if dbName == d.dbName {
-				return nil
-			}
-			if d.client != nil {
-				d.client.Close()
-			}
-			dsn := getDSN(d.config.Host, dbName)
-			client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(d.config.Password)))
-			if err != nil {
-				return err
-			}
-			d.client = client
-			d.dbName = dbName
-			return nil
-		}
-	}()
-
-	if d.client != nil {
-		d.client.Close()
-	}
-	dsn := getDSN(d.config.Host, dbName)
-	client, err := spanner.NewClient(ctx, dsn, option.WithCredentialsJSON([]byte(d.config.Password)))
+// ForkOpen opens another database in the same instance.
+// This is used to connect to the database where the migration_history table resides.
+func (driver *Driver) ForkOpen(ctx context.Context, database string) (db.Driver, error) {
+	connCfg := driver.config
+	connCfg.Database = database
+	fork, err := newDriver(db.DriverConfig{}).Open(ctx, "", connCfg, driver.connCtx)
 	if err != nil {
 		return nil, err
 	}
-	d.client = client
-	d.dbName = dbName
-	return switchBack, nil
+	return fork, nil
 }
 
 // Close closes the driver.

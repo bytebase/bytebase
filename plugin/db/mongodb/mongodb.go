@@ -54,6 +54,18 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, connCfg db.Connection
 	return driver, nil
 }
 
+// ForkOpen opens another database in the same instance.
+// This is used to connect to the database where the migration_history table resides.
+func (driver *Driver) ForkOpen(ctx context.Context, database string) (db.Driver, error) {
+	connCfg := driver.connCfg
+	connCfg.Database = database
+	fork, err := newDriver(db.DriverConfig{}).Open(ctx, "", connCfg, driver.connectionCtx)
+	if err != nil {
+		return nil, err
+	}
+	return fork, nil
+}
+
 // Close closes the MongoDB driver.
 func (driver *Driver) Close(ctx context.Context) error {
 	if err := driver.client.Disconnect(ctx); err != nil {
@@ -73,14 +85,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 // GetType returns the database type.
 func (*Driver) GetType() db.Type {
 	return db.MongoDB
-}
-
-// SwitchDatabase switches the connected database.
-func (*Driver) SwitchDatabase(context.Context, string) (func() error, error) {
-	noop := func() error {
-		return nil
-	}
-	return noop, nil
 }
 
 // GetDBConnection returns a database connection.

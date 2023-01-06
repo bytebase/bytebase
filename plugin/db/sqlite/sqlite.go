@@ -34,6 +34,7 @@ type Driver struct {
 	dir           string
 	db            *sql.DB
 	connectionCtx db.ConnectionContext
+	connCfg       db.ConnectionConfig
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -50,7 +51,20 @@ func (driver *Driver) Open(ctx context.Context, _ db.Type, config db.ConnectionC
 		return nil, err
 	}
 	driver.connectionCtx = connCtx
+	driver.connCfg = config
 	return driver, nil
+}
+
+// ForkOpen opens another database in the same instance.
+// This is used to connect to the database where the migration_history table resides.
+func (driver *Driver) ForkOpen(ctx context.Context, database string) (db.Driver, error) {
+	connCfg := driver.connCfg
+	connCfg.Database = database
+	fork, err := newDriver(db.DriverConfig{}).Open(ctx, "", connCfg, driver.connectionCtx)
+	if err != nil {
+		return nil, err
+	}
+	return fork, nil
 }
 
 // Close closes the driver.
@@ -69,14 +83,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 // GetType returns the database type.
 func (*Driver) GetType() db.Type {
 	return db.SQLite
-}
-
-// SwitchDatabase switches the connected database.
-func (*Driver) SwitchDatabase(context.Context, string) (func() error, error) {
-	noop := func() error {
-		return nil
-	}
-	return noop, nil
 }
 
 // GetDBConnection gets a database connection.

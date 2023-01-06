@@ -194,15 +194,31 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 		doMigrate = false
 	}
 	if doMigrate {
-		// Switch to the target database only if we're NOT creating this target database.
-		// We should not call GetDBConnection() if the instance is MongoDB because it doesn't support.
-		if !m.CreateDatabase && executor.GetType() != db.MongoDB {
-			if _, err := executor.GetDBConnection(ctx, m.Database); err != nil {
+		// Fork open a connection to the database where migration_history table resides.
+		// Becuase the target database is not created yet and cannot be connected.
+		if m.CreateDatabase {
+			if err := func() (err error) {
+				fork, err := executor.ForkOpen(ctx, databaseName)
+				if err != nil {
+					return err
+				}
+				defer func() {
+					if cerr := fork.Close(ctx); cerr != nil {
+						err = cerr
+					}
+				}()
+				forkExecutor := fork.(MigrationExecutor)
+				if _, err := forkExecutor.Execute(ctx, statement, m.CreateDatabase); err != nil {
+					return FormatError(err)
+				}
+				return nil
+			}(); err != nil {
 				return -1, "", err
 			}
-		}
-		if _, err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
-			return -1, "", FormatError(err)
+		} else {
+			if _, err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
+				return -1, "", FormatError(err)
+			}
 		}
 	}
 
@@ -226,9 +242,21 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to convert to stored version")
 	}
+
+	fork, err := executor.ForkOpen(ctx, databaseName)
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		if cerr := fork.Close(ctx); cerr != nil {
+			err = cerr
+		}
+	}()
+	forkExecutor := fork.(MigrationExecutor)
+
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
-	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+	if list, err := forkExecutor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
 		Version:  &m.Version,
 	}); err != nil {
@@ -260,19 +288,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	switchBack, err := executor.SwitchDatabase(ctx, databaseName)
-	if err != nil {
-		return 0, err
-	}
-	defer func() {
-		if nerr := switchBack(); nerr != nil {
-			if err == nil {
-				err = nerr
-			}
-		}
-	}()
-
-	version, largestSequence, err := executor.FindLargestVersionSinceBaselineAndLargestSequence(ctx, m.Namespace)
+	version, largestSequence, err := forkExecutor.FindLargestVersionSinceBaselineAndLargestSequence(ctx, m.Namespace)
 	if err != nil {
 		return -1, err
 	}
@@ -288,7 +304,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	if insertedID, err = executor.InsertPendingHistory(ctx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
+	if insertedID, err = forkExecutor.InsertPendingHistory(ctx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
 		return -1, err
 	}
 
@@ -297,24 +313,23 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
 func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
-	switchBack, err := executor.SwitchDatabase(ctx, databaseName)
+	fork, err := executor.ForkOpen(ctx, databaseName)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		if nerr := switchBack(); nerr != nil {
-			if err == nil {
-				err = nerr
-			}
+		if cerr := fork.Close(ctx); cerr != nil {
+			err = cerr
 		}
 	}()
+	forkExecutor := fork.(MigrationExecutor)
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-		err = executor.UpdateHistoryAsDone(ctx, migrationDurationNs, updatedSchema, migrationHistoryID)
+		err = forkExecutor.UpdateHistoryAsDone(ctx, migrationDurationNs, updatedSchema, migrationHistoryID)
 	} else {
 		// Otherwise, update the migration history as 'FAILED', execution_duration.
-		err = executor.UpdateHistoryAsFailed(ctx, migrationDurationNs, migrationHistoryID)
+		err = forkExecutor.UpdateHistoryAsFailed(ctx, migrationDurationNs, migrationHistoryID)
 	}
 	if err != nil {
 		return err

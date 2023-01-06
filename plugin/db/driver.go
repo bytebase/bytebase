@@ -434,13 +434,13 @@ type Driver interface {
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
 	// So we pass the dbType to tell the exact engine.
 	Open(ctx context.Context, dbType Type, config ConnectionConfig, connCtx ConnectionContext) (Driver, error)
+	// ForkOpen opens another database in the same instance.
+	// This is used to connect to the database where the migration_history table resides.
+	ForkOpen(ctx context.Context, database string) (Driver, error)
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
 	GetType() Type
-	// SwitchDatabase switches the connection to a specific database and returns a function to switch back the database.
-	// This function is a no-op if the underlying driver connection is at instance-level, e.g. MySQL.
-	SwitchDatabase(ctx context.Context, database string) (func() error, error)
 	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
