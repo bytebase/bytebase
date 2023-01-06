@@ -81,8 +81,8 @@ func (exec *PITRRestoreExecutor) RunOnce(ctx context.Context, task *api.Task) (t
 	return true, resultPayload, err
 }
 
-func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	backup, err := store.GetBackupByID(ctx, *payload.BackupID)
+func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+	backup, err := stores.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
@@ -91,7 +91,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, store *sto
 	}
 
 	// TODO(dragonly): We should let users restore the backup even if the source database is gone.
-	sourceDatabase, err := store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
+	sourceDatabase, err := stores.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find database for the backup")
 	}
@@ -102,11 +102,11 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, store *sto
 	if payload.TargetInstanceID == nil {
 		// Backup restore in place
 		if task.Instance.Engine == db.Postgres {
-			issue, err := getIssueByPipelineID(ctx, store, task.PipelineID)
+			issue, err := getIssueByPipelineID(ctx, stores, task.PipelineID)
 			if err != nil {
 				return nil, err
 			}
-			return exec.doRestoreInPlacePostgres(ctx, store, dbFactory, profile, issue, task, payload)
+			return exec.doRestoreInPlacePostgres(ctx, stores, dbFactory, profile, issue, task, payload)
 		}
 		return nil, errors.Errorf("we only support backup restore replace for PostgreSQL now")
 	}
@@ -116,7 +116,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, store *sto
 		InstanceID: &targetInstanceID,
 		Name:       payload.DatabaseName,
 	}
-	targetDatabase, err := store.GetDatabase(ctx, targetDatabaseFind)
+	targetDatabase, err := stores.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, task.Instance.Name)
 	}
@@ -137,7 +137,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, store *sto
 	}
 	// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
 	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	migrationID, version, err := createBranchMigrationHistory(ctx, store, dbFactory, profile, sourceDatabase, targetDatabase, backup, task)
+	migrationID, version, err := createBranchMigrationHistory(ctx, stores, dbFactory, profile, sourceDatabase, targetDatabase, backup, task)
 	if err != nil {
 		return nil, err
 	}
@@ -146,13 +146,13 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, store *sto
 	// restoringDatabase is changing the customer database instance, while here we are changing our own meta db,
 	// and since we can't guarantee cross database transaction consistency, there is always a chance to have
 	// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
-	databasePatch := &api.DatabasePatch{
-		ID:             targetDatabase.ID,
-		UpdaterID:      api.SystemBotID,
+	if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		EnvironmentID:  targetDatabase.Instance.Environment.ResourceID,
+		InstanceID:     targetDatabase.Instance.ResourceID,
+		DatabaseName:   targetDatabase.Name,
 		SourceBackupID: &backup.ID,
-	}
-	if _, err = store.PatchDatabase(ctx, databasePatch); err != nil {
-		return nil, errors.Wrapf(err, "failed to patch database source with ID %d and backup ID %d after restore", targetDatabase.ID, backup.ID)
+	}, api.SystemBotID); err != nil {
+		return nil, errors.Wrapf(err, "failed to update database %d backup source ID %d after restore", targetDatabase.ID, backup.ID)
 	}
 
 	// Sync database schema after restore is completed.

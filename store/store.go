@@ -11,6 +11,9 @@ type Store struct {
 	environmentCache   map[string]*EnvironmentMessage
 	environmentIDCache map[int]*EnvironmentMessage
 	instanceCache      map[string]*InstanceMessage
+	instanceIDCache    map[int]*InstanceMessage
+	databaseCache      map[string]*DatabaseMessage
+	databaseIDCache    map[int]*DatabaseMessage
 	projectCache       map[string]*ProjectMessage
 	projectIDCache     map[int]*ProjectMessage
 	dbSchemaCache      map[int]*DBSchema
@@ -24,6 +27,9 @@ func New(db *DB) *Store {
 		environmentCache:   make(map[string]*EnvironmentMessage),
 		environmentIDCache: make(map[int]*EnvironmentMessage),
 		instanceCache:      make(map[string]*InstanceMessage),
+		instanceIDCache:    make(map[int]*InstanceMessage),
+		databaseCache:      make(map[string]*DatabaseMessage),
+		databaseIDCache:    make(map[int]*DatabaseMessage),
 		projectCache:       make(map[string]*ProjectMessage),
 		projectIDCache:     make(map[int]*ProjectMessage),
 		dbSchemaCache:      make(map[int]*DBSchema),
@@ -37,4 +43,8 @@ func (s *Store) Close() error {
 
 func getInstanceCacheKey(environmentID, instanceID string) string {
 	return fmt.Sprintf("%s/%s", environmentID, instanceID)
+}
+
+func getDatabaseCacheKey(environmentID, instanceID, databaseName string) string {
+	return fmt.Sprintf("%s/%s/%s", environmentID, instanceID, databaseName)
 }

@@ -19,20 +19,14 @@ const (
 	projectMemberCacheNamespace cacheNamespace = "pm"
 	// instanceCacheNamespace is the cache type of instances.
 	instanceCacheNamespace cacheNamespace = "i"
-	// databaseCacheNamespace is the cache type of databases.
-	databaseCacheNamespace cacheNamespace = "d"
 	// memberCacheNamespace is the cache type of members.
 	memberCacheNamespace cacheNamespace = "m"
 	// pipelineCacheNamespace is the cache type of pipelines.
 	pipelineCacheNamespace cacheNamespace = "pl"
 	// issueCacheNamespace is the cache type of issues.
 	issueCacheNamespace cacheNamespace = "is"
-	// databaseLabelCacheNamespace is the cache type of database labels.
-	databaseLabelCacheNamespace cacheNamespace = "dl"
 	// dataSourceCacheNamespace is the cache type of data sources.
 	dataSourceCacheNamespace cacheNamespace = "ds"
-	// tierPolicyCacheNamespace is the cache type of tier policy.
-	tierPolicyCacheNamespace cacheNamespace = "pot"
 	// approvalPolicyCacheNamespace is the cache type of approval policy.
 	approvalPolicyCacheNamespace cacheNamespace = "app"
 )
