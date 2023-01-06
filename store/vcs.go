@@ -165,7 +165,7 @@ func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRa
 
 // findVCSRaw retrieves a list of VCSs based on find conditions.
 func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -182,7 +182,7 @@ func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, e
 // getVCSRaw retrieves a single vcs based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

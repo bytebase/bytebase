@@ -34,7 +34,7 @@ func (s *Store) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUser
 
 // GetInstanceUser gets an instance of IntanceUser.
 func (s *Store) GetInstanceUser(ctx context.Context, find *api.InstanceUserFind) (*api.InstanceUser, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -59,7 +59,7 @@ func (s *Store) FindInstanceUserByInstanceID(ctx context.Context, id int) ([]*ap
 		InstanceID: &id,
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

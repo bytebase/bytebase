@@ -308,7 +308,7 @@ func (s *Store) composePolicy(ctx context.Context, raw *policyRaw) (*api.Policy,
 // getPolicyRaw finds the policy for an environment.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policyRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

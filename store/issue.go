@@ -536,7 +536,7 @@ func (s *Store) createIssueRaw(ctx context.Context, create *api.IssueCreate) (*i
 
 // findIssueRaw retrieves a list of issues based on find.
 func (s *Store) findIssueRaw(ctx context.Context, find *api.IssueFind) ([]*issueRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -561,7 +561,7 @@ func (s *Store) findIssueRaw(ctx context.Context, find *api.IssueFind) ([]*issue
 // getIssueRaw retrieves a single issue based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getIssueRaw(ctx context.Context, find *api.IssueFind) (*issueRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

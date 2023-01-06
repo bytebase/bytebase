@@ -413,7 +413,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 
 // findInstanceRaw retrieves a list of instances based on find.
 func (s *Store) findInstanceRaw(ctx context.Context, find *api.InstanceFind) ([]*instanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -441,7 +441,7 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
