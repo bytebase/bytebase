@@ -68,23 +68,6 @@ func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Me
 	return memberList, nil
 }
 
-// GetMemberByPrincipalID gets an instance of Member.
-func (s *Store) GetMemberByPrincipalID(ctx context.Context, id int) (*api.Member, error) {
-	find := &api.MemberFind{PrincipalID: &id}
-	memberRaw, err := s.getMemberRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Member with PrincipalID %d", id)
-	}
-	if memberRaw == nil {
-		return nil, nil
-	}
-	member, err := s.composeMember(ctx, memberRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Member with memberRaw[%+v]", memberRaw)
-	}
-	return member, nil
-}
-
 // GetMemberByID gets an instance of Member.
 func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) {
 	find := &api.MemberFind{ID: &id}
