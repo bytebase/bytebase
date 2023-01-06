@@ -372,7 +372,9 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 		return FormatError(err)
 	}
 
-	// Update the cache.
+	// Invalidate an update the cache.
+	delete(s.databaseCache, getDatabaseCacheKey(instance.EnvironmentID, instance.ResourceID, create.DatabaseName))
+	delete(s.databaseIDCache, databaseUID)
 	if _, err = s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID}); err != nil {
 		return err
 	}
@@ -488,7 +490,9 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		return nil, err
 	}
 
-	// Update the cache.
+	// Invalidate and update the cache.
+	delete(s.databaseCache, getDatabaseCacheKey(instance.EnvironmentID, instance.ResourceID, create.DatabaseName))
+	delete(s.databaseIDCache, databaseUID)
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
@@ -498,6 +502,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if err != nil {
 		return nil, err
 	}
+
 	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
 	if v := patch.ProjectID; v != nil {
 		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: patch.ProjectID})
@@ -550,12 +555,10 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		return nil, FormatError(err)
 	}
 
-	// Update the cache.
-	database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
-	if err != nil {
-		return nil, err
-	}
-	return database, nil
+	// Invalidate and update the cache.
+	delete(s.databaseCache, getDatabaseCacheKey(patch.EnvironmentID, patch.InstanceID, patch.DatabaseName))
+	delete(s.databaseIDCache, databaseUID)
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {

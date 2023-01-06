@@ -1372,7 +1372,7 @@ func convertDatabaseLabels(labelsJSON string, database *api.Database) ([]*api.Da
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
 	if err := validateDatabaseLabelList(labels, database.Instance.Environment.Name); err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to validate database labels").SetInternal(err)
 	}
 
 	return labels, nil
