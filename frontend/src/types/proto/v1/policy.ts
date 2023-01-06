@@ -70,7 +70,7 @@ export function policyTypeToJSON(object: PolicyType): string {
 export interface GetPolicyRequest {
   /**
    * The name of the policy to retrieve.
-   * Format: policies/{policy type}/{policy resource id}
+   * Format: {resource type}/{resource id}/policies/{policy type}
    */
   name: string;
 }
@@ -78,7 +78,7 @@ export interface GetPolicyRequest {
 export interface ListPoliciesRequest {
   /**
    * The parent, which owns this collection of policies.
-   * Format: policies/{policy type}
+   * Format: {resource type}/{resource id}/policies/{policy type}
    */
   parent: string;
   /**
@@ -111,7 +111,7 @@ export interface ListPoliciesResponse {
 export interface Policy {
   /**
    * The name of the policy.
-   * Format: policies/{policy type}/{policy resource id}
+   * Format: {resource type}/{resource id}/policies/{policy type}
    */
   name: string;
   /** The system-assigned, unique identifier for a resource. */
@@ -391,37 +391,6 @@ export const Policy = {
     return message;
   },
 };
-
-export interface PolicyService {
-  GetPolicy(request: GetPolicyRequest): Promise<Policy>;
-  ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
-}
-
-export class PolicyServiceClientImpl implements PolicyService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.PolicyService";
-    this.rpc = rpc;
-    this.GetPolicy = this.GetPolicy.bind(this);
-    this.ListPolicies = this.ListPolicies.bind(this);
-  }
-  GetPolicy(request: GetPolicyRequest): Promise<Policy> {
-    const data = GetPolicyRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetPolicy", data);
-    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
-  }
-
-  ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse> {
-    const data = ListPoliciesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListPolicies", data);
-    return promise.then((data) => ListPoliciesResponse.decode(new _m0.Reader(data)));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

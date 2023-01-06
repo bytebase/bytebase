@@ -2,41 +2,20 @@ syntax = "proto3";
 
 package bytebase.v1;
 
-import "google/api/annotations.proto";
-import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/protobuf/empty.proto";
-import "google/protobuf/field_mask.proto";
-
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
-service PolicyService {
-  rpc GetPolicy(GetPolicyRequest) returns (Policy) {
-    option (google.api.http) = {
-      get: "/v1/{name=policies/*/*}"
-    };
-    option (google.api.method_signature) = "name";
-  }
-
-  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
-    option (google.api.http) = {
-      get: "/v1/{parent=policies/*}"
-    };
-    option (google.api.method_signature) = "parent";
-  }
-}
-
 message GetPolicyRequest {
   // The name of the policy to retrieve.
-  // Format: policies/{policy type}/{policy resource id}
+  // Format: {resource type}/{resource id}/policies/{policy type}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListPoliciesRequest {
   // The parent, which owns this collection of policies.
-  // Format: policies/{policy type}
+  // Format: {resource type}/{resource id}/policies/{policy type}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The maximum number of policies to return. The service may return fewer than
@@ -64,7 +43,7 @@ message ListPoliciesResponse {
 
 message Policy {
   // The name of the policy.
-  // Format: policies/{policy type}/{policy resource id}
+  // Format: {resource type}/{resource id}/policies/{policy type}
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.

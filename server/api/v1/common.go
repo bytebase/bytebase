@@ -53,15 +53,6 @@ func getEnvironmentInstanceID(name string) (string, string, error) {
 	return tokens[0], tokens[1], nil
 }
 
-func getPolicyType(name string) (string, error) {
-	// the policy request should be policies/{policy-type}
-	tokens, err := getNameParentTokens(name, policyNamePrefix)
-	if err != nil {
-		return "", err
-	}
-	return tokens[0], nil
-}
-
 func getEnvironmentInstanceRoleID(name string) (string, string, string, error) {
 	// the instance request should be environments/{environment-id}/instances/{instance-id}/roles/{role-name}
 	tokens, err := getNameParentTokens(name, environmentNamePrefix, instanceNamePrefix, instanceRolePrefix)

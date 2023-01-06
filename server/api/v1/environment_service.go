@@ -218,6 +218,79 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 	return convertToEnvironment(environment), nil
 }
 
+// GetEnvironmentPolicy gets a policy in a specific environment.
+func (s *EnvironmentService) GetEnvironmentPolicy(ctx context.Context, request *v1pb.GetPolicyRequest) (*v1pb.Policy, error) {
+	tokens, err := getNameParentTokens(request.Name, environmentNamePrefix, policyNamePrefix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	environmentID := tokens[0]
+	policyType, err := convertPolicyType(tokens[1])
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+	}
+
+	resourceType := api.PolicyResourceTypeEnvironment
+	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &resourceType,
+		Type:         &policyType,
+		ResourceUID:  &environment.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if policy == nil {
+		return nil, status.Errorf(codes.NotFound, "policy %q not found", request.Name)
+	}
+
+	return convertToPolicy(convertToEnvironment(environment).Name, policy), nil
+}
+
+// ListEnvironmentPolicies lists policies in a specific environment.
+func (s *EnvironmentService) ListEnvironmentPolicies(ctx context.Context, request *v1pb.ListPoliciesRequest) (*v1pb.ListPoliciesResponse, error) {
+	environmentID, err := getEnvironmentID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+	}
+
+	resourceType := api.PolicyResourceTypeEnvironment
+	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &environment.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	prefix := convertToEnvironment(environment).Name
+	response := &v1pb.ListPoliciesResponse{}
+	for _, policy := range policies {
+		response.Policies = append(response.Policies, convertToPolicy(prefix, policy))
+	}
+	return response, nil
+}
+
 func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
 	tier := v1pb.EnvironmentTier_UNPROTECTED
 	if environment.Protected {
