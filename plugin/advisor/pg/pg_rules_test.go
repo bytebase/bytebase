@@ -37,6 +37,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementDMLDryRun,
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+		advisor.SchemaRuleTableDropNamingConvention,
 	}
 
 	for _, rule := range pgRules {
