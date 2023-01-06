@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/mail"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -78,6 +79,9 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 	if request.User.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "email must be set")
+	}
+	if _, err := mail.ParseAddress(request.User.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q address", request.User.Email)
 	}
 	if request.User.Title == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "user title must be set")
@@ -169,6 +173,9 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "user.email":
+			if _, err := mail.ParseAddress(request.User.Email); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid email address %q", request.User.Email)
+			}
 			patch.Email = &request.User.Email
 		case "user.title":
 			patch.Name = &request.User.Title

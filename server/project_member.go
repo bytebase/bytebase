@@ -77,11 +77,11 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
 			}
 
-			principal, err := s.store.GetPrincipalByEmail(ctx, projectMember.Email)
+			user, err := s.store.GetUserByEmail(ctx, projectMember.Email)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
-			if principal == nil { // try to create principal
+			if user == nil { // try to create principal
 				password, err := common.RandomString(20)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random password").SetInternal(err)
@@ -95,11 +95,11 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					// if the principal uses external auth provider
 					Password: password,
 				}
-				createdPrincipal, httpErr := trySignUp(ctx, s, signUpInfo, c.Get(getPrincipalIDContextKey()).(int))
+				createdUser, httpErr := trySignUp(ctx, s, signUpInfo, c.Get(getPrincipalIDContextKey()).(int))
 				if httpErr != nil {
 					return httpErr
 				}
-				principal = createdPrincipal
+				user = createdUser
 			}
 
 			providerPayload := &api.ProjectRoleProviderPayload{
@@ -113,7 +113,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			createProjectMember := &api.ProjectMemberCreate{
 				ProjectID:    projectID,
 				CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
-				PrincipalID:  principal.ID,
+				PrincipalID:  user.ID,
 				Role:         projectMember.Role,
 				RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
 				Payload:      string(providerPayloadBytes),

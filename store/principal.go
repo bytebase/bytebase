@@ -54,18 +54,6 @@ func (raw *principalRaw) toPrincipal() *api.Principal {
 	}
 }
 
-// CreatePrincipal creates an instance of Principal.
-func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
-	principalRaw, err := s.createPrincipalRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Principal with PrincipalCreate[%+v]", create)
-	}
-	// NOTE: Currently the corresponding Member object is not created yet.
-	// YES, we are returning a Principal with empty Role field. OMG.
-	principal := principalRaw.toPrincipal()
-	return principal, nil
-}
-
 // GetPrincipalList gets a list of Principal instances.
 func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	principalRawList, err := s.findPrincipalRawList(ctx)
@@ -134,33 +122,7 @@ func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, e
 	return principal, nil
 }
 
-//
 // private functions
-//
-
-// createPrincipalRaw creates an instance of principalRaw.
-func (s *Store) createPrincipalRaw(ctx context.Context, create *api.PrincipalCreate) (*principalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	principal, err := createPrincipalImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(principalCacheNamespace, principal.ID, principal); err != nil {
-		return nil, err
-	}
-
-	return principal, nil
-}
 
 // findPrincipalRawList retrieves a list of principalRaw instances.
 func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, error) {
@@ -269,48 +231,6 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 		principal.Role = memberRaw.Role
 	}
 	return principal, nil
-}
-
-// createPrincipalImpl creates a new principal.
-func createPrincipalImpl(ctx context.Context, tx *Tx, create *api.PrincipalCreate) (*principalRaw, error) {
-	// Insert row into database.
-	query := `
-		INSERT INTO principal (
-			creator_id,
-			updater_id,
-			type,
-			name,
-			email,
-			password_hash
-		)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
-	`
-	var principalRaw principalRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.Type,
-		create.Name,
-		create.Email,
-		create.PasswordHash,
-	).Scan(
-		&principalRaw.ID,
-		&principalRaw.CreatorID,
-		&principalRaw.CreatedTs,
-		&principalRaw.UpdaterID,
-		&principalRaw.UpdatedTs,
-		&principalRaw.Type,
-		&principalRaw.Name,
-		&principalRaw.Email,
-		&principalRaw.PasswordHash,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &principalRaw, nil
 }
 
 func findPrincipalRawListImpl(ctx context.Context, tx *Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
@@ -488,6 +408,9 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 
 // GetUserByEmail gets the user by email.
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
+	// We use lower-case for emails.
+	email = strings.ToLower(email)
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -567,6 +490,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 
 // CreateUser creates an user.
 func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID int) (*UserMessage, error) {
+	// We use lower-case for emails.
+	create.Email = strings.ToLower(create.Email)
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

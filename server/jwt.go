@@ -12,7 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 	pkgerrors "github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/server/api/auth"
 	"github.com/bytebase/bytebase/store"
@@ -37,7 +36,7 @@ func getPrincipalIDContextKey() string {
 }
 
 // GenerateTokensAndSetCookies generates jwt token and saves it to the http-only cookie.
-func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode common.ReleaseMode, secret string) error {
+func GenerateTokensAndSetCookies(c echo.Context, user *store.UserMessage, mode common.ReleaseMode, secret string) error {
 	accessToken, err := auth.GenerateAccessToken(user.Name, user.ID, mode, secret)
 	if err != nil {
 		return pkgerrors.Wrap(err, "failed to generate access token")
@@ -45,7 +44,7 @@ func GenerateTokensAndSetCookies(c echo.Context, user *api.Principal, mode commo
 
 	cookieExp := time.Now().Add(auth.CookieExpDuration)
 	setTokenCookie(c, auth.AccessTokenCookieName, accessToken, cookieExp)
-	setUserCookie(c, user, cookieExp)
+	setUserCookie(c, user.ID, cookieExp)
 
 	// We generate here a new refresh token and saving it to the cookie.
 	refreshToken, err := auth.GenerateRefreshToken(user.Name, user.ID, mode, secret)
@@ -73,10 +72,10 @@ func setTokenCookie(c echo.Context, name, token string, expiration time.Time) {
 }
 
 // Purpose of this cookie is to store the user's id.
-func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
+func setUserCookie(c echo.Context, userID int, expiration time.Time) {
 	cookie := new(http.Cookie)
 	cookie.Name = "user"
-	cookie.Value = strconv.Itoa(user.ID)
+	cookie.Value = strconv.Itoa(userID)
 	cookie.Expires = expiration
 	cookie.Path = "/"
 	// For now, we allow Bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
@@ -179,7 +178,7 @@ func JWTMiddleware(pathPrefix string, principalStore *store.Store, next echo.Han
 			}
 
 			// Even if there is no error, we still need to make sure the user still exists.
-			user, err := principalStore.GetPrincipalByID(ctx, principalID)
+			user, err := principalStore.GetUserByID(ctx, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", principalID)).SetInternal(err)
 			}
