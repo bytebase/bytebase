@@ -73,6 +73,7 @@ func composePrincipal(user *UserMessage) (*api.Principal, error) {
 type FindUserMessage struct {
 	ID          *int
 	Email       *string
+	Role        *api.Role
 	ShowDeleted bool
 }
 
@@ -188,6 +189,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	}
 	if v := find.Email; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Role; v != nil {
+		where, args = append(where, fmt.Sprintf("member.role = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
