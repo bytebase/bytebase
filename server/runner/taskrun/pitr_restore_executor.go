@@ -490,16 +490,16 @@ func downloadBackupFileFromCloud(ctx context.Context, s3Client *bbs3.Client, bac
 // all migration history from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
-func createBranchMigrationHistory(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
+func createBranchMigrationHistory(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (string, string, error) {
 	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name)
 	if err != nil {
-		return -1, "", err
+		return "", "", err
 	}
 	defer targetDriver.Close(ctx)
 
 	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		return -1, "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
+		return "", "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}
 
 	// Add a branch migration history record.
@@ -526,7 +526,7 @@ func createBranchMigrationHistory(ctx context.Context, store *store.Store, dbFac
 	}
 	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
 	if err != nil {
-		return -1, "", errors.Wrap(err, "failed to create migration history")
+		return "", "", errors.Wrap(err, "failed to create migration history")
 	}
 	return migrationID, m.Version, nil
 }

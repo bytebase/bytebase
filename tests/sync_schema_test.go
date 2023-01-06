@@ -137,8 +137,7 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
 
-	history, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{
-		ID:       &instance.ID,
+	history, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{
 		Database: &database.Name,
 	})
 	a.NoError(err)

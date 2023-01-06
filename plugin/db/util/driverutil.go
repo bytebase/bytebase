@@ -142,23 +142,23 @@ type MigrationExecutor interface {
 	// Returns 0 if we haven't applied any migration for this namespace.
 	FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace string, baseline bool) (int, error)
 	// InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error)
+	InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (insertedID string, err error)
 	// UpdateHistoryAsDone will update the migration record as done.
-	UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error
+	UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID string) error
 	// UpdateHistoryAsFailed will update the migration record as failed.
-	UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error
+	UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID string) error
 }
 
 // ExecuteMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless (e.g. Mongo).
 	if !m.CreateDatabase && executor.GetType() != db.MongoDB {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
 		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
-			return -1, "", FormatError(err)
+			return "", "", FormatError(err)
 		}
 	}
 
@@ -169,7 +169,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 			return insertedID, prevSchemaBuf.String(), nil
 		}
-		return -1, "", errors.Wrapf(err, "failed to begin migration for issue %s", m.IssueID)
+		return "", "", errors.Wrapf(err, "failed to begin migration for issue %s", m.IssueID)
 	}
 
 	startedNs := time.Now().UnixNano()
@@ -178,7 +178,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 		if err := EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
 			log.Error("Failed to update migration history record",
 				zap.Error(err),
-				zap.Int64("migration_id", migrationHistoryID),
+				zap.String("migration_id", migrationHistoryID),
 			)
 		}
 	}()
@@ -199,11 +199,11 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 		// We should not call GetDBConnection() if the instance is MongoDB because it doesn't support.
 		if !m.CreateDatabase && executor.GetType() != db.MongoDB {
 			if _, err := executor.GetDBConnection(ctx, m.Database); err != nil {
-				return -1, "", err
+				return "", "", err
 			}
 		}
 		if _, err := executor.Execute(ctx, statement, m.CreateDatabase); err != nil {
-			return -1, "", FormatError(err)
+			return "", "", FormatError(err)
 		}
 	}
 
@@ -214,18 +214,18 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-		return -1, "", FormatError(err)
+		return "", "", FormatError(err)
 	}
 
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
 // BeginMigration checks before executing migration and inserts a migration history record with pending status.
-func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID int64, err error) {
+func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID string, err error) {
 	// Convert version to stored version.
 	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to convert to stored version")
+		return "", errors.Wrap(err, "failed to convert to stored version")
 	}
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
@@ -233,31 +233,31 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		Database: &m.Namespace,
 		Version:  &m.Version,
 	}); err != nil {
-		return -1, errors.Wrap(err, "failed to check duplicate version")
+		return "", errors.Wrap(err, "failed to check duplicate version")
 	} else if len(list) > 0 {
 		migrationHistory := list[0]
 		switch migrationHistory.Status {
 		case db.Done:
 			if migrationHistory.IssueID != m.IssueID {
-				return int64(migrationHistory.ID), common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
+				return migrationHistory.ID, common.Errorf(common.MigrationFailed, "database %q has already applied version %s by issue %s", m.Database, m.Version, migrationHistory.IssueID)
 			}
-			return int64(migrationHistory.ID), common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
+			return migrationHistory.ID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
 			log.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
-				return int64(migrationHistory.ID), nil
+				return migrationHistory.ID, nil
 			}
-			return -1, common.Wrap(err, common.MigrationPending)
+			return "", common.Wrap(err, common.MigrationPending)
 		case db.Failed:
 			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
 			log.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
-				return int64(migrationHistory.ID), nil
+				return migrationHistory.ID, nil
 			}
-			return -1, common.Wrap(err, common.MigrationFailed)
+			return "", common.Wrap(err, common.MigrationFailed)
 		}
 	}
 
@@ -270,27 +270,27 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		// We use transaction here for the RDBMS.
 		sqldb, err := executor.GetDBConnection(ctx, databaseName)
 		if err != nil {
-			return -1, err
+			return "", err
 		}
 		// From a concurrency perspective, there's no difference between using transaction or not. However, we use transaction here to save some code of starting a transaction inside each db engine executor.
 		tx, err = sqldb.BeginTx(ctx, nil)
 		if err != nil {
-			return -1, err
+			return "", err
 		}
 		defer tx.Rollback()
 	}
 
 	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
 
 	// Check if there is any higher version already been applied since the last baseline or branch.
 	if version, err := executor.FindLargestVersionSinceBaseline(ctx, tx, m.Namespace); err != nil {
-		return -1, err
+		return "", err
 	} else if version != nil && len(*version) > 0 && *version >= m.Version {
 		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
-		return -1, common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
+		return "", common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
 	}
 
 	// Phase 2 - Record migration history as PENDING.
@@ -299,12 +299,12 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
 	if insertedID, err = executor.InsertPendingHistory(ctx, tx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
-		return -1, err
+		return "", err
 	}
 
 	if executor.GetType() != db.MongoDB {
 		if err := tx.Commit(); err != nil {
-			return -1, err
+			return "", err
 		}
 	}
 
@@ -312,7 +312,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
+func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID string, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
 	var tx *sql.Tx

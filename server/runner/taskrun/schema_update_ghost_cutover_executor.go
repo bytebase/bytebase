@@ -102,32 +102,32 @@ func cutover(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFac
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := func() (migrationHistoryID int64, updatedSchema string, resErr error) {
+	migrationID, schema, err := func() (migrationHistoryID string, updatedSchema string, resErr error) {
 		driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
 		if err != nil {
-			return -1, "", err
+			return "", "", err
 		}
 		defer driver.Close(ctx)
 		needsSetup, err := driver.NeedsSetupMigration(ctx)
 		if err != nil {
-			return -1, "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
+			return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
 		}
 		if needsSetup {
-			return -1, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
+			return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
 		}
 
 		executor := driver.(util.MigrationExecutor)
 
 		var prevSchemaBuf bytes.Buffer
 		if _, err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
-			return -1, "", err
+			return "", "", err
 		}
 
 		// wait for heartbeat lag.
 		// try to make the time gap between the migration history insertion and the actual cutover as close as possible.
 		cancelled := waitForCutover(ctx, migrationContext)
 		if cancelled {
-			return -1, "", errors.Errorf("cutover poller cancelled")
+			return "", "", errors.Errorf("cutover poller cancelled")
 		}
 
 		insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
@@ -135,7 +135,7 @@ func cutover(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFac
 			if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 				return insertedID, prevSchemaBuf.String(), nil
 			}
-			return -1, "", errors.Wrapf(err, "failed to begin migration for issue %s", mi.IssueID)
+			return "", "", errors.Wrapf(err, "failed to begin migration for issue %s", mi.IssueID)
 		}
 		startedNs := time.Now().UnixNano()
 
@@ -143,22 +143,22 @@ func cutover(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFac
 			if err := util.EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
 				log.Error("failed to update migration history record",
 					zap.Error(err),
-					zap.Int64("migration_id", migrationHistoryID),
+					zap.String("migration_id", migrationHistoryID),
 				)
 			}
 		}()
 
 		if err := os.Remove(postponeFilename); err != nil {
-			return -1, "", errors.Wrap(err, "failed to remove postpone flag file")
+			return "", "", errors.Wrap(err, "failed to remove postpone flag file")
 		}
 
 		if migrationErr := <-errCh; migrationErr != nil {
-			return -1, "", errors.Wrapf(migrationErr, "failed to run gh-ost migration")
+			return "", "", errors.Wrapf(migrationErr, "failed to run gh-ost migration")
 		}
 
 		var afterSchemaBuf bytes.Buffer
 		if _, err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-			return -1, "", util.FormatError(err)
+			return "", "", util.FormatError(err)
 		}
 
 		return insertedID, afterSchemaBuf.String(), nil
