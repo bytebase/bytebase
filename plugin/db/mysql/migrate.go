@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -166,7 +165,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, insertHistoryQuery)
 	}
-	return strconv.FormatInt(insertedID, 10), nil
+	return fmt.Sprintf("%d", insertedID), nil
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
@@ -180,11 +179,7 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 		` + "`schema` = ?" + `
 		WHERE id = ?
 		`
-	id, err := strconv.ParseInt(insertedID, 10, 64)
-	if err != nil {
-		return err
-	}
-	_, err = tx.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, id)
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, insertedID)
 	return err
 }
 
@@ -198,11 +193,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 			execution_duration_ns = ?
 		WHERE id = ?
 		`
-	id, err := strconv.ParseInt(insertedID, 10, 64)
-	if err != nil {
-		return err
-	}
-	_, err = tx.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, id)
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, insertedID)
 	return err
 }
 
