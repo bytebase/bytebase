@@ -3,7 +3,7 @@ package mongodb
 import (
 	"context"
 	"database/sql"
-	"strconv"
+	"fmt"
 	"time"
 
 	// embed will embeds the migration schema.
@@ -176,7 +176,7 @@ func convertMigrationHistory(history MigrationHistory) (db.MigrationHistory, err
 		return db.MigrationHistory{}, err
 	}
 	return db.MigrationHistory{
-		ID:                    strconv.FormatInt(history.ID, 10),
+		ID:                    fmt.Sprintf("%d", history.ID),
 		Creator:               history.CreatedBy,
 		CreatedTs:             int64(history.CreatedTs.T),
 		Updater:               history.UpdatedBy,
@@ -342,7 +342,7 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 			}
 			return "", errors.Wrapf(err, "failed to insert a pending migration history record")
 		}
-		return strconv.FormatInt(nextID, 10), nil
+		return fmt.Sprintf("%d", nextID), nil
 	}
 	return "", errors.Errorf("failed to insert a pending migration history record because of the duplidate id after %d retries", retryTimes)
 }
