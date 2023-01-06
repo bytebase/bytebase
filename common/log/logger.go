@@ -2,8 +2,6 @@
 package log
 
 import (
-	"os"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -19,11 +17,15 @@ var (
 // Initializes the global console logger.
 func init() {
 	gLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
-	gl = zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
-		zapcore.Lock(os.Stdout),
-		gLevel,
-	))
+	gl, _ = zap.Config{
+		Level:       gLevel,
+		Development: true,
+		// Use "console" to print readable stacktrace.
+		Encoding:         "console",
+		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}.Build()
 }
 
 // SetLevel wraps the zap Level's SetLevel method.
