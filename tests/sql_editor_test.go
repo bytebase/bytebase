@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
 	"testing"
 
@@ -130,10 +129,14 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		a.NoError(err)
 		a.Equal(idx+1, len(databases))
 
-		sort.Slice(databases, func(i, j int) bool {
-			return databases[i].CreatedTs > databases[j].CreatedTs
-		})
-		database := databases[0]
+		var database *api.Database
+		for _, d := range databases {
+			if d.Name == tt.databaseName {
+				database = d
+				break
+			}
+		}
+		a.NotNil(database)
 
 		a.Equal(instance.ID, database.Instance.ID)
 

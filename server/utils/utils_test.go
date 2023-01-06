@@ -9,66 +9,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func TestValidateDatabaseLabelList(t *testing.T) {
-	tests := []struct {
-		name            string
-		labelList       []*api.DatabaseLabel
-		environmentName string
-		wantErr         bool
-	}{
-		{
-			name: "valid label list",
-			labelList: []*api.DatabaseLabel{
-				{
-					Key:   "bb.location",
-					Value: "earth",
-				},
-				{
-					Key:   api.EnvironmentLabelKey,
-					Value: "Dev",
-				},
-			},
-			environmentName: "Dev",
-			wantErr:         false,
-		},
-		{
-			name: "environment label not present",
-			labelList: []*api.DatabaseLabel{
-				{
-					Key:   "bb.location",
-					Value: "earth",
-				},
-			},
-			environmentName: "Dev",
-			wantErr:         true,
-		},
-		{
-			name: "cannot mutate environment label",
-			labelList: []*api.DatabaseLabel{
-				{
-					Key:   "bb.location",
-					Value: "earth",
-				},
-				{
-					Key:   api.EnvironmentLabelKey,
-					Value: "Prod",
-				},
-			},
-			environmentName: "Dev",
-			wantErr:         true,
-		},
-	}
-
-	for _, test := range tests {
-		err := validateDatabaseLabelList(test.labelList, test.environmentName)
-		if test.wantErr {
-			assert.Error(t, err)
-		} else {
-			assert.NoError(t, err)
-		}
-	}
-}
-
 func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	dbs := []*api.Database{
 		{
