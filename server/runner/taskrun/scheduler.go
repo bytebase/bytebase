@@ -1132,11 +1132,11 @@ func (s *Scheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int,
 		}
 	}
 	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
-		member, err := s.getAnyWorkspaceOwnerOrDBA(ctx)
+		user, err := s.getAnyWorkspaceOwner(ctx)
 		if err != nil {
 			return api.UnknownID, errors.Wrap(err, "failed to get a workspace owner or DBA")
 		}
-		return member.PrincipalID, nil
+		return user.ID, nil
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
 		projectMember, err := s.getAnyProjectOwner(ctx, projectID)
 		if err != nil {
@@ -1148,18 +1148,19 @@ func (s *Scheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int,
 	return api.UnknownID, errors.New("invalid assigneeGroupValue")
 }
 
-// getAnyFromWorkspaceOwnerOrDBA finds a default assignee from the workspace owners or DBAs.
-func (s *Scheduler) getAnyWorkspaceOwnerOrDBA(ctx context.Context) (*api.Member, error) {
-	for _, role := range []api.Role{api.Owner, api.DBA} {
-		memberList, err := s.store.FindMember(ctx, &api.MemberFind{
-			Role: &role,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get role %v", role)
+// getAnyWorkspaceOwner finds a default assignee from the workspace owners.
+func (s *Scheduler) getAnyWorkspaceOwner(ctx context.Context) (*store.UserMessage, error) {
+	// There must be at least one non-systembot owner in the workspace.
+	owner := api.Owner
+	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{Role: &owner})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get role %v", api.Owner)
+	}
+	for _, user := range users {
+		if user.ID == api.SystemBotID {
+			continue
 		}
-		if len(memberList) > 0 {
-			return memberList[0], nil
-		}
+		return user, nil
 	}
 	return nil, errors.New("failed to get a workspace owner or DBA")
 }
