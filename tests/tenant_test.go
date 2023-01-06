@@ -185,7 +185,7 @@ func TestTenant(t *testing.T) {
 	hm1 := map[string]bool{}
 	hm2 := map[string]bool{}
 	for _, instance := range instances {
-		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
+		histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{Database: &databaseName})
 		a.NoError(err)
 		a.Equal(2, len(histories))
 		a.NotEqual(histories[0].Version, "")
@@ -482,8 +482,8 @@ func TestTenantVCS(t *testing.T) {
 			hm2 := map[string]bool{}
 			for _, instance := range instances {
 				histories, err := ctl.getInstanceMigrationHistory(
+					instance.ID,
 					db.MigrationHistoryFind{
-						ID:       &instance.ID,
 						Database: &databaseName,
 					},
 				)
@@ -936,8 +936,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				histories, err := ctl.getInstanceMigrationHistory(
+					instance.ID,
 					db.MigrationHistoryFind{
-						ID:       &instance.ID,
 						Database: &databaseName,
 					},
 				)
@@ -951,8 +951,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				histories, err := ctl.getInstanceMigrationHistory(
+					instance.ID,
 					db.MigrationHistoryFind{
-						ID:       &instance.ID,
 						Database: &databaseName,
 					},
 				)
@@ -1244,8 +1244,8 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				histories, err := ctl.getInstanceMigrationHistory(
+					instance.ID,
 					db.MigrationHistoryFind{
-						ID:       &instance.ID,
 						Database: &databaseName,
 					},
 				)
@@ -1552,8 +1552,8 @@ statement: |
 
 			// Query migration history, only the database of the first tenant should be touched
 			histories, err := ctl.getInstanceMigrationHistory(
+				testInstances[0].ID,
 				db.MigrationHistoryFind{
-					ID:       &testInstances[0].ID,
 					Database: &databases[0].Name,
 				},
 			)
@@ -1562,8 +1562,8 @@ statement: |
 			require.Equal(t, histories[0].Version, "ver2")
 
 			histories, err = ctl.getInstanceMigrationHistory(
+				testInstances[1].ID,
 				db.MigrationHistoryFind{
-					ID:       &testInstances[1].ID,
 					Database: &databases[1].Name,
 				},
 			)

@@ -365,7 +365,7 @@ func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrat
 		return errors.Wrapf(err, "failed to update a migration history as done")
 	}
 	if updateResult.MatchedCount == 0 {
-		return errors.Errorf("failed to find a migration history record to mark as done with ID %d ", insertedID)
+		return errors.Errorf("failed to find a migration history record to mark as done with ID %s", insertedID)
 	}
 	return nil
 }
@@ -387,7 +387,7 @@ func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, _ *sql.Tx, migr
 		return errors.Wrapf(err, "failed to update a migration history as failed")
 	}
 	if updateResult.MatchedCount == 0 {
-		return errors.Errorf("failed to find a migration history record to mark as failed with ID %d ", insertedID)
+		return errors.Errorf("failed to find a migration history record to mark as failed with ID %s", insertedID)
 	}
 	return nil
 }
