@@ -434,6 +434,9 @@ type FindDatabaseMessage struct {
 	InstanceID    *string
 	DatabaseName  *string
 	UID           *int
+
+	// TODO(d): deprecate this field when we migrate all datasource to v1 store.
+	IncludeAllDatabase bool
 }
 
 // GetDatabaseV2 gets a database.
@@ -688,7 +691,9 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
-	where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
+	if !find.IncludeAllDatabase {
+		where, args = append(where, fmt.Sprintf("db.name != $%d", len(args)+1)), append(args, api.AllDatabaseName)
+	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
