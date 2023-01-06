@@ -227,6 +227,10 @@ func (*MockDriver) Close(_ context.Context) error {
 	return nil
 }
 
+func (d *MockDriver) ForkOpen(context.Context, string) (database.Driver, error) {
+	return d, nil
+}
+
 // Ping implements the Driver interface.
 func (*MockDriver) Ping(_ context.Context) error {
 	return nil
@@ -235,14 +239,6 @@ func (*MockDriver) Ping(_ context.Context) error {
 // GetType implements the Driver interface.
 func (*MockDriver) GetType() database.Type {
 	return database.Type("MOCK")
-}
-
-// SwitchDatabase switches the connected database.
-func (*MockDriver) SwitchDatabase(context.Context, string) (func() error, error) {
-	noop := func() error {
-		return nil
-	}
-	return noop, nil
 }
 
 // GetDBConnection implements the Driver interface.
