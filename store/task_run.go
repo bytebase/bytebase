@@ -186,7 +186,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *api.Tas
 }
 
 func (s *Store) listTaskRun(ctx context.Context, find *api.TaskRunFind) ([]*taskRunRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

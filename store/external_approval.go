@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -150,7 +151,7 @@ func (s *Store) createExternalApprovalRaw(ctx context.Context, create *api.Exter
 }
 
 func (s *Store) findExternalApprovalRaw(ctx context.Context, find *api.ExternalApprovalFind) ([]*externalApprovalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
