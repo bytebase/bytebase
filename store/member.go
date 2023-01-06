@@ -191,7 +191,7 @@ func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (
 
 // findMemberRaw retrieves a list of memberRaw instances.
 func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) ([]*memberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -225,7 +225,7 @@ func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*member
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

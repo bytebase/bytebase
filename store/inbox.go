@@ -96,7 +96,7 @@ func (s *Store) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inb
 
 // FindInboxSummary returns the inbox summary for a particular principal.
 func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.InboxSummary, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -165,7 +165,7 @@ func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*i
 
 // findInboxRaw retrieves a list of inboxes based on find.
 func (s *Store) findInboxRaw(ctx context.Context, find *api.InboxFind) ([]*inboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -182,7 +182,7 @@ func (s *Store) findInboxRaw(ctx context.Context, find *api.InboxFind) ([]*inbox
 // getInboxRawByID retrieves a single inbox based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getInboxRawByID(ctx context.Context, find *api.InboxFind) (*inboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

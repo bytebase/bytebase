@@ -345,7 +345,7 @@ func (s *Store) createBackupRaw(ctx context.Context, create *api.BackupCreate) (
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error) {
 	find := &api.BackupFind{ID: &id}
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -366,7 +366,7 @@ func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error
 
 // findBackupRaw retrieves a list of backups based on find.
 func (s *Store) findBackupRaw(ctx context.Context, find *api.BackupFind) ([]*backupRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

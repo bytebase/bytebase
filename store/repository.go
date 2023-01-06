@@ -219,7 +219,7 @@ func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryC
 
 // findRepositoryRaw retrieves a list of repositories based on find.
 func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind) ([]*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -236,7 +236,7 @@ func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind)
 // getRepositoryRaw retrieves a single repository based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) (*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

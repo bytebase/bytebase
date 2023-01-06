@@ -286,7 +286,7 @@ func (*Store) createTaskCheckRunImpl(ctx context.Context, tx *Tx, creates ...*ap
 
 // findTaskCheckRunRaw retrieves a list of taskCheckRuns based on find.
 func (s *Store) findTaskCheckRunRaw(ctx context.Context, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -378,7 +378,7 @@ func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *Tx, patch *ap
 }
 
 func (s *Store) listTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
