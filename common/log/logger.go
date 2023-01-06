@@ -25,7 +25,10 @@ func init() {
 		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
-	}.Build()
+	}.Build(
+		// Skip one caller stack to locate the correct caller.
+		zap.AddCallerSkip(1),
+	)
 }
 
 // SetLevel wraps the zap Level's SetLevel method.
