@@ -195,7 +195,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	}
 	if doMigrate {
 		// Fork open a connection to the database where migration_history table resides.
-		// Becuase the target database is not created yet and cannot be connected.
+		// Because the target database is not created yet and cannot be connected.
 		if m.CreateDatabase {
 			if err := func() (err error) {
 				fork, err := executor.ForkOpen(ctx, databaseName)
