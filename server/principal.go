@@ -120,36 +120,47 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch principal request").SetInternal(err)
 		}
+		updaterID := c.Get(getPrincipalIDContextKey()).(int)
 
+		update := &store.UpdateUserMessage{
+			Name:  principalPatch.Name,
+			Email: principalPatch.Email,
+		}
+		newPassword := principalPatch.Password
 		if principalPatch.Type == api.ServiceAccount && principalPatch.RefreshKey {
 			val, err := common.RandomString(20)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access key for service account.").SetInternal(err)
 			}
 			password := fmt.Sprintf("%s%s", serviceAccountAccessKeyPrefix, val)
-			principalPatch.Password = &password
+			newPassword = &password
 		}
-
-		if principalPatch.Password != nil && *principalPatch.Password != "" {
-			passwordHash, err := bcrypt.GenerateFromPassword([]byte(*principalPatch.Password), bcrypt.DefaultCost)
+		if newPassword != nil && *newPassword != "" {
+			passwordHash, err := bcrypt.GenerateFromPassword([]byte(*newPassword), bcrypt.DefaultCost)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 			}
 			passwordHashStr := string(passwordHash)
-			principalPatch.PasswordHash = &passwordHashStr
+			update.PasswordHash = &passwordHashStr
 		}
 
-		principal, err := s.store.PatchPrincipal(ctx, principalPatch)
+		user, err := s.store.UpdateUser(ctx, id, update, updaterID)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch principal ID: %v", id)).SetInternal(err)
+			return err
 		}
-
+		principal := &api.Principal{
+			ID:           user.ID,
+			CreatorID:    api.SystemBotID,
+			UpdaterID:    api.SystemBotID,
+			Type:         user.Type,
+			Name:         user.Name,
+			Email:        user.Email,
+			PasswordHash: user.PasswordHash,
+			Role:         user.Role,
+		}
 		// Only return the token if the user is ServiceAccount
-		if principal.Type == api.ServiceAccount && principalPatch.Password != nil {
-			principal.ServiceKey = *principalPatch.Password
+		if user.Type == api.ServiceAccount && newPassword != nil {
+			principal.ServiceKey = *newPassword
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

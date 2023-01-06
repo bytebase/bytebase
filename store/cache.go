@@ -13,8 +13,6 @@ import (
 type cacheNamespace string
 
 const (
-	// principalCacheNamespace is the cache type of principals.
-	principalCacheNamespace cacheNamespace = "p"
 	// projectMemberCacheNamespace is the cache type of project members.
 	projectMemberCacheNamespace cacheNamespace = "pm"
 	// instanceCacheNamespace is the cache type of instances.

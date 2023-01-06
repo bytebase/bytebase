@@ -7,64 +7,22 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 )
-
-// principalRaw is the store model for a Principal.
-// Fields have exactly the same meanings as Principal.
-type principalRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Domain specific fields
-	Type  api.PrincipalType
-	Name  string
-	Email string
-	// Do not return to the client
-	PasswordHash string
-}
-
-// toPrincipal creates an instance of Principal based on the principalRaw.
-// This is intended to be called when we need to compose a Principal relationship.
-func (raw *principalRaw) toPrincipal() *api.Principal {
-	return &api.Principal{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Domain specific fields
-		Type:  raw.Type,
-		Name:  raw.Name,
-		Email: raw.Email,
-		// Do not return to the client
-		PasswordHash: raw.PasswordHash,
-	}
-}
 
 // GetPrincipalList gets a list of Principal instances.
 func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
-	principalRawList, err := s.findPrincipalRawList(ctx)
+	users, err := s.ListUsers(ctx, &FindUserMessage{ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find Principal list")
 	}
 	var principalList []*api.Principal
-	for _, raw := range principalRawList {
-		principal, err := s.composePrincipal(ctx, raw)
+	for _, user := range users {
+		principal, err := composePrincipal(user)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Principal role with principalRaw[%+v]", raw)
+			return nil, errors.Wrapf(err, "failed to compose Principal role with user[%+v]", user)
 		}
 		if principal != nil {
 			principalList = append(principalList, principal)
@@ -73,264 +31,42 @@ func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) 
 	return principalList, nil
 }
 
-// GetPrincipalByEmail gets an instance of Principal.
-func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
-	find := &api.PrincipalFind{Email: &email}
-	principalRaw, err := s.getPrincipalRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Principal with PrincipalFind[%+v]", find)
-	}
-	if principalRaw == nil {
-		return nil, nil
-	}
-	principal, err := s.composePrincipal(ctx, principalRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Principal role with principalRaw[%+v]", principalRaw)
-	}
-	return principal, nil
-}
-
-// PatchPrincipal patches an instance of Principal.
-func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
-	principalRaw, err := s.patchPrincipalRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Principal with PrincipalPatch[%+v]", patch)
-	}
-	principal, err := s.composePrincipal(ctx, principalRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Principal role with principalRaw[%+v]", principalRaw)
-	}
-	return principal, nil
-}
-
 // GetPrincipalByID gets an instance of Principal by ID.
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
-	principalFind := &api.PrincipalFind{ID: &id}
-	principalRaw, err := s.getPrincipalRaw(ctx, principalFind)
+	user, err := s.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if principalRaw == nil {
+	if user == nil {
 		return nil, nil
 	}
 
-	principal, err := s.composePrincipal(ctx, principalRaw)
+	composedPrincipal, err := composePrincipal(user)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Principal role with principalRaw[%+v]", principalRaw)
+		return nil, errors.Wrapf(err, "failed to compose Principal role with user [%+v]", user)
 	}
 
-	return principal, nil
-}
-
-// private functions
-
-// findPrincipalRawList retrieves a list of principalRaw instances.
-func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findPrincipalRawListImpl(ctx, tx, &api.PrincipalFind{})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, principal := range list {
-		if err := s.cache.UpsertCache(principalCacheNamespace, principal.ID, principal); err != nil {
-			return nil, err
-		}
-	}
-
-	return list, nil
-}
-
-// getPrincipalRaw retrieves an instance of principalRaw based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*principalRaw, error) {
-	if find.ID != nil {
-		principalRaw := &principalRaw{}
-		has, err := s.cache.FindCache(principalCacheNamespace, *find.ID, principalRaw)
-		if err != nil {
-			return nil, err
-		}
-		if has {
-			return principalRaw, nil
-		}
-	}
-
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findPrincipalRawListImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d principals with PrincipalFind[%+v], expect 1", len(list), find)}
-	}
-	if err := s.cache.UpsertCache(principalCacheNamespace, list[0].ID, list[0]); err != nil {
-		return nil, err
-	}
-
-	return list[0], nil
-}
-
-// patchPrincipalRaw updates an existing instance of principalRaw by ID.
-// Returns ENOTFOUND if principal does not exist.
-func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch) (*principalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	principal, err := patchPrincipalImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(principalCacheNamespace, principal.ID, principal); err != nil {
-		return nil, err
-	}
-
-	return principal, nil
+	return composedPrincipal, nil
 }
 
 // composePrincipal composes an instance of Principal by principalRaw.
-func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.Principal, error) {
-	principal := raw.toPrincipal()
-
+func composePrincipal(user *UserMessage) (*api.Principal, error) {
+	principal := &api.Principal{
+		ID:        user.ID,
+		CreatorID: api.SystemBotID,
+		UpdaterID: api.SystemBotID,
+		Type:      user.Type,
+		Name:      user.Name,
+		Email:     user.Email,
+		// Do not return to the client.
+		PasswordHash: user.PasswordHash,
+		Role:         user.Role,
+	}
+	// TODO(d): move this user v1 store.
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
-	} else {
-		find := &api.MemberFind{PrincipalID: &principal.ID}
-		// NOTE: watch out for recursion here, because Member also contains pointers to Principal
-		memberRaw, err := s.getMemberRaw(ctx, find)
-		if err != nil {
-			return nil, err
-		}
-		if memberRaw == nil {
-			log.Error("Principal has not been assigned a role.",
-				zap.Int("id", principal.ID),
-				zap.String("name", principal.Name),
-			)
-			return nil, errors.Wrapf(err, "member with PrincipalID %d not exist", principal.ID)
-		}
-		principal.Role = memberRaw.Role
 	}
 	return principal, nil
-}
-
-func findPrincipalRawListImpl(ctx context.Context, tx *Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Email; v != nil {
-		where, args = append(where, fmt.Sprintf("email = $%d", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			type,
-			name,
-			email,
-			password_hash
-		FROM principal
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into principalRawList.
-	var principalRawList []*principalRaw
-	for rows.Next() {
-		var principalRaw principalRaw
-		if err := rows.Scan(
-			&principalRaw.ID,
-			&principalRaw.CreatorID,
-			&principalRaw.CreatedTs,
-			&principalRaw.UpdaterID,
-			&principalRaw.UpdatedTs,
-			&principalRaw.Type,
-			&principalRaw.Name,
-			&principalRaw.Email,
-			&principalRaw.PasswordHash,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		principalRawList = append(principalRawList, &principalRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return principalRawList, nil
-}
-
-// patchPrincipalImpl updates a principal by ID. Returns the new state of the principal after update.
-func patchPrincipalImpl(ctx context.Context, tx *Tx, patch *api.PrincipalPatch) (*principalRaw, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Email; v != nil {
-		set, args = append(set, fmt.Sprintf("email = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.PasswordHash; v != nil {
-		set, args = append(set, fmt.Sprintf("password_hash = $%d", len(args)+1)), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	var principalRaw principalRaw
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE principal
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
-	`, len(args)),
-		args...,
-	).Scan(
-		&principalRaw.ID,
-		&principalRaw.CreatorID,
-		&principalRaw.CreatedTs,
-		&principalRaw.UpdaterID,
-		&principalRaw.UpdatedTs,
-		&principalRaw.Type,
-		&principalRaw.Name,
-		&principalRaw.Email,
-		&principalRaw.PasswordHash,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("principal ID not found: %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	return &principalRaw, nil
 }
 
 // FindUserMessage is the message for finding users.
@@ -469,22 +205,32 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	defer rows.Close()
 	for rows.Next() {
 		var userMessage UserMessage
-		var rowStatus string
+		var role, rowStatus sql.NullString
 		if err := rows.Scan(
 			&userMessage.ID,
 			&userMessage.Email,
 			&userMessage.Name,
 			&userMessage.Type,
 			&userMessage.PasswordHash,
-			&userMessage.Role,
+			&role,
 			&rowStatus,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
+		if role.Valid {
+			userMessage.Role = api.Role(role.String)
+		} else if userMessage.ID == api.SystemBotID {
+			userMessage.Role = api.Owner
+		} else {
+			userMessage.Role = api.Developer
+		}
+		if rowStatus.Valid {
+			userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
+		} else if userMessage.ID != api.SystemBotID {
+			userMessage.MemberDeleted = true
+		}
 		userMessages = append(userMessages, &userMessage)
 	}
-
 	return userMessages, nil
 }
 
@@ -569,6 +315,9 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 
 // UpdateUser updates a user.
 func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMessage, updaterID int) (*UserMessage, error) {
+	if userID == api.SystemBotID {
+		return nil, errors.Errorf("cannot update system bot")
+	}
 	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
 	if v := patch.Email; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, *v)
@@ -601,7 +350,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	defer tx.Rollback()
 
 	user := &UserMessage{}
-
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE principal
 			SET `+strings.Join(principalSet, ", ")+`
