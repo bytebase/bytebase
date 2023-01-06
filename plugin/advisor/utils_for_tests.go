@@ -227,6 +227,7 @@ func (*MockDriver) Close(_ context.Context) error {
 	return nil
 }
 
+// ForkOpen forks the driver and opens a new driver to another database.
 func (d *MockDriver) ForkOpen(context.Context, string) (database.Driver, error) {
 	return d, nil
 }
