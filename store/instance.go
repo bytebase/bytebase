@@ -169,6 +169,7 @@ func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.I
 		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
 	}
 	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
+	delete(s.instanceIDCache, instance.ID)
 	return instance, nil
 }
 
@@ -768,6 +769,7 @@ type UpdateInstanceMessage struct {
 
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
+	UID           *int
 	EnvironmentID *string
 	ResourceID    *string
 	ShowDeleted   bool
@@ -775,15 +777,19 @@ type FindInstanceMessage struct {
 
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
+	if find.EnvironmentID != nil && find.ResourceID != nil {
+		if instance, ok := s.instanceCache[getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)]; ok {
+			return instance, nil
+		}
+	}
+	if find.UID != nil {
+		if instance, ok := s.instanceIDCache[*find.UID]; ok {
+			return instance, nil
+		}
+	}
+
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
-
-	if find.EnvironmentID == nil || find.ResourceID == nil {
-		return nil, errors.Errorf("environment and resource ID must exist and showDelete must be false for getting an instance")
-	}
-	if instance, ok := s.instanceCache[getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)]; ok {
-		return instance, nil
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -807,6 +813,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 
 	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	s.instanceIDCache[instance.UID] = instance
 	return instance, nil
 }
 
@@ -829,6 +836,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 
 	for _, instance := range instances {
 		s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+		s.instanceIDCache[instance.UID] = instance
 	}
 	return instances, nil
 }
@@ -921,6 +929,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		DataSources:   instanceCreate.DataSources,
 	}
 	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	s.instanceIDCache[instance.UID] = instance
 	return instance, nil
 }
 
@@ -1047,6 +1056,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	s.instanceIDCache[instance.UID] = instance
 	return instance, nil
 }
 

@@ -11,6 +11,7 @@ type Store struct {
 	environmentCache   map[string]*EnvironmentMessage
 	environmentIDCache map[int]*EnvironmentMessage
 	instanceCache      map[string]*InstanceMessage
+	instanceIDCache    map[int]*InstanceMessage
 	projectCache       map[string]*ProjectMessage
 	projectIDCache     map[int]*ProjectMessage
 	dbSchemaCache      map[int]*DBSchema
@@ -24,6 +25,7 @@ func New(db *DB) *Store {
 		environmentCache:   make(map[string]*EnvironmentMessage),
 		environmentIDCache: make(map[int]*EnvironmentMessage),
 		instanceCache:      make(map[string]*InstanceMessage),
+		instanceIDCache:    make(map[int]*InstanceMessage),
 		projectCache:       make(map[string]*ProjectMessage),
 		projectIDCache:     make(map[int]*ProjectMessage),
 		dbSchemaCache:      make(map[int]*DBSchema),
