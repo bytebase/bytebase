@@ -423,9 +423,12 @@
       "remove-sensitive-column-tips": "Expose this column?"
     },
     "access-control": {
-      "description": "Allow developers to execute queries for the following databases in the protected environments from SQL Editor.",
+      "description": "Allow developers to execute queries for the following databases in the protected environments from SQL Editor. {link}",
       "add-rule": "Add rule",
-      "remove-policy-tips": "Remove this rule?"
+      "remove-policy-tips": "Remove this rule?",
+      "inactive-rules": "Inactive rules",
+      "inactive-rules-description": "These rules are inactive because environment is not protected.",
+      "no-database-in-protected-environment": "Make sure there are databases in the {protected_environment}."
     },
     "release": {
       "new-version-available": "New version is available",
@@ -755,7 +758,8 @@
     "disable-auto-backup": {
       "self": "Disable database automatic backup",
       "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
-    }
+    },
+    "protected-environment": "Protected environment"
   },
   "quick-start": {
     "bookmark-an-issue": "Bookmark an issue",
