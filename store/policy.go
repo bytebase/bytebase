@@ -574,3 +574,131 @@ func (s *Store) upsertPolicyCache(policyType api.PolicyType, resourceID int, pay
 	}
 	return nil
 }
+
+// PolicyMessage is the mssage for policy.
+type PolicyMessage struct {
+	UID               int
+	ResourceID        string
+	ResourceType      api.PolicyResourceType
+	Payload           string
+	InheritFromParent bool
+	Deleted           bool
+	Type              api.PolicyType
+}
+
+// FindPolicyMessage is the message for finding policies.
+type FindPolicyMessage struct {
+	UID          *string
+	ResourceType *api.PolicyResourceType
+	ResourceID   *string
+	ShowDeleted  bool
+}
+
+// GetPolicyV2 gets a policy.
+func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*PolicyMessage, error) {
+	// We will always return the resource regardless of its deleted state.
+	find.ShowDeleted = true
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	policies, err := s.listPolicyImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(policies) == 0 {
+		return nil, nil
+	}
+	if len(policies) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d policies with filter %+v, expect 1", len(policies), find)}
+	}
+	policy := policies[0]
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	// TODO: add cache
+	return policy, nil
+}
+
+// ListPoliciesV2 lists all policies.
+func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]*PolicyMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	policies, err := s.listPolicyImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	// TODO: add cache
+	return policies, nil
+}
+
+func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ResourceType; v != nil {
+		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, *v)
+	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			row_status,
+			resource_type,
+			resource_id,
+			inherit_from_parent,
+			type,
+			payload
+		FROM policy
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var policyList []*PolicyMessage
+	for rows.Next() {
+		var policyMessage PolicyMessage
+		var rowStatus string
+		if err := rows.Scan(
+			&policyMessage.UID,
+			&rowStatus,
+			&policyMessage.ResourceType,
+			&policyMessage.ResourceID,
+			&policyMessage.InheritFromParent,
+			&policyMessage.Type,
+			&policyMessage.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		policyMessage.Deleted = convertRowStatusToDeleted(rowStatus)
+
+		policyList = append(policyList, &policyMessage)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return policyList, nil
+}

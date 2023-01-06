@@ -16,6 +16,7 @@ const (
 	projectNamePrefix     = "projects/"
 	environmentNamePrefix = "environments/"
 	instanceNamePrefix    = "instances/"
+	policyNamePrefix      = "policies/"
 	databaseIDPrefix      = "databases/"
 	instanceRolePrefix    = "roles/"
 	userNamePrefix        = "users/"
@@ -50,6 +51,15 @@ func getEnvironmentInstanceID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
+}
+
+func getPolicyType(name string) (string, error) {
+	// the policy request should be policies/{policy-type}
+	tokens, err := getNameParentTokens(name, policyNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
 }
 
 func getEnvironmentInstanceRoleID(name string) (string, string, string, error) {
