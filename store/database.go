@@ -104,6 +104,7 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 	if find.ID != nil {
 		v2Find.UID = find.ID
 	}
+	v2Find.IncludeAllDatabase = find.IncludeAllDatabase
 
 	databases, err := s.ListDatabases(ctx, v2Find)
 	if err != nil {
