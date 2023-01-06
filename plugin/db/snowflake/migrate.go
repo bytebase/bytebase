@@ -122,7 +122,7 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (int64, error) {
+func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (string, error) {
 	const insertHistoryQuery = `
 		INSERT INTO bytebase.public.migration_history (
 			created_by,
@@ -146,28 +146,28 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		)
 		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
 	`
-	var insertedID int64
+	var insertedID string
 	maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
 	rows, err := tx.QueryContext(ctx, maxIDQuery)
 	if err != nil {
-		return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+		return "", util.FormatErrorWithQuery(err, maxIDQuery)
 	}
 	defer rows.Close()
-	var id sql.NullInt64
+	var id sql.NullString
 	for rows.Next() {
 		if err := rows.Scan(
 			&id,
 		); err != nil {
-			return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+			return "", util.FormatErrorWithQuery(err, maxIDQuery)
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return int64(0), util.FormatErrorWithQuery(err, maxIDQuery)
+		return "", util.FormatErrorWithQuery(err, maxIDQuery)
 	}
 	if id.Valid {
-		insertedID = id.Int64
+		insertedID = id.String
 	} else {
-		insertedID = 1
+		insertedID = "1"
 	}
 
 	_, err = tx.ExecContext(ctx, insertHistoryQuery,
@@ -188,13 +188,13 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		m.Payload,
 	)
 	if err != nil {
-		return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+		return "", util.FormatErrorWithQuery(err, insertHistoryQuery)
 	}
 	return insertedID, nil
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
-func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
+func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID string) error {
 	const updateHistoryAsDoneQuery = `
 		UPDATE
 			bytebase.public.migration_history
@@ -209,7 +209,7 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 }
 
 // UpdateHistoryAsFailed will update the migration record as failed.
-func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error {
+func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID string) error {
 	const updateHistoryAsFailedQuery = `
 		UPDATE
 			bytebase.public.migration_history
@@ -223,9 +223,9 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 }
 
 // ExecuteMigration will execute the migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
 	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return int64(0), "", err
+		return "", "", err
 	}
 	return util.ExecuteMigration(ctx, driver, m, statement, bytebaseDatabase)
 }

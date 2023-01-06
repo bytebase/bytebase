@@ -311,7 +311,7 @@ func ParseSchemaFileInfo(baseDirectory, schemaPathTemplate, file string) (*Migra
 
 // MigrationHistory is the API message for migration history.
 type MigrationHistory struct {
-	ID int
+	ID string
 
 	Creator   string
 	CreatedTs int64
@@ -338,7 +338,7 @@ type MigrationHistory struct {
 
 // MigrationHistoryFind is the API message for finding migration histories.
 type MigrationHistoryFind struct {
-	ID *int
+	ID *string
 
 	Database *string
 	Source   *MigrationSource
@@ -471,7 +471,7 @@ type Driver interface {
 	// Execute migration will apply the statement and record the migration history, the schema after migration on success.
 	// The migration type is determined by m.Type. Note, it can also perform data migration (DML) in addition to schema migration (DDL).
 	// It returns the migration history id and the schema after migration on success.
-	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (int64, string, error)
+	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (string, string, error)
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
 

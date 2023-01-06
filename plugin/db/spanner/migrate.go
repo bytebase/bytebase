@@ -68,7 +68,7 @@ func (d *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 // ExecuteMigration executes a migration.
-func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string) (int64, string, error) {
+func (*Driver) ExecuteMigration(_ context.Context, _ *db.MigrationInfo, _ string) (string, string, error) {
 	panic("not implemented")
 }
 
@@ -151,9 +151,9 @@ func (d *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Migratio
 		}
 		var history db.MigrationHistory
 		var storedVersion string
-		var id, sequence int64
+		var sequence int64
 		if err := row.Columns(
-			&id,
+			&history.ID,
 			&history.Creator,
 			&history.CreatedTs,
 			&history.Updater,
@@ -175,7 +175,6 @@ func (d *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Migratio
 		); err != nil {
 			return nil, err
 		}
-		history.ID = int(id)
 		history.Sequence = int(sequence)
 		useSemanticVersion, version, semanticVersionSuffix, err := util.FromStoredVersion(storedVersion)
 		if err != nil {

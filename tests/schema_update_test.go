@@ -155,7 +155,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(api.TaskDone, status)
 
 	// Get migration history.
-	histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
+	histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
 	a.NoError(err)
 	wantHistories := []api.MigrationHistory{
 		{
@@ -224,7 +224,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	a.Equal(bookDataSQLResult, result)
 	// Query clone migration history.
-	histories, err = ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &cloneDatabaseName})
+	histories, err = ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{Database: &cloneDatabaseName})
 	a.NoError(err)
 	wantCloneHistories := []api.MigrationHistory{
 		{
@@ -580,7 +580,7 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 
 			// Get migration history.
-			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
+			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
 			a.NoError(err)
 
 			var historiesDeref []api.MigrationHistory
@@ -1002,7 +1002,7 @@ ALTER TABLE ONLY public.users
 
 `
 
-			histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
+			histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{})
 			a.NoError(err)
 			wantHistories := []api.MigrationHistory{
 				{
