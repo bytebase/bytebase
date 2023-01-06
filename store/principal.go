@@ -115,15 +115,15 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 	}
 
 	for _, user := range users {
-		s.userIDCache[user.ID] = user
+		s.userIDCache.Store(user.ID, user)
 	}
 	return users, nil
 }
 
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
-	if user, ok := s.userIDCache[id]; ok {
-		return user, nil
+	if user, ok := s.userIDCache.Load(id); ok {
+		return user.(*UserMessage), nil
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -147,7 +147,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 		return nil, FormatError(err)
 	}
 
-	s.userIDCache[user.ID] = user
+	s.userIDCache.Store(user.ID, user)
 	return user, nil
 }
 
@@ -177,7 +177,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 		return nil, FormatError(err)
 	}
 
-	s.userIDCache[user.ID] = user
+	s.userIDCache.Store(user.ID, user)
 	return user, nil
 }
 
@@ -324,7 +324,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		PasswordHash: create.PasswordHash,
 		Role:         role,
 	}
-	s.userIDCache[user.ID] = user
+	s.userIDCache.Store(user.ID, user)
 	return user, nil
 }
 
@@ -408,6 +408,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, FormatError(err)
 	}
 
-	s.userIDCache[user.ID] = user
+	s.userIDCache.Store(user.ID, user)
 	return user, nil
 }

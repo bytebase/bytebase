@@ -114,7 +114,7 @@ func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.M
 	}
 
 	// Invalidate the user cache for role update.
-	delete(s.userIDCache, memberRaw.PrincipalID)
+	s.userIDCache.Delete(memberRaw.PrincipalID)
 	return member, nil
 }
 

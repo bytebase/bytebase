@@ -202,13 +202,13 @@ type UpdateEnvironmentMessage struct {
 // GetEnvironmentV2 gets environment by resource ID.
 func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
 	if find.ResourceID != nil {
-		if environment, ok := s.environmentCache[*find.ResourceID]; ok {
-			return environment, nil
+		if environment, ok := s.environmentCache.Load(*find.ResourceID); ok {
+			return environment.(*EnvironmentMessage), nil
 		}
 	}
 	if find.UID != nil {
-		if environment, ok := s.environmentIDCache[*find.UID]; ok {
-			return environment, nil
+		if environment, ok := s.environmentCache.Load(*find.UID); ok {
+			return environment.(*EnvironmentMessage), nil
 		}
 	}
 
@@ -233,8 +233,8 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 		return nil, FormatError(err)
 	}
 
-	s.environmentCache[environment.ResourceID] = environment
-	s.environmentIDCache[environment.UID] = environment
+	s.environmentCache.Store(environment.ResourceID, environment)
+	s.environmentIDCache.Store(environment.UID, environment)
 	return environment, nil
 }
 
@@ -256,8 +256,8 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMess
 	}
 
 	for _, environment := range environments {
-		s.environmentCache[environment.ResourceID] = environment
-		s.environmentIDCache[environment.UID] = environment
+		s.environmentCache.Store(environment.ResourceID, environment)
+		s.environmentIDCache.Store(environment.UID, environment)
 	}
 	return environments, nil
 }
@@ -323,8 +323,8 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		UID:        uid,
 		Deleted:    false,
 	}
-	s.environmentCache[environment.ResourceID] = environment
-	s.environmentIDCache[environment.UID] = environment
+	s.environmentCache.Store(environment.ResourceID, environment)
+	s.environmentIDCache.Store(environment.UID, environment)
 	return environment, nil
 }
 
@@ -395,8 +395,8 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		return nil, FormatError(err)
 	}
 	// Invalid the cache and read the value again.
-	delete(s.environmentCache, environmentID)
-	delete(s.environmentIDCache, environmentUID)
+	s.environmentCache.Delete(environmentID)
+	s.environmentIDCache.Delete(environmentUID)
 
 	return s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
 		ResourceID: &environmentID,
