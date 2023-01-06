@@ -40,77 +40,86 @@ type databaseRaw struct {
 	LastSuccessfulSyncTs int64
 }
 
-// toDatabase creates an instance of Database based on the databaseRaw.
-// This is intended to be called when we need to compose an Database relationship.
-func (raw *databaseRaw) toDatabase() *api.Database {
-	return &api.Database{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		ProjectID:      raw.ProjectID,
-		InstanceID:     raw.InstanceID,
-		SourceBackupID: raw.SourceBackupID,
-
-		// Domain specific fields
-		Name:                 raw.Name,
-		CharacterSet:         raw.CharacterSet,
-		Collation:            raw.Collation,
-		SchemaVersion:        raw.SchemaVersion,
-		SyncStatus:           raw.SyncStatus,
-		LastSuccessfulSyncTs: raw.LastSuccessfulSyncTs,
-	}
-}
-
 // FindDatabase finds a list of Database instances.
 func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
-	databaseRawList, err := s.findDatabaseRaw(ctx, find)
+	// We don't have caller for searching IncludeAllDatabase.
+	v2Find := &FindDatabaseMessage{}
+	if find.InstanceID != nil {
+		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: find.InstanceID})
+		if err != nil {
+			return nil, err
+		}
+		v2Find.InstanceID = &instance.ResourceID
+	}
+	if find.ProjectID != nil {
+		project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: find.ProjectID})
+		if err != nil {
+			return nil, err
+		}
+		v2Find.ProjectID = &project.ResourceID
+	}
+	if find.Name != nil {
+		v2Find.DatabaseName = find.Name
+	}
+
+	databases, err := s.ListDatabases(ctx, v2Find)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Database list with DatabaseFind[%+v]", find)
+		return nil, err
 	}
 	var databaseList []*api.Database
-	for _, raw := range databaseRawList {
-		database, err := s.composeDatabase(ctx, raw)
+	for _, database := range databases {
+		composedDatabase, err := s.composeDatabase(ctx, database)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Database with databaseRaw[%+v]", raw)
+			return nil, err
 		}
-		databaseList = append(databaseList, database)
-	}
-
-	// If no specified instance, filter out databases belonging to archived instances.
-	if find.InstanceID == nil {
-		var filteredList []*api.Database
-		for _, database := range databaseList {
-			if i := database.Instance; i == nil || i.RowStatus == api.Archived {
-				continue
-			}
-			filteredList = append(filteredList, database)
+		if find.SyncStatus != nil && composedDatabase.SyncStatus != *find.SyncStatus {
+			continue
 		}
-		databaseList = filteredList
+		databaseList = append(databaseList, composedDatabase)
 	}
-
 	return databaseList, nil
 }
 
 // GetDatabase gets an instance of Database.
 func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	databaseRaw, err := s.getDatabaseRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Database with DatabaseFind[%+v]", find)
+	// We don't have caller for searching IncludeAllDatabase.
+	v2Find := &FindDatabaseMessage{}
+	if find.InstanceID != nil {
+		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: find.InstanceID})
+		if err != nil {
+			return nil, err
+		}
+		v2Find.InstanceID = &instance.ResourceID
 	}
-	if databaseRaw == nil {
+	if find.ProjectID != nil {
+		project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: find.ProjectID})
+		if err != nil {
+			return nil, err
+		}
+		v2Find.ProjectID = &project.ResourceID
+	}
+	if find.Name != nil {
+		v2Find.DatabaseName = find.Name
+	}
+	if find.ID != nil {
+		v2Find.UID = find.ID
+	}
+
+	databases, err := s.ListDatabases(ctx, v2Find)
+	if err != nil {
+		return nil, err
+	}
+	if len(databases) == 0 {
 		return nil, nil
+	} else if len(databases) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(databases), v2Find)}
 	}
-	database, err := s.composeDatabase(ctx, databaseRaw)
+	database := databases[0]
+	composedDatabase, err := s.composeDatabase(ctx, database)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Database with databaseRaw[%+v]", databaseRaw)
+		return nil, err
 	}
-	return database, nil
+	return composedDatabase, nil
 }
 
 // CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled.
@@ -177,141 +186,84 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 	return databaseCountMetricList, nil
 }
 
-//
-// private functions
-//
-
-func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Database, error) {
-	db := raw.toDatabase()
-
-	creator, err := s.GetPrincipalByID(ctx, db.CreatorID)
+// private functions.
+func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) (*api.Database, error) {
+	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
 	if err != nil {
 		return nil, err
 	}
-	db.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, db.UpdaterID)
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, err
 	}
-	db.Updater = updater
-
-	project, err := s.GetProjectByID(ctx, db.ProjectID)
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
 		return nil, err
 	}
-	db.Project = project
+	composedDatabase := &api.Database{
+		ID:                   database.UID,
+		CreatorID:            api.SystemBotID,
+		UpdaterID:            api.SystemBotID,
+		ProjectID:            project.UID,
+		InstanceID:           instance.UID,
+		Name:                 database.DatabaseName,
+		CharacterSet:         database.CharacterSet,
+		Collation:            database.Collation,
+		SchemaVersion:        database.SchemaVersion,
+		SyncStatus:           database.SyncState,
+		LastSuccessfulSyncTs: database.SuccessfulSyncTimeTs,
+	}
 
-	instance, err := s.GetInstanceByID(ctx, db.InstanceID)
+	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
 	if err != nil {
 		return nil, err
 	}
-	db.Instance = instance
+	composedDatabase.Creator = bot
+	composedDatabase.Updater = bot
 
-	if db.SourceBackupID != 0 {
-		sourceBackup, err := s.GetBackupByID(ctx, db.SourceBackupID)
-		if err != nil {
-			return nil, err
-		}
-		db.SourceBackup = sourceBackup
+	composedProject, err := s.GetProjectByID(ctx, project.UID)
+	if err != nil {
+		return nil, err
 	}
+	composedDatabase.Project = composedProject
+	composedInstance, err := s.GetInstanceByID(ctx, instance.UID)
+	if err != nil {
+		return nil, err
+	}
+	composedDatabase.Instance = composedInstance
 
 	// For now, only wildcard(*) database has data sources and we disallow it to be returned to the client.
 	// So we set this value to an empty array until we need to develop a data source for a non-wildcard database.
-	db.DataSourceList = []*api.DataSource{}
+	composedDatabase.DataSourceList = nil
 
-	rowStatus := api.Normal
-	labelList, err := s.findDatabaseLabel(ctx, &api.DatabaseLabelFind{
-		DatabaseID: db.ID,
-		RowStatus:  &rowStatus,
-	})
-	if err != nil {
-		return nil, err
+	// Compose labels.
+	var labelList []*api.DatabaseLabel
+	for key, value := range database.Labels {
+		labelList = append(labelList, &api.DatabaseLabel{
+			Key:   key,
+			Value: value,
+		})
 	}
-
 	// Since tenants are identified by labels in deployment config, we need an environment
 	// label to identify tenants from different environment in a schema update deployment.
 	// If we expose the environment label concept in the deployment config, it should look consistent in the label API.
-
 	// Each database instance is created under a particular environment.
 	// The value of bb.environment is identical to the name of the environment.
-
+	// TODO(d): change the envir
 	labelList = append(labelList, &api.DatabaseLabel{
 		Key:   api.EnvironmentLabelKey,
-		Value: db.Instance.Environment.Name,
+		Value: environment.Title,
 	})
-
 	labels, err := json.Marshal(labelList)
 	if err != nil {
 		return nil, err
 	}
-	db.Labels = string(labels)
+	composedDatabase.Labels = string(labels)
 
-	return db, nil
+	return composedDatabase, nil
 }
 
-// findDatabaseRaw retrieves a list of databases based on find.
-func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]*databaseRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := s.findDatabaseImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if err == nil {
-		for _, database := range list {
-			if err := s.cache.UpsertCache(databaseCacheNamespace, database.ID, database); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return list, nil
-}
-
-// getDatabaseRaw retrieves a single database based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*databaseRaw, error) {
-	if find.ID != nil {
-		databaseRaw := &databaseRaw{}
-		has, err := s.cache.FindCache(databaseCacheNamespace, *find.ID, databaseRaw)
-		if err != nil {
-			return nil, err
-		}
-		if has {
-			return databaseRaw, nil
-		}
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := s.findDatabaseImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(list), find)}
-	}
-
-	if err := s.cache.UpsertCache(databaseCacheNamespace, list[0].ID, list[0]); err != nil {
-		return nil, err
-	}
-
-	return list[0], nil
-}
-
+// TODO(d): clean up.
 func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -709,6 +661,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
 	}
+	// Don't return databases from deleted environments or instances.
 	where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
 
