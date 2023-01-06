@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/edit"
-	"github.com/bytebase/bytebase/server/utils"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -108,31 +107,31 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 	g.PATCH("/database/:databaseID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		updaterID := c.Get(getPrincipalIDContextKey()).(int)
 		id, err := strconv.Atoi(c.Param("databaseID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
-
-		dbPatch := &api.DatabasePatch{
-			ID:        id,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-		}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, dbPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch database request").SetInternal(err)
-		}
-
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database with ID %d", id)).SetInternal(err)
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
+		dbPatch := &api.DatabasePatch{
+			ID:        id,
+			UpdaterID: updaterID,
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, dbPatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch database request").SetInternal(err)
+		}
+
+		var toProject *store.ProjectMessage
 		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != database.ProjectID {
 			// Before updating database's projectID, we need to check if there are still bound sheets.
-			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.ID}, currentPrincipalID)
+			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.ID}, updaterID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.ID)).SetInternal(err)
 			}
@@ -140,58 +139,61 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, please go to SQL editor to unbind them first", len(sheetList)))
 			}
 
-			toProject, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: dbPatch.ProjectID})
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: dbPatch.ProjectID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", *dbPatch.ProjectID)).SetInternal(err)
 			}
-			if toProject == nil {
+			if project == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
 			}
-			if toProject.Deleted {
+			if project.Deleted {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project %q is deleted", *dbPatch.ProjectID))
 			}
+			toProject = project
 		}
 
+		updateMessage := &store.UpdateDatabaseMessage{
+			EnvironmentID: database.Instance.Environment.ResourceID,
+			InstanceID:    database.Instance.ResourceID,
+			DatabaseName:  database.Name,
+		}
+		if toProject != nil {
+			updateMessage.ProjectID = &toProject.ResourceID
+		}
 		// Patch database labels
 		// We will completely replace the old labels with the new ones, except bb.environment is immutable and
 		// must match instance environment.
 		if dbPatch.Labels != nil {
-			if err := utils.SetDatabaseLabels(ctx, s.store, *dbPatch.Labels, database, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
+			labels := make(map[string]string)
+			databaseLabels, err := convertDatabaseLabels(*dbPatch.Labels, database)
+			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
+			for _, databaseLabel := range databaseLabels {
+				labels[databaseLabel.Key] = databaseLabel.Value
+			}
+			updateMessage.Labels = &labels
+		}
+		if _, err := s.store.UpdateDatabase(ctx, updateMessage, updaterID); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
+		}
+
+		updatedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &database.ID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database with ID %d", id)).SetInternal(err)
 		}
 
 		// If we are transferring the database to a different project, then we create a project activity in both
 		// the old project and new project.
-		var dbExisting *api.Database
-		if dbPatch.ProjectID != nil {
-			dbExisting, err = s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &dbPatch.ID})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID %d", id)).SetInternal(err)
-			}
-			if dbExisting == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
-			}
-		}
-
-		dbPatched, err := s.store.PatchDatabase(ctx, dbPatch)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
-		}
-
-		// Create transferring database project activity.
-		if dbPatch.ProjectID != nil {
-			updaterID := c.Get(getPrincipalIDContextKey()).(int)
-			if err := createTransferProjectActivity(ctx, s.store, dbPatched, dbExisting.ProjectID, updaterID); err != nil {
+		if toProject != nil {
+			oldProjectID := database.ProjectID
+			if err := createTransferProjectActivity(ctx, s.store, updatedDatabase, oldProjectID, updaterID); err != nil {
 				log.Error("failed to create project transfer activity", zap.Error(err))
 			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, dbPatched); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedDatabase); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal database ID response: %v", id)).SetInternal(err)
 		}
 		return nil

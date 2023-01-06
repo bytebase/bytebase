@@ -5,14 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/github/gh-ost/go/base"
 	ghostsql "github.com/github/gh-ost/go/sql"
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
@@ -202,57 +200,6 @@ func GetActiveStage(pipeline *api.Pipeline) *api.Stage {
 			}
 		}
 	}
-	return nil
-}
-
-// SetDatabaseLabels sets the labels for a database.
-func SetDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON string, database *api.Database, updaterID int, validateOnly bool) error {
-	if labelsJSON == "" {
-		return nil
-	}
-	// NOTE: this is a partially filled DatabaseLabel
-	var labels []*api.DatabaseLabel
-	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-		return err
-	}
-
-	// For scalability, each database can have up to four labels for now.
-	if len(labels) > api.DatabaseLabelSizeMax {
-		err := errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-	}
-
-	if err := validateDatabaseLabelList(labels, database.Instance.Environment.Name); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
-	}
-
-	if !validateOnly {
-		if _, err := store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
-		}
-	}
-	return nil
-}
-
-func validateDatabaseLabelList(labelList []*api.DatabaseLabel, environmentName string) error {
-	var environmentValue *string
-
-	// check label key & value availability
-	for _, label := range labelList {
-		if label.Key == api.EnvironmentLabelKey {
-			environmentValue = &label.Value
-			continue
-		}
-	}
-
-	// Environment label must exist and is immutable.
-	if environmentValue == nil {
-		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentLabelKey)
-	}
-	if environmentName != *environmentValue {
-		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentLabelKey, environmentName, *environmentValue)
-	}
-
 	return nil
 }
 

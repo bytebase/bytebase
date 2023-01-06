@@ -113,19 +113,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 	return database, nil
 }
 
-// PatchDatabase patches an instance of Database.
-func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*api.Database, error) {
-	databaseRaw, err := s.patchDatabaseRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Database with DatabasePatch[%+v]", patch)
-	}
-	database, err := s.composeDatabase(ctx, databaseRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Database with databaseRaw[%+v]", databaseRaw)
-	}
-	return database, nil
-}
-
 // CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled.
 func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -325,31 +312,6 @@ func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*da
 	return list[0], nil
 }
 
-// patchDatabaseRaw updates an existing database by ID.
-// Returns ENOTFOUND if database does not exist.
-func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) (*databaseRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	database, err := s.patchDatabaseImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(databaseCacheNamespace, database.ID, database); err != nil {
-		return nil, err
-	}
-
-	return database, nil
-}
-
 func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -431,79 +393,6 @@ func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFi
 	}
 
 	return databaseRawList, nil
-}
-
-// patchDatabaseImpl updates a database by ID. Returns the new state of the database after update.
-func (*Store) patchDatabaseImpl(ctx context.Context, tx *Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.ProjectID; v != nil {
-		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SourceBackupID; v != nil {
-		set, args = append(set, fmt.Sprintf("source_backup_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SchemaVersion; v != nil {
-		set, args = append(set, fmt.Sprintf("schema_version = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SyncStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, api.SyncStatus(*v))
-	}
-	if v := patch.LastSuccessfulSyncTs; v != nil {
-		set, args = append(set, fmt.Sprintf("last_successful_sync_ts = $%d", len(args)+1)), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	var databaseRaw databaseRaw
-	var nullSourceBackupID sql.NullInt64
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE db
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			instance_id,
-			project_id,
-			source_backup_id,
-			name,
-			character_set,
-			"collation",
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-	`, len(args)),
-		args...,
-	).Scan(
-		&databaseRaw.ID,
-		&databaseRaw.CreatorID,
-		&databaseRaw.CreatedTs,
-		&databaseRaw.UpdaterID,
-		&databaseRaw.UpdatedTs,
-		&databaseRaw.InstanceID,
-		&databaseRaw.ProjectID,
-		&nullSourceBackupID,
-		&databaseRaw.Name,
-		&databaseRaw.CharacterSet,
-		&databaseRaw.Collation,
-		&databaseRaw.SyncStatus,
-		&databaseRaw.LastSuccessfulSyncTs,
-		&databaseRaw.SchemaVersion,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("database ID not found: %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	if nullSourceBackupID.Valid {
-		databaseRaw.SourceBackupID = int(nullSourceBackupID.Int64)
-	}
-	return &databaseRaw, nil
 }
 
 // DatabaseMessage is the message for database.
