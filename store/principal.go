@@ -164,7 +164,7 @@ func (s *Store) createPrincipalRaw(ctx context.Context, create *api.PrincipalCre
 
 // findPrincipalRawList retrieves a list of principalRaw instances.
 func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -198,7 +198,7 @@ func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

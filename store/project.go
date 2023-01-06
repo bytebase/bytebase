@@ -243,7 +243,7 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -272,7 +272,7 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 
 // ListProjectV2 lists all projects.
 func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

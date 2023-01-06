@@ -173,7 +173,7 @@ func (s *Store) upsertDeploymentConfigRaw(ctx context.Context, upsert *api.Deplo
 
 // getDeploymentConfigImpl finds the deployment configuration in a project.
 func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.DeploymentConfigFind) (*deploymentConfigRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

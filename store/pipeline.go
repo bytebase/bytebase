@@ -170,7 +170,7 @@ func (s *Store) createPipelineRaw(ctx context.Context, create *api.PipelineCreat
 
 // findPipelineRaw retrieves a list of pipelines based on find.
 func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]*pipelineRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -206,7 +206,7 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

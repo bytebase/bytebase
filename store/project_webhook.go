@@ -181,7 +181,7 @@ func (s *Store) createProjectWebhookRaw(ctx context.Context, create *api.Project
 
 // findProjectWebhookRaw retrieves a list of projectWebhooks based on find.
 func (s *Store) findProjectWebhookRaw(ctx context.Context, find *api.ProjectWebhookFind) ([]*projectWebhookRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -198,7 +198,7 @@ func (s *Store) findProjectWebhookRaw(ctx context.Context, find *api.ProjectWebh
 // getProjectWebhookRaw retrieves a single projectWebhook based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getProjectWebhookRaw(ctx context.Context, find *api.ProjectWebhookFind) (*projectWebhookRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

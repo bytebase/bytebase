@@ -137,7 +137,7 @@ func (s *Store) createBookmarkRaw(ctx context.Context, create *api.BookmarkCreat
 
 // findBookmarkRaw retrieves a list of bookmarks based on find.
 func (s *Store) findBookmarkRaw(ctx context.Context, find *api.BookmarkFind) ([]*bookmarkRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -154,7 +154,7 @@ func (s *Store) findBookmarkRaw(ctx context.Context, find *api.BookmarkFind) ([]
 // getBookmarkRaw retrieves a single bookmark based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getBookmarkRaw(ctx context.Context, find *api.BookmarkFind) (*bookmarkRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

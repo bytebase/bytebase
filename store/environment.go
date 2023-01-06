@@ -215,7 +215,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -240,7 +240,7 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 
 // ListEnvironmentV2 lists all environment.
 func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) ([]*EnvironmentMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

@@ -58,7 +58,7 @@ func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrgan
 
 // FindSheetOrganizer retrieves a SheetOrganizer.
 func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizerFind) (*api.SheetOrganizer, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

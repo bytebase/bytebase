@@ -164,7 +164,7 @@ func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.Sett
 
 // findSettingRaw retrieves a list of settings based on find.
 func (s *Store) findSettingRaw(ctx context.Context, find *api.SettingFind) ([]*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -180,7 +180,7 @@ func (s *Store) findSettingRaw(ctx context.Context, find *api.SettingFind) ([]*s
 // getSettingRaw retrieves a single setting based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getSettingRaw(ctx context.Context, find *api.SettingFind) (*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

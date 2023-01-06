@@ -228,7 +228,7 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 		return cacheList, nil
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -249,7 +249,7 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 // getDataSourceRaw retrieves a single dataSource based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) (*dataSourceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
