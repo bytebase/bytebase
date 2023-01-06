@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"time"
 
 	// embed will embeds the migration schema.
@@ -114,7 +115,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 }
 
 // ExecuteMigration executes a migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
 	return util.ExecuteMigration(ctx, driver, m, statement, migrationHistoryDefaultDatabase)
 }
 
@@ -175,7 +176,7 @@ func convertMigrationHistory(history MigrationHistory) (db.MigrationHistory, err
 		return db.MigrationHistory{}, err
 	}
 	return db.MigrationHistory{
-		ID:                    int(history.ID),
+		ID:                    strconv.FormatInt(history.ID, 10),
 		Creator:               history.CreatedBy,
 		CreatedTs:             int64(history.CreatedTs.T),
 		Updater:               history.UpdatedBy,
@@ -294,7 +295,7 @@ func (driver *Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *s
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, sequence int, _ string, m *db.MigrationInfo, storedVersion, statement string) (insertedID int64, err error) {
+func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, sequence int, _ string, m *db.MigrationInfo, storedVersion, statement string) (insertedID string, err error) {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 
 	retryTimes := 3
@@ -302,7 +303,7 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 		currentTimestamp := getMongoTimestamp()
 		nextID, err := driver.getMigrationHistoryNextID(ctx)
 		if err != nil {
-			return 0, errors.Wrapf(err, "failed to get next migration history ID")
+			return "", errors.Wrapf(err, "failed to get next migration history ID")
 		}
 
 		document := bson.M{
@@ -339,15 +340,15 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 					continue
 				}
 			}
-			return 0, errors.Wrapf(err, "failed to insert a pending migration history record")
+			return "", errors.Wrapf(err, "failed to insert a pending migration history record")
 		}
-		return nextID, nil
+		return strconv.FormatInt(nextID, 10), nil
 	}
-	return 0, errors.Errorf("failed to insert a pending migration history record because of the duplidate id after %d retries", retryTimes)
+	return "", errors.Errorf("failed to insert a pending migration history record because of the duplidate id after %d retries", retryTimes)
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
-func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrationDurationNs int64, _ string, insertedID int64) error {
+func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrationDurationNs int64, _ string, insertedID string) error {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 	filter := bson.M{
 		"id": insertedID,
@@ -370,7 +371,7 @@ func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrat
 }
 
 // UpdateHistoryAsFailed will update the migration record as failed.
-func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, _ *sql.Tx, migrationDurationNs int64, insertedID int64) error {
+func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, _ *sql.Tx, migrationDurationNs int64, insertedID string) error {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 	filter := bson.M{
 		"id": insertedID,
