@@ -141,10 +141,10 @@ func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, pa
 	defer driver.Close(ctx)
 	list, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{ID: &payload.MigrationID})
 	if err != nil {
-		return "", errors.WithMessagef(err, "failed to find migration history with ID %d", payload.MigrationID)
+		return "", errors.WithMessagef(err, "failed to find migration history with ID %s", payload.MigrationID)
 	}
 	if len(list) == 0 {
-		return "", errors.Errorf("migration history with ID %d not found", payload.MigrationID)
+		return "", errors.Errorf("migration history with ID %s not found", payload.MigrationID)
 	}
 	if len(list) > 1 {
 		return "", errors.Errorf("found %d migration history record, expecting one", len(list))
