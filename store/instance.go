@@ -480,25 +480,24 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 	}
 
 	if patch.DataSourceList != nil {
-		dbName := api.AllDatabaseName
-		dbFind := &api.DatabaseFind{
-			InstanceID:         &patch.ID,
-			Name:               &dbName,
+		allDatabaseName := api.AllDatabaseName
+		databaseList, err := s.listDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
+			InstanceID:         &instance.ResourceID,
+			DatabaseName:       &allDatabaseName,
 			IncludeAllDatabase: true,
-		}
-		databaseList, err := s.findDatabaseImpl(ctx, tx, dbFind)
+		})
 		if err != nil {
 			return nil, err
 		}
 		if len(databaseList) == 0 {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot find database with filter %+v. ", dbFind)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("data source database not found for instance %q", instance.ResourceID)}
 		}
 		if len(databaseList) > 1 {
-			return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(databaseList), dbFind)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases for instance %q", len(databaseList), instance.ResourceID)}
 		}
-		database := databaseList[0]
+		allDatabase := databaseList[0]
 
-		if err := s.clearDataSourceImpl(ctx, tx, patch.ID, database.ID); err != nil {
+		if err := s.clearDataSourceImpl(ctx, tx, patch.ID, allDatabase.UID); err != nil {
 			return nil, err
 		}
 		s.cache.DeleteCache(dataSourceCacheNamespace, patch.ID)
@@ -507,7 +506,7 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 			dataSourceCreate := &api.DataSourceCreate{
 				CreatorID:  patch.UpdaterID,
 				InstanceID: instance.ID,
-				DatabaseID: database.ID,
+				DatabaseID: allDatabase.UID,
 				Name:       dataSource.Name,
 				Type:       dataSource.Type,
 				Username:   dataSource.Username,
@@ -997,25 +996,24 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	if patch.DataSources != nil {
-		dbName := api.AllDatabaseName
-		dbFind := &api.DatabaseFind{
-			InstanceID:         &instance.UID,
-			Name:               &dbName,
+		allDatabaseName := api.AllDatabaseName
+		databaseList, err := s.listDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
+			InstanceID:         &instance.ResourceID,
+			DatabaseName:       &allDatabaseName,
 			IncludeAllDatabase: true,
-		}
-		databaseList, err := s.findDatabaseImpl(ctx, tx, dbFind)
+		})
 		if err != nil {
 			return nil, err
 		}
 		if len(databaseList) == 0 {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot find database with filter %+v. ", dbFind)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("data source database not found for instance %q", instance.ResourceID)}
 		}
 		if len(databaseList) > 1 {
-			return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(databaseList), dbFind)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases for instance %q", len(databaseList), instance.ResourceID)}
 		}
-		database := databaseList[0]
+		allDatabase := databaseList[0]
 
-		if err := s.clearDataSourceImpl(ctx, tx, instance.UID, database.ID); err != nil {
+		if err := s.clearDataSourceImpl(ctx, tx, instance.UID, allDatabase.UID); err != nil {
 			return nil, err
 		}
 
@@ -1023,7 +1021,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			dataSourceCreate := &api.DataSourceCreate{
 				CreatorID:  patch.UpdaterID,
 				InstanceID: instance.UID,
-				DatabaseID: database.ID,
+				DatabaseID: allDatabase.UID,
 				Name:       ds.Title,
 				Type:       ds.Type,
 				Username:   ds.Username,

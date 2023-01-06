@@ -15,31 +15,6 @@ import (
 	"github.com/bytebase/bytebase/metric"
 )
 
-// databaseRaw is the store model for an Database.
-// Fields have exactly the same meanings as Database.
-type databaseRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	ProjectID      int
-	InstanceID     int
-	SourceBackupID int
-
-	// Domain specific fields
-	Name                 string
-	CharacterSet         string
-	Collation            string
-	SchemaVersion        string
-	SyncStatus           api.SyncStatus
-	LastSuccessfulSyncTs int64
-}
-
 // FindDatabase finds a list of Database instances.
 func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
 	// We don't have caller for searching IncludeAllDatabase.
@@ -262,90 +237,6 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 	composedDatabase.Labels = string(labels)
 
 	return composedDatabase, nil
-}
-
-// TODO(d): clean up.
-func (*Store) findDatabaseImpl(ctx context.Context, tx *Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
-	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.InstanceID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Name; v != nil {
-		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.SyncStatus; v != nil {
-		where, args = append(where, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
-	}
-	if !find.IncludeAllDatabase {
-		where = append(where, "name != '"+api.AllDatabaseName+"'")
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			instance_id,
-			project_id,
-			source_backup_id,
-			name,
-			character_set,
-			"collation",
-			sync_status,
-			last_successful_sync_ts,
-			schema_version
-		FROM db
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into databaseRawList.
-	var databaseRawList []*databaseRaw
-	for rows.Next() {
-		var databaseRaw databaseRaw
-		var nullSourceBackupID sql.NullInt64
-		if err := rows.Scan(
-			&databaseRaw.ID,
-			&databaseRaw.CreatorID,
-			&databaseRaw.CreatedTs,
-			&databaseRaw.UpdaterID,
-			&databaseRaw.UpdatedTs,
-			&databaseRaw.InstanceID,
-			&databaseRaw.ProjectID,
-			&nullSourceBackupID,
-			&databaseRaw.Name,
-			&databaseRaw.CharacterSet,
-			&databaseRaw.Collation,
-			&databaseRaw.SyncStatus,
-			&databaseRaw.LastSuccessfulSyncTs,
-			&databaseRaw.SchemaVersion,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if nullSourceBackupID.Valid {
-			databaseRaw.SourceBackupID = int(nullSourceBackupID.Int64)
-		}
-
-		databaseRawList = append(databaseRawList, &databaseRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return databaseRawList, nil
 }
 
 // DatabaseMessage is the message for database.
