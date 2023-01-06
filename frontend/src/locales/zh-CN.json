@@ -423,9 +423,12 @@
       "remove-sensitive-column-tips": "不再对此列数据脱敏？"
     },
     "access-control": {
-      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。",
+      "description": "允许开发者通过 SQL 编辑器对下列受保护环境中的数据库执行查询。{link}",
       "add-rule": "添加规则",
-      "remove-policy-tips": "删除这条规则？"
+      "remove-policy-tips": "删除这条规则？",
+      "inactive-rules": "无效的规则",
+      "inactive-rules-description": "这些规则不再生效，因为所属环境不是受保护的。",
+      "no-database-in-protected-environment": "请确保{protected_environment}中有数据库。"
     },
     "release": {
       "new-version-available": "有新版本可更新",
@@ -755,7 +758,8 @@
     "disable-auto-backup": {
       "self": "禁用数据库自动备份",
       "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
-    }
+    },
+    "protected-environment": "受保护的环境"
   },
   "quick-start": {
     "bookmark-an-issue": "收藏工单",
