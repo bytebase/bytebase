@@ -643,7 +643,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
-	taskCreateList, err := s.createDatabaseCreateTaskList(ctx, c, *instance, project)
+	taskCreateList, err := s.createDatabaseCreateTaskList(c, *instance, project)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create task list of creating database")
 	}
@@ -1032,7 +1032,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 }
 
 // createDatabaseCreateTaskList returns the task list for create database.
-func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateDatabaseContext, instance api.Instance, project *store.ProjectMessage) ([]api.TaskCreate, error) {
+func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, instance api.Instance, project *store.ProjectMessage) ([]api.TaskCreate, error) {
 	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
 		return nil, err
 	}
@@ -1047,10 +1047,8 @@ func (s *Server) createDatabaseCreateTaskList(ctx context.Context, c api.CreateD
 		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB"))
 	}
 	// Validate the labels. Labels are set upon task completion.
-	if c.Labels != "" {
-		if err := utils.SetDatabaseLabels(ctx, s.store, c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
-		}
+	if _, err := convertDatabaseLabels(c.Labels, &api.Database{Name: c.DatabaseName, Instance: &instance} /* dummy database */); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
 	}
 
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
@@ -1117,7 +1115,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to find the project with ID %d", projectID)
 		}
-		taskList, err := s.createDatabaseCreateTaskList(ctx, *c.CreateDatabaseCtx, *targetInstance, project)
+		taskList, err := s.createDatabaseCreateTaskList(*c.CreateDatabaseCtx, *targetInstance, project)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
 		}
@@ -1356,4 +1354,48 @@ func unmarshalPageToken(pageToken string, sortOrder api.SortOrder) (int, error) 
 	}
 
 	return id, nil
+}
+
+// convertDatabaseLabels cnverts the json labels.
+func convertDatabaseLabels(labelsJSON string, database *api.Database) ([]*api.DatabaseLabel, error) {
+	if labelsJSON == "" {
+		return nil, nil
+	}
+	var labels []*api.DatabaseLabel
+	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
+		return nil, err
+	}
+
+	// For scalability, each database can have up to four labels for now.
+	if len(labels) > api.DatabaseLabelSizeMax {
+		err := errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
+		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+	}
+	if err := validateDatabaseLabelList(labels, database.Instance.Environment.Name); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to validate database labels").SetInternal(err)
+	}
+
+	return labels, nil
+}
+
+func validateDatabaseLabelList(labelList []*api.DatabaseLabel, environmentName string) error {
+	var environmentValue *string
+
+	// check label key & value availability
+	for _, label := range labelList {
+		if label.Key == api.EnvironmentLabelKey {
+			environmentValue = &label.Value
+			continue
+		}
+	}
+
+	// Environment label must exist and is immutable.
+	if environmentValue == nil {
+		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentLabelKey)
+	}
+	if environmentName != *environmentValue {
+		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentLabelKey, environmentName, *environmentValue)
+	}
+
+	return nil
 }

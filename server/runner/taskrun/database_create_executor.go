@@ -154,6 +154,16 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		return true, nil, err
 	}
 
+	labels := make(map[string]string)
+	if payload.Labels != "" {
+		var databaseLabels []*api.DatabaseLabel
+		if err := json.Unmarshal([]byte(payload.Labels), &databaseLabels); err != nil {
+			return true, nil, err
+		}
+		for _, databaseLabel := range databaseLabels {
+			labels[databaseLabel.Key] = databaseLabel.Value
+		}
+	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID:            project.ResourceID,
 		EnvironmentID:        instance.Environment.ResourceID,
@@ -164,18 +174,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		SyncState:            api.OK,
 		SuccessfulSyncTimeTs: time.Now().Unix(),
 		SchemaVersion:        schemaVersion,
+		Labels:               labels,
 	})
 	if err != nil {
-		return true, nil, err
-	}
-	// Set database labels, except bb.environment is immutable and must match instance environment.
-	var labels []*api.DatabaseLabel
-	if payload.Labels != "" {
-		if err := json.Unmarshal([]byte(payload.Labels), &labels); err != nil {
-			return true, nil, err
-		}
-	}
-	if _, err := exec.store.SetDatabaseLabelList(ctx, labels, database.UID, api.SystemBotID); err != nil {
 		return true, nil, err
 	}
 	composedDatabase, err := exec.store.GetDatabase(ctx, &api.DatabaseFind{ID: &database.UID})

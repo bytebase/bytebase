@@ -169,6 +169,7 @@ func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.I
 		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
 	}
 	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
+	delete(s.instanceIDCache, instance.ID)
 	return instance, nil
 }
 
@@ -479,25 +480,24 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 	}
 
 	if patch.DataSourceList != nil {
-		dbName := api.AllDatabaseName
-		dbFind := &api.DatabaseFind{
-			InstanceID:         &patch.ID,
-			Name:               &dbName,
+		allDatabaseName := api.AllDatabaseName
+		databaseList, err := s.listDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
+			InstanceID:         &instance.ResourceID,
+			DatabaseName:       &allDatabaseName,
 			IncludeAllDatabase: true,
-		}
-		databaseList, err := s.findDatabaseImpl(ctx, tx, dbFind)
+		})
 		if err != nil {
 			return nil, err
 		}
 		if len(databaseList) == 0 {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot find database with filter %+v. ", dbFind)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("data source database not found for instance %q", instance.ResourceID)}
 		}
 		if len(databaseList) > 1 {
-			return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(databaseList), dbFind)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases for instance %q", len(databaseList), instance.ResourceID)}
 		}
-		database := databaseList[0]
+		allDatabase := databaseList[0]
 
-		if err := s.clearDataSourceImpl(ctx, tx, patch.ID, database.ID); err != nil {
+		if err := s.clearDataSourceImpl(ctx, tx, patch.ID, allDatabase.UID); err != nil {
 			return nil, err
 		}
 		s.cache.DeleteCache(dataSourceCacheNamespace, patch.ID)
@@ -506,7 +506,7 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 			dataSourceCreate := &api.DataSourceCreate{
 				CreatorID:  patch.UpdaterID,
 				InstanceID: instance.ID,
-				DatabaseID: database.ID,
+				DatabaseID: allDatabase.UID,
 				Name:       dataSource.Name,
 				Type:       dataSource.Type,
 				Username:   dataSource.Username,
@@ -768,6 +768,7 @@ type UpdateInstanceMessage struct {
 
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
+	UID           *int
 	EnvironmentID *string
 	ResourceID    *string
 	ShowDeleted   bool
@@ -775,15 +776,19 @@ type FindInstanceMessage struct {
 
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
+	if find.EnvironmentID != nil && find.ResourceID != nil {
+		if instance, ok := s.instanceCache[getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)]; ok {
+			return instance, nil
+		}
+	}
+	if find.UID != nil {
+		if instance, ok := s.instanceIDCache[*find.UID]; ok {
+			return instance, nil
+		}
+	}
+
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
-
-	if find.EnvironmentID == nil || find.ResourceID == nil {
-		return nil, errors.Errorf("environment and resource ID must exist and showDelete must be false for getting an instance")
-	}
-	if instance, ok := s.instanceCache[getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)]; ok {
-		return instance, nil
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -807,6 +812,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 
 	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	s.instanceIDCache[instance.UID] = instance
 	return instance, nil
 }
 
@@ -829,6 +835,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 
 	for _, instance := range instances {
 		s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+		s.instanceIDCache[instance.UID] = instance
 	}
 	return instances, nil
 }
@@ -921,6 +928,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		DataSources:   instanceCreate.DataSources,
 	}
 	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	s.instanceIDCache[instance.UID] = instance
 	return instance, nil
 }
 
@@ -988,25 +996,24 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	if patch.DataSources != nil {
-		dbName := api.AllDatabaseName
-		dbFind := &api.DatabaseFind{
-			InstanceID:         &instance.UID,
-			Name:               &dbName,
+		allDatabaseName := api.AllDatabaseName
+		databaseList, err := s.listDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
+			InstanceID:         &instance.ResourceID,
+			DatabaseName:       &allDatabaseName,
 			IncludeAllDatabase: true,
-		}
-		databaseList, err := s.findDatabaseImpl(ctx, tx, dbFind)
+		})
 		if err != nil {
 			return nil, err
 		}
 		if len(databaseList) == 0 {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot find database with filter %+v. ", dbFind)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("data source database not found for instance %q", instance.ResourceID)}
 		}
 		if len(databaseList) > 1 {
-			return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d databases with filter %+v, expect 1. ", len(databaseList), dbFind)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases for instance %q", len(databaseList), instance.ResourceID)}
 		}
-		database := databaseList[0]
+		allDatabase := databaseList[0]
 
-		if err := s.clearDataSourceImpl(ctx, tx, instance.UID, database.ID); err != nil {
+		if err := s.clearDataSourceImpl(ctx, tx, instance.UID, allDatabase.UID); err != nil {
 			return nil, err
 		}
 
@@ -1014,7 +1021,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			dataSourceCreate := &api.DataSourceCreate{
 				CreatorID:  patch.UpdaterID,
 				InstanceID: instance.UID,
-				DatabaseID: database.ID,
+				DatabaseID: allDatabase.UID,
 				Name:       ds.Title,
 				Type:       ds.Type,
 				Username:   ds.Username,
@@ -1047,6 +1054,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
+	s.instanceIDCache[instance.UID] = instance
 	return instance, nil
 }
 
