@@ -30,14 +30,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 
 		// Record activity
 		{
-			user, err := s.store.GetPrincipalByID(ctx, user.ID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", user.ID)).SetInternal(err)
-			}
-			if user == nil {
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Failed to find user ID: %d", user.ID))
-			}
-
 			bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
 				PrincipalID:    user.ID,
 				PrincipalName:  user.Name,
