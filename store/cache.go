@@ -27,8 +27,6 @@ const (
 	issueCacheNamespace cacheNamespace = "is"
 	// dataSourceCacheNamespace is the cache type of data sources.
 	dataSourceCacheNamespace cacheNamespace = "ds"
-	// tierPolicyCacheNamespace is the cache type of tier policy.
-	tierPolicyCacheNamespace cacheNamespace = "pot"
 	// approvalPolicyCacheNamespace is the cache type of approval policy.
 	approvalPolicyCacheNamespace cacheNamespace = "app"
 )

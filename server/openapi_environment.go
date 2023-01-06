@@ -173,10 +173,6 @@ func (s *Server) convertToOpenAPIEnvironment(ctx context.Context, env *api.Envir
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the pipeline approval policy for environment %d", env.ID)).SetInternal(err)
 	}
-	environmentTierPolicy, err := s.store.GetEnvironmentTierPolicyByEnvID(ctx, env.ID)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find the environment tier policy for environment %d", env.ID)).SetInternal(err)
-	}
 
 	environmentResourceType := api.PolicyResourceTypeEnvironment
 	sqlReviewPolicy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &env.ID})
@@ -192,7 +188,6 @@ func (s *Server) convertToOpenAPIEnvironment(ctx context.Context, env *api.Envir
 		Order:                  env.Order,
 		BackupPlanPolicy:       backupPolicy,
 		PipelineApprovalPolicy: pipelineApprovalPolicy,
-		EnvironmentTierPolicy:  environmentTierPolicy,
 		SQLReviewPolicy:        sqlReviewPolicy,
 	}, nil
 }

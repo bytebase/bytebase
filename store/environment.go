@@ -142,6 +142,10 @@ func (s *Store) composeEnvironment(ctx context.Context, raw *EnvironmentMessage)
 	if raw.Deleted {
 		rowStatus = api.Archived
 	}
+	tier := api.EnvironmentTierValueUnprotected
+	if raw.Protected {
+		tier = api.EnvironmentTierValueProtected
+	}
 	ret := &api.Environment{
 		ID:         raw.UID,
 		ResourceID: raw.ResourceID,
@@ -154,6 +158,7 @@ func (s *Store) composeEnvironment(ctx context.Context, raw *EnvironmentMessage)
 
 		Name:  raw.Title,
 		Order: int(raw.Order),
+		Tier:  tier,
 	}
 	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
 	if err != nil {
@@ -161,12 +166,6 @@ func (s *Store) composeEnvironment(ctx context.Context, raw *EnvironmentMessage)
 	}
 	ret.Creator = bot
 	ret.Updater = bot
-
-	tier, err := s.GetEnvironmentTierPolicyByEnvID(ctx, raw.UID)
-	if err != nil {
-		return nil, err
-	}
-	ret.Tier = tier.EnvironmentTier
 
 	return ret, nil
 }
