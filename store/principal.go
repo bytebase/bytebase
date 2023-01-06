@@ -104,7 +104,7 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 	}
 	defer tx.Rollback()
 
-	userMessages, err := s.listUserImpl(ctx, tx, find)
+	users, err := s.listUserImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -113,33 +113,41 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 		return nil, FormatError(err)
 	}
 
-	return userMessages, nil
+	for _, user := range users {
+		s.userIDCache[user.ID] = user
+	}
+	return users, nil
 }
 
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
+	if user, ok := s.userIDCache[id]; ok {
+		return user, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	userMessages, err := s.listUserImpl(ctx, tx, &FindUserMessage{ID: &id, ShowDeleted: true})
+	users, err := s.listUserImpl(ctx, tx, &FindUserMessage{ID: &id, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
-	if len(userMessages) == 0 {
+	if len(users) == 0 {
 		return nil, nil
 	}
-	if len(userMessages) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with id %q, expect 1", len(userMessages), id)}
+	if len(users) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with id %q, expect 1", len(users), id)}
 	}
-
+	user := users[0]
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return userMessages[0], nil
+	s.userIDCache[user.ID] = user
+	return user, nil
 }
 
 // GetUserByEmail gets the user by email.
@@ -153,22 +161,23 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 	}
 	defer tx.Rollback()
 
-	userMessages, err := s.listUserImpl(ctx, tx, &FindUserMessage{Email: &email, ShowDeleted: true})
+	users, err := s.listUserImpl(ctx, tx, &FindUserMessage{Email: &email, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
-	if len(userMessages) == 0 {
+	if len(users) == 0 {
 		return nil, nil
 	}
-	if len(userMessages) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with email %q, expect 1", len(userMessages), email)}
+	if len(users) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d users with email %q, expect 1", len(users), email)}
 	}
-
+	user := users[0]
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return userMessages[0], nil
+	s.userIDCache[user.ID] = user
+	return user, nil
 }
 
 // GetUserByEmailV2 gets an instance of Principal.
@@ -303,14 +312,16 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		return nil, FormatError(err)
 	}
 
-	return &UserMessage{
+	user := &UserMessage{
 		ID:           userID,
 		Email:        create.Email,
 		Name:         create.Name,
 		Type:         create.Type,
 		PasswordHash: create.PasswordHash,
 		Role:         role,
-	}, nil
+	}
+	s.userIDCache[user.ID] = user
+	return user, nil
 }
 
 // UpdateUser updates a user.
@@ -369,6 +380,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		}
 		return nil, FormatError(err)
 	}
+	// TODO(d): use upsert for member update.
 	var rowStatus string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE member
@@ -392,5 +404,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, FormatError(err)
 	}
 
+	s.userIDCache[user.ID] = user
 	return user, nil
 }

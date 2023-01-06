@@ -8,6 +8,7 @@ type Store struct {
 	db    *DB
 	cache *CacheService
 
+	userIDCache        map[int]*UserMessage
 	environmentCache   map[string]*EnvironmentMessage
 	environmentIDCache map[int]*EnvironmentMessage
 	instanceCache      map[string]*InstanceMessage
@@ -24,6 +25,7 @@ func New(db *DB) *Store {
 	return &Store{
 		db:                 db,
 		cache:              newCacheService(),
+		userIDCache:        make(map[int]*UserMessage),
 		environmentCache:   make(map[string]*EnvironmentMessage),
 		environmentIDCache: make(map[int]*EnvironmentMessage),
 		instanceCache:      make(map[string]*InstanceMessage),
