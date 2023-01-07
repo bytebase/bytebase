@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/store"
 )
 
 // demoDataPath is the path prefix for demo data.
@@ -29,14 +30,18 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 		}
 
 		findRole := api.Owner
-		find := &api.MemberFind{
-			Role: &findRole,
-		}
-		memberList, err := s.store.FindMember(ctx, find)
+		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{Role: &findRole})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch admin setup status").SetInternal(err)
 		}
-		serverInfo.NeedAdminSetup = len(memberList) == 0
+		count := 0
+		for _, user := range users {
+			if user.ID == api.SystemBotID {
+				continue
+			}
+			count++
+		}
+		serverInfo.NeedAdminSetup = count == 0
 
 		return c.JSON(http.StatusOK, serverInfo)
 	})

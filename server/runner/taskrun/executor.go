@@ -77,7 +77,7 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
-		creator, err := store.GetPrincipalByID(ctx, task.CreatorID)
+		creator, err := store.GetUserByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.

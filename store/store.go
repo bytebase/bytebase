@@ -1,38 +1,33 @@
 // Package store is the implementation for managing Bytebase's own metadata in a PostgreSQL database.
 package store
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // Store provides database access to all raw objects.
 type Store struct {
 	db    *DB
 	cache *CacheService
 
-	environmentCache   map[string]*EnvironmentMessage
-	environmentIDCache map[int]*EnvironmentMessage
-	instanceCache      map[string]*InstanceMessage
-	instanceIDCache    map[int]*InstanceMessage
-	databaseCache      map[string]*DatabaseMessage
-	databaseIDCache    map[int]*DatabaseMessage
-	projectCache       map[string]*ProjectMessage
-	projectIDCache     map[int]*ProjectMessage
-	dbSchemaCache      map[int]*DBSchema
+	userIDCache        sync.Map // map[int]*UserMessage
+	environmentCache   sync.Map // map[string]*EnvironmentMessage
+	environmentIDCache sync.Map // map[int]*EnvironmentMessage
+	instanceCache      sync.Map // map[string]*InstanceMessage
+	instanceIDCache    sync.Map // map[int]*InstanceMessage
+	databaseCache      sync.Map // map[string]*DatabaseMessage
+	databaseIDCache    sync.Map // map[int]*DatabaseMessage
+	projectCache       sync.Map // map[string]*ProjectMessage
+	projectIDCache     sync.Map // map[int]*ProjectMessage
+	dbSchemaCache      sync.Map // map[int]*DBSchema
 }
 
 // New creates a new instance of Store.
 func New(db *DB) *Store {
 	return &Store{
-		db:                 db,
-		cache:              newCacheService(),
-		environmentCache:   make(map[string]*EnvironmentMessage),
-		environmentIDCache: make(map[int]*EnvironmentMessage),
-		instanceCache:      make(map[string]*InstanceMessage),
-		instanceIDCache:    make(map[int]*InstanceMessage),
-		databaseCache:      make(map[string]*DatabaseMessage),
-		databaseIDCache:    make(map[int]*DatabaseMessage),
-		projectCache:       make(map[string]*ProjectMessage),
-		projectIDCache:     make(map[int]*ProjectMessage),
-		dbSchemaCache:      make(map[int]*DBSchema),
+		db:    db,
+		cache: newCacheService(),
 	}
 }
 

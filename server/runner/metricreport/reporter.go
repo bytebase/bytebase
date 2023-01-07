@@ -123,15 +123,15 @@ func (m *Reporter) Identify(ctx context.Context) {
 	orgID := subscription.OrgID
 	orgName := subscription.OrgName
 
-	principal, err := m.store.GetPrincipalByID(ctx, api.PrincipalIDForFirstUser)
+	user, err := m.store.GetUserByID(ctx, api.PrincipalIDForFirstUser)
 	if err != nil {
 		log.Debug("unable to get the first principal user", zap.Int("id", api.PrincipalIDForFirstUser), zap.Error(err))
 	}
 	email := ""
 	name := ""
-	if principal != nil {
-		email = principal.Email
-		name = principal.Name
+	if user != nil {
+		email = user.Email
+		name = user.Name
 	}
 
 	if err := m.reporter.Identify(&metric.Identifier{
