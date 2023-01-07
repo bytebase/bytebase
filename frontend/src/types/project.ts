@@ -39,12 +39,7 @@ export const EmptyProjectRoleProviderPayload: ProjectRoleProviderPayload = {
 // Project
 export type Project = {
   id: ProjectId;
-
-  // Standard fields
-  creator: Principal;
-  updater: Principal;
-  createdTs: number;
-  updatedTs: number;
+  resourceId: string;
   rowStatus: RowStatus;
 
   // Domain specific fields

@@ -344,7 +344,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	for _, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement, t.run)
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.statement, t.run)
 		a.Equal(t.result, result)
 	}
 
@@ -359,7 +359,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
@@ -370,7 +370,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0], false)
+	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
@@ -1078,7 +1078,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	for _, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement, t.run)
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.statement, t.run)
 		a.Equal(t.result, result, t.statement)
 	}
 
@@ -1098,14 +1098,14 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		`INSERT INTO test(id, name) VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');`,
 	}
 	for _, stmt := range initialStmts {
-		createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, stmt, true /* wait */)
+		createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, stmt, true /* wait */)
 	}
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	origin, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
 	a.Equal("[[\"count(*)\"],[\"BIGINT\"],[[\"4\"]]]", origin)
-	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, dmlSQL, false /* wait */)
+	createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, dmlSQL, false /* wait */)
 	finial, err := ctl.query(instance, databaseName, countSQL)
 	a.NoError(err)
 	a.Equal(origin, finial)
@@ -1121,7 +1121,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 
 	// delete the SQL review policy
@@ -1132,11 +1132,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0], false)
+	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
-func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string, wait bool) []api.TaskCheckResult {
+func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, statement string, wait bool) []api.TaskCheckResult {
 	createContext, err := json.Marshal(&api.MigrationContext{
 		DetailList: []*api.MigrationDetail{
 			{
@@ -1153,7 +1153,7 @@ func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller,
 		Name:          "update schema for database",
 		Type:          api.IssueDatabaseSchemaUpdate,
 		Description:   "This updates the schema of database",
-		AssigneeID:    assigneeID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)

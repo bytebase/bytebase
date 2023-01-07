@@ -1,16 +1,12 @@
 import { RowStatus } from "./common";
 import { EnvironmentId } from "./id";
 import { EnvironmentTier } from "./policy";
-import { Principal } from "./principal";
 
 export type Environment = {
   id: EnvironmentId;
+  resourceId: string;
 
   // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
   rowStatus: RowStatus;
 
   // Domain specific fields
