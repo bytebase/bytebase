@@ -50,8 +50,6 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		principal := &api.Principal{
 			ID:           user.ID,
-			CreatorID:    api.SystemBotID,
-			UpdaterID:    api.SystemBotID,
 			Type:         user.Type,
 			Name:         user.Name,
 			Email:        user.Email,
@@ -113,10 +111,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalID"))).SetInternal(err)
 		}
 
-		principalPatch := &api.PrincipalPatch{
-			ID:        id,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-		}
+		principalPatch := &api.PrincipalPatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch principal request").SetInternal(err)
 		}
@@ -150,8 +145,6 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		principal := &api.Principal{
 			ID:           user.ID,
-			CreatorID:    api.SystemBotID,
-			UpdaterID:    api.SystemBotID,
 			Type:         user.Type,
 			Name:         user.Name,
 			Email:        user.Email,

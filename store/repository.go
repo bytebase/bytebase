@@ -17,12 +17,6 @@ import (
 type repositoryRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Related fields
 	VCSID     int
 	ProjectID int
@@ -52,11 +46,6 @@ type repositoryRaw struct {
 func (raw *repositoryRaw) toRepository() *api.Repository {
 	return &api.Repository{
 		ID: raw.ID,
-
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		VCSID:     raw.VCSID,
 		ProjectID: raw.ProjectID,
@@ -165,18 +154,6 @@ func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDele
 
 func (s *Store) composeRepository(ctx context.Context, raw *repositoryRaw) (*api.Repository, error) {
 	repository := raw.toRepository()
-
-	creator, err := s.GetPrincipalByID(ctx, repository.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	repository.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, repository.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	repository.Updater = updater
 
 	vcs, err := s.GetVCSByID(ctx, repository.VCSID)
 	if err != nil {
@@ -319,7 +296,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 			refresh_token
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		RETURNING id, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
@@ -345,10 +322,6 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 		create.RefreshToken,
 	).Scan(
 		&repository.ID,
-		&repository.CreatorID,
-		&repository.CreatedTs,
-		&repository.UpdaterID,
-		&repository.UpdatedTs,
 		&repository.VCSID,
 		&repository.ProjectID,
 		&repository.Name,
@@ -399,10 +372,6 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			vcs_id,
 			project_id,
 			name,
@@ -437,10 +406,6 @@ func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.Reposito
 		var repository repositoryRaw
 		if err := rows.Scan(
 			&repository.ID,
-			&repository.CreatorID,
-			&repository.CreatedTs,
-			&repository.UpdaterID,
-			&repository.UpdatedTs,
 			&repository.VCSID,
 			&repository.ProjectID,
 			&repository.Name,
@@ -521,15 +486,11 @@ func (*Store) patchRepositoryImpl(ctx context.Context, tx *Tx, patch *api.Reposi
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		RETURNING id, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 		`,
 		args...,
 	).Scan(
 		&repository.ID,
-		&repository.CreatorID,
-		&repository.CreatedTs,
-		&repository.UpdaterID,
-		&repository.UpdatedTs,
 		&repository.VCSID,
 		&repository.ProjectID,
 		&repository.Name,

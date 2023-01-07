@@ -20,10 +20,7 @@ func TestUnmarshal(t *testing.T) {
 	}`)
 	keys := []string{"bb.location", "bb.tenant"}
 	values := []string{"earth", "bytebase"}
-	databasePatch := &DatabasePatch{
-		ID:        1,
-		UpdaterID: 1,
-	}
+	databasePatch := &DatabasePatch{}
 	err := jsonapi.UnmarshalPayload(bytes.NewReader(b), databasePatch)
 	require.NoError(t, err)
 	var labels []*DatabaseLabel

@@ -1,17 +1,10 @@
 import isEmpty from "lodash-es/isEmpty";
 import { RepositoryId, VCSId } from "./id";
-import { Principal } from "./principal";
 import { Project } from "./project";
 import { VCS } from "./vcs";
 
 export type Repository = {
   id: RepositoryId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Related fields
   vcs: VCS;

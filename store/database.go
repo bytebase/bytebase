@@ -179,8 +179,6 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 	}
 	composedDatabase := &api.Database{
 		ID:                   database.UID,
-		CreatorID:            api.SystemBotID,
-		UpdaterID:            api.SystemBotID,
 		ProjectID:            project.UID,
 		InstanceID:           instance.UID,
 		Name:                 database.DatabaseName,
@@ -190,14 +188,6 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 		SyncStatus:           database.SyncState,
 		LastSuccessfulSyncTs: database.SuccessfulSyncTimeTs,
 	}
-
-	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	composedDatabase.Creator = bot
-	composedDatabase.Updater = bot
-
 	composedProject, err := s.GetProjectByID(ctx, project.UID)
 	if err != nil {
 		return nil, err

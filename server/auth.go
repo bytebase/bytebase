@@ -176,8 +176,6 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 		composedUser := &api.Principal{
 			ID:           user.ID,
-			CreatorID:    api.SystemBotID,
-			UpdaterID:    api.SystemBotID,
 			Type:         user.Type,
 			Name:         user.Name,
 			Email:        user.Email,

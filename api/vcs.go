@@ -11,14 +11,6 @@ import (
 type VCS struct {
 	ID int `jsonapi:"primary,vcs"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
 	// Domain specific fields
 	Name          string   `jsonapi:"attr,name"`
 	Type          vcs.Type `jsonapi:"attr,type"`
