@@ -53,11 +53,7 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *EnvironmentCreate
 		return nil, errors.Wrapf(err, "failed to create Environment with EnvironmentCreate[%+v]", create)
 	}
 
-	composedEnvironment, err := s.composeEnvironment(ctx, environment)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Environment with environmentRaw[%+v]", environment)
-	}
-	return composedEnvironment, nil
+	return composeEnvironment(environment), nil
 }
 
 // FindEnvironment finds a list of Environment instances.
@@ -72,10 +68,7 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 	})
 	var composedEnvironmentList []*api.Environment
 	for _, environment := range environments {
-		composedEnvironment, err := s.composeEnvironment(ctx, environment)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Environment role with environmentRaw[%+v]", environment)
-		}
+		composedEnvironment := composeEnvironment(environment)
 		if find.RowStatus != nil && composedEnvironment.RowStatus != *find.RowStatus {
 			continue
 		}
@@ -108,10 +101,7 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *EnvironmentPatch) (
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Environment with EnvironmentPatch[%+v]", patch)
 	}
-	composedEnvironment, err := s.composeEnvironment(ctx, environment)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Environment with environmentRaw[%+v]", environment)
-	}
+	composedEnvironment := composeEnvironment(environment)
 	return composedEnvironment, nil
 }
 
@@ -125,19 +115,11 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environmen
 		return nil, common.Errorf(common.NotFound, "environment %d not found", id)
 	}
 
-	env, err := s.composeEnvironment(ctx, environment)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose environment with environmentRaw[%+v]", environment)
-	}
-
+	env := composeEnvironment(environment)
 	return env, nil
 }
 
-//
-// private functions
-//
-
-func (s *Store) composeEnvironment(ctx context.Context, raw *EnvironmentMessage) (*api.Environment, error) {
+func composeEnvironment(raw *EnvironmentMessage) *api.Environment {
 	rowStatus := api.Normal
 	if raw.Deleted {
 		rowStatus = api.Archived
@@ -146,29 +128,20 @@ func (s *Store) composeEnvironment(ctx context.Context, raw *EnvironmentMessage)
 	if raw.Protected {
 		tier = api.EnvironmentTierValueProtected
 	}
-	ret := &api.Environment{
+	return &api.Environment{
 		ID:         raw.UID,
 		ResourceID: raw.ResourceID,
-
-		RowStatus: rowStatus,
-		CreatorID: api.SystemBotID,
-		CreatedTs: 0,
-		UpdaterID: api.SystemBotID,
-		UpdatedTs: 0,
+		RowStatus:  rowStatus,
 
 		Name:  raw.Title,
 		Order: int(raw.Order),
 		Tier:  tier,
 	}
-	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	ret.Creator = bot
-	ret.Updater = bot
-
-	return ret, nil
 }
+
+//
+// V1 store.
+//
 
 // EnvironmentMessage is the mssage for environment.
 type EnvironmentMessage struct {

@@ -8,17 +8,17 @@ import (
 
 // Environment is the API message for an environment.
 type Environment struct {
-	ID         int `jsonapi:"primary,environment"`
-	ResourceID string
+	ID         int    `jsonapi:"primary,environment"`
+	ResourceID string `jsonapi:"attr,resourceId"`
 
 	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
+	Creator   *Principal
+	CreatedTs int64
 	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+	Updater   *Principal
+	UpdatedTs int64
 
 	// Domain specific fields
 	Name  string               `jsonapi:"attr,name"`

@@ -8,13 +8,7 @@ export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
 
 export type Member = {
   id: MemberId;
-
-  // Standard fields
   rowStatus: RowStatus;
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Domain specific fields
   status: MemberStatus;

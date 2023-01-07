@@ -58,7 +58,6 @@ func TestExternalApprovalFeishu_AllUserCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	_, err = ctl.createMember(api.MemberCreate{
-		Status:      api.Active,
 		Role:        api.DBA,
 		PrincipalID: dba.ID,
 	})
@@ -214,7 +213,6 @@ func TestExternalApprovalFeishu_AssigneeCanBeFound(t *testing.T) {
 	a.NoError(err)
 
 	_, err = ctl.createMember(api.MemberCreate{
-		Status:      api.Active,
 		Role:        api.DBA,
 		PrincipalID: dba.ID,
 	})

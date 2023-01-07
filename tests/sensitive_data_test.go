@@ -130,12 +130,11 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("Create table for database %q", databaseName),
-		Type:        api.IssueDatabaseSchemaUpdate,
-		Description: fmt.Sprintf("Create table of database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("Create table for database %q", databaseName),
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   fmt.Sprintf("Create table of database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -181,12 +180,11 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("update data for database %q", databaseName),
-		Type:        api.IssueDatabaseDataUpdate,
-		Description: fmt.Sprintf("This updates the data of database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("update data for database %q", databaseName),
+		Type:          api.IssueDatabaseDataUpdate,
+		Description:   fmt.Sprintf("This updates the data of database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)

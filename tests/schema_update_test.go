@@ -111,12 +111,11 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("update schema for database %q", databaseName),
-		Type:        api.IssueDatabaseSchemaUpdate,
-		Description: fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("update schema for database %q", databaseName),
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -141,12 +140,11 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err = ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("update data for database %q", databaseName),
-		Type:        api.IssueDatabaseDataUpdate,
-		Description: fmt.Sprintf("This updates the data of database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("update data for database %q", databaseName),
+		Type:          api.IssueDatabaseDataUpdate,
+		Description:   fmt.Sprintf("This updates the data of database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -1966,12 +1964,11 @@ CREATE TABLE public.book (
 			})
 			a.NoError(err)
 			issue, err := ctl.createIssue(api.IssueCreate{
-				ProjectID:   project.ID,
-				Name:        fmt.Sprintf("update schema for database %q", test.databaseName),
-				Type:        api.IssueDatabaseSchemaUpdate,
-				Description: fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
-				// Assign to self.
-				AssigneeID:    project.Creator.ID,
+				ProjectID:     project.ID,
+				Name:          fmt.Sprintf("update schema for database %q", test.databaseName),
+				Type:          api.IssueDatabaseSchemaUpdate,
+				Description:   fmt.Sprintf("This updates the schema of database %q.", test.databaseName),
+				AssigneeID:    api.SystemBotID,
 				CreateContext: string(createContext),
 			})
 			a.NoError(err)
@@ -2071,12 +2068,11 @@ func TestMarkTaskAsDone(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("update schema for database %q", databaseName),
-		Type:        api.IssueDatabaseSchemaUpdate,
-		Description: fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("update schema for database %q", databaseName),
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
