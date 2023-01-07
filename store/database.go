@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
 )
 
 // FindDatabase finds a list of Database instances.
@@ -97,70 +96,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 		return nil, err
 	}
 	return composedDatabase, nil
-}
-
-// CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled.
-func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
-		WITH database_backup_policy AS (
-			SELECT db.id AS database_id, backup_policy.payload AS payload
-			FROM db, instance LEFT JOIN (
-				SELECT resource_id, payload
-				FROM policy
-				WHERE type = 'bb.policy.backup-plan'
-			) AS backup_policy ON instance.environment_id = backup_policy.resource_id
-			WHERE db.instance_id = instance.id
-		), database_backup_setting AS(
-			SELECT db.id AS database_id, backup_setting.enabled AS enabled
-			FROM db LEFT JOIN backup_setting ON db.id = backup_setting.database_id
-		)
-		SELECT database_backup_policy.payload, database_backup_setting.enabled, COUNT(*)
-		FROM database_backup_policy FULL JOIN database_backup_setting
-			ON database_backup_policy.database_id = database_backup_setting.database_id
-		GROUP BY database_backup_policy.payload, database_backup_setting.enabled
-		`)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var databaseCountMetricList []*metric.DatabaseCountMetric
-	for rows.Next() {
-		var optionalPayload sql.NullString
-		var optionalEnabled sql.NullBool
-		var count int
-		if err := rows.Scan(&optionalPayload, &optionalEnabled, &count); err != nil {
-			return nil, FormatError(err)
-		}
-		var backupPlanPolicySchedule *api.BackupPlanPolicySchedule
-		if optionalPayload.Valid {
-			backupPlanPolicy, err := api.UnmarshalBackupPlanPolicy(optionalPayload.String)
-			if err != nil {
-				return nil, FormatError(err)
-			}
-			backupPlanPolicySchedule = &backupPlanPolicy.Schedule
-		}
-		var enabled *bool
-		if optionalEnabled.Valid {
-			enabled = &optionalEnabled.Bool
-		}
-		databaseCountMetricList = append(databaseCountMetricList, &metric.DatabaseCountMetric{
-			BackupPlanPolicySchedule: backupPlanPolicySchedule,
-			BackupSettingEnabled:     enabled,
-			Count:                    count,
-		})
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return databaseCountMetricList, nil
 }
 
 // private functions.
