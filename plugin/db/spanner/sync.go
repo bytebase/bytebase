@@ -18,7 +18,7 @@ import (
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
-	var databaseList []db.DatabaseMeta
+	var databases []*storepb.DatabaseMetadata
 	iter := d.dbClient.ListDatabases(ctx, &databasepb.ListDatabasesRequest{
 		Parent: d.config.Host,
 	})
@@ -47,11 +47,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 			continue
 		}
 
-		databaseList = append(databaseList, db.DatabaseMeta{Name: databaseName})
+		databases = append(databases, &storepb.DatabaseMetadata{Name: databaseName})
 	}
 
 	return &db.InstanceMeta{
-		DatabaseList: databaseList,
+		DatabaseList: databases,
 	}, nil
 }
 

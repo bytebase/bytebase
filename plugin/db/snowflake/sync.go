@@ -44,24 +44,18 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 
-	var databaseList []db.DatabaseMeta
+	var filteredDatabases []*storepb.DatabaseMetadata
 	for _, database := range databases {
 		if database == bytebaseDatabase {
 			continue
 		}
-
-		databaseList = append(
-			databaseList,
-			db.DatabaseMeta{
-				Name: database,
-			},
-		)
+		filteredDatabases = append(filteredDatabases, &storepb.DatabaseMetadata{Name: database})
 	}
 
 	return &db.InstanceMeta{
 		Version:      version,
 		UserList:     userList,
-		DatabaseList: databaseList,
+		DatabaseList: filteredDatabases,
 	}, nil
 }
 

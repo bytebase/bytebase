@@ -39,17 +39,17 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 
-	excludedDatabaseList := []string{
+	excludedDatabases := []string{
 		// Skip our internal "bytebase" database
 		"'bytebase'",
 	}
 	// Skip all system databases
 	for k := range systemDatabases {
-		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
+		excludedDatabases = append(excludedDatabases, fmt.Sprintf("'%s'", k))
 	}
 
 	// Query db info
-	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabases, ", "))
 	query := `
 		SELECT
 			SCHEMA_NAME,
@@ -63,17 +63,17 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}
 	defer rows.Close()
 
-	var databaseList []db.DatabaseMeta
+	var databases []*storepb.DatabaseMetadata
 	for rows.Next() {
-		var databaseMeta db.DatabaseMeta
+		database := &storepb.DatabaseMetadata{}
 		if err := rows.Scan(
-			&databaseMeta.Name,
-			&databaseMeta.CharacterSet,
-			&databaseMeta.Collation,
+			&database.Name,
+			&database.CharacterSet,
+			&database.Collation,
 		); err != nil {
 			return nil, err
 		}
-		databaseList = append(databaseList, databaseMeta)
+		databases = append(databases, database)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	return &db.InstanceMeta{
 		Version:      version,
 		UserList:     userList,
-		DatabaseList: databaseList,
+		DatabaseList: databases,
 	}, nil
 }
 

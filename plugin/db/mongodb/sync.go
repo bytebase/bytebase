@@ -60,13 +60,13 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	if err != nil {
 		return nil, err
 	}
-	var databaseMetaList []db.DatabaseMeta
-	dbList, err := driver.getNonSystemDatabaseList(ctx)
+	var databases []*storepb.DatabaseMetadata
+	databaseNames, err := driver.getNonSystemDatabaseList(ctx)
 	if err != nil {
 		return nil, err
 	}
-	for _, databaseName := range dbList {
-		databaseMetaList = append(databaseMetaList, db.DatabaseMeta{
+	for _, databaseName := range databaseNames {
+		databases = append(databases, &storepb.DatabaseMetadata{
 			Name: databaseName,
 		})
 	}
@@ -74,7 +74,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	return &db.InstanceMeta{
 		Version:      version,
 		UserList:     userList,
-		DatabaseList: databaseMetaList,
+		DatabaseList: databases,
 	}, nil
 }
 

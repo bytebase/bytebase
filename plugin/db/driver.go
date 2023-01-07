@@ -51,18 +51,10 @@ type User struct {
 
 // InstanceMeta is the metadata for an instance.
 type InstanceMeta struct {
-	Version      string
-	UserList     []User
-	DatabaseList []DatabaseMeta
-}
-
-// DatabaseMeta is the metadata for a database.
-type DatabaseMeta struct {
-	Name string
-	// CharacterSet isn't supported for ClickHouse, Snowflake, MongoDB, Spanner.
-	CharacterSet string
-	// Collation isn't supported for ClickHouse, Snowflake, MongoDB, Spanner.
-	Collation string
+	Version  string
+	UserList []User
+	// Simplified version without actual database schema.
+	DatabaseList []*storepb.DatabaseMetadata
 }
 
 // TableKey is the map key for table metadata.

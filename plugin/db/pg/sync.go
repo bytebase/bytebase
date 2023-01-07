@@ -17,13 +17,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// pgDatabaseSchema describes a pg database schema.
-type pgDatabaseSchema struct {
-	name     string
-	encoding string
-	collate  string
-}
-
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	version, err := driver.getVersion(ctx)
@@ -42,28 +35,20 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
-	var databaseList []db.DatabaseMeta
+
+	var filteredDatabases []*storepb.DatabaseMetadata
 	for _, database := range databases {
-		dbName := database.name
 		// Skip all system databases
-		if _, ok := excludedDatabaseList[dbName]; ok {
+		if _, ok := excludedDatabaseList[database.Name]; ok {
 			continue
 		}
-
-		databaseList = append(
-			databaseList,
-			db.DatabaseMeta{
-				Name:         dbName,
-				CharacterSet: database.encoding,
-				Collation:    database.collate,
-			},
-		)
+		filteredDatabases = append(filteredDatabases, database)
 	}
 
 	return &db.InstanceMeta{
 		Version:      version,
 		UserList:     userList,
-		DatabaseList: databaseList,
+		DatabaseList: filteredDatabases,
 	}, nil
 }
 
@@ -75,19 +60,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	databaseMetadata := &storepb.DatabaseMetadata{
-		Name: databaseName,
-	}
-	found := false
+	var databaseMetadata *storepb.DatabaseMetadata
 	for _, database := range databases {
-		if database.name == databaseName {
-			found = true
-			databaseMetadata.CharacterSet = database.encoding
-			databaseMetadata.Collation = database.collate
+		if database.Name == databaseName {
+			databaseMetadata = database
 			break
 		}
 	}
-	if !found {
+	if databaseMetadata == nil {
 		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
