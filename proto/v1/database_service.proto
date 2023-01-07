@@ -11,6 +11,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 import "v1/common.proto";
+import "v1/policy.proto";
 
 option go_package = "generated-go/v1";
 
@@ -54,6 +55,20 @@ service DatabaseService {
     option (google.api.http) = {
       get: "/v1/{name=environments/*/instances/*/databases/*/schema}"
     };
+  }
+
+  rpc GetDatabasePolicy(GetPolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+    get: "/v1/{name=environments/*/instances/*/databases/*/policies/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+   rpc ListDatabasePolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
+    option (google.api.http) = {
+    get: "/v1/{parent=environments/*/instances/*/databases/*}/policies"
+    };
+    option (google.api.method_signature) = "";
   }
 }
 
