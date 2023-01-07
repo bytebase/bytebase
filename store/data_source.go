@@ -47,12 +47,6 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 	return &api.DataSource{
 		ID: raw.ID,
 
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
 		// Related fields
 		InstanceID: raw.InstanceID,
 		DatabaseID: raw.DatabaseID,
@@ -78,13 +72,9 @@ func (s *Store) CreateDataSource(ctx context.Context, instance *api.Instance, cr
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
-	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
-	}
 	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
 	s.instanceIDCache.Delete(instance.ID)
-	return dataSource, nil
+	return composeDataSource(dataSourceRaw), nil
 }
 
 // GetDataSource gets an instance of DataSource.
@@ -96,11 +86,7 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 	if dataSourceRaw == nil {
 		return nil, nil
 	}
-	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
-	}
-	return dataSource, nil
+	return composeDataSource(dataSourceRaw), nil
 }
 
 // findDataSource finds a list of DataSource instances.
@@ -112,11 +98,7 @@ func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([
 
 	var dataSourceList []*api.DataSource
 	for _, raw := range dataSourceRawList {
-		dataSource, err := s.composeDataSource(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", raw)
-		}
-		dataSourceList = append(dataSourceList, dataSource)
+		dataSourceList = append(dataSourceList, composeDataSource(raw))
 	}
 	return dataSourceList, nil
 }
@@ -127,13 +109,9 @@ func (s *Store) PatchDataSource(ctx context.Context, instance *api.Instance, pat
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch DataSource with DataSourcePatch[%+v]", patch)
 	}
-	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", dataSourceRaw)
-	}
 	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
 	s.instanceIDCache.Delete(instance.ID)
-	return dataSource, nil
+	return composeDataSource(dataSourceRaw), nil
 }
 
 // DeleteDataSource deletes an existing dataSource by ID.
@@ -174,22 +152,8 @@ func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.D
 	return nil
 }
 
-func (s *Store) composeDataSource(ctx context.Context, raw *dataSourceRaw) (*api.DataSource, error) {
-	dataSource := raw.toDataSource()
-
-	creator, err := s.GetPrincipalByID(ctx, dataSource.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	dataSource.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, dataSource.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	dataSource.Updater = updater
-
-	return dataSource, nil
+func composeDataSource(raw *dataSourceRaw) *api.DataSource {
+	return raw.toDataSource()
 }
 
 // createDataSourceRaw creates a new dataSource.

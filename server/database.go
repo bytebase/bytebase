@@ -120,10 +120,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		dbPatch := &api.DatabasePatch{
-			ID:        id,
-			UpdaterID: updaterID,
-		}
+		dbPatch := &api.DatabasePatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dbPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch database request").SetInternal(err)
 		}
