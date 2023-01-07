@@ -10,14 +10,6 @@ import (
 type DeploymentConfig struct {
 	ID int `jsonapi:"primary,deploymentConfig"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
 	// Related fields
 	ProjectID int
 	Project   *Project `jsonapi:"relation,project"`

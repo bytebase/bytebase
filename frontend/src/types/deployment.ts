@@ -1,16 +1,9 @@
 import { Project } from ".";
 import { DeploymentConfigId } from "./id";
 import { LabelKeyType, LabelValueType } from "./label";
-import { Principal } from "./principal";
 
 export type DeploymentConfig = {
   id: DeploymentConfigId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Related fields
   project: Project;

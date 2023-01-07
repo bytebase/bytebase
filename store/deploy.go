@@ -18,12 +18,6 @@ import (
 type deploymentConfigRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Related fields
 	ProjectID int
 
@@ -37,12 +31,6 @@ type deploymentConfigRaw struct {
 func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 	return &api.DeploymentConfig{
 		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
 		ProjectID: raw.ProjectID,
@@ -98,8 +86,6 @@ func (s *Store) getDefaultDeploymentConfig(ctx context.Context, projectID int) (
 	}
 	return &deploymentConfigRaw{
 		ID:        0,
-		CreatorID: api.SystemBotID,
-		UpdaterID: api.SystemBotID,
 		ProjectID: projectID,
 		Payload:   string(bytes),
 	}, nil
@@ -124,25 +110,11 @@ func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.Deployme
 
 func (s *Store) composeDeploymentConfig(ctx context.Context, raw *deploymentConfigRaw) (*api.DeploymentConfig, error) {
 	deploymentConfig := raw.toDeploymentConfig()
-
-	creator, err := s.GetPrincipalByID(ctx, deploymentConfig.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	deploymentConfig.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, deploymentConfig.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	deploymentConfig.Updater = updater
-
 	project, err := s.GetProjectByID(ctx, deploymentConfig.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 	deploymentConfig.Project = project
-
 	return deploymentConfig, nil
 }
 
@@ -191,10 +163,6 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			project_id,
 			name,
 			config
@@ -213,10 +181,6 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 		var cfg deploymentConfigRaw
 		if err := rows.Scan(
 			&cfg.ID,
-			&cfg.CreatorID,
-			&cfg.CreatedTs,
-			&cfg.UpdaterID,
-			&cfg.UpdatedTs,
 			&cfg.ProjectID,
 			&cfg.Name,
 			&cfg.Payload,
@@ -254,11 +218,10 @@ func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *Tx, upsert *ap
 		)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT(project_id) DO UPDATE SET
-			creator_id = excluded.creator_id,
 			updater_id = excluded.updater_id,
 			name = excluded.name,
 			config = excluded.config
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
+		RETURNING id, project_id, name, config
 	`
 	var cfg deploymentConfigRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -269,10 +232,6 @@ func (*Store) upsertDeploymentConfigImpl(ctx context.Context, tx *Tx, upsert *ap
 		upsert.Payload,
 	).Scan(
 		&cfg.ID,
-		&cfg.CreatorID,
-		&cfg.CreatedTs,
-		&cfg.UpdaterID,
-		&cfg.UpdatedTs,
 		&cfg.ProjectID,
 		&cfg.Name,
 		&cfg.Payload,
