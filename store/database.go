@@ -151,10 +151,9 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 	// If we expose the environment label concept in the deployment config, it should look consistent in the label API.
 	// Each database instance is created under a particular environment.
 	// The value of bb.environment is identical to the name of the environment.
-	// TODO(d): change the envir
 	labelList = append(labelList, &api.DatabaseLabel{
 		Key:   api.EnvironmentLabelKey,
-		Value: environment.Title,
+		Value: environment.ResourceID,
 	})
 	labels, err := json.Marshal(labelList)
 	if err != nil {
