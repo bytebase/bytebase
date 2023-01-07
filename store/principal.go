@@ -52,12 +52,10 @@ func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, e
 // composePrincipal composes an instance of Principal by principalRaw.
 func composePrincipal(user *UserMessage) (*api.Principal, error) {
 	principal := &api.Principal{
-		ID:        user.ID,
-		CreatorID: api.SystemBotID,
-		UpdaterID: api.SystemBotID,
-		Type:      user.Type,
-		Name:      user.Name,
-		Email:     user.Email,
+		ID:    user.ID,
+		Type:  user.Type,
+		Name:  user.Name,
+		Email: user.Email,
 		// Do not return to the client.
 		PasswordHash: user.PasswordHash,
 		Role:         user.Role,

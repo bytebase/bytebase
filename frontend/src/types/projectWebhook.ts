@@ -1,6 +1,5 @@
 import { ActivityType } from "./activity";
 import { MemberId, ProjectId } from "./id";
-import { Principal } from "./principal";
 import { t } from "../plugins/i18n";
 
 type ProjectWebhookTypeItem = {
@@ -95,12 +94,6 @@ export type ProjectWebhook = {
 
   // Related fields
   projectId: ProjectId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Domain specific fields
   type: string;

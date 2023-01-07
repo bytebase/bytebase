@@ -329,15 +329,6 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 		return nil, err
 	}
 	instance.DataSourceList = dataSourceList
-	for _, dataSource := range instance.DataSourceList {
-		if dataSource.Creator, err = s.GetPrincipalByID(ctx, dataSource.CreatorID); err != nil {
-			return nil, err
-		}
-		if dataSource.Updater, err = s.GetPrincipalByID(ctx, dataSource.UpdaterID); err != nil {
-			return nil, err
-		}
-	}
-
 	return instance, nil
 }
 

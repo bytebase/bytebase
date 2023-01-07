@@ -1,5 +1,4 @@
 import { VCSId } from "./id";
-import { Principal } from "./principal";
 
 export type VCSType = "GITLAB_SELF_HOST" | "GITHUB_COM";
 
@@ -13,12 +12,6 @@ export interface VCSConfig {
 
 export type VCS = {
   id: VCSId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Domain specific fields
   name: string;
