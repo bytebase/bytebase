@@ -113,20 +113,23 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 	if db.connCfg.StrictUseDb {
 		databaseName = db.connCfg.Database
 	} else {
+		// The database storing metadata is the same as user name.
 		databaseName = db.connCfg.Username
 	}
 
 	if db.readonly {
 		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
-		// The database storing metadata is the same as user name.
-		db.db, err = d.GetDBConnection(ctx, databaseName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to connect to database %q which may not be setup yet", databaseName)
-		}
-
+		// This should be called before d.GetDBConnection because getLatestVersion would call
+		// FindMigrationHistoryList which would invalidate the existing db connection. See
+		// https://github.com/bytebase/bytebase/blame/03cd4ef4f31cb74114144ed282e06b0a00aa40d8/plugin/db/util/driverutil.go#L591
 		ver, err := getLatestVersion(ctx, d, databaseName)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get current schema version")
+		}
+
+		db.db, err = d.GetDBConnection(ctx, databaseName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to connect to metaDB %q", databaseName)
 		}
 		return ver, nil
 	}
@@ -155,7 +158,7 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 
 	db.db, err = d.GetDBConnection(ctx, databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to connect to database %q", db.connCfg.Username)
+		return nil, errors.Wrapf(err, "failed to connect to metaDB %q", databaseName)
 	}
 
 	// Set the max open connections so that we won't exceed the connection limit of metaDB.
