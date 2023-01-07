@@ -162,8 +162,8 @@ func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.I
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
 	}
-	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
-	delete(s.instanceIDCache, instance.ID)
+	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
+	s.instanceIDCache.Delete(instance.ID)
 	return instance, nil
 }
 
@@ -759,13 +759,13 @@ type FindInstanceMessage struct {
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
 	if find.EnvironmentID != nil && find.ResourceID != nil {
-		if instance, ok := s.instanceCache[getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)]; ok {
-			return instance, nil
+		if instance, ok := s.instanceCache.Load(getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)); ok {
+			return instance.(*InstanceMessage), nil
 		}
 	}
 	if find.UID != nil {
-		if instance, ok := s.instanceIDCache[*find.UID]; ok {
-			return instance, nil
+		if instance, ok := s.instanceIDCache.Load(*find.UID); ok {
+			return instance.(*InstanceMessage), nil
 		}
 	}
 
@@ -793,8 +793,8 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 		return nil, FormatError(err)
 	}
 
-	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
-	s.instanceIDCache[instance.UID] = instance
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }
 
@@ -816,8 +816,8 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	}
 
 	for _, instance := range instances {
-		s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
-		s.instanceIDCache[instance.UID] = instance
+		s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+		s.instanceIDCache.Store(instance.UID, instance)
 	}
 	return instances, nil
 }
@@ -909,8 +909,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		ExternalLink:  instanceCreate.ExternalLink,
 		DataSources:   instanceCreate.DataSources,
 	}
-	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
-	s.instanceIDCache[instance.UID] = instance
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }
 
@@ -1035,8 +1035,8 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, FormatError(err)
 	}
 
-	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
-	s.instanceIDCache[instance.UID] = instance
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/server/component/activity"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerAuthRoutes(g *echo.Group) {
@@ -48,7 +49,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 	g.POST("/auth/login/:auth_provider", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		var user *api.Principal
+		var user *store.UserMessage
 
 		authProvider := api.PrincipalAuthProvider(c.Param("auth_provider"))
 		switch authProvider {
@@ -60,7 +61,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				var err error
-				user, err = s.store.GetPrincipalByEmail(ctx, login.Email)
+				user, err = s.store.GetUserByEmail(ctx, login.Email)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -122,7 +123,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via VCS, user is Archived")
 				}
 
-				user, err = s.store.GetPrincipalByEmail(ctx, userInfo.PublicEmail)
+				user, err = s.store.GetUserByEmail(ctx, userInfo.PublicEmail)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -161,14 +162,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		}
 
 		// test the status of this user
-		member, err := s.store.GetMemberByPrincipalID(ctx, user.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
+		if user == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("user not found: %s", user.Email))
 		}
-		if member == nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Member not found: %s", user.Email))
-		}
-		if member.RowStatus == api.Archived {
+		if user.MemberDeleted {
 			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
 		}
 
@@ -177,88 +174,61 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token").SetInternal(err)
 		}
 
+		composedUser := &api.Principal{
+			ID:           user.ID,
+			CreatorID:    api.SystemBotID,
+			UpdaterID:    api.SystemBotID,
+			Type:         user.Type,
+			Name:         user.Name,
+			Email:        user.Email,
+			PasswordHash: user.PasswordHash,
+			Role:         user.Role,
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, user); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedUser); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal login response").SetInternal(err)
 		}
 		return nil
 	})
 }
 
-func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int) (*api.Principal, *echo.HTTPError) {
+func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int) (*store.UserMessage, *echo.HTTPError) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(signUp.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
-	principalCreate := &api.PrincipalCreate{
-		CreatorID:    creatorID,
-		Type:         api.EndUser,
-		Name:         signUp.Name,
+	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        signUp.Email,
+		Name:         signUp.Name,
+		Type:         api.EndUser,
 		PasswordHash: string(passwordHash),
-	}
-	// The user has an empty field of Role, which corresponds to the Member object created later.
-	user, err := s.store.CreatePrincipal(ctx, principalCreate)
-	if err != nil {
-		if common.ErrorCode(err) == common.Conflict {
-			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Email already exists: %s", signUp.Email))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
-	}
-
-	findRole := api.Owner
-	find := &api.MemberFind{
-		Role: &findRole,
-	}
-	memberList, err := s.store.FindMember(ctx, find)
+	}, creatorID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
 	}
 
-	// Grant the member Owner role if there is no existing Owner member.
-	role := api.Developer
-	if len(memberList) == 0 {
-		role = api.Owner
-	}
-	memberCreate := &api.MemberCreate{
-		CreatorID:   creatorID,
-		Status:      api.Active,
-		Role:        role,
-		PrincipalID: user.ID,
-	}
-
-	member, err := s.store.CreateMember(ctx, memberCreate)
-	if err != nil {
-		if common.ErrorCode(err) == common.Conflict {
-			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Member already exists: %s", signUp.Email))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign up").SetInternal(err)
-	}
 	// From now on, the Principal we just created could be composed with a valid Role field.
-
-	{
-		bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
-			PrincipalID:    member.PrincipalID,
-			PrincipalName:  user.Name,
-			PrincipalEmail: user.Email,
-			MemberStatus:   member.Status,
-			Role:           member.Role,
-		})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
-		}
-		activityCreate := &api.ActivityCreate{
-			CreatorID:   user.ID,
-			ContainerID: member.ID,
-			Type:        api.ActivityMemberCreate,
-			Level:       api.ActivityInfo,
-			Payload:     string(bytes),
-		}
-		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after create member: %d", member.ID)).SetInternal(err)
-		}
+	bytes, err := json.Marshal(api.ActivityMemberCreatePayload{
+		PrincipalID:    user.ID,
+		PrincipalName:  user.Name,
+		PrincipalEmail: user.Email,
+		MemberStatus:   api.Active,
+		Role:           user.Role,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+	}
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   creatorID,
+		ContainerID: user.ID,
+		Type:        api.ActivityMemberCreate,
+		Level:       api.ActivityInfo,
+		Payload:     string(bytes),
+	}
+	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after create user: %d", user.ID)).SetInternal(err)
 	}
 
 	return user, nil

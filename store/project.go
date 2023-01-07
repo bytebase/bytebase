@@ -221,13 +221,13 @@ type UpdateProjectMessage struct {
 // GetProjectV2 gets project by resource ID.
 func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
 	if find.ResourceID != nil {
-		if project, ok := s.projectCache[*find.ResourceID]; ok {
-			return project, nil
+		if project, ok := s.projectCache.Load(*find.ResourceID); ok {
+			return project.(*ProjectMessage), nil
 		}
 	}
 	if find.UID != nil {
-		if project, ok := s.projectIDCache[*find.UID]; ok {
-			return project, nil
+		if project, ok := s.projectIDCache.Load(*find.UID); ok {
+			return project.(*ProjectMessage), nil
 		}
 	}
 
@@ -256,8 +256,8 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 		return nil, FormatError(err)
 	}
 
-	s.projectCache[project.ResourceID] = project
-	s.projectIDCache[project.UID] = project
+	s.projectCache.Store(project.ResourceID, project)
+	s.projectIDCache.Store(project.UID, project)
 	return projects[0], nil
 }
 
@@ -279,8 +279,8 @@ func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]
 	}
 
 	for _, project := range projects {
-		s.projectCache[project.ResourceID] = project
-		s.projectIDCache[project.UID] = project
+		s.projectCache.Store(project.ResourceID, project)
+		s.projectIDCache.Store(project.UID, project)
 	}
 	return projects, nil
 }
@@ -365,8 +365,8 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, FormatError(err)
 	}
 
-	s.projectCache[project.ResourceID] = project
-	s.projectIDCache[project.UID] = project
+	s.projectCache.Store(project.ResourceID, project)
+	s.projectIDCache.Store(project.UID, project)
 	return project, nil
 }
 
@@ -387,8 +387,8 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 		return nil, FormatError(err)
 	}
 
-	s.projectCache[project.ResourceID] = project
-	s.projectIDCache[project.UID] = project
+	s.projectCache.Store(project.ResourceID, project)
+	s.projectIDCache.Store(project.UID, project)
 	return project, nil
 }
 
