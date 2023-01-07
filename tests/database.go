@@ -40,12 +40,11 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
 	}
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("create database %q", databaseName),
-		Type:        api.IssueDatabaseCreate,
-		Description: fmt.Sprintf("This creates a database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("create database %q", databaseName),
+		Type:          api.IssueDatabaseCreate,
+		Description:   fmt.Sprintf("This creates a database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	if err != nil {
@@ -90,12 +89,11 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 		return errors.Wrap(err, "failed to construct database creation issue CreateContext payload")
 	}
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("create database %q from backup %q", databaseName, backup.Name),
-		Type:        api.IssueDatabaseCreate,
-		Description: fmt.Sprintf("This creates a database %q from backup %q.", databaseName, backup.Name),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("create database %q from backup %q", databaseName, backup.Name),
+		Type:          api.IssueDatabaseCreate,
+		Description:   fmt.Sprintf("This creates a database %q from backup %q.", databaseName, backup.Name),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	if err != nil {

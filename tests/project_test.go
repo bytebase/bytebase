@@ -62,7 +62,6 @@ func TestArchiveProject(t *testing.T) {
 		err = ctl.patchProject(api.ProjectPatch{
 			ID:        project.ID,
 			RowStatus: &status,
-			UpdaterID: project.Creator.ID,
 		})
 		a.Error(err)
 	})
@@ -88,12 +87,11 @@ func TestArchiveProject(t *testing.T) {
 		a.NoError(err)
 
 		_, err = ctl.createIssue(api.IssueCreate{
-			ProjectID:   project.ID,
-			Name:        fmt.Sprintf("create database %q", databaseName),
-			Type:        api.IssueDatabaseCreate,
-			Description: fmt.Sprintf("This creates a database %q.", databaseName),
-			// Assign to self.
-			AssigneeID:    project.Creator.ID,
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("create database %q", databaseName),
+			Type:          api.IssueDatabaseCreate,
+			Description:   fmt.Sprintf("This creates a database %q.", databaseName),
+			AssigneeID:    api.SystemBotID,
 			CreateContext: string(c),
 		})
 		a.NoError(err)
@@ -102,7 +100,6 @@ func TestArchiveProject(t *testing.T) {
 		err = ctl.patchProject(api.ProjectPatch{
 			ID:        project.ID,
 			RowStatus: &status,
-			UpdaterID: project.Creator.ID,
 		})
 		a.Error(err)
 	})

@@ -153,8 +153,6 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 		ID:               project.UID,
 		ResourceID:       project.ResourceID,
 		RowStatus:        api.Normal,
-		CreatorID:        api.SystemBotID,
-		UpdaterID:        api.SystemBotID,
 		Name:             project.Title,
 		Key:              project.Key,
 		WorkflowType:     project.Workflow,
@@ -168,13 +166,6 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 	if project.Deleted {
 		composedProject.RowStatus = api.Archived
 	}
-
-	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	composedProject.Creator = bot
-	composedProject.Updater = bot
 
 	// TODO(d): migrate FindProjectMember to v2.
 	projectMemberList, err := s.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &project.UID})

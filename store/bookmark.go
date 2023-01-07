@@ -36,9 +36,6 @@ func (raw *bookmarkRaw) toBookmark() *api.Bookmark {
 
 		// Standard fields
 		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		// Domain specific fields
 		Name: raw.Name,
@@ -105,12 +102,6 @@ func (s *Store) composeBookmark(ctx context.Context, raw *bookmarkRaw) (*api.Boo
 		return nil, err
 	}
 	bookmark.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, bookmark.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	bookmark.Updater = updater
 
 	return bookmark, nil
 }

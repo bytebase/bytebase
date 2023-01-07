@@ -152,12 +152,11 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		})
 		a.NoError(err)
 		issue, err := ctl.createIssue(api.IssueCreate{
-			ProjectID:   project.ID,
-			Name:        fmt.Sprintf("Prepare statements of database %q", tt.databaseName),
-			Type:        api.IssueDatabaseSchemaUpdate,
-			Description: fmt.Sprintf("Prepare statements of database %q.", tt.databaseName),
-			// Assign to self.
-			AssigneeID:    project.Creator.ID,
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("Prepare statements of database %q", tt.databaseName),
+			Type:          api.IssueDatabaseSchemaUpdate,
+			Description:   fmt.Sprintf("Prepare statements of database %q.", tt.databaseName),
+			AssigneeID:    api.SystemBotID,
 			CreateContext: string(createContext),
 		})
 		a.NoError(err)

@@ -57,17 +57,9 @@ const (
 
 // Project is the API message for a project.
 type Project struct {
-	ID         int `jsonapi:"primary,project"`
-	ResourceID string
-
-	// Standard fields
-	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+	ID         int       `jsonapi:"primary,project"`
+	ResourceID string    `jsonapi:"attr,resourceId"`
+	RowStatus  RowStatus `jsonapi:"attr,rowStatus"`
 
 	// Related fields
 	ProjectMemberList []*ProjectMember `jsonapi:"relation,projectMember"`

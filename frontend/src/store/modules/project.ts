@@ -24,27 +24,15 @@ function convert(
   project: ResourceObject,
   includedList: ResourceObject[]
 ): Project {
-  const attrs = project.attributes as Omit<
-    Project,
-    "id" | "memberList" | "creator" | "updater"
-  >;
+  const attrs = project.attributes as Omit<Project, "id" | "memberList">;
   // Only able to assign an empty member list, otherwise would cause circular dependency.
   // This should be fine as we shouldn't access member via member.project.memberList
   const projectWithoutMemberList: Project = {
     id: parseInt(project.id),
+    resourceId: attrs.resourceId,
     rowStatus: attrs.rowStatus,
     name: attrs.name,
     key: attrs.key,
-    creator: getPrincipalFromIncludedList(
-      project.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      project.relationships!.updater.data,
-      includedList
-    ),
-    createdTs: attrs.createdTs,
-    updatedTs: attrs.updatedTs,
     memberList: [],
     workflowType: attrs.workflowType,
     visibility: attrs.visibility,

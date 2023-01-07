@@ -190,10 +190,7 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_ENVIRONMENT: Environment = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
+    resourceId: "",
     rowStatus: "NORMAL",
     name: "<<Unknown environment>>",
     order: 0,
@@ -202,13 +199,10 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_PROJECT: Project = {
     id: UNKNOWN_ID,
+    resourceId: "",
     rowStatus: "NORMAL",
     name: "<<Unknown project>>",
     key: "UNK",
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     memberList: [],
     workflowType: "UI",
     visibility: "PUBLIC",
@@ -247,18 +241,16 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_INSTANCE: Instance = {
     id: UNKNOWN_ID,
+    resourceId: "",
     rowStatus: "NORMAL",
     environment: UNKNOWN_ENVIRONMENT,
     dataSourceList: [],
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "<<Unknown instance>>",
     engine: "MYSQL",
     engineVersion: "",
-    host: "",
-    database: "",
+    externalLink: "",
+    srv: false,
+    authenticationDatabase: "",
   };
 
   const UNKNOWN_DATABASE: Database = {
@@ -291,6 +283,17 @@ const makeUnknown = (type: ResourceType) => {
     updatedTs: 0,
     name: "<<Unknown data source>>",
     type: "RO",
+    username: "",
+    password: "",
+    sslCa: "",
+    sslCert: "",
+    sslKey: "",
+    host: "",
+    port: "",
+    database: "",
+    options: { srv: false, authenticationDatabase: "" },
+    // UI-only fields
+    updateSsl: false,
   };
 
   const UNKNOWN_BACKUP_SETTING: BackupSetting = {
@@ -415,9 +418,6 @@ const makeUnknown = (type: ResourceType) => {
   const UNKNOWN_BOOKMARK: Bookmark = {
     id: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "",
     link: "",
   };
@@ -452,6 +452,8 @@ const makeUnknown = (type: ResourceType) => {
     filePathTemplate: "",
     schemaPathTemplate: "",
     sheetPathTemplate: "",
+    enableSQLReviewCI: false,
+    sqlReviewCIPullRequestURL: "",
     externalId: UNKNOWN_ID.toString(),
   };
 
@@ -506,6 +508,7 @@ const makeUnknown = (type: ResourceType) => {
     starred: false,
     pinned: false,
     payload: {},
+    size: 0,
   };
 
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
@@ -601,10 +604,7 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_ENVIRONMENT: Environment = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
+    resourceId: "",
     rowStatus: "NORMAL",
     name: "",
     order: 0,
@@ -613,13 +613,10 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_PROJECT: Project = {
     id: EMPTY_ID,
+    resourceId: "",
     rowStatus: "NORMAL",
     name: "",
     key: "",
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     memberList: [],
     workflowType: "UI",
     visibility: "PUBLIC",
@@ -658,18 +655,16 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_INSTANCE: Instance = {
     id: EMPTY_ID,
+    resourceId: "",
     rowStatus: "NORMAL",
     environment: EMPTY_ENVIRONMENT,
     dataSourceList: [],
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "",
     engine: "MYSQL",
     engineVersion: "",
-    host: "",
-    database: "",
+    externalLink: "",
+    srv: false,
+    authenticationDatabase: "",
   };
 
   const EMPTY_DATABASE: Database = {
@@ -702,6 +697,17 @@ const makeEmpty = (type: ResourceType) => {
     updatedTs: 0,
     name: "",
     type: "RO",
+    username: "",
+    password: "",
+    sslCa: "",
+    sslCert: "",
+    sslKey: "",
+    host: "",
+    port: "",
+    database: "",
+    options: { srv: false, authenticationDatabase: "" },
+    // UI-only fields
+    updateSsl: false,
   };
 
   const EMPTY_BACKUP_SETTING: BackupSetting = {
@@ -826,9 +832,6 @@ const makeEmpty = (type: ResourceType) => {
   const EMPTY_BOOKMARK: Bookmark = {
     id: EMPTY_ID,
     creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "",
     link: "",
   };
@@ -863,6 +866,8 @@ const makeEmpty = (type: ResourceType) => {
     filePathTemplate: "",
     schemaPathTemplate: "",
     sheetPathTemplate: "",
+    enableSQLReviewCI: false,
+    sqlReviewCIPullRequestURL: "",
     externalId: EMPTY_ID.toString(),
   };
 
@@ -916,6 +921,8 @@ const makeEmpty = (type: ResourceType) => {
     type: "SQL",
     starred: false,
     pinned: false,
+    payload: {},
+    size: 0,
   };
 
   const EMPTY_SQL_REVIEW_POLICY: SQLReviewPolicy = {

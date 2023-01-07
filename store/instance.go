@@ -89,13 +89,7 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 	return &api.Instance{
 		ID:         raw.ID,
 		ResourceID: raw.ResourceID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
+		RowStatus:  raw.RowStatus,
 
 		// Related fields
 		EnvironmentID: raw.EnvironmentID,
@@ -321,18 +315,6 @@ func (s *Store) GetInstanceSslSuiteByID(ctx context.Context, instanceID int) (db
 
 func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Instance, error) {
 	instance := raw.toInstance()
-
-	creator, err := s.GetPrincipalByID(ctx, instance.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	instance.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, instance.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	instance.Updater = updater
 
 	env, err := s.GetEnvironmentByID(ctx, instance.EnvironmentID)
 	if err != nil {
