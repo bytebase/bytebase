@@ -3,6 +3,7 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
+import { GetPolicyRequest, ListPoliciesRequest, ListPoliciesResponse, Policy } from "./policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -961,6 +962,8 @@ export interface ProjectService {
   UpdateProject(request: UpdateProjectRequest): Promise<Project>;
   DeleteProject(request: DeleteProjectRequest): Promise<Empty>;
   UndeleteProject(request: UndeleteProjectRequest): Promise<Project>;
+  GetProjectPolicy(request: GetPolicyRequest): Promise<Policy>;
+  ListProjectPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
 }
 
 export class ProjectServiceClientImpl implements ProjectService {
@@ -975,6 +978,8 @@ export class ProjectServiceClientImpl implements ProjectService {
     this.UpdateProject = this.UpdateProject.bind(this);
     this.DeleteProject = this.DeleteProject.bind(this);
     this.UndeleteProject = this.UndeleteProject.bind(this);
+    this.GetProjectPolicy = this.GetProjectPolicy.bind(this);
+    this.ListProjectPolicies = this.ListProjectPolicies.bind(this);
   }
   GetProject(request: GetProjectRequest): Promise<Project> {
     const data = GetProjectRequest.encode(request).finish();
@@ -1010,6 +1015,18 @@ export class ProjectServiceClientImpl implements ProjectService {
     const data = UndeleteProjectRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "UndeleteProject", data);
     return promise.then((data) => Project.decode(new _m0.Reader(data)));
+  }
+
+  GetProjectPolicy(request: GetPolicyRequest): Promise<Policy> {
+    const data = GetPolicyRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetProjectPolicy", data);
+    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
+  }
+
+  ListProjectPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse> {
+    const data = ListPoliciesRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "ListProjectPolicies", data);
+    return promise.then((data) => ListPoliciesResponse.decode(new _m0.Reader(data)));
   }
 }
 
