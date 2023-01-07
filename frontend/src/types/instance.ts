@@ -2,7 +2,6 @@ import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
-import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 
 export type EngineType =
