@@ -166,10 +166,6 @@ const makeUnknown = (type: ResourceType) => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
-    creatorId: UNKNOWN_ID,
-    createdTs: 0,
-    updaterId: UNKNOWN_ID,
-    updatedTs: 0,
     type: "END_USER",
     name: "<<Unknown principal>>",
     email: "",
@@ -212,10 +208,6 @@ const makeUnknown = (type: ResourceType) => {
   const UNKNOWN_PROJECT_HOOK: ProjectWebhook = {
     id: UNKNOWN_ID,
     projectId: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     type: "",
     name: "",
     url: "",
@@ -257,10 +249,6 @@ const makeUnknown = (type: ResourceType) => {
     project: UNKNOWN_PROJECT,
     labels: [],
     dataSourceList: [],
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown database>>",
     characterSet: "",
     collation: "",
@@ -273,10 +261,6 @@ const makeUnknown = (type: ResourceType) => {
     id: UNKNOWN_ID,
     instanceId: UNKNOWN_ID,
     databaseId: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     name: "<<Unknown data source>>",
     type: "RO",
     username: "",
@@ -420,10 +404,6 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_VCS: VCS = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "",
     type: "GITLAB_SELF_HOST",
     instanceUrl: "",
@@ -434,10 +414,6 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_REPOSITORY: Repository = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     vcs: UNKNOWN_VCS,
     project: UNKNOWN_PROJECT,
     name: "",
@@ -474,10 +450,6 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_DEPLOYMENT_CONFIG: DeploymentConfig = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     project: UNKNOWN_PROJECT,
     schedule: {
       deployments: [],
@@ -578,8 +550,6 @@ const makeEmpty = (type: ResourceType) => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
-    createdTs: 0,
-    updatedTs: 0,
     type: "END_USER",
     name: "",
     email: "",
@@ -622,10 +592,6 @@ const makeEmpty = (type: ResourceType) => {
   const EMPTY_PROJECT_HOOK: ProjectWebhook = {
     id: EMPTY_ID,
     projectId: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     type: "",
     name: "",
     url: "",
@@ -667,10 +633,6 @@ const makeEmpty = (type: ResourceType) => {
     project: EMPTY_PROJECT,
     dataSourceList: [],
     labels: [],
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
     characterSet: "",
     collation: "",
@@ -683,10 +645,6 @@ const makeEmpty = (type: ResourceType) => {
     id: EMPTY_ID,
     instanceId: UNKNOWN_ID,
     databaseId: UNKNOWN_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     name: "",
     type: "RO",
     username: "",
@@ -830,10 +788,6 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_VCS: VCS = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     name: "",
     type: "GITLAB_SELF_HOST",
     instanceUrl: "",
@@ -844,10 +798,6 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_REPOSITORY: Repository = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     vcs: EMPTY_VCS,
     project: EMPTY_PROJECT,
     name: "",
@@ -884,10 +834,6 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_DEPLOYMENT_CONFIG: DeploymentConfig = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     project: EMPTY_PROJECT,
     schedule: {
       deployments: [],

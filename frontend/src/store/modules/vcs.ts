@@ -11,20 +11,11 @@ import {
   empty,
   EMPTY_ID,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {
   return {
-    ...(vcs.attributes as Omit<VCS, "id" | "creator" | "updater">),
+    ...(vcs.attributes as Omit<VCS, "id">),
     id: parseInt(vcs.id),
-    creator: getPrincipalFromIncludedList(
-      vcs.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      vcs.relationships!.updater.data,
-      includedList
-    ),
   };
 }
 
@@ -73,7 +64,7 @@ export const useVCSStore = defineStore("vcs", {
           return convert(vcs, data.included);
         })
         .sort((a: VCS, b: VCS) => {
-          return b.createdTs - a.createdTs;
+          return b.id - a.id;
         });
 
       this.setVCSList(vcsList);

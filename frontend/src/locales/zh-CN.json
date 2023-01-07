@@ -882,8 +882,6 @@
     "sync-status": "同步状态",
     "search-database-name": "搜索数据库名称",
     "search-database": "搜索数据库",
-    "restored-from": "恢复于",
-    "database-name-is-restored-from-another-database-backup": "{0}恢复于另一个数据库备份",
     "transfer-project": "转移项目",
     "alter-schema": "变更 Schema",
     "alter-schema-in-vcs": "变更 Schema (VCS)",

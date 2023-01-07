@@ -20,10 +20,6 @@ import { useAuthStore } from "./auth";
 function convert(principal: ResourceObject): Principal {
   return {
     id: parseInt(principal.id),
-    creatorId: principal.attributes.creatorId as PrincipalId,
-    createdTs: principal.attributes.createdTs as number,
-    updaterId: principal.attributes.updaterId as PrincipalId,
-    updatedTs: principal.attributes.updatedTs as number,
     type: principal.attributes.type as PrincipalType,
     name: principal.attributes.name as string,
     email: principal.attributes.email as string,

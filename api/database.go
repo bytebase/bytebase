@@ -23,22 +23,12 @@ const (
 type Database struct {
 	ID int `jsonapi:"primary,database"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
 	// Related fields
 	ProjectID      int           `jsonapi:"attr,projectId"`
 	Project        *Project      `jsonapi:"relation,project"`
 	InstanceID     int           `jsonapi:"attr,instanceId"`
 	Instance       *Instance     `jsonapi:"relation,instance"`
 	DataSourceList []*DataSource `jsonapi:"relation,dataSource"`
-	SourceBackupID int
-	SourceBackup   *Backup `jsonapi:"relation,sourceBackup"`
 
 	// Domain specific fields
 	Name                 string     `jsonapi:"attr,name"`
@@ -76,24 +66,12 @@ func (find *DatabaseFind) String() string {
 
 // DatabasePatch is the API message for patching a database.
 type DatabasePatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
 	// Related fields
-	ProjectID      *int `jsonapi:"attr,projectId"`
-	SourceBackupID *int
+	ProjectID *int `jsonapi:"attr,projectId"`
 
 	// Labels is a json-encoded string from a list of DatabaseLabel,
 	// e.g. "[{"key":"bb.location","value":"earth"},{"key":"bb.tenant","value":"bytebase"}]".
 	Labels *string `jsonapi:"attr,labels"`
-
-	// Domain specific fields
-	SchemaVersion        *string
-	SyncStatus           *SyncStatus
-	LastSuccessfulSyncTs *int64
 }
 
 // DatabaseEdit is the API message for updating a database in UI editor.

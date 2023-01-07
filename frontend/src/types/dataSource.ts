@@ -26,12 +26,6 @@ export type DataSource = {
   databaseId: DatabaseId;
   instanceId: InstanceId;
 
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-
   // Domain specific fields
   name: string;
   type: DataSourceType;

@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { computed, unref, watch, markRaw } from "vue";
 import {
-  Backup,
   Database,
   DatabaseFind,
   DatabaseId,
@@ -23,8 +22,6 @@ import {
   unknown,
   UNKNOWN_ID,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
-import { useBackupStore } from "./backup";
 import { useDataSourceStore } from "./dataSource";
 import { useInstanceStore } from "./instance";
 import { useProjectStore } from "./project";
@@ -56,23 +53,14 @@ function convert(
     dataSourceList.push(dataSource);
   }
 
-  const sourceBackupId = database.relationships!.sourceBackup.data
-    ? (database.relationships!.sourceBackup.data as ResourceIdentifier).id
-    : undefined;
-  let sourceBackup: Backup | undefined = undefined;
-
   const instanceStore = useInstanceStore();
   const projectStore = useProjectStore();
-  const backupStore = useBackupStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
       instance = instanceStore.convert(item, includedList);
     }
     if (item.type == "project" && item.id == projectId) {
       project = projectStore.convert(item, includedList);
-    }
-    if (item.type == "backup" && item.id == sourceBackupId) {
-      sourceBackup = backupStore.convert(item, includedList);
     }
   }
 
@@ -99,29 +87,13 @@ function convert(
   const databaseWPartial = {
     ...(database.attributes as Omit<
       Database,
-      | "id"
-      | "instance"
-      | "project"
-      | "dataSourceList"
-      | "sourceBackup"
-      | "labels"
-      | "creator"
-      | "updater"
+      "id" | "instance" | "project" | "dataSourceList" | "labels"
     >),
     id: parseInt(database.id),
-    creator: getPrincipalFromIncludedList(
-      database.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      database.relationships!.updater.data,
-      includedList
-    ),
     instance,
     project,
     labels,
     dataSourceList: [],
-    sourceBackup,
   };
 
   for (const item of includedList || []) {
