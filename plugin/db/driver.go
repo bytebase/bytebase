@@ -49,12 +49,12 @@ type User struct {
 	Grant string
 }
 
-// InstanceMeta is the metadata for an instance.
-type InstanceMeta struct {
-	Version  string
-	UserList []User
-	// Simplified version without actual database schema.
-	DatabaseList []*storepb.DatabaseMetadata
+// InstanceMetadata is the metadata for an instance.
+type InstanceMetadata struct {
+	Version       string
+	InstanceRoles []*storepb.InstanceRoleMetadata
+	// Simplified database metadata.
+	Databases []*storepb.DatabaseMetadata
 }
 
 // TableKey is the map key for table metadata.
@@ -439,7 +439,7 @@ type Driver interface {
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
-	SyncInstance(ctx context.Context) (*InstanceMeta, error)
+	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
 	SyncDBSchema(ctx context.Context, database string) (*storepb.DatabaseMetadata, error)
 

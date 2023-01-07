@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -51,12 +50,12 @@ type Role struct {
 }
 
 // SyncInstance syncs the instance meta.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
-	userList, err := driver.getUserMetaList(ctx)
+	users, err := driver.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -71,10 +70,10 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		})
 	}
 
-	return &db.InstanceMeta{
-		Version:      version,
-		UserList:     userList,
-		DatabaseList: databases,
+	return &db.InstanceMetadata{
+		Version:       version,
+		InstanceRoles: users,
+		Databases:     databases,
 	}, nil
 }
 
@@ -220,38 +219,6 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		return "", errors.New("cannot get version from buildInfo command result")
 	}
 	return version.(string), nil
-}
-
-// getUserList returns the list of users.
-func (driver *Driver) getUserMetaList(ctx context.Context) ([]db.User, error) {
-	database := driver.client.Database(migrationHistoryDefaultDatabase)
-	command := bson.D{{
-		Key: "usersInfo",
-		Value: bson.D{{
-			Key:   "forAllDBs",
-			Value: true,
-		}},
-	}}
-	var commandResult UsersInfo
-	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
-		if isAtlasUnauthorizedError(err) {
-			log.Info("Skip getting user list because the user is not authorized to run the command 'usersInfo' in atlas cluster M0/M2/M5")
-			return nil, nil
-		}
-		return nil, errors.Wrap(err, "cannot run usersInfo command")
-	}
-	var dbUserList []db.User
-	for _, user := range commandResult.Users {
-		var dbUser db.User
-		dbUser.Name = user.UserName
-		bs, err := json.Marshal(user)
-		if err != nil {
-			return nil, errors.Wrap(err, "cannot marshal user")
-		}
-		dbUser.Grant = string(bs)
-		dbUserList = append(dbUserList, dbUser)
-	}
-	return dbUserList, nil
 }
 
 // isDatabaseExist returns true if the database exists.

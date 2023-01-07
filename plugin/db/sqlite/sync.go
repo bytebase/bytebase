@@ -23,7 +23,7 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
@@ -42,10 +42,9 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		databases = append(databases, &storepb.DatabaseMetadata{Name: databaseName})
 	}
 
-	return &db.InstanceMeta{
-		Version:      version,
-		UserList:     nil,
-		DatabaseList: databases,
+	return &db.InstanceMetadata{
+		Version:   version,
+		Databases: databases,
 	}, nil
 }
 

@@ -33,7 +33,7 @@ func NewInstanceRoleService(store *store.Store, dbFactory *dbfactory.DBFactory) 
 }
 
 // GetRole gets an role.
-func (s *InstanceRoleService) GetRole(ctx context.Context, request *v1pb.GetRoleRequest) (*v1pb.DatabaseRole, error) {
+func (s *InstanceRoleService) GetRole(ctx context.Context, request *v1pb.GetRoleRequest) (*v1pb.InstanceRole, error) {
 	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -106,7 +106,7 @@ func (s *InstanceRoleService) ListRoles(ctx context.Context, request *v1pb.ListR
 }
 
 // CreateRole creates an role.
-func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRequest) (*v1pb.DatabaseRole, error) {
+func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRequest) (*v1pb.InstanceRole, error) {
 	if request.Role == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "role must be set")
 	}
@@ -160,7 +160,7 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 }
 
 // UpdateRole updates an role.
-func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.DatabaseRole, error) {
+func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.InstanceRole, error) {
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
@@ -255,7 +255,7 @@ func (s *InstanceRoleService) DeleteRole(ctx context.Context, request *v1pb.Dele
 }
 
 // UndeleteRole undeletes an role.
-func (*InstanceRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRoleRequest) (*v1pb.DatabaseRole, error) {
+func (*InstanceRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRoleRequest) (*v1pb.InstanceRole, error) {
 	return nil, status.Errorf(codes.Unimplemented, "Undelete role is not supported")
 }
 
@@ -326,13 +326,13 @@ func convertToLegacyInstance(instance *store.InstanceMessage, environment *store
 	}
 }
 
-func convertToRole(role *db.DatabaseRoleMessage, instance *store.InstanceMessage) *v1pb.DatabaseRole {
-	return &v1pb.DatabaseRole{
+func convertToRole(role *db.DatabaseRoleMessage, instance *store.InstanceMessage) *v1pb.InstanceRole {
+	return &v1pb.InstanceRole{
 		Name:            fmt.Sprintf("environments/%s/instances/%s/roles/%s", instance.EnvironmentID, instance.ResourceID, role.Name),
 		Title:           role.Name,
 		ConnectionLimit: &role.ConnectionLimit,
 		ValidUntil:      role.ValidUntil,
-		Attribute: &v1pb.DatabaseRoleAttribute{
+		Attribute: &v1pb.RoleAttribute{
 			SuperUser:   role.Attribute.SuperUser,
 			NoInherit:   role.Attribute.NoInherit,
 			CreateRole:  role.Attribute.CreateRole,

@@ -191,7 +191,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 	}
 
 	var instanceUsers []*store.InstanceUserMessage
-	for _, instanceUser := range instanceMeta.UserList {
+	for _, instanceUser := range instanceMeta.InstanceRoles {
 		instanceUsers = append(instanceUsers, &store.InstanceUserMessage{
 			Name:  instanceUser.Name,
 			Grant: instanceUser.Grant,
@@ -205,7 +205,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
 	}
-	for _, databaseMetadata := range instanceMeta.DatabaseList {
+	for _, databaseMetadata := range instanceMeta.Databases {
 		exist := false
 		for _, database := range databases {
 			if database.DatabaseName == databaseMetadata.Name {
@@ -229,7 +229,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 
 	for _, database := range databases {
 		exist := false
-		for _, databaseMetadata := range instanceMeta.DatabaseList {
+		for _, databaseMetadata := range instanceMeta.Databases {
 			if database.DatabaseName == databaseMetadata.Name {
 				exist = true
 				break
@@ -249,7 +249,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 	}
 
 	var databaseList []string
-	for _, database := range instanceMeta.DatabaseList {
+	for _, database := range instanceMeta.Databases {
 		databaseList = append(databaseList, database.Name)
 	}
 	return databaseList, nil

@@ -23,12 +23,12 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InstanceRoleServiceClient interface {
-	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*DatabaseRole, error)
+	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
-	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*DatabaseRole, error)
-	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*DatabaseRole, error)
+	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
+	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
 	DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	UndeleteRole(ctx context.Context, in *UndeleteRoleRequest, opts ...grpc.CallOption) (*DatabaseRole, error)
+	UndeleteRole(ctx context.Context, in *UndeleteRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
 }
 
 type instanceRoleServiceClient struct {
@@ -39,8 +39,8 @@ func NewInstanceRoleServiceClient(cc grpc.ClientConnInterface) InstanceRoleServi
 	return &instanceRoleServiceClient{cc}
 }
 
-func (c *instanceRoleServiceClient) GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*DatabaseRole, error) {
-	out := new(DatabaseRole)
+func (c *instanceRoleServiceClient) GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error) {
+	out := new(InstanceRole)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceRoleService/GetRole", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -57,8 +57,8 @@ func (c *instanceRoleServiceClient) ListRoles(ctx context.Context, in *ListRoles
 	return out, nil
 }
 
-func (c *instanceRoleServiceClient) CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*DatabaseRole, error) {
-	out := new(DatabaseRole)
+func (c *instanceRoleServiceClient) CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error) {
+	out := new(InstanceRole)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceRoleService/CreateRole", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -66,8 +66,8 @@ func (c *instanceRoleServiceClient) CreateRole(ctx context.Context, in *CreateRo
 	return out, nil
 }
 
-func (c *instanceRoleServiceClient) UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*DatabaseRole, error) {
-	out := new(DatabaseRole)
+func (c *instanceRoleServiceClient) UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error) {
+	out := new(InstanceRole)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceRoleService/UpdateRole", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -84,8 +84,8 @@ func (c *instanceRoleServiceClient) DeleteRole(ctx context.Context, in *DeleteRo
 	return out, nil
 }
 
-func (c *instanceRoleServiceClient) UndeleteRole(ctx context.Context, in *UndeleteRoleRequest, opts ...grpc.CallOption) (*DatabaseRole, error) {
-	out := new(DatabaseRole)
+func (c *instanceRoleServiceClient) UndeleteRole(ctx context.Context, in *UndeleteRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error) {
+	out := new(InstanceRole)
 	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceRoleService/UndeleteRole", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -97,12 +97,12 @@ func (c *instanceRoleServiceClient) UndeleteRole(ctx context.Context, in *Undele
 // All implementations must embed UnimplementedInstanceRoleServiceServer
 // for forward compatibility
 type InstanceRoleServiceServer interface {
-	GetRole(context.Context, *GetRoleRequest) (*DatabaseRole, error)
+	GetRole(context.Context, *GetRoleRequest) (*InstanceRole, error)
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
-	CreateRole(context.Context, *CreateRoleRequest) (*DatabaseRole, error)
-	UpdateRole(context.Context, *UpdateRoleRequest) (*DatabaseRole, error)
+	CreateRole(context.Context, *CreateRoleRequest) (*InstanceRole, error)
+	UpdateRole(context.Context, *UpdateRoleRequest) (*InstanceRole, error)
 	DeleteRole(context.Context, *DeleteRoleRequest) (*emptypb.Empty, error)
-	UndeleteRole(context.Context, *UndeleteRoleRequest) (*DatabaseRole, error)
+	UndeleteRole(context.Context, *UndeleteRoleRequest) (*InstanceRole, error)
 	mustEmbedUnimplementedInstanceRoleServiceServer()
 }
 
@@ -110,22 +110,22 @@ type InstanceRoleServiceServer interface {
 type UnimplementedInstanceRoleServiceServer struct {
 }
 
-func (UnimplementedInstanceRoleServiceServer) GetRole(context.Context, *GetRoleRequest) (*DatabaseRole, error) {
+func (UnimplementedInstanceRoleServiceServer) GetRole(context.Context, *GetRoleRequest) (*InstanceRole, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRole not implemented")
 }
 func (UnimplementedInstanceRoleServiceServer) ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRoles not implemented")
 }
-func (UnimplementedInstanceRoleServiceServer) CreateRole(context.Context, *CreateRoleRequest) (*DatabaseRole, error) {
+func (UnimplementedInstanceRoleServiceServer) CreateRole(context.Context, *CreateRoleRequest) (*InstanceRole, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRole not implemented")
 }
-func (UnimplementedInstanceRoleServiceServer) UpdateRole(context.Context, *UpdateRoleRequest) (*DatabaseRole, error) {
+func (UnimplementedInstanceRoleServiceServer) UpdateRole(context.Context, *UpdateRoleRequest) (*InstanceRole, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRole not implemented")
 }
 func (UnimplementedInstanceRoleServiceServer) DeleteRole(context.Context, *DeleteRoleRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRole not implemented")
 }
-func (UnimplementedInstanceRoleServiceServer) UndeleteRole(context.Context, *UndeleteRoleRequest) (*DatabaseRole, error) {
+func (UnimplementedInstanceRoleServiceServer) UndeleteRole(context.Context, *UndeleteRoleRequest) (*InstanceRole, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteRole not implemented")
 }
 func (UnimplementedInstanceRoleServiceServer) mustEmbedUnimplementedInstanceRoleServiceServer() {}

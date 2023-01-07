@@ -27,14 +27,13 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Query user info
-	userList, err := driver.getUserList(ctx)
+	users, err := driver.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -79,10 +78,10 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 
-	return &db.InstanceMeta{
-		Version:      version,
-		UserList:     userList,
-		DatabaseList: databases,
+	return &db.InstanceMetadata{
+		Version:       version,
+		InstanceRoles: users,
+		Databases:     databases,
 	}, nil
 }
 
@@ -450,72 +449,4 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 	}
 
 	return foreignKeysMap, nil
-}
-
-func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
-	// Query user info
-	userQuery := `
-	  SELECT
-			user,
-			host
-		FROM mysql.user
-		WHERE user NOT LIKE 'mysql.%'
-	`
-	var userList []db.User
-	userRows, err := driver.db.QueryContext(ctx, userQuery)
-
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, userQuery)
-	}
-	defer userRows.Close()
-
-	for userRows.Next() {
-		var user string
-		var host string
-		if err := userRows.Scan(
-			&user,
-			&host,
-		); err != nil {
-			return nil, err
-		}
-
-		if err := func() error {
-			// Uses single quote instead of backtick to escape because this is a string
-			// instead of table (which should use backtick instead). MySQL actually works
-			// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
-			name := fmt.Sprintf("'%s'@'%s'", user, host)
-			grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", name)
-			grantRows, err := driver.db.QueryContext(ctx,
-				grantQuery,
-			)
-			if err != nil {
-				return util.FormatErrorWithQuery(err, grantQuery)
-			}
-			defer grantRows.Close()
-
-			grantList := []string{}
-			for grantRows.Next() {
-				var grant string
-				if err := grantRows.Scan(&grant); err != nil {
-					return err
-				}
-				grantList = append(grantList, grant)
-			}
-			if err := grantRows.Err(); err != nil {
-				return util.FormatErrorWithQuery(err, grantQuery)
-			}
-
-			userList = append(userList, db.User{
-				Name:  name,
-				Grant: strings.Join(grantList, "\n"),
-			})
-			return nil
-		}(); err != nil {
-			return nil, err
-		}
-	}
-	if err := userRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, userQuery)
-	}
-	return userList, nil
 }
