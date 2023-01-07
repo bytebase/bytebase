@@ -16,12 +16,32 @@ import (
 	"github.com/bytebase/bytebase/tests/fake"
 )
 
-func TestServiceRestart(t *testing.T) {
+func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string, readOnly bool) {
+	err := ctl.StartServer(ctx, &config{
+		dataDir:            dataDir,
+		vcsProviderCreator: fake.NewGitLab,
+		readOnly:           readOnly,
+	})
+	a.NoError(err)
+
+	projects, err := ctl.getProjects()
+	a.NoError(err)
+
+	// Default project.
+	a.Equal(1, len(projects))
+	a.Equal("Default", projects[0].Name)
+
+	err = ctl.Close(ctx)
+	a.NoError(err)
+}
+
+func TestServerRestart(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
+	// Start server in non-readonly mode to init schema and register user.
 	err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
@@ -32,23 +52,14 @@ func TestServiceRestart(t *testing.T) {
 	err = ctl.Login()
 	a.NoError(err)
 
-	projects, err := ctl.getProjects()
-	a.NoError(err)
-
-	// Default project.
-	a.Equal(1, len(projects))
-	a.Equal("Default", projects[0].Name)
-
-	// Restart the server.
 	err = ctl.Close(ctx)
 	a.NoError(err)
 
-	err = ctl.StartServer(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
-	})
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	// Start server in readonly mode
+	startStopServer(ctx, a, ctl, dataDir, true /*readOnly*/)
+
+	// Start server in non-readonly mode
+	startStopServer(ctx, a, ctl, dataDir, false /*readOnly*/)
 }
 
 var (
