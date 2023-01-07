@@ -57,11 +57,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
-		bot, err := s.store.GetPrincipalByID(ctx, api.SystemBotID)
-		if err != nil {
-			return err
-		}
-		member := convertMember(user, composedPrincipal, bot)
+		member := convertMember(user, composedPrincipal)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, member); err != nil {
@@ -78,10 +74,6 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		}
 
 		var members []*api.Member
-		bot, err := s.store.GetPrincipalByID(ctx, api.SystemBotID)
-		if err != nil {
-			return err
-		}
 		for _, user := range users {
 			if user.ID == api.SystemBotID {
 				continue
@@ -90,7 +82,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			if err != nil {
 				return err
 			}
-			member := convertMember(user, composedPrincipal, bot)
+			member := convertMember(user, composedPrincipal)
 			members = append(members, member)
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -211,11 +203,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		if err != nil {
 			return err
 		}
-		bot, err := s.store.GetPrincipalByID(ctx, api.SystemBotID)
-		if err != nil {
-			return err
-		}
-		member := convertMember(user, composedPrincipal, bot)
+		member := convertMember(user, composedPrincipal)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, member); err != nil {
@@ -225,14 +213,10 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 }
 
-func convertMember(user *store.UserMessage, composedPrincipal, bot *api.Principal) *api.Member {
+func convertMember(user *store.UserMessage, composedPrincipal *api.Principal) *api.Member {
 	member := &api.Member{
 		ID:          user.ID,
 		RowStatus:   api.Normal,
-		CreatorID:   api.SystemBotID,
-		Creator:     bot,
-		UpdaterID:   api.SystemBotID,
-		Updater:     bot,
 		Status:      api.Active,
 		Role:        user.Role,
 		PrincipalID: user.ID,
