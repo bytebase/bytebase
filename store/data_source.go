@@ -17,12 +17,6 @@ import (
 type dataSourceRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Related fields
 	InstanceID int
 	DatabaseID int
@@ -277,7 +271,7 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 			database
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
+		RETURNING id, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
 	`
 	var dataSourceRaw dataSourceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -298,10 +292,6 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		create.Database,
 	).Scan(
 		&dataSourceRaw.ID,
-		&dataSourceRaw.CreatorID,
-		&dataSourceRaw.CreatedTs,
-		&dataSourceRaw.UpdaterID,
-		&dataSourceRaw.UpdatedTs,
 		&dataSourceRaw.InstanceID,
 		&dataSourceRaw.DatabaseID,
 		&dataSourceRaw.Name,
@@ -343,10 +333,6 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			instance_id,
 			database_id,
 			name,
@@ -375,10 +361,6 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 		var dataSourceRaw dataSourceRaw
 		if err := rows.Scan(
 			&dataSourceRaw.ID,
-			&dataSourceRaw.CreatorID,
-			&dataSourceRaw.CreatedTs,
-			&dataSourceRaw.UpdaterID,
-			&dataSourceRaw.UpdatedTs,
 			&dataSourceRaw.InstanceID,
 			&dataSourceRaw.DatabaseID,
 			&dataSourceRaw.Name,
@@ -444,15 +426,11 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 			UPDATE data_source
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
+			RETURNING id, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
 		`, len(args)),
 		args...,
 	).Scan(
 		&dataSourceRaw.ID,
-		&dataSourceRaw.CreatorID,
-		&dataSourceRaw.CreatedTs,
-		&dataSourceRaw.UpdaterID,
-		&dataSourceRaw.UpdatedTs,
 		&dataSourceRaw.InstanceID,
 		&dataSourceRaw.DatabaseID,
 		&dataSourceRaw.Name,
