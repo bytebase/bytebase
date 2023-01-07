@@ -21,16 +21,8 @@ export function convertBackup(
   includedList: ResourceObject[]
 ): Backup {
   return {
-    ...(backup.attributes as Omit<Backup, "id" | "creator" | "updater">),
+    ...(backup.attributes as Omit<Backup, "id">),
     id: parseInt(backup.id),
-    creator: getPrincipalFromIncludedList(
-      backup.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      backup.relationships!.updater.data,
-      includedList
-    ),
   };
 }
 

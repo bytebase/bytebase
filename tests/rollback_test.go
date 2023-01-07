@@ -179,7 +179,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		ProjectID:     project.ID,
 		Name:          "update data",
 		Type:          api.IssueDatabaseDataUpdate,
-		AssigneeID:    project.Creator.ID,
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -222,7 +222,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 			ProjectID:     project.ID,
 			Name:          "rollback",
 			Type:          api.IssueDatabaseRollback,
-			AssigneeID:    project.Creator.ID,
+			AssigneeID:    api.SystemBotID,
 			CreateContext: string(rollbackCreateContext),
 		})
 		if err == nil {

@@ -28,19 +28,8 @@ function convert(
   principal.role = member.attributes.role as RoleType;
 
   return {
-    ...(member.attributes as Omit<
-      Member,
-      "id" | "principal" | "creator" | "updater"
-    >),
+    ...(member.attributes as Omit<Member, "id" | "principal">),
     id: parseInt(member.id),
-    creator: getPrincipalFromIncludedList(
-      member.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      member.relationships!.updater.data,
-      includedList
-    ),
     principal: principal,
   };
 }
@@ -101,10 +90,7 @@ export const useMemberStore = defineStore("member", {
 
       // sort the member list
       memberList.sort((a: Member, b: Member) => {
-        if (a.createdTs === b.createdTs) {
-          return a.id - b.id;
-        }
-        return a.createdTs - b.createdTs;
+        return a.id - b.id;
       });
 
       this.setMemberList(memberList);

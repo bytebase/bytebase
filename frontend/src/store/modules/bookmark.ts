@@ -15,14 +15,10 @@ function convert(
   includedList: ResourceObject[]
 ): Bookmark {
   return {
-    ...(bookmark.attributes as Omit<Bookmark, "id" | "creator" | "updater">),
+    ...(bookmark.attributes as Omit<Bookmark, "id" | "creator">),
     id: parseInt(bookmark.id),
     creator: getPrincipalFromIncludedList(
       bookmark.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      bookmark.relationships!.updater.data,
       includedList
     ),
   };

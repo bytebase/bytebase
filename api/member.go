@@ -1,9 +1,5 @@
 package api
 
-import (
-	"encoding/json"
-)
-
 // MemberStatus is the status of an member.
 type MemberStatus string
 
@@ -34,14 +30,7 @@ const (
 type Member struct {
 	ID int `jsonapi:"primary,member"`
 
-	// Standard fields
 	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Domain specific fields
 	Status      MemberStatus `jsonapi:"attr,status"`
@@ -52,31 +41,9 @@ type Member struct {
 
 // MemberCreate is the API message for creating a member.
 type MemberCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
 	// Domain specific fields
-	Status      MemberStatus `jsonapi:"attr,status"`
-	Role        Role         `jsonapi:"attr,role"`
-	PrincipalID int          `jsonapi:"attr,principalId"`
-}
-
-// MemberFind is the API message for finding members.
-type MemberFind struct {
-	ID *int
-
-	// Domain specific fields
-	PrincipalID *int
-	Role        *Role
-}
-
-func (find *MemberFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
+	Role        Role `jsonapi:"attr,role"`
+	PrincipalID int  `jsonapi:"attr,principalId"`
 }
 
 // MemberPatch is the API message for patching a member.
@@ -85,9 +52,6 @@ type MemberPatch struct {
 
 	// Standard fields
 	RowStatus *string `jsonapi:"attr,rowStatus"`
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
 	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`
 }

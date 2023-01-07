@@ -27,13 +27,10 @@
         <button
           v-if="instance.externalLink?.trim().length != 0"
           class="btn-icon"
-          @click.stop="window.open(urlfy(instanceLink(instance)), '_blank')"
+          @click.stop="window.open(urlfy(instance.externalLink), '_blank')"
         >
           <heroicons-outline:external-link class="w-4 h-4" />
         </button>
-      </div>
-      <div class="bb-grid-cell">
-        {{ humanizeTs(instance.createdTs) }}
       </div>
     </template>
   </BBGrid>
@@ -87,10 +84,6 @@ export default defineComponent({
           width: { sm: "1fr" },
           class: "hidden sm:flex",
         },
-        {
-          title: t("common.created-at"),
-          width: "minmax(auto, 8rem)",
-        },
       ];
     });
 
@@ -113,23 +106,11 @@ export default defineComponent({
       return environmentName(env);
     };
 
-    const instanceLink = (instance: Instance): string => {
-      if (instance.engine == "SNOWFLAKE") {
-        if (instance.host) {
-          return `https://${
-            instance.host.split("@")[0]
-          }.snowflakecomputing.com/console`;
-        }
-      }
-      return instance.host;
-    };
-
     return {
       columnList,
       urlfy,
       clickInstance,
       environmentNameFromId,
-      instanceLink,
     };
   },
 });
