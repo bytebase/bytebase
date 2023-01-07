@@ -119,7 +119,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		CreateDatabase: true,
 		Force:          true,
 	}
-	creator, err := exec.store.GetPrincipalByID(ctx, task.CreatorID)
+	creator, err := exec.store.GetUserByID(ctx, task.CreatorID)
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.

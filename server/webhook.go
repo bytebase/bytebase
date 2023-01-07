@@ -867,7 +867,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 	creatorID := api.SystemBotID
 	if email != "" {
-		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, email)
+		committerPrincipal, err := s.store.GetUserByEmail(ctx, email)
 		if err != nil {
 			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", email), zap.Error(err))
 		} else if committerPrincipal == nil {
