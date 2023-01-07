@@ -183,6 +183,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 
 // GetUserByEmailV2 gets an instance of Principal.
 func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
+	// TODO(d): set user role to owner for free license.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)

@@ -568,14 +568,14 @@ func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalI
 		}
 	}
 	// the workspace owner and DBA roles can always change task status.
-	principal, err := s.store.GetPrincipalByID(ctx, principalID)
+	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
 	}
-	if principal == nil {
+	if user == nil {
 		return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
 	}
-	if principal.Role == api.Owner || principal.Role == api.DBA {
+	if user.Role == api.Owner || user.Role == api.DBA {
 		return true, nil
 	}
 
@@ -1198,17 +1198,17 @@ func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int,
 	if groupValue == nil || *groupValue == api.AssigneeGroupValueWorkspaceOwnerOrDBA {
 		// no value is set, fallback to default.
 		// the assignee group is the workspace owner or DBA.
-		principal, err := s.store.GetPrincipalByID(ctx, principalID)
+		user, err := s.store.GetUserByID(ctx, principalID)
 		if err != nil {
 			return false, common.Wrapf(err, common.Internal, "failed to get principal by ID %d", principalID)
 		}
-		if principal == nil {
+		if user == nil {
 			return false, common.Errorf(common.NotFound, "principal not found by ID %d", principalID)
 		}
 		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
-			principal.Role = api.Owner
+			user.Role = api.Owner
 		}
-		if principal.Role == api.Owner || principal.Role == api.DBA {
+		if user.Role == api.Owner || user.Role == api.DBA {
 			return true, nil
 		}
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
