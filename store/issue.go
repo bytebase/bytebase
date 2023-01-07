@@ -13,7 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
 )
 
 // issueRaw is the store model for an Issue.
@@ -167,42 +166,6 @@ func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Iss
 		return nil, errors.Wrapf(err, "failed to compose Issue with issueRaw[%+v]", issueRaw)
 	}
 	return issue, nil
-}
-
-// CountIssueGroupByTypeAndStatus counts the number of issue and group by type and status.
-// Used by the metric collector.
-func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.IssueCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT type, status, COUNT(*)
-		FROM issue
-		WHERE (id <= 101 AND updater_id != 1) OR id > 101
-		GROUP BY type, status`,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var res []*metric.IssueCountMetric
-
-	for rows.Next() {
-		var metric metric.IssueCountMetric
-		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
-			return nil, FormatError(err)
-		}
-		res = append(res, &metric)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return res, nil
 }
 
 // CreateIssueValidateOnly creates an issue for validation purpose

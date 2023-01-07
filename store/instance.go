@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -165,42 +164,6 @@ func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.I
 	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
 	s.instanceIDCache.Delete(instance.ID)
 	return instance, nil
-}
-
-// CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
-// Used by the metric collector.
-func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) ([]*metric.InstanceCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT engine, environment_id, row_status, COUNT(*)
-		FROM instance
-		WHERE (id <= 101 AND updater_id != 1) OR id > 101
-		GROUP BY engine, environment_id, row_status`,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var res []*metric.InstanceCountMetric
-
-	for rows.Next() {
-		var metric metric.InstanceCountMetric
-		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
-			return nil, FormatError(err)
-		}
-		res = append(res, &metric)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return res, nil
 }
 
 // FindInstanceWithDatabaseBackupEnabled finds instances with at least one database who enables backup policy.
@@ -1089,39 +1052,4 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	return instanceMessages, nil
-}
-
-// CountInstanceMessage is the message for counting instances.
-type CountInstanceMessage struct {
-	EnvironmentID *string
-}
-
-// CountInstance counts the number of instances.
-func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
-	where, args := []string{"instance.row_status = $1"}, []interface{}{api.Normal}
-	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	query := `
-		SELECT
-			count(1)
-		FROM instance
-		LEFT JOIN environment ON environment.id = instance.environment_id
-		WHERE ` + strings.Join(where, " AND ")
-	var count int
-	if err := tx.QueryRowContext(ctx, query,
-		args...).Scan(&count); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return 0, FormatError(err)
-	}
-	return count, nil
 }
