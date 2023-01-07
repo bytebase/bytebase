@@ -39,7 +39,7 @@ export type EnvironmentId = IdType;
 
 export type InstanceId = IdType;
 
-export type InstanceUserId = IdType;
+export type InstanceUserId = string;
 
 export type DataSourceId = IdType;
 
