@@ -97,7 +97,7 @@ CREATE TABLE book3 (
 							{
 								Key:      api.EnvironmentLabelKey,
 								Operator: api.InOperatorType,
-								Values:   []string{"Test"},
+								Values:   []string{"test"},
 							},
 							{
 								Key:      api.TenantLabelKey,
@@ -115,7 +115,7 @@ CREATE TABLE book3 (
 							{
 								Key:      api.EnvironmentLabelKey,
 								Operator: api.InOperatorType,
-								Values:   []string{"Prod"},
+								Values:   []string{"prod"},
 							},
 							{
 								Key:      api.TenantLabelKey,
