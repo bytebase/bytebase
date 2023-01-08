@@ -117,7 +117,12 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *api.Instance) {
 		}
 	}()
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.Environment.ResourceID, InstanceID: &instance.ResourceID})
+	find := &store.FindDatabaseMessage{}
+	if instance != nil {
+		find.EnvironmentID = &instance.Environment.ResourceID
+		find.InstanceID = &instance.ResourceID
+	}
+	databases, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
 		log.Debug("Failed to find databases to sync",
 			zap.String("error", err.Error()))
