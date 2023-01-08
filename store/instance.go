@@ -739,7 +739,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 		return nil, nil
 	}
 	if len(instances) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(instances), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %#v, expect 1", len(instances), find)}
 	}
 	instance := instances[0]
 
