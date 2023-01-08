@@ -838,19 +838,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME,
 			// and ENV_NAME and DB_NAME is either both present or neither present.
 			if project.TenantMode != api.TenantModeDisabled {
-				if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
-					databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-						Name:      &sheetInfo.DatabaseName,
-						ProjectID: &projectID,
-					})
+				if sheetInfo.EnvironmentID != "" && sheetInfo.DatabaseName != "" {
+					databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID, DatabaseName: &sheetInfo.DatabaseName})
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
 					}
-
-					for _, database := range databaseList {
+					for _, database := range databases {
 						database := database // create a new var "database".
-						if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
-							databaseID = &database.ID
+						if database.EnvironmentID == sheetInfo.EnvironmentID {
+							databaseID = &database.UID
 							break
 						}
 					}
