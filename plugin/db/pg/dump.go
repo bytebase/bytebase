@@ -29,7 +29,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if database != "" {
 		exist := false
 		for _, n := range databases {
-			if n.name == database {
+			if n.Name == database {
 				exist = true
 				break
 			}
@@ -40,10 +40,10 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		dumpableDbNames = []string{database}
 	} else {
 		for _, n := range databases {
-			if excludedDatabaseList[n.name] {
+			if excludedDatabaseList[n.Name] {
 				continue
 			}
-			dumpableDbNames = append(dumpableDbNames, n.name)
+			dumpableDbNames = append(dumpableDbNames, n.Name)
 		}
 	}
 
