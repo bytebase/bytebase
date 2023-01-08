@@ -1076,7 +1076,7 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB"))
 	}
 	// Validate the labels. Labels are set upon task completion.
-	if _, err := convertDatabaseLabels(c.Labels, instance.EnvironmentID); err != nil {
+	if _, err := convertDatabaseLabels(c.Labels); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
 	}
 
@@ -1386,7 +1386,7 @@ func unmarshalPageToken(pageToken string, sortOrder api.SortOrder) (int, error) 
 }
 
 // convertDatabaseLabels cnverts the json labels.
-func convertDatabaseLabels(labelsJSON, environmentID string) ([]*api.DatabaseLabel, error) {
+func convertDatabaseLabels(labelsJSON string) ([]*api.DatabaseLabel, error) {
 	if labelsJSON == "" {
 		return nil, nil
 	}

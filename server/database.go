@@ -169,7 +169,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// must match instance environment.
 		if dbPatch.Labels != nil {
 			labels := make(map[string]string)
-			databaseLabels, err := convertDatabaseLabels(*dbPatch.Labels, database.EnvironmentID)
+			databaseLabels, err := convertDatabaseLabels(*dbPatch.Labels)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
