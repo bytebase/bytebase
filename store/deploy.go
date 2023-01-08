@@ -73,8 +73,7 @@ func (s *Store) getDefaultDeploymentConfig(ctx context.Context, projectID int) (
 			Spec: &api.DeploymentSpec{
 				Selector: &api.LabelSelector{
 					MatchExpressions: []*api.LabelSelectorRequirement{
-						// TODO(d): use environment ID for the label.
-						{Key: "bb.environment", Operator: api.InOperatorType, Values: []string{environment.Title}},
+						{Key: "bb.environment", Operator: api.InOperatorType, Values: []string{environment.ResourceID}},
 					},
 				},
 			},
