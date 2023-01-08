@@ -61,7 +61,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.InstanceID)
 	}
 
-	instanceUserList, err := e.store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
+	instanceUsers, err := e.store.ListInstanceUsers(ctx, &store.FindInstanceUserMessage{InstanceUID: task.InstanceID})
 	if err != nil {
 		return nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
 	}
@@ -76,7 +76,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
 	}
 
-	config := utils.GetGhostConfig(task, adminDataSource, instanceUserList, tableName, payload.Statement, true, 20000000)
+	config := utils.GetGhostConfig(task, adminDataSource, instanceUsers, tableName, payload.Statement, true, 20000000)
 
 	migrationContext, err := utils.NewMigrationContext(config)
 	if err != nil {

@@ -93,7 +93,7 @@ function convert(
 function convertInstanceUser(instanceUser: ResourceObject): InstanceUser {
   return {
     ...(instanceUser.attributes as Omit<InstanceUser, "id">),
-    id: parseInt(instanceUser.id),
+    id: instanceUser.id,
   };
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // RoleAttribute is the attribute string for role.
@@ -318,4 +319,71 @@ func convertToAttributeStatement(r *db.DatabaseRoleUpsertMessage) string {
 	}
 
 	return attribute
+}
+
+func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
+	query := `
+		SELECT r.rolname, r.rolsuper, r.rolinherit, r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolvaliduntil, r.rolbypassrls
+		FROM pg_catalog.pg_roles r
+		WHERE r.rolname !~ '^pg_';
+	`
+	var instanceRoles []*storepb.InstanceRoleMetadata
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var role string
+		var super, inherit, createRole, createDB, canLogin, replication, bypassRLS bool
+		var rolValidUntil sql.NullString
+		if err := rows.Scan(
+			&role,
+			&super,
+			&inherit,
+			&createRole,
+			&createDB,
+			&canLogin,
+			&replication,
+			&rolValidUntil,
+			&bypassRLS,
+		); err != nil {
+			return nil, err
+		}
+
+		var attributes []string
+		if super {
+			attributes = append(attributes, "Superuser")
+		}
+		if !inherit {
+			attributes = append(attributes, "No inheritance")
+		}
+		if createRole {
+			attributes = append(attributes, "Create role")
+		}
+		if createDB {
+			attributes = append(attributes, "Create DB")
+		}
+		if !canLogin {
+			attributes = append(attributes, "Cannot login")
+		}
+		if replication {
+			attributes = append(attributes, "Replication")
+		}
+		if rolValidUntil.Valid {
+			attributes = append(attributes, fmt.Sprintf("Password valid until %s", rolValidUntil.String))
+		}
+		if bypassRLS {
+			attributes = append(attributes, "Bypass RLS+")
+		}
+
+		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
+			Name:  role,
+			Grant: strings.Join(attributes, ", "),
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return instanceRoles, nil
 }

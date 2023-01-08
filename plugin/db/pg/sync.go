@@ -17,22 +17,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// pgDatabaseSchema describes a pg database schema.
-type pgDatabaseSchema struct {
-	name     string
-	encoding string
-	collate  string
-}
-
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Query user info
-	userList, err := driver.getUserList(ctx)
+	instanceRoles, err := driver.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,28 +34,20 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
-	var databaseList []db.DatabaseMeta
+
+	var filteredDatabases []*storepb.DatabaseMetadata
 	for _, database := range databases {
-		dbName := database.name
 		// Skip all system databases
-		if _, ok := excludedDatabaseList[dbName]; ok {
+		if _, ok := excludedDatabaseList[database.Name]; ok {
 			continue
 		}
-
-		databaseList = append(
-			databaseList,
-			db.DatabaseMeta{
-				Name:         dbName,
-				CharacterSet: database.encoding,
-				Collation:    database.collate,
-			},
-		)
+		filteredDatabases = append(filteredDatabases, database)
 	}
 
-	return &db.InstanceMeta{
-		Version:      version,
-		UserList:     userList,
-		DatabaseList: databaseList,
+	return &db.InstanceMetadata{
+		Version:       version,
+		InstanceRoles: instanceRoles,
+		Databases:     filteredDatabases,
 	}, nil
 }
 
@@ -75,19 +59,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	databaseMetadata := &storepb.DatabaseMetadata{
-		Name: databaseName,
-	}
-	found := false
+	var databaseMetadata *storepb.DatabaseMetadata
 	for _, database := range databases {
-		if database.name == databaseName {
-			found = true
-			databaseMetadata.CharacterSet = database.encoding
-			databaseMetadata.Collation = database.collate
+		if database.Name == databaseName {
+			databaseMetadata = database
 			break
 		}
 	}
-	if !found {
+	if databaseMetadata == nil {
 		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
@@ -140,75 +119,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	databaseMetadata.Extensions = extensions
 
 	return databaseMetadata, err
-}
-
-func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
-	// Query user info
-	query := `
-		SELECT r.rolname, r.rolsuper, r.rolinherit, r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolvaliduntil, r.rolbypassrls
-		FROM pg_catalog.pg_roles r
-		WHERE r.rolname !~ '^pg_';
-	`
-	var userList []db.User
-	rows, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var role string
-		var super, inherit, createRole, createDB, canLogin, replication, bypassRLS bool
-		var rolValidUntil sql.NullString
-		if err := rows.Scan(
-			&role,
-			&super,
-			&inherit,
-			&createRole,
-			&createDB,
-			&canLogin,
-			&replication,
-			&rolValidUntil,
-			&bypassRLS,
-		); err != nil {
-			return nil, err
-		}
-
-		var attributes []string
-		if super {
-			attributes = append(attributes, "Superuser")
-		}
-		if !inherit {
-			attributes = append(attributes, "No inheritance")
-		}
-		if createRole {
-			attributes = append(attributes, "Create role")
-		}
-		if createDB {
-			attributes = append(attributes, "Create DB")
-		}
-		if !canLogin {
-			attributes = append(attributes, "Cannot login")
-		}
-		if replication {
-			attributes = append(attributes, "Replication")
-		}
-		if rolValidUntil.Valid {
-			attributes = append(attributes, fmt.Sprintf("Password valid until %s", rolValidUntil.String))
-		}
-		if bypassRLS {
-			attributes = append(attributes, "Bypass RLS+")
-		}
-
-		userList = append(userList, db.User{
-			Name:  role,
-			Grant: strings.Join(attributes, ", "),
-		})
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return userList, nil
 }
 
 func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
