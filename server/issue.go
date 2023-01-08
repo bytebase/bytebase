@@ -333,7 +333,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 }
 
 func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate) (*api.Issue, error) {
-	if issueCreate.ProjectID == api.DefaultProjectID {
+	if issueCreate.ProjectID == api.DefaultProjectUID {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create a new issue in the default project")
 	}
 
