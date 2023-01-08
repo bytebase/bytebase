@@ -2,10 +2,14 @@ package mongodb
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/pkg/errors"
+	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // CreateRole creates the role.
@@ -31,4 +35,37 @@ func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
 // DeleteRole deletes the role by name.
 func (*Driver) DeleteRole(_ context.Context, _ string) error {
 	return errors.Errorf("delete role for MongoDB is not implemented yet")
+}
+
+// getUserList returns the list of users.
+func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata, error) {
+	database := driver.client.Database(migrationHistoryDefaultDatabase)
+	command := bson.D{{
+		Key: "usersInfo",
+		Value: bson.D{{
+			Key:   "forAllDBs",
+			Value: true,
+		}},
+	}}
+	var commandResult UsersInfo
+	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
+		if isAtlasUnauthorizedError(err) {
+			log.Info("Skip getting user list because the user is not authorized to run the command 'usersInfo' in atlas cluster M0/M2/M5")
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "cannot run usersInfo command")
+	}
+	var instanceRoles []*storepb.InstanceRoleMetadata
+	for _, user := range commandResult.Users {
+		bs, err := json.Marshal(user)
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot marshal user")
+		}
+
+		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
+			Name:  user.UserName,
+			Grant: string(bs),
+		})
+	}
+	return instanceRoles, nil
 }

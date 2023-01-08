@@ -69,9 +69,9 @@ type GhostConfig struct {
 }
 
 // GetGhostConfig returns a gh-ost configuration for migration.
-func GetGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.InstanceUser, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
+func GetGhostConfig(task *api.Task, dataSource *api.DataSource, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
 	var isAWS bool
-	for _, user := range userList {
+	for _, user := range instanceUsers {
 		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
 			isAWS = true
 			break

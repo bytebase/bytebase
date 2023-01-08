@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -12,15 +11,41 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
-// UpsertInstanceUser would update the existing user if name matches.
-func (s *Store) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
+// InstanceUserMessage is the mssage for instance user.
+type InstanceUserMessage struct {
+	Name  string
+	Grant string
+}
+
+// FindInstanceUserMessage is the message for finding instance users.
+type FindInstanceUserMessage struct {
+	InstanceUID int
+	Name        *string
+}
+
+// GetInstanceUser gets an instance users.
+func (s *Store) GetInstanceUser(ctx context.Context, find *FindInstanceUserMessage) (*InstanceUserMessage, error) {
+	instanceUsers, err := s.ListInstanceUsers(ctx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(instanceUsers) == 0 {
+		return nil, nil
+	} else if len(instanceUsers) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instance users with filter %+v, expect 1", len(instanceUsers), find)}
+	}
+	return instanceUsers[0], nil
+}
+
+// ListInstanceUsers lists all the instance users.
+func (s *Store) ListInstanceUsers(ctx context.Context, find *FindInstanceUserMessage) ([]*InstanceUserMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	instanceUser, err := upsertInstanceUserImpl(ctx, tx, upsert)
+	instanceUsers, err := listInstanceUsersImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -29,60 +54,65 @@ func (s *Store) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUser
 		return nil, FormatError(err)
 	}
 
-	return instanceUser, nil
+	return instanceUsers, nil
 }
 
-// GetInstanceUser gets an instance of IntanceUser.
-func (s *Store) GetInstanceUser(ctx context.Context, find *api.InstanceUserFind) (*api.InstanceUser, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findInstanceUserImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instance users with filter %+v, expect 1", len(list), find)}
-	}
-	return list[0], nil
-}
-
-// FindInstanceUserByInstanceID retrieves a list of instanceUsers based on find.
-func (s *Store) FindInstanceUserByInstanceID(ctx context.Context, id int) ([]*api.InstanceUser, error) {
-	find := &api.InstanceUserFind{
-		InstanceID: &id,
-	}
-
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findInstanceUserImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// DeleteInstanceUser deletes an existing instance user by ID.
-func (s *Store) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUserDelete) error {
+// UpsertInstanceUsers will reconcile instance users for the instance.
+func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instanceUsers []*InstanceUserMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return err
 	}
 	defer tx.Rollback()
 
-	if err := deleteInstanceUser(ctx, tx, delete); err != nil {
-		return FormatError(err)
+	oldInstanceUsers, err := listInstanceUsersImpl(ctx, tx, &FindInstanceUserMessage{InstanceUID: instanceUID})
+	if err != nil {
+		return err
+	}
+	deletes, upserts := getInstanceUsersDiff(oldInstanceUsers, instanceUsers)
+	if len(deletes) == 0 && len(upserts) == 0 {
+		return nil
+	}
+
+	// Delete instance users that no longer exist.
+	if len(deletes) > 0 {
+		deleteArgs := []interface{}{instanceUID}
+		var deletePlaceholders []string
+		for i, d := range deletes {
+			deleteArgs = append(deleteArgs, d)
+			deletePlaceholders = append(deletePlaceholders, fmt.Sprintf("$%d", i+2))
+		}
+		deleteQuery := fmt.Sprintf(`
+			DELETE FROM instance_user WHERE instance_id = $1 AND name IN (%s)
+		`, strings.Join(deletePlaceholders, ", "))
+		if _, err := tx.ExecContext(ctx, deleteQuery, deleteArgs...); err != nil {
+			return err
+		}
+	}
+	// Upsert instance users.
+	if len(upserts) > 0 {
+		args := []interface{}{}
+		var placeholders []string
+		for i, instanceUser := range upserts {
+			args = append(args, api.SystemBotID, api.SystemBotID, instanceUID, instanceUser.Name, instanceUser.Grant)
+			placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", 5*i+1, 5*i+2, 5*i+3, 5*i+4, 5*i+5))
+		}
+		query := fmt.Sprintf(`
+			INSERT INTO instance_user (
+				creator_id,
+				updater_id,
+				instance_id,
+				name,
+				"grant"
+			)
+			VALUES %s
+			ON CONFLICT (instance_id, name) DO UPDATE SET
+				updater_id = excluded.updater_id,
+				"grant" = excluded.grant;
+		`, strings.Join(placeholders, ", "))
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -92,61 +122,43 @@ func (s *Store) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUser
 	return nil
 }
 
-// upsertInstanceUserImpl upserts a new instanceUser.
-func upsertInstanceUserImpl(ctx context.Context, tx *Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
-	// Upsert row into database.
-	query := `
-		INSERT INTO instance_user (
-			creator_id,
-			updater_id,
-			instance_id,
-			name,
-			"grant"
-		)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (instance_id, name) DO UPDATE SET
-			updater_id = excluded.updater_id,
-			"grant" = excluded.grant
-		RETURNING id, instance_id, name, "grant"
-	`
-	var instanceUser api.InstanceUser
-	if err := tx.QueryRowContext(ctx, query,
-		upsert.CreatorID,
-		upsert.CreatorID,
-		upsert.InstanceID,
-		upsert.Name,
-		upsert.Grant,
-	).Scan(
-		&instanceUser.ID,
-		&instanceUser.InstanceID,
-		&instanceUser.Name,
-		&instanceUser.Grant,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
+func getInstanceUsersDiff(oldInstanceUsers, instanceUsers []*InstanceUserMessage) ([]string, []*InstanceUserMessage) {
+	instanceUserNamesMap := make(map[string]bool)
+	oldInstanceUserMap := make(map[string]*InstanceUserMessage)
+	var deletes []string
+	var upserts []*InstanceUserMessage
+	for _, instanceUser := range instanceUsers {
+		instanceUserNamesMap[instanceUser.Name] = true
 	}
-	return &instanceUser, nil
+	for _, oldInstanceUser := range oldInstanceUsers {
+		oldInstanceUserMap[oldInstanceUser.Name] = oldInstanceUser
+	}
+
+	for _, oldInstanceUser := range oldInstanceUsers {
+		if _, ok := instanceUserNamesMap[oldInstanceUser.Name]; !ok {
+			deletes = append(deletes, oldInstanceUser.Name)
+		}
+	}
+	for _, instanceUser := range instanceUsers {
+		if old, ok := oldInstanceUserMap[instanceUser.Name]; !ok || old.Grant != instanceUser.Grant {
+			upserts = append(upserts, instanceUser)
+		}
+	}
+	return deletes, upserts
 }
 
-func findInstanceUserImpl(ctx context.Context, tx *Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
-	// Build WHERE clause.
+func listInstanceUsersImpl(ctx context.Context, tx *Tx, find *FindInstanceUserMessage) ([]*InstanceUserMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.InstanceID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
+	where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, find.InstanceUID)
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 
+	var instanceUsers []*InstanceUserMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
-			instance_id,
-			name,
-			"grant"
+			name, "grant"
 		FROM instance_user
 		WHERE `+strings.Join(where, " AND ")+`
 		ORDER BY name ASC
@@ -157,34 +169,18 @@ func findInstanceUserImpl(ctx context.Context, tx *Tx, find *api.InstanceUserFin
 		return nil, FormatError(err)
 	}
 	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into instanceUserList.
-	var instanceUserList []*api.InstanceUser
 	for rows.Next() {
-		var instanceUser api.InstanceUser
+		var instanceUser InstanceUserMessage
 		if err := rows.Scan(
-			&instanceUser.ID,
-			&instanceUser.InstanceID,
 			&instanceUser.Name,
 			&instanceUser.Grant,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
-		instanceUserList = append(instanceUserList, &instanceUser)
+		instanceUsers = append(instanceUsers, &instanceUser)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return instanceUserList, nil
-}
-
-// deleteInstanceUser permanently deletes a instance user by ID.
-func deleteInstanceUser(ctx context.Context, tx *Tx, delete *api.InstanceUserDelete) error {
-	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM instance_user WHERE id = $1`, delete.ID); err != nil {
-		return FormatError(err)
-	}
-	return nil
+	return instanceUsers, nil
 }

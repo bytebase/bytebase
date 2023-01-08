@@ -5,12 +5,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -192,49 +190,22 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 		instance.EngineVersion = instanceMeta.Version
 	}
 
-	instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
+	var instanceUsers []*store.InstanceUserMessage
+	for _, instanceUser := range instanceMeta.InstanceRoles {
+		instanceUsers = append(instanceUsers, &store.InstanceUserMessage{
+			Name:  instanceUser.Name,
+			Grant: instanceUser.Grant,
+		})
 	}
-
-	// Upsert user found in the instance
-	for _, user := range instanceMeta.UserList {
-		userUpsert := &api.InstanceUserUpsert{
-			CreatorID:  api.SystemBotID,
-			InstanceID: instance.ID,
-			Name:       user.Name,
-			Grant:      user.Grant,
-		}
-		if _, err := s.store.UpsertInstanceUser(ctx, userUpsert); err != nil {
-			return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to upsert user", instance.Name)
-		}
-	}
-
-	// Delete user no longer found in the instance
-	for _, user := range instanceUserList {
-		found := false
-		for _, dbUser := range instanceMeta.UserList {
-			if user.Name == dbUser.Name {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			userDelete := &api.InstanceUserDelete{
-				ID: user.ID,
-			}
-			if err := s.store.DeleteInstanceUser(ctx, userDelete); err != nil {
-				return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to delete user: %s", instance.Name, user.Name)
-			}
-		}
+	if err := s.store.UpsertInstanceUsers(ctx, instance.ID, instanceUsers); err != nil {
+		return nil, err
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
 	}
-	for _, databaseMetadata := range instanceMeta.DatabaseList {
+	for _, databaseMetadata := range instanceMeta.Databases {
 		exist := false
 		for _, database := range databases {
 			if database.DatabaseName == databaseMetadata.Name {
@@ -258,7 +229,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 
 	for _, database := range databases {
 		exist := false
-		for _, databaseMetadata := range instanceMeta.DatabaseList {
+		for _, databaseMetadata := range instanceMeta.Databases {
 			if database.DatabaseName == databaseMetadata.Name {
 				exist = true
 				break
@@ -278,7 +249,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 	}
 
 	var databaseList []string
-	for _, database := range instanceMeta.DatabaseList {
+	for _, database := range instanceMeta.Databases {
 		databaseList = append(databaseList, database.Name)
 	}
 	return databaseList, nil

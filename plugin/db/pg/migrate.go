@@ -310,14 +310,12 @@ func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	exist := false
 	for _, database := range databases {
-		if database.name == db.BytebaseDatabase {
-			exist = true
-			break
+		if database.Name == db.BytebaseDatabase {
+			return true, nil
 		}
 	}
-	return exist, nil
+	return false, nil
 }
 
 func (driver *Driver) strictUseDb() bool {

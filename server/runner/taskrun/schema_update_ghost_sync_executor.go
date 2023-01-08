@@ -48,7 +48,7 @@ type sharedGhostState struct {
 	errCh            <-chan error
 }
 
-func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, store *store.Store, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, stores *store.Store, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -66,12 +66,12 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.Instance.ID)
 	}
 
-	instanceUserList, err := store.FindInstanceUserByInstanceID(ctx, task.InstanceID)
+	instanceUsers, err := stores.ListInstanceUsers(ctx, &store.FindInstanceUserMessage{InstanceUID: task.InstanceID})
 	if err != nil {
 		return true, nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
 	}
 
-	config := utils.GetGhostConfig(task, adminDataSource, instanceUserList, tableName, statement, false, 10000000)
+	config := utils.GetGhostConfig(task, adminDataSource, instanceUsers, tableName, statement, false, 10000000)
 
 	migrationContext, err := utils.NewMigrationContext(config)
 	if err != nil {
