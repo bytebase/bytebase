@@ -5,60 +5,60 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/store"
 )
 
 func TestGetPeerTenantDatabase(t *testing.T) {
-	dbs := []*api.Database{
+	dbs := []*store.DatabaseMessage{
 		{
-			ID:       0,
-			Name:     "hello",
-			Instance: &api.Instance{EnvironmentID: 0},
+			UID:           0,
+			DatabaseName:  "hello",
+			EnvironmentID: "dev",
 		},
 		{
-			ID:       1,
-			Name:     "hello2",
-			Instance: &api.Instance{EnvironmentID: 0},
+			UID:           1,
+			DatabaseName:  "hello2",
+			EnvironmentID: "dev",
 		},
 		{
-			ID:       2,
-			Name:     "hello",
-			Instance: &api.Instance{EnvironmentID: 1},
+			UID:           2,
+			DatabaseName:  "hello",
+			EnvironmentID: "staging",
 		},
 		{
-			ID:       3,
-			Name:     "world",
-			Instance: &api.Instance{EnvironmentID: 2},
+			UID:           3,
+			DatabaseName:  "world",
+			EnvironmentID: "prod",
 		},
 	}
 
 	tests := []struct {
 		name          string
-		pipeline      [][]*api.Database
-		environmentID int
-		want          *api.Database
+		pipeline      [][]*store.DatabaseMessage
+		environmentID string
+		want          *store.DatabaseMessage
 	}{
 		{
 			"same environment",
-			[][]*api.Database{
+			[][]*store.DatabaseMessage{
 				{},
 				{dbs[0], dbs[1]},
 				nil,
 				{dbs[3]},
 				{dbs[2]},
 			},
-			1,
+			"staging",
 			dbs[2],
 		},
 		{
 			"fallback",
-			[][]*api.Database{
+			[][]*store.DatabaseMessage{
 				{},
 				{dbs[0], dbs[1]},
 				nil,
 				{dbs[3]},
 			},
-			1,
+			"staging",
 			dbs[0],
 		},
 	}

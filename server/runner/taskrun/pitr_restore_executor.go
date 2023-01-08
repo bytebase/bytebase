@@ -116,28 +116,36 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 		InstanceID: &targetInstanceID,
 		Name:       payload.DatabaseName,
 	}
-	targetDatabase, err := stores.GetDatabase(ctx, targetDatabaseFind)
+	composedTargetDatabase, err := stores.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, task.Instance.Name)
 	}
-	if targetDatabase == nil {
+	if composedTargetDatabase == nil {
 		return nil, errors.Wrapf(err, "target database %q not found in instance %q", *payload.DatabaseName, task.Instance.Name)
+	}
+	targetDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &composedTargetDatabase.Instance.Environment.ResourceID,
+		InstanceID:    &composedTargetDatabase.Instance.ResourceID,
+		DatabaseName:  &composedTargetDatabase.Name,
+	})
+	if err != nil {
+		return nil, err
 	}
 	log.Debug("Start database restore from backup...",
 		zap.String("source_instance", sourceDatabase.Instance.Name),
 		zap.String("source_database", sourceDatabase.Name),
-		zap.String("target_instance", targetDatabase.Instance.Name),
-		zap.String("target_database", targetDatabase.Name),
+		zap.String("target_instance", composedTargetDatabase.Instance.Name),
+		zap.String("target_database", composedTargetDatabase.Name),
 		zap.String("backup", backup.Name),
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, dbFactory, s3Client, profile, targetDatabase.Instance, targetDatabase.Name, backup); err != nil {
+	if err := exec.restoreDatabase(ctx, dbFactory, s3Client, profile, composedTargetDatabase.Instance, composedTargetDatabase.Name, backup); err != nil {
 		return nil, err
 	}
 	// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
 	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	migrationID, version, err := createBranchMigrationHistory(ctx, stores, dbFactory, profile, sourceDatabase, targetDatabase, backup, task)
+	migrationID, version, err := createBranchMigrationHistory(ctx, stores, dbFactory, profile, sourceDatabase, composedTargetDatabase, backup, task)
 	if err != nil {
 		return nil, err
 	}
@@ -147,25 +155,25 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	// and since we can't guarantee cross database transaction consistency, there is always a chance to have
 	// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
 	if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		EnvironmentID:  targetDatabase.Instance.Environment.ResourceID,
-		InstanceID:     targetDatabase.Instance.ResourceID,
-		DatabaseName:   targetDatabase.Name,
+		EnvironmentID:  composedTargetDatabase.Instance.Environment.ResourceID,
+		InstanceID:     composedTargetDatabase.Instance.ResourceID,
+		DatabaseName:   composedTargetDatabase.Name,
 		SourceBackupID: &backup.ID,
 	}, api.SystemBotID); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %d backup source ID %d after restore", targetDatabase.ID, backup.ID)
+		return nil, errors.Wrapf(err, "failed to update database %d backup source ID %d after restore", composedTargetDatabase.ID, backup.ID)
 	}
 
 	// Sync database schema after restore is completed.
 	if err := schemaSyncer.SyncDatabaseSchema(ctx, targetDatabase, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
-			zap.String("instanceName", targetDatabase.Instance.Name),
-			zap.String("databaseName", targetDatabase.Name),
+			zap.String("instanceName", composedTargetDatabase.Instance.Name),
+			zap.String("databaseName", composedTargetDatabase.Name),
 			zap.Error(err),
 		)
 	}
 
 	return &api.TaskRunResultPayload{
-		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
+		Detail:      fmt.Sprintf("Restored database %q from backup %q", composedTargetDatabase.Name, backup.Name),
 		MigrationID: migrationID,
 		Version:     version,
 	}, nil

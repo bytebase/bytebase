@@ -553,20 +553,20 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 		}
 		// Ensure all databases belong to this instance are under the default project before instance is archived.
 		if v := patch.RowStatus; v != nil && *v == string(api.Archived) {
-			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &patch.ID})
+			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError,
-					errors.Errorf("failed to find databases in the instance %d", patch.ID)).SetInternal(err)
+					errors.Errorf("failed to list databases in the instance %d", patch.ID)).SetInternal(err)
 			}
 			var databaseNameList []string
 			for _, database := range databases {
 				if database.ProjectID != api.DefaultProjectID {
-					databaseNameList = append(databaseNameList, database.Name)
+					databaseNameList = append(databaseNameList, database.DatabaseName)
 				}
 			}
 			if len(databaseNameList) > 0 {
 				return nil, echo.NewHTTPError(http.StatusBadRequest,
-					fmt.Sprintf("You should transfer these databases to the default project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
+					fmt.Sprintf("You should transfer these databases to the default project before deleting the instance: %s.", strings.Join(databaseNameList, ", ")))
 			}
 		}
 		instancePatched, err = s.store.PatchInstance(ctx, patch)

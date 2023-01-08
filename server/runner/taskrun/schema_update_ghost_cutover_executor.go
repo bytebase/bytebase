@@ -56,6 +56,14 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get a single taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
 	}
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &task.Database.Instance.Environment.ResourceID,
+		InstanceID:    &task.Database.Instance.ResourceID,
+		DatabaseName:  &task.Database.Name,
+	})
+	if err != nil {
+		return true, nil, err
+	}
 
 	syncTaskID := taskDAG.FromTaskID
 	defer exec.stateCfg.GhostTaskState.Delete(syncTaskID)
@@ -83,8 +91,7 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	sharedGhost := value.(sharedGhostState)
 
 	terminated, result, err := cutover(ctx, exec.store, exec.dbFactory, exec.activityManager, exec.profile, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
-
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, task.Database, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Instance.Name),
 			zap.String("databaseName", task.Database.Name),
