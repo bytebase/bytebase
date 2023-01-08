@@ -65,7 +65,8 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			stmt: `
 				CREATE TABLE tech_book(
 					a int,
-					b int
+					b int,
+					c text COLLATE public."de_DE"
 				)
 				PARTITION BY RANGE (a)
 			`,
@@ -85,6 +86,14 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 							ColumnName: "b",
 							Type:       &ast.Integer{Size: 4},
 						},
+						{
+							ColumnName: "c",
+							Type:       &ast.Text{},
+							Collation: &ast.CollationNameDef{
+								Schema: "public",
+								Name:   "de_DE",
+							},
+						},
 					},
 					PartitionDef: &ast.UnconvertedStmt{},
 				},
@@ -93,14 +102,15 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				{
 					Text: `CREATE TABLE tech_book(
 					a int,
-					b int
+					b int,
+					c text COLLATE public."de_DE"
 				)
 				PARTITION BY RANGE (a)`,
-					LastLine: 6,
+					LastLine: 7,
 				},
 			},
 			columnLine: [][]int{
-				{3, 4},
+				{3, 4, 5},
 			},
 		},
 		{
@@ -2024,7 +2034,7 @@ func TestExplainStmt(t *testing.T) {
 func TestAlterColumnType(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "ALTER TABLE tech_book ALTER COLUMN a TYPE int",
+			stmt: `ALTER TABLE tech_book ALTER COLUMN a TYPE TEXT COLLATE "en_EN"`,
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
@@ -2038,8 +2048,9 @@ func TestAlterColumnType(t *testing.T) {
 								Name: "tech_book",
 							},
 							ColumnName: "a",
-							Type: &ast.Integer{
-								Size: 4,
+							Type:       &ast.Text{},
+							Collation: &ast.CollationNameDef{
+								Name: "en_EN",
 							},
 						},
 					},
@@ -2047,7 +2058,7 @@ func TestAlterColumnType(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "ALTER TABLE tech_book ALTER COLUMN a TYPE int",
+					Text:     `ALTER TABLE tech_book ALTER COLUMN a TYPE TEXT COLLATE "en_EN"`,
 					LastLine: 1,
 				},
 			},

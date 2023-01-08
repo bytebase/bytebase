@@ -289,6 +289,9 @@ const (
 
 	// PostgreSQLTableDropNamingConvention is an advisor type for PostgreSQL table drop with naming convention.
 	PostgreSQLTableDropNamingConvention Type = "bb.plugin.advisor.postgresql.table.drop-naming-convention"
+
+	// PostgreSQLCollationAllowlist is an advisor type for PostgreSQL collation allowlist.
+	PostgreSQLCollationAllowlist Type = "bb.plugin.advisor.postgresql.collation.allowlist"
 )
 
 // Advice is the result of an advisor.
