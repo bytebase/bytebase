@@ -29,8 +29,6 @@ type EnvironmentServiceClient interface {
 	UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentRequest, opts ...grpc.CallOption) (*Environment, error)
 	DeleteEnvironment(ctx context.Context, in *DeleteEnvironmentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteEnvironment(ctx context.Context, in *UndeleteEnvironmentRequest, opts ...grpc.CallOption) (*Environment, error)
-	GetEnvironmentPolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error)
-	ListEnvironmentPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error)
 }
 
 type environmentServiceClient struct {
@@ -95,24 +93,6 @@ func (c *environmentServiceClient) UndeleteEnvironment(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *environmentServiceClient) GetEnvironmentPolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error) {
-	out := new(Policy)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.EnvironmentService/GetEnvironmentPolicy", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *environmentServiceClient) ListEnvironmentPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error) {
-	out := new(ListPoliciesResponse)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.EnvironmentService/ListEnvironmentPolicies", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // EnvironmentServiceServer is the server API for EnvironmentService service.
 // All implementations must embed UnimplementedEnvironmentServiceServer
 // for forward compatibility
@@ -123,8 +103,6 @@ type EnvironmentServiceServer interface {
 	UpdateEnvironment(context.Context, *UpdateEnvironmentRequest) (*Environment, error)
 	DeleteEnvironment(context.Context, *DeleteEnvironmentRequest) (*emptypb.Empty, error)
 	UndeleteEnvironment(context.Context, *UndeleteEnvironmentRequest) (*Environment, error)
-	GetEnvironmentPolicy(context.Context, *GetPolicyRequest) (*Policy, error)
-	ListEnvironmentPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error)
 	mustEmbedUnimplementedEnvironmentServiceServer()
 }
 
@@ -149,12 +127,6 @@ func (UnimplementedEnvironmentServiceServer) DeleteEnvironment(context.Context, 
 }
 func (UnimplementedEnvironmentServiceServer) UndeleteEnvironment(context.Context, *UndeleteEnvironmentRequest) (*Environment, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteEnvironment not implemented")
-}
-func (UnimplementedEnvironmentServiceServer) GetEnvironmentPolicy(context.Context, *GetPolicyRequest) (*Policy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetEnvironmentPolicy not implemented")
-}
-func (UnimplementedEnvironmentServiceServer) ListEnvironmentPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListEnvironmentPolicies not implemented")
 }
 func (UnimplementedEnvironmentServiceServer) mustEmbedUnimplementedEnvironmentServiceServer() {}
 
@@ -277,42 +249,6 @@ func _EnvironmentService_UndeleteEnvironment_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _EnvironmentService_GetEnvironmentPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPolicyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(EnvironmentServiceServer).GetEnvironmentPolicy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.EnvironmentService/GetEnvironmentPolicy",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EnvironmentServiceServer).GetEnvironmentPolicy(ctx, req.(*GetPolicyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _EnvironmentService_ListEnvironmentPolicies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPoliciesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(EnvironmentServiceServer).ListEnvironmentPolicies(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.EnvironmentService/ListEnvironmentPolicies",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EnvironmentServiceServer).ListEnvironmentPolicies(ctx, req.(*ListPoliciesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // EnvironmentService_ServiceDesc is the grpc.ServiceDesc for EnvironmentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -343,14 +279,6 @@ var EnvironmentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndeleteEnvironment",
 			Handler:    _EnvironmentService_UndeleteEnvironment_Handler,
-		},
-		{
-			MethodName: "GetEnvironmentPolicy",
-			Handler:    _EnvironmentService_GetEnvironmentPolicy_Handler,
-		},
-		{
-			MethodName: "ListEnvironmentPolicies",
-			Handler:    _EnvironmentService_ListEnvironmentPolicies_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -392,6 +392,37 @@ export const Policy = {
   },
 };
 
+export interface WorkspacePolicyService {
+  GetPolicy(request: GetPolicyRequest): Promise<Policy>;
+  ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
+}
+
+export class WorkspacePolicyServiceClientImpl implements WorkspacePolicyService {
+  private readonly rpc: Rpc;
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "bytebase.v1.WorkspacePolicyService";
+    this.rpc = rpc;
+    this.GetPolicy = this.GetPolicy.bind(this);
+    this.ListPolicies = this.ListPolicies.bind(this);
+  }
+  GetPolicy(request: GetPolicyRequest): Promise<Policy> {
+    const data = GetPolicyRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetPolicy", data);
+    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
+  }
+
+  ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse> {
+    const data = ListPoliciesRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "ListPolicies", data);
+    return promise.then((data) => ListPoliciesResponse.decode(new _m0.Reader(data)));
+  }
+}
+
+interface Rpc {
+  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+}
+
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T

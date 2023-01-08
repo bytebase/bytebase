@@ -29,8 +29,6 @@ type ProjectServiceClient interface {
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteProject(ctx context.Context, in *UndeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
-	GetProjectPolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error)
-	ListProjectPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error)
 }
 
 type projectServiceClient struct {
@@ -95,24 +93,6 @@ func (c *projectServiceClient) UndeleteProject(ctx context.Context, in *Undelete
 	return out, nil
 }
 
-func (c *projectServiceClient) GetProjectPolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error) {
-	out := new(Policy)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/GetProjectPolicy", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) ListProjectPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error) {
-	out := new(ListPoliciesResponse)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/ListProjectPolicies", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -123,8 +103,6 @@ type ProjectServiceServer interface {
 	UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error)
 	DeleteProject(context.Context, *DeleteProjectRequest) (*emptypb.Empty, error)
 	UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error)
-	GetProjectPolicy(context.Context, *GetPolicyRequest) (*Policy, error)
-	ListProjectPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -149,12 +127,6 @@ func (UnimplementedProjectServiceServer) DeleteProject(context.Context, *DeleteP
 }
 func (UnimplementedProjectServiceServer) UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteProject not implemented")
-}
-func (UnimplementedProjectServiceServer) GetProjectPolicy(context.Context, *GetPolicyRequest) (*Policy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProjectPolicy not implemented")
-}
-func (UnimplementedProjectServiceServer) ListProjectPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListProjectPolicies not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -277,42 +249,6 @@ func _ProjectService_UndeleteProject_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_GetProjectPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPolicyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetProjectPolicy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.ProjectService/GetProjectPolicy",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetProjectPolicy(ctx, req.(*GetPolicyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_ListProjectPolicies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPoliciesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).ListProjectPolicies(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.ProjectService/ListProjectPolicies",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).ListProjectPolicies(ctx, req.(*ListPoliciesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -343,14 +279,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndeleteProject",
 			Handler:    _ProjectService_UndeleteProject_Handler,
-		},
-		{
-			MethodName: "GetProjectPolicy",
-			Handler:    _ProjectService_GetProjectPolicy_Handler,
-		},
-		{
-			MethodName: "ListProjectPolicies",
-			Handler:    _ProjectService_ListProjectPolicies_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

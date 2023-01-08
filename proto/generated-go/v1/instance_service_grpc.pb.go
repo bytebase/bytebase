@@ -32,8 +32,6 @@ type InstanceServiceClient interface {
 	AddDataSource(ctx context.Context, in *AddDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 	RemoveDataSource(ctx context.Context, in *RemoveDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 	UpdateDataSource(ctx context.Context, in *UpdateDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
-	GetInstancePolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error)
-	ListInstancePolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error)
 }
 
 type instanceServiceClient struct {
@@ -125,24 +123,6 @@ func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, in *Update
 	return out, nil
 }
 
-func (c *instanceServiceClient) GetInstancePolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error) {
-	out := new(Policy)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceService/GetInstancePolicy", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *instanceServiceClient) ListInstancePolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error) {
-	out := new(ListPoliciesResponse)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.InstanceService/ListInstancePolicies", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // InstanceServiceServer is the server API for InstanceService service.
 // All implementations must embed UnimplementedInstanceServiceServer
 // for forward compatibility
@@ -156,8 +136,6 @@ type InstanceServiceServer interface {
 	AddDataSource(context.Context, *AddDataSourceRequest) (*Instance, error)
 	RemoveDataSource(context.Context, *RemoveDataSourceRequest) (*Instance, error)
 	UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error)
-	GetInstancePolicy(context.Context, *GetPolicyRequest) (*Policy, error)
-	ListInstancePolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error)
 	mustEmbedUnimplementedInstanceServiceServer()
 }
 
@@ -191,12 +169,6 @@ func (UnimplementedInstanceServiceServer) RemoveDataSource(context.Context, *Rem
 }
 func (UnimplementedInstanceServiceServer) UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
-}
-func (UnimplementedInstanceServiceServer) GetInstancePolicy(context.Context, *GetPolicyRequest) (*Policy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetInstancePolicy not implemented")
-}
-func (UnimplementedInstanceServiceServer) ListInstancePolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListInstancePolicies not implemented")
 }
 func (UnimplementedInstanceServiceServer) mustEmbedUnimplementedInstanceServiceServer() {}
 
@@ -373,42 +345,6 @@ func _InstanceService_UpdateDataSource_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InstanceService_GetInstancePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPolicyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceServiceServer).GetInstancePolicy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.InstanceService/GetInstancePolicy",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServiceServer).GetInstancePolicy(ctx, req.(*GetPolicyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _InstanceService_ListInstancePolicies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPoliciesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceServiceServer).ListInstancePolicies(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bytebase.v1.InstanceService/ListInstancePolicies",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServiceServer).ListInstancePolicies(ctx, req.(*ListPoliciesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // InstanceService_ServiceDesc is the grpc.ServiceDesc for InstanceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -451,14 +387,6 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateDataSource",
 			Handler:    _InstanceService_UpdateDataSource_Handler,
-		},
-		{
-			MethodName: "GetInstancePolicy",
-			Handler:    _InstanceService_GetInstancePolicy_Handler,
-		},
-		{
-			MethodName: "ListInstancePolicies",
-			Handler:    _InstanceService_ListInstancePolicies_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

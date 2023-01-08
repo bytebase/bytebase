@@ -3,7 +3,6 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
-import { GetPolicyRequest, ListPoliciesRequest, ListPoliciesResponse, Policy } from "./policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -634,8 +633,6 @@ export interface EnvironmentService {
   UpdateEnvironment(request: UpdateEnvironmentRequest): Promise<Environment>;
   DeleteEnvironment(request: DeleteEnvironmentRequest): Promise<Empty>;
   UndeleteEnvironment(request: UndeleteEnvironmentRequest): Promise<Environment>;
-  GetEnvironmentPolicy(request: GetPolicyRequest): Promise<Policy>;
-  ListEnvironmentPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
 }
 
 export class EnvironmentServiceClientImpl implements EnvironmentService {
@@ -650,8 +647,6 @@ export class EnvironmentServiceClientImpl implements EnvironmentService {
     this.UpdateEnvironment = this.UpdateEnvironment.bind(this);
     this.DeleteEnvironment = this.DeleteEnvironment.bind(this);
     this.UndeleteEnvironment = this.UndeleteEnvironment.bind(this);
-    this.GetEnvironmentPolicy = this.GetEnvironmentPolicy.bind(this);
-    this.ListEnvironmentPolicies = this.ListEnvironmentPolicies.bind(this);
   }
   GetEnvironment(request: GetEnvironmentRequest): Promise<Environment> {
     const data = GetEnvironmentRequest.encode(request).finish();
@@ -687,18 +682,6 @@ export class EnvironmentServiceClientImpl implements EnvironmentService {
     const data = UndeleteEnvironmentRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "UndeleteEnvironment", data);
     return promise.then((data) => Environment.decode(new _m0.Reader(data)));
-  }
-
-  GetEnvironmentPolicy(request: GetPolicyRequest): Promise<Policy> {
-    const data = GetPolicyRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetEnvironmentPolicy", data);
-    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
-  }
-
-  ListEnvironmentPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse> {
-    const data = ListPoliciesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListEnvironmentPolicies", data);
-    return promise.then((data) => ListPoliciesResponse.decode(new _m0.Reader(data)));
   }
 }
 

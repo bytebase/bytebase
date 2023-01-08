@@ -2,10 +2,57 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "google/api/annotations.proto";
+import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
+
+service WorkspacePolicyService {
+  rpc GetPolicy(GetPolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      get: "/v1/{name=policies/*}"
+
+      additional_bindings {
+        get: "/v1/{name=projects/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/instances/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/instances/*/databases/*/policies/*}"
+      }
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
+    option (google.api.http) = {
+      get: "/v1/policies"
+
+      additional_bindings {
+        get: "/v1/{parent=projects/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*/instances/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*/instances/*/databases/*}/policies"
+      }
+    };
+    option (google.api.method_signature) = "";
+  }
+}
 
 message GetPolicyRequest {
   // The name of the policy to retrieve.

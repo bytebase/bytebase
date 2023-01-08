@@ -5,7 +5,6 @@ import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
 import { State, stateFromJSON, stateToJSON } from "./common";
-import { GetPolicyRequest, ListPoliciesRequest, ListPoliciesResponse, Policy } from "./policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -1849,8 +1848,6 @@ export interface DatabaseService {
   BatchUpdateDatabases(request: BatchUpdateDatabasesRequest): Promise<BatchUpdateDatabasesResponse>;
   GetDatabaseMetadata(request: GetDatabaseMetadataRequest): Promise<DatabaseMetadata>;
   GetDatabaseSchema(request: GetDatabaseSchemaRequest): Promise<DatabaseSchema>;
-  GetDatabasePolicy(request: GetPolicyRequest): Promise<Policy>;
-  ListDatabasePolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
 }
 
 export class DatabaseServiceClientImpl implements DatabaseService {
@@ -1865,8 +1862,6 @@ export class DatabaseServiceClientImpl implements DatabaseService {
     this.BatchUpdateDatabases = this.BatchUpdateDatabases.bind(this);
     this.GetDatabaseMetadata = this.GetDatabaseMetadata.bind(this);
     this.GetDatabaseSchema = this.GetDatabaseSchema.bind(this);
-    this.GetDatabasePolicy = this.GetDatabasePolicy.bind(this);
-    this.ListDatabasePolicies = this.ListDatabasePolicies.bind(this);
   }
   GetDatabase(request: GetDatabaseRequest): Promise<Database> {
     const data = GetDatabaseRequest.encode(request).finish();
@@ -1902,18 +1897,6 @@ export class DatabaseServiceClientImpl implements DatabaseService {
     const data = GetDatabaseSchemaRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "GetDatabaseSchema", data);
     return promise.then((data) => DatabaseSchema.decode(new _m0.Reader(data)));
-  }
-
-  GetDatabasePolicy(request: GetPolicyRequest): Promise<Policy> {
-    const data = GetPolicyRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetDatabasePolicy", data);
-    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
-  }
-
-  ListDatabasePolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse> {
-    const data = ListPoliciesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListDatabasePolicies", data);
-    return promise.then((data) => ListPoliciesResponse.decode(new _m0.Reader(data)));
   }
 }
 

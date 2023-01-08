@@ -455,6 +455,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterProjectServiceServer(s.grpcServer, v1.NewProjectService(s.store))
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir)))
+	v1pb.RegisterWorkspacePolicyServiceServer(s.grpcServer, v1.NewWorkspacePolicyService(s.store, s.licenseService))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
 	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
@@ -473,6 +474,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	if err := v1pb.RegisterInstanceRoleServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterWorkspacePolicyServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))

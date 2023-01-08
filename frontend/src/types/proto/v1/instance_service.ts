@@ -3,7 +3,6 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
-import { GetPolicyRequest, ListPoliciesRequest, ListPoliciesResponse, Policy } from "./policy";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -1151,8 +1150,6 @@ export interface InstanceService {
   AddDataSource(request: AddDataSourceRequest): Promise<Instance>;
   RemoveDataSource(request: RemoveDataSourceRequest): Promise<Instance>;
   UpdateDataSource(request: UpdateDataSourceRequest): Promise<Instance>;
-  GetInstancePolicy(request: GetPolicyRequest): Promise<Policy>;
-  ListInstancePolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
 }
 
 export class InstanceServiceClientImpl implements InstanceService {
@@ -1170,8 +1167,6 @@ export class InstanceServiceClientImpl implements InstanceService {
     this.AddDataSource = this.AddDataSource.bind(this);
     this.RemoveDataSource = this.RemoveDataSource.bind(this);
     this.UpdateDataSource = this.UpdateDataSource.bind(this);
-    this.GetInstancePolicy = this.GetInstancePolicy.bind(this);
-    this.ListInstancePolicies = this.ListInstancePolicies.bind(this);
   }
   GetInstance(request: GetInstanceRequest): Promise<Instance> {
     const data = GetInstanceRequest.encode(request).finish();
@@ -1225,18 +1220,6 @@ export class InstanceServiceClientImpl implements InstanceService {
     const data = UpdateDataSourceRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "UpdateDataSource", data);
     return promise.then((data) => Instance.decode(new _m0.Reader(data)));
-  }
-
-  GetInstancePolicy(request: GetPolicyRequest): Promise<Policy> {
-    const data = GetPolicyRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetInstancePolicy", data);
-    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
-  }
-
-  ListInstancePolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse> {
-    const data = ListPoliciesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListInstancePolicies", data);
-    return promise.then((data) => ListPoliciesResponse.decode(new _m0.Reader(data)));
   }
 }
 
