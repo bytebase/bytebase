@@ -21,7 +21,7 @@ func (d *Driver) Dump(ctx context.Context, database string, out io.Writer, schem
 	var dumpableDbNames []string
 	if database != "" {
 		exist := false
-		for _, db := range instance.DatabaseList {
+		for _, db := range instance.Databases {
 			if db.Name == database {
 				exist = true
 				break
@@ -32,7 +32,7 @@ func (d *Driver) Dump(ctx context.Context, database string, out io.Writer, schem
 		}
 		dumpableDbNames = []string{database}
 	} else {
-		for _, db := range instance.DatabaseList {
+		for _, db := range instance.Databases {
 			dumpableDbNames = append(dumpableDbNames, db.Name)
 		}
 	}
