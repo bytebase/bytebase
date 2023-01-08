@@ -85,21 +85,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
+		composedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database with ID %d", id)).SetInternal(err)
 		}
-		if database == nil {
+		if composedDatabase == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 		// Wildcard(*) database is used to connect all database at instance level.
 		// Do not return it via `get database by id` API.
-		if database.Name == api.AllDatabaseName {
+		if composedDatabase.Name == api.AllDatabaseName {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database with ID %d is a wildcard *", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, database); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedDatabase); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -112,12 +112,19 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database with ID %d", id)).SetInternal(err)
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+		}
+		oldProject, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+		if err != nil {
+			return err
+		}
+		if oldProject == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("project%q not found", database.ProjectID))
 		}
 
 		dbPatch := &api.DatabasePatch{}
@@ -126,11 +133,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		var toProject *store.ProjectMessage
-		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != database.ProjectID {
+		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != oldProject.UID {
 			// Before updating database's projectID, we need to check if there are still bound sheets.
-			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.ID}, updaterID)
+			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.UID}, updaterID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.ID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.UID)).SetInternal(err)
 			}
 			if len(sheetList) > 0 {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, please go to SQL editor to unbind them first", len(sheetList)))
@@ -150,9 +157,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		updateMessage := &store.UpdateDatabaseMessage{
-			EnvironmentID: database.Instance.Environment.ResourceID,
-			InstanceID:    database.Instance.ResourceID,
-			DatabaseName:  database.Name,
+			EnvironmentID: database.EnvironmentID,
+			InstanceID:    database.InstanceID,
+			DatabaseName:  database.DatabaseName,
 		}
 		if toProject != nil {
 			updateMessage.ProjectID = &toProject.ResourceID
@@ -162,7 +169,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// must match instance environment.
 		if dbPatch.Labels != nil {
 			labels := make(map[string]string)
-			databaseLabels, err := convertDatabaseLabels(*dbPatch.Labels, database)
+			databaseLabels, err := convertDatabaseLabels(*dbPatch.Labels, database.EnvironmentID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
@@ -171,26 +178,25 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			updateMessage.Labels = &labels
 		}
-		if _, err := s.store.UpdateDatabase(ctx, updateMessage, updaterID); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
-		}
-
-		updatedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &database.ID})
+		updatedDatabase, err := s.store.UpdateDatabase(ctx, updateMessage, updaterID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database with ID %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database ID: %v", id)).SetInternal(err)
 		}
 
 		// If we are transferring the database to a different project, then we create a project activity in both
 		// the old project and new project.
 		if toProject != nil {
-			oldProjectID := database.ProjectID
-			if err := createTransferProjectActivity(ctx, s.store, updatedDatabase, oldProjectID, updaterID); err != nil {
+			if err := createTransferProjectActivity(ctx, s.store, updatedDatabase, oldProject, toProject, updaterID); err != nil {
 				log.Error("failed to create project transfer activity", zap.Error(err))
 			}
 		}
 
+		composedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &database.UID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database with ID %d", id)).SetInternal(err)
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, updatedDatabase); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedDatabase); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal database ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -204,13 +210,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
-		composedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
-		}
-		if composedDatabase == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
-		}
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
@@ -679,50 +678,50 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 }
 
-func createTransferProjectActivity(ctx context.Context, stores *store.Store, database *api.Database, existingProjectID, updaterID int) error {
-	existingProject, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{UID: &existingProjectID})
+func createTransferProjectActivity(ctx context.Context, stores *store.Store, database *store.DatabaseMessage, oldProject, newProject *store.ProjectMessage, updaterID int) error {
+	existingProject, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{UID: &oldProject.UID})
 	if err != nil {
 		return err
 	}
 
 	bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
-		DatabaseID:   database.ID,
-		DatabaseName: database.Name,
+		DatabaseID:   database.UID,
+		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return err
 	}
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   updaterID,
-		ContainerID: existingProjectID,
+		ContainerID: oldProject.UID,
 		Type:        api.ActivityProjectDatabaseTransfer,
 		Level:       api.ActivityInfo,
-		Comment:     fmt.Sprintf("Transferred out database %q to project %q.", database.Name, database.Project.Name),
+		Comment:     fmt.Sprintf("Transferred out database %q to project %q.", database.DatabaseName, newProject.Title),
 		Payload:     string(bytes),
 	}
 	if _, err := stores.CreateActivity(ctx, activityCreate); err != nil {
 		log.Warn("Failed to create project activity after transferring database",
-			zap.Int("database_id", database.ID),
-			zap.String("database_name", database.Name),
-			zap.Int("old_project_id", existingProjectID),
-			zap.Int("new_project_id", database.ProjectID),
+			zap.Int("database_id", database.UID),
+			zap.String("database_name", database.DatabaseName),
+			zap.Int("old_project_id", oldProject.UID),
+			zap.Int("new_project_id", newProject.UID),
 			zap.Error(err))
 	}
 
 	activityCreate = &api.ActivityCreate{
 		CreatorID:   updaterID,
-		ContainerID: database.ProjectID,
+		ContainerID: newProject.UID,
 		Type:        api.ActivityProjectDatabaseTransfer,
 		Level:       api.ActivityInfo,
-		Comment:     fmt.Sprintf("Transferred in database %q from project %q.", database.Name, existingProject.Title),
+		Comment:     fmt.Sprintf("Transferred in database %q from project %q.", database.DatabaseName, existingProject.Title),
 		Payload:     string(bytes),
 	}
 	if _, err := stores.CreateActivity(ctx, activityCreate); err != nil {
 		log.Warn("Failed to create project activity after transferring database",
-			zap.Int("database_id", database.ID),
-			zap.String("database_name", database.Name),
-			zap.Int("old_project_id", existingProjectID),
-			zap.Int("new_project_id", database.ProjectID),
+			zap.Int("database_id", database.UID),
+			zap.String("database_name", database.DatabaseName),
+			zap.Int("old_project_id", oldProject.UID),
+			zap.Int("new_project_id", newProject.UID),
 			zap.Error(err))
 	}
 	return nil
