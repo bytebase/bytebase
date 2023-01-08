@@ -333,7 +333,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
 			}
 
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance.Engine, instance.UID, databaseList, exec.DatabaseName)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, exec.DatabaseName)
 			if err != nil {
 				return err
 			}
@@ -695,25 +695,7 @@ func checkPostgreSQLIndexHit(statement string, plan string) []advisor.Advice {
 	return nil
 }
 
-func (s *Server) getDatabase(ctx context.Context, instanceID int, databaseName string) (*api.Database, error) {
-	databaseFind := &api.DatabaseFind{
-		InstanceID: &instanceID,
-		Name:       &databaseName,
-	}
-	dbList, err := s.store.FindDatabase(ctx, databaseFind)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", databaseName, instanceID)).SetInternal(err)
-	}
-	if len(dbList) == 0 {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", databaseName, instanceID))
-	}
-	if len(dbList) > 1 {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", databaseName, instanceID))
-	}
-	return dbList[0], nil
-}
-
-func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type, instanceID int, databaseList []string, currentDatabase string) (*db.SensitiveSchemaInfo, error) {
+func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.InstanceMessage, databaseList []string, currentDatabase string) (*db.SensitiveSchemaInfo, error) {
 	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
 	isEmpty := true
 	result := &db.SensitiveSchemaInfo{
@@ -728,20 +710,22 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 			databaseName = currentDatabase
 		}
 
-		if isExcludeDatabase(engineType, databaseName) {
+		if isExcludeDatabase(instance.Engine, databaseName) {
 			continue
 		}
 
-		database, err := s.getDatabase(ctx, instanceID, databaseName)
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 		if err != nil {
 			return nil, err
 		}
+		if database == nil {
+			return nil, errors.Errorf("database %q not found", databaseName)
+		}
 
 		columnMap := make(sensitiveDataMap)
-
-		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.ID)
+		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instanceID))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instance.UID))
 		}
 		for _, data := range policy.SensitiveDataList {
 			columnMap[api.SensitiveData{
@@ -750,7 +734,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 			}] = data.Type
 		}
 
-		dbSchema, err := s.store.GetDBSchema(ctx, database.ID)
+		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
 		}
