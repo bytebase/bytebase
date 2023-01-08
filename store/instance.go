@@ -739,7 +739,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 		return nil, nil
 	}
 	if len(instances) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(instances), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %#v, expect 1", len(instances), find)}
 	}
 	instance := instances[0]
 
@@ -1001,6 +1001,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)

@@ -213,7 +213,7 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 		return nil, nil
 	}
 	if len(projects) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(projects), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d projects with filter %+v, expect 1", len(projects), find)}
 	}
 	project := projects[0]
 
