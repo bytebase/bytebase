@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
 )
 
 // FindDatabase finds a list of Database instances.
@@ -57,8 +56,9 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 
 // GetDatabase gets an instance of Database.
 func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	// We don't have caller for searching IncludeAllDatabase.
-	v2Find := &FindDatabaseMessage{}
+	v2Find := &FindDatabaseMessage{
+		ShowDeleted: true,
+	}
 	if find.InstanceID != nil {
 		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: find.InstanceID})
 		if err != nil {
@@ -98,76 +98,8 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 	return composedDatabase, nil
 }
 
-// CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled.
-func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
-		WITH database_backup_policy AS (
-			SELECT db.id AS database_id, backup_policy.payload AS payload
-			FROM db, instance LEFT JOIN (
-				SELECT resource_id, payload
-				FROM policy
-				WHERE type = 'bb.policy.backup-plan'
-			) AS backup_policy ON instance.environment_id = backup_policy.resource_id
-			WHERE db.instance_id = instance.id
-		), database_backup_setting AS(
-			SELECT db.id AS database_id, backup_setting.enabled AS enabled
-			FROM db LEFT JOIN backup_setting ON db.id = backup_setting.database_id
-		)
-		SELECT database_backup_policy.payload, database_backup_setting.enabled, COUNT(*)
-		FROM database_backup_policy FULL JOIN database_backup_setting
-			ON database_backup_policy.database_id = database_backup_setting.database_id
-		GROUP BY database_backup_policy.payload, database_backup_setting.enabled
-		`)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var databaseCountMetricList []*metric.DatabaseCountMetric
-	for rows.Next() {
-		var optionalPayload sql.NullString
-		var optionalEnabled sql.NullBool
-		var count int
-		if err := rows.Scan(&optionalPayload, &optionalEnabled, &count); err != nil {
-			return nil, FormatError(err)
-		}
-		var backupPlanPolicySchedule *api.BackupPlanPolicySchedule
-		if optionalPayload.Valid {
-			backupPlanPolicy, err := api.UnmarshalBackupPlanPolicy(optionalPayload.String)
-			if err != nil {
-				return nil, FormatError(err)
-			}
-			backupPlanPolicySchedule = &backupPlanPolicy.Schedule
-		}
-		var enabled *bool
-		if optionalEnabled.Valid {
-			enabled = &optionalEnabled.Bool
-		}
-		databaseCountMetricList = append(databaseCountMetricList, &metric.DatabaseCountMetric{
-			BackupPlanPolicySchedule: backupPlanPolicySchedule,
-			BackupSettingEnabled:     enabled,
-			Count:                    count,
-		})
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return databaseCountMetricList, nil
-}
-
 // private functions.
 func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) (*api.Database, error) {
-	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
-	if err != nil {
-		return nil, err
-	}
 	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, err
@@ -178,8 +110,6 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 	}
 	composedDatabase := &api.Database{
 		ID:                   database.UID,
-		CreatorID:            api.SystemBotID,
-		UpdaterID:            api.SystemBotID,
 		ProjectID:            project.UID,
 		InstanceID:           instance.UID,
 		Name:                 database.DatabaseName,
@@ -189,14 +119,6 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 		SyncStatus:           database.SyncState,
 		LastSuccessfulSyncTs: database.SuccessfulSyncTimeTs,
 	}
-
-	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	composedDatabase.Creator = bot
-	composedDatabase.Updater = bot
-
 	composedProject, err := s.GetProjectByID(ctx, project.UID)
 	if err != nil {
 		return nil, err
@@ -220,16 +142,6 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 			Value: value,
 		})
 	}
-	// Since tenants are identified by labels in deployment config, we need an environment
-	// label to identify tenants from different environment in a schema update deployment.
-	// If we expose the environment label concept in the deployment config, it should look consistent in the label API.
-	// Each database instance is created under a particular environment.
-	// The value of bb.environment is identical to the name of the environment.
-	// TODO(d): change the envir
-	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   api.EnvironmentLabelKey,
-		Value: environment.Title,
-	})
 	labels, err := json.Marshal(labelList)
 	if err != nil {
 		return nil, err
@@ -278,6 +190,9 @@ type FindDatabaseMessage struct {
 	InstanceID    *string
 	DatabaseName  *string
 	UID           *int
+	// When this is used, we will return databases from archived instances or environments.
+	// This is used for existing tasks with archived databases.
+	ShowDeleted bool
 
 	// TODO(d): deprecate this field when we migrate all datasource to v1 store.
 	IncludeAllDatabase bool
@@ -286,17 +201,17 @@ type FindDatabaseMessage struct {
 // GetDatabaseV2 gets a database.
 func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
 	if find.EnvironmentID != nil && find.InstanceID != nil && find.DatabaseName != nil {
-		if database, ok := s.databaseCache[getDatabaseCacheKey(*find.EnvironmentID, *find.InstanceID, *find.DatabaseName)]; ok {
-			return database, nil
+		if database, ok := s.databaseCache.Load(getDatabaseCacheKey(*find.EnvironmentID, *find.InstanceID, *find.DatabaseName)); ok {
+			return database.(*DatabaseMessage), nil
 		}
 	}
 	if find.UID != nil {
-		if database, ok := s.databaseIDCache[*find.UID]; ok {
-			return database, nil
+		if database, ok := s.databaseIDCache.Load(*find.UID); ok {
+			return database.(*DatabaseMessage), nil
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -318,14 +233,14 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 		return nil, FormatError(err)
 	}
 
-	s.databaseCache[getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName)] = database
-	s.databaseIDCache[database.UID] = database
+	s.databaseCache.Store(getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName), database)
+	s.databaseIDCache.Store(database.UID, database)
 	return database, nil
 }
 
 // ListDatabases lists all databases.
 func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -341,8 +256,8 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 
 	for _, database := range databases {
-		s.databaseCache[getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName)] = database
-		s.databaseIDCache[database.UID] = database
+		s.databaseCache.Store(getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName), database)
+		s.databaseIDCache.Store(database.UID, database)
 	}
 	return databases, nil
 }
@@ -373,8 +288,8 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	}
 
 	// Invalidate an update the cache.
-	delete(s.databaseCache, getDatabaseCacheKey(instance.EnvironmentID, instance.ResourceID, create.DatabaseName))
-	delete(s.databaseIDCache, databaseUID)
+	s.databaseCache.Delete(getDatabaseCacheKey(instance.EnvironmentID, instance.ResourceID, create.DatabaseName))
+	s.databaseIDCache.Delete(databaseUID)
 	if _, err = s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID}); err != nil {
 		return err
 	}
@@ -406,7 +321,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		api.SystemBotID,
 		api.SystemBotID,
 		instanceUID,
-		api.DefaultProjectID,
+		api.DefaultProjectUID,
 		create.DatabaseName,
 		create.CharacterSet,
 		create.Collation,
@@ -491,8 +406,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 
 	// Invalidate and update the cache.
-	delete(s.databaseCache, getDatabaseCacheKey(instance.EnvironmentID, instance.ResourceID, create.DatabaseName))
-	delete(s.databaseIDCache, databaseUID)
+	s.databaseCache.Delete(getDatabaseCacheKey(instance.EnvironmentID, instance.ResourceID, create.DatabaseName))
+	s.databaseIDCache.Delete(databaseUID)
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
@@ -556,8 +471,8 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	}
 
 	// Invalidate and update the cache.
-	delete(s.databaseCache, getDatabaseCacheKey(patch.EnvironmentID, patch.InstanceID, patch.DatabaseName))
-	delete(s.databaseIDCache, databaseUID)
+	s.databaseCache.Delete(getDatabaseCacheKey(patch.EnvironmentID, patch.InstanceID, patch.DatabaseName))
+	s.databaseIDCache.Delete(databaseUID)
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
@@ -581,9 +496,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
 	}
-	// Don't return databases from deleted environments or instances.
-	where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
-	where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
 
 	var databaseMessages []*DatabaseMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
@@ -647,6 +563,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			}
 			databaseMessage.Labels[keys[i].String] = values[i].String
 		}
+		// System default environment label.
+		// The value of bb.environment is resource ID of the environment.
+		databaseMessage.Labels[api.EnvironmentLabelKey] = databaseMessage.EnvironmentID
+
 		databaseMessages = append(databaseMessages, &databaseMessage)
 	}
 

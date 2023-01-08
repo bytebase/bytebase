@@ -44,7 +44,7 @@ func (ctl *controller) getInstanceByID(instanceID int) (*api.Instance, error) {
 	return instance, nil
 }
 
-func (ctl *controller) getInstanceMigrationHistory(find db.MigrationHistoryFind) ([]*api.MigrationHistory, error) {
+func (ctl *controller) getInstanceMigrationHistory(instanceID int, find db.MigrationHistoryFind) ([]*api.MigrationHistory, error) {
 	params := make(map[string]string)
 	if find.Database != nil {
 		params["database"] = *find.Database
@@ -55,7 +55,7 @@ func (ctl *controller) getInstanceMigrationHistory(find db.MigrationHistoryFind)
 	if find.Limit != nil {
 		params["limit"] = fmt.Sprintf("%d", *find.Limit)
 	}
-	body, err := ctl.get(fmt.Sprintf("/instance/%v/migration/history", *find.ID), params)
+	body, err := ctl.get(fmt.Sprintf("/instance/%d/migration/history", instanceID), params)
 	if err != nil {
 		return nil, err
 	}

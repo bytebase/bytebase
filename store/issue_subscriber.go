@@ -115,7 +115,7 @@ func (s *Store) createIssueSubscriberRaw(ctx context.Context, create *api.IssueS
 
 // findIssueSubscriberRaw retrieves a list of issueSubscribers based on find.
 func (s *Store) findIssueSubscriberRaw(ctx context.Context, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

@@ -188,18 +188,18 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		// Gets principal id from the context.
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
 
-		member, err := s.store.GetMemberByPrincipalID(ctx, principalID)
+		user, err := s.store.GetUserByID(ctx, principalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)
 		}
-		if member == nil {
+		if user == nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("User ID is not a member: %d", principalID))
 		}
-		if member.RowStatus == api.Archived {
+		if user.MemberDeleted {
 			return echo.NewHTTPError(http.StatusUnauthorized, "This user has been deactivated by the admin")
 		}
 
-		role := member.Role
+		role := user.Role
 		// If admin feature is not enabled, then we treat all user as OWNER.
 		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
 			role = api.Owner

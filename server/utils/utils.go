@@ -69,9 +69,9 @@ type GhostConfig struct {
 }
 
 // GetGhostConfig returns a gh-ost configuration for migration.
-func GetGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.InstanceUser, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
+func GetGhostConfig(task *api.Task, dataSource *api.DataSource, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
 	var isAWS bool
-	for _, user := range userList {
+	for _, user := range instanceUsers {
 		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
 			isAWS = true
 			break
@@ -242,23 +242,19 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 
 // GetDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The matrix will include the stage even if the stage has no database.
-func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*api.Database) ([][]*api.Database, error) {
-	var matrix [][]*api.Database
+func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
+	var matrix [][]*store.DatabaseMessage
 
-	// idToLabels maps databaseID -> label.Key -> label.Value
+	// idToLabels maps databaseID -> label key -> label value
 	idToLabels := make(map[int]map[string]string)
-	databaseMap := make(map[int]*api.Database)
+	databaseMap := make(map[int]*store.DatabaseMessage)
 	for _, database := range databaseList {
-		databaseMap[database.ID] = database
-		if _, ok := idToLabels[database.ID]; !ok {
-			idToLabels[database.ID] = make(map[string]string)
+		databaseMap[database.UID] = database
+		if _, ok := idToLabels[database.UID]; !ok {
+			idToLabels[database.UID] = make(map[string]string)
 		}
-		var labelList []*api.DatabaseLabel
-		if err := json.Unmarshal([]byte(database.Labels), &labelList); err != nil {
-			return nil, err
-		}
-		for _, label := range labelList {
-			idToLabels[database.ID][label.Key] = label.Value
+		for key, value := range database.Labels {
+			idToLabels[database.UID][key] = value
 		}
 	}
 
@@ -272,25 +268,25 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 		// Loop over databaseList instead of idToLabels to get determinant results.
 		for _, database := range databaseList {
 			// Skip if the database is already in a stage.
-			if _, ok := idsSeen[database.ID]; ok {
+			if _, ok := idsSeen[database.UID]; ok {
 				continue
 			}
 
-			labels := idToLabels[database.ID]
+			labels := idToLabels[database.UID]
 			if isMatchExpressions(labels, deployment.Spec.Selector.MatchExpressions) {
-				matchedDatabaseList = append(matchedDatabaseList, database.ID)
-				idsSeen[database.ID] = true
+				matchedDatabaseList = append(matchedDatabaseList, database.UID)
+				idsSeen[database.UID] = true
 			}
 		}
 
-		var databaseList []*api.Database
+		var databaseList []*store.DatabaseMessage
 		for _, id := range matchedDatabaseList {
 			databaseList = append(databaseList, databaseMap[id])
 		}
 		// sort databases in stage based on IDs.
 		if len(databaseList) > 0 {
 			sort.Slice(databaseList, func(i, j int) bool {
-				return databaseList[i].ID < databaseList[j].ID
+				return databaseList[i].UID < databaseList[j].UID
 			})
 		}
 

@@ -6,9 +6,6 @@ export type Bookmark = {
 
   // Standard fields
   creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Domain specific fields
   name: string;

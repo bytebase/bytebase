@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/plugin/parser"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -196,8 +197,8 @@ func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases(ctx context.Context) ([]*pgDatabaseSchema, error) {
-	var dbs []*pgDatabaseSchema
+func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseMetadata, error) {
+	var databases []*storepb.DatabaseMetadata
 	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
 	if err != nil {
 		return nil, err
@@ -205,16 +206,16 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*pgDatabaseSchema, er
 	defer rows.Close()
 
 	for rows.Next() {
-		var d pgDatabaseSchema
-		if err := rows.Scan(&d.name, &d.encoding, &d.collate); err != nil {
+		database := &storepb.DatabaseMetadata{}
+		if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
 			return nil, err
 		}
-		dbs = append(dbs, &d)
+		databases = append(databases, database)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return dbs, nil
+	return databases, nil
 }
 
 // getVersion gets the version of Postgres server.
@@ -256,7 +257,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				}
 				exist := false
 				for _, database := range databases {
-					if database.name == databaseName {
+					if database.Name == databaseName {
 						exist = true
 						break
 					}

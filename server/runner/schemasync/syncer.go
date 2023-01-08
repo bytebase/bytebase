@@ -5,12 +5,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -62,7 +60,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 			s.syncAllDatabases(ctx, nil /* instanceID */)
 		case instance := <-s.stateCfg.InstanceDatabaseSyncChan:
 			// Sync all databases for instance.
-			s.syncAllDatabases(ctx, &instance.ID)
+			s.syncAllDatabases(ctx, instance)
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
@@ -108,7 +106,7 @@ func (s *Syncer) syncAllInstances(ctx context.Context) {
 	instanceWG.Wait()
 }
 
-func (s *Syncer) syncAllDatabases(ctx context.Context, instanceID *int) {
+func (s *Syncer) syncAllDatabases(ctx context.Context, instance *api.Instance) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -119,45 +117,48 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instanceID *int) {
 		}
 	}()
 
-	okSyncStatus := api.OK
-	databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-		InstanceID: instanceID,
-		SyncStatus: &okSyncStatus,
-	})
+	find := &store.FindDatabaseMessage{}
+	if instance != nil {
+		find.EnvironmentID = &instance.Environment.ResourceID
+		find.InstanceID = &instance.ResourceID
+	}
+	databases, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
 		log.Debug("Failed to find databases to sync",
 			zap.String("error", err.Error()))
 		return
 	}
 
-	instanceMap := make(map[int][]*api.Database)
-	for _, database := range databaseList {
+	instanceMap := make(map[string][]*store.DatabaseMessage)
+	for _, database := range databases {
+		if database.SyncState != api.OK {
+			continue
+		}
 		instanceMap[database.InstanceID] = append(instanceMap[database.InstanceID], database)
 	}
 
 	var instanceWG sync.WaitGroup
 	for _, databaseList := range instanceMap {
 		instanceWG.Add(1)
-		go func(databaseList []*api.Database) {
+		go func(databaseList []*store.DatabaseMessage) {
 			defer instanceWG.Done()
 
 			if len(databaseList) == 0 {
 				return
 			}
-			instance := databaseList[0].Instance
+			instanceID := databaseList[0].InstanceID
 			for _, database := range databaseList {
 				log.Debug("Sync database schema",
-					zap.String("instance", instance.Name),
-					zap.String("database", database.Name),
-					zap.Int64("lastSuccessfulSyncTs", database.LastSuccessfulSyncTs),
+					zap.String("instance", instanceID),
+					zap.String("database", database.DatabaseName),
+					zap.Int64("lastSuccessfulSyncTs", database.SuccessfulSyncTimeTs),
 				)
 				// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
 				// We don't force dump database schema because it's rarely changed till the metadata is changed.
 				if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 					log.Debug("Failed to sync database schema",
-						zap.Int("instanceID", instance.ID),
-						zap.String("instanceName", instance.Name),
-						zap.String("databaseName", database.Name),
+						zap.String("instance", instanceID),
+						zap.String("databaseName", database.DatabaseName),
 						zap.Error(err))
 				}
 			}
@@ -192,49 +193,22 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 		instance.EngineVersion = instanceMeta.Version
 	}
 
-	instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
+	var instanceUsers []*store.InstanceUserMessage
+	for _, instanceUser := range instanceMeta.InstanceRoles {
+		instanceUsers = append(instanceUsers, &store.InstanceUserMessage{
+			Name:  instanceUser.Name,
+			Grant: instanceUser.Grant,
+		})
 	}
-
-	// Upsert user found in the instance
-	for _, user := range instanceMeta.UserList {
-		userUpsert := &api.InstanceUserUpsert{
-			CreatorID:  api.SystemBotID,
-			InstanceID: instance.ID,
-			Name:       user.Name,
-			Grant:      user.Grant,
-		}
-		if _, err := s.store.UpsertInstanceUser(ctx, userUpsert); err != nil {
-			return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to upsert user", instance.Name)
-		}
-	}
-
-	// Delete user no longer found in the instance
-	for _, user := range instanceUserList {
-		found := false
-		for _, dbUser := range instanceMeta.UserList {
-			if user.Name == dbUser.Name {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			userDelete := &api.InstanceUserDelete{
-				ID: user.ID,
-			}
-			if err := s.store.DeleteInstanceUser(ctx, userDelete); err != nil {
-				return nil, errors.Wrapf(err, "failed to sync user for instance: %s. Failed to delete user: %s", instance.Name, user.Name)
-			}
-		}
+	if err := s.store.UpsertInstanceUsers(ctx, instance.ID, instanceUsers); err != nil {
+		return nil, err
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
 	}
-	for _, databaseMetadata := range instanceMeta.DatabaseList {
+	for _, databaseMetadata := range instanceMeta.Databases {
 		exist := false
 		for _, database := range databases {
 			if database.DatabaseName == databaseMetadata.Name {
@@ -258,7 +232,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 
 	for _, database := range databases {
 		exist := false
-		for _, databaseMetadata := range instanceMeta.DatabaseList {
+		for _, databaseMetadata := range instanceMeta.Databases {
 			if database.DatabaseName == databaseMetadata.Name {
 				exist = true
 				break
@@ -278,21 +252,32 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 	}
 
 	var databaseList []string
-	for _, database := range instanceMeta.DatabaseList {
+	for _, database := range instanceMeta.Databases {
 		databaseList = append(databaseList, database.Name)
 	}
 	return databaseList, nil
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *api.Database, force bool) error {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) error {
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+	if err != nil {
+		return err
+	}
+	if instance == nil {
+		return errors.Errorf("instance %q not found", database.InstanceID)
+	}
+	composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
+	if err != nil {
+		return err
+	}
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, composedInstance, database.DatabaseName)
 	if err != nil {
 		return err
 	}
 	defer driver.Close(ctx)
 	// Sync database schema
-	databaseMetadata, err := driver.SyncDBSchema(ctx, database.Name)
+	databaseMetadata, err := driver.SyncDBSchema(ctx, database.DatabaseName)
 	if err != nil {
 		return err
 	}
@@ -311,23 +296,23 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *api.Database,
 	syncStatus := api.OK
 	ts := time.Now().Unix()
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		EnvironmentID:        database.Instance.Environment.ResourceID,
-		InstanceID:           database.Instance.ResourceID,
-		DatabaseName:         database.Name,
+		EnvironmentID:        database.EnvironmentID,
+		InstanceID:           database.InstanceID,
+		DatabaseName:         database.DatabaseName,
 		SyncState:            &syncStatus,
 		SuccessfulSyncTimeTs: &ts,
 		SchemaVersion:        patchSchemaVersion,
 		CharacterSet:         &databaseMetadata.CharacterSet,
 		Collation:            &databaseMetadata.Collation,
 	}, api.SystemBotID); err != nil {
-		return errors.Errorf("failed to update database %q for instance %q", database.Name, database.Instance.Name)
+		return errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	return syncDBSchema(ctx, s.store, database, databaseMetadata, driver, force)
 }
 
-func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Database, databaseMetadata *storepb.DatabaseMetadata, driver db.Driver, force bool) error {
-	dbSchema, err := stores.GetDBSchema(ctx, database.ID)
+func syncDBSchema(ctx context.Context, stores *store.Store, database *store.DatabaseMessage, databaseMetadata *storepb.DatabaseMetadata, driver db.Driver, force bool) error {
+	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return err
 	}
@@ -345,13 +330,13 @@ func syncDBSchema(ctx context.Context, stores *store.Store, database *api.Databa
 		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
 		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
 			var schemaBuf bytes.Buffer
-			if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+			if _, err := driver.Dump(ctx, database.DatabaseName, &schemaBuf, true /* schemaOnly */); err != nil {
 				return err
 			}
 			rawDump = schemaBuf.Bytes()
 		}
 
-		if err := stores.UpsertDBSchema(ctx, database.ID, &store.DBSchema{
+		if err := stores.UpsertDBSchema(ctx, database.UID, &store.DBSchema{
 			Metadata: databaseMetadata,
 			Schema:   rawDump,
 		}, api.SystemBotID); err != nil {

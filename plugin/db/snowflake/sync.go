@@ -22,8 +22,7 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
-	// Query user info
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
 		return nil, err
 	}
@@ -33,7 +32,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 
-	userList, err := driver.getUserList(ctx)
+	instanceRoles, err := driver.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,30 +43,23 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		return nil, err
 	}
 
-	var databaseList []db.DatabaseMeta
+	var filteredDatabases []*storepb.DatabaseMetadata
 	for _, database := range databases {
 		if database == bytebaseDatabase {
 			continue
 		}
-
-		databaseList = append(
-			databaseList,
-			db.DatabaseMeta{
-				Name: database,
-			},
-		)
+		filteredDatabases = append(filteredDatabases, &storepb.DatabaseMetadata{Name: database})
 	}
 
-	return &db.InstanceMeta{
-		Version:      version,
-		UserList:     userList,
-		DatabaseList: databaseList,
+	return &db.InstanceMetadata{
+		Version:       version,
+		InstanceRoles: instanceRoles,
+		Databases:     filteredDatabases,
 	}, nil
 }
 
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*storepb.DatabaseMetadata, error) {
-	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
 		return nil, err
 	}
@@ -117,68 +109,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	return databaseMetadata, nil
-}
-
-func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
-	grantQuery := `
-		SELECT
-			GRANTEE_NAME,
-			ROLE
-		FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_USERS
-	`
-	grants := make(map[string][]string)
-
-	grantRows, err := driver.db.QueryContext(ctx, grantQuery)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, grantQuery)
-	}
-	defer grantRows.Close()
-
-	for grantRows.Next() {
-		var name, role string
-		if err := grantRows.Scan(
-			&name,
-			&role,
-		); err != nil {
-			return nil, err
-		}
-		grants[name] = append(grants[name], role)
-	}
-	if err := grantRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, grantQuery)
-	}
-
-	// Query user info
-	userQuery := `
-	  SELECT
-			name
-		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
-	`
-	var userList []db.User
-	userRows, err := driver.db.QueryContext(ctx, userQuery)
-
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, userQuery)
-	}
-	defer userRows.Close()
-
-	for userRows.Next() {
-		var name string
-		if err := userRows.Scan(
-			&name,
-		); err != nil {
-			return nil, err
-		}
-
-		userList = append(userList, db.User{
-			Name:  name,
-			Grant: strings.Join(grants[name], ", "),
-		})
-	}
-	if err := userRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, userQuery)
-	}
-	return userList, nil
 }
 
 func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ViewMetadata, error) {

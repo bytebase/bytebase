@@ -882,8 +882,6 @@
     "last-successful-sync": "Last successful sync",
     "search-database-name": "Search database name",
     "search-database": "Search database",
-    "restored-from": "Restored from ",
-    "database-name-is-restored-from-another-database-backup": "{0} is restored from another database backup",
     "database-backup": "database backup",
     "transfer-project": "Transfer Project",
     "alter-schema": "Alter Schema",

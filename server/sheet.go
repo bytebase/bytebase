@@ -238,9 +238,9 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 // SheetInfo represents the sheet related information from sheetPathTemplate.
 type SheetInfo struct {
-	EnvironmentName string
-	DatabaseName    string
-	SheetName       string
+	EnvironmentID string
+	DatabaseName  string
+	SheetName     string
 }
 
 // parseSheetInfo matches sheetPath against sheetPathTemplate. If sheetPath matches, then it will derive SheetInfo from the sheetPath.
@@ -270,7 +270,7 @@ func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, err
 		if index >= 0 {
 			switch placeholder {
 			case "ENV_NAME":
-				sheetInfo.EnvironmentName = matchList[index]
+				sheetInfo.EnvironmentID = matchList[index]
 			case "DB_NAME":
 				sheetInfo.DatabaseName = matchList[index]
 			case "NAME":

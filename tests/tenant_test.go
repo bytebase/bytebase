@@ -153,12 +153,11 @@ func TestTenant(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("update schema for database %q", databaseName),
-		Type:        api.IssueDatabaseSchemaUpdate,
-		Description: fmt.Sprintf("This updates the schema of database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("update schema for database %q", databaseName),
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   fmt.Sprintf("This updates the schema of database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -185,7 +184,7 @@ func TestTenant(t *testing.T) {
 	hm1 := map[string]bool{}
 	hm2 := map[string]bool{}
 	for _, instance := range instances {
-		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
+		histories, err := ctl.getInstanceMigrationHistory(instance.ID, db.MigrationHistoryFind{Database: &databaseName})
 		a.NoError(err)
 		a.Equal(2, len(histories))
 		a.NotEqual(histories[0].Version, "")
@@ -482,8 +481,8 @@ func TestTenantVCS(t *testing.T) {
 			hm2 := map[string]bool{}
 			for _, instance := range instances {
 				histories, err := ctl.getInstanceMigrationHistory(
+					instance.ID,
 					db.MigrationHistoryFind{
-						ID:       &instance.ID,
 						Database: &databaseName,
 					},
 				)
@@ -617,12 +616,11 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        "update schema for tenants",
-		Type:        api.IssueDatabaseSchemaUpdate,
-		Description: "This updates the schema of tenant databases.",
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          "update schema for tenants",
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   "This updates the schema of tenant databases.",
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -936,8 +934,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				histories, err := ctl.getInstanceMigrationHistory(
+					instance.ID,
 					db.MigrationHistoryFind{
-						ID:       &instance.ID,
 						Database: &databaseName,
 					},
 				)
@@ -951,8 +949,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				histories, err := ctl.getInstanceMigrationHistory(
+					instance.ID,
 					db.MigrationHistoryFind{
-						ID:       &instance.ID,
 						Database: &databaseName,
 					},
 				)
@@ -1162,7 +1160,7 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 										{
 											Key:      api.EnvironmentLabelKey,
 											Operator: api.InOperatorType,
-											Values:   []string{"Test"},
+											Values:   []string{"test"},
 										},
 									},
 								},
@@ -1244,8 +1242,8 @@ func TestTenantVCSDatabaseNameTemplate_Empty(t *testing.T) {
 				tenant := fmt.Sprintf("tenant%d", i)
 				databaseName := baseDatabaseName + "_" + tenant
 				histories, err := ctl.getInstanceMigrationHistory(
+					instance.ID,
 					db.MigrationHistoryFind{
-						ID:       &instance.ID,
 						Database: &databaseName,
 					},
 				)
@@ -1446,7 +1444,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 										{
 											Key:      api.EnvironmentLabelKey,
 											Operator: api.InOperatorType,
-											Values:   []string{"Test"},
+											Values:   []string{"test"},
 										},
 									},
 								},
@@ -1552,8 +1550,8 @@ statement: |
 
 			// Query migration history, only the database of the first tenant should be touched
 			histories, err := ctl.getInstanceMigrationHistory(
+				testInstances[0].ID,
 				db.MigrationHistoryFind{
-					ID:       &testInstances[0].ID,
 					Database: &databases[0].Name,
 				},
 			)
@@ -1562,8 +1560,8 @@ statement: |
 			require.Equal(t, histories[0].Version, "ver2")
 
 			histories, err = ctl.getInstanceMigrationHistory(
+				testInstances[1].ID,
 				db.MigrationHistoryFind{
-					ID:       &testInstances[1].ID,
 					Database: &databases[1].Name,
 				},
 			)

@@ -16,12 +16,6 @@ import (
 type settingRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Domain specific fields
 	Name        api.SettingName
 	Value       string
@@ -33,12 +27,6 @@ type settingRaw struct {
 func (raw *settingRaw) toSetting() *api.Setting {
 	return &api.Setting{
 		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		// Domain specific fields
 		Name:        raw.Name,
@@ -53,11 +41,7 @@ func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.Setting
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to create Setting with SettingCreate[%+v]", create)
 	}
-	setting, err := s.composeSetting(ctx, settingRaw)
-	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to compose Setting with settingRaw[%+v]", settingRaw)
-	}
-	return setting, created, nil
+	return settingRaw.toSetting(), created, nil
 }
 
 // FindSetting finds a list of Setting instances.
@@ -68,11 +52,7 @@ func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.
 	}
 	var settingList []*api.Setting
 	for _, raw := range settingRawList {
-		setting, err := s.composeSetting(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Setting with settingRaw[%+v]", raw)
-		}
-		settingList = append(settingList, setting)
+		settingList = append(settingList, raw.toSetting())
 	}
 	return settingList, nil
 }
@@ -86,11 +66,7 @@ func (s *Store) GetSetting(ctx context.Context, find *api.SettingFind) (*api.Set
 	if settingRaw == nil {
 		return nil, nil
 	}
-	setting, err := s.composeSetting(ctx, settingRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Setting with settingRaw[%+v]", settingRaw)
-	}
-	return setting, nil
+	return settingRaw.toSetting(), nil
 }
 
 // PatchSetting patches an instance of Setting.
@@ -99,34 +75,12 @@ func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Setting with SettingPatch[%+v]", patch)
 	}
-	setting, err := s.composeSetting(ctx, settingRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Setting with settingRaw[%+v]", settingRaw)
-	}
-	return setting, nil
+	return settingRaw.toSetting(), nil
 }
 
 //
 // private functions
 //
-
-func (s *Store) composeSetting(ctx context.Context, raw *settingRaw) (*api.Setting, error) {
-	setting := raw.toSetting()
-
-	creator, err := s.GetPrincipalByID(ctx, setting.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	setting.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, setting.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	setting.Updater = updater
-
-	return setting, nil
-}
 
 // createSettingRawIfNotExist creates a new setting only if the named setting does not exist.
 // The returned bool means the resource is created successfully.
@@ -164,7 +118,7 @@ func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.Sett
 
 // findSettingRaw retrieves a list of settings based on find.
 func (s *Store) findSettingRaw(ctx context.Context, find *api.SettingFind) ([]*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -180,7 +134,7 @@ func (s *Store) findSettingRaw(ctx context.Context, find *api.SettingFind) ([]*s
 // getSettingRaw retrieves a single setting based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getSettingRaw(ctx context.Context, find *api.SettingFind) (*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -264,10 +218,6 @@ func findSettingImpl(ctx context.Context, tx *Tx, find *api.SettingFind) ([]*set
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			name,
 			value,
 			description
@@ -285,10 +235,6 @@ func findSettingImpl(ctx context.Context, tx *Tx, find *api.SettingFind) ([]*set
 	for rows.Next() {
 		var settingRaw settingRaw
 		if err := rows.Scan(
-			&settingRaw.CreatorID,
-			&settingRaw.CreatedTs,
-			&settingRaw.UpdaterID,
-			&settingRaw.UpdatedTs,
 			&settingRaw.Name,
 			&settingRaw.Value,
 			&settingRaw.Description,
@@ -319,14 +265,10 @@ func patchSettingImpl(ctx context.Context, tx *Tx, patch *api.SettingPatch) (*se
 		UPDATE setting
 		SET `+strings.Join(set, ", ")+`
 		WHERE name = $3
-		RETURNING creator_id, created_ts, updater_id, updated_ts, name, value, description
+		RETURNING name, value, description
 	`,
 		args...,
 	).Scan(
-		&settingRaw.CreatorID,
-		&settingRaw.CreatedTs,
-		&settingRaw.UpdaterID,
-		&settingRaw.UpdatedTs,
 		&settingRaw.Name,
 		&settingRaw.Value,
 		&settingRaw.Description,

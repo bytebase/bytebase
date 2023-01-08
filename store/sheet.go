@@ -280,7 +280,7 @@ func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*shee
 
 // findSheetRaw retrieves a list of sheet based on find.
 func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -297,7 +297,7 @@ func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheet
 // getSheetRaw retrieves a single sheet based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

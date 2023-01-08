@@ -2,23 +2,14 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { ResourceObject, SettingState } from "@/types";
 import { Setting, SettingName } from "@/types/setting";
-import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   setting: ResourceObject,
   includedList: ResourceObject[]
 ): Setting {
   return {
-    ...(setting.attributes as Omit<Setting, "id" | "creator" | "updater">),
+    ...(setting.attributes as Omit<Setting, "id">),
     id: parseInt(setting.id),
-    creator: getPrincipalFromIncludedList(
-      setting.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      setting.relationships!.updater.data,
-      includedList
-    ),
   };
 }
 

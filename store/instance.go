@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -89,13 +88,7 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 	return &api.Instance{
 		ID:         raw.ID,
 		ResourceID: raw.ResourceID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
+		RowStatus:  raw.RowStatus,
 
 		// Related fields
 		EnvironmentID: raw.EnvironmentID,
@@ -168,45 +161,9 @@ func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.I
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
 	}
-	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
-	delete(s.instanceIDCache, instance.ID)
+	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
+	s.instanceIDCache.Delete(instance.ID)
 	return instance, nil
-}
-
-// CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
-// Used by the metric collector.
-func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) ([]*metric.InstanceCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT engine, environment_id, row_status, COUNT(*)
-		FROM instance
-		WHERE (id <= 101 AND updater_id != 1) OR id > 101
-		GROUP BY engine, environment_id, row_status`,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var res []*metric.InstanceCountMetric
-
-	for rows.Next() {
-		var metric metric.InstanceCountMetric
-		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
-			return nil, FormatError(err)
-		}
-		res = append(res, &metric)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return res, nil
 }
 
 // FindInstanceWithDatabaseBackupEnabled finds instances with at least one database who enables backup policy.
@@ -322,18 +279,6 @@ func (s *Store) GetInstanceSslSuiteByID(ctx context.Context, instanceID int) (db
 func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Instance, error) {
 	instance := raw.toInstance()
 
-	creator, err := s.GetPrincipalByID(ctx, instance.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	instance.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, instance.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	instance.Updater = updater
-
 	env, err := s.GetEnvironmentByID(ctx, instance.EnvironmentID)
 	if err != nil {
 		return nil, err
@@ -347,15 +292,6 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 		return nil, err
 	}
 	instance.DataSourceList = dataSourceList
-	for _, dataSource := range instance.DataSourceList {
-		if dataSource.Creator, err = s.GetPrincipalByID(ctx, dataSource.CreatorID); err != nil {
-			return nil, err
-		}
-		if dataSource.Updater, err = s.GetPrincipalByID(ctx, dataSource.UpdaterID); err != nil {
-			return nil, err
-		}
-	}
-
 	return instance, nil
 }
 
@@ -413,7 +349,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (
 
 // findInstanceRaw retrieves a list of instances based on find.
 func (s *Store) findInstanceRaw(ctx context.Context, find *api.InstanceFind) ([]*instanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -441,7 +377,7 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -777,13 +713,13 @@ type FindInstanceMessage struct {
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
 	if find.EnvironmentID != nil && find.ResourceID != nil {
-		if instance, ok := s.instanceCache[getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)]; ok {
-			return instance, nil
+		if instance, ok := s.instanceCache.Load(getInstanceCacheKey(*find.EnvironmentID, *find.ResourceID)); ok {
+			return instance.(*InstanceMessage), nil
 		}
 	}
 	if find.UID != nil {
-		if instance, ok := s.instanceIDCache[*find.UID]; ok {
-			return instance, nil
+		if instance, ok := s.instanceIDCache.Load(*find.UID); ok {
+			return instance.(*InstanceMessage), nil
 		}
 	}
 
@@ -803,7 +739,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 		return nil, nil
 	}
 	if len(instances) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(instances), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %#v, expect 1", len(instances), find)}
 	}
 	instance := instances[0]
 
@@ -811,8 +747,8 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 		return nil, FormatError(err)
 	}
 
-	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
-	s.instanceIDCache[instance.UID] = instance
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }
 
@@ -834,8 +770,8 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	}
 
 	for _, instance := range instances {
-		s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
-		s.instanceIDCache[instance.UID] = instance
+		s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+		s.instanceIDCache.Store(instance.UID, instance)
 	}
 	return instances, nil
 }
@@ -927,8 +863,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		ExternalLink:  instanceCreate.ExternalLink,
 		DataSources:   instanceCreate.DataSources,
 	}
-	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
-	s.instanceIDCache[instance.UID] = instance
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }
 
@@ -1053,8 +989,8 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, FormatError(err)
 	}
 
-	s.instanceCache[getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID)] = instance
-	s.instanceIDCache[instance.UID] = instance
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
 }
 
@@ -1065,6 +1001,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
@@ -1116,39 +1055,4 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	return instanceMessages, nil
-}
-
-// CountInstanceMessage is the message for counting instances.
-type CountInstanceMessage struct {
-	EnvironmentID *string
-}
-
-// CountInstance counts the number of instances.
-func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
-	where, args := []string{"instance.row_status = $1"}, []interface{}{api.Normal}
-	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	query := `
-		SELECT
-			count(1)
-		FROM instance
-		LEFT JOIN environment ON environment.id = instance.environment_id
-		WHERE ` + strings.Join(where, " AND ")
-	var count int
-	if err := tx.QueryRowContext(ctx, query,
-		args...).Scan(&count); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return 0, FormatError(err)
-	}
-	return count, nil
 }

@@ -6,10 +6,6 @@ export type LabelValueType = string;
 export type Label = {
   id: LabelId;
 
-  // Standard fields
-  createdTs: number;
-  updatedTs: number;
-
   // Domain specific fields
   key: LabelKeyType;
   valueList: LabelValueType[];

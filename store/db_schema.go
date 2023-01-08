@@ -19,15 +19,15 @@ type DBSchema struct {
 
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, error) {
-	if dbSchema, ok := s.dbSchemaCache[databaseID]; ok {
-		return dbSchema, nil
+	if dbSchema, ok := s.dbSchemaCache.Load(databaseID); ok {
+		return dbSchema.(*DBSchema), nil
 	}
 
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, databaseID)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -62,7 +62,7 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	}
 	dbSchema.Metadata = &databaseSchema
 
-	s.dbSchemaCache[databaseID] = dbSchema
+	s.dbSchemaCache.Store(databaseID, dbSchema)
 	return dbSchema, nil
 }
 
@@ -107,6 +107,6 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 		return FormatError(err)
 	}
 
-	s.dbSchemaCache[databaseID] = dbSchema
+	s.dbSchemaCache.Store(databaseID, dbSchema)
 	return nil
 }

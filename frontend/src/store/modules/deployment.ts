@@ -10,7 +10,6 @@ import {
   UNKNOWN_ID,
   DeploymentConfigPatch,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   deployment: ResourceObject,
@@ -37,19 +36,8 @@ function convert(
   }
 
   return {
-    ...(deployment.attributes as Omit<
-      DeploymentConfig,
-      "id" | "schedule" | "creator" | "updater"
-    >),
+    ...(deployment.attributes as Omit<DeploymentConfig, "id" | "schedule">),
     id: parseInt(deployment.id, 10),
-    creator: getPrincipalFromIncludedList(
-      deployment.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      deployment.relationships!.updater.data,
-      includedList
-    ),
     schedule,
   };
 }

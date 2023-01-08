@@ -97,7 +97,7 @@ CREATE TABLE book3 (
 							{
 								Key:      api.EnvironmentLabelKey,
 								Operator: api.InOperatorType,
-								Values:   []string{"Test"},
+								Values:   []string{"test"},
 							},
 							{
 								Key:      api.TenantLabelKey,
@@ -115,7 +115,7 @@ CREATE TABLE book3 (
 							{
 								Key:      api.EnvironmentLabelKey,
 								Operator: api.InOperatorType,
-								Values:   []string{"Prod"},
+								Values:   []string{"prod"},
 							},
 							{
 								Key:      api.TenantLabelKey,
@@ -148,6 +148,7 @@ type config struct {
 	dataDir                 string
 	vcsProviderCreator      fake.VCSProviderCreator
 	feishuProverdierCreator fake.FeishuProviderCreator
+	readOnly                bool
 }
 
 var (
@@ -236,7 +237,7 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 		return err
 	}
 	serverPort := getTestPortForEmbeddedPg()
-	profile := getTestProfile(config.dataDir, resourceDirOverride, serverPort, ctl.feishuProvider.APIURL(ctl.feishuURL))
+	profile := getTestProfile(config.dataDir, resourceDirOverride, serverPort, config.readOnly, ctl.feishuProvider.APIURL(ctl.feishuURL))
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -249,13 +250,14 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) error {
 
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func getTestProfile(dataDir, resourceDirOverride string, port int, feishuAPIURL string) componentConfig.Profile {
+func getTestProfile(dataDir, resourceDirOverride string, port int, readOnly bool, feishuAPIURL string) componentConfig.Profile {
 	return componentConfig.Profile{
 		Mode:                 testReleaseMode,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:             port + 1,
 		DatastorePort:        port + 2,
 		PgUser:               "bbtest",
+		Readonly:             readOnly,
 		DataDir:              dataDir,
 		ResourceDirOverride:  resourceDirOverride,
 		AppRunnerInterval:    1 * time.Second,

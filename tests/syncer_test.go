@@ -211,12 +211,11 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("Create sequence for database %q", databaseName),
-		Type:        api.IssueDatabaseSchemaUpdate,
-		Description: fmt.Sprintf("Create sequence of database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("Create sequence for database %q", databaseName),
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   fmt.Sprintf("Create sequence of database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
@@ -491,12 +490,11 @@ func TestSyncerForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
-		ProjectID:   project.ID,
-		Name:        fmt.Sprintf("Create sequence for database %q", databaseName),
-		Type:        api.IssueDatabaseSchemaUpdate,
-		Description: fmt.Sprintf("Create sequence of database %q.", databaseName),
-		// Assign to self.
-		AssigneeID:    project.Creator.ID,
+		ProjectID:     project.ID,
+		Name:          fmt.Sprintf("Create sequence for database %q", databaseName),
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   fmt.Sprintf("Create sequence of database %q.", databaseName),
+		AssigneeID:    api.SystemBotID,
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)

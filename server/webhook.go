@@ -32,6 +32,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/server/component/activity"
 	"github.com/bytebase/bytebase/server/utils"
+	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -333,32 +334,41 @@ func (s *Server) sqlAdviceForFile(
 	// There may exist many databases that match the file name.
 	// We just need to use the first one, which has the SQL review policy and can let us take the check.
 	for _, database := range databases {
-		environmentResourceType := api.PolicyResourceTypeEnvironment
-		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &database.Instance.EnvironmentID})
-		if err != nil {
-			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-				log.Debug("Cannot found SQL review policy in environment", zap.Int("Environment", database.Instance.EnvironmentID), zap.Error(err))
-				continue
-			}
-
-			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", database.Instance.EnvironmentID, err)
-		}
-
-		dbType, err := advisorDB.ConvertToAdvisorDBType(string(database.Instance.Engine))
-		if err != nil {
-			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", database.Instance.Engine, err)
-		}
-
-		catalog, err := s.store.NewCatalog(ctx, database.ID, database.Instance.Engine)
-		if err != nil {
-			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.ID, err)
-		}
-
-		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
 		if err != nil {
 			return nil, err
 		}
-		connection, err := driver.GetDBConnection(ctx, database.Name)
+		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
+		if err != nil {
+			return nil, err
+		}
+		// composedInstance, err := s.store.GetInstanceByID()
+		environmentResourceType := api.PolicyResourceTypeEnvironment
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &composedInstance.EnvironmentID})
+		if err != nil {
+			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+				log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", database.EnvironmentID), zap.Error(err))
+				continue
+			}
+
+			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", instance.EnvironmentID, err)
+		}
+
+		dbType, err := advisorDB.ConvertToAdvisorDBType(string(instance.Engine))
+		if err != nil {
+			return nil, errors.Errorf("Failed to convert database engine type %v to advisor db type with error: %v", instance.Engine, err)
+		}
+
+		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine)
+		if err != nil {
+			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
+		}
+
+		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, composedInstance, database.DatabaseName)
+		if err != nil {
+			return nil, err
+		}
+		connection, err := driver.GetDBConnection(ctx, database.DatabaseName)
 		if err != nil {
 			return nil, err
 		}
@@ -373,7 +383,7 @@ func (s *Server) sqlAdviceForFile(
 		})
 		driver.Close(ctx)
 		if err != nil {
-			return nil, errors.Errorf("Failed to exec the SQL check for database %v with error: %v", database.ID, err)
+			return nil, errors.Errorf("Failed to exec the SQL check for database %v with error: %v", database.UID, err)
 		}
 
 		return adviceList, nil
@@ -867,7 +877,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 	creatorID := api.SystemBotID
 	if email != "" {
-		committerPrincipal, err := s.store.GetPrincipalByEmail(ctx, email)
+		committerPrincipal, err := s.store.GetUserByEmail(ctx, email)
 		if err != nil {
 			log.Warn("Failed to find the principal with committer email, use system bot instead", zap.String("email", email), zap.Error(err))
 		} else if committerPrincipal == nil {
@@ -882,12 +892,19 @@ func (s *Server) getIssueCreatorID(ctx context.Context, email string) int {
 // findProjectDatabases finds the list of databases with given name in the
 // project. If the `envName` is not empty, it will be used as a filter condition
 // for the result list.
-func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*api.Database, error) {
+func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName, envName string) ([]*store.DatabaseMessage, error) {
 	// Retrieve the current schema from the database
-	foundDatabases, err := s.store.FindDatabase(ctx,
-		&api.DatabaseFind{
-			ProjectID: &projectID,
-			Name:      &dbName,
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.Errorf("project %d not found", projectID)
+	}
+	foundDatabases, err := s.store.ListDatabases(ctx,
+		&store.FindDatabaseMessage{
+			ProjectID:    &project.ResourceID,
+			DatabaseName: &dbName,
 		},
 	)
 	if err != nil {
@@ -908,11 +925,11 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	//             	to identify ambiguity.
 
 	// Further filter by environment name if applicable.
-	var filteredDatabases []*api.Database
+	var filteredDatabases []*store.DatabaseMessage
 	if envName != "" {
 		for _, database := range foundDatabases {
-			// Environment name comparison is case insensitive
-			if strings.EqualFold(database.Instance.Environment.Name, envName) {
+			// Environment resource ID comparison is case insensitive
+			if strings.EqualFold(database.EnvironmentID, envName) {
 				filteredDatabases = append(filteredDatabases, database)
 			}
 		}
@@ -924,12 +941,12 @@ func (s *Server) findProjectDatabases(ctx context.Context, projectID int, dbName
 	}
 
 	// In case there are databases with identical name in a project for the same environment.
-	marked := make(map[int]struct{})
+	marked := make(map[string]bool)
 	for _, database := range filteredDatabases {
-		if _, ok := marked[database.Instance.EnvironmentID]; ok {
+		if _, ok := marked[database.EnvironmentID]; ok {
 			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, envName)
 		}
-		marked[database.Instance.EnvironmentID] = struct{}{}
+		marked[database.EnvironmentID] = true
 	}
 	return filteredDatabases, nil
 }
@@ -1029,7 +1046,7 @@ func (s *Server) prepareIssueFromSDLFile(ctx context.Context, repo *api.Reposito
 		migrationDetailList = append(migrationDetailList,
 			&api.MigrationDetail{
 				MigrationType: db.MigrateSDL,
-				DatabaseID:    database.ID,
+				DatabaseID:    database.UID,
 				Statement:     sdl,
 			},
 		)
@@ -1096,7 +1113,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 				migrationDetailList = append(migrationDetailList,
 					&api.MigrationDetail{
 						MigrationType: fileInfo.migrationInfo.Type,
-						DatabaseID:    db.ID,
+						DatabaseID:    db.UID,
 						Statement:     migrationFile.Statement,
 						SchemaVersion: fileInfo.migrationInfo.Version,
 					},
@@ -1119,7 +1136,7 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 			migrationDetailList = append(migrationDetailList,
 				&api.MigrationDetail{
 					MigrationType: fileInfo.migrationInfo.Type,
-					DatabaseID:    database.ID,
+					DatabaseID:    database.UID,
 					Statement:     content,
 					SchemaVersion: fileInfo.migrationInfo.Version,
 				},
@@ -1141,11 +1158,11 @@ func (s *Server) prepareIssueFromFile(ctx context.Context, repo *api.Repository,
 	return nil, nil
 }
 
-func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*api.Database, fileName, schemaVersion, statement string) error {
+func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases []*store.DatabaseMessage, fileName, schemaVersion, statement string) error {
 	// For modified files, we try to update the existing issue's statement.
 	for _, database := range databases {
 		find := &api.TaskFind{
-			DatabaseID: &database.ID,
+			DatabaseID: &database.UID,
 			StatusList: &[]api.TaskStatus{api.TaskPendingApproval, api.TaskFailed},
 			TypeList:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate},
 			Payload:    fmt.Sprintf("payload->>'schemaVersion' = '%s'", schemaVersion),
@@ -1158,7 +1175,7 @@ func (s *Server) tryUpdateTasksFromModifiedFile(ctx context.Context, databases [
 			continue
 		}
 		if len(taskList) > 1 {
-			log.Error("Found more than one pending approval or failed tasks for modified VCS file, should be only one task.", zap.Int("databaseID", database.ID), zap.String("schemaVersion", schemaVersion))
+			log.Error("Found more than one pending approval or failed tasks for modified VCS file, should be only one task.", zap.Int("databaseID", database.UID), zap.String("schemaVersion", schemaVersion))
 			return nil
 		}
 		task := taskList[0]

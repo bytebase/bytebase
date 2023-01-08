@@ -77,7 +77,7 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	}
 	if vcsPushEvent == nil {
 		mi.Source = db.UI
-		creator, err := store.GetPrincipalByID(ctx, task.CreatorID)
+		creator, err := store.GetUserByID(ctx, task.CreatorID)
 		if err != nil {
 			// If somehow we unable to find the principal, we just emit the error since it's not
 			// critical enough to fail the entire operation.
@@ -127,13 +127,13 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
+func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID string, schema string, err error) {
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, databaseName)
 	if err != nil {
-		return 0, "", err
+		return "", "", err
 	}
 	defer driver.Close(ctx)
 
@@ -148,29 +148,29 @@ func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfact
 
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return 0, "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
+		return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
 	}
 	if setup {
-		return 0, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
+		return "", "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
 		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, store)
 		if err != nil {
-			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 		task = updatedTask
 	}
 
 	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
 	if err != nil {
-		return 0, "", err
+		return "", "", err
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
 		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, store, migrationID)
 		if err != nil {
-			return 0, "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
+			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
 		// The runner will periodically scan the map to generate rollback SQL asynchronously.
 		stateCfg.RollbackGenerateMap.Store(updatedTask.ID, updatedTask)
@@ -226,13 +226,13 @@ func setThreadIDAndStartBinlogCoordinate(ctx context.Context, driver db.Driver, 
 	return updatedTask, nil
 }
 
-func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store, migrationID int64) (*api.Task, error) {
+func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver, task *api.Task, store *store.Store, migrationID string) (*api.Task, error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
-	payload.MigrationID = int(migrationID)
+	payload.MigrationID = migrationID
 	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the DB connection")
@@ -265,7 +265,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, driver db.Driver,
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, profile config.Profile, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID string, schema string) (bool, *api.TaskRunResultPayload, error) {
 	databaseName := task.Database.Name
 	issue, err := findIssueByTask(ctx, stores, task)
 	if err != nil {

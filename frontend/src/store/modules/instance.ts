@@ -26,7 +26,6 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { InstanceUser } from "@/types/InstanceUser";
-import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
 import { useDataSourceStore } from "./dataSource";
 import { useSQLStore } from "./sql";
@@ -53,17 +52,9 @@ function convert(
   const instancePartial = {
     ...(instance.attributes as Omit<
       Instance,
-      "id" | "environment" | "dataSourceList" | "creator" | "updater"
+      "id" | "environment" | "dataSourceList"
     >),
     id: parseInt(instance.id),
-    creator: getPrincipalFromIncludedList(
-      instance.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      instance.relationships!.updater.data,
-      includedList
-    ),
     environment,
     dataSourceList: [],
   };
@@ -102,7 +93,7 @@ function convert(
 function convertInstanceUser(instanceUser: ResourceObject): InstanceUser {
   return {
     ...(instanceUser.attributes as Omit<InstanceUser, "id">),
-    id: parseInt(instanceUser.id),
+    id: instanceUser.id,
   };
 }
 
@@ -148,7 +139,7 @@ export const useInstanceStore = defineStore("instance", {
         }
       }
       return list.sort((a: Instance, b: Instance) => {
-        return b.createdTs - a.createdTs;
+        return b.id - a.id;
       });
     },
     getInstanceListByEnvironmentId(

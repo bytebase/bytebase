@@ -14,7 +14,6 @@ import {
   unknown,
 } from "@/types";
 import { usePolicyStore } from "./policy";
-import { getPrincipalFromIncludedList } from "./principal";
 import { environmentName } from "../../utils";
 
 function convert(
@@ -22,19 +21,8 @@ function convert(
   includedList: ResourceObject[]
 ): Environment {
   return {
-    ...(environment.attributes as Omit<
-      Environment,
-      "id" | "creator" | "updater"
-    >),
+    ...(environment.attributes as Omit<Environment, "id">),
     id: parseInt(environment.id),
-    creator: getPrincipalFromIncludedList(
-      environment.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      environment.relationships!.updater.data,
-      includedList
-    ),
   };
 }
 
