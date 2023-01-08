@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
 )
 
 // GetProjectByID gets an instance of Project.
@@ -114,47 +113,11 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 	return composedProject, nil
 }
 
-// CountProjectGroupByTenantModeAndWorkflow counts the number of projects and group by tenant mode and workflow type.
-// Used by the metric collector.
-func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([]*metric.ProjectCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT tenant_mode, workflow_type, row_status, COUNT(*)
-		FROM project
-		GROUP BY tenant_mode, workflow_type, row_status`,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var res []*metric.ProjectCountMetric
-
-	for rows.Next() {
-		var metric metric.ProjectCountMetric
-		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.RowStatus, &metric.Count); err != nil {
-			return nil, FormatError(err)
-		}
-		res = append(res, &metric)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return res, nil
-}
-
 func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*api.Project, error) {
 	composedProject := &api.Project{
 		ID:               project.UID,
 		ResourceID:       project.ResourceID,
 		RowStatus:        api.Normal,
-		CreatorID:        api.SystemBotID,
-		UpdaterID:        api.SystemBotID,
 		Name:             project.Title,
 		Key:              project.Key,
 		WorkflowType:     project.Workflow,
@@ -168,13 +131,6 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 	if project.Deleted {
 		composedProject.RowStatus = api.Archived
 	}
-
-	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	composedProject.Creator = bot
-	composedProject.Updater = bot
 
 	// TODO(d): migrate FindProjectMember to v2.
 	projectMemberList, err := s.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &project.UID})
@@ -230,20 +186,20 @@ type UpdateProjectMessage struct {
 // GetProjectV2 gets project by resource ID.
 func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
 	if find.ResourceID != nil {
-		if project, ok := s.projectCache[*find.ResourceID]; ok {
-			return project, nil
+		if project, ok := s.projectCache.Load(*find.ResourceID); ok {
+			return project.(*ProjectMessage), nil
 		}
 	}
 	if find.UID != nil {
-		if project, ok := s.projectIDCache[*find.UID]; ok {
-			return project, nil
+		if project, ok := s.projectIDCache.Load(*find.UID); ok {
+			return project.(*ProjectMessage), nil
 		}
 	}
 
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -257,7 +213,7 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 		return nil, nil
 	}
 	if len(projects) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(projects), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d projects with filter %+v, expect 1", len(projects), find)}
 	}
 	project := projects[0]
 
@@ -265,14 +221,14 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 		return nil, FormatError(err)
 	}
 
-	s.projectCache[project.ResourceID] = project
-	s.projectIDCache[project.UID] = project
+	s.projectCache.Store(project.ResourceID, project)
+	s.projectIDCache.Store(project.UID, project)
 	return projects[0], nil
 }
 
 // ListProjectV2 lists all projects.
 func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -288,8 +244,8 @@ func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]
 	}
 
 	for _, project := range projects {
-		s.projectCache[project.ResourceID] = project
-		s.projectIDCache[project.UID] = project
+		s.projectCache.Store(project.ResourceID, project)
+		s.projectIDCache.Store(project.UID, project)
 	}
 	return projects, nil
 }
@@ -374,8 +330,8 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, FormatError(err)
 	}
 
-	s.projectCache[project.ResourceID] = project
-	s.projectIDCache[project.UID] = project
+	s.projectCache.Store(project.ResourceID, project)
+	s.projectIDCache.Store(project.UID, project)
 	return project, nil
 }
 
@@ -396,8 +352,8 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 		return nil, FormatError(err)
 	}
 
-	s.projectCache[project.ResourceID] = project
-	s.projectIDCache[project.UID] = project
+	s.projectCache.Store(project.ResourceID, project)
+	s.projectIDCache.Store(project.UID, project)
 	return project, nil
 }
 

@@ -18,12 +18,6 @@ import (
 type projectWebhookRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Related fields
 	ProjectID int
 
@@ -39,12 +33,6 @@ type projectWebhookRaw struct {
 func (raw *projectWebhookRaw) toProjectWebhook() *api.ProjectWebhook {
 	projectWebhook := api.ProjectWebhook{
 		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
 		ProjectID: raw.ProjectID,
@@ -64,11 +52,7 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, create *api.ProjectWeb
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ProjectWebhook with ProjectWebhookCreate[%+v]", create)
 	}
-	projectWebhook, err := s.composeProjectWebhook(ctx, projectWebhookRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ProjectWebhook with projectWebhookRaw[%+v]", projectWebhookRaw)
-	}
-	return projectWebhook, nil
+	return composeProjectWebhook(projectWebhookRaw), nil
 }
 
 // GetProjectWebhookByID gets an instance of ProjectWebhook.
@@ -81,11 +65,7 @@ func (s *Store) GetProjectWebhookByID(ctx context.Context, id int) (*api.Project
 	if projectWebhookRaw == nil {
 		return nil, nil
 	}
-	projectWebhook, err := s.composeProjectWebhook(ctx, projectWebhookRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ProjectWebhook with projectWebhookRaw[%+v]", projectWebhookRaw)
-	}
-	return projectWebhook, nil
+	return composeProjectWebhook(projectWebhookRaw), nil
 }
 
 // FindProjectWebhook finds a list of ProjectWebhook instances.
@@ -96,11 +76,7 @@ func (s *Store) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhook
 	}
 	var projectWebhookList []*api.ProjectWebhook
 	for _, raw := range projectWebhookRawList {
-		projectWebhook, err := s.composeProjectWebhook(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose ProjectWebhook with projectWebhookRaw[%+v]", raw)
-		}
-		projectWebhookList = append(projectWebhookList, projectWebhook)
+		projectWebhookList = append(projectWebhookList, composeProjectWebhook(raw))
 	}
 	return projectWebhookList, nil
 }
@@ -111,11 +87,7 @@ func (s *Store) PatchProjectWebhook(ctx context.Context, patch *api.ProjectWebho
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch ProjectWebhook with ProjectWebhookPatch[%+v]", patch)
 	}
-	projectWebhook, err := s.composeProjectWebhook(ctx, projectWebhookRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ProjectWebhook with projectWebhookRaw[%+v]", projectWebhookRaw)
-	}
-	return projectWebhook, nil
+	return composeProjectWebhook(projectWebhookRaw), nil
 }
 
 // DeleteProjectWebhook deletes an existing projectWebhook by ID.
@@ -141,22 +113,8 @@ func (s *Store) DeleteProjectWebhook(ctx context.Context, delete *api.ProjectWeb
 // private functions
 //
 
-func (s *Store) composeProjectWebhook(ctx context.Context, raw *projectWebhookRaw) (*api.ProjectWebhook, error) {
-	webhook := raw.toProjectWebhook()
-
-	creator, err := s.GetPrincipalByID(ctx, webhook.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	webhook.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, webhook.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	webhook.Updater = updater
-
-	return webhook, nil
+func composeProjectWebhook(raw *projectWebhookRaw) *api.ProjectWebhook {
+	return raw.toProjectWebhook()
 }
 
 // createProjectWebhookRaw creates a new projectWebhook.
@@ -181,7 +139,7 @@ func (s *Store) createProjectWebhookRaw(ctx context.Context, create *api.Project
 
 // findProjectWebhookRaw retrieves a list of projectWebhooks based on find.
 func (s *Store) findProjectWebhookRaw(ctx context.Context, find *api.ProjectWebhookFind) ([]*projectWebhookRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -198,7 +156,7 @@ func (s *Store) findProjectWebhookRaw(ctx context.Context, find *api.ProjectWebh
 // getProjectWebhookRaw retrieves a single projectWebhook based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getProjectWebhookRaw(ctx context.Context, find *api.ProjectWebhookFind) (*projectWebhookRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -252,7 +210,7 @@ func createProjectWebhookImpl(ctx context.Context, tx *Tx, create *api.ProjectWe
 			activity_list
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, type, name, url, activity_list
+		RETURNING id, project_id, type, name, url, activity_list
 	`
 	var projectWebhookRaw projectWebhookRaw
 	var txtArray pgtype.TextArray
@@ -266,10 +224,6 @@ func createProjectWebhookImpl(ctx context.Context, tx *Tx, create *api.ProjectWe
 		create.ActivityList,
 	).Scan(
 		&projectWebhookRaw.ID,
-		&projectWebhookRaw.CreatorID,
-		&projectWebhookRaw.CreatedTs,
-		&projectWebhookRaw.UpdaterID,
-		&projectWebhookRaw.UpdatedTs,
 		&projectWebhookRaw.ProjectID,
 		&projectWebhookRaw.Type,
 		&projectWebhookRaw.Name,
@@ -300,10 +254,6 @@ func findProjectWebhookImpl(ctx context.Context, tx *Tx, find *api.ProjectWebhoo
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			project_id,
 			type,
 			name,
@@ -326,10 +276,6 @@ func findProjectWebhookImpl(ctx context.Context, tx *Tx, find *api.ProjectWebhoo
 
 		if err := rows.Scan(
 			&projectWebhookRaw.ID,
-			&projectWebhookRaw.CreatorID,
-			&projectWebhookRaw.CreatedTs,
-			&projectWebhookRaw.UpdaterID,
-			&projectWebhookRaw.UpdatedTs,
 			&projectWebhookRaw.ProjectID,
 			&projectWebhookRaw.Type,
 			&projectWebhookRaw.Name,
@@ -385,15 +331,11 @@ func patchProjectWebhookImpl(ctx context.Context, tx *Tx, patch *api.ProjectWebh
 		UPDATE project_webhook
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, type, name, url, activity_list
+		RETURNING id, project_id, type, name, url, activity_list
 	`, len(args)),
 		args...,
 	).Scan(
 		&projectWebhookRaw.ID,
-		&projectWebhookRaw.CreatorID,
-		&projectWebhookRaw.CreatedTs,
-		&projectWebhookRaw.UpdaterID,
-		&projectWebhookRaw.UpdatedTs,
 		&projectWebhookRaw.ProjectID,
 		&projectWebhookRaw.Type,
 		&projectWebhookRaw.Name,

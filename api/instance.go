@@ -8,17 +8,9 @@ import (
 
 // Instance is the API message for an instance.
 type Instance struct {
-	ID         int `jsonapi:"primary,instance"`
-	ResourceID string
-
-	// Standard fields
-	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+	ID         int       `jsonapi:"primary,instance"`
+	ResourceID string    `jsonapi:"attr,resourceId"`
+	RowStatus  RowStatus `jsonapi:"attr,rowStatus"`
 
 	// Related fields
 	EnvironmentID  int
@@ -141,7 +133,7 @@ type InstanceMigration struct {
 // MigrationHistory is stored in the instance instead of our own data file, so the field
 // format is a bit different from the standard format.
 type MigrationHistory struct {
-	ID int `jsonapi:"primary,migrationHistory"`
+	ID string `jsonapi:"primary,migrationHistory"`
 
 	// Standard fields
 	Creator   string `jsonapi:"attr,creator"`

@@ -89,7 +89,7 @@ func (s *Store) createTaskDAGRaw(ctx context.Context, create *api.TaskDAGCreate)
 }
 
 func (s *Store) findTaskDAGRawList(ctx context.Context, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

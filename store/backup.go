@@ -49,9 +49,7 @@ func (raw *backupRaw) toBackup() *api.Backup {
 
 		// Standard fields
 		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
 		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
@@ -123,11 +121,7 @@ func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*ap
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Backup with BackupCreate[%+v]", create)
 	}
-	backup, err := s.composeBackup(ctx, backupRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Backup with backupRaw[%+v]", backupRaw)
-	}
-	return backup, nil
+	return composeBackup(backupRaw), nil
 }
 
 // GetBackupByID gets an instance of Backup by ID.
@@ -139,11 +133,7 @@ func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) 
 	if backupRaw == nil {
 		return nil, nil
 	}
-	backupSetting, err := s.composeBackup(ctx, backupRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Backup with backupRaw[%+v]", backupRaw)
-	}
-	return backupSetting, nil
+	return composeBackup(backupRaw), nil
 }
 
 // FindBackup finds a list of Backup instances.
@@ -154,11 +144,7 @@ func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Ba
 	}
 	var backupList []*api.Backup
 	for _, raw := range backupRawList {
-		backup, err := s.composeBackup(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Backup with backupRaw[%+v]", raw)
-		}
-		backupList = append(backupList, backup)
+		backupList = append(backupList, composeBackup(raw))
 	}
 	return backupList, nil
 }
@@ -169,11 +155,7 @@ func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.B
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Backup with BackupPatch[%+v]", patch)
 	}
-	backup, err := s.composeBackup(ctx, backupRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Backup with backupRaw[%+v]", backupRaw)
-	}
-	return backup, nil
+	return composeBackup(backupRaw), nil
 }
 
 // FindBackupSetting finds a list of BackupSetting of databases in the instance.
@@ -276,22 +258,8 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 //
 
 // composeBackup composes an instance of Backup by backupRaw.
-func (s *Store) composeBackup(ctx context.Context, raw *backupRaw) (*api.Backup, error) {
-	backup := raw.toBackup()
-
-	creator, err := s.GetPrincipalByID(ctx, backup.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	backup.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, backup.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	backup.Updater = updater
-
-	return backup, nil
+func composeBackup(raw *backupRaw) *api.Backup {
+	return raw.toBackup()
 }
 
 func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw) (*api.BackupSetting, error) {
@@ -345,7 +313,7 @@ func (s *Store) createBackupRaw(ctx context.Context, create *api.BackupCreate) (
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error) {
 	find := &api.BackupFind{ID: &id}
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -366,7 +334,7 @@ func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error
 
 // findBackupRaw retrieves a list of backups based on find.
 func (s *Store) findBackupRaw(ctx context.Context, find *api.BackupFind) ([]*backupRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

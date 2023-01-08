@@ -184,7 +184,7 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 
 // findActivityRaw retrieves a list of activities based on the find condition.
 func (s *Store) findActivityRaw(ctx context.Context, find *api.ActivityFind) ([]*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -202,7 +202,7 @@ func (s *Store) findActivityRaw(ctx context.Context, find *api.ActivityFind) ([]
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getActivityRawByID(ctx context.Context, id int) (*activityRaw, error) {
 	find := &api.ActivityFind{ID: &id}
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

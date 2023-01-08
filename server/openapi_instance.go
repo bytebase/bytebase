@@ -35,16 +35,18 @@ func (s *Server) updateInstanceDatabase(c echo.Context) error {
 	}
 	instance := instances[0]
 
-	databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &instance.ID, Name: &databaseName})
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &instance.Environment.ResourceID,
+		InstanceID:    &instance.ResourceID,
+		DatabaseName:  &databaseName,
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find database").SetInternal(err)
 	}
-	if len(databases) != 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Found %v databases with name %q but expecting one", len(databases), databaseName)
+	if database == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "database %q not found", databaseName)
 	}
-	database := databases[0]
 
-	var patchProjectID *int
 	if instanceDatabasePatch.Project != nil {
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: instanceDatabasePatch.Project})
 		if err != nil {
@@ -53,11 +55,16 @@ func (s *Server) updateInstanceDatabase(c echo.Context) error {
 		if project == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "project %q not found", *instanceDatabasePatch.Project)
 		}
-		patchProjectID = &project.UID
-	}
-	updaterID := c.Get(getPrincipalIDContextKey()).(int)
-	if _, err := s.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: updaterID, ProjectID: patchProjectID}); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Failed to patch database project").SetInternal(err)
+
+		updaterID := c.Get(getPrincipalIDContextKey()).(int)
+		if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+			EnvironmentID: database.EnvironmentID,
+			InstanceID:    database.InstanceID,
+			DatabaseName:  database.DatabaseName,
+			ProjectID:     &project.ResourceID,
+		}, updaterID); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to patch database project").SetInternal(err)
+		}
 	}
 	return c.JSON(http.StatusOK, "")
 }

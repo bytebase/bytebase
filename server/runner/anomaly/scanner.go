@@ -126,17 +126,14 @@ func (s *Scanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 						s.checkInstanceAnomaly(ctx, instance)
 
-						databaseFind := &api.DatabaseFind{
-							InstanceID: &instance.ID,
-						}
-						dbList, err := s.store.FindDatabase(ctx, databaseFind)
+						databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.Environment.ResourceID, InstanceID: &instance.ResourceID})
 						if err != nil {
 							log.Error("Failed to retrieve database list",
 								zap.String("instance", instance.Name),
 								zap.Error(err))
 							return
 						}
-						for _, database := range dbList {
+						for _, database := range databases {
 							s.checkDatabaseAnomaly(ctx, instance, database)
 							s.checkBackupAnomaly(ctx, instance, database, backupPlanPolicyMap)
 						}
@@ -230,8 +227,8 @@ func (s *Scanner) checkInstanceAnomaly(ctx context.Context, instance *api.Instan
 	}
 }
 
-func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *api.Database) {
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.Name)
+func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instance, database *store.DatabaseMessage) {
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
 
 	// Check connection
 	if err != nil {
@@ -242,20 +239,20 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instan
 		if err != nil {
 			log.Error("Failed to marshal anomaly payload",
 				zap.String("instance", instance.Name),
-				zap.String("database", database.Name),
+				zap.String("database", database.DatabaseName),
 				zap.String("type", string(api.AnomalyDatabaseConnection)),
 				zap.Error(err))
 		} else {
 			if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
-				DatabaseID: &database.ID,
+				DatabaseID: &database.UID,
 				Type:       api.AnomalyDatabaseConnection,
 				Payload:    string(payload),
 			}); err != nil {
 				log.Error("Failed to create anomaly",
 					zap.String("instance", instance.Name),
-					zap.String("database", database.Name),
+					zap.String("database", database.DatabaseName),
 					zap.String("type", string(api.AnomalyDatabaseConnection)),
 					zap.Error(err))
 			}
@@ -264,13 +261,13 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instan
 	}
 	defer driver.Close(ctx)
 	err = s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-		DatabaseID: &database.ID,
+		DatabaseID: &database.UID,
 		Type:       api.AnomalyDatabaseConnection,
 	})
 	if err != nil && common.ErrorCode(err) != common.NotFound {
 		log.Error("Failed to close anomaly",
 			zap.String("instance", instance.Name),
-			zap.String("database", database.Name),
+			zap.String("database", database.DatabaseName),
 			zap.String("type", string(api.AnomalyDatabaseConnection)),
 			zap.Error(err))
 	}
@@ -281,7 +278,7 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instan
 		if err != nil {
 			log.Debug("Failed to check anomaly",
 				zap.String("instance", instance.Name),
-				zap.String("database", database.Name),
+				zap.String("database", database.DatabaseName),
 				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 				zap.Error(err))
 			return
@@ -291,17 +288,17 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instan
 			return
 		}
 		var schemaBuf bytes.Buffer
-		if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /*schemaOnly*/); err != nil {
+		if _, err := driver.Dump(ctx, database.DatabaseName, &schemaBuf, true /*schemaOnly*/); err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				log.Debug("Failed to check anomaly",
 					zap.String("instance", instance.Name),
-					zap.String("database", database.Name),
+					zap.String("database", database.DatabaseName),
 					zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 					zap.Error(err))
 			} else {
 				log.Error("Failed to check anomaly",
 					zap.String("instance", instance.Name),
-					zap.String("database", database.Name),
+					zap.String("database", database.DatabaseName),
 					zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 					zap.Error(err))
 			}
@@ -309,13 +306,13 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instan
 		}
 		limit := 1
 		list, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-			Database: &database.Name,
+			Database: &database.DatabaseName,
 			Limit:    &limit,
 		})
 		if err != nil {
 			log.Error("Failed to check anomaly",
 				zap.String("instance", instance.Name),
-				zap.String("database", database.Name),
+				zap.String("database", database.DatabaseName),
 				zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 				zap.Error(err))
 			return
@@ -331,33 +328,33 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instan
 				if err != nil {
 					log.Error("Failed to marshal anomaly payload",
 						zap.String("instance", instance.Name),
-						zap.String("database", database.Name),
+						zap.String("database", database.DatabaseName),
 						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 						zap.Error(err))
 				} else {
 					if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 						CreatorID:  api.SystemBotID,
 						InstanceID: instance.ID,
-						DatabaseID: &database.ID,
+						DatabaseID: &database.UID,
 						Type:       api.AnomalyDatabaseSchemaDrift,
 						Payload:    string(payload),
 					}); err != nil {
 						log.Error("Failed to create anomaly",
 							zap.String("instance", instance.Name),
-							zap.String("database", database.Name),
+							zap.String("database", database.DatabaseName),
 							zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 							zap.Error(err))
 					}
 				}
 			} else {
 				err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-					DatabaseID: &database.ID,
+					DatabaseID: &database.UID,
 					Type:       api.AnomalyDatabaseSchemaDrift,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
 					log.Error("Failed to close anomaly",
 						zap.String("instance", instance.Name),
-						zap.String("database", database.Name),
+						zap.String("database", database.DatabaseName),
 						zap.String("type", string(api.AnomalyDatabaseSchemaDrift)),
 						zap.Error(err))
 				}
@@ -366,13 +363,13 @@ func (s *Scanner) checkDatabaseAnomaly(ctx context.Context, instance *api.Instan
 	}
 }
 
-func (s *Scanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *api.Database, policyMap map[int]*api.BackupPlanPolicy) {
+func (s *Scanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *store.DatabaseMessage, policyMap map[int]*api.BackupPlanPolicy) {
 	schedule := api.BackupPlanPolicyScheduleUnset
-	backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, database.ID)
+	backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, database.UID)
 	if err != nil {
 		log.Error("Failed to retrieve backup setting",
 			zap.String("instance", instance.Name),
-			zap.String("database", database.Name),
+			zap.String("database", database.DatabaseName),
 			zap.Error(err))
 		return
 	}
@@ -411,33 +408,33 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance
 			if err != nil {
 				log.Error("Failed to marshal anomaly payload",
 					zap.String("instance", instance.Name),
-					zap.String("database", database.Name),
+					zap.String("database", database.DatabaseName),
 					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			} else {
 				if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
-					DatabaseID: &database.ID,
+					DatabaseID: &database.UID,
 					Type:       api.AnomalyDatabaseBackupPolicyViolation,
 					Payload:    string(payload),
 				}); err != nil {
 					log.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
-						zap.String("database", database.Name),
+						zap.String("database", database.DatabaseName),
 						zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 						zap.Error(err))
 				}
 			}
 		} else {
 			err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-				DatabaseID: &database.ID,
+				DatabaseID: &database.UID,
 				Type:       api.AnomalyDatabaseBackupPolicyViolation,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
 				log.Error("Failed to close anomaly",
 					zap.String("instance", instance.Name),
-					zap.String("database", database.Name),
+					zap.String("database", database.DatabaseName),
 					zap.String("type", string(api.AnomalyDatabaseBackupPolicyViolation)),
 					zap.Error(err))
 			}
@@ -460,14 +457,14 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance
 			if backupSetting.UpdatedTs < time.Now().Add(-backupMaxAge).Unix() {
 				status := api.BackupStatusDone
 				backupFind := &api.BackupFind{
-					DatabaseID: &database.ID,
+					DatabaseID: &database.UID,
 					Status:     &status,
 				}
 				backupList, err := s.store.FindBackup(ctx, backupFind)
 				if err != nil {
 					log.Error("Failed to retrieve backup list",
 						zap.String("instance", instance.Name),
-						zap.String("database", database.Name),
+						zap.String("database", database.DatabaseName),
 						zap.Error(err))
 				}
 
@@ -494,33 +491,33 @@ func (s *Scanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance
 			if err != nil {
 				log.Error("Failed to marshal anomaly payload",
 					zap.String("instance", instance.Name),
-					zap.String("database", database.Name),
+					zap.String("database", database.DatabaseName),
 					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			} else {
 				if _, err = s.store.UpsertActiveAnomaly(ctx, &api.AnomalyUpsert{
 					CreatorID:  api.SystemBotID,
 					InstanceID: instance.ID,
-					DatabaseID: &database.ID,
+					DatabaseID: &database.UID,
 					Type:       api.AnomalyDatabaseBackupMissing,
 					Payload:    string(payload),
 				}); err != nil {
 					log.Error("Failed to create anomaly",
 						zap.String("instance", instance.Name),
-						zap.String("database", database.Name),
+						zap.String("database", database.DatabaseName),
 						zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 						zap.Error(err))
 				}
 			}
 		} else {
 			err := s.store.ArchiveAnomaly(ctx, &api.AnomalyArchive{
-				DatabaseID: &database.ID,
+				DatabaseID: &database.UID,
 				Type:       api.AnomalyDatabaseBackupMissing,
 			})
 			if err != nil && common.ErrorCode(err) != common.NotFound {
 				log.Error("Failed to close anomaly",
 					zap.String("instance", instance.Name),
-					zap.String("database", database.Name),
+					zap.String("database", database.DatabaseName),
 					zap.String("type", string(api.AnomalyDatabaseBackupMissing)),
 					zap.Error(err))
 			}

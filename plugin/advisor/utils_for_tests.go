@@ -283,7 +283,7 @@ func (*MockDriver) Query(_ context.Context, statement string, _ *database.QueryC
 }
 
 // SyncInstance implements the Driver interface.
-func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMeta, error) {
+func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, error) {
 	return nil, nil
 }
 
@@ -303,8 +303,8 @@ func (*MockDriver) SetupMigrationIfNeeded(_ context.Context) error {
 }
 
 // ExecuteMigration implements the Driver interface.
-func (*MockDriver) ExecuteMigration(_ context.Context, _ *database.MigrationInfo, _ string) (int64, string, error) {
-	return 0, "", nil
+func (*MockDriver) ExecuteMigration(_ context.Context, _ *database.MigrationInfo, _ string) (string, string, error) {
+	return "", "", nil
 }
 
 // FindMigrationHistoryList implements the Driver interface.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -136,7 +137,7 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
-func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (int64, error) {
+func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (string, error) {
 	const insertHistoryQuery = `
 	INSERT INTO bytebase_migration_history (
 		created_by,
@@ -178,18 +179,18 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		m.Payload,
 	)
 	if err != nil {
-		return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+		return "", util.FormatErrorWithQuery(err, insertHistoryQuery)
 	}
 
 	insertedID, err := res.LastInsertId()
 	if err != nil {
-		return int64(0), util.FormatErrorWithQuery(err, insertHistoryQuery)
+		return "", util.FormatErrorWithQuery(err, insertHistoryQuery)
 	}
-	return insertedID, nil
+	return strconv.FormatInt(insertedID, 10), nil
 }
 
 // UpdateHistoryAsDone will update the migration record as done.
-func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error {
+func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID string) error {
 	const updateHistoryAsDoneQuery = `
 	UPDATE
 		bytebase_migration_history
@@ -204,7 +205,7 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 }
 
 // UpdateHistoryAsFailed will update the migration record as failed.
-func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error {
+func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID string) error {
 	const updateHistoryAsFailedQuery = `
 	UPDATE
 		bytebase_migration_history
@@ -218,7 +219,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 }
 
 // ExecuteMigration will execute the migration.
-func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
+func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (string, string, error) {
 	return util.ExecuteMigration(ctx, driver, m, statement, bytebaseDatabase)
 }
 

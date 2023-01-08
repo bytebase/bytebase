@@ -2,11 +2,9 @@
 // in the "database" object.
 // Physically, a database belongs to an instance. Logically, it belongs to a project.
 
-import { Backup } from "./backup";
 import { DataSource } from "./dataSource";
 import { DatabaseId, InstanceId, ProjectId } from "./id";
 import { Instance } from "./instance";
-import { Principal } from "./principal";
 import { Project } from "./project";
 import { DatabaseLabel } from "./label";
 
@@ -23,13 +21,6 @@ export type Database = {
   instanceId: InstanceId;
   instance: Instance;
   dataSourceList: DataSource[];
-  sourceBackup?: Backup;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   // Domain specific fields
   syncStatus: DatabaseSyncStatus;

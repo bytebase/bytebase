@@ -77,11 +77,11 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
 			}
 
-			principal, err := s.store.GetPrincipalByEmail(ctx, projectMember.Email)
+			user, err := s.store.GetUserByEmail(ctx, projectMember.Email)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
-			if principal == nil { // try to create principal
+			if user == nil { // try to create principal
 				password, err := common.RandomString(20)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate random password").SetInternal(err)
@@ -95,11 +95,11 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					// if the principal uses external auth provider
 					Password: password,
 				}
-				createdPrincipal, httpErr := trySignUp(ctx, s, signUpInfo, c.Get(getPrincipalIDContextKey()).(int))
+				createdUser, httpErr := trySignUp(ctx, s, signUpInfo, c.Get(getPrincipalIDContextKey()).(int))
 				if httpErr != nil {
 					return httpErr
 				}
-				principal = createdPrincipal
+				user = createdUser
 			}
 
 			providerPayload := &api.ProjectRoleProviderPayload{
@@ -113,7 +113,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			createProjectMember := &api.ProjectMemberCreate{
 				ProjectID:    projectID,
 				CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
-				PrincipalID:  principal.ID,
+				PrincipalID:  user.ID,
 				Role:         projectMember.Role,
 				RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
 				Payload:      string(providerPayloadBytes),
@@ -159,9 +159,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				if createdMember.Role == deletedMember.Role && createdMember.RoleProvider == deletedMember.RoleProvider {
 					continue
 				}
-				principal, err := s.store.GetPrincipalByID(ctx, createdMember.PrincipalID)
+				user, err := s.store.GetUserByID(ctx, createdMember.PrincipalID)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", principal.ID)).SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", user.ID)).SetInternal(err)
 				}
 				activityUpdateMember := &api.ActivityCreate{
 					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
@@ -169,22 +169,22 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Type:        api.ActivityProjectMemberRoleUpdate,
 					Level:       api.ActivityInfo,
 					Comment: fmt.Sprintf("Changed %s (%s) from %s (provided by %s) to %s (provided by %s).",
-						principal.Name, principal.Email, deletedMember.Role, deletedMember.RoleProvider, createdMember.Role, createdMember.RoleProvider),
+						user.Name, user.Email, deletedMember.Role, deletedMember.RoleProvider, createdMember.Role, createdMember.RoleProvider),
 				}
-				if _, err = s.ActivityManager.CreateActivity(ctx, activityUpdateMember, &activity.Metadata{}); err != nil {
+				if _, err := s.store.CreateActivity(ctx, activityUpdateMember); err != nil {
 					log.Warn("Failed to create project activity after updating member role",
 						zap.Int("project_id", projectID),
-						zap.Int("principal_id", principal.ID),
-						zap.String("principal_name", principal.Name),
+						zap.Int("principal_id", user.ID),
+						zap.String("principal_name", user.Name),
 						zap.String("old_role", deletedMember.Role),
 						zap.String("new_role", createdMember.Role),
 						zap.Error(err))
 				}
 			} else {
 				// otherwise, we will create a MEMBER CREATE activity
-				principal, err := s.store.GetPrincipalByID(ctx, createdMember.PrincipalID)
+				user, err := s.store.GetUserByID(ctx, createdMember.PrincipalID)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", principal.ID)).SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", user.ID)).SetInternal(err)
 				}
 				activityCreateMember := &api.ActivityCreate{
 					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
@@ -192,13 +192,13 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					Type:        api.ActivityProjectMemberCreate,
 					Level:       api.ActivityInfo,
 					Comment: fmt.Sprintf("Granted %s to %s (%s) (synced from VCS).",
-						principal.Name, principal.Email, createdMember.Role),
+						user.Name, user.Email, createdMember.Role),
 				}
-				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &activity.Metadata{}); err != nil {
+				if _, err := s.store.CreateActivity(ctx, activityCreateMember); err != nil {
 					log.Warn("Failed to create project activity after creating member",
 						zap.Int("project_id", projectID),
-						zap.Int("principal_id", principal.ID),
-						zap.String("principal_name", principal.Name),
+						zap.Int("principal_id", user.ID),
+						zap.String("principal_name", user.Name),
 						zap.String("role", string(createdMember.Role)),
 						zap.Error(err))
 				}
@@ -211,7 +211,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				// if the member does exist in createdMemberList, meaning we need to update this member(already done above).
 				continue
 			}
-			principal, err := s.store.GetPrincipalByID(ctx, deletedMember.PrincipalID)
+			user, err := s.store.GetUserByID(ctx, deletedMember.PrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to create member relation, Principal ID: %v", deletedMember.PrincipalID)).SetInternal(err)
 			}
@@ -221,13 +221,13 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Type:        api.ActivityProjectMemberDelete,
 				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Revoked %s from %s (%s). Because this member does not belong to the VCS.",
-					principal.Name, principal.Email, deletedMember.Role),
+					user.Name, user.Email, deletedMember.Role),
 			}
-			if _, err = s.ActivityManager.CreateActivity(ctx, activityDeleteMember, &activity.Metadata{}); err != nil {
+			if _, err := s.store.CreateActivity(ctx, activityDeleteMember); err != nil {
 				log.Warn("Failed to create project activity after creating member",
 					zap.Int("project_id", projectID),
-					zap.Int("principal_id", principal.ID),
-					zap.String("principal_name", principal.Name),
+					zap.Int("principal_id", user.ID),
+					zap.String("principal_name", user.Name),
 					zap.String("role", deletedMember.Role),
 					zap.Error(err))
 			}
@@ -381,23 +381,22 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		{
-			projectMember.Principal, err = s.store.GetPrincipalByID(ctx, projectMember.PrincipalID)
+			user, err := s.store.GetUserByID(ctx, projectMember.PrincipalID)
 			if err == nil {
 				activityCreate := &api.ActivityCreate{
 					CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
 					ContainerID: projectID,
 					Type:        api.ActivityProjectMemberDelete,
 					Level:       api.ActivityInfo,
-					Comment: fmt.Sprintf("Revoked %s from %s (%s).",
-						projectMember.Role, projectMember.Principal.Name, projectMember.Principal.Email),
+					Comment:     fmt.Sprintf("Revoked %s from %s (%s).", projectMember.Role, user.Name, user.Email),
 				}
 				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{})
 			}
 			if err != nil {
 				log.Warn("Failed to create project activity after deleting member",
 					zap.Int("project_id", projectID),
-					zap.Int("principal_id", projectMember.Principal.ID),
-					zap.String("principal_name", projectMember.Principal.Name),
+					zap.Int("principal_id", user.ID),
+					zap.String("principal_name", user.Name),
 					zap.String("role", projectMember.Role),
 					zap.Error(err))
 			}

@@ -246,7 +246,7 @@ func (s *Store) createProjectMemberRaw(ctx context.Context, create *api.ProjectM
 
 // findProjectMemberRaw retrieves a list of projectMembers based on find.
 func (s *Store) findProjectMemberRaw(ctx context.Context, find *api.ProjectMemberFind) ([]*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -262,7 +262,7 @@ func (s *Store) findProjectMemberRaw(ctx context.Context, find *api.ProjectMembe
 
 // getProjectMemberRaw finds project members.
 func (s *Store) getProjectMemberRaw(ctx context.Context, find *api.ProjectMemberFind) (*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}

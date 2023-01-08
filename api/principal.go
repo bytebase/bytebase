@@ -41,12 +41,6 @@ const (
 type Principal struct {
 	ID int `jsonapi:"primary,principal"`
 
-	// Standard fields
-	CreatorID int   `jsonapi:"attr,creatorId"`
-	CreatedTs int64 `jsonapi:"attr,createdTs"`
-	UpdaterID int   `jsonapi:"attr,updaterId"`
-	UpdatedTs int64 `jsonapi:"attr,updatedTs"`
-
 	// Domain specific fields
 	Type  PrincipalType `jsonapi:"attr,type"`
 	Name  string        `jsonapi:"attr,name"`
@@ -66,10 +60,6 @@ type Principal struct {
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		ID         int           `json:"id"`
-		CreatorID  int           `json:"creatorId"`
-		CreatedTs  int64         `json:"createdTs"`
-		UpdaterID  int           `json:"updaterId"`
-		UpdatedTs  int64         `json:"updatedTs"`
 		Type       PrincipalType `json:"type"`
 		Name       string        `json:"name"`
 		Email      string        `json:"email"`
@@ -77,10 +67,6 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 		ServiceKey string        `json:"serviceKey"`
 	}{
 		ID:         p.ID,
-		CreatorID:  p.CreatorID,
-		CreatedTs:  p.CreatedTs,
-		UpdaterID:  p.UpdaterID,
-		UpdatedTs:  p.UpdatedTs,
 		Type:       p.Type,
 		Name:       p.Name,
 		Email:      p.Email,
@@ -91,11 +77,6 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 
 // PrincipalCreate is the API message for creating a principal.
 type PrincipalCreate struct {
-	// Standard fields
-	// For signup, value is SYSTEM_BOT_ID
-	// For invite, value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
 	// Domain specific fields
 	Type         PrincipalType `jsonapi:"attr,type"`
 	Name         string        `jsonapi:"attr,name"`
@@ -104,30 +85,8 @@ type PrincipalCreate struct {
 	PasswordHash string
 }
 
-// PrincipalFind is the API message for finding principals.
-type PrincipalFind struct {
-	ID *int
-
-	// Domain specific fields
-	Email *string
-}
-
-func (find *PrincipalFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
 // PrincipalPatch is the API message for patching a principal.
 type PrincipalPatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
 	// Domain specific fields
 	Type         PrincipalType `jsonapi:"attr,type"`
 	Name         *string       `jsonapi:"attr,name"`

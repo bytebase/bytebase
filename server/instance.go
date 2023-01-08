@@ -156,13 +156,22 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, id)
+		instanceUsers, err := s.store.ListInstanceUsers(ctx, &store.FindInstanceUserMessage{InstanceUID: id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", id)).SetInternal(err)
 		}
+		var composedInstanceUsers []*api.InstanceUser
+		for _, instanceUser := range instanceUsers {
+			composedInstanceUsers = append(composedInstanceUsers, &api.InstanceUser{
+				ID:         instanceUser.Name,
+				InstanceID: id,
+				Name:       instanceUser.Name,
+				Grant:      instanceUser.Grant,
+			})
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceUserList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstanceUsers); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance user list response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -174,25 +183,23 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
-		userID, err := strconv.Atoi(c.Param("userID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
-		}
+		userID := c.Param("userID")
 
-		instanceUserFind := &api.InstanceUserFind{
-			ID:         &userID,
-			InstanceID: &instanceID,
-		}
-		instanceUser, err := s.store.GetInstanceUser(ctx, instanceUserFind)
+		instanceUser, err := s.store.GetInstanceUser(ctx, &store.FindInstanceUserMessage{InstanceUID: instanceID, Name: &userID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
 		}
 		if instanceUser == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instanceUser not found with instanceID: %v and userID: %v", instanceID, userID))
 		}
-
+		composedInstanceUser := &api.InstanceUser{
+			ID:         instanceUser.Name,
+			InstanceID: instanceID,
+			Name:       instanceUser.Name,
+			Grant:      instanceUser.Grant,
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceUser); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstanceUser); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance user with instanceID: %v and userID: %v", instanceID, userID)).SetInternal(err)
 		}
 		return nil
@@ -278,10 +285,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		historyID, err := strconv.Atoi(c.Param("historyID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("History ID is not a number: %s", c.Param("historyID"))).SetInternal(err)
-		}
+		historyID := c.Param("historyID")
 
 		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
@@ -302,7 +306,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 		}
 		if len(list) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %d not found for instance %q", historyID, instance.Name))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Name))
 		}
 		entry := list[0]
 
@@ -549,20 +553,20 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 		}
 		// Ensure all databases belong to this instance are under the default project before instance is archived.
 		if v := patch.RowStatus; v != nil && *v == string(api.Archived) {
-			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &patch.ID})
+			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError,
-					errors.Errorf("failed to find databases in the instance %d", patch.ID)).SetInternal(err)
+					errors.Errorf("failed to list databases in the instance %d", patch.ID)).SetInternal(err)
 			}
 			var databaseNameList []string
 			for _, database := range databases {
 				if database.ProjectID != api.DefaultProjectID {
-					databaseNameList = append(databaseNameList, database.Name)
+					databaseNameList = append(databaseNameList, database.DatabaseName)
 				}
 			}
 			if len(databaseNameList) > 0 {
 				return nil, echo.NewHTTPError(http.StatusBadRequest,
-					fmt.Sprintf("You should transfer these databases to the default project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
+					fmt.Sprintf("You should transfer these databases to the default project before deleting the instance: %s.", strings.Join(databaseNameList, ", ")))
 			}
 		}
 		instancePatched, err = s.store.PatchInstance(ctx, patch)

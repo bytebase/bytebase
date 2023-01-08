@@ -5,14 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/github/gh-ost/go/base"
 	ghostsql "github.com/github/gh-ost/go/sql"
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
@@ -71,9 +69,9 @@ type GhostConfig struct {
 }
 
 // GetGhostConfig returns a gh-ost configuration for migration.
-func GetGhostConfig(task *api.Task, dataSource *api.DataSource, userList []*api.InstanceUser, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
+func GetGhostConfig(task *api.Task, dataSource *api.DataSource, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
 	var isAWS bool
-	for _, user := range userList {
+	for _, user := range instanceUsers {
 		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
 			isAWS = true
 			break
@@ -205,57 +203,6 @@ func GetActiveStage(pipeline *api.Pipeline) *api.Stage {
 	return nil
 }
 
-// SetDatabaseLabels sets the labels for a database.
-func SetDatabaseLabels(ctx context.Context, store *store.Store, labelsJSON string, database *api.Database, updaterID int, validateOnly bool) error {
-	if labelsJSON == "" {
-		return nil
-	}
-	// NOTE: this is a partially filled DatabaseLabel
-	var labels []*api.DatabaseLabel
-	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-		return err
-	}
-
-	// For scalability, each database can have up to four labels for now.
-	if len(labels) > api.DatabaseLabelSizeMax {
-		err := errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-	}
-
-	if err := validateDatabaseLabelList(labels, database.Instance.Environment.Name); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
-	}
-
-	if !validateOnly {
-		if _, err := store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
-		}
-	}
-	return nil
-}
-
-func validateDatabaseLabelList(labelList []*api.DatabaseLabel, environmentName string) error {
-	var environmentValue *string
-
-	// check label key & value availability
-	for _, label := range labelList {
-		if label.Key == api.EnvironmentLabelKey {
-			environmentValue = &label.Value
-			continue
-		}
-	}
-
-	// Environment label must exist and is immutable.
-	if environmentValue == nil {
-		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentLabelKey)
-	}
-	if environmentName != *environmentValue {
-		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentLabelKey, environmentName, *environmentValue)
-	}
-
-	return nil
-}
-
 // isMatchExpression checks whether a databases matches the query.
 // labels is a mapping from database label key to value.
 func isMatchExpression(labels map[string]string, expression *api.LabelSelectorRequirement) bool {
@@ -295,23 +242,19 @@ func isMatchExpressions(labels map[string]string, expressionList []*api.LabelSel
 
 // GetDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The matrix will include the stage even if the stage has no database.
-func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*api.Database) ([][]*api.Database, error) {
-	var matrix [][]*api.Database
+func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
+	var matrix [][]*store.DatabaseMessage
 
-	// idToLabels maps databaseID -> label.Key -> label.Value
+	// idToLabels maps databaseID -> label key -> label value
 	idToLabels := make(map[int]map[string]string)
-	databaseMap := make(map[int]*api.Database)
+	databaseMap := make(map[int]*store.DatabaseMessage)
 	for _, database := range databaseList {
-		databaseMap[database.ID] = database
-		if _, ok := idToLabels[database.ID]; !ok {
-			idToLabels[database.ID] = make(map[string]string)
+		databaseMap[database.UID] = database
+		if _, ok := idToLabels[database.UID]; !ok {
+			idToLabels[database.UID] = make(map[string]string)
 		}
-		var labelList []*api.DatabaseLabel
-		if err := json.Unmarshal([]byte(database.Labels), &labelList); err != nil {
-			return nil, err
-		}
-		for _, label := range labelList {
-			idToLabels[database.ID][label.Key] = label.Value
+		for key, value := range database.Labels {
+			idToLabels[database.UID][key] = value
 		}
 	}
 
@@ -325,25 +268,25 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 		// Loop over databaseList instead of idToLabels to get determinant results.
 		for _, database := range databaseList {
 			// Skip if the database is already in a stage.
-			if _, ok := idsSeen[database.ID]; ok {
+			if _, ok := idsSeen[database.UID]; ok {
 				continue
 			}
 
-			labels := idToLabels[database.ID]
+			labels := idToLabels[database.UID]
 			if isMatchExpressions(labels, deployment.Spec.Selector.MatchExpressions) {
-				matchedDatabaseList = append(matchedDatabaseList, database.ID)
-				idsSeen[database.ID] = true
+				matchedDatabaseList = append(matchedDatabaseList, database.UID)
+				idsSeen[database.UID] = true
 			}
 		}
 
-		var databaseList []*api.Database
+		var databaseList []*store.DatabaseMessage
 		for _, id := range matchedDatabaseList {
 			databaseList = append(databaseList, databaseMap[id])
 		}
 		// sort databases in stage based on IDs.
 		if len(databaseList) > 0 {
 			sort.Slice(databaseList, func(i, j int) bool {
-				return databaseList[i].ID < databaseList[j].ID
+				return databaseList[i].UID < databaseList[j].UID
 			})
 		}
 

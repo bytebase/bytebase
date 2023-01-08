@@ -14,16 +14,12 @@
         :title="$t(columnList[0].title)"
       />
       <BBTableHeaderCell
-        class="w-8 table-cell"
+        class="w-20 table-cell"
         :title="$t(columnList[1].title)"
       />
       <BBTableHeaderCell
-        class="w-72 table-cell"
+        class="w-20 table-cell"
         :title="$t(columnList[2].title)"
-      />
-      <BBTableHeaderCell
-        class="w-auto table-cell"
-        :title="$t(columnList[3].title)"
       />
     </template>
     <template #body="{ rowData: member }">
@@ -110,18 +106,6 @@
           "
         />
       </BBTableCell>
-      <BBTableCell class="table-cell">
-        <div
-          v-if="member.principal.id !== SYSTEM_BOT_ID"
-          class="flex flex-row items-center space-x-1"
-        >
-          <span>{{ humanizeTs(member.updatedTs) }}</span>
-          <span>by</span>
-          <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{
-            member.updater.name
-          }}</router-link>
-        </div>
-      </BBTableCell>
       <BBTableCell>
         <BBButtonConfirm
           v-if="allowDeactivateMember(member)"
@@ -192,9 +176,6 @@ const columnList = computed(() => [
   },
   {
     title: "settings.members.table.role",
-  },
-  {
-    title: "settings.members.table.update-time",
   },
   {
     title: "",

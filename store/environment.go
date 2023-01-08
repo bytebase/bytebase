@@ -53,11 +53,7 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *EnvironmentCreate
 		return nil, errors.Wrapf(err, "failed to create Environment with EnvironmentCreate[%+v]", create)
 	}
 
-	composedEnvironment, err := s.composeEnvironment(ctx, environment)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Environment with environmentRaw[%+v]", environment)
-	}
-	return composedEnvironment, nil
+	return composeEnvironment(environment), nil
 }
 
 // FindEnvironment finds a list of Environment instances.
@@ -72,10 +68,7 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 	})
 	var composedEnvironmentList []*api.Environment
 	for _, environment := range environments {
-		composedEnvironment, err := s.composeEnvironment(ctx, environment)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Environment role with environmentRaw[%+v]", environment)
-		}
+		composedEnvironment := composeEnvironment(environment)
 		if find.RowStatus != nil && composedEnvironment.RowStatus != *find.RowStatus {
 			continue
 		}
@@ -108,10 +101,7 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *EnvironmentPatch) (
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch Environment with EnvironmentPatch[%+v]", patch)
 	}
-	composedEnvironment, err := s.composeEnvironment(ctx, environment)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Environment with environmentRaw[%+v]", environment)
-	}
+	composedEnvironment := composeEnvironment(environment)
 	return composedEnvironment, nil
 }
 
@@ -125,51 +115,33 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environmen
 		return nil, common.Errorf(common.NotFound, "environment %d not found", id)
 	}
 
-	env, err := s.composeEnvironment(ctx, environment)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose environment with environmentRaw[%+v]", environment)
-	}
-
+	env := composeEnvironment(environment)
 	return env, nil
 }
 
-//
-// private functions
-//
-
-func (s *Store) composeEnvironment(ctx context.Context, raw *EnvironmentMessage) (*api.Environment, error) {
+func composeEnvironment(raw *EnvironmentMessage) *api.Environment {
 	rowStatus := api.Normal
 	if raw.Deleted {
 		rowStatus = api.Archived
 	}
-	ret := &api.Environment{
+	tier := api.EnvironmentTierValueUnprotected
+	if raw.Protected {
+		tier = api.EnvironmentTierValueProtected
+	}
+	return &api.Environment{
 		ID:         raw.UID,
 		ResourceID: raw.ResourceID,
-
-		RowStatus: rowStatus,
-		CreatorID: api.SystemBotID,
-		CreatedTs: 0,
-		UpdaterID: api.SystemBotID,
-		UpdatedTs: 0,
+		RowStatus:  rowStatus,
 
 		Name:  raw.Title,
 		Order: int(raw.Order),
+		Tier:  tier,
 	}
-	bot, err := s.GetPrincipalByID(ctx, api.SystemBotID)
-	if err != nil {
-		return nil, err
-	}
-	ret.Creator = bot
-	ret.Updater = bot
-
-	tier, err := s.GetEnvironmentTierPolicyByEnvID(ctx, raw.UID)
-	if err != nil {
-		return nil, err
-	}
-	ret.Tier = tier.EnvironmentTier
-
-	return ret, nil
 }
+
+//
+// V1 store.
+//
 
 // EnvironmentMessage is the mssage for environment.
 type EnvironmentMessage struct {
@@ -203,20 +175,20 @@ type UpdateEnvironmentMessage struct {
 // GetEnvironmentV2 gets environment by resource ID.
 func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
 	if find.ResourceID != nil {
-		if environment, ok := s.environmentCache[*find.ResourceID]; ok {
-			return environment, nil
+		if environment, ok := s.environmentCache.Load(*find.ResourceID); ok {
+			return environment.(*EnvironmentMessage), nil
 		}
 	}
 	if find.UID != nil {
-		if environment, ok := s.environmentIDCache[*find.UID]; ok {
-			return environment, nil
+		if environment, ok := s.environmentCache.Load(*find.UID); ok {
+			return environment.(*EnvironmentMessage), nil
 		}
 	}
 
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -234,14 +206,14 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 		return nil, FormatError(err)
 	}
 
-	s.environmentCache[environment.ResourceID] = environment
-	s.environmentIDCache[environment.UID] = environment
+	s.environmentCache.Store(environment.ResourceID, environment)
+	s.environmentIDCache.Store(environment.UID, environment)
 	return environment, nil
 }
 
 // ListEnvironmentV2 lists all environment.
 func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) ([]*EnvironmentMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -257,8 +229,8 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMess
 	}
 
 	for _, environment := range environments {
-		s.environmentCache[environment.ResourceID] = environment
-		s.environmentIDCache[environment.UID] = environment
+		s.environmentCache.Store(environment.ResourceID, environment)
+		s.environmentIDCache.Store(environment.UID, environment)
 	}
 	return environments, nil
 }
@@ -324,8 +296,8 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		UID:        uid,
 		Deleted:    false,
 	}
-	s.environmentCache[environment.ResourceID] = environment
-	s.environmentIDCache[environment.UID] = environment
+	s.environmentCache.Store(environment.ResourceID, environment)
+	s.environmentIDCache.Store(environment.UID, environment)
 	return environment, nil
 }
 
@@ -396,8 +368,8 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		return nil, FormatError(err)
 	}
 	// Invalid the cache and read the value again.
-	delete(s.environmentCache, environmentID)
-	delete(s.environmentIDCache, environmentUID)
+	s.environmentCache.Delete(environmentID)
+	s.environmentIDCache.Delete(environmentUID)
 
 	return s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
 		ResourceID: &environmentID,

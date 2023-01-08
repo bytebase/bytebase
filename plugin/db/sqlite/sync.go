@@ -23,35 +23,28 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	databases, err := driver.getDatabases()
+	databaseNames, err := driver.getDatabases()
 	if err != nil {
 		return nil, err
 	}
 
-	var databaseList []db.DatabaseMeta
-	for _, dbName := range databases {
-		if _, ok := excludedDatabaseList[dbName]; ok {
+	var databases []*storepb.DatabaseMetadata
+	for _, databaseName := range databaseNames {
+		if _, ok := excludedDatabaseList[databaseName]; ok {
 			continue
 		}
-
-		databaseList = append(
-			databaseList,
-			db.DatabaseMeta{
-				Name: dbName,
-			},
-		)
+		databases = append(databases, &storepb.DatabaseMetadata{Name: databaseName})
 	}
 
-	return &db.InstanceMeta{
-		Version:      version,
-		UserList:     nil,
-		DatabaseList: databaseList,
+	return &db.InstanceMetadata{
+		Version:   version,
+		Databases: databases,
 	}, nil
 }
 

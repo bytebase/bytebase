@@ -6,7 +6,7 @@ import (
 
 // InstanceUser is the API message for instance user.
 type InstanceUser struct {
-	ID int `jsonapi:"primary,instanceUser"`
+	ID string `jsonapi:"primary,instanceUser"`
 
 	// Related fields
 	InstanceID int `jsonapi:"attr,instanceId"`
@@ -31,7 +31,7 @@ type InstanceUserUpsert struct {
 
 // InstanceUserFind is the API message for finding instance users.
 type InstanceUserFind struct {
-	ID *int
+	ID *string
 
 	// Related fields
 	InstanceID *int
@@ -47,5 +47,5 @@ func (find *InstanceUserFind) String() string {
 
 // InstanceUserDelete is the API message for deleting an instance user.
 type InstanceUserDelete struct {
-	ID int
+	ID string
 }

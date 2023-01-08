@@ -32,14 +32,6 @@ const IMTypeFeishu IMType = "im.feishu"
 type Setting struct {
 	ID int `jsonapi:"primary,setting"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
 	// Domain specific fields
 	Name        SettingName `jsonapi:"attr,name"`
 	Value       string      `jsonapi:"attr,value"`

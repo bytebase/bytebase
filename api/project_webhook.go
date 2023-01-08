@@ -8,14 +8,6 @@ import (
 type ProjectWebhook struct {
 	ID int `jsonapi:"primary,projectWebhookMember"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
 	// Related fields
 	// Just returns ProjectID since it always operates within the project context
 	ProjectID int `jsonapi:"attr,projectId"`

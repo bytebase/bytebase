@@ -10,8 +10,12 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
-// DefaultProjectID is the ID for the default project.
-const DefaultProjectID = 1
+const (
+	// DefaultProjectUID is the UID for the default project.
+	DefaultProjectUID = 1
+	// DefaultProjectID is the resource ID for the default project.
+	DefaultProjectID = "default"
+)
 
 // ProjectWorkflowType is the workflow type for projects.
 type ProjectWorkflowType string
@@ -57,17 +61,9 @@ const (
 
 // Project is the API message for a project.
 type Project struct {
-	ID         int `jsonapi:"primary,project"`
-	ResourceID string
-
-	// Standard fields
-	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+	ID         int       `jsonapi:"primary,project"`
+	ResourceID string    `jsonapi:"attr,resourceId"`
+	RowStatus  RowStatus `jsonapi:"attr,rowStatus"`
 
 	// Related fields
 	ProjectMemberList []*ProjectMember `jsonapi:"relation,projectMember"`

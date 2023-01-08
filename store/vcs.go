@@ -18,12 +18,6 @@ import (
 type vcsRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Domain specific fields
 	Name          string
 	Type          vcs.Type
@@ -38,11 +32,6 @@ type vcsRaw struct {
 func (raw *vcsRaw) toVCS() *api.VCS {
 	return &api.VCS{
 		ID: raw.ID,
-
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		Name:          raw.Name,
 		Type:          raw.Type,
@@ -59,11 +48,7 @@ func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS,
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create VCS with VCSCreate[%+v]", create)
 	}
-	vcs, err := s.composeVCS(ctx, vcsRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose VCS with vcsRaw[%+v]", vcsRaw)
-	}
-	return vcs, nil
+	return vcsRaw.toVCS(), nil
 }
 
 // FindVCS finds a list of VCS instances.
@@ -74,11 +59,7 @@ func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, err
 	}
 	var vcsList []*api.VCS
 	for _, raw := range vcsRawList {
-		vcs, err := s.composeVCS(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose VCS with vcsRaw[%+v]", raw)
-		}
-		vcsList = append(vcsList, vcs)
+		vcsList = append(vcsList, raw.toVCS())
 	}
 	return vcsList, nil
 }
@@ -92,12 +73,7 @@ func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 	if vcsRaw == nil {
 		return nil, nil
 	}
-
-	vcs, err := s.composeVCS(ctx, vcsRaw)
-	if err != nil {
-		return nil, err
-	}
-	return vcs, nil
+	return vcsRaw.toVCS(), nil
 }
 
 // PatchVCS patches an instance of VCS.
@@ -106,11 +82,7 @@ func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, er
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch VCS with VCSPatch[%+v]", patch)
 	}
-	vcs, err := s.composeVCS(ctx, vcsRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose VCS with vcsRaw[%+v]", vcsRaw)
-	}
-	return vcs, nil
+	return vcsRaw.toVCS(), nil
 }
 
 // DeleteVCS deletes an instance of VCS.
@@ -124,24 +96,6 @@ func (s *Store) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
 //
 // private functions
 //
-
-func (s *Store) composeVCS(ctx context.Context, raw *vcsRaw) (*api.VCS, error) {
-	vcs := raw.toVCS()
-
-	creator, err := s.GetPrincipalByID(ctx, vcs.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	vcs.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, vcs.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	vcs.Updater = updater
-
-	return vcs, nil
-}
 
 // createVCSRaw creates a new vcs.
 func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRaw, error) {
@@ -165,7 +119,7 @@ func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRa
 
 // findVCSRaw retrieves a list of VCSs based on find conditions.
 func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -182,7 +136,7 @@ func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, e
 // getVCSRaw retrieves a single vcs based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -263,7 +217,7 @@ func createVCSImpl(ctx context.Context, tx *Tx, create *api.VCSCreate) (*vcsRaw,
 			secret
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
+		RETURNING id, name, type, instance_url, api_url, application_id, secret
 	`
 	var vcs vcsRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -277,10 +231,6 @@ func createVCSImpl(ctx context.Context, tx *Tx, create *api.VCSCreate) (*vcsRaw,
 		create.Secret,
 	).Scan(
 		&vcs.ID,
-		&vcs.CreatorID,
-		&vcs.CreatedTs,
-		&vcs.UpdaterID,
-		&vcs.UpdatedTs,
 		&vcs.Name,
 		&vcs.Type,
 		&vcs.InstanceURL,
@@ -306,10 +256,6 @@ func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, err
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			name,
 			type,
 			instance_url,
@@ -331,10 +277,6 @@ func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, err
 		var vcs vcsRaw
 		if err := rows.Scan(
 			&vcs.ID,
-			&vcs.CreatorID,
-			&vcs.CreatedTs,
-			&vcs.UpdaterID,
-			&vcs.UpdatedTs,
 			&vcs.Name,
 			&vcs.Type,
 			&vcs.InstanceURL,
@@ -375,15 +317,11 @@ func patchVCSImpl(ctx context.Context, tx *Tx, patch *api.VCSPatch) (*vcsRaw, er
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
+		RETURNING id, name, type, instance_url, api_url, application_id, secret
 	`, len(args)),
 		args...,
 	).Scan(
 		&vcs.ID,
-		&vcs.CreatorID,
-		&vcs.CreatedTs,
-		&vcs.UpdaterID,
-		&vcs.UpdatedTs,
 		&vcs.Name,
 		&vcs.Type,
 		&vcs.InstanceURL,

@@ -17,12 +17,6 @@ import (
 type dataSourceRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
 	// Related fields
 	InstanceID int
 	DatabaseID int
@@ -46,12 +40,6 @@ type dataSourceRaw struct {
 func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 	return &api.DataSource{
 		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
 		InstanceID: raw.InstanceID,
@@ -78,12 +66,9 @@ func (s *Store) CreateDataSource(ctx context.Context, instance *api.Instance, cr
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
 	}
-	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
-	}
-	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
-	return dataSource, nil
+	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
+	s.instanceIDCache.Delete(instance.ID)
+	return composeDataSource(dataSourceRaw), nil
 }
 
 // GetDataSource gets an instance of DataSource.
@@ -95,11 +80,7 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 	if dataSourceRaw == nil {
 		return nil, nil
 	}
-	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose data source with dataSourceRaw[%+v]", dataSourceRaw)
-	}
-	return dataSource, nil
+	return composeDataSource(dataSourceRaw), nil
 }
 
 // findDataSource finds a list of DataSource instances.
@@ -111,11 +92,7 @@ func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([
 
 	var dataSourceList []*api.DataSource
 	for _, raw := range dataSourceRawList {
-		dataSource, err := s.composeDataSource(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", raw)
-		}
-		dataSourceList = append(dataSourceList, dataSource)
+		dataSourceList = append(dataSourceList, composeDataSource(raw))
 	}
 	return dataSourceList, nil
 }
@@ -126,12 +103,9 @@ func (s *Store) PatchDataSource(ctx context.Context, instance *api.Instance, pat
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to patch DataSource with DataSourcePatch[%+v]", patch)
 	}
-	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose DataSource role with dataSourceRaw[%+v]", dataSourceRaw)
-	}
-	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
-	return dataSource, nil
+	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
+	s.instanceIDCache.Delete(instance.ID)
+	return composeDataSource(dataSourceRaw), nil
 }
 
 // DeleteDataSource deletes an existing dataSource by ID.
@@ -152,7 +126,8 @@ func (s *Store) DeleteDataSource(ctx context.Context, instance *api.Instance, de
 
 	// Invalidate the cache.
 	s.cache.DeleteCache(dataSourceCacheNamespace, deleteDataSource.InstanceID)
-	delete(s.instanceCache, getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
+	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instance.ResourceID))
+	s.instanceIDCache.Delete(instance.ID)
 	return nil
 }
 
@@ -171,22 +146,8 @@ func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.D
 	return nil
 }
 
-func (s *Store) composeDataSource(ctx context.Context, raw *dataSourceRaw) (*api.DataSource, error) {
-	dataSource := raw.toDataSource()
-
-	creator, err := s.GetPrincipalByID(ctx, dataSource.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	dataSource.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, dataSource.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	dataSource.Updater = updater
-
-	return dataSource, nil
+func composeDataSource(raw *dataSourceRaw) *api.DataSource {
+	return raw.toDataSource()
 }
 
 // createDataSourceRaw creates a new dataSource.
@@ -225,7 +186,7 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 		return cacheList, nil
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -246,7 +207,7 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 // getDataSourceRaw retrieves a single dataSource based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) (*dataSourceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -310,7 +271,7 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 			database
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
+		RETURNING id, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
 	`
 	var dataSourceRaw dataSourceRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -331,10 +292,6 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 		create.Database,
 	).Scan(
 		&dataSourceRaw.ID,
-		&dataSourceRaw.CreatorID,
-		&dataSourceRaw.CreatedTs,
-		&dataSourceRaw.UpdaterID,
-		&dataSourceRaw.UpdatedTs,
 		&dataSourceRaw.InstanceID,
 		&dataSourceRaw.DatabaseID,
 		&dataSourceRaw.Name,
@@ -376,10 +333,6 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			instance_id,
 			database_id,
 			name,
@@ -408,10 +361,6 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 		var dataSourceRaw dataSourceRaw
 		if err := rows.Scan(
 			&dataSourceRaw.ID,
-			&dataSourceRaw.CreatorID,
-			&dataSourceRaw.CreatedTs,
-			&dataSourceRaw.UpdaterID,
-			&dataSourceRaw.UpdatedTs,
 			&dataSourceRaw.InstanceID,
 			&dataSourceRaw.DatabaseID,
 			&dataSourceRaw.Name,
@@ -477,15 +426,11 @@ func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSo
 			UPDATE data_source
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
+			RETURNING id, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
 		`, len(args)),
 		args...,
 	).Scan(
 		&dataSourceRaw.ID,
-		&dataSourceRaw.CreatorID,
-		&dataSourceRaw.CreatedTs,
-		&dataSourceRaw.UpdaterID,
-		&dataSourceRaw.UpdatedTs,
 		&dataSourceRaw.InstanceID,
 		&dataSourceRaw.DatabaseID,
 		&dataSourceRaw.Name,

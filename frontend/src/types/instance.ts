@@ -2,7 +2,6 @@ import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { EnvironmentId, InstanceId, MigrationHistoryId } from "./id";
-import { Principal } from "./principal";
 import { VCSPushEvent } from "./vcs";
 
 export type EngineType =
@@ -72,18 +71,13 @@ export function defaultCollation(type: EngineType): string {
 
 export type Instance = {
   id: InstanceId;
+  resourceId: string;
+  rowStatus: RowStatus;
 
   // Related fields
   environment: Environment;
   // An instance must have a admin data source, maybe a read-only data source.
   dataSourceList: DataSource[];
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-  rowStatus: RowStatus;
 
   // Domain specific fields
   name: string;

@@ -72,29 +72,6 @@
                 >{{ projectName(database.project) }}</router-link
               >
             </dd>
-            <template v-if="database.sourceBackup">
-              <dt class="sr-only">{{ $t("db.parent") }}</dt>
-              <dd class="flex items-center text-sm md:mr-4 tooltip-wrapper">
-                <span class="textlabel">{{
-                  $t("database.restored-from")
-                }}</span>
-                <router-link
-                  :to="`/db/${database.sourceBackup.databaseId}`"
-                  class="normal-link"
-                >
-                  <!-- Do not display the name of the backup's database because that requires a fetch  -->
-                  <span class="tooltip">
-                    {{
-                      $t(
-                        "database.database-name-is-restored-from-another-database-backup",
-                        [database.name]
-                      )
-                    }}
-                  </span>
-                  {{ $t("database.database-backup") }}
-                </router-link>
-              </dd>
-            </template>
             <dd
               class="flex items-center text-sm md:mr-4"
               :class="
@@ -108,7 +85,7 @@
               <heroicons-solid:terminal class="w-5 h-5" />
             </dd>
             <dd
-              v-if="isDev && hasSchemaDiagramFeature"
+              v-if="hasSchemaDiagramFeature"
               class="flex items-center text-sm md:mr-4 textlabel cursor-pointer hover:text-accent"
               @click.prevent="state.showSchemaDiagram = true"
             >

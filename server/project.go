@@ -154,7 +154,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
-
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &id})
+		if err != nil {
+			return err
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project %d not found", id))
+		}
 		projectPatch := &api.ProjectPatch{
 			ID:        id,
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
@@ -189,7 +195,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// 1. the project has no database.
 		// 2. the issue status of this project should be canceled or done.
 		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
-			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
+			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find databases in the project %d", id)).SetInternal(err)
 			}
@@ -206,7 +212,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 
-		project, err := s.store.PatchProject(ctx, projectPatch)
+		composedProject, err := s.store.PatchProject(ctx, projectPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
@@ -218,7 +224,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, project); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedProject); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -832,19 +838,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME,
 			// and ENV_NAME and DB_NAME is either both present or neither present.
 			if project.TenantMode != api.TenantModeDisabled {
-				if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
-					databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-						Name:      &sheetInfo.DatabaseName,
-						ProjectID: &projectID,
-					})
+				if sheetInfo.EnvironmentID != "" && sheetInfo.DatabaseName != "" {
+					databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID, DatabaseName: &sheetInfo.DatabaseName})
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
 					}
-
-					for _, database := range databaseList {
+					for _, database := range databases {
 						database := database // create a new var "database".
-						if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
-							databaseID = &database.ID
+						if database.EnvironmentID == sheetInfo.EnvironmentID {
+							databaseID = &database.UID
 							break
 						}
 					}

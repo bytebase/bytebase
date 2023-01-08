@@ -15,30 +15,29 @@ import (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Query user info
-	userList, err := driver.getUserList(ctx)
+	instanceRoles, err := driver.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	excludedDatabaseList := []string{
+	excludedDatabases := []string{
 		// Skip our internal "bytebase" database
 		"'bytebase'",
 	}
 	// Skip all system databases
 	for k := range systemDatabases {
-		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
+		excludedDatabases = append(excludedDatabases, fmt.Sprintf("'%s'", k))
 	}
 
-	var databaseList []db.DatabaseMeta
+	var databases []*storepb.DatabaseMetadata
 	// Query db info
-	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabases, ", "))
 	query := `
 		SELECT
 			name
@@ -50,22 +49,22 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var databaseMeta db.DatabaseMeta
+		database := &storepb.DatabaseMetadata{}
 		if err := rows.Scan(
-			&databaseMeta.Name,
+			&database.Name,
 		); err != nil {
 			return nil, err
 		}
-		databaseList = append(databaseList, databaseMeta)
+		databases = append(databases, database)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return &db.InstanceMeta{
-		Version:      version,
-		UserList:     userList,
-		DatabaseList: databaseList,
+	return &db.InstanceMetadata{
+		Version:       version,
+		InstanceRoles: instanceRoles,
+		Databases:     databases,
 	}, nil
 }
 
@@ -175,68 +174,4 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		Name:    databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
-}
-
-func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
-	// Query user info
-	// host_ip isn't used for user identifier.
-	userQuery := `
-	  SELECT
-			name
-		FROM system.users
-	`
-	userRows, err := driver.db.QueryContext(ctx, userQuery)
-
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, userQuery)
-	}
-	defer userRows.Close()
-
-	var userList []db.User
-	for userRows.Next() {
-		var user string
-		if err := userRows.Scan(
-			&user,
-		); err != nil {
-			return nil, err
-		}
-
-		if err := func() error {
-			// Uses single quote instead of backtick to escape because this is a string
-			// instead of table (which should use backtick instead). MySQL actually works
-			// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
-			grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", user)
-			grantRows, err := driver.db.QueryContext(ctx,
-				grantQuery,
-			)
-			if err != nil {
-				return util.FormatErrorWithQuery(err, grantQuery)
-			}
-			defer grantRows.Close()
-
-			grantList := []string{}
-			for grantRows.Next() {
-				var grant string
-				if err := grantRows.Scan(&grant); err != nil {
-					return err
-				}
-				grantList = append(grantList, grant)
-			}
-			if err := grantRows.Err(); err != nil {
-				return util.FormatErrorWithQuery(err, grantQuery)
-			}
-
-			userList = append(userList, db.User{
-				Name:  user,
-				Grant: strings.Join(grantList, "\n"),
-			})
-			return nil
-		}(); err != nil {
-			return nil, err
-		}
-	}
-	if err := userRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, userQuery)
-	}
-	return userList, nil
 }

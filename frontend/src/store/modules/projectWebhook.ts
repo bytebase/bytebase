@@ -11,26 +11,14 @@ import {
   ResourceObject,
   unknown,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   projectWebhook: ResourceObject,
   includedList: ResourceObject[]
 ): ProjectWebhook {
   return {
-    ...(projectWebhook.attributes as Omit<
-      ProjectWebhook,
-      "id" | "creator" | "updater"
-    >),
+    ...(projectWebhook.attributes as Omit<ProjectWebhook, "id">),
     id: parseInt(projectWebhook.id),
-    creator: getPrincipalFromIncludedList(
-      projectWebhook.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      projectWebhook.relationships!.updater.data,
-      includedList
-    ),
   };
 }
 

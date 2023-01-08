@@ -15,10 +15,7 @@ export type Backup = {
   databaseId: DatabaseId;
 
   // Standard fields
-  creator: Principal;
   createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   name: string;
   status: BackupStatus;

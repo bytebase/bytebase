@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/api"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	advisorDB "github.com/bytebase/bytebase/plugin/advisor/db"
@@ -92,22 +90,53 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	var connection *sql.DB
 
 	if request.DatabaseName != "" && request.Host != "" && request.Port != "" {
-		database, err := s.findDatabase(ctx, request.Host, request.Port, request.DatabaseName)
+		instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 		if err != nil {
 			return err
 		}
-		dbType := database.Instance.Engine
+		var instance *store.InstanceMessage
+		for _, v := range instances {
+			for _, d := range v.DataSources {
+				if d.Host == request.Host && d.Port == request.Port {
+					instance = v
+					break
+				}
+			}
+			if instance != nil {
+				break
+			}
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "instance not found with host and port")
+		}
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			EnvironmentID: &instance.EnvironmentID,
+			InstanceID:    &instance.ResourceID,
+			DatabaseName:  &request.DatabaseName,
+		})
+		if err != nil {
+			return err
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "database not found")
+		}
+		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
+		if err != nil {
+			return err
+		}
+
+		dbType := instance.Engine
 		databaseType = string(dbType)
-		catalog, err = s.store.NewCatalog(ctx, database.ID, dbType)
+		catalog, err = s.store.NewCatalog(ctx, database.UID, dbType)
 		if err != nil {
 			return err
 		}
-		driver, err = s.dbFactory.GetReadOnlyDatabaseDriver(ctx, database.Instance, database.Name)
+		driver, err = s.dbFactory.GetReadOnlyDatabaseDriver(ctx, composedInstance, database.DatabaseName)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}
 		defer driver.Close(ctx)
-		connection, err = driver.GetDBConnection(ctx, database.Name)
+		connection, err = driver.GetDBConnection(ctx, database.DatabaseName)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database connection").SetInternal(err)
 		}
@@ -160,34 +189,6 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, adviceList)
-}
-
-func (s *Server) findDatabase(ctx context.Context, host string, port string, databaseName string) (*api.Database, error) {
-	instanceList, err := s.store.FindInstance(ctx, &api.InstanceFind{
-		Host: &host,
-		Port: &port,
-	})
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find instance by host: %s, port: %s", host, port)).SetInternal(err)
-	}
-	if len(instanceList) == 0 {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find instance with host: %s, port: %s", host, port))
-	}
-
-	for _, instance := range instanceList {
-		databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-			InstanceID: &instance.ID,
-			Name:       &databaseName,
-		})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database by name %s in instance %d", databaseName, instance.ID)).SetInternal(err)
-		}
-		if len(databaseList) != 0 {
-			return databaseList[0], nil
-		}
-	}
-
-	return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find database %s in instance %s:%s", databaseName, host, port))
 }
 
 type schemaDiffRequestBody struct {

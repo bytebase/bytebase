@@ -50,7 +50,21 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 		if err != nil {
 			return err
 		}
-		opts := x509.VerifyOptions{Roots: rootCertPool}
+
+		// Add the intermediates.
+		intermediatePool := x509.NewCertPool()
+		for _, intermediate := range rawCerts[1:] {
+			cert, err := x509.ParseCertificate(intermediate)
+			if err != nil {
+				return err
+			}
+			intermediatePool.AddCert(cert)
+		}
+
+		opts := x509.VerifyOptions{
+			Roots:         rootCertPool,
+			Intermediates: intermediatePool,
+		}
 		if _, err = cert.Verify(opts); err != nil {
 			return errors.Wrap(err, "SSL cert failed to verify")
 		}
