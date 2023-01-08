@@ -183,10 +183,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	if err != nil {
 		return true, nil, err
 	}
-	composedDatabase, err := exec.store.GetDatabase(ctx, &api.DatabaseFind{ID: &database.UID})
-	if err != nil {
-		return true, nil, err
-	}
 
 	// After the task related database entry created successfully,
 	// we need to update task's database_id and statement with the newly created database immediately.
@@ -204,7 +200,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		return true, nil, err
 	}
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, composedDatabase, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", instance.Name),
 			zap.String("databaseName", database.DatabaseName),
