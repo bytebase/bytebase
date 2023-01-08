@@ -321,7 +321,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		api.SystemBotID,
 		api.SystemBotID,
 		instanceUID,
-		api.DefaultProjectID,
+		api.DefaultProjectUID,
 		create.DatabaseName,
 		create.CharacterSet,
 		create.Collation,

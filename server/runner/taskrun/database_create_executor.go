@@ -54,8 +54,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 
 	instance := task.Instance
+	v2Instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instance.ID})
+	if err != nil {
+		return true, nil, err
+	}
 	var driver db.Driver
-	if instance.Engine == db.MongoDB {
+	if v2Instance.Engine == db.MongoDB {
 		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
 		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, payload.DatabaseName)
@@ -81,12 +85,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	var schemaVersion string
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
 	if project.TenantMode == api.TenantModeTenant {
-		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project)
+		sv, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, v2Instance, project)
 		if err != nil {
 			return true, nil, err
 		}
 		schemaVersion = sv
-		connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
+		connectionStmt, err := getConnectionStatement(v2Instance.Engine, payload.DatabaseName)
 		if err != nil {
 			return true, nil, err
 		}
@@ -99,7 +103,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 
 	log.Debug("Start creating database...",
-		zap.String("instance", instance.Name),
+		zap.String("instance", v2Instance.Title),
 		zap.String("database", payload.DatabaseName),
 		zap.String("schemaVersion", schemaVersion),
 		zap.String("statement", statement),
@@ -179,10 +183,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	if err != nil {
 		return true, nil, err
 	}
-	composedDatabase, err := exec.store.GetDatabase(ctx, &api.DatabaseFind{ID: &database.UID})
-	if err != nil {
-		return true, nil, err
-	}
 
 	// After the task related database entry created successfully,
 	// we need to update task's database_id and statement with the newly created database immediately.
@@ -200,7 +200,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		return true, nil, err
 	}
 
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, composedDatabase, true /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", instance.Name),
 			zap.String("databaseName", database.DatabaseName),
@@ -236,16 +236,15 @@ func getConnectionStatement(dbType db.Type, databaseName string) (string, error)
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, instance *api.Instance, project *store.ProjectMessage) (string, string, error) {
-	// Find all databases in the project.
-	dbList, err := store.FindDatabase(ctx, &api.DatabaseFind{
-		ProjectID: &project.UID,
+func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage) (string, string, error) {
+	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+		ProjectID: &project.ResourceID,
 	})
 	if err != nil {
 		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
 	}
 
-	deployConfig, err := store.GetDeploymentConfigByProjectID(ctx, project.UID)
+	deployConfig, err := stores.GetDeploymentConfigByProjectID(ctx, project.UID)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
 	}
@@ -253,7 +252,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	if err != nil {
 		return "", "", errors.Errorf("Failed to get deployment schedule")
 	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, dbList)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, databases)
 	if err != nil {
 		return "", "", errors.Errorf("Failed to create deployment pipeline")
 	}
@@ -261,30 +260,38 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	if similarDB == nil {
 		return "", "", nil
 	}
+	similarDBInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &similarDB.EnvironmentID, ResourceID: &similarDB.InstanceID})
+	if err != nil {
+		return "", "", err
+	}
+	composedSimilarDBInstance, err := stores.GetInstanceByID(ctx, similarDBInstance.UID)
+	if err != nil {
+		return "", "", err
+	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, similarDB.Instance, similarDB.Name)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, composedSimilarDBInstance, similarDB.DatabaseName)
 	if err != nil {
 		return "", "", err
 	}
 	defer driver.Close(ctx)
-	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, similarDB.Name)
+	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, driver, similarDB.DatabaseName)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.Name)
+		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
 	}
 
 	var schemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, similarDB.DatabaseName, &schemaBuf, true /* schemaOnly */); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schemaBuf.String(), nil
 }
 
-func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) *api.Database {
-	var similarDB *api.Database
+func getPeerTenantDatabase(databaseMatrix [][]*store.DatabaseMessage, environmentID string) *store.DatabaseMessage {
+	var similarDB *store.DatabaseMessage
 	// We try to use an existing tenant with the same environment, if possible.
 	for _, databaseList := range databaseMatrix {
 		for _, db := range databaseList {
-			if db.Instance.EnvironmentID == environmentID {
+			if db.EnvironmentID == environmentID {
 				similarDB = db
 				break
 			}

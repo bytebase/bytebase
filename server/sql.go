@@ -140,9 +140,16 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			s.stateCfg.InstanceDatabaseSyncChan <- instance
 		}
 		if sync.DatabaseID != nil {
-			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
+			composedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to database instance ID: %d", *sync.DatabaseID)).SetInternal(err)
+			}
+			if composedDatabase == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
+			}
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: sync.DatabaseID})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", *sync.DatabaseID)).SetInternal(err)
 			}
 			if database == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
@@ -179,20 +186,30 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support SELECT sql statement")
 		}
 
-		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &exec.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", exec.InstanceID)).SetInternal(err)
 		}
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
+		composedInstance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
+		if err != nil {
+			return err
+		}
+		if composedInstance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
+		}
 		principalID := c.Get(getPrincipalIDContextKey()).(int)
 		role := c.Get(getRoleContextKey()).(api.Role)
-		var database *api.Database
+		var database *store.DatabaseMessage
 		if exec.DatabaseName != "" {
-			database, err = s.getDatabase(ctx, instance.ID, exec.DatabaseName)
+			database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
 			if err != nil {
 				return err
+			}
+			if database == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database %q not found", exec.DatabaseName))
 			}
 			// Database Access Control
 			hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, database)
@@ -232,7 +249,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 						// We have already checked the current database access rights.
 						continue
 					}
-					accessDatabase, err := s.getDatabase(ctx, instance.ID, databaseName)
+					accessDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 					if err != nil {
 						if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
 							// If database not found, skip.
@@ -243,10 +260,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 					hasAccessRights, err := s.hasDatabaseAccessRights(ctx, principalID, role, accessDatabase)
 					if err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.Name)).SetInternal(err)
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check access control for database: %q", accessDatabase.DatabaseName)).SetInternal(err)
 					}
 					if !hasAccessRights {
-						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.Name))
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed sql execute request, no permission to access database %q", accessDatabase.DatabaseName))
 					}
 				}
 			}
@@ -261,12 +278,12 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
 			}
 
-			catalog, err := s.store.NewCatalog(ctx, database.ID, instance.Engine)
+			catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
 
-			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, composedInstance, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
@@ -281,7 +298,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				dbType,
 				database.CharacterSet,
 				database.Collation,
-				instance.EnvironmentID,
+				composedInstance.EnvironmentID,
 				exec.Statement,
 				catalog,
 				connection,
@@ -294,9 +311,9 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				if err := s.createSQLEditorQueryActivity(ctx, c, api.ActivityError, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
 					Statement:              exec.Statement,
 					DurationNs:             0,
-					InstanceID:             instance.ID,
-					DeprecatedInstanceName: instance.Name,
-					DatabaseID:             database.ID,
+					InstanceID:             instance.UID,
+					DeprecatedInstanceName: instance.Title,
+					DatabaseID:             database.UID,
 					DatabaseName:           exec.DatabaseName,
 					Error:                  "",
 					AdviceList:             adviceList,
@@ -323,7 +340,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database list: %s", exec.Statement)).SetInternal(err)
 			}
 
-			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance.Engine, instance.ID, databaseList, exec.DatabaseName)
+			sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databaseList, exec.DatabaseName)
 			if err != nil {
 				return err
 			}
@@ -332,7 +349,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, composedInstance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -393,13 +410,13 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		var databaseID int
 		if database != nil {
-			databaseID = database.ID
+			databaseID = database.UID
 		}
 		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
 			Statement:              exec.Statement,
 			DurationNs:             time.Now().UnixNano() - start,
-			InstanceID:             instance.ID,
-			DeprecatedInstanceName: instance.Name,
+			InstanceID:             instance.UID,
+			DeprecatedInstanceName: instance.Title,
 			DatabaseID:             databaseID,
 			DatabaseName:           exec.DatabaseName,
 			Error:                  errMessage,
@@ -452,38 +469,33 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if len(exec.Statement) == 0 {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, missing sql statement")
 		}
-		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &exec.InstanceID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", exec.InstanceID)).SetInternal(err)
 		}
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
-		var database *api.Database
-		if exec.DatabaseName != "" {
-			databaseFind := &api.DatabaseFind{
-				InstanceID: &instance.ID,
-				Name:       &exec.DatabaseName,
-			}
-			dbList, err := s.store.FindDatabase(ctx, databaseFind)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
-			}
-			if len(dbList) == 0 {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
-			}
-			if len(dbList) > 1 {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
-			}
-			database = dbList[0]
+		composedInstance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
+		if err != nil {
+			return err
 		}
-
+		if composedInstance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
+		}
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
+		if err != nil {
+			return err
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database %q not found", exec.DatabaseName))
+		}
 		// Admin API always executes with read-only off.
 		exec.Readonly = true
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, composedInstance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -510,13 +522,13 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 		var databaseID int
 		if database != nil {
-			databaseID = database.ID
+			databaseID = database.UID
 		}
 		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
 			Statement:              exec.Statement,
 			DurationNs:             time.Now().UnixNano() - start,
-			InstanceID:             instance.ID,
-			DeprecatedInstanceName: instance.Name,
+			InstanceID:             instance.UID,
+			DeprecatedInstanceName: instance.Title,
 			DatabaseID:             databaseID,
 			DatabaseName:           exec.DatabaseName,
 			Error:                  errMessage,
@@ -690,25 +702,7 @@ func checkPostgreSQLIndexHit(statement string, plan string) []advisor.Advice {
 	return nil
 }
 
-func (s *Server) getDatabase(ctx context.Context, instanceID int, databaseName string) (*api.Database, error) {
-	databaseFind := &api.DatabaseFind{
-		InstanceID: &instanceID,
-		Name:       &databaseName,
-	}
-	dbList, err := s.store.FindDatabase(ctx, databaseFind)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", databaseName, instanceID)).SetInternal(err)
-	}
-	if len(dbList) == 0 {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", databaseName, instanceID))
-	}
-	if len(dbList) > 1 {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", databaseName, instanceID))
-	}
-	return dbList[0], nil
-}
-
-func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type, instanceID int, databaseList []string, currentDatabase string) (*db.SensitiveSchemaInfo, error) {
+func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.InstanceMessage, databaseList []string, currentDatabase string) (*db.SensitiveSchemaInfo, error) {
 	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
 	isEmpty := true
 	result := &db.SensitiveSchemaInfo{
@@ -723,20 +717,22 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 			databaseName = currentDatabase
 		}
 
-		if isExcludeDatabase(engineType, databaseName) {
+		if isExcludeDatabase(instance.Engine, databaseName) {
 			continue
 		}
 
-		database, err := s.getDatabase(ctx, instanceID, databaseName)
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 		if err != nil {
 			return nil, err
 		}
+		if database == nil {
+			return nil, errors.Errorf("database %q not found", databaseName)
+		}
 
 		columnMap := make(sensitiveDataMap)
-
-		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.ID)
+		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instanceID))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instance.UID))
 		}
 		for _, data := range policy.SensitiveDataList {
 			columnMap[api.SensitiveData{
@@ -745,7 +741,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, engineType db.Type,
 			}] = data.Type
 		}
 
-		dbSchema, err := s.store.GetDBSchema(ctx, database.ID)
+		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find table list for database %q", databaseName))
 		}
@@ -816,14 +812,23 @@ func isMySQLExcludeDatabase(database string) bool {
 	return true
 }
 
-func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, role api.Role, database *api.Database) (bool, error) {
+func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, role api.Role, database *store.DatabaseMessage) (bool, error) {
 	// Workspace Owners and DBAs always have database access rights.
 	if role == api.Owner || role == api.DBA {
 		return true, nil
 	}
 
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		return false, err
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
+	if err != nil {
+		return false, err
+	}
+
 	// Only project member can access database.
-	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.Project.ResourceID})
+	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return false, err
 	}
@@ -832,12 +837,12 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, r
 	}
 
 	// calculate the effective policy.
-	databasePolicy, inheritFromEnvironment, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.ID)
+	databasePolicy, inheritFromEnvironment, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
 	if err != nil {
 		return false, err
 	}
 
-	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, database.Instance.EnvironmentID)
+	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
 	if err != nil {
 		return false, err
 	}

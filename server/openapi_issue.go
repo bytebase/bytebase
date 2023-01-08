@@ -44,7 +44,7 @@ func (s *Server) createIssueByOpenAPI(c echo.Context) error {
 
 	for _, database := range dbList {
 		migrationList = append(migrationList, &api.MigrationDetail{
-			DatabaseID:    database.ID,
+			DatabaseID:    database.UID,
 			MigrationType: create.MigrationType,
 			Statement:     create.Statement,
 			SchemaVersion: create.SchemaVersion,
