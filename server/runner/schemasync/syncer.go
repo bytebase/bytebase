@@ -78,26 +78,21 @@ func (s *Syncer) syncAllInstances(ctx context.Context) {
 		}
 	}()
 
-	rowStatus := api.Normal
-	instanceFind := &api.InstanceFind{
-		RowStatus: &rowStatus,
-	}
-	instanceList, err := s.store.FindInstance(ctx, instanceFind)
+	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
 		log.Error("Failed to retrieve instances", zap.Error(err))
 		return
 	}
 
 	var instanceWG sync.WaitGroup
-	for _, instance := range instanceList {
+	for _, instance := range instances {
 		instanceWG.Add(1)
-		go func(instance *api.Instance) {
+		go func(instance *store.InstanceMessage) {
 			defer instanceWG.Done()
-			log.Debug("Sync instance schema", zap.String("instance", instance.Name))
+			log.Debug("Sync instance schema", zap.String("instance", instance.ResourceID))
 			if _, err := s.SyncInstance(ctx, instance); err != nil {
 				log.Debug("Failed to sync instance",
-					zap.Int("id", instance.ID),
-					zap.String("name", instance.Name),
+					zap.String("instance", instance.ResourceID),
 					zap.String("error", err.Error()))
 				return
 			}
@@ -168,7 +163,7 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *api.Instance) {
 }
 
 // SyncInstance syncs the schema for all databases in an instance.
-func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]string, error) {
+func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) ([]string, error) {
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return nil, err
@@ -184,7 +179,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 	// to avoid changing the updated_ts.
 	if instanceMeta.Version != instance.EngineVersion {
 		if _, err := s.store.PatchInstance(ctx, &store.InstancePatch{
-			ID:            instance.ID,
+			ID:            instance.UID,
 			UpdaterID:     api.SystemBotID,
 			EngineVersion: &instanceMeta.Version,
 		}); err != nil {
@@ -200,13 +195,13 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 			Grant: instanceUser.Grant,
 		})
 	}
-	if err := s.store.UpsertInstanceUsers(ctx, instance.ID, instanceUsers); err != nil {
+	if err := s.store.UpsertInstanceUsers(ctx, instance.UID, instanceUsers); err != nil {
 		return nil, err
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.Name)
+		return nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
 	}
 	for _, databaseMetadata := range instanceMeta.Databases {
 		exist := false
@@ -219,13 +214,13 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 		if !exist {
 			// Create the database in the default project.
 			if err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
-				EnvironmentID: instance.Environment.ResourceID,
+				EnvironmentID: instance.EnvironmentID,
 				InstanceID:    instance.ResourceID,
 				DatabaseName:  databaseMetadata.Name,
 				CharacterSet:  databaseMetadata.CharacterSet,
 				Collation:     databaseMetadata.Collation,
 			}); err != nil {
-				return nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.Name, databaseMetadata.Name)
+				return nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}
 		}
 	}
@@ -241,12 +236,12 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *api.Instance) ([]st
 		if !exist {
 			syncStatus := api.NotFound
 			if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-				EnvironmentID: instance.Environment.ResourceID,
+				EnvironmentID: instance.EnvironmentID,
 				InstanceID:    instance.ResourceID,
 				DatabaseName:  database.DatabaseName,
 				SyncState:     &syncStatus,
 			}, api.SystemBotID); err != nil {
-				return nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.Name)
+				return nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 			}
 		}
 	}
@@ -267,11 +262,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if instance == nil {
 		return errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
-	if err != nil {
-		return err
-	}
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, composedInstance, database.DatabaseName)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
 	if err != nil {
 		return err
 	}

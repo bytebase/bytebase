@@ -95,7 +95,11 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, task *api.Task) (t
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
 func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.Runner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *api.Task, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		return true, nil, err
 	}

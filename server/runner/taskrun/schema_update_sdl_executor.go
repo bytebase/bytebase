@@ -49,15 +49,19 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *api.Task
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update payload")
 	}
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
 	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &task.Database.Instance.Environment.ResourceID,
-		InstanceID:    &task.Database.Instance.ResourceID,
+		EnvironmentID: &instance.EnvironmentID,
+		InstanceID:    &instance.ResourceID,
 		DatabaseName:  &task.Database.Name,
 	})
 	if err != nil {
 		return true, nil, err
 	}
-	ddl, err := exec.computeDatabaseSchemaDiff(ctx, exec.dbFactory, task.Database, payload.Statement)
+	ddl, err := exec.computeDatabaseSchemaDiff(ctx, exec.dbFactory, instance, database.DatabaseName, payload.Statement)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
@@ -77,8 +81,8 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, task *api.Task
 // computeDatabaseSchemaDiff computes the diff between current database schema
 // and the given schema. It returns an empty string if there is no applicable
 // diff.
-func (*SchemaUpdateSDLExecutor) computeDatabaseSchemaDiff(ctx context.Context, dbFactory *dbfactory.DBFactory, database *api.Database, newSchemaStr string) (string, error) {
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
+func (*SchemaUpdateSDLExecutor) computeDatabaseSchemaDiff(ctx context.Context, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, databaseName string, newSchemaStr string) (string, error) {
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", errors.Wrap(err, "get admin driver")
 	}
@@ -87,19 +91,19 @@ func (*SchemaUpdateSDLExecutor) computeDatabaseSchemaDiff(ctx context.Context, d
 	}()
 
 	var schema bytes.Buffer
-	_, err = driver.Dump(ctx, database.Name, &schema, true /* schemaOnly */)
+	_, err = driver.Dump(ctx, databaseName, &schema, true /* schemaOnly */)
 	if err != nil {
 		return "", errors.Wrap(err, "dump old schema")
 	}
 
 	var engine parser.EngineType
-	switch database.Instance.Engine {
+	switch instance.Engine {
 	case db.Postgres:
 		engine = parser.Postgres
 	case db.MySQL:
 		engine = parser.MySQL
 	default:
-		return "", errors.Errorf("unsupported database engine %q", database.Instance.Engine)
+		return "", errors.Errorf("unsupported database engine %q", instance.Engine)
 	}
 
 	diff, err := differ.SchemaDiff(engine, schema.String(), newSchemaStr)

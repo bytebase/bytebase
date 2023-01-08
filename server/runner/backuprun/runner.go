@@ -261,40 +261,44 @@ func (r *Runner) downloadBinlogFiles(ctx context.Context) {
 
 	r.downloadBinlogMu.Lock()
 	defer r.downloadBinlogMu.Unlock()
-	for _, instance := range instanceList {
-		if _, ok := r.downloadBinlogInstanceIDs[instance.ID]; !ok {
-			r.downloadBinlogInstanceIDs[instance.ID] = true
+	for _, composedInstance := range instanceList {
+		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &composedInstance.ID})
+		if err != nil {
+			log.Error("failed to get instance", zap.Int("instance", composedInstance.ID))
+		}
+		if _, ok := r.downloadBinlogInstanceIDs[instance.UID]; !ok {
+			r.downloadBinlogInstanceIDs[instance.UID] = true
 			go r.downloadBinlogFilesForInstance(ctx, instance)
 			r.downloadBinlogWg.Add(1)
 		}
 	}
 }
 
-func (r *Runner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance) {
+func (r *Runner) downloadBinlogFilesForInstance(ctx context.Context, instance *store.InstanceMessage) {
 	defer func() {
 		r.downloadBinlogMu.Lock()
-		delete(r.downloadBinlogInstanceIDs, instance.ID)
+		delete(r.downloadBinlogInstanceIDs, instance.UID)
 		r.downloadBinlogMu.Unlock()
 		r.downloadBinlogWg.Done()
 	}()
 	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
-			log.Debug("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
+			log.Debug("Cannot connect to instance", zap.String("instance", instance.ResourceID), zap.Error(err))
 			return
 		}
-		log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.Name), zap.Error(err))
+		log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.ResourceID), zap.Error(err))
 		return
 	}
 	defer driver.Close(ctx)
 
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
-		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
+		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.ResourceID))
 		return
 	}
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */, r.s3Client); err != nil {
-		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
+		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.ResourceID), zap.Error(err))
 		return
 	}
 }
@@ -329,13 +333,22 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		if err != nil {
 			log.Error("Failed to get project", zap.Error(err))
 		}
+		if project.Deleted {
+			continue
+		}
 		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
 		if err != nil {
 			log.Error("Failed to get instance", zap.Error(err))
 		}
+		if instance.Deleted {
+			continue
+		}
 		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 		if err != nil {
 			log.Error("Failed to get environment", zap.Error(err))
+		}
+		if environment.Deleted {
+			continue
 		}
 		backupName := fmt.Sprintf("%s-%s-%s-autobackup", slug.Make(project.Title), slug.Make(environment.Title), t.Format("20060102T030405"))
 		backupList, err := r.store.FindBackup(ctx, &api.BackupFind{
@@ -390,15 +403,18 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	composedInstance, err := r.store.GetInstanceByID(ctx, instance.UID)
+	if instance.Deleted {
+		return nil, errors.Errorf("instance %q deleted", database.InstanceID)
+	}
+	environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return nil, err
 	}
-	if composedInstance == nil {
-		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	if environment == nil {
+		return nil, errors.Errorf("environment %q not found", instance.EnvironmentID)
 	}
 
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, composedInstance, database.DatabaseName)
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, database.DatabaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get admin database driver")
 	}
@@ -450,7 +466,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 	createdStages, err := r.store.CreateStage(ctx, []*api.StageCreate{
 		{
 			Name:          fmt.Sprintf("backup-%s", backupName),
-			EnvironmentID: composedInstance.EnvironmentID,
+			EnvironmentID: environment.UID,
 			PipelineID:    createdPipeline.ID,
 			CreatorID:     creatorID,
 		},

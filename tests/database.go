@@ -19,7 +19,7 @@ import (
 )
 
 func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
-	labels, err := marshalLabels(labelMap, instance.Environment.Name)
+	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
 	if err != nil {
 		return err
 	}

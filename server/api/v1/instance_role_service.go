@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -39,13 +38,13 @@ func (s *InstanceRoleService) GetRole(ctx context.Context, request *v1pb.GetRole
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, instance, err := s.getEnvironmentAndInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstance(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
 	role, err := func() (*db.DatabaseRoleMessage, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, convertToLegacyInstance(instance, environment), "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
 		}
@@ -75,13 +74,13 @@ func (s *InstanceRoleService) ListRoles(ctx context.Context, request *v1pb.ListR
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, instance, err := s.getEnvironmentAndInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstance(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
 	roleList, err := func() ([]*db.DatabaseRoleMessage, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, convertToLegacyInstance(instance, environment), "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
 		}
@@ -114,7 +113,7 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	environment, instance, err := s.getEnvironmentAndInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstance(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +138,7 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 	}
 
 	role, err := func() (*db.DatabaseRoleMessage, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, convertToLegacyInstance(instance, environment), "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
 		}
@@ -169,7 +168,7 @@ func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, instance, err := s.getEnvironmentAndInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstance(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +203,7 @@ func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.Upda
 	}
 
 	role, err := func() (*db.DatabaseRoleMessage, error) {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, convertToLegacyInstance(instance, environment), "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return nil, err
 		}
@@ -234,13 +233,13 @@ func (s *InstanceRoleService) DeleteRole(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environment, instance, err := s.getEnvironmentAndInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstance(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := func() error {
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, convertToLegacyInstance(instance, environment), "" /* database name */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* database name */)
 		if err != nil {
 			return err
 		}
@@ -259,71 +258,22 @@ func (*InstanceRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRole
 	return nil, status.Errorf(codes.Unimplemented, "Undelete role is not supported")
 }
 
-func (s *InstanceRoleService) getEnvironmentAndInstance(ctx context.Context, environmentID, instanceID string) (*store.EnvironmentMessage, *store.InstanceMessage, error) {
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-	}
-	// We don't allow access even for the read API because the API will call user instances without using Bytebase metadata.
-	if environment.Deleted {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
-	}
-
+func (s *InstanceRoleService) getInstance(ctx context.Context, environmentID, instanceID string) (*store.InstanceMessage, error) {
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
 	})
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if instance == nil {
-		return nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	if instance.Deleted {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", instanceID)
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", instanceID)
 	}
 
-	return environment, instance, nil
-}
-
-func convertToLegacyInstance(instance *store.InstanceMessage, environment *store.EnvironmentMessage) *api.Instance {
-	port := ""
-	host := ""
-	ds := []*api.DataSource{}
-	for _, dataSource := range instance.DataSources {
-		if dataSource.Type == api.Admin {
-			port = dataSource.Port
-			host = dataSource.Host
-		}
-		ds = append(ds, &api.DataSource{
-			Type:     dataSource.Type,
-			Name:     dataSource.Title,
-			Username: dataSource.Username,
-			Password: dataSource.Password,
-			SslCa:    dataSource.SslCa,
-			SslCert:  dataSource.SslCert,
-			SslKey:   dataSource.SslKey,
-			Host:     dataSource.Host,
-			Port:     dataSource.Port,
-			Database: dataSource.Database,
-		})
-	}
-
-	return &api.Instance{
-		ID:     instance.UID,
-		Engine: instance.Engine,
-		Host:   host,
-		Port:   port,
-		Environment: &api.Environment{
-			Name: environment.Title,
-		},
-		DataSourceList: ds,
-	}
+	return instance, nil
 }
 
 func convertToRole(role *db.DatabaseRoleMessage, instance *store.InstanceMessage) *v1pb.InstanceRole {

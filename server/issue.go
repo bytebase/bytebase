@@ -620,13 +620,19 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
 	}
 
-	// Find instance.
-	instance, err := s.store.GetInstanceByID(ctx, c.InstanceID)
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &c.InstanceID})
 	if err != nil {
 		return nil, err
 	}
 	if instance == nil {
 		return nil, errors.Errorf("instance ID not found %v", c.InstanceID)
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+	if err != nil {
+		return nil, err
+	}
+	if environment == nil {
+		return nil, errors.Errorf("environment ID not found %v", instance.EnvironmentID)
 	}
 
 	if instance.Engine == db.MongoDB && c.TableName == "" {
@@ -642,7 +648,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
 	}
 
-	taskCreateList, err := s.createDatabaseCreateTaskList(c, *instance, project)
+	taskCreateList, err := s.createDatabaseCreateTaskList(c, instance, project)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create task list of creating database")
 	}
@@ -681,8 +687,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			CreatorID: issueCreate.CreatorID,
 			StageList: []api.StageCreate{
 				{
-					Name:          instance.Environment.Name,
-					EnvironmentID: instance.EnvironmentID,
+					Name:          environment.Title,
+					EnvironmentID: environment.UID,
 					TaskList:      taskCreateList,
 					// TODO(zp): Find a common way to merge taskCreateList and TaskIndexDAGList.
 					TaskIndexDAGList: []api.TaskIndexDAG{
@@ -701,8 +707,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		CreatorID: issueCreate.CreatorID,
 		StageList: []api.StageCreate{
 			{
-				Name:          instance.Environment.Name,
-				EnvironmentID: instance.EnvironmentID,
+				Name:          environment.Title,
+				EnvironmentID: environment.UID,
 				TaskList:      taskCreateList,
 			},
 		},
@@ -1055,7 +1061,7 @@ func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMess
 }
 
 // createDatabaseCreateTaskList returns the task list for create database.
-func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, instance api.Instance, project *store.ProjectMessage) ([]api.TaskCreate, error) {
+func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, instance *store.InstanceMessage, project *store.ProjectMessage) ([]api.TaskCreate, error) {
 	if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
 		return nil, err
 	}
@@ -1070,7 +1076,7 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 		return nil, util.FormatError(common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB"))
 	}
 	// Validate the labels. Labels are set upon task completion.
-	if _, err := convertDatabaseLabels(c.Labels, instance.Environment.ResourceID); err != nil {
+	if _, err := convertDatabaseLabels(c.Labels, instance.EnvironmentID); err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
 	}
 
@@ -1082,9 +1088,9 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 	}
 
 	// Get admin data source username.
-	adminDataSource := api.DataSourceFromInstanceWithType(&instance, api.Admin)
+	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.UID)
 	}
 	// Snowflake needs to use upper case of DatabaseName.
 	databaseName := c.DatabaseName
@@ -1130,7 +1136,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 
 	// PITR to new db: task 1
 	if c.CreateDatabaseCtx != nil {
-		targetInstance, err := s.store.GetInstanceByID(ctx, c.CreateDatabaseCtx.InstanceID)
+		targetInstance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &c.CreateDatabaseCtx.InstanceID})
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to find the instance with ID %d", c.CreateDatabaseCtx.InstanceID)
 		}
@@ -1138,13 +1144,13 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to find the project with ID %d", projectID)
 		}
-		taskList, err := s.createDatabaseCreateTaskList(*c.CreateDatabaseCtx, *targetInstance, project)
+		taskList, err := s.createDatabaseCreateTaskList(*c.CreateDatabaseCtx, targetInstance, project)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
 		}
 		taskCreateList = append(taskCreateList, taskList...)
 
-		payloadRestore.TargetInstanceID = &targetInstance.ID
+		payloadRestore.TargetInstanceID = &targetInstance.UID
 		payloadRestore.DatabaseName = &c.CreateDatabaseCtx.DatabaseName
 	}
 

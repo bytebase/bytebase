@@ -49,8 +49,8 @@ func (d *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		return nil
 	}
 	log.Info("Bytebase migration schema not found, creating schema...",
-		zap.String("environment", d.connCtx.EnvironmentName),
-		zap.String("instance", d.connCtx.InstanceName),
+		zap.String("environment", d.connCtx.EnvironmentID),
+		zap.String("instance", d.connCtx.InstanceID),
 	)
 	statements := splitStatement(migrationSchema)
 	op, err := d.dbClient.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{

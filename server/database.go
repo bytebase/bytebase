@@ -284,6 +284,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance %q not found", database.InstanceID))
 		}
+		if instance.Deleted {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance %q deleted", database.InstanceID))
+		}
 		if instance.Engine == db.MongoDB {
 			return echo.NewHTTPError(http.StatusBadRequest, "Backup is not supported for MongoDB")
 		}
@@ -488,17 +491,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
-		// Refetch the instance to get the updated data source.
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &database.InstanceID})
+		if err != nil {
+			return err
+		}
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.String("instance", instance.ResourceID),
+				zap.Error(err))
+		}
+
+		// Sync all databases in the instance asynchronously.
 		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.SchemaSyncer.SyncInstance(ctx, updatedInstance); err != nil {
-			log.Warn("Failed to sync instance",
-				zap.Int("instance_id", updatedInstance.ID),
-				zap.Error(err))
-		}
-		// Sync all databases in the instance asynchronously.
 		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -564,17 +571,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
-		// Refetch the instance to get the updated data source.
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &database.InstanceID})
+		if err != nil {
+			return err
+		}
+		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
+			log.Warn("Failed to sync instance",
+				zap.String("instance", instance.ResourceID),
+				zap.Error(err))
+		}
+		// Sync all databases in the instance asynchronously.
 		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 		}
-		if _, err := s.SchemaSyncer.SyncInstance(ctx, updatedInstance); err != nil {
-			log.Warn("Failed to sync instance",
-				zap.Int("instance_id", updatedInstance.ID),
-				zap.Error(err))
-		}
-		// Sync all databases in the instance asynchronously.
 		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

@@ -69,7 +69,11 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 		return nil, err
 	}
 
-	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, task.Instance, task.Database.Name)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, task.Database.Name)
 	if err != nil {
 		return nil, err
 	}

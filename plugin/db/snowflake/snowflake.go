@@ -79,8 +79,8 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 	}
 	log.Debug("Opening Snowflake driver",
 		zap.String("dsn", loggedDSN),
-		zap.String("environment", connCtx.EnvironmentName),
-		zap.String("database", connCtx.InstanceName),
+		zap.String("environment", connCtx.EnvironmentID),
+		zap.String("database", connCtx.InstanceID),
 	)
 	db, err := sql.Open("snowflake", dsn)
 	if err != nil {

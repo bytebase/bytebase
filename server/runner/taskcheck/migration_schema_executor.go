@@ -26,7 +26,7 @@ type MigrationSchemaExecutor struct {
 
 // Run will run the task check migration schema executor once.
 func (e *MigrationSchemaExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *api.Task) (result []api.TaskCheckResult, err error) {
-	instance, err := e.store.GetInstanceByID(ctx, task.InstanceID)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}
@@ -49,7 +49,7 @@ func (e *MigrationSchemaExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, 
 				Namespace: api.BBNamespace,
 				Code:      common.MigrationSchemaMissing.Int(),
 				Title:     "Error",
-				Content:   fmt.Sprintf("Missing migration schema for instance %q", instance.Name),
+				Content:   fmt.Sprintf("Missing migration schema for instance %q", instance.Title),
 			},
 		}, nil
 	}
@@ -60,7 +60,7 @@ func (e *MigrationSchemaExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, 
 			Namespace: api.BBNamespace,
 			Code:      common.Ok.Int(),
 			Title:     "OK",
-			Content:   fmt.Sprintf("Instance %q has setup migration schema", instance.Name),
+			Content:   fmt.Sprintf("Instance %q has setup migration schema", instance.Title),
 		},
 	}, nil
 }

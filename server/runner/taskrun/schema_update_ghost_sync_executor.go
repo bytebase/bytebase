@@ -61,7 +61,14 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 		return true, nil, err
 	}
 
-	adminDataSource := api.DataSourceFromInstanceWithType(task.Instance, api.Admin)
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
+	if instance == nil {
+		return true, nil, errors.Errorf("instance %d not found", task.InstanceID)
+	}
+	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
 		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.Instance.ID)
 	}
