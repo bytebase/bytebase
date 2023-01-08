@@ -633,7 +633,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collection name missing for MongoDB")
 	}
 
-	// Find project.
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
@@ -813,19 +812,17 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 
 	// aggregatedMatrix is the aggregated matrix by deployments.
 	// databaseToMigrationList is the mapping from database ID to migration detail.
-	aggregatedMatrix := make([][]*api.Database, len(deploySchedule.Deployments))
+	aggregatedMatrix := make([][]*store.DatabaseMessage, len(deploySchedule.Deployments))
 	databaseToMigrationList := make(map[int][]*api.MigrationDetail)
 
-	dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-		ProjectID: &issueCreate.ProjectID,
-	})
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 	}
 	if databaseIDCount == 0 {
 		// Deploy to all tenant databases.
 		migrationDetail := c.DetailList[0]
-		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, dbList)
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, databases)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
 		}
@@ -833,31 +830,38 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		for _, databaseList := range matrix {
 			for _, database := range databaseList {
 				// There should be only one migration per database for tenant mode deployment.
-				databaseToMigrationList[database.ID] = []*api.MigrationDetail{migrationDetail}
+				databaseToMigrationList[database.UID] = []*api.MigrationDetail{migrationDetail}
 			}
 		}
 	} else {
-		databaseMap := make(map[int]*api.Database)
-		for _, db := range dbList {
-			databaseMap[db.ID] = db
+		databaseMap := make(map[int]*store.DatabaseMessage)
+		for _, database := range databases {
+			databaseMap[database.UID] = database
 		}
 		for _, d := range c.DetailList {
 			database, ok := databaseMap[d.DatabaseID]
 			if !ok {
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID %d not found in project %d", d.DatabaseID, issueCreate.ProjectID))
 			}
-			if database.Instance.Engine == db.MongoDB && d.MigrationType != db.Data && d.MigrationType != db.Baseline {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+			if err != nil {
+				return nil, err
+			}
+			if instance == nil {
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance not found for database %v", d.DatabaseID))
+			}
+			if instance.Engine == db.MongoDB && d.MigrationType != db.Data && d.MigrationType != db.Baseline {
 				// We disallow user to create non-data migration for MongoDB.
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Cannot create non-data migration for MongoDB, consider using data migration(DML) instead.")
 			}
-			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, []*api.Database{database})
+			matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, []*store.DatabaseMessage{database})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to build deployment pipeline").SetInternal(err)
 			}
 			for i, databaseList := range matrix {
 				aggregatedMatrix[i] = append(aggregatedMatrix[i], databaseList...)
 			}
-			databaseToMigrationList[database.ID] = append(databaseToMigrationList[database.ID], d)
+			databaseToMigrationList[database.UID] = append(databaseToMigrationList[database.UID], d)
 		}
 	}
 
@@ -871,19 +875,23 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if len(databaseList) == 0 {
 				continue
 			}
-			var environmentID int
+			var environmentID string
 			var taskCreateLists [][]api.TaskCreate
 			var taskIndexDAGLists [][]api.TaskIndexDAG
 			for _, database := range databaseList {
-				if environmentID > 0 && environmentID != database.Instance.EnvironmentID {
+				if environmentID != "" && environmentID != database.EnvironmentID {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
 				}
-				environmentID = database.Instance.EnvironmentID
+				environmentID = database.EnvironmentID
 
 				schemaVersion := common.DefaultMigrationVersion()
-				migrationDetailList := databaseToMigrationList[database.ID]
+				migrationDetailList := databaseToMigrationList[database.UID]
 				for _, migrationDetail := range migrationDetailList {
-					taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, c.VCSPushEvent, migrationDetail, schemaVersion)
+					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+					if err != nil {
+						return nil, err
+					}
+					taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, instance, c.VCSPushEvent, migrationDetail, schemaVersion)
 					if err != nil {
 						return nil, err
 					}
@@ -896,9 +904,13 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			if err != nil {
 				return nil, err
 			}
+			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+			if err != nil {
+				return nil, err
+			}
 			create.StageList = append(create.StageList, api.StageCreate{
 				Name:             deploySchedule.Deployments[i].Name,
-				EnvironmentID:    environmentID,
+				EnvironmentID:    environment.UID,
 				TaskList:         taskCreateList,
 				TaskIndexDAGList: taskIndexDAGList,
 			})
@@ -914,16 +926,23 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 		if len(databaseList) == 0 {
 			continue
 		}
-		var environmentID int
+		var environmentID string
 		var taskCreateList []api.TaskCreate
 		var taskIndexDAGList []api.TaskIndexDAG
 		for _, database := range databaseList {
-			if environmentID > 0 && environmentID != database.Instance.EnvironmentID {
+			if environmentID != "" && environmentID != database.EnvironmentID {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, "all databases in a stage should have the same environment")
 			}
-			environmentID = database.Instance.EnvironmentID
+			environmentID = database.EnvironmentID
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+			if err != nil {
+				return nil, err
+			}
+			if instance == nil {
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance not found for database %v", database.UID))
+			}
 
-			migrationDetailList := databaseToMigrationList[database.ID]
+			migrationDetailList := databaseToMigrationList[database.UID]
 			sort.Slice(migrationDetailList, func(i, j int) bool {
 				return migrationDetailList[i].SchemaVersion < migrationDetailList[j].SchemaVersion
 			})
@@ -931,7 +950,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				taskIndexDAGList = append(taskIndexDAGList, api.TaskIndexDAG{FromIndex: len(taskCreateList) + i, ToIndex: len(taskCreateList) + i + 1})
 			}
 			for _, migrationDetail := range migrationDetailList {
-				taskCreate, err := getUpdateTask(database, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
+				taskCreate, err := getUpdateTask(database, instance, c.VCSPushEvent, migrationDetail, getOrDefaultSchemaVersion(migrationDetail))
 				if err != nil {
 					return nil, err
 				}
@@ -939,9 +958,13 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+		if err != nil {
+			return nil, err
+		}
 		create.StageList = append(create.StageList, api.StageCreate{
 			Name:             deploySchedule.Deployments[i].Name,
-			EnvironmentID:    environmentID,
+			EnvironmentID:    environment.UID,
 			TaskList:         taskCreateList,
 			TaskIndexDAGList: taskIndexDAGList,
 		})
@@ -956,14 +979,14 @@ func getOrDefaultSchemaVersion(detail *api.MigrationDetail) string {
 	return common.DefaultMigrationVersion()
 }
 
-func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (api.TaskCreate, error) {
+func getUpdateTask(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, d *api.MigrationDetail, schemaVersion string) (api.TaskCreate, error) {
 	var taskName string
 	var taskType api.TaskType
 
 	var payloadString string
 	switch d.MigrationType {
 	case db.Baseline:
-		taskName = fmt.Sprintf("Establish baseline for database %q", database.Name)
+		taskName = fmt.Sprintf("Establish baseline for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseSchemaBaseline
 		payload := api.TaskDatabaseSchemaBaselinePayload{
 			SchemaVersion: schemaVersion,
@@ -974,7 +997,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.Migrate:
-		taskName = fmt.Sprintf("DDL(schema) for database %q", database.Name)
+		taskName = fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseSchemaUpdate
 		payload := api.TaskDatabaseSchemaUpdatePayload{
 			Statement:     d.Statement,
@@ -988,7 +1011,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.MigrateSDL:
-		taskName = fmt.Sprintf("SDL for database %q", database.Name)
+		taskName = fmt.Sprintf("SDL for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseSchemaUpdateSDL
 		payload := api.TaskDatabaseSchemaUpdateSDLPayload{
 			Statement:     d.Statement,
@@ -1002,7 +1025,7 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 		}
 		payloadString = string(bytes)
 	case db.Data:
-		taskName = fmt.Sprintf("DML(data) for database %q", database.Name)
+		taskName = fmt.Sprintf("DML(data) for database %q", database.DatabaseName)
 		taskType = api.TaskDatabaseDataUpdate
 		payload := api.TaskDatabaseDataUpdatePayload{
 			Statement:     d.Statement,
@@ -1021,8 +1044,8 @@ func getUpdateTask(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.M
 
 	return api.TaskCreate{
 		Name:              taskName,
-		InstanceID:        database.Instance.ID,
-		DatabaseID:        &database.ID,
+		InstanceID:        instance.UID,
+		DatabaseID:        &database.UID,
 		Status:            api.TaskPendingApproval,
 		Type:              taskType,
 		Statement:         d.Statement,
@@ -1227,7 +1250,7 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 }
 
 // creates gh-ost TaskCreate list and dependency.
-func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.MigrationDetail, schemaVersion string) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func createGhostTaskList(database *store.DatabaseMessage, instance *store.InstanceMessage, vcsPushEvent *vcs.PushEvent, detail *api.MigrationDetail, schemaVersion string) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	// task "sync"
 	payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
@@ -1240,9 +1263,9 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update gh-ost sync payload, error: %v", err))
 	}
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:              fmt.Sprintf("Update schema gh-ost sync for database %q", database.Name),
-		InstanceID:        database.InstanceID,
-		DatabaseID:        &database.ID,
+		Name:              fmt.Sprintf("Update schema gh-ost sync for database %q", database.DatabaseName),
+		InstanceID:        instance.UID,
+		DatabaseID:        &database.UID,
 		Status:            api.TaskPendingApproval,
 		Type:              api.TaskDatabaseSchemaUpdateGhostSync,
 		Statement:         detail.Statement,
@@ -1257,9 +1280,9 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
 	}
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:              fmt.Sprintf("Update schema gh-ost cutover for database %q", database.Name),
-		InstanceID:        database.InstanceID,
-		DatabaseID:        &database.ID,
+		Name:              fmt.Sprintf("Update schema gh-ost cutover for database %q", database.DatabaseName),
+		InstanceID:        instance.UID,
+		DatabaseID:        &database.UID,
 		Status:            api.TaskPendingApproval,
 		Type:              api.TaskDatabaseSchemaUpdateGhostCutover,
 		EarliestAllowedTs: detail.EarliestAllowedTs,

@@ -7,52 +7,77 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/store"
 )
 
 func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
-	dbs := []*api.Database{
+	dbs := []*store.DatabaseMessage{
 		{
-			ID:     0,
-			Name:   "hello",
-			Labels: "[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			UID:          0,
+			DatabaseName: "hello",
+			Labels: map[string]string{
+				"bb.location":    "us-central1",
+				"bb.tenant":      "bytebase",
+				"bb.environment": "dev",
+			},
 		},
 		{
-			ID:     1,
-			Name:   "hello",
-			Labels: "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			UID:          1,
+			DatabaseName: "hello",
+			Labels: map[string]string{
+				"bb.location":    "earth",
+				"bb.tenant":      "bytebase",
+				"bb.environment": "dev",
+			},
 		},
 		{
-			ID:     2,
-			Name:   "hello",
-			Labels: "[{\"key\":\"bb.location\",\"value\":\"europe-west1\"},{\"key\":\"bb.tenant\",\"value\":\"bytebase\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			UID:          2,
+			DatabaseName: "hello",
+			Labels: map[string]string{
+				"bb.location":    "europe-west1",
+				"bb.tenant":      "bytebase",
+				"bb.environment": "dev",
+			},
 		},
 		{
-			ID:     3,
-			Name:   "hello",
-			Labels: "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			UID:          3,
+			DatabaseName: "hello",
+			Labels: map[string]string{
+				"bb.location":    "earth",
+				"bb.environment": "dev",
+			},
 		},
 		{
-			ID:     4,
-			Name:   "world",
-			Labels: "[{\"key\":\"bb.location\",\"value\":\"earth\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			UID:          4,
+			DatabaseName: "world",
+			Labels: map[string]string{
+				"bb.location":    "earth",
+				"bb.environment": "dev",
+			},
 		},
 		{
-			ID:     5,
-			Name:   "db1_us",
-			Labels: "[{\"key\":\"bb.location\",\"value\":\"us\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			UID:          5,
+			DatabaseName: "db1_us",
+			Labels: map[string]string{
+				"bb.location":    "us",
+				"bb.environment": "dev",
+			},
 		},
 		{
-			ID:     6,
-			Name:   "db1_eu",
-			Labels: "[{\"key\":\"bb.location\",\"value\":\"eu\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			UID:          6,
+			DatabaseName: "db1_eu",
+			Labels: map[string]string{
+				"bb.location":    "eu",
+				"bb.environment": "dev",
+			},
 		},
 	}
 
 	tests := []struct {
 		name         string
 		schedule     *api.DeploymentSchedule
-		databaseList []*api.Database
-		want         [][]*api.Database
+		databaseList []*store.DatabaseMessage
+		want         [][]*store.DatabaseMessage
 		// Notice relevant position is preserved from databaseList to want.
 		// e.g. in simpleDeployments the result is [db[0], db[1]] instead of [db[1], db[0]] in the first stage.
 	}{
@@ -88,10 +113,10 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			[]*api.Database{
+			[]*store.DatabaseMessage{
 				dbs[0], dbs[1],
 			},
-			[][]*api.Database{
+			[][]*store.DatabaseMessage{
 				{dbs[0]},
 				{dbs[1]},
 			},
@@ -128,10 +153,10 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			[]*api.Database{
+			[]*store.DatabaseMessage{
 				dbs[0], dbs[1], dbs[2],
 			},
-			[][]*api.Database{
+			[][]*store.DatabaseMessage{
 				{dbs[0], dbs[2]},
 				{dbs[1]},
 			},
@@ -168,10 +193,10 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			[]*api.Database{
+			[]*store.DatabaseMessage{
 				dbs[0], dbs[2], dbs[3],
 			},
-			[][]*api.Database{
+			[][]*store.DatabaseMessage{
 				{dbs[0], dbs[2]},
 				nil,
 			},
@@ -195,10 +220,10 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			[]*api.Database{
+			[]*store.DatabaseMessage{
 				dbs[3], dbs[4],
 			},
-			[][]*api.Database{
+			[][]*store.DatabaseMessage{
 				{dbs[3], dbs[4]},
 			},
 		},
@@ -221,10 +246,10 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 					},
 				},
 			},
-			[]*api.Database{
+			[]*store.DatabaseMessage{
 				dbs[5], dbs[6],
 			},
-			[][]*api.Database{
+			[][]*store.DatabaseMessage{
 				{dbs[5], dbs[6]},
 			},
 		},
