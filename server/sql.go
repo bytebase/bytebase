@@ -126,18 +126,22 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		var resultSet api.SQLResultSet
 		if sync.InstanceID != nil {
-			instance, err := s.store.GetInstanceByID(ctx, *sync.InstanceID)
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: sync.InstanceID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %d", *sync.InstanceID)).SetInternal(err)
 			}
 			if instance == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", *sync.InstanceID))
 			}
+			composedInstance, err := s.store.GetInstanceByID(ctx, *sync.InstanceID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %d", *sync.InstanceID)).SetInternal(err)
+			}
 			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 				resultSet.Error = err.Error()
 			}
 			// Sync all databases in the instance asynchronously.
-			s.stateCfg.InstanceDatabaseSyncChan <- instance
+			s.stateCfg.InstanceDatabaseSyncChan <- composedInstance
 		}
 		if sync.DatabaseID != nil {
 			composedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
@@ -283,7 +287,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create a catalog")
 			}
 
-			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, composedInstance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 			}
@@ -349,7 +353,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, composedInstance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -476,13 +480,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
-		composedInstance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
-		if err != nil {
-			return err
-		}
-		if composedInstance == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
-		}
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &instance.EnvironmentID, InstanceID: &instance.ResourceID, DatabaseName: &exec.DatabaseName})
 		if err != nil {
 			return err
@@ -495,7 +492,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, queryErr := func() ([]byte, error) {
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, composedInstance, exec.DatabaseName)
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}

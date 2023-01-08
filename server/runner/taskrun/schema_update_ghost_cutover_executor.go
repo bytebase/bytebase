@@ -102,15 +102,19 @@ func (exec *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, task 
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, profile config.Profile, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
 
-	mi, err := preMigration(ctx, store, profile, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
+	mi, err := preMigration(ctx, stores, profile, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
 	migrationID, schema, err := func() (migrationHistoryID string, updatedSchema string, resErr error) {
-		driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
+		driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, task.Database.Name)
 		if err != nil {
 			return "", "", err
 		}
@@ -174,7 +178,7 @@ func cutover(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFac
 		return true, nil, err
 	}
 
-	return postMigration(ctx, store, activityManager, profile, task, vcsPushEvent, mi, migrationID, schema)
+	return postMigration(ctx, stores, activityManager, profile, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 func waitForCutover(ctx context.Context, migrationContext *base.MigrationContext) bool {

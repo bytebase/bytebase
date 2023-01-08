@@ -316,7 +316,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 	_, err = sourceMySQLDB.ExecContext(ctx, dropColumnStmt)
 	a.NoError(err)
 
-	labels, err := marshalLabels(nil, dstInstance.Environment.Name)
+	labels, err := marshalLabels(nil, dstInstance.Environment.ResourceID)
 	a.NoError(err)
 
 	targetDatabaseName := "new_database"

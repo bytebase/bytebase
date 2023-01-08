@@ -37,6 +37,16 @@ func GetLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 	return schemaVersion, nil
 }
 
+// DataSourceFromInstanceWithType gets a typed data source from an instance.
+func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceType api.DataSourceType) *store.DataSourceMessage {
+	for _, dataSource := range instance.DataSources {
+		if dataSource.Type == dataSourceType {
+			return dataSource
+		}
+	}
+	return nil
+}
+
 // GetTableNameFromStatement gets the table name from statement for gh-ost.
 func GetTableNameFromStatement(statement string) (string, error) {
 	// Trim the statement for the parser.
@@ -69,7 +79,7 @@ type GhostConfig struct {
 }
 
 // GetGhostConfig returns a gh-ost configuration for migration.
-func GetGhostConfig(task *api.Task, dataSource *api.DataSource, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
+func GetGhostConfig(task *api.Task, dataSource *store.DataSourceMessage, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
 	var isAWS bool
 	for _, user := range instanceUsers {
 		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
