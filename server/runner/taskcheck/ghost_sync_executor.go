@@ -51,12 +51,18 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 	if task.Instance == nil {
 		return nil, common.Errorf(common.Internal, "failed to find instance %d", task.InstanceID)
 	}
-
 	if task.Database == nil {
 		return nil, common.Errorf(common.Internal, "failed to find database %d", task.DatabaseID)
 	}
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %d not found", task.InstanceID)
+	}
 
-	adminDataSource := api.DataSourceFromInstanceWithType(task.Instance, api.Admin)
+	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", task.InstanceID)
 	}

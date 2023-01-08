@@ -53,7 +53,7 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 		databaseName = *payload.DatabaseName
 	}
 
-	instance, err := e.store.GetInstanceByID(ctx, instanceID)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance by ID %d", instanceID)
 	}
