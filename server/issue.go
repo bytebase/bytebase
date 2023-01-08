@@ -1394,36 +1394,10 @@ func convertDatabaseLabels(labelsJSON, environmentID string) ([]*api.DatabaseLab
 	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
 		return nil, err
 	}
-
 	// For scalability, each database can have up to four labels for now.
 	if len(labels) > api.DatabaseLabelSizeMax {
 		err := errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 	}
-	if err := validateDatabaseLabelList(labels, environmentID); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to validate database labels").SetInternal(err)
-	}
-
 	return labels, nil
-}
-
-func validateDatabaseLabelList(labelList []*api.DatabaseLabel, environmentID string) error {
-	var environmentValue *string
-
-	// check label key & value availability
-	for _, label := range labelList {
-		if label.Key == api.EnvironmentLabelKey {
-			environmentValue = &label.Value
-			continue
-		}
-	}
-
-	// Environment label must exist and is immutable.
-	if environmentValue == nil {
-		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentLabelKey)
-	}
-	if environmentID != *environmentValue {
-		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentLabelKey, environmentID, *environmentValue)
-	}
-	return nil
 }
