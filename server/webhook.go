@@ -338,8 +338,12 @@ func (s *Server) sqlAdviceForFile(
 		if err != nil {
 			return nil, err
 		}
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+		if err != nil {
+			return nil, err
+		}
 		environmentResourceType := api.PolicyResourceTypeEnvironment
-		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &instance.UID})
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environment.UID})
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 				log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", database.EnvironmentID), zap.Error(err))
