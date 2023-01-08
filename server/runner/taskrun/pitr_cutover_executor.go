@@ -134,8 +134,16 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		return true, nil, errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
 	}
 
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &task.Database.Instance.Environment.ResourceID,
+		InstanceID:    &task.Database.Instance.ResourceID,
+		DatabaseName:  &task.Database.Name,
+	})
+	if err != nil {
+		return true, nil, err
+	}
 	// Sync database schema after restore is completed.
-	if err := schemaSyncer.SyncDatabaseSchema(ctx, task.Database, true /* force */); err != nil {
+	if err := schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
 			zap.String("instanceName", task.Database.Instance.Name),
 			zap.String("databaseName", task.Database.Name),
