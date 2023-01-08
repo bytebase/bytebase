@@ -127,13 +127,17 @@ func preMigration(ctx context.Context, store *store.Store, profile config.Profil
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID string, schema string, err error) {
+func executeMigration(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID string, schema string, err error) {
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
-
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, databaseName)
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
+	}
+
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "failed to check migration setup for instance %q", task.Instance.Name)
 	}
 	defer driver.Close(ctx)
 
@@ -155,7 +159,7 @@ func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfact
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, store)
+		updatedTask, err := setThreadIDAndStartBinlogCoordinate(ctx, driver, task, stores)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}
@@ -168,7 +172,7 @@ func executeMigration(ctx context.Context, store *store.Store, dbFactory *dbfact
 	}
 
 	if task.Type == api.TaskDatabaseDataUpdate && task.Instance.Engine == db.MySQL {
-		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, store, migrationID)
+		updatedTask, err := setMigrationIDAndEndBinlogCoordinate(ctx, driver, task, stores, migrationID)
 		if err != nil {
 			return "", "", errors.Wrap(err, "failed to update the task payload for MySQL rollback SQL")
 		}

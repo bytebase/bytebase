@@ -56,15 +56,15 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 	if setup {
 		log.Info("Bytebase migration schema not found, creating schema...",
-			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("instance", driver.connectionCtx.InstanceName),
+			zap.String("environment", driver.connectionCtx.EnvironmentID),
+			zap.String("instance", driver.connectionCtx.InstanceID),
 		)
 
 		if _, err := driver.GetDBConnection(ctx, bytebaseDatabase); err != nil {
 			log.Error("Failed to switch to database \"bytebase\".",
 				zap.Error(err),
-				zap.String("environment", driver.connectionCtx.EnvironmentName),
-				zap.String("instance", driver.connectionCtx.InstanceName),
+				zap.String("environment", driver.connectionCtx.EnvironmentID),
+				zap.String("instance", driver.connectionCtx.InstanceID),
 			)
 			return errors.Wrap(err, "failed to switch to database \"bytebase\"")
 		}
@@ -72,14 +72,14 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
 			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
-				zap.String("environment", driver.connectionCtx.EnvironmentName),
-				zap.String("instance", driver.connectionCtx.InstanceName),
+				zap.String("environment", driver.connectionCtx.EnvironmentID),
+				zap.String("instance", driver.connectionCtx.InstanceID),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
 		log.Info("Successfully created migration schema.",
-			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("instance", driver.connectionCtx.InstanceName),
+			zap.String("environment", driver.connectionCtx.EnvironmentID),
+			zap.String("instance", driver.connectionCtx.InstanceID),
 		)
 	}
 

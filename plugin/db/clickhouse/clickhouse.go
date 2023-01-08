@@ -80,8 +80,8 @@ func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.Connecti
 
 	log.Debug("Opening ClickHouse driver",
 		zap.String("addr", addr),
-		zap.String("environment", connCtx.EnvironmentName),
-		zap.String("database", connCtx.InstanceName),
+		zap.String("environment", connCtx.EnvironmentID),
+		zap.String("database", connCtx.InstanceID),
 	)
 
 	driver.dbType = dbType

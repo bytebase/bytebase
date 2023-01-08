@@ -54,7 +54,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	}
 
 	instance := task.Instance
-	v2Instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instance.ID})
+	v2Instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
@@ -62,12 +62,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 	if v2Instance.Engine == db.MongoDB {
 		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
-		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, payload.DatabaseName)
+		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, v2Instance, payload.DatabaseName)
 		if err != nil {
 			return true, nil, err
 		}
 	} else {
-		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "" /* databaseName */)
+		driver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, v2Instance, "" /* databaseName */)
 		if err != nil {
 			return true, nil, err
 		}
@@ -264,12 +264,8 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	if err != nil {
 		return "", "", err
 	}
-	composedSimilarDBInstance, err := stores.GetInstanceByID(ctx, similarDBInstance.UID)
-	if err != nil {
-		return "", "", err
-	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, composedSimilarDBInstance, similarDB.DatabaseName)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB.DatabaseName)
 	if err != nil {
 		return "", "", err
 	}

@@ -360,8 +360,8 @@ type ConnectionConfig struct {
 // ConnectionContext is the context for connection.
 // It's not used for establishing the db connection, but is useful for logging.
 type ConnectionContext struct {
-	EnvironmentName string
-	InstanceName    string
+	EnvironmentID string
+	InstanceID    string
 }
 
 // QueryContext is the context to query.

@@ -69,9 +69,12 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, task *api.Task)
 			return true, nil, errors.Errorf("the available file system space %dMB is less than the minimal threshold %dMB", availableBytes/1024/1024, minAvailableFSBytes/1024/1024)
 		}
 	}
-
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
 	log.Debug("Start database backup.", zap.String("instance", task.Instance.Name), zap.String("database", task.Database.Name), zap.String("backup", backup.Name))
-	backupPayload, backupErr := exec.backupDatabase(ctx, exec.dbFactory, exec.s3Client, exec.profile, task.Instance, task.Database.Name, backup)
+	backupPayload, backupErr := exec.backupDatabase(ctx, exec.dbFactory, exec.s3Client, exec.profile, instance, task.Database.Name, backup)
 	backupStatus := string(api.BackupStatusDone)
 	comment := ""
 	if backupErr != nil {
@@ -142,7 +145,7 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, databaseName, backupF
 }
 
 // backupDatabase will take a backup of a database.
-func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *api.Instance, databaseName string, backup *api.Backup) (string, error) {
+func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, databaseName string, backup *api.Backup) (string, error) {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
