@@ -100,10 +100,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 
 // private functions.
 func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) (*api.Database, error) {
-	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
-	if err != nil {
-		return nil, err
-	}
 	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, err
