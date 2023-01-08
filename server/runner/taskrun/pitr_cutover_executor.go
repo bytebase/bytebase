@@ -128,20 +128,16 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
 
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return true, nil, errors.Errorf("database %q not found", task.Database.Name)
+	}
 	// TODO(dragonly): Only needed for in-place PITR.
 	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
-	if _, err := backupRunner.ScheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
+	if _, err := backupRunner.ScheduleBackupTask(ctx, database, backupName, api.BackupTypePITR, api.SystemBotID); err != nil {
 		return true, nil, errors.Wrapf(err, "failed to schedule backup task for database %q after PITR", task.Database.Name)
 	}
 
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &task.Database.Instance.Environment.ResourceID,
-		InstanceID:    &task.Database.Instance.ResourceID,
-		DatabaseName:  &task.Database.Name,
-	})
-	if err != nil {
-		return true, nil, err
-	}
 	// Sync database schema after restore is completed.
 	if err := schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		log.Error("failed to sync database schema",

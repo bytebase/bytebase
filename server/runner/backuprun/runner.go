@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -315,14 +316,30 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		if _, ok := r.stateCfg.RunningBackupDatabases.Load(backupSetting.DatabaseID); ok {
 			continue
 		}
-		db := backupSetting.Database
-		if db.Name == api.AllDatabaseName {
+		database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &backupSetting.DatabaseID})
+		if err != nil {
+			log.Error("Failed to get database", zap.Error(err))
+			return
+		}
+		if database.DatabaseName == api.AllDatabaseName {
 			// Skip backup job for wildcard database `*`.
 			continue
 		}
-		backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
+		project, err := r.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+		if err != nil {
+			log.Error("Failed to get project", zap.Error(err))
+		}
+		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		if err != nil {
+			log.Error("Failed to get instance", zap.Error(err))
+		}
+		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+		if err != nil {
+			log.Error("Failed to get environment", zap.Error(err))
+		}
+		backupName := fmt.Sprintf("%s-%s-%s-autobackup", slug.Make(project.Title), slug.Make(environment.Title), t.Format("20060102T030405"))
 		backupList, err := r.store.FindBackup(ctx, &api.BackupFind{
-			DatabaseID: &db.ID,
+			DatabaseID: &database.UID,
 			Name:       &backupName,
 		})
 		if err != nil {
@@ -334,18 +351,18 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 		}
 
 		r.stateCfg.RunningBackupDatabases.Store(backupSetting.DatabaseID, true)
-		go func(database *api.Database, backupName string, hookURL string) {
+		go func(database *store.DatabaseMessage, backupName string, hookURL string) {
 			defer func() {
-				r.stateCfg.RunningBackupDatabases.Delete(database.ID)
+				r.stateCfg.RunningBackupDatabases.Delete(database.UID)
 				r.backupWg.Done()
 			}()
 			log.Debug("Schedule auto backup",
-				zap.String("database", database.Name),
+				zap.String("database", database.DatabaseName),
 				zap.String("backup", backupName),
 			)
 			if _, err := r.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.SystemBotID); err != nil {
 				log.Error("Failed to create automatic backup for database",
-					zap.Int("databaseID", database.ID),
+					zap.Int("databaseID", database.UID),
 					zap.Error(err))
 				return
 			}
@@ -356,34 +373,48 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			if _, err := http.PostForm(hookURL, nil); err != nil {
 				log.Warn("Failed to POST hook URL",
 					zap.String("hookURL", hookURL),
-					zap.Int("databaseID", database.ID),
+					zap.Int("databaseID", database.UID),
 					zap.Error(err))
 			}
-		}(db, backupName, backupSetting.HookURL)
+		}(database, backupName, backupSetting.HookURL)
 		r.backupWg.Add(1)
 	}
 }
 
 // ScheduleBackupTask schedules a backup task.
-func (r *Runner) ScheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
-	// Store the migration history version if exists.
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, database.Instance, database.Name)
+func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.DatabaseMessage, backupName string, backupType api.BackupType, creatorID int) (*api.Backup, error) {
+	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	}
+	composedInstance, err := r.store.GetInstanceByID(ctx, instance.UID)
+	if err != nil {
+		return nil, err
+	}
+	if composedInstance == nil {
+		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	}
+
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, composedInstance, database.DatabaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get admin database driver")
 	}
 	defer driver.Close(ctx)
 
-	migrationHistoryVersion, err := utils.GetLatestSchemaVersion(ctx, driver, database.Name)
+	migrationHistoryVersion, err := utils.GetLatestSchemaVersion(ctx, driver, database.DatabaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get migration history for database %q", database.Name)
+		return nil, errors.Wrapf(err, "failed to get migration history for database %q", database.DatabaseName)
 	}
-	path := getBackupRelativeFilePath(database.ID, backupName)
-	if err := createBackupDirectory(r.profile.DataDir, database.ID); err != nil {
+	path := getBackupRelativeFilePath(database.UID, backupName)
+	if err := createBackupDirectory(r.profile.DataDir, database.UID); err != nil {
 		return nil, errors.Wrap(err, "failed to create backup directory")
 	}
 	backupCreate := &api.BackupCreate{
 		CreatorID:               creatorID,
-		DatabaseID:              database.ID,
+		DatabaseID:              database.UID,
 		Name:                    backupName,
 		StorageBackend:          r.profile.BackupStorageBackend,
 		Type:                    backupType,
@@ -394,7 +425,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *api.Database,
 	backupNew, err := r.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
-			log.Error("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.Name))
+			log.Error("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.DatabaseName))
 			return nil, nil
 		}
 		return nil, errors.Wrapf(err, "failed to create backup %q", backupName)
@@ -419,7 +450,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *api.Database,
 	createdStages, err := r.store.CreateStage(ctx, []*api.StageCreate{
 		{
 			Name:          fmt.Sprintf("backup-%s", backupName),
-			EnvironmentID: database.Instance.EnvironmentID,
+			EnvironmentID: composedInstance.EnvironmentID,
 			PipelineID:    createdPipeline.ID,
 			CreatorID:     creatorID,
 		},
@@ -436,8 +467,8 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *api.Database,
 		Name:       fmt.Sprintf("backup-%s", backupName),
 		PipelineID: createdPipeline.ID,
 		StageID:    createdStage.ID,
-		InstanceID: database.InstanceID,
-		DatabaseID: &database.ID,
+		InstanceID: instance.UID,
+		DatabaseID: &database.UID,
 		Status:     api.TaskPending,
 		Type:       api.TaskDatabaseBackup,
 		Payload:    string(bytes),
