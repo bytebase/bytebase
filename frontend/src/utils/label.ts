@@ -218,7 +218,7 @@ export const getLabelValuesFromDatabaseList = (
 ): string[] => {
   if (key === "bb.environment") {
     const environmentList = useEnvironmentStore().getEnvironmentList();
-    return environmentList.map((env) => env.name);
+    return environmentList.map((env) => env.resourceId);
   }
 
   const labelList = databaseList.flatMap((db) =>
