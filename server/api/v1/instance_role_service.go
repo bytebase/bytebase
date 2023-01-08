@@ -120,7 +120,7 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 	}
 
 	roleUpsert := &db.DatabaseRoleUpsertMessage{
-		Name:            request.Role.Title,
+		Name:            request.Role.RoleName,
 		Password:        request.Role.Password,
 		ConnectionLimit: request.Role.ConnectionLimit,
 		ValidUntil:      request.Role.ValidUntil,
@@ -179,8 +179,8 @@ func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.Upda
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "role.title":
-			upsert.Name = request.Role.Title
+		case "role.role_name":
+			upsert.Name = request.Role.RoleName
 		case "role.password":
 			upsert.Password = request.Role.Password
 		case "role.connection_limit":
