@@ -1444,7 +1444,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 										{
 											Key:      api.EnvironmentLabelKey,
 											Operator: api.InOperatorType,
-											Values:   []string{"Test"},
+											Values:   []string{"test"},
 										},
 									},
 								},
