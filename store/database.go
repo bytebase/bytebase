@@ -146,15 +146,6 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 			Value: value,
 		})
 	}
-	// Since tenants are identified by labels in deployment config, we need an environment
-	// label to identify tenants from different environment in a schema update deployment.
-	// If we expose the environment label concept in the deployment config, it should look consistent in the label API.
-	// Each database instance is created under a particular environment.
-	// The value of bb.environment is identical to the name of the environment.
-	labelList = append(labelList, &api.DatabaseLabel{
-		Key:   api.EnvironmentLabelKey,
-		Value: environment.ResourceID,
-	})
 	labels, err := json.Marshal(labelList)
 	if err != nil {
 		return nil, err
@@ -576,6 +567,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			}
 			databaseMessage.Labels[keys[i].String] = values[i].String
 		}
+		// System default environment label.
+		// The value of bb.environment is resource ID of the environment.
+		databaseMessage.Labels[api.EnvironmentLabelKey] = databaseMessage.EnvironmentID
+
 		databaseMessages = append(databaseMessages, &databaseMessage)
 	}
 
