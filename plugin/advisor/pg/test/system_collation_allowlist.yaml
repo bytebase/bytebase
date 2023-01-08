@@ -1,0 +1,28 @@
+- statement: CREATE TABLE t(a text COLLATE utf8mb4_0900_ai_ci)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+- statement: CREATE TABLE t(a text COLLATE "unknown")
+  want:
+    - status: WARN
+      code: 1201
+      title: system.collation.allowlist
+      content: Use disabled collation "unknown", related statement "CREATE TABLE t(a text COLLATE "unknown")"
+      line: 1
+- statement: ALTER TABLE t ADD COLUMN c1 text COLLATE "unknown"
+  want:
+    - status: WARN
+      code: 1201
+      title: system.collation.allowlist
+      content: Use disabled collation "unknown", related statement "ALTER TABLE t ADD COLUMN c1 text COLLATE "unknown""
+      line: 1
+- statement: ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown"
+  want:
+    - status: WARN
+      code: 1201
+      title: system.collation.allowlist
+      content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown""
+      line: 1
