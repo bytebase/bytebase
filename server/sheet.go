@@ -33,15 +33,18 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		// If sheetCreate.DatabaseID is not nil, use its associated ProjectID as the new sheet's ProjectID.
 		if sheetCreate.DatabaseID != nil {
-			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sheetCreate.DatabaseID})
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: sheetCreate.DatabaseID})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %d", *sheetCreate.DatabaseID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", *sheetCreate.DatabaseID)).SetInternal(err)
 			}
 			if database == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sheetCreate.DatabaseID))
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", *sheetCreate.DatabaseID)).SetInternal(err)
 			}
-
-			sheetCreate.ProjectID = database.ProjectID
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+			if err != nil {
+				return err
+			}
+			sheetCreate.ProjectID = project.UID
 		}
 
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &sheetCreate.ProjectID})
