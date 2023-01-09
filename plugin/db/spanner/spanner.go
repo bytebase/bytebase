@@ -183,10 +183,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 		if err != nil {
 			return 0, err
 		}
-		if err := op.Wait(ctx); err != nil {
-			return 0, err
-		}
-		return 0, nil
+		return 0, op.Wait(ctx)
 	}
 
 	if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
