@@ -218,6 +218,7 @@ func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.Q
 	}
 	stmt := getStatementWithResultLimit(stmts[0], queryContext.Limit)
 	iter := d.client.Single().Query(ctx, spanner.NewStatement(stmt))
+	defer iter.Stop()
 
 	row, err := iter.Next()
 	if err == iterator.Done {
