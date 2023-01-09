@@ -275,13 +275,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	storeInstance := store.New(storeDB)
 	s.store = storeInstance
-	// TODO(d): backfill activity. Remove this whenever the backfill is completed over the time.
-	if !s.profile.Readonly {
-		if err := storeInstance.BackfillSQLEditorActivity(ctx); err != nil {
-			return nil, errors.Wrap(err, "cannot backfill SQL editor activities")
-		}
-	}
-
 	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
