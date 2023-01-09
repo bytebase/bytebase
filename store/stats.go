@@ -43,6 +43,9 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 		}
 		return 0, FormatError(err)
 	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
 	return count, nil
 }
 
@@ -106,7 +109,9 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return databaseCountMetricList, nil
 }
 
@@ -140,6 +145,9 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
@@ -163,7 +171,6 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	defer rows.Close()
 
 	var res []*metric.ProjectCountMetric
-
 	for rows.Next() {
 		var metric metric.ProjectCountMetric
 		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.RowStatus, &metric.Count); err != nil {
@@ -173,6 +180,9 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 	return res, nil
 }
@@ -209,7 +219,9 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
@@ -234,7 +246,6 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	defer rows.Close()
 
 	var res []*metric.InstanceCountMetric
-
 	for rows.Next() {
 		var metric metric.InstanceCountMetric
 		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
@@ -245,6 +256,8 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
