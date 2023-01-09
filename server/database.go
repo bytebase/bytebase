@@ -324,12 +324,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
 		}
 
 		backupFind := &api.BackupFind{
@@ -360,14 +360,18 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupSettingUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		db, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
-		if db == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+		if database == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
 		}
-		backupSettingUpsert.EnvironmentID = db.Instance.Environment.ID
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
+		if err != nil {
+			return err
+		}
+		backupSettingUpsert.EnvironmentID = environment.UID
 
 		backupSetting, err := s.store.UpsertBackupSetting(ctx, backupSettingUpsert)
 		if err != nil {
@@ -391,12 +395,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("database %d not found", id)).SetInternal(err)
 		}
 
 		backupSetting, err := s.store.GetBackupSettingByDatabaseID(ctx, id)

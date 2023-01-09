@@ -91,7 +91,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	}
 
 	// TODO(dragonly): We should let users restore the backup even if the source database is gone.
-	sourceDatabase, err := stores.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
+	sourceDatabase, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &backup.DatabaseID})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find database for the backup")
 	}
@@ -111,45 +111,35 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 		return nil, errors.Errorf("we only support backup restore replace for PostgreSQL now")
 	}
 
-	targetInstanceID := *payload.TargetInstanceID
 	targetInstance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: payload.TargetInstanceID})
 	if err != nil {
 		return nil, err
 	}
-	targetDatabaseFind := &api.DatabaseFind{
-		InstanceID: &targetInstanceID,
-		Name:       payload.DatabaseName,
-	}
-	composedTargetDatabase, err := stores.GetDatabase(ctx, targetDatabaseFind)
+	targetDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{EnvironmentID: &targetInstance.EnvironmentID, InstanceID: &targetInstance.ResourceID, DatabaseName: payload.DatabaseName})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find target database %q in instance %q", *payload.DatabaseName, task.Instance.Name)
 	}
-	if composedTargetDatabase == nil {
+	if targetDatabase == nil {
 		return nil, errors.Wrapf(err, "target database %q not found in instance %q", *payload.DatabaseName, task.Instance.Name)
 	}
-	targetDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &composedTargetDatabase.Instance.Environment.ResourceID,
-		InstanceID:    &composedTargetDatabase.Instance.ResourceID,
-		DatabaseName:  &composedTargetDatabase.Name,
-	})
 	if err != nil {
 		return nil, err
 	}
 	log.Debug("Start database restore from backup...",
-		zap.String("source_instance", sourceDatabase.Instance.Name),
-		zap.String("source_database", sourceDatabase.Name),
-		zap.String("target_instance", composedTargetDatabase.Instance.Name),
-		zap.String("target_database", composedTargetDatabase.Name),
+		zap.String("source_instance", sourceDatabase.InstanceID),
+		zap.String("source_database", sourceDatabase.DatabaseName),
+		zap.String("target_instance", targetInstance.ResourceID),
+		zap.String("target_database", targetDatabase.DatabaseName),
 		zap.String("backup", backup.Name),
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, dbFactory, s3Client, profile, targetInstance, composedTargetDatabase.Name, backup); err != nil {
+	if err := exec.restoreDatabase(ctx, dbFactory, s3Client, profile, targetInstance, targetDatabase.DatabaseName, backup); err != nil {
 		return nil, err
 	}
 	// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
 	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	migrationID, version, err := createBranchMigrationHistory(ctx, stores, dbFactory, profile, sourceDatabase, composedTargetDatabase, backup, task)
+	migrationID, version, err := createBranchMigrationHistory(ctx, stores, dbFactory, profile, targetInstance, sourceDatabase, targetDatabase, backup, task)
 	if err != nil {
 		return nil, err
 	}
@@ -159,25 +149,25 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	// and since we can't guarantee cross database transaction consistency, there is always a chance to have
 	// inconsistent data. We choose to do Patch afterwards since this one is unlikely to fail.
 	if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		EnvironmentID:  composedTargetDatabase.Instance.Environment.ResourceID,
-		InstanceID:     composedTargetDatabase.Instance.ResourceID,
-		DatabaseName:   composedTargetDatabase.Name,
+		EnvironmentID:  targetDatabase.EnvironmentID,
+		InstanceID:     targetDatabase.InstanceID,
+		DatabaseName:   targetDatabase.DatabaseName,
 		SourceBackupID: &backup.ID,
 	}, api.SystemBotID); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %d backup source ID %d after restore", composedTargetDatabase.ID, backup.ID)
+		return nil, errors.Wrapf(err, "failed to update database %d backup source ID %d after restore", targetDatabase.UID, backup.ID)
 	}
 
 	// Sync database schema after restore is completed.
 	if err := schemaSyncer.SyncDatabaseSchema(ctx, targetDatabase, true /* force */); err != nil {
 		log.Error("failed to sync database schema",
-			zap.String("instanceName", composedTargetDatabase.Instance.Name),
-			zap.String("databaseName", composedTargetDatabase.Name),
+			zap.String("instanceName", targetDatabase.InstanceID),
+			zap.String("databaseName", targetDatabase.DatabaseName),
 			zap.Error(err),
 		)
 	}
 
 	return &api.TaskRunResultPayload{
-		Detail:      fmt.Sprintf("Restored database %q from backup %q", composedTargetDatabase.Name, backup.Name),
+		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.DatabaseName, backup.Name),
 		MigrationID: migrationID,
 		Version:     version,
 	}, nil
@@ -510,44 +500,47 @@ func downloadBackupFileFromCloud(ctx context.Context, s3Client *bbs3.Client, bac
 // all migration history from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
-func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (string, string, error) {
-	targetInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &targetDatabase.InstanceID})
+func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, targetInstance *store.InstanceMessage, sourceDatabase, targetDatabase *store.DatabaseMessage, backup *api.Backup, task *api.Task) (string, string, error) {
+	targetInstanceEnvironment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &targetInstance.EnvironmentID})
 	if err != nil {
 		return "", "", err
 	}
-	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase.Name)
+	targetDatabaseProject, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &targetDatabase.ProjectID})
 	if err != nil {
 		return "", "", err
 	}
-	defer targetDriver.Close(ctx)
-
 	issue, err := stores.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}
-
 	// Add a branch migration history record.
 	issueID := ""
 	if issue != nil {
 		issueID = strconv.Itoa(issue.ID)
 	}
-	description := fmt.Sprintf("Restored from backup %q of database %q.", backup.Name, sourceDatabase.Name)
+	description := fmt.Sprintf("Restored from backup %q of database %q.", backup.Name, sourceDatabase.DatabaseName)
 	if sourceDatabase.InstanceID != targetDatabase.InstanceID {
-		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
+		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.DatabaseName, sourceDatabase.InstanceID)
 	}
+
 	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
 		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
-		Namespace:      targetDatabase.Name,
-		Database:       targetDatabase.Name,
-		Environment:    targetDatabase.Instance.Environment.Name,
-		Source:         db.MigrationSource(targetDatabase.Project.WorkflowType),
+		Namespace:      targetDatabase.DatabaseName,
+		Database:       targetDatabase.DatabaseName,
+		Environment:    targetInstanceEnvironment.Title,
+		Source:         db.MigrationSource(targetDatabaseProject.Workflow),
 		Type:           db.Branch,
 		Description:    description,
 		Creator:        task.Creator.Name,
 		IssueID:        issueID,
 	}
+	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase.DatabaseName)
+	if err != nil {
+		return "", "", err
+	}
+	defer targetDriver.Close(ctx)
 	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create migration history")
