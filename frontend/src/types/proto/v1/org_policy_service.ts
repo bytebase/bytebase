@@ -9,9 +9,8 @@ export enum PolicyType {
   PIPELINE_APPROVAL = 1,
   BACKUP_PLAN = 2,
   SQL_REVIEW = 3,
-  ENVIRONMENT_TIER = 4,
-  SENSITIVE_DATA = 5,
-  ACCESS_CONTROL = 6,
+  SENSITIVE_DATA = 4,
+  ACCESS_CONTROL = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -30,12 +29,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case "SQL_REVIEW":
       return PolicyType.SQL_REVIEW;
     case 4:
-    case "ENVIRONMENT_TIER":
-      return PolicyType.ENVIRONMENT_TIER;
-    case 5:
     case "SENSITIVE_DATA":
       return PolicyType.SENSITIVE_DATA;
-    case 6:
+    case 5:
     case "ACCESS_CONTROL":
       return PolicyType.ACCESS_CONTROL;
     case -1:
@@ -55,8 +51,6 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "BACKUP_PLAN";
     case PolicyType.SQL_REVIEW:
       return "SQL_REVIEW";
-    case PolicyType.ENVIRONMENT_TIER:
-      return "ENVIRONMENT_TIER";
     case PolicyType.SENSITIVE_DATA:
       return "SENSITIVE_DATA";
     case PolicyType.ACCESS_CONTROL:
