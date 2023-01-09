@@ -7,6 +7,8 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/server/utils"
+	"github.com/bytebase/bytebase/store"
 )
 
 // DBFactory is the factory for building database driver.
@@ -29,10 +31,10 @@ func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir string) *DBFactory {
 
 // GetAdminDatabaseDriver gets the admin database driver using the instance's admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
-func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
+func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, databaseName string) (db.Driver, error) {
+	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.UID)
 	}
 
 	dbBinDir := ""
@@ -46,14 +48,14 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *api.In
 	}
 
 	if databaseName == "" {
-		databaseName = instance.Database
+		databaseName = adminDataSource.Database
 	}
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
 		db.DriverConfig{
 			DbBinDir:  dbBinDir,
-			BinlogDir: common.GetBinlogAbsDir(d.dataDir, instance.ID),
+			BinlogDir: common.GetBinlogAbsDir(d.dataDir, instance.UID),
 		},
 		db.ConnectionConfig{
 			Username: adminDataSource.Username,
@@ -63,15 +65,15 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *api.In
 				SslCert: adminDataSource.SslCert,
 				SslKey:  adminDataSource.SslKey,
 			},
-			Host:                   instance.Host,
-			Port:                   instance.Port,
+			Host:                   adminDataSource.Host,
+			Port:                   adminDataSource.Port,
 			Database:               databaseName,
-			SRV:                    adminDataSource.Options.SRV,
-			AuthenticationDatabase: adminDataSource.Options.AuthenticationDatabase,
+			SRV:                    adminDataSource.SRV,
+			AuthenticationDatabase: adminDataSource.AuthenticationDatabase,
 		},
 		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
+			EnvironmentID: instance.EnvironmentID,
+			InstanceID:    instance.ResourceID,
 		},
 	)
 	if err != nil {
@@ -84,17 +86,17 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *api.In
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
 // If the read-only data source is not defined, we will fallback to admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
-func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
-	dataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
+func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, databaseName string) (db.Driver, error) {
+	dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
 	// If there are no read-only data source, fall back to admin data source.
 	if dataSource == nil {
-		dataSource = api.DataSourceFromInstanceWithType(instance, api.Admin)
+		dataSource = utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	}
 	if dataSource == nil {
-		return nil, common.Errorf(common.Internal, "data source not found for instance %d", instance.ID)
+		return nil, common.Errorf(common.Internal, "data source not found for instance %d", instance.UID)
 	}
 
-	host, port := instance.Host, instance.Port
+	host, port := dataSource.Host, dataSource.Port
 	if dataSource.Host != "" || dataSource.Port != "" {
 		host, port = dataSource.Host, dataSource.Port
 	}
@@ -112,7 +114,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *api
 		instance.Engine,
 		db.DriverConfig{
 			DbBinDir:  dbBinDir,
-			BinlogDir: common.GetBinlogAbsDir(d.dataDir, instance.ID),
+			BinlogDir: common.GetBinlogAbsDir(d.dataDir, instance.UID),
 		},
 		db.ConnectionConfig{
 			Username: dataSource.Username,
@@ -128,8 +130,8 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *api
 			ReadOnly: true,
 		},
 		db.ConnectionContext{
-			EnvironmentName: instance.Environment.Name,
-			InstanceName:    instance.Name,
+			EnvironmentID: instance.EnvironmentID,
+			InstanceID:    instance.ResourceID,
 		},
 	)
 	if err != nil {

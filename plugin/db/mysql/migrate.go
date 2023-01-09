@@ -43,8 +43,8 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 	if setup {
 		log.Info("Bytebase migration schema not found, creating schema...",
-			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("instance", driver.connectionCtx.InstanceName),
+			zap.String("environment", driver.connectionCtx.EnvironmentID),
+			zap.String("instance", driver.connectionCtx.InstanceID),
 		)
 		// Do not wrap it in a single transaction here because:
 		// 1. For MySQL, each DDL is in its own transaction. See https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
@@ -52,14 +52,14 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
 			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
-				zap.String("environment", driver.connectionCtx.EnvironmentName),
-				zap.String("instance", driver.connectionCtx.InstanceName),
+				zap.String("environment", driver.connectionCtx.EnvironmentID),
+				zap.String("instance", driver.connectionCtx.InstanceID),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
 		log.Info("Successfully created migration schema.",
-			zap.String("environment", driver.connectionCtx.EnvironmentName),
-			zap.String("instance", driver.connectionCtx.InstanceName),
+			zap.String("environment", driver.connectionCtx.EnvironmentID),
+			zap.String("instance", driver.connectionCtx.InstanceID),
 		)
 	}
 

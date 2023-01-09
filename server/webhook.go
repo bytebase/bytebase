@@ -338,13 +338,12 @@ func (s *Server) sqlAdviceForFile(
 		if err != nil {
 			return nil, err
 		}
-		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 		if err != nil {
 			return nil, err
 		}
-		// composedInstance, err := s.store.GetInstanceByID()
 		environmentResourceType := api.PolicyResourceTypeEnvironment
-		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &composedInstance.EnvironmentID})
+		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environment.UID})
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 				log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", database.EnvironmentID), zap.Error(err))
@@ -364,7 +363,7 @@ func (s *Server) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
 		}
 
-		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, composedInstance, database.DatabaseName)
+		driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database.DatabaseName)
 		if err != nil {
 			return nil, err
 		}

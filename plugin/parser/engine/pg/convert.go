@@ -109,10 +109,18 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					if err != nil {
 						return nil, err
 					}
+					collation := (*ast.CollationNameDef)(nil)
+					if column.ColumnDef.CollClause != nil {
+						collation, err = convertCollationName(column.ColumnDef.CollClause)
+						if err != nil {
+							return nil, err
+						}
+					}
 					alterColumType := &ast.AlterColumnTypeStmt{
 						Table:      alterTable.Table,
 						ColumnName: alterCmd.Name,
 						Type:       dataType,
+						Collation:  collation,
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, alterColumType)
@@ -1529,7 +1537,39 @@ func convertColumnDef(in *pgquery.Node_ColumnDef) (*ast.ColumnDef, error) {
 		column.ConstraintList = append(column.ConstraintList, columnCons)
 	}
 
+	if in.ColumnDef.CollClause != nil {
+		collation, err := convertCollationName(in.ColumnDef.CollClause)
+		if err != nil {
+			return nil, err
+		}
+		column.Collation = collation
+	}
+
 	return column, nil
+}
+
+func convertCollationName(collation *pgquery.CollateClause) (*ast.CollationNameDef, error) {
+	result := &ast.CollationNameDef{}
+	var err error
+	switch len(collation.Collname) {
+	case 1:
+		result.Name, err = convertToString(collation.Collname[0])
+		if err != nil {
+			return nil, err
+		}
+	case 2:
+		result.Schema, err = convertToString(collation.Collname[0])
+		if err != nil {
+			return nil, err
+		}
+		result.Name, err = convertToString(collation.Collname[1])
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, parser.NewConvertErrorf("expected one or two length but found %d", len(collation.Collname))
+	}
+	return result, nil
 }
 
 func convertToTableType(relationType pgquery.ObjectType) (ast.TableType, error) {

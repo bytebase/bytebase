@@ -77,7 +77,7 @@ func (exec *PITRRestoreExecutor) RunOnce(ctx context.Context, task *api.Task) (t
 		return true, resultPayload, err
 	}
 
-	resultPayload, err := exec.doPITRRestore(ctx, exec.store, exec.dbFactory, exec.s3Client, exec.profile, task, payload)
+	resultPayload, err := exec.doPITRRestore(ctx, exec.dbFactory, exec.s3Client, exec.profile, task, payload)
 	return true, resultPayload, err
 }
 
@@ -112,6 +112,10 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	}
 
 	targetInstanceID := *payload.TargetInstanceID
+	targetInstance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: payload.TargetInstanceID})
+	if err != nil {
+		return nil, err
+	}
 	targetDatabaseFind := &api.DatabaseFind{
 		InstanceID: &targetInstanceID,
 		Name:       payload.DatabaseName,
@@ -140,7 +144,7 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, dbFactory, s3Client, profile, composedTargetDatabase.Instance, composedTargetDatabase.Name, backup); err != nil {
+	if err := exec.restoreDatabase(ctx, dbFactory, s3Client, profile, targetInstance, composedTargetDatabase.Name, backup); err != nil {
 		return nil, err
 	}
 	// TODO(zp): This should be done in the same transaction as restoreDatabase to guarantee consistency.
@@ -179,8 +183,12 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 	}, nil
 }
 
-func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
-	sourceDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "")
+func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	sourceDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +196,7 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, store *store
 
 	targetDriver := sourceDriver
 	if payload.TargetInstanceID != nil {
-		targetInstance, err := store.GetInstanceByID(ctx, *payload.TargetInstanceID)
+		targetInstance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: payload.TargetInstanceID})
 		if err != nil {
 			return nil, err
 		}
@@ -199,13 +207,13 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, store *store
 	// DB.Close is idempotent, so we can feel free to assign sourceDriver to targetDriver first.
 	defer targetDriver.Close(ctx)
 
-	issue, err := getIssueByPipelineID(ctx, store, task.PipelineID)
+	issue, err := getIssueByPipelineID(ctx, exec.store, task.PipelineID)
 	if err != nil {
 		return nil, err
 	}
 
 	backupStatus := api.BackupStatusDone
-	backupList, err := store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
+	backupList, err := exec.store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
 	if err != nil {
 		return nil, err
 	}
@@ -332,12 +340,12 @@ func downloadBinlogFilesFromCloud(ctx context.Context, client *bbs3.Client, star
 	return replayBinlogPathList, nil
 }
 
-func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
+func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, issue *api.Issue, task *api.Task, payload api.TaskDatabasePITRRestorePayload) (*api.TaskRunResultPayload, error) {
 	if payload.BackupID == nil {
 		return nil, errors.Errorf("PITR for Postgres is not implemented")
 	}
 
-	backup, err := store.GetBackupByID(ctx, *payload.BackupID)
+	backup, err := stores.GetBackupByID(ctx, *payload.BackupID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find backup with ID %d", *payload.BackupID)
 	}
@@ -351,7 +359,11 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, store 
 	}
 	defer backupFile.Close()
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, task.Database.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -451,7 +463,7 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*ap
 }
 
 // restoreDatabase will restore the database to the instance from the backup.
-func (*PITRRestoreExecutor) restoreDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *api.Instance, databaseName string, backup *api.Backup) error {
+func (*PITRRestoreExecutor) restoreDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, databaseName string, backup *api.Backup) error {
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return err
@@ -498,14 +510,18 @@ func downloadBackupFileFromCloud(ctx context.Context, s3Client *bbs3.Client, bac
 // all migration history from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
-func createBranchMigrationHistory(ctx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (string, string, error) {
-	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name)
+func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (string, string, error) {
+	targetInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &targetDatabase.InstanceID})
+	if err != nil {
+		return "", "", err
+	}
+	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase.Name)
 	if err != nil {
 		return "", "", err
 	}
 	defer targetDriver.Close(ctx)
 
-	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
+	issue, err := stores.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}

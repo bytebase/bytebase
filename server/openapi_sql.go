@@ -120,10 +120,6 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, "database not found")
 		}
-		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
-		if err != nil {
-			return err
-		}
 
 		dbType := instance.Engine
 		databaseType = string(dbType)
@@ -131,7 +127,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		if err != nil {
 			return err
 		}
-		driver, err = s.dbFactory.GetReadOnlyDatabaseDriver(ctx, composedInstance, database.DatabaseName)
+		driver, err = s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database.DatabaseName)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database driver").SetInternal(err)
 		}

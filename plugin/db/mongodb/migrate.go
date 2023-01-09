@@ -84,12 +84,12 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		return nil
 	}
 	log.Info("Bytebase migration schema not found, creating schema for mongodb...",
-		zap.String("environment", driver.connectionCtx.EnvironmentName),
-		zap.String("instance", driver.connectionCtx.InstanceName),
+		zap.String("environment", driver.connectionCtx.EnvironmentID),
+		zap.String("instance", driver.connectionCtx.InstanceID),
 	)
 	database := driver.client.Database(migrationHistoryDefaultDatabase)
 	if err := database.CreateCollection(ctx, migrationHistoryDefaultCollection); err != nil {
-		return errors.Wrapf(err, "failed to create collection %q in mongodb database %q for instance named %q", migrationHistoryDefaultCollection, migrationHistoryDefaultDatabase, driver.connectionCtx.InstanceName)
+		return errors.Wrapf(err, "failed to create collection %q in mongodb database %q for instance named %q", migrationHistoryDefaultCollection, migrationHistoryDefaultDatabase, driver.connectionCtx.InstanceID)
 	}
 
 	var b interface{}
@@ -108,8 +108,8 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		return errors.Wrap(err, "failed to run create index command")
 	}
 	log.Info("Successfully created migration schema for mongodb.",
-		zap.String("environment", driver.connectionCtx.EnvironmentName),
-		zap.String("instance", driver.connectionCtx.InstanceName),
+		zap.String("environment", driver.connectionCtx.EnvironmentID),
+		zap.String("instance", driver.connectionCtx.InstanceID),
 	)
 	return nil
 }

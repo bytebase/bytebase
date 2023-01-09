@@ -685,6 +685,7 @@ type InstanceMessage struct {
 	ResourceID    string
 	Title         string
 	Engine        db.Type
+	EngineVersion string
 	ExternalLink  string
 	Deleted       bool
 	DataSources   []*DataSourceMessage
@@ -1017,6 +1018,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			instance.resource_id AS resource_id,
 			instance.name AS name,
 			engine,
+			engine_version,
 			external_link,
 			instance.row_status AS row_status
 		FROM instance
@@ -1037,6 +1039,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			&instanceMessage.ResourceID,
 			&instanceMessage.Title,
 			&instanceMessage.Engine,
+			&instanceMessage.EngineVersion,
 			&instanceMessage.ExternalLink,
 			&rowStatus,
 		); err != nil {

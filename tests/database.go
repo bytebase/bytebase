@@ -19,7 +19,7 @@ import (
 )
 
 func (ctl *controller) createDatabase(project *api.Project, instance *api.Instance, databaseName string, owner string, labelMap map[string]string) error {
-	labels, err := marshalLabels(labelMap, instance.Environment.Name)
+	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 
 // cloneDatabaseFromBackup clones the database from an existing backup.
 func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *api.Instance, databaseName string, backup *api.Backup, labelMap map[string]string) error {
-	labels, err := marshalLabels(labelMap, instance.Environment.Name)
+	labels, err := marshalLabels(labelMap, instance.Environment.ResourceID)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (ctl *controller) getLatestSchemaMetadata(databaseID int) (string, error) {
 	return string(bs), nil
 }
 
-func marshalLabels(labelMap map[string]string, environmentName string) (string, error) {
+func marshalLabels(labelMap map[string]string, environmentID string) (string, error) {
 	var labelList []*api.DatabaseLabel
 	for k, v := range labelMap {
 		labelList = append(labelList, &api.DatabaseLabel{
@@ -210,7 +210,7 @@ func marshalLabels(labelMap map[string]string, environmentName string) (string, 
 	}
 	labelList = append(labelList, &api.DatabaseLabel{
 		Key:   api.EnvironmentLabelKey,
-		Value: environmentName,
+		Value: environmentID,
 	})
 
 	labels, err := json.Marshal(labelList)

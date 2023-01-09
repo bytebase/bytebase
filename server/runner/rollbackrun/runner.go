@@ -120,6 +120,10 @@ func (r *Runner) generateRollbackSQL(ctx context.Context, task *api.Task) {
 }
 
 func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, payload *api.TaskDatabaseDataUpdatePayload) (string, error) {
+	instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return "", err
+	}
 	// We cannot support rollback SQL generation for sheets because it can take lots of resources.
 	if payload.SheetID > 0 {
 		return "", errors.Errorf("rollback SQL isn't supported for large sheet")
@@ -134,7 +138,7 @@ func (r *Runner) generateRollbackSQLImpl(ctx context.Context, task *api.Task, pa
 	}
 	binlogFileNameList := mysql.GenBinlogFileNames(basename, seqStart, seqEnd)
 
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, task.Instance, "")
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}

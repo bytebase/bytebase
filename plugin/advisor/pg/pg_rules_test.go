@@ -38,6 +38,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 		advisor.SchemaRuleTableDropNamingConvention,
+		advisor.SchemaRuleCollationAllowlist,
 	}
 
 	for _, rule := range pgRules {
