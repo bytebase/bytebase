@@ -209,7 +209,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 }
 
 // Query queries a SQL statement.
-func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
+func (*Driver) Query(context.Context, string, *db.QueryContext) ([]interface{}, error) {
 	panic("not implemented")
 }
 

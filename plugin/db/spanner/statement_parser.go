@@ -45,8 +45,8 @@ func removeCommentsAndTrim(sql string) (string, error) {
 						isInQuoted = false
 						startQuote = 0
 						isTripleQuoted = false
-						res.WriteRune(c)
-						res.WriteRune(c)
+						_, _ = res.WriteRune(c)
+						_, _ = res.WriteRune(c)
 						index += 2
 					}
 				} else {
@@ -58,14 +58,14 @@ func removeCommentsAndTrim(sql string) (string, error) {
 			} else {
 				lastCharWasEscapeChar = false
 			}
-			res.WriteRune(c)
+			_, _ = res.WriteRune(c)
 		} else {
 			// We are not in a quoted string.
 			if isInSingleLineComment {
 				if c == '\n' {
 					isInSingleLineComment = false
 					// Include the line feed in the result.
-					res.WriteRune(c)
+					_, _ = res.WriteRune(c)
 				}
 			} else if isInMultiLineComment {
 				if len(runes) > index+1 && c == asterisk && runes[index+1] == slash {
@@ -86,12 +86,12 @@ func removeCommentsAndTrim(sql string) (string, error) {
 						// Check whether it is a triple-quote.
 						if len(runes) > index+2 && runes[index+1] == startQuote && runes[index+2] == startQuote {
 							isTripleQuoted = true
-							res.WriteRune(c)
-							res.WriteRune(c)
+							_, _ = res.WriteRune(c)
+							_, _ = res.WriteRune(c)
 							index += 2
 						}
 					}
-					res.WriteRune(c)
+					_, _ = res.WriteRune(c)
 				}
 			}
 		}

@@ -216,7 +216,7 @@ func (d *Driver) beginMigration(ctx context.Context, m *db.MigrationInfo, prevSc
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	if insertedID, err = d.InsertPendingHistory(ctx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
+	if insertedID, err = d.insertPendingHistory(ctx, largestSequence+1, prevSchema, m, storedVersion, statementRecord); err != nil {
 		return "", err
 	}
 
@@ -400,7 +400,7 @@ func (d *Driver) findLargestVersionSinceBaseline(ctx context.Context, tx *spanne
 	return nil, nil
 }
 
-func (d *Driver) findLargestSequence(ctx context.Context, tx *spanner.ReadOnlyTransaction, namespace string, baseline bool) (int, error) {
+func (*Driver) findLargestSequence(ctx context.Context, tx *spanner.ReadOnlyTransaction, namespace string, baseline bool) (int, error) {
 	query := `
     SELECT
       MAX(sequence)
@@ -438,7 +438,7 @@ func (d *Driver) findLargestSequence(ctx context.Context, tx *spanner.ReadOnlyTr
 	return 0, nil
 }
 
-func (d *Driver) InsertPendingHistory(ctx context.Context, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (string, error) {
+func (d *Driver) insertPendingHistory(ctx context.Context, sequence int, prevSchema string, m *db.MigrationInfo, storedVersion, statement string) (string, error) {
 	id := uuid.NewString()
 	query := `
 		INSERT INTO migration_history (
