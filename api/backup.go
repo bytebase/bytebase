@@ -170,19 +170,10 @@ type BackupPatch struct {
 type BackupSetting struct {
 	ID int `jsonapi:"primary,backupSetting"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
+	UpdatedTs int64
 
 	// Related fields
 	DatabaseID int `jsonapi:"attr,databaseId"`
-	// Do not return this to the client since the client always has the database context and fetching the
-	// database object and all its own related objects is a bit expensive.
-	Database *Database
 
 	// Domain specific fields
 	Enabled bool `jsonapi:"attr,enabled"`

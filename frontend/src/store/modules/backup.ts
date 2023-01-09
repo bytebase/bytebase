@@ -13,7 +13,6 @@ import {
   ResourceObject,
   unknown,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
 import { useAuthStore } from "./auth";
 
 export function convertBackup(
@@ -31,19 +30,8 @@ function convertBackupSetting(
   includedList: ResourceObject[]
 ): BackupSetting {
   return {
-    ...(backupSetting.attributes as Omit<
-      BackupSetting,
-      "id" | "creator" | "updater"
-    >),
+    ...(backupSetting.attributes as Omit<BackupSetting, "id">),
     id: parseInt(backupSetting.id),
-    creator: getPrincipalFromIncludedList(
-      backupSetting.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      backupSetting.relationships!.updater.data,
-      includedList
-    ),
   };
 }
 

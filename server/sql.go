@@ -144,13 +144,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			s.stateCfg.InstanceDatabaseSyncChan <- composedInstance
 		}
 		if sync.DatabaseID != nil {
-			composedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to database instance ID: %d", *sync.DatabaseID)).SetInternal(err)
-			}
-			if composedDatabase == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
-			}
 			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: sync.DatabaseID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", *sync.DatabaseID)).SetInternal(err)

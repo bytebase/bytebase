@@ -1,14 +1,9 @@
 import { Database, EngineType } from "@/types";
-import { isDev } from "../util";
 
 // Only allow using Schema Editor with MySQL.
 export const allowUsingSchemaEditor = (databaseList: Database[]): boolean => {
   return databaseList.every((db) => {
-    return (
-      db.instance.engine === "MYSQL" ||
-      // TODO(steven): remove release guard later.
-      (isDev() && db.instance.engine === "POSTGRES")
-    );
+    return db.instance.engine === "MYSQL" || db.instance.engine === "POSTGRES";
   });
 };
 
