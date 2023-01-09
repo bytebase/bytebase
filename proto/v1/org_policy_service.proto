@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service OrgPolicyService {
+  rpc GetPolicy(GetPolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      get: "/v1/{name=policies/*}"
+
+      additional_bindings {
+        get: "/v1/{name=projects/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/instances/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/instances/*/databases/*/policies/*}"
+      }
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
+    option (google.api.http) = {
+      get: "/v1/policies"
+
+      additional_bindings {
+        get: "/v1/{parent=projects/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*/instances/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*/instances/*/databases/*}/policies"
+      }
+    };
+    option (google.api.method_signature) = "";
+  }
+}
+
+message GetPolicyRequest {
+  // The name of the policy to retrieve.
+  // Format: {resource type}/{resource id}/policies/{policy type}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListPoliciesRequest {
+  // The parent, which owns this collection of policies.
+  // Format: {resource type}/{resource id}/policies/{policy type}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of policies to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 policies will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `GetPolicies` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `GetPolicies` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListPoliciesResponse {
+  // The policies from the specified request.
+  repeated Policy policies = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message Policy {
+  // The name of the policy.
+  // Format: {resource type}/{resource id}/policies/{policy type}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  bool inherit_from_parent = 4;
+
+  PolicyType type = 5;
+
+  string payload = 6;
+}
+
+enum PolicyType {
+  POLICY_TYPE_UNSPECIFIED = 0;
+  PIPELINE_APPROVAL = 1;
+  BACKUP_PLAN = 2;
+  SQL_REVIEW = 3;
+  SENSITIVE_DATA = 4;
+  ACCESS_CONTROL = 5;
+}
