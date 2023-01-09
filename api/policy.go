@@ -452,3 +452,23 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 	}
 	return "", nil
 }
+
+// GetPolicyResourceType gets the policy resource type.
+func GetPolicyResourceType(resourceType string) (PolicyResourceType, error) {
+	var rt PolicyResourceType
+	switch resourceType {
+	case "workspace":
+		rt = PolicyResourceTypeWorkspace
+	case "environment":
+		rt = PolicyResourceTypeEnvironment
+	case "project":
+		rt = PolicyResourceTypeProject
+	case "instance":
+		rt = PolicyResourceTypeInstance
+	case "database":
+		rt = PolicyResourceTypeDatabase
+	default:
+		return PolicyResourceTypeUnknown, errors.Errorf("invalid policy resource type %q", rt)
+	}
+	return rt, nil
+}
