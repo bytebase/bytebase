@@ -279,10 +279,6 @@ const makeUnknown = (type: ResourceType) => {
   const UNKNOWN_BACKUP_SETTING: BackupSetting = {
     id: UNKNOWN_ID,
     databaseId: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     enabled: false,
     hour: 0,
     dayOfWeek: 0,
@@ -663,10 +659,6 @@ const makeEmpty = (type: ResourceType) => {
   const EMPTY_BACKUP_SETTING: BackupSetting = {
     id: EMPTY_ID,
     databaseId: UNKNOWN_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     enabled: false,
     hour: 0,
     dayOfWeek: 0,
