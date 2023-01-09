@@ -314,8 +314,7 @@ func convertSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPo
 	sensitiveDataList := make([]*v1pb.SensitiveData, 0)
 	for _, data := range payload.SensitiveDataList {
 		maskType := v1pb.SensitiveDataMaskType_MASK_TYPE_UNSPECIFIED
-		switch data.Type {
-		case api.SensitiveDataMaskTypeDefault:
+		if data.Type == api.SensitiveDataMaskTypeDefault {
 			maskType = v1pb.SensitiveDataMaskType_DEFAULT
 		}
 		sensitiveDataList = append(sensitiveDataList, &v1pb.SensitiveData{
