@@ -1,5 +1,4 @@
 import { BackupId, BackupSettingId, DatabaseId } from "./id";
-import { Principal } from "./principal";
 
 export type BackupStatus = "PENDING_CREATE" | "DONE" | "FAILED";
 
@@ -41,12 +40,6 @@ export type BackupSetting = {
 
   // Related fields
   databaseId: DatabaseId;
-
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
 
   enabled: boolean;
   hour: number;

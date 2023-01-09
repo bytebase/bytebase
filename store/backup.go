@@ -72,10 +72,6 @@ func (raw *backupRaw) toBackup() *api.Backup {
 type backupSettingRaw struct {
 	ID int
 
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
 	UpdatedTs int64
 
 	// Related fields
@@ -96,10 +92,6 @@ func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 	return &api.BackupSetting{
 		ID: raw.ID,
 
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
@@ -166,11 +158,7 @@ func (s *Store) FindBackupSetting(ctx context.Context, find api.BackupSettingFin
 	}
 	var backupSettingList []*api.BackupSetting
 	for _, raw := range backupSettingRawList {
-		backupSetting, err := s.composeBackupSetting(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose BackupSetting with backupSettingRaw %+v", raw)
-		}
-		backupSettingList = append(backupSettingList, backupSetting)
+		backupSettingList = append(backupSettingList, raw.toBackupSetting())
 	}
 	return backupSettingList, nil
 }
@@ -184,11 +172,7 @@ func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.
 	if backupSettingRaw == nil {
 		return nil, nil
 	}
-	backupSetting, err := s.composeBackupSetting(ctx, backupSettingRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose BackupSetting with backupSettingRaw[%+v]", backupSettingRaw)
-	}
-	return backupSetting, nil
+	return backupSettingRaw.toBackupSetting(), nil
 }
 
 // UpsertBackupSetting upserts an instance of backup setting.
@@ -197,11 +181,7 @@ func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSetti
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to upsert backup setting with BackupSettingUpsert[%+v]", upsert)
 	}
-	backup, err := s.composeBackupSetting(ctx, backupSettingRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Backup with backupRaw[%+v]", backupSettingRaw)
-	}
-	return backup, nil
+	return backupSettingRaw.toBackupSetting(), nil
 }
 
 // UpdateBackupSettingsInEnvironment upserts an instance of backup setting.
@@ -244,11 +224,7 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 	}
 	var backupSettingList []*api.BackupSetting
 	for _, raw := range backupSettingRawList {
-		backupSetting, err := s.composeBackupSetting(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Backup with backupRaw[%+v]", raw)
-		}
-		backupSettingList = append(backupSettingList, backupSetting)
+		backupSettingList = append(backupSettingList, raw.toBackupSetting())
 	}
 	return backupSettingList, nil
 }
@@ -260,33 +236,6 @@ func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSe
 // composeBackup composes an instance of Backup by backupRaw.
 func composeBackup(raw *backupRaw) *api.Backup {
 	return raw.toBackup()
-}
-
-func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw) (*api.BackupSetting, error) {
-	backupSetting := raw.toBackupSetting()
-
-	creator, err := s.GetPrincipalByID(ctx, backupSetting.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	backupSetting.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, backupSetting.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	backupSetting.Updater = updater
-
-	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
-	if err != nil {
-		return nil, err
-	}
-	if database == nil {
-		return nil, errors.Errorf("failed to get database with databaseID %v", backupSetting.DatabaseID)
-	}
-	backupSetting.Database = database
-
-	return backupSetting, nil
 }
 
 // createBackupRaw creates a new backup.
@@ -650,9 +599,6 @@ func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSetting
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			bs.id,
-			bs.creator_id,
-			bs.created_ts,
-			bs.updater_id,
 			bs.updated_ts,
 			bs.database_id,
 			bs.enabled,
@@ -674,9 +620,6 @@ func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSetting
 		var backupSettingRaw backupSettingRaw
 		if err := rows.Scan(
 			&backupSettingRaw.ID,
-			&backupSettingRaw.CreatorID,
-			&backupSettingRaw.CreatedTs,
-			&backupSettingRaw.UpdaterID,
 			&backupSettingRaw.UpdatedTs,
 			&backupSettingRaw.DatabaseID,
 			&backupSettingRaw.Enabled,
@@ -710,9 +653,6 @@ func (*Store) findBackupSettingImpl(ctx context.Context, tx *Tx, find *api.Backu
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
 			updated_ts,
 			database_id,
 			enabled,
@@ -735,9 +675,6 @@ func (*Store) findBackupSettingImpl(ctx context.Context, tx *Tx, find *api.Backu
 		var backupSettingRaw backupSettingRaw
 		if err := rows.Scan(
 			&backupSettingRaw.ID,
-			&backupSettingRaw.CreatorID,
-			&backupSettingRaw.CreatedTs,
-			&backupSettingRaw.UpdaterID,
 			&backupSettingRaw.UpdatedTs,
 			&backupSettingRaw.DatabaseID,
 			&backupSettingRaw.Enabled,
@@ -778,7 +715,7 @@ func (*Store) upsertBackupSettingImpl(ctx context.Context, tx *Tx, upsert *api.B
 				day_of_week = EXCLUDED.day_of_week,
 				retention_period_ts = EXCLUDED.retention_period_ts,
 				hook_url = EXCLUDED.hook_url
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, enabled, hour, day_of_week, retention_period_ts, hook_url
+		RETURNING id, updated_ts, database_id, enabled, hour, day_of_week, retention_period_ts, hook_url
 	`
 	var backupSettingRaw backupSettingRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -792,9 +729,6 @@ func (*Store) upsertBackupSettingImpl(ctx context.Context, tx *Tx, upsert *api.B
 		upsert.HookURL,
 	).Scan(
 		&backupSettingRaw.ID,
-		&backupSettingRaw.CreatorID,
-		&backupSettingRaw.CreatedTs,
-		&backupSettingRaw.UpdaterID,
 		&backupSettingRaw.UpdatedTs,
 		&backupSettingRaw.DatabaseID,
 		&backupSettingRaw.Enabled,
@@ -822,9 +756,6 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
 			updated_ts,
 			database_id,
 			enabled,
@@ -856,9 +787,6 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 		var backupSettingRaw backupSettingRaw
 		if err := rows.Scan(
 			&backupSettingRaw.ID,
-			&backupSettingRaw.CreatorID,
-			&backupSettingRaw.CreatedTs,
-			&backupSettingRaw.UpdaterID,
 			&backupSettingRaw.UpdatedTs,
 			&backupSettingRaw.DatabaseID,
 			&backupSettingRaw.Enabled,
