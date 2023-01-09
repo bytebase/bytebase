@@ -216,8 +216,14 @@ func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.Q
 	if len(stmts) != 1 {
 		return nil, errors.Errorf("expect to get 1 statement, get %d", len(stmts))
 	}
-	stmt := getStatementWithResultLimit(stmts[0], queryContext.Limit)
-	iter := d.client.Single().Query(ctx, spanner.NewStatement(stmt))
+
+	statement = stmts[0]
+	if !queryContext.ReadOnly && !isSelect(statement) {
+		return d.queryAdmin(ctx, statement)
+	}
+
+	statement = getStatementWithResultLimit(statement, queryContext.Limit)
+	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
 	defer iter.Stop()
 
 	row, err := iter.Next()
@@ -241,6 +247,7 @@ func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.Q
 			return nil, err
 		}
 		data = append(data, rowData)
+
 		row, err = iter.Next()
 		if err == iterator.Done {
 			break
@@ -250,6 +257,36 @@ func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.Q
 		}
 	}
 	return []interface{}{columnNames, columnTypeNames, data}, nil
+}
+
+func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]interface{}, error) {
+	if isDDL(statement) {
+		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &adminpb.UpdateDatabaseDdlRequest{
+			Database:   getDSN(d.config.Host, d.dbName),
+			Statements: []string{statement},
+		})
+		if err != nil {
+			return nil, err
+		}
+		return nil, op.Wait(ctx)
+	}
+
+	var rowCount int64
+	if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
+		count, err := rwt.Update(ctx, spanner.NewStatement(statement))
+		if err != nil {
+			return err
+		}
+		rowCount = count
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	field := []string{"Affected Rows"}
+	types := []string{"INT64"}
+	rows := [][]interface{}{{rowCount}}
+	return []interface{}{field, types, rows}, nil
 }
 
 func getColumnNames(iter *spanner.RowIterator) []string {
