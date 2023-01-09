@@ -94,6 +94,10 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
+		if p.Type == v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED {
+			// skip unknown type policy and environment tier policy
+			continue
+		}
 		response.Policies = append(response.Policies, p)
 	}
 	return response, nil
