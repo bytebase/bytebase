@@ -1,13 +1,14 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
+import { Duration } from "../google/protobuf/duration";
 import { State, stateFromJSON, stateToJSON } from "./common";
-import { IssueType, issueTypeFromJSON, issueTypeToJSON } from "./issue";
+import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
-  PIPELINE_APPROVAL = 1,
+  DEPLOYMENT_APPROVAL = 1,
   BACKUP_PLAN = 2,
   SQL_REVIEW = 3,
   SENSITIVE_DATA = 4,
@@ -21,8 +22,8 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case "POLICY_TYPE_UNSPECIFIED":
       return PolicyType.POLICY_TYPE_UNSPECIFIED;
     case 1:
-    case "PIPELINE_APPROVAL":
-      return PolicyType.PIPELINE_APPROVAL;
+    case "DEPLOYMENT_APPROVAL":
+      return PolicyType.DEPLOYMENT_APPROVAL;
     case 2:
     case "BACKUP_PLAN":
       return PolicyType.BACKUP_PLAN;
@@ -46,8 +47,8 @@ export function policyTypeToJSON(object: PolicyType): string {
   switch (object) {
     case PolicyType.POLICY_TYPE_UNSPECIFIED:
       return "POLICY_TYPE_UNSPECIFIED";
-    case PolicyType.PIPELINE_APPROVAL:
-      return "PIPELINE_APPROVAL";
+    case PolicyType.DEPLOYMENT_APPROVAL:
+      return "DEPLOYMENT_APPROVAL";
     case PolicyType.BACKUP_PLAN:
       return "BACKUP_PLAN";
     case PolicyType.SQL_REVIEW:
@@ -62,85 +63,85 @@ export function policyTypeToJSON(object: PolicyType): string {
   }
 }
 
-export enum AssigneeGroupValue {
+export enum ApprovalGroup {
   ASSIGNEE_GROUP_UNSPECIFIED = 0,
-  WORKSPACE_OWNER_OR_DBA = 1,
-  PROJECT_OWNER = 2,
+  APPROVAL_GROUP_DBA = 1,
+  APPROVAL_GROUP_PROJECT_OWNER = 2,
   UNRECOGNIZED = -1,
 }
 
-export function assigneeGroupValueFromJSON(object: any): AssigneeGroupValue {
+export function approvalGroupFromJSON(object: any): ApprovalGroup {
   switch (object) {
     case 0:
     case "ASSIGNEE_GROUP_UNSPECIFIED":
-      return AssigneeGroupValue.ASSIGNEE_GROUP_UNSPECIFIED;
+      return ApprovalGroup.ASSIGNEE_GROUP_UNSPECIFIED;
     case 1:
-    case "WORKSPACE_OWNER_OR_DBA":
-      return AssigneeGroupValue.WORKSPACE_OWNER_OR_DBA;
+    case "APPROVAL_GROUP_DBA":
+      return ApprovalGroup.APPROVAL_GROUP_DBA;
     case 2:
-    case "PROJECT_OWNER":
-      return AssigneeGroupValue.PROJECT_OWNER;
+    case "APPROVAL_GROUP_PROJECT_OWNER":
+      return ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return AssigneeGroupValue.UNRECOGNIZED;
+      return ApprovalGroup.UNRECOGNIZED;
   }
 }
 
-export function assigneeGroupValueToJSON(object: AssigneeGroupValue): string {
+export function approvalGroupToJSON(object: ApprovalGroup): string {
   switch (object) {
-    case AssigneeGroupValue.ASSIGNEE_GROUP_UNSPECIFIED:
+    case ApprovalGroup.ASSIGNEE_GROUP_UNSPECIFIED:
       return "ASSIGNEE_GROUP_UNSPECIFIED";
-    case AssigneeGroupValue.WORKSPACE_OWNER_OR_DBA:
-      return "WORKSPACE_OWNER_OR_DBA";
-    case AssigneeGroupValue.PROJECT_OWNER:
-      return "PROJECT_OWNER";
-    case AssigneeGroupValue.UNRECOGNIZED:
+    case ApprovalGroup.APPROVAL_GROUP_DBA:
+      return "APPROVAL_GROUP_DBA";
+    case ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER:
+      return "APPROVAL_GROUP_PROJECT_OWNER";
+    case ApprovalGroup.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export enum PipelineApprovalValue {
-  PIPELINE_APPROVAL_UNSPECIFIED = 0,
-  MANUAL_APPROVAL_NEVER = 1,
-  MANUAL_APPROVAL_ALWAYS = 2,
+export enum ApprovalStrategy {
+  APPROVAL_STRATEGY_UNSPECIFIED = 0,
+  AUTOMATIC = 1,
+  MANUAL = 2,
   UNRECOGNIZED = -1,
 }
 
-export function pipelineApprovalValueFromJSON(object: any): PipelineApprovalValue {
+export function approvalStrategyFromJSON(object: any): ApprovalStrategy {
   switch (object) {
     case 0:
-    case "PIPELINE_APPROVAL_UNSPECIFIED":
-      return PipelineApprovalValue.PIPELINE_APPROVAL_UNSPECIFIED;
+    case "APPROVAL_STRATEGY_UNSPECIFIED":
+      return ApprovalStrategy.APPROVAL_STRATEGY_UNSPECIFIED;
     case 1:
-    case "MANUAL_APPROVAL_NEVER":
-      return PipelineApprovalValue.MANUAL_APPROVAL_NEVER;
+    case "AUTOMATIC":
+      return ApprovalStrategy.AUTOMATIC;
     case 2:
-    case "MANUAL_APPROVAL_ALWAYS":
-      return PipelineApprovalValue.MANUAL_APPROVAL_ALWAYS;
+    case "MANUAL":
+      return ApprovalStrategy.MANUAL;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return PipelineApprovalValue.UNRECOGNIZED;
+      return ApprovalStrategy.UNRECOGNIZED;
   }
 }
 
-export function pipelineApprovalValueToJSON(object: PipelineApprovalValue): string {
+export function approvalStrategyToJSON(object: ApprovalStrategy): string {
   switch (object) {
-    case PipelineApprovalValue.PIPELINE_APPROVAL_UNSPECIFIED:
-      return "PIPELINE_APPROVAL_UNSPECIFIED";
-    case PipelineApprovalValue.MANUAL_APPROVAL_NEVER:
-      return "MANUAL_APPROVAL_NEVER";
-    case PipelineApprovalValue.MANUAL_APPROVAL_ALWAYS:
-      return "MANUAL_APPROVAL_ALWAYS";
-    case PipelineApprovalValue.UNRECOGNIZED:
+    case ApprovalStrategy.APPROVAL_STRATEGY_UNSPECIFIED:
+      return "APPROVAL_STRATEGY_UNSPECIFIED";
+    case ApprovalStrategy.AUTOMATIC:
+      return "AUTOMATIC";
+    case ApprovalStrategy.MANUAL:
+      return "MANUAL";
+    case ApprovalStrategy.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export enum BackupPlanPolicySchedule {
+export enum BackupPlanSchedule {
   SCHEDULE_UNSPECIFIED = 0,
   UNSET = 1,
   DAILY = 2,
@@ -148,38 +149,38 @@ export enum BackupPlanPolicySchedule {
   UNRECOGNIZED = -1,
 }
 
-export function backupPlanPolicyScheduleFromJSON(object: any): BackupPlanPolicySchedule {
+export function backupPlanScheduleFromJSON(object: any): BackupPlanSchedule {
   switch (object) {
     case 0:
     case "SCHEDULE_UNSPECIFIED":
-      return BackupPlanPolicySchedule.SCHEDULE_UNSPECIFIED;
+      return BackupPlanSchedule.SCHEDULE_UNSPECIFIED;
     case 1:
     case "UNSET":
-      return BackupPlanPolicySchedule.UNSET;
+      return BackupPlanSchedule.UNSET;
     case 2:
     case "DAILY":
-      return BackupPlanPolicySchedule.DAILY;
+      return BackupPlanSchedule.DAILY;
     case 3:
     case "WEEKLY":
-      return BackupPlanPolicySchedule.WEEKLY;
+      return BackupPlanSchedule.WEEKLY;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return BackupPlanPolicySchedule.UNRECOGNIZED;
+      return BackupPlanSchedule.UNRECOGNIZED;
   }
 }
 
-export function backupPlanPolicyScheduleToJSON(object: BackupPlanPolicySchedule): string {
+export function backupPlanScheduleToJSON(object: BackupPlanSchedule): string {
   switch (object) {
-    case BackupPlanPolicySchedule.SCHEDULE_UNSPECIFIED:
+    case BackupPlanSchedule.SCHEDULE_UNSPECIFIED:
       return "SCHEDULE_UNSPECIFIED";
-    case BackupPlanPolicySchedule.UNSET:
+    case BackupPlanSchedule.UNSET:
       return "UNSET";
-    case BackupPlanPolicySchedule.DAILY:
+    case BackupPlanSchedule.DAILY:
       return "DAILY";
-    case BackupPlanPolicySchedule.WEEKLY:
+    case BackupPlanSchedule.WEEKLY:
       return "WEEKLY";
-    case BackupPlanPolicySchedule.UNRECOGNIZED:
+    case BackupPlanSchedule.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -307,7 +308,11 @@ export interface ListPoliciesResponse {
 export interface Policy {
   /**
    * The name of the policy.
-   * Format: {resource type}/{resource id}/policies/{policy type}
+   * Format: {resource name}/policies/{policy type}
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
    */
   name: string;
   /** The system-assigned, unique identifier for a resource. */
@@ -315,40 +320,42 @@ export interface Policy {
   state: State;
   inheritFromParent: boolean;
   type: PolicyType;
-  pipelineApprovalPolicy?: PipelineApprovalPolicy | undefined;
+  deploymentApprovalPolicy?: DeploymentApprovalPolicy | undefined;
   backupPlanPolicy?: BackupPlanPolicy | undefined;
   sensitiveDataPolicy?: SensitiveDataPolicy | undefined;
   accessControlPolicy?: AccessControlPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
 }
 
-export interface PipelineApprovalPolicy {
-  value: PipelineApprovalValue;
-  assigneeGroupList: AssigneeGroup[];
+export interface DeploymentApprovalPolicy {
+  defaultStrategy: ApprovalStrategy;
+  deploymentApprovalStrategies: DeploymentApprovalStrategy[];
 }
 
-export interface AssigneeGroup {
-  issueType: IssueType;
-  value: AssigneeGroupValue;
+export interface DeploymentApprovalStrategy {
+  deploymentType: DeploymentType;
+  approvalGroup: ApprovalGroup;
+  approvalStrategy: ApprovalStrategy;
 }
 
 export interface BackupPlanPolicy {
-  schedule: BackupPlanPolicySchedule;
-  retentionPeriodTs: number;
+  schedule: BackupPlanSchedule;
+  retentionDuration?: Duration;
 }
 
 export interface SensitiveDataPolicy {
-  sensitiveDataList: SensitiveData[];
+  sensitiveData: SensitiveData[];
 }
 
 export interface SensitiveData {
+  schema: string;
   table: string;
   column: string;
   maskType: SensitiveDataMaskType;
 }
 
 export interface AccessControlPolicy {
-  disallowRuleList: AccessControlRule[];
+  disallowRules: AccessControlRule[];
 }
 
 export interface AccessControlRule {
@@ -356,8 +363,8 @@ export interface AccessControlRule {
 }
 
 export interface SQLReviewPolicy {
-  name: string;
-  ruleList: SQLReviewRule[];
+  title: string;
+  rules: SQLReviewRule[];
 }
 
 export interface SQLReviewRule {
@@ -549,7 +556,7 @@ function createBasePolicy(): Policy {
     state: 0,
     inheritFromParent: false,
     type: 0,
-    pipelineApprovalPolicy: undefined,
+    deploymentApprovalPolicy: undefined,
     backupPlanPolicy: undefined,
     sensitiveDataPolicy: undefined,
     accessControlPolicy: undefined,
@@ -574,8 +581,8 @@ export const Policy = {
     if (message.type !== 0) {
       writer.uint32(40).int32(message.type);
     }
-    if (message.pipelineApprovalPolicy !== undefined) {
-      PipelineApprovalPolicy.encode(message.pipelineApprovalPolicy, writer.uint32(50).fork()).ldelim();
+    if (message.deploymentApprovalPolicy !== undefined) {
+      DeploymentApprovalPolicy.encode(message.deploymentApprovalPolicy, writer.uint32(50).fork()).ldelim();
     }
     if (message.backupPlanPolicy !== undefined) {
       BackupPlanPolicy.encode(message.backupPlanPolicy, writer.uint32(58).fork()).ldelim();
@@ -615,7 +622,7 @@ export const Policy = {
           message.type = reader.int32() as any;
           break;
         case 6:
-          message.pipelineApprovalPolicy = PipelineApprovalPolicy.decode(reader, reader.uint32());
+          message.deploymentApprovalPolicy = DeploymentApprovalPolicy.decode(reader, reader.uint32());
           break;
         case 7:
           message.backupPlanPolicy = BackupPlanPolicy.decode(reader, reader.uint32());
@@ -644,8 +651,8 @@ export const Policy = {
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
       inheritFromParent: isSet(object.inheritFromParent) ? Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
-      pipelineApprovalPolicy: isSet(object.pipelineApprovalPolicy)
-        ? PipelineApprovalPolicy.fromJSON(object.pipelineApprovalPolicy)
+      deploymentApprovalPolicy: isSet(object.deploymentApprovalPolicy)
+        ? DeploymentApprovalPolicy.fromJSON(object.deploymentApprovalPolicy)
         : undefined,
       backupPlanPolicy: isSet(object.backupPlanPolicy) ? BackupPlanPolicy.fromJSON(object.backupPlanPolicy) : undefined,
       sensitiveDataPolicy: isSet(object.sensitiveDataPolicy)
@@ -665,8 +672,8 @@ export const Policy = {
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.inheritFromParent !== undefined && (obj.inheritFromParent = message.inheritFromParent);
     message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
-    message.pipelineApprovalPolicy !== undefined && (obj.pipelineApprovalPolicy = message.pipelineApprovalPolicy
-      ? PipelineApprovalPolicy.toJSON(message.pipelineApprovalPolicy)
+    message.deploymentApprovalPolicy !== undefined && (obj.deploymentApprovalPolicy = message.deploymentApprovalPolicy
+      ? DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy)
       : undefined);
     message.backupPlanPolicy !== undefined &&
       (obj.backupPlanPolicy = message.backupPlanPolicy ? BackupPlanPolicy.toJSON(message.backupPlanPolicy) : undefined);
@@ -688,9 +695,9 @@ export const Policy = {
     message.state = object.state ?? 0;
     message.inheritFromParent = object.inheritFromParent ?? false;
     message.type = object.type ?? 0;
-    message.pipelineApprovalPolicy =
-      (object.pipelineApprovalPolicy !== undefined && object.pipelineApprovalPolicy !== null)
-        ? PipelineApprovalPolicy.fromPartial(object.pipelineApprovalPolicy)
+    message.deploymentApprovalPolicy =
+      (object.deploymentApprovalPolicy !== undefined && object.deploymentApprovalPolicy !== null)
+        ? DeploymentApprovalPolicy.fromPartial(object.deploymentApprovalPolicy)
         : undefined;
     message.backupPlanPolicy = (object.backupPlanPolicy !== undefined && object.backupPlanPolicy !== null)
       ? BackupPlanPolicy.fromPartial(object.backupPlanPolicy)
@@ -708,33 +715,33 @@ export const Policy = {
   },
 };
 
-function createBasePipelineApprovalPolicy(): PipelineApprovalPolicy {
-  return { value: 0, assigneeGroupList: [] };
+function createBaseDeploymentApprovalPolicy(): DeploymentApprovalPolicy {
+  return { defaultStrategy: 0, deploymentApprovalStrategies: [] };
 }
 
-export const PipelineApprovalPolicy = {
-  encode(message: PipelineApprovalPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.value !== 0) {
-      writer.uint32(8).int32(message.value);
+export const DeploymentApprovalPolicy = {
+  encode(message: DeploymentApprovalPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.defaultStrategy !== 0) {
+      writer.uint32(8).int32(message.defaultStrategy);
     }
-    for (const v of message.assigneeGroupList) {
-      AssigneeGroup.encode(v!, writer.uint32(18).fork()).ldelim();
+    for (const v of message.deploymentApprovalStrategies) {
+      DeploymentApprovalStrategy.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PipelineApprovalPolicy {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeploymentApprovalPolicy {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePipelineApprovalPolicy();
+    const message = createBaseDeploymentApprovalPolicy();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.value = reader.int32() as any;
+          message.defaultStrategy = reader.int32() as any;
           break;
         case 2:
-          message.assigneeGroupList.push(AssigneeGroup.decode(reader, reader.uint32()));
+          message.deploymentApprovalStrategies.push(DeploymentApprovalStrategy.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -744,61 +751,70 @@ export const PipelineApprovalPolicy = {
     return message;
   },
 
-  fromJSON(object: any): PipelineApprovalPolicy {
+  fromJSON(object: any): DeploymentApprovalPolicy {
     return {
-      value: isSet(object.value) ? pipelineApprovalValueFromJSON(object.value) : 0,
-      assigneeGroupList: Array.isArray(object?.assigneeGroupList)
-        ? object.assigneeGroupList.map((e: any) => AssigneeGroup.fromJSON(e))
+      defaultStrategy: isSet(object.defaultStrategy) ? approvalStrategyFromJSON(object.defaultStrategy) : 0,
+      deploymentApprovalStrategies: Array.isArray(object?.deploymentApprovalStrategies)
+        ? object.deploymentApprovalStrategies.map((e: any) => DeploymentApprovalStrategy.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: PipelineApprovalPolicy): unknown {
+  toJSON(message: DeploymentApprovalPolicy): unknown {
     const obj: any = {};
-    message.value !== undefined && (obj.value = pipelineApprovalValueToJSON(message.value));
-    if (message.assigneeGroupList) {
-      obj.assigneeGroupList = message.assigneeGroupList.map((e) => e ? AssigneeGroup.toJSON(e) : undefined);
+    message.defaultStrategy !== undefined && (obj.defaultStrategy = approvalStrategyToJSON(message.defaultStrategy));
+    if (message.deploymentApprovalStrategies) {
+      obj.deploymentApprovalStrategies = message.deploymentApprovalStrategies.map((e) =>
+        e ? DeploymentApprovalStrategy.toJSON(e) : undefined
+      );
     } else {
-      obj.assigneeGroupList = [];
+      obj.deploymentApprovalStrategies = [];
     }
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<PipelineApprovalPolicy>, I>>(object: I): PipelineApprovalPolicy {
-    const message = createBasePipelineApprovalPolicy();
-    message.value = object.value ?? 0;
-    message.assigneeGroupList = object.assigneeGroupList?.map((e) => AssigneeGroup.fromPartial(e)) || [];
+  fromPartial<I extends Exact<DeepPartial<DeploymentApprovalPolicy>, I>>(object: I): DeploymentApprovalPolicy {
+    const message = createBaseDeploymentApprovalPolicy();
+    message.defaultStrategy = object.defaultStrategy ?? 0;
+    message.deploymentApprovalStrategies =
+      object.deploymentApprovalStrategies?.map((e) => DeploymentApprovalStrategy.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseAssigneeGroup(): AssigneeGroup {
-  return { issueType: 0, value: 0 };
+function createBaseDeploymentApprovalStrategy(): DeploymentApprovalStrategy {
+  return { deploymentType: 0, approvalGroup: 0, approvalStrategy: 0 };
 }
 
-export const AssigneeGroup = {
-  encode(message: AssigneeGroup, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.issueType !== 0) {
-      writer.uint32(8).int32(message.issueType);
+export const DeploymentApprovalStrategy = {
+  encode(message: DeploymentApprovalStrategy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.deploymentType !== 0) {
+      writer.uint32(8).int32(message.deploymentType);
     }
-    if (message.value !== 0) {
-      writer.uint32(16).int32(message.value);
+    if (message.approvalGroup !== 0) {
+      writer.uint32(16).int32(message.approvalGroup);
+    }
+    if (message.approvalStrategy !== 0) {
+      writer.uint32(24).int32(message.approvalStrategy);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): AssigneeGroup {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeploymentApprovalStrategy {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAssigneeGroup();
+    const message = createBaseDeploymentApprovalStrategy();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.issueType = reader.int32() as any;
+          message.deploymentType = reader.int32() as any;
           break;
         case 2:
-          message.value = reader.int32() as any;
+          message.approvalGroup = reader.int32() as any;
+          break;
+        case 3:
+          message.approvalStrategy = reader.int32() as any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -808,30 +824,33 @@ export const AssigneeGroup = {
     return message;
   },
 
-  fromJSON(object: any): AssigneeGroup {
+  fromJSON(object: any): DeploymentApprovalStrategy {
     return {
-      issueType: isSet(object.issueType) ? issueTypeFromJSON(object.issueType) : 0,
-      value: isSet(object.value) ? assigneeGroupValueFromJSON(object.value) : 0,
+      deploymentType: isSet(object.deploymentType) ? deploymentTypeFromJSON(object.deploymentType) : 0,
+      approvalGroup: isSet(object.approvalGroup) ? approvalGroupFromJSON(object.approvalGroup) : 0,
+      approvalStrategy: isSet(object.approvalStrategy) ? approvalStrategyFromJSON(object.approvalStrategy) : 0,
     };
   },
 
-  toJSON(message: AssigneeGroup): unknown {
+  toJSON(message: DeploymentApprovalStrategy): unknown {
     const obj: any = {};
-    message.issueType !== undefined && (obj.issueType = issueTypeToJSON(message.issueType));
-    message.value !== undefined && (obj.value = assigneeGroupValueToJSON(message.value));
+    message.deploymentType !== undefined && (obj.deploymentType = deploymentTypeToJSON(message.deploymentType));
+    message.approvalGroup !== undefined && (obj.approvalGroup = approvalGroupToJSON(message.approvalGroup));
+    message.approvalStrategy !== undefined && (obj.approvalStrategy = approvalStrategyToJSON(message.approvalStrategy));
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<AssigneeGroup>, I>>(object: I): AssigneeGroup {
-    const message = createBaseAssigneeGroup();
-    message.issueType = object.issueType ?? 0;
-    message.value = object.value ?? 0;
+  fromPartial<I extends Exact<DeepPartial<DeploymentApprovalStrategy>, I>>(object: I): DeploymentApprovalStrategy {
+    const message = createBaseDeploymentApprovalStrategy();
+    message.deploymentType = object.deploymentType ?? 0;
+    message.approvalGroup = object.approvalGroup ?? 0;
+    message.approvalStrategy = object.approvalStrategy ?? 0;
     return message;
   },
 };
 
 function createBaseBackupPlanPolicy(): BackupPlanPolicy {
-  return { schedule: 0, retentionPeriodTs: 0 };
+  return { schedule: 0, retentionDuration: undefined };
 }
 
 export const BackupPlanPolicy = {
@@ -839,8 +858,8 @@ export const BackupPlanPolicy = {
     if (message.schedule !== 0) {
       writer.uint32(8).int32(message.schedule);
     }
-    if (message.retentionPeriodTs !== 0) {
-      writer.uint32(16).int32(message.retentionPeriodTs);
+    if (message.retentionDuration !== undefined) {
+      Duration.encode(message.retentionDuration, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -856,7 +875,7 @@ export const BackupPlanPolicy = {
           message.schedule = reader.int32() as any;
           break;
         case 2:
-          message.retentionPeriodTs = reader.int32();
+          message.retentionDuration = Duration.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -868,33 +887,36 @@ export const BackupPlanPolicy = {
 
   fromJSON(object: any): BackupPlanPolicy {
     return {
-      schedule: isSet(object.schedule) ? backupPlanPolicyScheduleFromJSON(object.schedule) : 0,
-      retentionPeriodTs: isSet(object.retentionPeriodTs) ? Number(object.retentionPeriodTs) : 0,
+      schedule: isSet(object.schedule) ? backupPlanScheduleFromJSON(object.schedule) : 0,
+      retentionDuration: isSet(object.retentionDuration) ? Duration.fromJSON(object.retentionDuration) : undefined,
     };
   },
 
   toJSON(message: BackupPlanPolicy): unknown {
     const obj: any = {};
-    message.schedule !== undefined && (obj.schedule = backupPlanPolicyScheduleToJSON(message.schedule));
-    message.retentionPeriodTs !== undefined && (obj.retentionPeriodTs = Math.round(message.retentionPeriodTs));
+    message.schedule !== undefined && (obj.schedule = backupPlanScheduleToJSON(message.schedule));
+    message.retentionDuration !== undefined &&
+      (obj.retentionDuration = message.retentionDuration ? Duration.toJSON(message.retentionDuration) : undefined);
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<BackupPlanPolicy>, I>>(object: I): BackupPlanPolicy {
     const message = createBaseBackupPlanPolicy();
     message.schedule = object.schedule ?? 0;
-    message.retentionPeriodTs = object.retentionPeriodTs ?? 0;
+    message.retentionDuration = (object.retentionDuration !== undefined && object.retentionDuration !== null)
+      ? Duration.fromPartial(object.retentionDuration)
+      : undefined;
     return message;
   },
 };
 
 function createBaseSensitiveDataPolicy(): SensitiveDataPolicy {
-  return { sensitiveDataList: [] };
+  return { sensitiveData: [] };
 }
 
 export const SensitiveDataPolicy = {
   encode(message: SensitiveDataPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.sensitiveDataList) {
+    for (const v of message.sensitiveData) {
       SensitiveData.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
@@ -908,7 +930,7 @@ export const SensitiveDataPolicy = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.sensitiveDataList.push(SensitiveData.decode(reader, reader.uint32()));
+          message.sensitiveData.push(SensitiveData.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -920,43 +942,46 @@ export const SensitiveDataPolicy = {
 
   fromJSON(object: any): SensitiveDataPolicy {
     return {
-      sensitiveDataList: Array.isArray(object?.sensitiveDataList)
-        ? object.sensitiveDataList.map((e: any) => SensitiveData.fromJSON(e))
+      sensitiveData: Array.isArray(object?.sensitiveData)
+        ? object.sensitiveData.map((e: any) => SensitiveData.fromJSON(e))
         : [],
     };
   },
 
   toJSON(message: SensitiveDataPolicy): unknown {
     const obj: any = {};
-    if (message.sensitiveDataList) {
-      obj.sensitiveDataList = message.sensitiveDataList.map((e) => e ? SensitiveData.toJSON(e) : undefined);
+    if (message.sensitiveData) {
+      obj.sensitiveData = message.sensitiveData.map((e) => e ? SensitiveData.toJSON(e) : undefined);
     } else {
-      obj.sensitiveDataList = [];
+      obj.sensitiveData = [];
     }
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<SensitiveDataPolicy>, I>>(object: I): SensitiveDataPolicy {
     const message = createBaseSensitiveDataPolicy();
-    message.sensitiveDataList = object.sensitiveDataList?.map((e) => SensitiveData.fromPartial(e)) || [];
+    message.sensitiveData = object.sensitiveData?.map((e) => SensitiveData.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseSensitiveData(): SensitiveData {
-  return { table: "", column: "", maskType: 0 };
+  return { schema: "", table: "", column: "", maskType: 0 };
 }
 
 export const SensitiveData = {
   encode(message: SensitiveData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
     if (message.table !== "") {
-      writer.uint32(10).string(message.table);
+      writer.uint32(18).string(message.table);
     }
     if (message.column !== "") {
-      writer.uint32(18).string(message.column);
+      writer.uint32(26).string(message.column);
     }
     if (message.maskType !== 0) {
-      writer.uint32(24).int32(message.maskType);
+      writer.uint32(32).int32(message.maskType);
     }
     return writer;
   },
@@ -969,12 +994,15 @@ export const SensitiveData = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.table = reader.string();
+          message.schema = reader.string();
           break;
         case 2:
-          message.column = reader.string();
+          message.table = reader.string();
           break;
         case 3:
+          message.column = reader.string();
+          break;
+        case 4:
           message.maskType = reader.int32() as any;
           break;
         default:
@@ -987,6 +1015,7 @@ export const SensitiveData = {
 
   fromJSON(object: any): SensitiveData {
     return {
+      schema: isSet(object.schema) ? String(object.schema) : "",
       table: isSet(object.table) ? String(object.table) : "",
       column: isSet(object.column) ? String(object.column) : "",
       maskType: isSet(object.maskType) ? sensitiveDataMaskTypeFromJSON(object.maskType) : 0,
@@ -995,6 +1024,7 @@ export const SensitiveData = {
 
   toJSON(message: SensitiveData): unknown {
     const obj: any = {};
+    message.schema !== undefined && (obj.schema = message.schema);
     message.table !== undefined && (obj.table = message.table);
     message.column !== undefined && (obj.column = message.column);
     message.maskType !== undefined && (obj.maskType = sensitiveDataMaskTypeToJSON(message.maskType));
@@ -1003,6 +1033,7 @@ export const SensitiveData = {
 
   fromPartial<I extends Exact<DeepPartial<SensitiveData>, I>>(object: I): SensitiveData {
     const message = createBaseSensitiveData();
+    message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
     message.maskType = object.maskType ?? 0;
@@ -1011,12 +1042,12 @@ export const SensitiveData = {
 };
 
 function createBaseAccessControlPolicy(): AccessControlPolicy {
-  return { disallowRuleList: [] };
+  return { disallowRules: [] };
 }
 
 export const AccessControlPolicy = {
   encode(message: AccessControlPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.disallowRuleList) {
+    for (const v of message.disallowRules) {
       AccessControlRule.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
@@ -1030,7 +1061,7 @@ export const AccessControlPolicy = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.disallowRuleList.push(AccessControlRule.decode(reader, reader.uint32()));
+          message.disallowRules.push(AccessControlRule.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -1042,25 +1073,25 @@ export const AccessControlPolicy = {
 
   fromJSON(object: any): AccessControlPolicy {
     return {
-      disallowRuleList: Array.isArray(object?.disallowRuleList)
-        ? object.disallowRuleList.map((e: any) => AccessControlRule.fromJSON(e))
+      disallowRules: Array.isArray(object?.disallowRules)
+        ? object.disallowRules.map((e: any) => AccessControlRule.fromJSON(e))
         : [],
     };
   },
 
   toJSON(message: AccessControlPolicy): unknown {
     const obj: any = {};
-    if (message.disallowRuleList) {
-      obj.disallowRuleList = message.disallowRuleList.map((e) => e ? AccessControlRule.toJSON(e) : undefined);
+    if (message.disallowRules) {
+      obj.disallowRules = message.disallowRules.map((e) => e ? AccessControlRule.toJSON(e) : undefined);
     } else {
-      obj.disallowRuleList = [];
+      obj.disallowRules = [];
     }
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<AccessControlPolicy>, I>>(object: I): AccessControlPolicy {
     const message = createBaseAccessControlPolicy();
-    message.disallowRuleList = object.disallowRuleList?.map((e) => AccessControlRule.fromPartial(e)) || [];
+    message.disallowRules = object.disallowRules?.map((e) => AccessControlRule.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1113,15 +1144,15 @@ export const AccessControlRule = {
 };
 
 function createBaseSQLReviewPolicy(): SQLReviewPolicy {
-  return { name: "", ruleList: [] };
+  return { title: "", rules: [] };
 }
 
 export const SQLReviewPolicy = {
   encode(message: SQLReviewPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
     }
-    for (const v of message.ruleList) {
+    for (const v of message.rules) {
       SQLReviewRule.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
@@ -1135,10 +1166,10 @@ export const SQLReviewPolicy = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.name = reader.string();
+          message.title = reader.string();
           break;
         case 2:
-          message.ruleList.push(SQLReviewRule.decode(reader, reader.uint32()));
+          message.rules.push(SQLReviewRule.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -1150,26 +1181,26 @@ export const SQLReviewPolicy = {
 
   fromJSON(object: any): SQLReviewPolicy {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      ruleList: Array.isArray(object?.ruleList) ? object.ruleList.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
+      title: isSet(object.title) ? String(object.title) : "",
+      rules: Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: SQLReviewPolicy): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.ruleList) {
-      obj.ruleList = message.ruleList.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
+    message.title !== undefined && (obj.title = message.title);
+    if (message.rules) {
+      obj.rules = message.rules.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
     } else {
-      obj.ruleList = [];
+      obj.rules = [];
     }
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<SQLReviewPolicy>, I>>(object: I): SQLReviewPolicy {
     const message = createBaseSQLReviewPolicy();
-    message.name = object.name ?? "";
-    message.ruleList = object.ruleList?.map((e) => SQLReviewRule.fromPartial(e)) || [];
+    message.title = object.title ?? "";
+    message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
     return message;
   },
 };

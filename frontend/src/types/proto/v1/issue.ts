@@ -5,14 +5,12 @@ export const protobufPackage = "bytebase.v1";
 export enum IssueType {
   ISSUE_TYPE_UNSPECIFIED = 0,
   BB_ISSUE_GENERAL = 1,
-  BB_ISSUE_DATABASE_CREATE = 11,
-  BB_ISSUE_DATABASE_GRANT = 12,
-  BB_ISSUE_DATABASE_SCHEMA_UPDATE = 13,
-  BB_ISSUE_DATABASE_SCHEMA_UPDATE_GHOST = 14,
-  BB_ISSUE_DATABASE_DATA_UPDATE = 15,
-  BB_ISSUE_DATABASE_RESTORE_PITR = 16,
-  BB_ISSUE_DATABASE_ROLLBACK = 17,
-  BB_ISSUE_DATASOURCE_REQUEST = 21,
+  BB_ISSUE_DATABASE_CREATE = 2,
+  BB_ISSUE_DATABASE_SCHEMA_UPDATE = 3,
+  BB_ISSUE_DATABASE_SCHEMA_UPDATE_GHOST = 4,
+  BB_ISSUE_DATABASE_DATA_UPDATE = 5,
+  BB_ISSUE_DATABASE_RESTORE_PITR = 6,
+  BB_ISSUE_DATABASE_ROLLBACK = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -24,30 +22,24 @@ export function issueTypeFromJSON(object: any): IssueType {
     case 1:
     case "BB_ISSUE_GENERAL":
       return IssueType.BB_ISSUE_GENERAL;
-    case 11:
+    case 2:
     case "BB_ISSUE_DATABASE_CREATE":
       return IssueType.BB_ISSUE_DATABASE_CREATE;
-    case 12:
-    case "BB_ISSUE_DATABASE_GRANT":
-      return IssueType.BB_ISSUE_DATABASE_GRANT;
-    case 13:
+    case 3:
     case "BB_ISSUE_DATABASE_SCHEMA_UPDATE":
       return IssueType.BB_ISSUE_DATABASE_SCHEMA_UPDATE;
-    case 14:
+    case 4:
     case "BB_ISSUE_DATABASE_SCHEMA_UPDATE_GHOST":
       return IssueType.BB_ISSUE_DATABASE_SCHEMA_UPDATE_GHOST;
-    case 15:
+    case 5:
     case "BB_ISSUE_DATABASE_DATA_UPDATE":
       return IssueType.BB_ISSUE_DATABASE_DATA_UPDATE;
-    case 16:
+    case 6:
     case "BB_ISSUE_DATABASE_RESTORE_PITR":
       return IssueType.BB_ISSUE_DATABASE_RESTORE_PITR;
-    case 17:
+    case 7:
     case "BB_ISSUE_DATABASE_ROLLBACK":
       return IssueType.BB_ISSUE_DATABASE_ROLLBACK;
-    case 21:
-    case "BB_ISSUE_DATASOURCE_REQUEST":
-      return IssueType.BB_ISSUE_DATASOURCE_REQUEST;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -63,8 +55,6 @@ export function issueTypeToJSON(object: IssueType): string {
       return "BB_ISSUE_GENERAL";
     case IssueType.BB_ISSUE_DATABASE_CREATE:
       return "BB_ISSUE_DATABASE_CREATE";
-    case IssueType.BB_ISSUE_DATABASE_GRANT:
-      return "BB_ISSUE_DATABASE_GRANT";
     case IssueType.BB_ISSUE_DATABASE_SCHEMA_UPDATE:
       return "BB_ISSUE_DATABASE_SCHEMA_UPDATE";
     case IssueType.BB_ISSUE_DATABASE_SCHEMA_UPDATE_GHOST:
@@ -75,8 +65,6 @@ export function issueTypeToJSON(object: IssueType): string {
       return "BB_ISSUE_DATABASE_RESTORE_PITR";
     case IssueType.BB_ISSUE_DATABASE_ROLLBACK:
       return "BB_ISSUE_DATABASE_ROLLBACK";
-    case IssueType.BB_ISSUE_DATASOURCE_REQUEST:
-      return "BB_ISSUE_DATASOURCE_REQUEST";
     case IssueType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

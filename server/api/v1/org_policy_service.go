@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/pkg/errors"
 
@@ -216,40 +217,41 @@ func convertToPolicy(prefix string, policyMessage *store.PolicyMessage) (*v1pb.P
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
 	switch policyMessage.Type {
 	case api.PolicyTypePipelineApproval:
-		pType = v1pb.PolicyType_PIPELINE_APPROVAL
+		pType = v1pb.PolicyType_DEPLOYMENT_APPROVAL
+		// TODO(ed): change convertPipelineApprovalPolicy.
 		payload, err := convertPipelineApprovalPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
-		policy.Payload = payload
+		policy.Policy = payload
 	case api.PolicyTypeBackupPlan:
 		pType = v1pb.PolicyType_BACKUP_PLAN
 		payload, err := convertBackupPlanPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
-		policy.Payload = payload
+		policy.Policy = payload
 	case api.PolicyTypeSQLReview:
 		pType = v1pb.PolicyType_SQL_REVIEW
 		payload, err := convertSQLReviewPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
-		policy.Payload = payload
+		policy.Policy = payload
 	case api.PolicyTypeSensitiveData:
 		pType = v1pb.PolicyType_SENSITIVE_DATA
 		payload, err := convertSensitiveDataPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
-		policy.Payload = payload
+		policy.Policy = payload
 	case api.PolicyTypeAccessControl:
 		pType = v1pb.PolicyType_ACCESS_CONTROL
 		payload, err := convertAccessControlPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
-		policy.Payload = payload
+		policy.Policy = payload
 	}
 
 	policy.Type = pType
@@ -264,7 +266,7 @@ func convertSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, er
 		return nil, err
 	}
 
-	ruleList := make([]*v1pb.SQLReviewRule, 0)
+	var rules []*v1pb.SQLReviewRule
 	for _, rule := range payload.RuleList {
 		level := v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED
 		switch rule.Level {
@@ -275,7 +277,7 @@ func convertSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, er
 		case advisor.SchemaRuleLevelDisabled:
 			level = v1pb.SQLReviewRuleLevel_DISABLED
 		}
-		ruleList = append(ruleList, &v1pb.SQLReviewRule{
+		rules = append(rules, &v1pb.SQLReviewRule{
 			Level:   level,
 			Type:    string(rule.Type),
 			Payload: rule.Payload,
@@ -284,8 +286,8 @@ func convertSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, er
 
 	return &v1pb.Policy_SqlReviewPolicy{
 		SqlReviewPolicy: &v1pb.SQLReviewPolicy{
-			Name:     payload.Name,
-			RuleList: ruleList,
+			Title: payload.Name,
+			Rules: rules,
 		},
 	}, nil
 }
@@ -296,15 +298,15 @@ func convertAccessControlPolicy(payloadStr string) (*v1pb.Policy_AccessControlPo
 		return nil, err
 	}
 
-	disallowRuleList := make([]*v1pb.AccessControlRule, 0)
+	var disallowRules []*v1pb.AccessControlRule
 	for _, rule := range payload.DisallowRuleList {
-		disallowRuleList = append(disallowRuleList, &v1pb.AccessControlRule{
+		disallowRules = append(disallowRules, &v1pb.AccessControlRule{
 			FullDatabase: rule.FullDatabase,
 		})
 	}
 	return &v1pb.Policy_AccessControlPolicy{
 		AccessControlPolicy: &v1pb.AccessControlPolicy{
-			DisallowRuleList: disallowRuleList,
+			DisallowRules: disallowRules,
 		},
 	}, nil
 }
@@ -315,7 +317,7 @@ func convertSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPo
 		return nil, err
 	}
 
-	sensitiveDataList := make([]*v1pb.SensitiveData, 0)
+	var sensitiveDataList []*v1pb.SensitiveData
 	for _, data := range payload.SensitiveDataList {
 		maskType := v1pb.SensitiveDataMaskType_MASK_TYPE_UNSPECIFIED
 		if data.Type == api.SensitiveDataMaskTypeDefault {
@@ -330,7 +332,7 @@ func convertSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPo
 
 	return &v1pb.Policy_SensitiveDataPolicy{
 		SensitiveDataPolicy: &v1pb.SensitiveDataPolicy{
-			SensitiveDataList: sensitiveDataList,
+			SensitiveData: sensitiveDataList,
 		},
 	}, nil
 }
@@ -341,25 +343,25 @@ func convertBackupPlanPolicy(payloadStr string) (*v1pb.Policy_BackupPlanPolicy, 
 		return nil, err
 	}
 
-	schedule := v1pb.BackupPlanPolicySchedule_SCHEDULE_UNSPECIFIED
+	schedule := v1pb.BackupPlanSchedule_SCHEDULE_UNSPECIFIED
 	switch payload.Schedule {
 	case api.BackupPlanPolicyScheduleUnset:
-		schedule = v1pb.BackupPlanPolicySchedule_UNSET
+		schedule = v1pb.BackupPlanSchedule_UNSET
 	case api.BackupPlanPolicyScheduleDaily:
-		schedule = v1pb.BackupPlanPolicySchedule_DAILY
+		schedule = v1pb.BackupPlanSchedule_DAILY
 	case api.BackupPlanPolicyScheduleWeekly:
-		schedule = v1pb.BackupPlanPolicySchedule_WEEKLY
+		schedule = v1pb.BackupPlanSchedule_WEEKLY
 	}
 
 	return &v1pb.Policy_BackupPlanPolicy{
 		BackupPlanPolicy: &v1pb.BackupPlanPolicy{
 			Schedule:          schedule,
-			RetentionPeriodTs: int32(payload.RetentionPeriodTs),
+			RetentionDuration: &durationpb.Duration{Seconds: int64(payload.RetentionPeriodTs)},
 		},
 	}, nil
 }
 
-func convertPipelineApprovalPolicy(payloadStr string) (*v1pb.Policy_PipelineApprovalPolicy, error) {
+func convertPipelineApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentApprovalPolicy, error) {
 	payload, err := api.UnmarshalPipelineApprovalPolicy(payloadStr)
 	if err != nil {
 		return nil, err
@@ -400,12 +402,8 @@ func convertPipelineApprovalPolicy(payloadStr string) (*v1pb.Policy_PipelineAppr
 func convertIssueTypeToV1PB(issueType api.IssueType) v1pb.IssueType {
 	res := v1pb.IssueType_ISSUE_TYPE_UNSPECIFIED
 	switch issueType {
-	case api.IssueGeneral:
-		res = v1pb.IssueType_BB_ISSUE_GENERAL
 	case api.IssueDatabaseCreate:
 		res = v1pb.IssueType_BB_ISSUE_DATABASE_CREATE
-	case api.IssueDatabaseGrant:
-		res = v1pb.IssueType_BB_ISSUE_DATABASE_GRANT
 	case api.IssueDatabaseSchemaUpdate:
 		res = v1pb.IssueType_BB_ISSUE_DATABASE_SCHEMA_UPDATE
 	case api.IssueDatabaseSchemaUpdateGhost:
@@ -416,8 +414,6 @@ func convertIssueTypeToV1PB(issueType api.IssueType) v1pb.IssueType {
 		res = v1pb.IssueType_BB_ISSUE_DATABASE_RESTORE_PITR
 	case api.IssueDatabaseRollback:
 		res = v1pb.IssueType_BB_ISSUE_DATABASE_ROLLBACK
-	case api.IssueDataSourceRequest:
-		res = v1pb.IssueType_BB_ISSUE_DATASOURCE_REQUEST
 	}
 
 	return res

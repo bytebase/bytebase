@@ -5,11 +5,12 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 
 import "v1/common.proto";
-import "v1/issue.proto";
+import "v1/deployment.proto";
 
 option go_package = "generated-go/v1";
 
@@ -91,7 +92,11 @@ message ListPoliciesResponse {
 
 message Policy {
   // The name of the policy.
-  // Format: {resource type}/{resource id}/policies/{policy type}
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.
@@ -103,8 +108,8 @@ message Policy {
 
   PolicyType type = 5;
 
-  oneof payload {
-    PipelineApprovalPolicy pipeline_approval_policy = 6;
+  oneof policy {
+    DeploymentApprovalPolicy deployment_approval_policy = 6;
     BackupPlanPolicy backup_plan_policy = 7;
     SensitiveDataPolicy sensitive_data_policy = 8;
     AccessControlPolicy access_control_policy = 9;
@@ -114,41 +119,42 @@ message Policy {
 
 enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0;
-  PIPELINE_APPROVAL = 1;
+  DEPLOYMENT_APPROVAL = 1;
   BACKUP_PLAN = 2;
   SQL_REVIEW = 3;
   SENSITIVE_DATA = 4;
   ACCESS_CONTROL = 5;
 }
 
-message PipelineApprovalPolicy {
-  PipelineApprovalValue value = 1;
-  repeated AssigneeGroup assignee_group_list = 2;
+message DeploymentApprovalPolicy {
+  ApprovalStrategy default_strategy = 1;
+  repeated DeploymentApprovalStrategy deployment_approval_strategies = 2;
 }
 
-message AssigneeGroup {
-  IssueType issue_type = 1;
-  AssigneeGroupValue value = 2;
+message DeploymentApprovalStrategy {
+  DeploymentType deployment_type = 1;
+  ApprovalGroup approval_group = 2;
+  ApprovalStrategy approval_strategy = 3;
 }
 
-enum AssigneeGroupValue {
+enum ApprovalGroup {
   ASSIGNEE_GROUP_UNSPECIFIED = 0;
-  WORKSPACE_OWNER_OR_DBA = 1;
-  PROJECT_OWNER = 2;
+  APPROVAL_GROUP_DBA = 1;
+  APPROVAL_GROUP_PROJECT_OWNER = 2;
 }
 
-enum PipelineApprovalValue {
-  PIPELINE_APPROVAL_UNSPECIFIED = 0;
-  MANUAL_APPROVAL_NEVER = 1;
-  MANUAL_APPROVAL_ALWAYS = 2;
+enum ApprovalStrategy {
+  APPROVAL_STRATEGY_UNSPECIFIED = 0;
+  AUTOMATIC = 1;
+  MANUAL = 2;
 }
 
 message BackupPlanPolicy {
-  BackupPlanPolicySchedule schedule = 1;
-  int32 retention_period_ts = 2;
+  BackupPlanSchedule schedule = 1;
+  google.protobuf.Duration retention_duration = 2;
 }
 
-enum BackupPlanPolicySchedule {
+enum BackupPlanSchedule {
   SCHEDULE_UNSPECIFIED = 0;
   UNSET = 1;
   DAILY = 2;
@@ -156,13 +162,14 @@ enum BackupPlanPolicySchedule {
 }
 
 message SensitiveDataPolicy {
-  repeated SensitiveData sensitive_data_list = 1;
+  repeated SensitiveData sensitive_data = 1;
 }
 
 message SensitiveData {
-  string table = 1;
-  string column = 2;
-  SensitiveDataMaskType mask_type = 3;
+  string schema = 1;
+  string table = 2;
+  string column = 3;
+  SensitiveDataMaskType mask_type = 4;
 }
 
 enum SensitiveDataMaskType {
@@ -171,7 +178,7 @@ enum SensitiveDataMaskType {
 }
 
 message AccessControlPolicy {
-  repeated AccessControlRule disallow_rule_list = 1;
+  repeated AccessControlRule disallow_rules = 1;
 }
 
 message AccessControlRule {
@@ -179,8 +186,8 @@ message AccessControlRule {
 }
 
 message SQLReviewPolicy {
-  string name = 1;
-  repeated SQLReviewRule rule_list = 2;
+  string title = 1;
+  repeated SQLReviewRule rules = 2;
 }
 
 message SQLReviewRule {
