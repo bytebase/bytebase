@@ -7,10 +7,10 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
-	"strings"
 
 	spanner "cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
+	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
@@ -156,12 +156,57 @@ func (*Driver) GetDBConnection(_ context.Context, _ string) (*sql.DB, error) {
 }
 
 // Execute executes a SQL statement.
-func (*Driver) Execute(_ context.Context, _ string, _ bool) (int64, error) {
-	panic("not implemented")
+func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool) (int64, error) {
+	if createDatabase {
+		return 0, errors.Errorf("cannot set createDatabase to true")
+	}
+	var rowCount int64
+	stmts, err := sanitizeSQL(statement)
+	if err != nil {
+		return 0, err
+	}
+
+	ddl := func() bool {
+		for _, stmt := range stmts {
+			if isDDL(stmt) {
+				return true
+			}
+		}
+		return false
+	}()
+
+	if ddl {
+		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &adminpb.UpdateDatabaseDdlRequest{
+			Database:   getDSN(d.config.Host, d.dbName),
+			Statements: stmts,
+		})
+		if err != nil {
+			return 0, err
+		}
+		return 0, op.Wait(ctx)
+	}
+
+	if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
+		spannerStmts := []spanner.Statement{}
+		for _, stmt := range stmts {
+			spannerStmts = append(spannerStmts, spanner.NewStatement(stmt))
+		}
+		counts, err := rwt.BatchUpdate(ctx, spannerStmts)
+		if err != nil {
+			return err
+		}
+		for _, count := range counts {
+			rowCount += count
+		}
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+	return rowCount, nil
 }
 
 // Query queries a SQL statement.
-func (*Driver) Query(_ context.Context, _ string, _ *db.QueryContext) ([]interface{}, error) {
+func (*Driver) Query(context.Context, string, *db.QueryContext) ([]interface{}, error) {
 	panic("not implemented")
 }
 
@@ -182,16 +227,4 @@ func getDatabaseFromDSN(dsn string) (string, error) {
 		}
 	}
 	return matches["DATABASEGROUP"], nil
-}
-
-func splitStatement(statement string) []string {
-	var res []string
-	for _, s := range strings.Split(statement, ";") {
-		trimmed := strings.TrimSpace(s)
-		if trimmed == "" {
-			continue
-		}
-		res = append(res, trimmed)
-	}
-	return res
 }
