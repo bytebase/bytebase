@@ -1311,10 +1311,10 @@ func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, ow
 	case db.Spanner:
 		// Spanner does not support character set and collation at the database level.
 		if characterSet != "" {
-			return errors.Errorf("ClickHouse does not support character set, but got %s", characterSet)
+			return errors.Errorf("Spanner does not support character set, but got %s", characterSet)
 		}
 		if collation != "" {
-			return errors.Errorf("ClickHouse does not support collation, but got %s", collation)
+			return errors.Errorf("Spanner does not support collation, but got %s", collation)
 		}
 	case db.ClickHouse:
 		// ClickHouse does not support character set and collation at the database level.
