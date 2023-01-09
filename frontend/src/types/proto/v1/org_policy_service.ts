@@ -392,16 +392,16 @@ export const Policy = {
   },
 };
 
-export interface WorkspacePolicyService {
+export interface OrgPolicyService {
   GetPolicy(request: GetPolicyRequest): Promise<Policy>;
   ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
 }
 
-export class WorkspacePolicyServiceClientImpl implements WorkspacePolicyService {
+export class OrgPolicyServiceClientImpl implements OrgPolicyService {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.WorkspacePolicyService";
+    this.service = opts?.service || "bytebase.v1.OrgPolicyService";
     this.rpc = rpc;
     this.GetPolicy = this.GetPolicy.bind(this);
     this.ListPolicies = this.ListPolicies.bind(this);

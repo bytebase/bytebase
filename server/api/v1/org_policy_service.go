@@ -16,25 +16,23 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// WorkspacePolicyService implements the workspace policy service.
-type WorkspacePolicyService struct {
-	v1pb.UnimplementedWorkspacePolicyServiceServer
+// OrgPolicyService implements the workspace policy service.
+type OrgPolicyService struct {
+	v1pb.UnimplementedOrgPolicyServiceServer
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
 }
 
-// NewWorkspacePolicyService creates a new WorkspacePolicyService.
-func NewWorkspacePolicyService(store *store.Store, licenseService enterpriseAPI.LicenseService) *WorkspacePolicyService {
-	return &WorkspacePolicyService{
+// NewOrgPolicyService creates a new OrgPolicyService.
+func NewOrgPolicyService(store *store.Store, licenseService enterpriseAPI.LicenseService) *OrgPolicyService {
+	return &OrgPolicyService{
 		store:          store,
 		licenseService: licenseService,
 	}
 }
 
 // GetPolicy gets a policy in a specific resource.
-func (s *WorkspacePolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolicyRequest) (*v1pb.Policy, error) {
-	fmt.Printf("name: %s\n", request.Name)
-
+func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolicyRequest) (*v1pb.Policy, error) {
 	tokens := strings.Split(request.Name, policyNamePrefix)
 	if len(tokens) != 2 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid request %s", request.Name)
@@ -70,7 +68,7 @@ func (s *WorkspacePolicyService) GetPolicy(ctx context.Context, request *v1pb.Ge
 }
 
 // ListPolicies lists policies in a specific resource.
-func (s *WorkspacePolicyService) ListPolicies(ctx context.Context, request *v1pb.ListPoliciesRequest) (*v1pb.ListPoliciesResponse, error) {
+func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListPoliciesRequest) (*v1pb.ListPoliciesResponse, error) {
 	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, request.Parent)
 	if err != nil {
 		return nil, err
@@ -91,7 +89,7 @@ func (s *WorkspacePolicyService) ListPolicies(ctx context.Context, request *v1pb
 	return response, nil
 }
 
-func (s *WorkspacePolicyService) getPolicyResourceTypeAndID(ctx context.Context, requestName string) (api.PolicyResourceType, int, error) {
+func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, requestName string) (api.PolicyResourceType, int, error) {
 	if requestName == "" {
 		return api.PolicyResourceTypeWorkspace, 0, nil
 	}

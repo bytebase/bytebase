@@ -12,7 +12,7 @@ import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
-service WorkspacePolicyService {
+service OrgPolicyService {
   rpc GetPolicy(GetPolicyRequest) returns (Policy) {
     option (google.api.http) = {
       get: "/v1/{name=policies/*}"
