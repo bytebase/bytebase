@@ -108,16 +108,77 @@ func removeCommentsAndTrim(sql string) (string, error) {
 	return trimmed, nil
 }
 
-func splitStatement(statement string) []string {
-	var res []string
-	for _, s := range strings.Split(statement, ";") {
-		trimmed := strings.TrimSpace(s)
-		if trimmed == "" {
-			continue
+func splitStatement(sql string) ([]string, error) {
+	var stmts []string
+	const singleQuote = '\''
+	const doubleQuote = '"'
+	const backtick = '`'
+	const delimiter = ';'
+	isInQuoted := false
+	var startQuote rune
+	lastCharWasEscapeChar := false
+	isTripleQuoted := false
+	res := strings.Builder{}
+	res.Grow(len(sql))
+	index := 0
+	runes := []rune(sql)
+	for index < len(runes) {
+		c := runes[index]
+		if isInQuoted {
+			if (c == '\n' || c == '\r') && !isTripleQuoted {
+				return nil, spanner.ToSpannerError(status.Errorf(codes.InvalidArgument, "statement contains an unclosed literal: %s", sql))
+			} else if c == startQuote {
+				if lastCharWasEscapeChar {
+					lastCharWasEscapeChar = false
+				} else if isTripleQuoted {
+					if len(runes) > index+2 && runes[index+1] == startQuote && runes[index+2] == startQuote {
+						isInQuoted = false
+						startQuote = 0
+						isTripleQuoted = false
+						_, _ = res.WriteRune(c)
+						_, _ = res.WriteRune(c)
+						index += 2
+					}
+				} else {
+					isInQuoted = false
+					startQuote = 0
+				}
+			} else if c == '\\' {
+				lastCharWasEscapeChar = true
+			} else {
+				lastCharWasEscapeChar = false
+			}
+			_, _ = res.WriteRune(c)
+		} else {
+			// We are not in a quoted string.
+			if c == singleQuote || c == doubleQuote || c == backtick {
+				isInQuoted = true
+				startQuote = c
+				// Check whether it is a triple-quote.
+				if len(runes) > index+2 && runes[index+1] == startQuote && runes[index+2] == startQuote {
+					isTripleQuoted = true
+					_, _ = res.WriteRune(c)
+					_, _ = res.WriteRune(c)
+					index += 2
+				}
+				_, _ = res.WriteRune(c)
+			} else if c == delimiter {
+				stmts = append(stmts, strings.Trim(res.String(), " \n\t"))
+				res.Reset()
+				res.Grow(len(sql))
+			} else {
+				_, _ = res.WriteRune(c)
+			}
 		}
-		res = append(res, trimmed)
+		index++
 	}
-	return res
+	if isInQuoted {
+		return nil, spanner.ToSpannerError(status.Errorf(codes.InvalidArgument, "statement contains an unclosed literal: %s", sql))
+	}
+	if res.Len() > 0 {
+		stmts = append(stmts, strings.Trim(res.String(), " \n\t"))
+	}
+	return stmts, nil
 }
 
 func sanitizeSQL(sql string) ([]string, error) {
@@ -125,7 +186,11 @@ func sanitizeSQL(sql string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return splitStatement(query), nil
+	stmts, err := splitStatement(query)
+	if err != nil {
+		return nil, err
+	}
+	return stmts, nil
 }
 
 // isDDL returns true if the given sql string is a DDL statement.
