@@ -4,7 +4,7 @@
 
 -- Create migration_history table
 CREATE TABLE migration_history (
-    -- id is UUIDv4.
+    -- id is UUIDv4. See https://cloud.google.com/spanner/docs/schema-design#uuid_primary_key
     id STRING(MAX) NOT NULL,
     created_by STRING(MAX) NOT NULL,
     created_ts INT64 NOT NULL,
