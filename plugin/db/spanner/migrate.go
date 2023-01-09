@@ -58,7 +58,10 @@ func (d *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		zap.String("environment", d.connCtx.EnvironmentID),
 		zap.String("instance", d.connCtx.InstanceID),
 	)
-	statements := splitStatement(migrationSchema)
+	statements, err := sanitizeSQL(migrationSchema)
+	if err != nil {
+		return err
+	}
 	return d.creataDatabase(ctx, createBytebaseDatabaseStatement, statements)
 }
 
