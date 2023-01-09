@@ -190,6 +190,7 @@ export function removeElementBySelector(selector: string) {
 }
 
 // semverCompare compares version string v1 is greater than v2.
+// It should be used to handle the database pseudo semantic version likes "8.0.29-0ubuntu0.20.04.3".
 export function semverCompare(v1: string, v2: string) {
   const formatedV1 = semver.coerce(v1);
   const formatedV2 = semver.coerce(v2);
