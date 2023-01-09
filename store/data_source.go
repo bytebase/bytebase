@@ -486,6 +486,23 @@ type DataSourceMessage struct {
 	AuthenticationDatabase string
 }
 
+type UpdateDataSourceMessage struct {
+	UpdaterID   int
+	InstanceUID int
+	Type        api.DataSourceType
+
+	Username *string
+	Password *string
+	SslCa    *string
+	SslCert  *string
+	SslKey   *string
+	Host     *string
+	Port     *string
+	// Flatten data source options.
+	SRV                    *bool
+	AuthenticationDatabase *string
+}
+
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
 	var dataSourceMessages []*DataSourceMessage
 	rows, err := tx.QueryContext(ctx, `
@@ -535,4 +552,201 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 	}
 
 	return dataSourceMessages, nil
+}
+
+// AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.
+func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, creatorID int, dataSource *DataSourceMessage) (*InstanceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.New("Failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
+	dataSourceOptions := api.DataSourceOptions{
+		SRV:                    dataSource.SRV,
+		AuthenticationDatabase: dataSource.AuthenticationDatabase,
+	}
+
+	if _, err := tx.QueryContext(ctx, `
+		INSERT INTO data_source (
+			creator_id,
+			updater_id,
+			instance_id,
+			database_id,
+			name,
+			type,
+			username,
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca,
+			host,
+			port,
+			options,
+			database
+		)
+		SELECT $1, $2, $3, data_source.database_id, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+			FROM data_source WHERE instance_id = $15 AND type = $16;
+	`, creatorID, creatorID, instanceUID,
+		dataSource.Title, dataSource.Type, dataSource.Username,
+		dataSource.Password, dataSource.SslKey, dataSource.SslCert,
+		dataSource.SslCa, dataSource.Host, dataSource.Port,
+		dataSourceOptions, dataSource.Database, instanceUID, api.Admin,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	instanceMsgs, err := s.listInstanceImplV2(ctx, tx, &FindInstanceMessage{
+		UID: &instanceUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %v after add the data source to the instance", instanceUID)
+	}
+	if len(instanceMsgs) == 0 {
+		return nil, errors.Wrapf(err, "cannot get instance %v after add the data source to the instance", instanceUID)
+	}
+	if len(instanceMsgs) >= 2 {
+		return nil, errors.Wrapf(err, "find %v instances with instance uid %v, but expect one", len(instanceMsgs), instanceUID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+
+	instanceMsg := instanceMsgs[0]
+
+	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
+	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
+	return instanceMsg, nil
+}
+
+// RemoveDataSourceV2 removes a RO data source from an instance and return the instance where the data source had beed removed from.
+func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, dataSourceTp api.DataSourceType) (*InstanceMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.New("Failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	result, err := tx.ExecContext(ctx, `
+		DELETE FROM data_source WHERE instance_id = $1 AND type = $2;
+	`, instanceUID, dataSourceTp)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get rows affected")
+	}
+	if rowsAffected != 1 {
+		return nil, errors.Errorf("deleted %v read-only data source records from instance %v, but expected one", rowsAffected, instanceUID)
+	}
+
+	instanceMsgs, err := s.listInstanceImplV2(ctx, tx, &FindInstanceMessage{
+		UID: &instanceUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %v after add the data source to the instance", instanceUID)
+	}
+	if len(instanceMsgs) == 0 {
+		return nil, errors.Wrapf(err, "cannot get instance %v after add the data source to the instance", instanceUID)
+	}
+	if len(instanceMsgs) >= 2 {
+		return nil, errors.Wrapf(err, "find %v instances with instance uid %v, but expect one", len(instanceMsgs), instanceUID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+
+	instanceMsg := instanceMsgs[0]
+	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
+	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
+	return instanceMsg, nil
+}
+
+// UpdateDataSourceV2 updates a data source and returns the instance.
+func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) (*InstanceMessage, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
+
+	if v := patch.Username; v != nil {
+		set, args = append(set, fmt.Sprintf("username = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Password; v != nil {
+		set, args = append(set, fmt.Sprintf("password = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslKey; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_key = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslCert; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_cert = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslCa; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_ca = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Host; v != nil {
+		set, args = append(set, fmt.Sprintf("host = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Port; v != nil {
+		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
+	}
+
+	// Use jsonb_build_object to build the jsonb object to update some fields in jsonb instead of whole column.
+	var optionSet []string
+	if v := patch.SRV; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('srv', to_jsonb($%d::BOOLEAN))", len(args)+1)), append(args, *v)
+	}
+	if v := patch.AuthenticationDatabase; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationDatabase', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+	}
+	if len(optionSet) != 0 {
+		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.New("Failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Only update the data source if the
+	query := `UPDATE data_source SET ` + strings.Join(set, ", ") +
+		` WHERE instance_id = ` + fmt.Sprintf("%d", patch.InstanceUID) +
+		` AND type = ` + fmt.Sprintf(`'%s'`, patch.Type)
+	result, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get rows affected")
+	}
+	if rowsAffected != 1 {
+		return nil, errors.Errorf("update %v data source records from instance %v, but expected one", rowsAffected, patch.InstanceUID)
+	}
+
+	instanceMsgs, err := s.listInstanceImplV2(ctx, tx, &FindInstanceMessage{
+		UID: &patch.InstanceUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %v after add the data source to the instance", patch.InstanceUID)
+	}
+	if len(instanceMsgs) == 0 {
+		return nil, errors.Wrapf(err, "cannot get instance %v after add the data source to the instance", patch.InstanceUID)
+	}
+	if len(instanceMsgs) >= 2 {
+		return nil, errors.Wrapf(err, "find %v instances with instance uid %v, but expect one", len(instanceMsgs), patch.InstanceUID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+
+	instanceMsg := instanceMsgs[0]
+	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
+	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
+	return instanceMsg, nil
 }
