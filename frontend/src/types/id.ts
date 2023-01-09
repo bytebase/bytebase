@@ -49,7 +49,7 @@ export type VCSId = IdType;
 
 export type RepositoryId = IdType;
 
-export type MigrationHistoryId = IdType;
+export type MigrationHistoryId = string;
 
 export type BackupId = IdType;
 

@@ -241,6 +241,7 @@ import {
   idFromSlug,
   nanosecondsToString,
   migrationHistorySlug,
+  migrationHistoryIdFromSlug,
 } from "../utils";
 import {
   MigrationHistory,
@@ -274,7 +275,9 @@ export default defineComponent({
       return useDatabaseStore().getDatabaseById(idFromSlug(props.databaseSlug));
     });
 
-    const migrationHistoryId = idFromSlug(props.migrationHistorySlug);
+    const migrationHistoryId = migrationHistoryIdFromSlug(
+      props.migrationHistorySlug
+    );
 
     onMounted(() => {
       instanceStore.fetchMigrationHistory({

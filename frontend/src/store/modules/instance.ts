@@ -102,11 +102,7 @@ function convertMigrationHistory(history: ResourceObject): MigrationHistory {
     ? JSON.parse((history.attributes.payload as string) || "{}")
     : {};
   return {
-    ...(history.attributes as Omit<
-      MigrationHistory,
-      "id" | "issueId" | "payload"
-    >),
-    id: parseInt(history.id),
+    ...(history.attributes as Omit<MigrationHistory, "issueId" | "payload">),
     // This issueId is special since it's stored in the migration history table
     // and may refer to the issueId from the external system in the future.
     issueId: parseInt(history.attributes.issueId as string),
