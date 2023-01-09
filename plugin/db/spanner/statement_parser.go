@@ -14,6 +14,7 @@ var ddlStatements = map[string]bool{"CREATE": true, "DROP": true, "ALTER": true}
 // spaces at the beginning and end of the query. This makes checking what type
 // of query a string is a lot easier, as only the first word(s) need to be
 // checked after this has been removed.
+// source: https://github.com/googleapis/go-sql-spanner/blob/e33bd23e1ebfa2fe1b947bced9eacdc6454595eb/statement_parser.go
 func removeCommentsAndTrim(sql string) (string, error) {
 	const singleQuote = '\''
 	const doubleQuote = '"'
