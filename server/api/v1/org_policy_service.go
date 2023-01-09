@@ -201,8 +201,6 @@ func convertToPolicy(prefix string, policyMessage *store.PolicyMessage) *v1pb.Po
 		pType = v1pb.PolicyType_BACKUP_PLAN
 	case api.PolicyTypeSQLReview:
 		pType = v1pb.PolicyType_SQL_REVIEW
-	case api.PolicyTypeEnvironmentTier:
-		pType = v1pb.PolicyType_ENVIRONMENT_TIER
 	case api.PolicyTypeSensitiveData:
 		pType = v1pb.PolicyType_SENSITIVE_DATA
 	case api.PolicyTypeAccessControl:
@@ -228,8 +226,6 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeBackupPlan, nil
 	case v1pb.PolicyType_SQL_REVIEW.String():
 		return api.PolicyTypeSQLReview, nil
-	case v1pb.PolicyType_ENVIRONMENT_TIER.String():
-		return api.PolicyTypeEnvironmentTier, nil
 	case v1pb.PolicyType_SENSITIVE_DATA.String():
 		return api.PolicyTypeSensitiveData, nil
 	case v1pb.PolicyType_ACCESS_CONTROL.String():
