@@ -105,7 +105,7 @@ func (r *Runner) purgeExpiredBackupData(ctx context.Context) {
 			RowStatus:  &statusNormal,
 		})
 		if err != nil {
-			log.Error("Failed to get backups for database.", zap.Int("databaseID", bs.DatabaseID), zap.String("database", bs.Database.Name))
+			log.Error("Failed to get backups for database.", zap.Int("databaseID", bs.DatabaseID))
 			return
 		}
 		for _, backup := range backupList {
