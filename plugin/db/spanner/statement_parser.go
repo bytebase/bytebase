@@ -164,7 +164,10 @@ func splitStatement(sql string) ([]string, error) {
 				}
 				_, _ = res.WriteRune(c)
 			} else if c == delimiter {
-				stmts = append(stmts, strings.Trim(res.String(), " \n\t"))
+				stmt := strings.Trim(res.String(), " \n\t")
+				if stmt != "" {
+					stmts = append(stmts, stmt)
+				}
 				res.Reset()
 				res.Grow(len(sql))
 			} else {
@@ -177,11 +180,15 @@ func splitStatement(sql string) ([]string, error) {
 		return nil, spanner.ToSpannerError(status.Errorf(codes.InvalidArgument, "statement contains an unclosed literal: %s", sql))
 	}
 	if res.Len() > 0 {
-		stmts = append(stmts, strings.Trim(res.String(), " \n\t"))
+		stmt := strings.Trim(res.String(), " \n\t")
+		if stmt != "" {
+			stmts = append(stmts, stmt)
+		}
 	}
 	return stmts, nil
 }
 
+// sanitizeSQL removes comments, splits the sql by `;` and returns the trimmed sql statement array.
 func sanitizeSQL(sql string) ([]string, error) {
 	query, err := removeCommentsAndTrim(sql)
 	if err != nil {
@@ -204,6 +211,7 @@ func isDDL(query string) bool {
 	return false
 }
 
+// isSelect returns true if the given sql string is a SELECT statement.
 func isSelect(query string) bool {
 	for keyword := range selectStatements {
 		if len(query) >= len(keyword) && strings.EqualFold(query[:len(keyword)], keyword) {
