@@ -188,6 +188,7 @@ func splitStatement(sql string) ([]string, error) {
 	return stmts, nil
 }
 
+// sanitizeSQL removes comments, splits the sql by `;` and returns the trimmed sql statement array.
 func sanitizeSQL(sql string) ([]string, error) {
 	query, err := removeCommentsAndTrim(sql)
 	if err != nil {
