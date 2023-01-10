@@ -34,7 +34,7 @@ func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir string) *DBFactory {
 func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, databaseName string) (db.Driver, error) {
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.UID)
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
 	}
 
 	dbBinDir := ""
@@ -93,7 +93,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		dataSource = utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	}
 	if dataSource == nil {
-		return nil, common.Errorf(common.Internal, "data source not found for instance %d", instance.UID)
+		return nil, common.Errorf(common.Internal, "data source not found for instance %q", instance.Title)
 	}
 
 	host, port := dataSource.Host, dataSource.Port
