@@ -218,7 +218,6 @@ func convertToPolicy(prefix string, policyMessage *store.PolicyMessage) (*v1pb.P
 	switch policyMessage.Type {
 	case api.PolicyTypePipelineApproval:
 		pType = v1pb.PolicyType_DEPLOYMENT_APPROVAL
-		// TODO(ed): change convertPipelineApprovalPolicy.
 		payload, err := convertPipelineApprovalPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
@@ -367,53 +366,54 @@ func convertPipelineApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentAp
 		return nil, err
 	}
 
-	pipelineApprovalValue := v1pb.PipelineApprovalValue_PIPELINE_APPROVAL_UNSPECIFIED
+	approvalStrategy := v1pb.ApprovalStrategy_APPROVAL_STRATEGY_UNSPECIFIED
 	switch payload.Value {
 	case api.PipelineApprovalValueManualAlways:
-		pipelineApprovalValue = v1pb.PipelineApprovalValue_MANUAL_APPROVAL_ALWAYS
+		approvalStrategy = v1pb.ApprovalStrategy_MANUAL
 	case api.PipelineApprovalValueManualNever:
-		pipelineApprovalValue = v1pb.PipelineApprovalValue_MANUAL_APPROVAL_NEVER
+		approvalStrategy = v1pb.ApprovalStrategy_AUTOMATIC
 	}
 
-	assigneeGroupList := make([]*v1pb.AssigneeGroup, 0)
+	approvalStrategies := make([]*v1pb.DeploymentApprovalStrategy, 0)
 	for _, group := range payload.AssigneeGroupList {
-		assigneeGroupValue := v1pb.AssigneeGroupValue_ASSIGNEE_GROUP_UNSPECIFIED
+		assigneeGroupValue := v1pb.ApprovalGroup_ASSIGNEE_GROUP_UNSPECIFIED
 		switch group.Value {
 		case api.AssigneeGroupValueProjectOwner:
-			assigneeGroupValue = v1pb.AssigneeGroupValue_PROJECT_OWNER
+			assigneeGroupValue = v1pb.ApprovalGroup_APPROVAL_GROUP_PROJECT_OWNER
 		case api.AssigneeGroupValueWorkspaceOwnerOrDBA:
-			assigneeGroupValue = v1pb.AssigneeGroupValue_WORKSPACE_OWNER_OR_DBA
+			assigneeGroupValue = v1pb.ApprovalGroup_APPROVAL_GROUP_DBA
 		}
 
-		assigneeGroupList = append(assigneeGroupList, &v1pb.AssigneeGroup{
-			Value:     assigneeGroupValue,
-			IssueType: convertIssueTypeToV1PB(group.IssueType),
+		approvalStrategies = append(approvalStrategies, &v1pb.DeploymentApprovalStrategy{
+			ApprovalGroup:    assigneeGroupValue,
+			DeploymentType:   convertIssueTypeToDeplymentType(group.IssueType),
+			ApprovalStrategy: approvalStrategy,
 		})
 	}
 
-	return &v1pb.Policy_PipelineApprovalPolicy{
-		PipelineApprovalPolicy: &v1pb.PipelineApprovalPolicy{
-			Value:             pipelineApprovalValue,
-			AssigneeGroupList: assigneeGroupList,
+	return &v1pb.Policy_DeploymentApprovalPolicy{
+		DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
+			DefaultStrategy:              approvalStrategy,
+			DeploymentApprovalStrategies: approvalStrategies,
 		},
 	}, nil
 }
 
-func convertIssueTypeToV1PB(issueType api.IssueType) v1pb.IssueType {
-	res := v1pb.IssueType_ISSUE_TYPE_UNSPECIFIED
+func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
+	res := v1pb.DeploymentType_ISSUE_TYPE_UNSPECIFIED
 	switch issueType {
 	case api.IssueDatabaseCreate:
-		res = v1pb.IssueType_BB_ISSUE_DATABASE_CREATE
+		res = v1pb.DeploymentType_DATABASE_CREATE
 	case api.IssueDatabaseSchemaUpdate:
-		res = v1pb.IssueType_BB_ISSUE_DATABASE_SCHEMA_UPDATE
+		res = v1pb.DeploymentType_DATABASE_DDL
 	case api.IssueDatabaseSchemaUpdateGhost:
-		res = v1pb.IssueType_BB_ISSUE_DATABASE_SCHEMA_UPDATE_GHOST
+		res = v1pb.DeploymentType_DATABASE_DDL_GHOST
 	case api.IssueDatabaseDataUpdate:
-		res = v1pb.IssueType_BB_ISSUE_DATABASE_DATA_UPDATE
+		res = v1pb.DeploymentType_DATABASE_DML
 	case api.IssueDatabaseRestorePITR:
-		res = v1pb.IssueType_BB_ISSUE_DATABASE_RESTORE_PITR
+		res = v1pb.DeploymentType_DATABASE_RESTORE_PITR
 	case api.IssueDatabaseRollback:
-		res = v1pb.IssueType_BB_ISSUE_DATABASE_ROLLBACK
+		res = v1pb.DeploymentType_DATABASE_DML_ROLLBACK
 	}
 
 	return res
@@ -422,7 +422,7 @@ func convertIssueTypeToV1PB(issueType api.IssueType) v1pb.IssueType {
 func convertPolicyType(pType string) (api.PolicyType, error) {
 	var policyType api.PolicyType
 	switch strings.ToUpper(pType) {
-	case v1pb.PolicyType_PIPELINE_APPROVAL.String():
+	case v1pb.PolicyType_DEPLOYMENT_APPROVAL.String():
 		return api.PolicyTypePipelineApproval, nil
 	case v1pb.PolicyType_BACKUP_PLAN.String():
 		return api.PolicyTypeBackupPlan, nil
