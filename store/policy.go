@@ -667,7 +667,58 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creat
 }
 
 func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
+	if v := patch.InheritFromParent; v != nil {
+		set, args = append(set, fmt.Sprintf("inherit_from_parent = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, patch.ResourceType, patch.ResourceUID, patch.Type)
 
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	policy := &PolicyMessage{
+		ResourceUID:  patch.ResourceUID,
+		ResourceType: patch.ResourceType,
+		Type:         patch.Type,
+	}
+	var rowStatus string
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+			UPDATE policy
+			SET `+strings.Join(set, ", ")+`
+			WHERE resource_type = $%d AND resource_id = $%d AND type =$%d
+			RETURNING
+				payload,
+				inherit_from_parent,
+				row_status
+		`, len(args)-2, len(args)-1, len(args)),
+		args...,
+	).Scan(
+		&policy.Payload,
+		&policy.InheritFromParent,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+
+	policy.Deleted = convertRowStatusToDeleted(rowStatus)
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+	// TODO: update the cache
+	return policy, nil
 }
 
 func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
