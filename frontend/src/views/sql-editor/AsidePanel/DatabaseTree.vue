@@ -2,6 +2,7 @@
   <div
     v-if="connectionTreeStore.tree.state === ConnectionTreeState.LOADED"
     class="databases-tree p-2 space-y-2 h-full flex flex-col"
+    :class="connectionTreeStore.tree.mode"
   >
     <div class="databases-tree--input">
       <n-input
@@ -399,8 +400,14 @@ watch(
 </script>
 
 <style postcss>
+.databases-tree .n-tree-node-content {
+  @apply !pl-0;
+}
 .databases-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
+}
+.databases-tree.project .n-tree-node-content__prefix {
+  @apply hidden;
 }
 .databases-tree .n-tree-node-content__text {
   @apply truncate mr-1;
