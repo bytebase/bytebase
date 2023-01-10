@@ -58,7 +58,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		// Only return the token if the user is ServiceAccount
 		if principal.Type == api.ServiceAccount {
-			principal.ServiceKey = principalCreate.Password
+			principal.ServiceKey = password
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
