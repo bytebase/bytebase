@@ -13,6 +13,7 @@ import {
 } from "@/types/proto/store/database";
 import { isTableChanged } from "./table";
 import { isSchemaChanged } from "./schema";
+import { isColumnChanged } from "./column";
 
 type MetadataWithEditStatus<T, E> = T & {
   $$status?: EditStatus;
@@ -40,6 +41,23 @@ const statusOfTable = (
     return status;
   }
   if (isTableChanged(database.id, schema.id, table.id)) {
+    return "changed";
+  }
+
+  return "normal";
+};
+
+const statusOfColumn = (
+  database: Database,
+  schema: Schema,
+  table: Table,
+  column: Column
+): EditStatus => {
+  const { status } = column;
+  if (status === "created" || status === "dropped") {
+    return status;
+  }
+  if (isColumnChanged(database.id, schema.id, table.id, column.id)) {
     return "changed";
   }
 
@@ -89,7 +107,7 @@ export const useMetadataForDiagram = (
           const columnMeta = ColumnMetadata.fromPartial({});
           Object.defineProperty(columnMeta, "$$status", {
             enumerable: false,
-            value: column.status,
+            value: statusOfColumn(database, schema, table, column),
           });
           Object.defineProperty(columnMeta, "$$edit", {
             enumerable: false,
