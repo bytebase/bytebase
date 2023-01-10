@@ -1090,7 +1090,7 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 	// Get admin data source username.
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.UID)
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
 	}
 	// Snowflake needs to use upper case of DatabaseName.
 	databaseName := c.DatabaseName
@@ -1234,7 +1234,7 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		//
 		// For tenant project, the schema for the newly created database will belong to the same owner.
 		// TODO(d): alter schema "public" owner to the database owner.
-		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;", stmt, databaseName, createDatabaseContext.Owner), nil
+		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, createDatabaseContext.Owner), nil
 	case db.ClickHouse:
 		clusterPart := ""
 		if createDatabaseContext.Cluster != "" {
@@ -1251,6 +1251,8 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		// mongodb statement in mongosh with --file flag, and it doesn't support `use <database>` statement in the file.
 		// And we pass the database name to Bytebase engine driver, which will be used to build the connection string.
 		return fmt.Sprintf(`db.createCollection("%s");`, createDatabaseContext.TableName), nil
+	case db.Spanner:
+		return fmt.Sprintf("CREATE DATABASE %s", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }
@@ -1306,6 +1308,14 @@ func createGhostTaskList(database *store.DatabaseMessage, instance *store.Instan
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.
 func checkCharacterSetCollationOwner(dbType db.Type, characterSet, collation, owner string) error {
 	switch dbType {
+	case db.Spanner:
+		// Spanner does not support character set and collation at the database level.
+		if characterSet != "" {
+			return errors.Errorf("Spanner does not support character set, but got %s", characterSet)
+		}
+		if collation != "" {
+			return errors.Errorf("Spanner does not support collation, but got %s", collation)
+		}
 	case db.ClickHouse:
 		// ClickHouse does not support character set and collation at the database level.
 		if characterSet != "" {

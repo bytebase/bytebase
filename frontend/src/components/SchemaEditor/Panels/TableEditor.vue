@@ -76,9 +76,8 @@
             :key="`${index}-${column.id}`"
             class="grid grid-cols-[repeat(4,_minmax(0,_1fr))_repeat(2,_96px)_minmax(0,_1fr)_32px] gr text-sm even:bg-gray-50"
             :class="[
-              isDroppedColumn(column) &&
-                'text-red-700 cursor-not-allowed !bg-red-50 opacity-70',
               `column-${column.id}`,
+              getColumnItemComputedClassList(column),
             ]"
           >
             <div class="table-body-item-container">
@@ -277,6 +276,7 @@ import {
 import { getDataTypeSuggestionList } from "@/utils";
 import { BBCheckbox, BBSpin } from "@/bbkit";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";
+import { isColumnChanged } from "../utils/column";
 import { isTableChanged } from "../utils/table";
 import { diffSchema } from "@/utils/schemaEditor/diffSchema";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
@@ -387,6 +387,24 @@ const dataTypeOptions = computed(() => {
     };
   });
 });
+
+const getColumnItemComputedClassList = (column: Column) => {
+  if (column.status === "dropped") {
+    return ["text-red-700", "cursor-not-allowed", "!bg-red-50", "opacity-70"];
+  } else if (column.status === "created") {
+    return ["text-green-700", "!bg-green-50"];
+  } else if (
+    isColumnChanged(
+      currentTab.value.databaseId,
+      currentTab.value.schemaId,
+      currentTab.value.tableId,
+      column.id
+    )
+  ) {
+    return ["text-yellow-700", "!bg-yellow-50"];
+  }
+  return [];
+};
 
 const dataDefaultOptions = [
   {

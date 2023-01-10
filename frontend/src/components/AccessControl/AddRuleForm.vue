@@ -10,7 +10,8 @@
 
     <DatabaseTable
       mode="ALL_TINY"
-      class="max-h-[55vh] overflow-y-auto"
+      class="overflow-y-auto"
+      style="max-height: calc(100vh - 320px)"
       table-class="border"
       :custom-click="true"
       :database-list="databaseList"

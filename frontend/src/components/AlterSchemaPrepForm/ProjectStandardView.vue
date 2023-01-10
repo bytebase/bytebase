@@ -10,7 +10,8 @@
     <slot name="header"></slot>
 
     <NCollapse
-      class="max-h-[55vh] overflow-y-auto"
+      class="overflow-y-auto"
+      style="max-height: calc(100vh - 380px)"
       arrow-placement="left"
       :default-expanded-names="
         databaseListGroupByEnvironment.map((group) => group.environment.id)

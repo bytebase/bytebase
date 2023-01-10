@@ -176,7 +176,7 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 		return errors.Wrapf(err, "failed to get the OWNER of the current database")
 	}
 
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s;", owner)); err != nil {
+	if _, err := txn.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE \"%s\";", owner)); err != nil {
 		return errors.Wrapf(err, "failed to set role to %q", owner)
 	}
 
@@ -189,7 +189,7 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 			stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 		}
 		if isSuperuserStatement(stmt) {
-			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
+			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE \"%s\";", stmt, owner)
 		}
 		if isIgnoredStatement(stmt) {
 			return nil
