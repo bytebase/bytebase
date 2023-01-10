@@ -1,5 +1,5 @@
 <template>
-  <label class="flex items-center text-sm h-6 ml-0.5">
+  <label class="flex items-center text-sm h-6 ml-0.5 whitespace-nowrap">
     <template v-if="instance.id !== UNKNOWN_ID">
       <span>{{ instance.environment.name }}</span>
       <ProtectedEnvironmentIcon

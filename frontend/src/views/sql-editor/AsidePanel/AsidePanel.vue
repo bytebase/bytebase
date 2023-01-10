@@ -15,7 +15,11 @@
           </Pane>
         </Splitpanes>
       </n-tab-pane>
-      <n-tab-pane name="instances" :tab="$t('common.instances')">
+      <n-tab-pane
+        v-if="hasInstanceView"
+        name="instances"
+        :tab="$t('common.instances')"
+      >
         <Splitpanes
           horizontal
           class="default-theme"
@@ -40,17 +44,27 @@
 import { computed, ref, watchEffect } from "vue";
 import { isUndefined } from "lodash-es";
 
-import { useConnectionTreeStore } from "@/store";
+import { useConnectionTreeStore, useCurrentUser } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import TableSchema from "./TableSchema.vue";
 import { Splitpanes, Pane } from "splitpanes";
 import { ConnectionTreeMode } from "@/types";
+import { hasWorkspacePermission } from "@/utils";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
 
+const currentUser = useCurrentUser();
+
 const tab = ref<"projects" | "instances" | "history">("projects");
+
+const hasInstanceView = computed((): boolean => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-database",
+    currentUser.value.role
+  );
+});
 
 const connectionTreeStore = useConnectionTreeStore();
 
