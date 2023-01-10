@@ -308,7 +308,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 					stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 				}
 				// Use superuser privilege to run privileged statements.
-				stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE %s;", stmt, owner)
+				stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE \"%s\";", stmt, owner)
 				remainingStmts = append(remainingStmts, stmt)
 			} else if !isIgnoredStatement(stmt) {
 				remainingStmts = append(remainingStmts, stmt)
@@ -332,7 +332,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	defer tx.Rollback()
 
 	// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s", owner)); err != nil {
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE \"%s\"", owner)); err != nil {
 		return 0, err
 	}
 
