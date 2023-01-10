@@ -202,7 +202,7 @@
             <label for="password" class="textlabel block">
               <template v-if="state.instance.engine == 'SPANNER'">
                 {{ $t("common.credentials") }}
-                <span style="color: red">*</span>
+                <span class="text-red-600">*</span>
               </template>
               <template v-else>
                 {{ $t("common.password") }}
