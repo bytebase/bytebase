@@ -1234,7 +1234,7 @@ func getCreateDatabaseStatement(dbType db.Type, createDatabaseContext api.Create
 		//
 		// For tenant project, the schema for the newly created database will belong to the same owner.
 		// TODO(d): alter schema "public" owner to the database owner.
-		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;", stmt, databaseName, createDatabaseContext.Owner), nil
+		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, createDatabaseContext.Owner), nil
 	case db.ClickHouse:
 		clusterPart := ""
 		if createDatabaseContext.Cluster != "" {
