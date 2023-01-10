@@ -51,7 +51,7 @@
         </div>
         <div>
           <n-button
-            v-if="isDev() && selectedProject?.workflowType === 'VCS'"
+            v-if="selectedProject?.workflowType === 'VCS'"
             @click="handleSyncSheetFromVCS"
           >
             <heroicons-outline:refresh class="w-4 h-auto mr-1" />
@@ -128,7 +128,6 @@ import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
 import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
 import {
   getDefaultSheetPayloadWithSource,
-  isDev,
   isSheetWritable,
   sheetSlug,
 } from "@/utils";
