@@ -222,6 +222,9 @@ message ListPoliciesRequest {
   // When paginating, all other parameters provided to `GetPolicies` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // Show deleted policies if specified.
+  bool show_deleted = 4;
 }
 
 message ListPoliciesResponse {

@@ -60,6 +60,7 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		ResourceUID:  &resourceID,
+		ShowDeleted:  request.ShowDeleted,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
