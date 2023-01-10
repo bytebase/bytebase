@@ -5,10 +5,12 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 
 import "v1/common.proto";
+import "v1/deployment.proto";
 
 option go_package = "generated-go/v1";
 
@@ -90,7 +92,11 @@ message ListPoliciesResponse {
 
 message Policy {
   // The name of the policy.
-  // Format: {resource type}/{resource id}/policies/{policy type}
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.
@@ -102,14 +108,97 @@ message Policy {
 
   PolicyType type = 5;
 
-  string payload = 6;
+  oneof policy {
+    DeploymentApprovalPolicy deployment_approval_policy = 6;
+    BackupPlanPolicy backup_plan_policy = 7;
+    SensitiveDataPolicy sensitive_data_policy = 8;
+    AccessControlPolicy access_control_policy = 9;
+    SQLReviewPolicy sql_review_policy = 10;
+  }
 }
 
 enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0;
-  PIPELINE_APPROVAL = 1;
+  DEPLOYMENT_APPROVAL = 1;
   BACKUP_PLAN = 2;
   SQL_REVIEW = 3;
   SENSITIVE_DATA = 4;
   ACCESS_CONTROL = 5;
+}
+
+message DeploymentApprovalPolicy {
+  ApprovalStrategy default_strategy = 1;
+  repeated DeploymentApprovalStrategy deployment_approval_strategies = 2;
+}
+
+message DeploymentApprovalStrategy {
+  DeploymentType deployment_type = 1;
+  ApprovalGroup approval_group = 2;
+  ApprovalStrategy approval_strategy = 3;
+}
+
+enum ApprovalGroup {
+  ASSIGNEE_GROUP_UNSPECIFIED = 0;
+  APPROVAL_GROUP_DBA = 1;
+  APPROVAL_GROUP_PROJECT_OWNER = 2;
+}
+
+enum ApprovalStrategy {
+  APPROVAL_STRATEGY_UNSPECIFIED = 0;
+  AUTOMATIC = 1;
+  MANUAL = 2;
+}
+
+message BackupPlanPolicy {
+  BackupPlanSchedule schedule = 1;
+  google.protobuf.Duration retention_duration = 2;
+}
+
+enum BackupPlanSchedule {
+  SCHEDULE_UNSPECIFIED = 0;
+  UNSET = 1;
+  DAILY = 2;
+  WEEKLY = 3;
+}
+
+message SensitiveDataPolicy {
+  repeated SensitiveData sensitive_data = 1;
+}
+
+message SensitiveData {
+  string schema = 1;
+  string table = 2;
+  string column = 3;
+  SensitiveDataMaskType mask_type = 4;
+}
+
+enum SensitiveDataMaskType {
+  MASK_TYPE_UNSPECIFIED = 0;
+  DEFAULT = 1;
+}
+
+message AccessControlPolicy {
+  repeated AccessControlRule disallow_rules = 1;
+}
+
+message AccessControlRule {
+  bool full_database = 1;
+}
+
+message SQLReviewPolicy {
+  string title = 1;
+  repeated SQLReviewRule rules = 2;
+}
+
+message SQLReviewRule {
+  string type = 1;
+  SQLReviewRuleLevel level = 2;
+  string payload = 3;
+}
+
+enum SQLReviewRuleLevel {
+  LEVEL_UNSPECIFIED = 0;
+  ERROR = 1;
+  WARNING = 2;
+  DISABLED = 3;
 }
