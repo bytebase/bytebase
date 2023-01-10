@@ -348,6 +348,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         dropdownPosition.value.y = e.clientY;
       });
     },
+    "data-node-type": atom.type,
   };
 };
 
@@ -414,7 +415,9 @@ watch(
 .databases-tree .n-tree-node-content__prefix {
   @apply shrink-0 !mr-1;
 }
-.databases-tree.project .n-tree-node-content__prefix {
+.databases-tree.project
+  .n-tree-node[data-node-type="project"]
+  .n-tree-node-content__prefix {
   @apply hidden;
 }
 .databases-tree .n-tree-node-content__text {
