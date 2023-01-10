@@ -123,7 +123,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 // UpdateInstance updates an instance.
 func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.UpdateInstanceRequest) (*v1pb.Instance, error) {
 	if request.Instance == nil {
-		return nil, status.Error(codes.InvalidArgument, "instance must be set")
+		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
 
 	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance.Name)
@@ -336,7 +336,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 // UpdateDataSource updates a data source of an instance.
 func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
 	if request.DataSources == nil {
-		return nil, status.Error(codes.InvalidArgument, "datasource is required")
+		return nil, status.Errorf(codes.InvalidArgument, "datasource is required")
 	}
 	tp, err := convertDataSourceTp(request.DataSources.Type)
 	if err != nil {
