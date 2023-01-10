@@ -164,12 +164,14 @@
       <div
         class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
       >
-        <CreateDataSourceExample
-          className="sm:col-span-3"
-          :createInstanceFlag="true"
-          :engineType="state.instance.engine"
-          :dataSourceType="'ADMIN'"
-        />
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <CreateDataSourceExample
+            className="sm:col-span-3"
+            :createInstanceFlag="true"
+            :engineType="state.instance.engine"
+            :dataSourceType="'ADMIN'"
+          />
+        </template>
 
         <template v-if="state.instance.engine !== 'SPANNER'">
           <div class="sm:col-span-1 sm:col-start-1">
@@ -200,6 +202,7 @@
             <label for="password" class="textlabel block">
               <template v-if="state.instance.engine == 'SPANNER'">
                 {{ $t("common.credentials") }}
+                <span style="color: red">*</span>
               </template>
               <template v-else>
                 {{ $t("common.password") }}
@@ -226,6 +229,9 @@
           <div class="flex flex-row items-center space-x-2">
             <label for="database" class="textlabel block">
               {{ $t("common.database") }}
+              <template v-if="state.instance.engine === 'SPANNER'">
+                <span style="color: red">*</span>
+              </template>
             </label>
           </div>
           <input
@@ -279,7 +285,7 @@
           <button
             type="button"
             class="btn-normal whitespace-nowrap items-center"
-            :disabled="!state.instance.host || state.isPingingInstance"
+            :disabled="!allowCreate || state.isPingingInstance"
             @click.prevent="testConnection"
           >
             {{ $t("instance.test-connection") }}
@@ -430,6 +436,14 @@ const isCreatingEmbeddedInstance = ref(false);
 const embeddedPostgresInstance = ref<Partial<InstanceCreate>>();
 
 const allowCreate = computed(() => {
+  if (state.instance.engine === "SPANNER") {
+    return (
+      state.instance.name &&
+      state.instance.host &&
+      state.instance.password &&
+      state.instance.database
+    );
+  }
   return state.instance.name && state.instance.host;
 });
 
