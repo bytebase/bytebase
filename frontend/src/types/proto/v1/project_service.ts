@@ -1,5 +1,6 @@
 /* eslint-disable */
-import _m0 from "protobufjs/minimal";
+import type { CallContext, CallOptions } from "nice-grpc-common";
+import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
@@ -433,7 +434,7 @@ export const GetProjectRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetProjectRequest>, I>>(object: I): GetProjectRequest {
+  fromPartial(object: DeepPartial<GetProjectRequest>): GetProjectRequest {
     const message = createBaseGetProjectRequest();
     message.name = object.name ?? "";
     return message;
@@ -498,7 +499,7 @@ export const ListProjectsRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListProjectsRequest>, I>>(object: I): ListProjectsRequest {
+  fromPartial(object: DeepPartial<ListProjectsRequest>): ListProjectsRequest {
     const message = createBaseListProjectsRequest();
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
@@ -561,7 +562,7 @@ export const ListProjectsResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListProjectsResponse>, I>>(object: I): ListProjectsResponse {
+  fromPartial(object: DeepPartial<ListProjectsResponse>): ListProjectsResponse {
     const message = createBaseListProjectsResponse();
     message.projects = object.projects?.map((e) => Project.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
@@ -619,7 +620,7 @@ export const CreateProjectRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<CreateProjectRequest>, I>>(object: I): CreateProjectRequest {
+  fromPartial(object: DeepPartial<CreateProjectRequest>): CreateProjectRequest {
     const message = createBaseCreateProjectRequest();
     message.project = (object.project !== undefined && object.project !== null)
       ? Project.fromPartial(object.project)
@@ -679,7 +680,7 @@ export const UpdateProjectRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UpdateProjectRequest>, I>>(object: I): UpdateProjectRequest {
+  fromPartial(object: DeepPartial<UpdateProjectRequest>): UpdateProjectRequest {
     const message = createBaseUpdateProjectRequest();
     message.project = (object.project !== undefined && object.project !== null)
       ? Project.fromPartial(object.project)
@@ -729,7 +730,7 @@ export const DeleteProjectRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DeleteProjectRequest>, I>>(object: I): DeleteProjectRequest {
+  fromPartial(object: DeepPartial<DeleteProjectRequest>): DeleteProjectRequest {
     const message = createBaseDeleteProjectRequest();
     message.name = object.name ?? "";
     return message;
@@ -776,7 +777,7 @@ export const UndeleteProjectRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UndeleteProjectRequest>, I>>(object: I): UndeleteProjectRequest {
+  fromPartial(object: DeepPartial<UndeleteProjectRequest>): UndeleteProjectRequest {
     const message = createBaseUndeleteProjectRequest();
     message.name = object.name ?? "";
     return message;
@@ -935,7 +936,7 @@ export const Project = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<Project>, I>>(object: I): Project {
+  fromPartial(object: DeepPartial<Project>): Project {
     const message = createBaseProject();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
@@ -954,67 +955,90 @@ export const Project = {
   },
 };
 
-export interface ProjectService {
-  GetProject(request: GetProjectRequest): Promise<Project>;
-  ListProjects(request: ListProjectsRequest): Promise<ListProjectsResponse>;
-  CreateProject(request: CreateProjectRequest): Promise<Project>;
-  UpdateProject(request: UpdateProjectRequest): Promise<Project>;
-  DeleteProject(request: DeleteProjectRequest): Promise<Empty>;
-  UndeleteProject(request: UndeleteProjectRequest): Promise<Project>;
+export type ProjectServiceDefinition = typeof ProjectServiceDefinition;
+export const ProjectServiceDefinition = {
+  name: "ProjectService",
+  fullName: "bytebase.v1.ProjectService",
+  methods: {
+    getProject: {
+      name: "GetProject",
+      requestType: GetProjectRequest,
+      requestStream: false,
+      responseType: Project,
+      responseStream: false,
+      options: {},
+    },
+    listProjects: {
+      name: "ListProjects",
+      requestType: ListProjectsRequest,
+      requestStream: false,
+      responseType: ListProjectsResponse,
+      responseStream: false,
+      options: {},
+    },
+    createProject: {
+      name: "CreateProject",
+      requestType: CreateProjectRequest,
+      requestStream: false,
+      responseType: Project,
+      responseStream: false,
+      options: {},
+    },
+    updateProject: {
+      name: "UpdateProject",
+      requestType: UpdateProjectRequest,
+      requestStream: false,
+      responseType: Project,
+      responseStream: false,
+      options: {},
+    },
+    deleteProject: {
+      name: "DeleteProject",
+      requestType: DeleteProjectRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    undeleteProject: {
+      name: "UndeleteProject",
+      requestType: UndeleteProjectRequest,
+      requestStream: false,
+      responseType: Project,
+      responseStream: false,
+      options: {},
+    },
+  },
+} as const;
+
+export interface ProjectServiceImplementation<CallContextExt = {}> {
+  getProject(request: GetProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
+  listProjects(
+    request: ListProjectsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListProjectsResponse>>;
+  createProject(request: CreateProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
+  updateProject(request: UpdateProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Project>>;
+  deleteProject(request: DeleteProjectRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  undeleteProject(
+    request: UndeleteProjectRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Project>>;
 }
 
-export class ProjectServiceClientImpl implements ProjectService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.ProjectService";
-    this.rpc = rpc;
-    this.GetProject = this.GetProject.bind(this);
-    this.ListProjects = this.ListProjects.bind(this);
-    this.CreateProject = this.CreateProject.bind(this);
-    this.UpdateProject = this.UpdateProject.bind(this);
-    this.DeleteProject = this.DeleteProject.bind(this);
-    this.UndeleteProject = this.UndeleteProject.bind(this);
-  }
-  GetProject(request: GetProjectRequest): Promise<Project> {
-    const data = GetProjectRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetProject", data);
-    return promise.then((data) => Project.decode(new _m0.Reader(data)));
-  }
-
-  ListProjects(request: ListProjectsRequest): Promise<ListProjectsResponse> {
-    const data = ListProjectsRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListProjects", data);
-    return promise.then((data) => ListProjectsResponse.decode(new _m0.Reader(data)));
-  }
-
-  CreateProject(request: CreateProjectRequest): Promise<Project> {
-    const data = CreateProjectRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "CreateProject", data);
-    return promise.then((data) => Project.decode(new _m0.Reader(data)));
-  }
-
-  UpdateProject(request: UpdateProjectRequest): Promise<Project> {
-    const data = UpdateProjectRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UpdateProject", data);
-    return promise.then((data) => Project.decode(new _m0.Reader(data)));
-  }
-
-  DeleteProject(request: DeleteProjectRequest): Promise<Empty> {
-    const data = DeleteProjectRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "DeleteProject", data);
-    return promise.then((data) => Empty.decode(new _m0.Reader(data)));
-  }
-
-  UndeleteProject(request: UndeleteProjectRequest): Promise<Project> {
-    const data = UndeleteProjectRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UndeleteProject", data);
-    return promise.then((data) => Project.decode(new _m0.Reader(data)));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+export interface ProjectServiceClient<CallOptionsExt = {}> {
+  getProject(request: DeepPartial<GetProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
+  listProjects(
+    request: DeepPartial<ListProjectsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListProjectsResponse>;
+  createProject(request: DeepPartial<CreateProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
+  updateProject(request: DeepPartial<UpdateProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Project>;
+  deleteProject(request: DeepPartial<DeleteProjectRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  undeleteProject(
+    request: DeepPartial<UndeleteProjectRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Project>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
@@ -1023,10 +1047,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

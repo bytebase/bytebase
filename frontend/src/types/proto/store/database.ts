@@ -1,6 +1,6 @@
 /* eslint-disable */
-import Long from "long";
-import _m0 from "protobufjs/minimal";
+import * as Long from "long";
+import * as _m0 from "protobufjs/minimal";
 import { StringValue } from "../google/protobuf/wrappers";
 
 export const protobufPackage = "bytebase.store";
@@ -244,7 +244,7 @@ export const DatabaseMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DatabaseMetadata>, I>>(object: I): DatabaseMetadata {
+  fromPartial(object: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
     const message = createBaseDatabaseMetadata();
     message.name = object.name ?? "";
     message.schemas = object.schemas?.map((e) => SchemaMetadata.fromPartial(e)) || [];
@@ -321,7 +321,7 @@ export const SchemaMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<SchemaMetadata>, I>>(object: I): SchemaMetadata {
+  fromPartial(object: DeepPartial<SchemaMetadata>): SchemaMetadata {
     const message = createBaseSchemaMetadata();
     message.name = object.name ?? "";
     message.tables = object.tables?.map((e) => TableMetadata.fromPartial(e)) || [];
@@ -487,7 +487,7 @@ export const TableMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<TableMetadata>, I>>(object: I): TableMetadata {
+  fromPartial(object: DeepPartial<TableMetadata>): TableMetadata {
     const message = createBaseTableMetadata();
     message.name = object.name ?? "";
     message.columns = object.columns?.map((e) => ColumnMetadata.fromPartial(e)) || [];
@@ -612,7 +612,7 @@ export const ColumnMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ColumnMetadata>, I>>(object: I): ColumnMetadata {
+  fromPartial(object: DeepPartial<ColumnMetadata>): ColumnMetadata {
     const message = createBaseColumnMetadata();
     message.name = object.name ?? "";
     message.position = object.position ?? 0;
@@ -684,7 +684,7 @@ export const ViewMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ViewMetadata>, I>>(object: I): ViewMetadata {
+  fromPartial(object: DeepPartial<ViewMetadata>): ViewMetadata {
     const message = createBaseViewMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
@@ -787,7 +787,7 @@ export const IndexMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<IndexMetadata>, I>>(object: I): IndexMetadata {
+  fromPartial(object: DeepPartial<IndexMetadata>): IndexMetadata {
     const message = createBaseIndexMetadata();
     message.name = object.name ?? "";
     message.expressions = object.expressions?.map((e) => e) || [];
@@ -866,7 +866,7 @@ export const ExtensionMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ExtensionMetadata>, I>>(object: I): ExtensionMetadata {
+  fromPartial(object: DeepPartial<ExtensionMetadata>): ExtensionMetadata {
     const message = createBaseExtensionMetadata();
     message.name = object.name ?? "";
     message.schema = object.schema ?? "";
@@ -993,7 +993,7 @@ export const ForeignKeyMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ForeignKeyMetadata>, I>>(object: I): ForeignKeyMetadata {
+  fromPartial(object: DeepPartial<ForeignKeyMetadata>): ForeignKeyMetadata {
     const message = createBaseForeignKeyMetadata();
     message.name = object.name ?? "";
     message.columns = object.columns?.map((e) => e) || [];
@@ -1057,7 +1057,7 @@ export const InstanceRoleMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<InstanceRoleMetadata>, I>>(object: I): InstanceRoleMetadata {
+  fromPartial(object: DeepPartial<InstanceRoleMetadata>): InstanceRoleMetadata {
     const message = createBaseInstanceRoleMetadata();
     message.name = object.name ?? "";
     message.grant = object.grant ?? "";
@@ -1091,10 +1091,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
-
 function longToNumber(long: Long): number {
   if (long.gt(Number.MAX_SAFE_INTEGER)) {
     throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
@@ -1102,6 +1098,8 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
