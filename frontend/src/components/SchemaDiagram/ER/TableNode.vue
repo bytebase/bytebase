@@ -41,13 +41,9 @@
         :key="i"
         :bb-column-name="column.name"
         :bb-status="columnStatus(column)"
-        :class="[
-          editable && 'cursor-pointer',
-          isColumnDropped(column) && 'text-red-700 bg-red-50 line-through',
-          isColumnCreated(column) && 'text-green-700 bg-green-50',
-        ]"
+        :class="columnClasses(column)"
       >
-        <td class="w-5 py-1.5">
+        <td class="w-5 py-1.5 relative">
           <heroicons-outline:key
             v-if="isPrimaryKey(table, column)"
             class="w-3 h-3 mx-auto text-amber-500"
@@ -90,6 +86,7 @@ import {
   TableMetadata,
 } from "@/types/proto/store/database";
 import { useSchemaDiagramContext, isPrimaryKey, isIndex } from "../common";
+import { VueClass } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -151,12 +148,22 @@ const isTableChanged = computed(() => {
   return tableStatus(props.table) === "changed";
 });
 
-const isColumnDropped = (column: ColumnMetadata) => {
-  return columnStatus(column) === "dropped";
-};
+const columnClasses = (column: ColumnMetadata): VueClass => {
+  const classes: string[] = [];
+  if (editable.value) {
+    classes.push("cursor-pointer");
+  }
 
-const isColumnCreated = (column: ColumnMetadata) => {
-  return columnStatus(column) === "created";
+  const status = columnStatus(column);
+  if (status === "changed") {
+    classes.push("text-yellow-700", "bg-yellow-50");
+  } else if (status === "created") {
+    classes.push("text-green-700", "bg-green-50");
+  } else if (status === "dropped") {
+    classes.push("text-red-700", "bg-red-50", "line-through");
+  }
+
+  return classes;
 };
 
 const handleClickColumn = (column: ColumnMetadata, target: "name" | "type") => {
