@@ -461,8 +461,9 @@ const saveEdit = () => {
   if (allowFormatOnSave.value && formatOnSave.value) {
     editorRef.value?.formatEditorContent();
   }
-  updateStatement(state.editStatement);
-  state.editing = false;
+  updateStatement(state.editStatement, () => {
+    state.editing = false;
+  });
 };
 
 const cancelEdit = () => {
