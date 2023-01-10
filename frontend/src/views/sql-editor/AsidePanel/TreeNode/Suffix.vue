@@ -1,5 +1,5 @@
 <template>
-  <heroicons-outline:lightning-bolt v-if="connected" class="w-4 h-4" />
+  <heroicons-outline:link v-if="connected" class="w-4 h-4" />
 </template>
 
 <script lang="ts" setup>
