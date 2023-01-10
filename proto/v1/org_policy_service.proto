@@ -54,6 +54,77 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "";
   }
+
+  rpc CreatcePolicy(CreatePolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      post: "/v1/policies"
+      body: "policy"
+
+      additional_bindings {
+        post: "/v1/{parent=projects/*}/policies"
+      }
+      additional_bindings {
+        post: "/v1/{parent=environments/*}/policies"
+      }
+      additional_bindings {
+        post: "/v1/{parent=environments/*/instances/*}/policies"
+      }
+      additional_bindings {
+        post: "/v1/{parent=environments/*/instances/*/databases/*}/policies"
+      }
+    };
+    option (google.api.method_signature) = "parent,policy";
+  }
+
+  rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      patch: "/v1/{policy.name=policies/*}"
+      body: "policy"
+
+      additional_bindings {
+        patch: "/v1/{policy.name=projects/*/policies/*}"
+      }
+      additional_bindings {
+        patch: "/v1/{policy.name=environments/*/policies/*}"
+      }
+      additional_bindings {
+        patch: "/v1/{policy.name=environments/*/instances/*/policies/*}"
+      }
+      additional_bindings {
+        patch: "/v1/{policy.name=environments/*/instances/*/databases/*/policies/*}"
+      }
+    };
+    option (google.api.method_signature) = "policy,update_mask";
+  }
+}
+
+message CreatePolicyRequest {
+  // The parent resource where this instance will be created.
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The policy to create.
+  Policy policy = 2 [(google.api.field_behavior) = REQUIRED];
+
+  PolicyType type = 3;
+}
+
+message UpdatePolicyRequest {
+  // The policy to update.
+  //
+  // The policy's `name` field is used to identify the instance to update.
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  Policy policy = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
 }
 
 message GetPolicyRequest {

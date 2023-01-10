@@ -543,7 +543,7 @@ func (s *Store) upsertPolicyCache(policyType api.PolicyType, resourceID int, pay
 // PolicyMessage is the mssage for policy.
 type PolicyMessage struct {
 	UID               int
-	ResourceID        string
+	ResourceUID       int
 	ResourceType      api.PolicyResourceType
 	Payload           string
 	InheritFromParent bool
@@ -557,6 +557,17 @@ type FindPolicyMessage struct {
 	ResourceUID  *int
 	Type         *api.PolicyType
 	ShowDeleted  bool
+}
+
+// UpdatePolicyMessage is the message for updating a policy.
+type UpdatePolicyMessage struct {
+	UpdaterID         int
+	ResourceType      api.PolicyResourceType
+	ResourceUID       int
+	Type              api.PolicyType
+	InheritFromParent *bool
+	Payload           *string
+	RowStatus         *api.RowStatus
 }
 
 // GetPolicyV2 gets a policy.
@@ -610,6 +621,55 @@ func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]
 	return policies, nil
 }
 
+// CreatePolicyV2 creates a policy.
+func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creatorID int) (*PolicyMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var uid int
+	if err := tx.QueryRowContext(ctx, `
+			INSERT INTO policy (
+				creator_id,
+				updater_id,
+				resource_type,
+				resource_id,
+				inherit_from_parent,
+				type,
+				payload
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id
+		`,
+		creatorID,
+		creatorID,
+		create.ResourceType,
+		create.ResourceUID,
+		create.InheritFromParent,
+		create.Type,
+		create.Payload,
+	).Scan(
+		&uid,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	create.UID = uid
+	create.Deleted = false
+	// TODO: update the policy cache
+	return create, nil
+}
+
+func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
+
+}
+
 func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ResourceType; v != nil {
@@ -651,7 +711,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 			&policyMessage.UID,
 			&rowStatus,
 			&policyMessage.ResourceType,
-			&policyMessage.ResourceID,
+			&policyMessage.ResourceUID,
 			&policyMessage.InheritFromParent,
 			&policyMessage.Type,
 			&policyMessage.Payload,

@@ -209,6 +209,15 @@ func (policy *SQLReviewPolicy) Validate() error {
 	return nil
 }
 
+// String returns the marshal string value for SQL review policy.
+func (policy *SQLReviewPolicy) String() (string, error) {
+	s, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
 // SQLReviewRule is the rule for SQL review policy.
 type SQLReviewRule struct {
 	Type  SQLReviewRuleType  `json:"type"`

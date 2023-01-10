@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -101,6 +102,105 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 		}
 		response.Policies = append(response.Policies, p)
 	}
+	return response, nil
+}
+
+// CreatePolicy creates a policy in a specific resource.
+func (s *OrgPolicyService) CreatePolicy(ctx context.Context, request *v1pb.CreatePolicyRequest) (*v1pb.Policy, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	if request.Policy == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
+	}
+
+	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, request.Parent)
+	if err != nil {
+		return nil, err
+	}
+
+	policyType, err := convertPolicyType(request.Type.String())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	payloadStr, err := convertPolicyPayloadToString(request.Policy)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid policy %v", err.Error())
+	}
+
+	policy, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       resourceID,
+		ResourceType:      resourceType,
+		Payload:           payloadStr,
+		Type:              policyType,
+		InheritFromParent: request.Policy.InheritFromParent,
+	}, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	response, err := convertToPolicy(request.Parent, policy)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return response, nil
+}
+
+// UpdatePolicy updates a policy in a specific resource.
+func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.UpdatePolicyRequest) (*v1pb.Policy, error) {
+	tokens := strings.Split(request.Policy.Name, policyNamePrefix)
+	if len(tokens) != 2 {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid request %s", request.Policy.Name)
+	}
+
+	token := tokens[0]
+	if strings.HasSuffix(token, "/") {
+		token = token[:(len(token) - 1)]
+	}
+	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	policyType, err := convertPolicyType(tokens[1])
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &resourceType,
+		Type:         &policyType,
+		ResourceUID:  &resourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if policy == nil {
+		return nil, status.Errorf(codes.NotFound, "policy %q not found", request.Policy.Name)
+	}
+	if policy.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "policy %q has been deleted", request.Policy.Name)
+	}
+
+	patch := &store.UpdatePolicyMessage{
+		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
+		ResourceType: resourceType,
+		Type:         policyType,
+		ResourceUID:  resourceID,
+	}
+	for _, path := range request.UpdateMask.Paths {
+	}
+
+	p, err := s.store.UpdatePolicyV2(ctx, patch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	response, err := convertToPolicy(token, p)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	return response, nil
 }
 
@@ -207,6 +307,43 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 	return api.PolicyResourceTypeUnknown, 0, status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
 }
 
+func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
+	switch policy.Type {
+	case v1pb.PolicyType_DEPLOYMENT_APPROVAL:
+		payload, err := convertToPipelineApprovalPolicyPayload(policy.GetDeploymentApprovalPolicy())
+		if err != nil {
+			return "", err
+		}
+		return payload.String()
+	case v1pb.PolicyType_BACKUP_PLAN:
+		payload, err := convertToBackupPlanPolicyPayload(policy.GetBackupPlanPolicy())
+		if err != nil {
+			return "", err
+		}
+		return payload.String()
+	case v1pb.PolicyType_SQL_REVIEW:
+		payload, err := convertToSQLReviewPolicyPayload(policy.GetSqlReviewPolicy())
+		if err != nil {
+			return "", err
+		}
+		return payload.String()
+	case v1pb.PolicyType_SENSITIVE_DATA:
+		payload, err := convertToSensitiveDataPolicyPayload(policy.GetSensitiveDataPolicy())
+		if err != nil {
+			return "", err
+		}
+		return payload.String()
+	case v1pb.PolicyType_ACCESS_CONTROL:
+		payload, err := convertToAccessControlPolicyPayload(policy.GetAccessControlPolicy())
+		if err != nil {
+			return "", err
+		}
+		return payload.String()
+	}
+
+	return "", errors.Errorf("invalid policy %v", policy.Type)
+}
+
 func convertToPolicy(prefix string, policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
 	policy := &v1pb.Policy{
 		Uid:               fmt.Sprintf("%d", policyMessage.UID),
@@ -218,35 +355,35 @@ func convertToPolicy(prefix string, policyMessage *store.PolicyMessage) (*v1pb.P
 	switch policyMessage.Type {
 	case api.PolicyTypePipelineApproval:
 		pType = v1pb.PolicyType_DEPLOYMENT_APPROVAL
-		payload, err := convertPipelineApprovalPolicy(policyMessage.Payload)
+		payload, err := convertToV1PBDeploymentApprovalPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
 		policy.Policy = payload
 	case api.PolicyTypeBackupPlan:
 		pType = v1pb.PolicyType_BACKUP_PLAN
-		payload, err := convertBackupPlanPolicy(policyMessage.Payload)
+		payload, err := convertToV1PBBackupPlanPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
 		policy.Policy = payload
 	case api.PolicyTypeSQLReview:
 		pType = v1pb.PolicyType_SQL_REVIEW
-		payload, err := convertSQLReviewPolicy(policyMessage.Payload)
+		payload, err := convertToV1PBSQLReviewPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
 		policy.Policy = payload
 	case api.PolicyTypeSensitiveData:
 		pType = v1pb.PolicyType_SENSITIVE_DATA
-		payload, err := convertSensitiveDataPolicy(policyMessage.Payload)
+		payload, err := convertToV1PBSensitiveDataPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
 		policy.Policy = payload
 	case api.PolicyTypeAccessControl:
 		pType = v1pb.PolicyType_ACCESS_CONTROL
-		payload, err := convertAccessControlPolicy(policyMessage.Payload)
+		payload, err := convertToV1PBAccessControlPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -254,12 +391,15 @@ func convertToPolicy(prefix string, policyMessage *store.PolicyMessage) (*v1pb.P
 	}
 
 	policy.Type = pType
-	policy.Name = fmt.Sprintf("%s/%s%s", prefix, policyNamePrefix, strings.ToLower(pType.String()))
+	policy.Name = fmt.Sprintf("%s%s", policyNamePrefix, strings.ToLower(pType.String()))
+	if prefix != "" {
+		policy.Name = fmt.Sprintf("%s/%s", prefix, policy.Name)
+	}
 
 	return policy, nil
 }
 
-func convertSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
+func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
 	payload, err := api.UnmarshalSQLReviewPolicy(payloadStr)
 	if err != nil {
 		return nil, err
@@ -291,7 +431,35 @@ func convertSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, er
 	}, nil
 }
 
-func convertAccessControlPolicy(payloadStr string) (*v1pb.Policy_AccessControlPolicy, error) {
+func convertToSQLReviewPolicyPayload(policy *v1pb.SQLReviewPolicy) (*advisor.SQLReviewPolicy, error) {
+	var ruleList []*advisor.SQLReviewRule
+	for _, rule := range policy.Rules {
+		var level advisor.SQLReviewRuleLevel
+		switch rule.Level {
+		case v1pb.SQLReviewRuleLevel_ERROR:
+			level = advisor.SchemaRuleLevelError
+		case v1pb.SQLReviewRuleLevel_WARNING:
+			level = advisor.SchemaRuleLevelWarning
+		case v1pb.SQLReviewRuleLevel_DISABLED:
+			level = advisor.SchemaRuleLevelDisabled
+		default:
+			return nil, errors.Errorf("invalid rule level %v", rule.Level)
+		}
+
+		ruleList = append(ruleList, &advisor.SQLReviewRule{
+			Level:   level,
+			Payload: rule.Payload,
+			Type:    advisor.SQLReviewRuleType(rule.Type),
+		})
+	}
+
+	return &advisor.SQLReviewPolicy{
+		Name:     policy.Title,
+		RuleList: ruleList,
+	}, nil
+}
+
+func convertToV1PBAccessControlPolicy(payloadStr string) (*v1pb.Policy_AccessControlPolicy, error) {
 	payload, err := api.UnmarshalAccessControlPolicy(payloadStr)
 	if err != nil {
 		return nil, err
@@ -310,7 +478,20 @@ func convertAccessControlPolicy(payloadStr string) (*v1pb.Policy_AccessControlPo
 	}, nil
 }
 
-func convertSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPolicy, error) {
+func convertToAccessControlPolicyPayload(policy *v1pb.AccessControlPolicy) (*api.AccessControlPolicy, error) {
+	var disallowRuleList []api.AccessControlRule
+	for _, rule := range policy.DisallowRules {
+		disallowRuleList = append(disallowRuleList, api.AccessControlRule{
+			FullDatabase: rule.FullDatabase,
+		})
+	}
+
+	return &api.AccessControlPolicy{
+		DisallowRuleList: disallowRuleList,
+	}, nil
+}
+
+func convertToV1PBSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPolicy, error) {
 	payload, err := api.UnmarshalSensitiveDataPolicy(payloadStr)
 	if err != nil {
 		return nil, err
@@ -336,7 +517,24 @@ func convertSensitiveDataPolicy(payloadStr string) (*v1pb.Policy_SensitiveDataPo
 	}, nil
 }
 
-func convertBackupPlanPolicy(payloadStr string) (*v1pb.Policy_BackupPlanPolicy, error) {
+func convertToSensitiveDataPolicyPayload(policy *v1pb.SensitiveDataPolicy) (*api.SensitiveDataPolicy, error) {
+	var sensitiveDataList []api.SensitiveData
+	for _, data := range policy.SensitiveData {
+		if data.MaskType != v1pb.SensitiveDataMaskType_DEFAULT {
+			return nil, errors.Errorf("invalid sensitive data mask type %v", data.MaskType)
+		}
+		sensitiveDataList = append(sensitiveDataList, api.SensitiveData{
+			Table:  data.Table,
+			Column: data.Column,
+			Type:   api.SensitiveDataMaskTypeDefault,
+		})
+	}
+	return &api.SensitiveDataPolicy{
+		SensitiveDataList: sensitiveDataList,
+	}, nil
+}
+
+func convertToV1PBBackupPlanPolicy(payloadStr string) (*v1pb.Policy_BackupPlanPolicy, error) {
 	payload, err := api.UnmarshalBackupPlanPolicy(payloadStr)
 	if err != nil {
 		return nil, err
@@ -360,7 +558,26 @@ func convertBackupPlanPolicy(payloadStr string) (*v1pb.Policy_BackupPlanPolicy, 
 	}, nil
 }
 
-func convertPipelineApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentApprovalPolicy, error) {
+func convertToBackupPlanPolicyPayload(policy *v1pb.BackupPlanPolicy) (*api.BackupPlanPolicy, error) {
+	var schedule api.BackupPlanPolicySchedule
+	switch policy.Schedule {
+	case v1pb.BackupPlanSchedule_UNSET:
+		schedule = api.BackupPlanPolicyScheduleUnset
+	case v1pb.BackupPlanSchedule_DAILY:
+		schedule = api.BackupPlanPolicyScheduleDaily
+	case v1pb.BackupPlanSchedule_WEEKLY:
+		schedule = api.BackupPlanPolicyScheduleWeekly
+	default:
+		return nil, errors.Errorf("invalid backup plan schedule %v", policy.Schedule)
+	}
+
+	return &api.BackupPlanPolicy{
+		Schedule:          schedule,
+		RetentionPeriodTs: int(policy.RetentionDuration.Seconds),
+	}, nil
+}
+
+func convertToV1PBDeploymentApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentApprovalPolicy, error) {
 	payload, err := api.UnmarshalPipelineApprovalPolicy(payloadStr)
 	if err != nil {
 		return nil, err
@@ -385,8 +602,9 @@ func convertPipelineApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentAp
 		}
 
 		approvalStrategies = append(approvalStrategies, &v1pb.DeploymentApprovalStrategy{
-			ApprovalGroup:    assigneeGroupValue,
-			DeploymentType:   convertIssueTypeToDeplymentType(group.IssueType),
+			ApprovalGroup:  assigneeGroupValue,
+			DeploymentType: convertIssueTypeToDeplymentType(group.IssueType),
+			// TODO: support using different strategy for different assignee group.
 			ApprovalStrategy: approvalStrategy,
 		})
 	}
@@ -396,6 +614,59 @@ func convertPipelineApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentAp
 			DefaultStrategy:              approvalStrategy,
 			DeploymentApprovalStrategies: approvalStrategies,
 		},
+	}, nil
+}
+
+func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolicy) (*api.PipelineApprovalPolicy, error) {
+	var strategy api.PipelineApprovalValue
+	switch policy.DefaultStrategy {
+	case v1pb.ApprovalStrategy_MANUAL:
+		strategy = api.PipelineApprovalValueManualAlways
+	case v1pb.ApprovalStrategy_AUTOMATIC:
+		strategy = api.PipelineApprovalValueManualNever
+	default:
+		return nil, errors.Errorf("invalid default strategy %v", policy.DefaultStrategy)
+	}
+
+	var assigneeGroupList []api.AssigneeGroup
+	for _, group := range policy.DeploymentApprovalStrategies {
+		var assigneeGroup api.AssigneeGroupValue
+		switch group.ApprovalGroup {
+		case v1pb.ApprovalGroup_APPROVAL_GROUP_PROJECT_OWNER:
+			assigneeGroup = api.AssigneeGroupValueProjectOwner
+		case v1pb.ApprovalGroup_APPROVAL_GROUP_DBA:
+			assigneeGroup = api.AssigneeGroupValueWorkspaceOwnerOrDBA
+		default:
+			return nil, errors.Errorf("invalid assignee group %v", group.ApprovalGroup)
+		}
+
+		var issueType api.IssueType
+		switch group.DeploymentType {
+		case v1pb.DeploymentType_DATABASE_CREATE:
+			issueType = api.IssueDatabaseCreate
+		case v1pb.DeploymentType_DATABASE_DDL:
+			issueType = api.IssueDatabaseSchemaUpdate
+		case v1pb.DeploymentType_DATABASE_DDL_GHOST:
+			issueType = api.IssueDatabaseSchemaUpdateGhost
+		case v1pb.DeploymentType_DATABASE_DML:
+			issueType = api.IssueDatabaseDataUpdate
+		case v1pb.DeploymentType_DATABASE_RESTORE_PITR:
+			issueType = api.IssueDatabaseRestorePITR
+		case v1pb.DeploymentType_DATABASE_DML_ROLLBACK:
+			issueType = api.IssueDatabaseRollback
+		default:
+			return nil, errors.Errorf("invalid deployment type %v", group.DeploymentType)
+		}
+
+		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
+			Value:     assigneeGroup,
+			IssueType: issueType,
+		})
+	}
+
+	return &api.PipelineApprovalPolicy{
+		Value:             strategy,
+		AssigneeGroupList: assigneeGroupList,
 	}, nil
 }
 

@@ -1,6 +1,7 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
+import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 
@@ -264,6 +265,36 @@ export function sQLReviewRuleLevelToJSON(object: SQLReviewRuleLevel): string {
   }
 }
 
+export interface CreatePolicyRequest {
+  /**
+   * The parent resource where this instance will be created.
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   */
+  parent: string;
+  /** The policy to create. */
+  policy?: Policy;
+  type: PolicyType;
+}
+
+export interface UpdatePolicyRequest {
+  /**
+   * The policy to update.
+   *
+   * The policy's `name` field is used to identify the instance to update.
+   * Format: {resource name}/policies/{policy type}
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   */
+  policy?: Policy;
+  /** The list of fields to update. */
+  updateMask?: string[];
+}
+
 export interface GetPolicyRequest {
   /**
    * The name of the policy to retrieve.
@@ -372,6 +403,135 @@ export interface SQLReviewRule {
   level: SQLReviewRuleLevel;
   payload: string;
 }
+
+function createBaseCreatePolicyRequest(): CreatePolicyRequest {
+  return { parent: "", policy: undefined, type: 0 };
+}
+
+export const CreatePolicyRequest = {
+  encode(message: CreatePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.policy !== undefined) {
+      Policy.encode(message.policy, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.type !== 0) {
+      writer.uint32(24).int32(message.type);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreatePolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreatePolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.parent = reader.string();
+          break;
+        case 2:
+          message.policy = Policy.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.type = reader.int32() as any;
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreatePolicyRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
+      type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
+    };
+  },
+
+  toJSON(message: CreatePolicyRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
+    message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CreatePolicyRequest>, I>>(object: I): CreatePolicyRequest {
+    const message = createBaseCreatePolicyRequest();
+    message.parent = object.parent ?? "";
+    message.policy = (object.policy !== undefined && object.policy !== null)
+      ? Policy.fromPartial(object.policy)
+      : undefined;
+    message.type = object.type ?? 0;
+    return message;
+  },
+};
+
+function createBaseUpdatePolicyRequest(): UpdatePolicyRequest {
+  return { policy: undefined, updateMask: undefined };
+}
+
+export const UpdatePolicyRequest = {
+  encode(message: UpdatePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.policy !== undefined) {
+      Policy.encode(message.policy, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdatePolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdatePolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.policy = Policy.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdatePolicyRequest {
+    return {
+      policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdatePolicyRequest): unknown {
+    const obj: any = {};
+    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<UpdatePolicyRequest>, I>>(object: I): UpdatePolicyRequest {
+    const message = createBaseUpdatePolicyRequest();
+    message.policy = (object.policy !== undefined && object.policy !== null)
+      ? Policy.fromPartial(object.policy)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
 
 function createBaseGetPolicyRequest(): GetPolicyRequest {
   return { name: "" };
@@ -1275,6 +1435,8 @@ export const SQLReviewRule = {
 export interface OrgPolicyService {
   GetPolicy(request: GetPolicyRequest): Promise<Policy>;
   ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
+  CreatcePolicy(request: CreatePolicyRequest): Promise<Policy>;
+  UpdatePolicy(request: UpdatePolicyRequest): Promise<Policy>;
 }
 
 export class OrgPolicyServiceClientImpl implements OrgPolicyService {
@@ -1285,6 +1447,8 @@ export class OrgPolicyServiceClientImpl implements OrgPolicyService {
     this.rpc = rpc;
     this.GetPolicy = this.GetPolicy.bind(this);
     this.ListPolicies = this.ListPolicies.bind(this);
+    this.CreatcePolicy = this.CreatcePolicy.bind(this);
+    this.UpdatePolicy = this.UpdatePolicy.bind(this);
   }
   GetPolicy(request: GetPolicyRequest): Promise<Policy> {
     const data = GetPolicyRequest.encode(request).finish();
@@ -1296,6 +1460,18 @@ export class OrgPolicyServiceClientImpl implements OrgPolicyService {
     const data = ListPoliciesRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "ListPolicies", data);
     return promise.then((data) => ListPoliciesResponse.decode(new _m0.Reader(data)));
+  }
+
+  CreatcePolicy(request: CreatePolicyRequest): Promise<Policy> {
+    const data = CreatePolicyRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CreatcePolicy", data);
+    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
+  }
+
+  UpdatePolicy(request: UpdatePolicyRequest): Promise<Policy> {
+    const data = UpdatePolicyRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UpdatePolicy", data);
+    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
   }
 }
 
