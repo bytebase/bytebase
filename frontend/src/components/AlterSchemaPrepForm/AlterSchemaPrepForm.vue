@@ -8,7 +8,8 @@
             <NTabs v-model:value="state.alterType">
               <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
                 <ProjectTenantView
-                  class="max-h-[55vh] overflow-y-auto"
+                  class="overflow-y-auto"
+                  style="max-height: calc(100vh - 320px)"
                   :state="state"
                   :database-list="databaseList"
                   :environment-list="environmentList"
@@ -22,7 +23,8 @@
               >
                 <DatabaseTable
                   mode="PROJECT_SHORT"
-                  class="max-h-[55vh] overflow-y-auto"
+                  class="overflow-y-auto"
+                  style="max-height: calc(100vh - 360px)"
                   table-class="border"
                   :custom-click="true"
                   :database-list="databaseList"

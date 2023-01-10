@@ -3,7 +3,8 @@
     <slot name="transfer-source-selector" />
 
     <DatabaseTable
-      class="max-h-[55vh] overflow-y-auto"
+      class="overflow-y-auto"
+      style="max-height: calc(100vh - 400px)"
       table-class="border"
       :mode="transferSource === 'DEFAULT' ? 'PROJECT_SHORT' : 'ALL_SHORT'"
       :custom-click="true"
