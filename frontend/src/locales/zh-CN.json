@@ -1491,7 +1491,8 @@
       "duplicated-table-name": "重复的表名",
       "invalid-column-name": "无效的列名",
       "duplicated-column-name": "重复的列名",
-      "invalid-column-type": "无效的列类型"
+      "invalid-column-type": "无效的列类型",
+      "failed-to-fetch-database-schema": "请求数据库 Schema 失败"
     },
     "confirm-to-close": {
       "title": "确定关闭？",
