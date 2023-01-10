@@ -39,7 +39,6 @@ Releaser should take the following steps for schema update release, about once a
 
 ### DML Change
 
-> **Note** We store some info in a JSON field, if we change the structure of that JSON field, this is still
-> considerrd as a schema change and should follow the DDL change practice. See [this example](https://github.com/bytebase/bytebase/pull/4232/files#diff-199bfe21ce52a70858acbc212c5463c8bd7853c09b077c4da53cd73ccee38e8b)
+> **Note** Changing the structure of a JSON field is considered to be a schema change and should follow the DDL change practice. See [this example](https://github.com/bytebase/bytebase/pull/4232/files#diff-199bfe21ce52a70858acbc212c5463c8bd7853c09b077c4da53cd73ccee38e8b)
 
 For DML file release, we don't need to bump up the minor version because the database schema does not change. We can move the file to the current schema release directory and rename it by following the format above. See [this example](https://github.com/bytebase/bytebase/pull/2439).
