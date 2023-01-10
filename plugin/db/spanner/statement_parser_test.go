@@ -477,6 +477,14 @@ CREATE INDEX bytebase_idx_migration_history_namespace_created ON migration_histo
 			`,
 			want: []string{"SELECT 1", "SELECT '2;3;4;'", "SELECT 2"},
 		},
+		{
+			input: `
+				SELECT 1;;;;
+				SELECT '2;3;4;';;
+				SELECT 2;;
+			`,
+			want: []string{"SELECT 1", "SELECT '2;3;4;'", "SELECT 2"},
+		},
 	}
 	a := require.New(t)
 	for _, tc := range tests {
