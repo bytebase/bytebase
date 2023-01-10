@@ -9,6 +9,7 @@ import (
 )
 
 var ddlStatements = map[string]bool{"CREATE": true, "DROP": true, "ALTER": true}
+var selectStatements = map[string]bool{"WITH": true, "SELECT": true}
 
 // RemoveCommentsAndTrim removes any comments in the query string and trims any
 // spaces at the beginning and end of the query. This makes checking what type
@@ -196,7 +197,16 @@ func sanitizeSQL(sql string) ([]string, error) {
 // isDDL returns true if the given sql string is a DDL statement.
 func isDDL(query string) bool {
 	for ddl := range ddlStatements {
-		if strings.EqualFold(query[:len(ddl)], ddl) {
+		if len(query) >= len(ddl) && strings.EqualFold(query[:len(ddl)], ddl) {
+			return true
+		}
+	}
+	return false
+}
+
+func isSelect(query string) bool {
+	for keyword := range selectStatements {
+		if len(query) >= len(keyword) && strings.EqualFold(query[:len(keyword)], keyword) {
 			return true
 		}
 	}
