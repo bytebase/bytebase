@@ -137,7 +137,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			// Before updating database's projectID, we need to check if there are still bound sheets.
 			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.UID}, updaterID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.UID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database %q", database.DatabaseName)).SetInternal(err)
 			}
 			if len(sheetList) > 0 {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The transferring database has %d bound sheets, please go to SQL editor to unbind them first", len(sheetList)))
@@ -193,7 +193,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		composedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &database.UID})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database with ID %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database with ID %q", id)).SetInternal(err)
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedDatabase); err != nil {
@@ -212,7 +212,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database %q", database.DatabaseName)).SetInternal(err)
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
@@ -220,19 +220,19 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		dbSchema, err := s.store.GetDBSchema(ctx, id)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database ID %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database %q", database.DatabaseName)).SetInternal(err)
 		}
 		if dbSchema == nil {
 			// TODO(d): make SyncDatabaseSchema return the updated database schema.
 			if err := s.SchemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database schema for database ID %v", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to sync database schema for database %q", database.DatabaseName)).SetInternal(err)
 			}
 			newDBSchema, err := s.store.GetDBSchema(ctx, id)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database ID %v", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get dbSchema for database %q", database.DatabaseName)).SetInternal(err)
 			}
 			if newDBSchema == nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("New dbSchema not found for database ID %v", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("New dbSchema not found for database %q", database.DatabaseName)).SetInternal(err)
 			}
 			dbSchema = newDBSchema
 		}
@@ -241,7 +241,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if isQuerySchema {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
 			if _, err := c.Response().Write([]byte(dbSchema.Schema)); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
 			}
 		} else {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -250,7 +250,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				return err
 			}
 			if _, err := c.Response().Write(metadataBytes); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %v", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to write schema response for database %q", database.DatabaseName)).SetInternal(err)
 			}
 		}
 		return nil
@@ -272,7 +272,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &id})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database %q", database.DatabaseName)).SetInternal(err)
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
