@@ -168,7 +168,7 @@ watchEffect(watchNotification);
 
 onErrorCaptured((error: any /* , _, info */) => {
   // Handle grpc request error.
-  // It looks lik: `{"path":"/bytebase.v1.AuthService/Login","code":2,"details":"Response closed without headers"}`
+  // It looks like: `{"path":"/bytebase.v1.AuthService/Login","code":2,"details":"Response closed without headers"}`
   if (
     error instanceof ClientError &&
     Object.values(Status).includes(error.code)
