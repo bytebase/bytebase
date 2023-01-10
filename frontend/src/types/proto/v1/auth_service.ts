@@ -1,5 +1,6 @@
 /* eslint-disable */
-import _m0 from "protobufjs/minimal";
+import type { CallContext, CallOptions } from "nice-grpc-common";
+import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
@@ -236,7 +237,7 @@ export const GetUserRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetUserRequest>, I>>(object: I): GetUserRequest {
+  fromPartial(object: DeepPartial<GetUserRequest>): GetUserRequest {
     const message = createBaseGetUserRequest();
     message.name = object.name ?? "";
     return message;
@@ -301,7 +302,7 @@ export const ListUsersRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListUsersRequest>, I>>(object: I): ListUsersRequest {
+  fromPartial(object: DeepPartial<ListUsersRequest>): ListUsersRequest {
     const message = createBaseListUsersRequest();
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
@@ -364,7 +365,7 @@ export const ListUsersResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListUsersResponse>, I>>(object: I): ListUsersResponse {
+  fromPartial(object: DeepPartial<ListUsersResponse>): ListUsersResponse {
     const message = createBaseListUsersResponse();
     message.users = object.users?.map((e) => User.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
@@ -412,7 +413,7 @@ export const CreateUserRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<CreateUserRequest>, I>>(object: I): CreateUserRequest {
+  fromPartial(object: DeepPartial<CreateUserRequest>): CreateUserRequest {
     const message = createBaseCreateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
     return message;
@@ -469,7 +470,7 @@ export const UpdateUserRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UpdateUserRequest>, I>>(object: I): UpdateUserRequest {
+  fromPartial(object: DeepPartial<UpdateUserRequest>): UpdateUserRequest {
     const message = createBaseUpdateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
     message.updateMask = object.updateMask ?? undefined;
@@ -517,7 +518,7 @@ export const DeleteUserRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DeleteUserRequest>, I>>(object: I): DeleteUserRequest {
+  fromPartial(object: DeepPartial<DeleteUserRequest>): DeleteUserRequest {
     const message = createBaseDeleteUserRequest();
     message.name = object.name ?? "";
     return message;
@@ -564,7 +565,7 @@ export const UndeleteUserRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UndeleteUserRequest>, I>>(object: I): UndeleteUserRequest {
+  fromPartial(object: DeepPartial<UndeleteUserRequest>): UndeleteUserRequest {
     const message = createBaseUndeleteUserRequest();
     message.name = object.name ?? "";
     return message;
@@ -629,7 +630,7 @@ export const LoginRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<LoginRequest>, I>>(object: I): LoginRequest {
+  fromPartial(object: DeepPartial<LoginRequest>): LoginRequest {
     const message = createBaseLoginRequest();
     message.email = object.email ?? "";
     message.password = object.password ?? "";
@@ -678,7 +679,7 @@ export const LoginResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<LoginResponse>, I>>(object: I): LoginResponse {
+  fromPartial(object: DeepPartial<LoginResponse>): LoginResponse {
     const message = createBaseLoginResponse();
     message.token = object.token ?? "";
     return message;
@@ -718,7 +719,7 @@ export const LogoutRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<LogoutRequest>, I>>(_: I): LogoutRequest {
+  fromPartial(_: DeepPartial<LogoutRequest>): LogoutRequest {
     const message = createBaseLogoutRequest();
     return message;
   },
@@ -814,7 +815,7 @@ export const User = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<User>, I>>(object: I): User {
+  fromPartial(object: DeepPartial<User>): User {
     const message = createBaseUser();
     message.name = object.name ?? "";
     message.state = object.state ?? 0;
@@ -827,83 +828,98 @@ export const User = {
   },
 };
 
-export interface AuthService {
-  GetUser(request: GetUserRequest): Promise<User>;
-  ListUsers(request: ListUsersRequest): Promise<ListUsersResponse>;
-  CreateUser(request: CreateUserRequest): Promise<User>;
-  UpdateUser(request: UpdateUserRequest): Promise<User>;
-  DeleteUser(request: DeleteUserRequest): Promise<Empty>;
-  UndeleteUser(request: UndeleteUserRequest): Promise<User>;
-  Login(request: LoginRequest): Promise<LoginResponse>;
-  Logout(request: LogoutRequest): Promise<Empty>;
+export type AuthServiceDefinition = typeof AuthServiceDefinition;
+export const AuthServiceDefinition = {
+  name: "AuthService",
+  fullName: "bytebase.v1.AuthService",
+  methods: {
+    getUser: {
+      name: "GetUser",
+      requestType: GetUserRequest,
+      requestStream: false,
+      responseType: User,
+      responseStream: false,
+      options: {},
+    },
+    listUsers: {
+      name: "ListUsers",
+      requestType: ListUsersRequest,
+      requestStream: false,
+      responseType: ListUsersResponse,
+      responseStream: false,
+      options: {},
+    },
+    createUser: {
+      name: "CreateUser",
+      requestType: CreateUserRequest,
+      requestStream: false,
+      responseType: User,
+      responseStream: false,
+      options: {},
+    },
+    updateUser: {
+      name: "UpdateUser",
+      requestType: UpdateUserRequest,
+      requestStream: false,
+      responseType: User,
+      responseStream: false,
+      options: {},
+    },
+    deleteUser: {
+      name: "DeleteUser",
+      requestType: DeleteUserRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    undeleteUser: {
+      name: "UndeleteUser",
+      requestType: UndeleteUserRequest,
+      requestStream: false,
+      responseType: User,
+      responseStream: false,
+      options: {},
+    },
+    login: {
+      name: "Login",
+      requestType: LoginRequest,
+      requestStream: false,
+      responseType: LoginResponse,
+      responseStream: false,
+      options: {},
+    },
+    logout: {
+      name: "Logout",
+      requestType: LogoutRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+  },
+} as const;
+
+export interface AuthServiceImplementation<CallContextExt = {}> {
+  getUser(request: GetUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
+  listUsers(request: ListUsersRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListUsersResponse>>;
+  createUser(request: CreateUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
+  updateUser(request: UpdateUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
+  deleteUser(request: DeleteUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  undeleteUser(request: UndeleteUserRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
+  login(request: LoginRequest, context: CallContext & CallContextExt): Promise<DeepPartial<LoginResponse>>;
+  logout(request: LogoutRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
 }
 
-export class AuthServiceClientImpl implements AuthService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.AuthService";
-    this.rpc = rpc;
-    this.GetUser = this.GetUser.bind(this);
-    this.ListUsers = this.ListUsers.bind(this);
-    this.CreateUser = this.CreateUser.bind(this);
-    this.UpdateUser = this.UpdateUser.bind(this);
-    this.DeleteUser = this.DeleteUser.bind(this);
-    this.UndeleteUser = this.UndeleteUser.bind(this);
-    this.Login = this.Login.bind(this);
-    this.Logout = this.Logout.bind(this);
-  }
-  GetUser(request: GetUserRequest): Promise<User> {
-    const data = GetUserRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetUser", data);
-    return promise.then((data) => User.decode(new _m0.Reader(data)));
-  }
-
-  ListUsers(request: ListUsersRequest): Promise<ListUsersResponse> {
-    const data = ListUsersRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListUsers", data);
-    return promise.then((data) => ListUsersResponse.decode(new _m0.Reader(data)));
-  }
-
-  CreateUser(request: CreateUserRequest): Promise<User> {
-    const data = CreateUserRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "CreateUser", data);
-    return promise.then((data) => User.decode(new _m0.Reader(data)));
-  }
-
-  UpdateUser(request: UpdateUserRequest): Promise<User> {
-    const data = UpdateUserRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UpdateUser", data);
-    return promise.then((data) => User.decode(new _m0.Reader(data)));
-  }
-
-  DeleteUser(request: DeleteUserRequest): Promise<Empty> {
-    const data = DeleteUserRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "DeleteUser", data);
-    return promise.then((data) => Empty.decode(new _m0.Reader(data)));
-  }
-
-  UndeleteUser(request: UndeleteUserRequest): Promise<User> {
-    const data = UndeleteUserRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UndeleteUser", data);
-    return promise.then((data) => User.decode(new _m0.Reader(data)));
-  }
-
-  Login(request: LoginRequest): Promise<LoginResponse> {
-    const data = LoginRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Login", data);
-    return promise.then((data) => LoginResponse.decode(new _m0.Reader(data)));
-  }
-
-  Logout(request: LogoutRequest): Promise<Empty> {
-    const data = LogoutRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Logout", data);
-    return promise.then((data) => Empty.decode(new _m0.Reader(data)));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+export interface AuthServiceClient<CallOptionsExt = {}> {
+  getUser(request: DeepPartial<GetUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
+  listUsers(request: DeepPartial<ListUsersRequest>, options?: CallOptions & CallOptionsExt): Promise<ListUsersResponse>;
+  createUser(request: DeepPartial<CreateUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
+  updateUser(request: DeepPartial<UpdateUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
+  deleteUser(request: DeepPartial<DeleteUserRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  undeleteUser(request: DeepPartial<UndeleteUserRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
+  login(request: DeepPartial<LoginRequest>, options?: CallOptions & CallOptionsExt): Promise<LoginResponse>;
+  logout(request: DeepPartial<LogoutRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
@@ -912,10 +928,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

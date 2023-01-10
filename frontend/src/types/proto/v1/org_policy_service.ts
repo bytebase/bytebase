@@ -1,5 +1,6 @@
 /* eslint-disable */
-import _m0 from "protobufjs/minimal";
+import type { CallContext, CallOptions } from "nice-grpc-common";
+import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { State, stateFromJSON, stateToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
@@ -413,7 +414,7 @@ export const GetPolicyRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetPolicyRequest>, I>>(object: I): GetPolicyRequest {
+  fromPartial(object: DeepPartial<GetPolicyRequest>): GetPolicyRequest {
     const message = createBaseGetPolicyRequest();
     message.name = object.name ?? "";
     return message;
@@ -478,7 +479,7 @@ export const ListPoliciesRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListPoliciesRequest>, I>>(object: I): ListPoliciesRequest {
+  fromPartial(object: DeepPartial<ListPoliciesRequest>): ListPoliciesRequest {
     const message = createBaseListPoliciesRequest();
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
@@ -541,7 +542,7 @@ export const ListPoliciesResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListPoliciesResponse>, I>>(object: I): ListPoliciesResponse {
+  fromPartial(object: DeepPartial<ListPoliciesResponse>): ListPoliciesResponse {
     const message = createBaseListPoliciesResponse();
     message.policies = object.policies?.map((e) => Policy.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
@@ -688,7 +689,7 @@ export const Policy = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<Policy>, I>>(object: I): Policy {
+  fromPartial(object: DeepPartial<Policy>): Policy {
     const message = createBasePolicy();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
@@ -773,7 +774,7 @@ export const DeploymentApprovalPolicy = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DeploymentApprovalPolicy>, I>>(object: I): DeploymentApprovalPolicy {
+  fromPartial(object: DeepPartial<DeploymentApprovalPolicy>): DeploymentApprovalPolicy {
     const message = createBaseDeploymentApprovalPolicy();
     message.defaultStrategy = object.defaultStrategy ?? 0;
     message.deploymentApprovalStrategies =
@@ -840,7 +841,7 @@ export const DeploymentApprovalStrategy = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DeploymentApprovalStrategy>, I>>(object: I): DeploymentApprovalStrategy {
+  fromPartial(object: DeepPartial<DeploymentApprovalStrategy>): DeploymentApprovalStrategy {
     const message = createBaseDeploymentApprovalStrategy();
     message.deploymentType = object.deploymentType ?? 0;
     message.approvalGroup = object.approvalGroup ?? 0;
@@ -900,7 +901,7 @@ export const BackupPlanPolicy = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<BackupPlanPolicy>, I>>(object: I): BackupPlanPolicy {
+  fromPartial(object: DeepPartial<BackupPlanPolicy>): BackupPlanPolicy {
     const message = createBaseBackupPlanPolicy();
     message.schedule = object.schedule ?? 0;
     message.retentionDuration = (object.retentionDuration !== undefined && object.retentionDuration !== null)
@@ -958,7 +959,7 @@ export const SensitiveDataPolicy = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<SensitiveDataPolicy>, I>>(object: I): SensitiveDataPolicy {
+  fromPartial(object: DeepPartial<SensitiveDataPolicy>): SensitiveDataPolicy {
     const message = createBaseSensitiveDataPolicy();
     message.sensitiveData = object.sensitiveData?.map((e) => SensitiveData.fromPartial(e)) || [];
     return message;
@@ -1031,7 +1032,7 @@ export const SensitiveData = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<SensitiveData>, I>>(object: I): SensitiveData {
+  fromPartial(object: DeepPartial<SensitiveData>): SensitiveData {
     const message = createBaseSensitiveData();
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
@@ -1089,7 +1090,7 @@ export const AccessControlPolicy = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<AccessControlPolicy>, I>>(object: I): AccessControlPolicy {
+  fromPartial(object: DeepPartial<AccessControlPolicy>): AccessControlPolicy {
     const message = createBaseAccessControlPolicy();
     message.disallowRules = object.disallowRules?.map((e) => AccessControlRule.fromPartial(e)) || [];
     return message;
@@ -1136,7 +1137,7 @@ export const AccessControlRule = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<AccessControlRule>, I>>(object: I): AccessControlRule {
+  fromPartial(object: DeepPartial<AccessControlRule>): AccessControlRule {
     const message = createBaseAccessControlRule();
     message.fullDatabase = object.fullDatabase ?? false;
     return message;
@@ -1197,7 +1198,7 @@ export const SQLReviewPolicy = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<SQLReviewPolicy>, I>>(object: I): SQLReviewPolicy {
+  fromPartial(object: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
     const message = createBaseSQLReviewPolicy();
     message.title = object.title ?? "";
     message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
@@ -1263,7 +1264,7 @@ export const SQLReviewRule = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<SQLReviewRule>, I>>(object: I): SQLReviewRule {
+  fromPartial(object: DeepPartial<SQLReviewRule>): SQLReviewRule {
     const message = createBaseSQLReviewRule();
     message.type = object.type ?? "";
     message.level = object.level ?? 0;
@@ -1272,35 +1273,44 @@ export const SQLReviewRule = {
   },
 };
 
-export interface OrgPolicyService {
-  GetPolicy(request: GetPolicyRequest): Promise<Policy>;
-  ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
+export type OrgPolicyServiceDefinition = typeof OrgPolicyServiceDefinition;
+export const OrgPolicyServiceDefinition = {
+  name: "OrgPolicyService",
+  fullName: "bytebase.v1.OrgPolicyService",
+  methods: {
+    getPolicy: {
+      name: "GetPolicy",
+      requestType: GetPolicyRequest,
+      requestStream: false,
+      responseType: Policy,
+      responseStream: false,
+      options: {},
+    },
+    listPolicies: {
+      name: "ListPolicies",
+      requestType: ListPoliciesRequest,
+      requestStream: false,
+      responseType: ListPoliciesResponse,
+      responseStream: false,
+      options: {},
+    },
+  },
+} as const;
+
+export interface OrgPolicyServiceImplementation<CallContextExt = {}> {
+  getPolicy(request: GetPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
+  listPolicies(
+    request: ListPoliciesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListPoliciesResponse>>;
 }
 
-export class OrgPolicyServiceClientImpl implements OrgPolicyService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.OrgPolicyService";
-    this.rpc = rpc;
-    this.GetPolicy = this.GetPolicy.bind(this);
-    this.ListPolicies = this.ListPolicies.bind(this);
-  }
-  GetPolicy(request: GetPolicyRequest): Promise<Policy> {
-    const data = GetPolicyRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetPolicy", data);
-    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
-  }
-
-  ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse> {
-    const data = ListPoliciesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListPolicies", data);
-    return promise.then((data) => ListPoliciesResponse.decode(new _m0.Reader(data)));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+export interface OrgPolicyServiceClient<CallOptionsExt = {}> {
+  getPolicy(request: DeepPartial<GetPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
+  listPolicies(
+    request: DeepPartial<ListPoliciesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListPoliciesResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
@@ -1309,10 +1319,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

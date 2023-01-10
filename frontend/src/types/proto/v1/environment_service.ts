@@ -1,5 +1,6 @@
 /* eslint-disable */
-import _m0 from "protobufjs/minimal";
+import type { CallContext, CallOptions } from "nice-grpc-common";
+import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
@@ -178,7 +179,7 @@ export const GetEnvironmentRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetEnvironmentRequest>, I>>(object: I): GetEnvironmentRequest {
+  fromPartial(object: DeepPartial<GetEnvironmentRequest>): GetEnvironmentRequest {
     const message = createBaseGetEnvironmentRequest();
     message.name = object.name ?? "";
     return message;
@@ -243,7 +244,7 @@ export const ListEnvironmentsRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListEnvironmentsRequest>, I>>(object: I): ListEnvironmentsRequest {
+  fromPartial(object: DeepPartial<ListEnvironmentsRequest>): ListEnvironmentsRequest {
     const message = createBaseListEnvironmentsRequest();
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
@@ -308,7 +309,7 @@ export const ListEnvironmentsResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListEnvironmentsResponse>, I>>(object: I): ListEnvironmentsResponse {
+  fromPartial(object: DeepPartial<ListEnvironmentsResponse>): ListEnvironmentsResponse {
     const message = createBaseListEnvironmentsResponse();
     message.environments = object.environments?.map((e) => Environment.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
@@ -367,7 +368,7 @@ export const CreateEnvironmentRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<CreateEnvironmentRequest>, I>>(object: I): CreateEnvironmentRequest {
+  fromPartial(object: DeepPartial<CreateEnvironmentRequest>): CreateEnvironmentRequest {
     const message = createBaseCreateEnvironmentRequest();
     message.environment = (object.environment !== undefined && object.environment !== null)
       ? Environment.fromPartial(object.environment)
@@ -428,7 +429,7 @@ export const UpdateEnvironmentRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UpdateEnvironmentRequest>, I>>(object: I): UpdateEnvironmentRequest {
+  fromPartial(object: DeepPartial<UpdateEnvironmentRequest>): UpdateEnvironmentRequest {
     const message = createBaseUpdateEnvironmentRequest();
     message.environment = (object.environment !== undefined && object.environment !== null)
       ? Environment.fromPartial(object.environment)
@@ -478,7 +479,7 @@ export const DeleteEnvironmentRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DeleteEnvironmentRequest>, I>>(object: I): DeleteEnvironmentRequest {
+  fromPartial(object: DeepPartial<DeleteEnvironmentRequest>): DeleteEnvironmentRequest {
     const message = createBaseDeleteEnvironmentRequest();
     message.name = object.name ?? "";
     return message;
@@ -525,7 +526,7 @@ export const UndeleteEnvironmentRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UndeleteEnvironmentRequest>, I>>(object: I): UndeleteEnvironmentRequest {
+  fromPartial(object: DeepPartial<UndeleteEnvironmentRequest>): UndeleteEnvironmentRequest {
     const message = createBaseUndeleteEnvironmentRequest();
     message.name = object.name ?? "";
     return message;
@@ -614,7 +615,7 @@ export const Environment = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<Environment>, I>>(object: I): Environment {
+  fromPartial(object: DeepPartial<Environment>): Environment {
     const message = createBaseEnvironment();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
@@ -626,67 +627,114 @@ export const Environment = {
   },
 };
 
-export interface EnvironmentService {
-  GetEnvironment(request: GetEnvironmentRequest): Promise<Environment>;
-  ListEnvironments(request: ListEnvironmentsRequest): Promise<ListEnvironmentsResponse>;
-  CreateEnvironment(request: CreateEnvironmentRequest): Promise<Environment>;
-  UpdateEnvironment(request: UpdateEnvironmentRequest): Promise<Environment>;
-  DeleteEnvironment(request: DeleteEnvironmentRequest): Promise<Empty>;
-  UndeleteEnvironment(request: UndeleteEnvironmentRequest): Promise<Environment>;
+export type EnvironmentServiceDefinition = typeof EnvironmentServiceDefinition;
+export const EnvironmentServiceDefinition = {
+  name: "EnvironmentService",
+  fullName: "bytebase.v1.EnvironmentService",
+  methods: {
+    getEnvironment: {
+      name: "GetEnvironment",
+      requestType: GetEnvironmentRequest,
+      requestStream: false,
+      responseType: Environment,
+      responseStream: false,
+      options: {},
+    },
+    listEnvironments: {
+      name: "ListEnvironments",
+      requestType: ListEnvironmentsRequest,
+      requestStream: false,
+      responseType: ListEnvironmentsResponse,
+      responseStream: false,
+      options: {},
+    },
+    createEnvironment: {
+      name: "CreateEnvironment",
+      requestType: CreateEnvironmentRequest,
+      requestStream: false,
+      responseType: Environment,
+      responseStream: false,
+      options: {},
+    },
+    updateEnvironment: {
+      name: "UpdateEnvironment",
+      requestType: UpdateEnvironmentRequest,
+      requestStream: false,
+      responseType: Environment,
+      responseStream: false,
+      options: {},
+    },
+    deleteEnvironment: {
+      name: "DeleteEnvironment",
+      requestType: DeleteEnvironmentRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    undeleteEnvironment: {
+      name: "UndeleteEnvironment",
+      requestType: UndeleteEnvironmentRequest,
+      requestStream: false,
+      responseType: Environment,
+      responseStream: false,
+      options: {},
+    },
+  },
+} as const;
+
+export interface EnvironmentServiceImplementation<CallContextExt = {}> {
+  getEnvironment(
+    request: GetEnvironmentRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Environment>>;
+  listEnvironments(
+    request: ListEnvironmentsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListEnvironmentsResponse>>;
+  createEnvironment(
+    request: CreateEnvironmentRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Environment>>;
+  updateEnvironment(
+    request: UpdateEnvironmentRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Environment>>;
+  deleteEnvironment(
+    request: DeleteEnvironmentRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
+  undeleteEnvironment(
+    request: UndeleteEnvironmentRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Environment>>;
 }
 
-export class EnvironmentServiceClientImpl implements EnvironmentService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.EnvironmentService";
-    this.rpc = rpc;
-    this.GetEnvironment = this.GetEnvironment.bind(this);
-    this.ListEnvironments = this.ListEnvironments.bind(this);
-    this.CreateEnvironment = this.CreateEnvironment.bind(this);
-    this.UpdateEnvironment = this.UpdateEnvironment.bind(this);
-    this.DeleteEnvironment = this.DeleteEnvironment.bind(this);
-    this.UndeleteEnvironment = this.UndeleteEnvironment.bind(this);
-  }
-  GetEnvironment(request: GetEnvironmentRequest): Promise<Environment> {
-    const data = GetEnvironmentRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetEnvironment", data);
-    return promise.then((data) => Environment.decode(new _m0.Reader(data)));
-  }
-
-  ListEnvironments(request: ListEnvironmentsRequest): Promise<ListEnvironmentsResponse> {
-    const data = ListEnvironmentsRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListEnvironments", data);
-    return promise.then((data) => ListEnvironmentsResponse.decode(new _m0.Reader(data)));
-  }
-
-  CreateEnvironment(request: CreateEnvironmentRequest): Promise<Environment> {
-    const data = CreateEnvironmentRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "CreateEnvironment", data);
-    return promise.then((data) => Environment.decode(new _m0.Reader(data)));
-  }
-
-  UpdateEnvironment(request: UpdateEnvironmentRequest): Promise<Environment> {
-    const data = UpdateEnvironmentRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UpdateEnvironment", data);
-    return promise.then((data) => Environment.decode(new _m0.Reader(data)));
-  }
-
-  DeleteEnvironment(request: DeleteEnvironmentRequest): Promise<Empty> {
-    const data = DeleteEnvironmentRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "DeleteEnvironment", data);
-    return promise.then((data) => Empty.decode(new _m0.Reader(data)));
-  }
-
-  UndeleteEnvironment(request: UndeleteEnvironmentRequest): Promise<Environment> {
-    const data = UndeleteEnvironmentRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UndeleteEnvironment", data);
-    return promise.then((data) => Environment.decode(new _m0.Reader(data)));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+export interface EnvironmentServiceClient<CallOptionsExt = {}> {
+  getEnvironment(
+    request: DeepPartial<GetEnvironmentRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Environment>;
+  listEnvironments(
+    request: DeepPartial<ListEnvironmentsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListEnvironmentsResponse>;
+  createEnvironment(
+    request: DeepPartial<CreateEnvironmentRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Environment>;
+  updateEnvironment(
+    request: DeepPartial<UpdateEnvironmentRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Environment>;
+  deleteEnvironment(
+    request: DeepPartial<DeleteEnvironmentRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
+  undeleteEnvironment(
+    request: DeepPartial<UndeleteEnvironmentRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Environment>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
@@ -695,10 +743,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

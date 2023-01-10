@@ -1,6 +1,7 @@
 /* eslint-disable */
-import Long from "long";
-import _m0 from "protobufjs/minimal";
+import * as Long from "long";
+import type { CallContext, CallOptions } from "nice-grpc-common";
+import * as _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { StringValue } from "../google/protobuf/wrappers";
@@ -327,7 +328,7 @@ export const GetDatabaseRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetDatabaseRequest>, I>>(object: I): GetDatabaseRequest {
+  fromPartial(object: DeepPartial<GetDatabaseRequest>): GetDatabaseRequest {
     const message = createBaseGetDatabaseRequest();
     message.name = object.name ?? "";
     return message;
@@ -400,7 +401,7 @@ export const ListDatabasesRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListDatabasesRequest>, I>>(object: I): ListDatabasesRequest {
+  fromPartial(object: DeepPartial<ListDatabasesRequest>): ListDatabasesRequest {
     const message = createBaseListDatabasesRequest();
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
@@ -464,7 +465,7 @@ export const ListDatabasesResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListDatabasesResponse>, I>>(object: I): ListDatabasesResponse {
+  fromPartial(object: DeepPartial<ListDatabasesResponse>): ListDatabasesResponse {
     const message = createBaseListDatabasesResponse();
     message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
@@ -522,7 +523,7 @@ export const UpdateDatabaseRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UpdateDatabaseRequest>, I>>(object: I): UpdateDatabaseRequest {
+  fromPartial(object: DeepPartial<UpdateDatabaseRequest>): UpdateDatabaseRequest {
     const message = createBaseUpdateDatabaseRequest();
     message.database = (object.database !== undefined && object.database !== null)
       ? Database.fromPartial(object.database)
@@ -588,7 +589,7 @@ export const BatchUpdateDatabasesRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<BatchUpdateDatabasesRequest>, I>>(object: I): BatchUpdateDatabasesRequest {
+  fromPartial(object: DeepPartial<BatchUpdateDatabasesRequest>): BatchUpdateDatabasesRequest {
     const message = createBaseBatchUpdateDatabasesRequest();
     message.parent = object.parent ?? "";
     message.requests = object.requests?.map((e) => UpdateDatabaseRequest.fromPartial(e)) || [];
@@ -642,7 +643,7 @@ export const BatchUpdateDatabasesResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<BatchUpdateDatabasesResponse>, I>>(object: I): BatchUpdateDatabasesResponse {
+  fromPartial(object: DeepPartial<BatchUpdateDatabasesResponse>): BatchUpdateDatabasesResponse {
     const message = createBaseBatchUpdateDatabasesResponse();
     message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
     return message;
@@ -689,7 +690,7 @@ export const GetDatabaseMetadataRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetDatabaseMetadataRequest>, I>>(object: I): GetDatabaseMetadataRequest {
+  fromPartial(object: DeepPartial<GetDatabaseMetadataRequest>): GetDatabaseMetadataRequest {
     const message = createBaseGetDatabaseMetadataRequest();
     message.name = object.name ?? "";
     return message;
@@ -736,7 +737,7 @@ export const GetDatabaseSchemaRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetDatabaseSchemaRequest>, I>>(object: I): GetDatabaseSchemaRequest {
+  fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
     return message;
@@ -872,7 +873,7 @@ export const Database = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<Database>, I>>(object: I): Database {
+  fromPartial(object: DeepPartial<Database>): Database {
     const message = createBaseDatabase();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
@@ -939,7 +940,7 @@ export const Database_LabelsEntry = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<Database_LabelsEntry>, I>>(object: I): Database_LabelsEntry {
+  fromPartial(object: DeepPartial<Database_LabelsEntry>): Database_LabelsEntry {
     const message = createBaseDatabase_LabelsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
@@ -1031,7 +1032,7 @@ export const DatabaseMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DatabaseMetadata>, I>>(object: I): DatabaseMetadata {
+  fromPartial(object: DeepPartial<DatabaseMetadata>): DatabaseMetadata {
     const message = createBaseDatabaseMetadata();
     message.name = object.name ?? "";
     message.schemas = object.schemas?.map((e) => SchemaMetadata.fromPartial(e)) || [];
@@ -1108,7 +1109,7 @@ export const SchemaMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<SchemaMetadata>, I>>(object: I): SchemaMetadata {
+  fromPartial(object: DeepPartial<SchemaMetadata>): SchemaMetadata {
     const message = createBaseSchemaMetadata();
     message.name = object.name ?? "";
     message.tables = object.tables?.map((e) => TableMetadata.fromPartial(e)) || [];
@@ -1274,7 +1275,7 @@ export const TableMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<TableMetadata>, I>>(object: I): TableMetadata {
+  fromPartial(object: DeepPartial<TableMetadata>): TableMetadata {
     const message = createBaseTableMetadata();
     message.name = object.name ?? "";
     message.columns = object.columns?.map((e) => ColumnMetadata.fromPartial(e)) || [];
@@ -1399,7 +1400,7 @@ export const ColumnMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ColumnMetadata>, I>>(object: I): ColumnMetadata {
+  fromPartial(object: DeepPartial<ColumnMetadata>): ColumnMetadata {
     const message = createBaseColumnMetadata();
     message.name = object.name ?? "";
     message.position = object.position ?? 0;
@@ -1471,7 +1472,7 @@ export const ViewMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ViewMetadata>, I>>(object: I): ViewMetadata {
+  fromPartial(object: DeepPartial<ViewMetadata>): ViewMetadata {
     const message = createBaseViewMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
@@ -1574,7 +1575,7 @@ export const IndexMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<IndexMetadata>, I>>(object: I): IndexMetadata {
+  fromPartial(object: DeepPartial<IndexMetadata>): IndexMetadata {
     const message = createBaseIndexMetadata();
     message.name = object.name ?? "";
     message.expressions = object.expressions?.map((e) => e) || [];
@@ -1653,7 +1654,7 @@ export const ExtensionMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ExtensionMetadata>, I>>(object: I): ExtensionMetadata {
+  fromPartial(object: DeepPartial<ExtensionMetadata>): ExtensionMetadata {
     const message = createBaseExtensionMetadata();
     message.name = object.name ?? "";
     message.schema = object.schema ?? "";
@@ -1780,7 +1781,7 @@ export const ForeignKeyMetadata = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ForeignKeyMetadata>, I>>(object: I): ForeignKeyMetadata {
+  fromPartial(object: DeepPartial<ForeignKeyMetadata>): ForeignKeyMetadata {
     const message = createBaseForeignKeyMetadata();
     message.name = object.name ?? "";
     message.columns = object.columns?.map((e) => e) || [];
@@ -1834,74 +1835,112 @@ export const DatabaseSchema = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DatabaseSchema>, I>>(object: I): DatabaseSchema {
+  fromPartial(object: DeepPartial<DatabaseSchema>): DatabaseSchema {
     const message = createBaseDatabaseSchema();
     message.schema = object.schema ?? "";
     return message;
   },
 };
 
-export interface DatabaseService {
-  GetDatabase(request: GetDatabaseRequest): Promise<Database>;
-  ListDatabases(request: ListDatabasesRequest): Promise<ListDatabasesResponse>;
-  UpdateDatabase(request: UpdateDatabaseRequest): Promise<Database>;
-  BatchUpdateDatabases(request: BatchUpdateDatabasesRequest): Promise<BatchUpdateDatabasesResponse>;
-  GetDatabaseMetadata(request: GetDatabaseMetadataRequest): Promise<DatabaseMetadata>;
-  GetDatabaseSchema(request: GetDatabaseSchemaRequest): Promise<DatabaseSchema>;
+export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
+export const DatabaseServiceDefinition = {
+  name: "DatabaseService",
+  fullName: "bytebase.v1.DatabaseService",
+  methods: {
+    getDatabase: {
+      name: "GetDatabase",
+      requestType: GetDatabaseRequest,
+      requestStream: false,
+      responseType: Database,
+      responseStream: false,
+      options: {},
+    },
+    listDatabases: {
+      name: "ListDatabases",
+      requestType: ListDatabasesRequest,
+      requestStream: false,
+      responseType: ListDatabasesResponse,
+      responseStream: false,
+      options: {},
+    },
+    updateDatabase: {
+      name: "UpdateDatabase",
+      requestType: UpdateDatabaseRequest,
+      requestStream: false,
+      responseType: Database,
+      responseStream: false,
+      options: {},
+    },
+    batchUpdateDatabases: {
+      name: "BatchUpdateDatabases",
+      requestType: BatchUpdateDatabasesRequest,
+      requestStream: false,
+      responseType: BatchUpdateDatabasesResponse,
+      responseStream: false,
+      options: {},
+    },
+    getDatabaseMetadata: {
+      name: "GetDatabaseMetadata",
+      requestType: GetDatabaseMetadataRequest,
+      requestStream: false,
+      responseType: DatabaseMetadata,
+      responseStream: false,
+      options: {},
+    },
+    getDatabaseSchema: {
+      name: "GetDatabaseSchema",
+      requestType: GetDatabaseSchemaRequest,
+      requestStream: false,
+      responseType: DatabaseSchema,
+      responseStream: false,
+      options: {},
+    },
+  },
+} as const;
+
+export interface DatabaseServiceImplementation<CallContextExt = {}> {
+  getDatabase(request: GetDatabaseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Database>>;
+  listDatabases(
+    request: ListDatabasesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListDatabasesResponse>>;
+  updateDatabase(request: UpdateDatabaseRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Database>>;
+  batchUpdateDatabases(
+    request: BatchUpdateDatabasesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<BatchUpdateDatabasesResponse>>;
+  getDatabaseMetadata(
+    request: GetDatabaseMetadataRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<DatabaseMetadata>>;
+  getDatabaseSchema(
+    request: GetDatabaseSchemaRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<DatabaseSchema>>;
 }
 
-export class DatabaseServiceClientImpl implements DatabaseService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.DatabaseService";
-    this.rpc = rpc;
-    this.GetDatabase = this.GetDatabase.bind(this);
-    this.ListDatabases = this.ListDatabases.bind(this);
-    this.UpdateDatabase = this.UpdateDatabase.bind(this);
-    this.BatchUpdateDatabases = this.BatchUpdateDatabases.bind(this);
-    this.GetDatabaseMetadata = this.GetDatabaseMetadata.bind(this);
-    this.GetDatabaseSchema = this.GetDatabaseSchema.bind(this);
-  }
-  GetDatabase(request: GetDatabaseRequest): Promise<Database> {
-    const data = GetDatabaseRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetDatabase", data);
-    return promise.then((data) => Database.decode(new _m0.Reader(data)));
-  }
-
-  ListDatabases(request: ListDatabasesRequest): Promise<ListDatabasesResponse> {
-    const data = ListDatabasesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListDatabases", data);
-    return promise.then((data) => ListDatabasesResponse.decode(new _m0.Reader(data)));
-  }
-
-  UpdateDatabase(request: UpdateDatabaseRequest): Promise<Database> {
-    const data = UpdateDatabaseRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UpdateDatabase", data);
-    return promise.then((data) => Database.decode(new _m0.Reader(data)));
-  }
-
-  BatchUpdateDatabases(request: BatchUpdateDatabasesRequest): Promise<BatchUpdateDatabasesResponse> {
-    const data = BatchUpdateDatabasesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "BatchUpdateDatabases", data);
-    return promise.then((data) => BatchUpdateDatabasesResponse.decode(new _m0.Reader(data)));
-  }
-
-  GetDatabaseMetadata(request: GetDatabaseMetadataRequest): Promise<DatabaseMetadata> {
-    const data = GetDatabaseMetadataRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetDatabaseMetadata", data);
-    return promise.then((data) => DatabaseMetadata.decode(new _m0.Reader(data)));
-  }
-
-  GetDatabaseSchema(request: GetDatabaseSchemaRequest): Promise<DatabaseSchema> {
-    const data = GetDatabaseSchemaRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetDatabaseSchema", data);
-    return promise.then((data) => DatabaseSchema.decode(new _m0.Reader(data)));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+export interface DatabaseServiceClient<CallOptionsExt = {}> {
+  getDatabase(request: DeepPartial<GetDatabaseRequest>, options?: CallOptions & CallOptionsExt): Promise<Database>;
+  listDatabases(
+    request: DeepPartial<ListDatabasesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListDatabasesResponse>;
+  updateDatabase(
+    request: DeepPartial<UpdateDatabaseRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Database>;
+  batchUpdateDatabases(
+    request: DeepPartial<BatchUpdateDatabasesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<BatchUpdateDatabasesResponse>;
+  getDatabaseMetadata(
+    request: DeepPartial<GetDatabaseMetadataRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<DatabaseMetadata>;
+  getDatabaseSchema(
+    request: DeepPartial<GetDatabaseSchemaRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<DatabaseSchema>;
 }
 
 declare var self: any | undefined;
@@ -1929,10 +1968,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function toTimestamp(date: Date): Timestamp {
   const seconds = date.getTime() / 1_000;
@@ -1963,6 +1998,8 @@ function longToNumber(long: Long): number {
   return long.toNumber();
 }
 
+// If you get a compile-error about 'Constructor<Long> and ... have no overlap',
+// add '--ts_proto_opt=esModuleInterop=true' as a flag when calling 'protoc'.
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
