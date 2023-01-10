@@ -497,7 +497,7 @@ func convertWalkThroughErrorToAdvice(err error) ([]Advice, error) {
 			Title:   SyntaxErrorTitle,
 			Content: walkThroughError.Content,
 		})
-	case catalog.ErrorTypeRestoreError:
+	case catalog.ErrorTypeDeparseError:
 		res = append(res, Advice{
 			Status:  Error,
 			Code:    Internal,
