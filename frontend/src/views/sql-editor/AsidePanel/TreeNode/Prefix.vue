@@ -4,6 +4,12 @@
   </template>
   <template v-else-if="atom.type === 'instance'">
     <span class="flex items-center gap-x-1">
+      <span
+        class="text-sm -mr-0.5"
+        :class="[!atom.disabled && 'text-gray-500']"
+      >
+        (
+      </span>
       <InstanceEngineIcon :instance="instance" />
       <ProtectedEnvironmentIcon
         :environment="instance.environment"
@@ -12,6 +18,12 @@
       <span class="text-sm" :class="[!atom.disabled && 'text-gray-500']">
         {{ instance.environment.name }}
       </span>
+      <span
+        class="text-sm -ml-0.5"
+        :class="[!atom.disabled && 'text-gray-500']"
+      >
+        )
+      </span>
     </span>
   </template>
   <template v-else-if="atom.type === 'database'">
@@ -19,12 +31,24 @@
       <template
         v-if="connectionTreeStore.tree.mode === ConnectionTreeMode.PROJECT"
       >
+        <span
+          class="text-sm -mr-0.5"
+          :class="[!atom.disabled && 'text-gray-500']"
+        >
+          (
+        </span>
         <ProtectedEnvironmentIcon
           :environment="database.instance.environment"
           class="w-4 h-4 text-inherit"
         />
         <span class="text-sm" :class="[!atom.disabled && 'text-gray-500']">
           {{ database.instance.environment.name }}
+        </span>
+        <span
+          class="text-sm -ml-0.5"
+          :class="[!atom.disabled && 'text-gray-500']"
+        >
+          )
         </span>
       </template>
 
