@@ -1,6 +1,7 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
+import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
@@ -295,6 +296,30 @@ export interface UpdatePolicyRequest {
   updateMask?: string[];
 }
 
+export interface DeletePolicyRequest {
+  /**
+   * The policy's `name` field is used to identify the instance to update.
+   * Format: {resource name}/policies/{policy type}
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   */
+  name: string;
+}
+
+export interface UndeletePolicyRequest {
+  /**
+   * The policy's `name` field is used to identify the instance to update.
+   * Format: {resource name}/policies/{policy type}
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   */
+  name: string;
+}
+
 export interface GetPolicyRequest {
   /**
    * The name of the policy to retrieve.
@@ -529,6 +554,100 @@ export const UpdatePolicyRequest = {
       ? Policy.fromPartial(object.policy)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseDeletePolicyRequest(): DeletePolicyRequest {
+  return { name: "" };
+}
+
+export const DeletePolicyRequest = {
+  encode(message: DeletePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeletePolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeletePolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeletePolicyRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: DeletePolicyRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DeletePolicyRequest>, I>>(object: I): DeletePolicyRequest {
+    const message = createBaseDeletePolicyRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUndeletePolicyRequest(): UndeletePolicyRequest {
+  return { name: "" };
+}
+
+export const UndeletePolicyRequest = {
+  encode(message: UndeletePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UndeletePolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUndeletePolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UndeletePolicyRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: UndeletePolicyRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial<I extends Exact<DeepPartial<UndeletePolicyRequest>, I>>(object: I): UndeletePolicyRequest {
+    const message = createBaseUndeletePolicyRequest();
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -1437,6 +1556,8 @@ export interface OrgPolicyService {
   ListPolicies(request: ListPoliciesRequest): Promise<ListPoliciesResponse>;
   CreatcePolicy(request: CreatePolicyRequest): Promise<Policy>;
   UpdatePolicy(request: UpdatePolicyRequest): Promise<Policy>;
+  DeletePolicy(request: DeletePolicyRequest): Promise<Empty>;
+  UndeletePolicy(request: UndeletePolicyRequest): Promise<Policy>;
 }
 
 export class OrgPolicyServiceClientImpl implements OrgPolicyService {
@@ -1449,6 +1570,8 @@ export class OrgPolicyServiceClientImpl implements OrgPolicyService {
     this.ListPolicies = this.ListPolicies.bind(this);
     this.CreatcePolicy = this.CreatcePolicy.bind(this);
     this.UpdatePolicy = this.UpdatePolicy.bind(this);
+    this.DeletePolicy = this.DeletePolicy.bind(this);
+    this.UndeletePolicy = this.UndeletePolicy.bind(this);
   }
   GetPolicy(request: GetPolicyRequest): Promise<Policy> {
     const data = GetPolicyRequest.encode(request).finish();
@@ -1471,6 +1594,18 @@ export class OrgPolicyServiceClientImpl implements OrgPolicyService {
   UpdatePolicy(request: UpdatePolicyRequest): Promise<Policy> {
     const data = UpdatePolicyRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "UpdatePolicy", data);
+    return promise.then((data) => Policy.decode(new _m0.Reader(data)));
+  }
+
+  DeletePolicy(request: DeletePolicyRequest): Promise<Empty> {
+    const data = DeletePolicyRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "DeletePolicy", data);
+    return promise.then((data) => Empty.decode(new _m0.Reader(data)));
+  }
+
+  UndeletePolicy(request: UndeletePolicyRequest): Promise<Policy> {
+    const data = UndeletePolicyRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UndeletePolicy", data);
     return promise.then((data) => Policy.decode(new _m0.Reader(data)));
   }
 }

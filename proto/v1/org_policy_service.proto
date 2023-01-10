@@ -96,6 +96,46 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "policy,update_mask";
   }
+
+  rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=policies/*}"
+
+      additional_bindings {
+        delete: "/v1/{name=projects/*/policies/*}"
+      }
+      additional_bindings {
+        delete: "/v1/{name=environments/*/policies/*}"
+      }
+      additional_bindings {
+        delete: "/v1/{name=environments/*/instances/*/policies/*}"
+      }
+      additional_bindings {
+        delete: "/v1/{name=environments/*/instances/*/databases/*/policies/*}"
+      }
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+   rpc UndeletePolicy(UndeletePolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      post: "/v1/{name=policies/*}:undelete"
+      body: "*"
+
+      additional_bindings {
+        post: "/v1/{name=projects/*/policies/*}:undelete"
+      }
+      additional_bindings {
+        post: "/v1/{name=environments/*/policies/*}:undelete"
+      }
+      additional_bindings {
+        post: "/v1/{name=environments/*/instances/*/policies/*}:undelete"
+      }
+      additional_bindings {
+        post: "/v1/{name=environments/*/instances/*/databases/*/policies/*}:undelete"
+      }
+    };
+  }
 }
 
 message CreatePolicyRequest {
@@ -125,6 +165,26 @@ message UpdatePolicyRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeletePolicyRequest {
+  // The policy's `name` field is used to identify the instance to update.
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeletePolicyRequest {
+  // The policy's `name` field is used to identify the instance to update.
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetPolicyRequest {

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/pkg/errors"
 
@@ -36,38 +37,12 @@ func NewOrgPolicyService(store *store.Store, licenseService enterpriseAPI.Licens
 
 // GetPolicy gets a policy in a specific resource.
 func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolicyRequest) (*v1pb.Policy, error) {
-	tokens := strings.Split(request.Name, policyNamePrefix)
-	if len(tokens) != 2 {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid request %s", request.Name)
-	}
-
-	token := tokens[0]
-	if strings.HasSuffix(token, "/") {
-		token = token[:(len(token) - 1)]
-	}
-	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, token)
+	policy, parent, err := s.findPolicyMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	policyType, err := convertPolicyType(tokens[1])
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
-		ResourceType: &resourceType,
-		Type:         &policyType,
-		ResourceUID:  &resourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if policy == nil {
-		return nil, status.Errorf(codes.NotFound, "policy %q not found", request.Name)
-	}
-
-	response, err := convertToPolicy(token, policy)
+	response, err := convertToPolicy(parent, policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -148,23 +123,119 @@ func (s *OrgPolicyService) CreatePolicy(ctx context.Context, request *v1pb.Creat
 
 // UpdatePolicy updates a policy in a specific resource.
 func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.UpdatePolicyRequest) (*v1pb.Policy, error) {
-	tokens := strings.Split(request.Policy.Name, policyNamePrefix)
-	if len(tokens) != 2 {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid request %s", request.Policy.Name)
-	}
-
-	token := tokens[0]
-	if strings.HasSuffix(token, "/") {
-		token = token[:(len(token) - 1)]
-	}
-	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, token)
+	policy, parent, err := s.findPolicyMessage(ctx, request.Policy.Name)
 	if err != nil {
 		return nil, err
+	}
+	if policy.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "policy %q has been deleted", request.Policy.Name)
+	}
+
+	patch := &store.UpdatePolicyMessage{
+		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
+		ResourceType: policy.ResourceType,
+		Type:         policy.Type,
+		ResourceUID:  policy.ResourceUID,
+	}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "policy.inherit_from_parent":
+			patch.InheritFromParent = &request.Policy.InheritFromParent
+		case "policy.payload":
+			payloadStr, err := convertPolicyPayloadToString(request.Policy)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid policy %v", err.Error())
+			}
+			patch.Payload = &payloadStr
+		}
+	}
+
+	p, err := s.store.UpdatePolicyV2(ctx, patch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	response, err := convertToPolicy(parent, p)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return response, nil
+}
+
+// DeletePolicy deletes a policy in a specific resource.
+func (s *OrgPolicyService) DeletePolicy(ctx context.Context, request *v1pb.DeletePolicyRequest) (*emptypb.Empty, error) {
+	policy, _, err := s.findPolicyMessage(ctx, request.Name)
+	if err != nil {
+		return nil, err
+	}
+	if policy.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "policy %q has been deleted", request.Name)
+	}
+
+	rowStatus := api.Archived
+	if _, err := s.store.UpdatePolicyV2(ctx, &store.UpdatePolicyMessage{
+		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
+		ResourceType: policy.ResourceType,
+		Type:         policy.Type,
+		ResourceUID:  policy.ResourceUID,
+		RowStatus:    &rowStatus,
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+// UndeletePolicy undeletes a policy in a specific resource.
+func (s *OrgPolicyService) UndeletePolicy(ctx context.Context, request *v1pb.UndeletePolicyRequest) (*v1pb.Policy, error) {
+	policy, parent, err := s.findPolicyMessage(ctx, request.Name)
+	if err != nil {
+		return nil, err
+	}
+	if !policy.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "policy %q is active", request.Name)
+	}
+
+	rowStatus := api.Normal
+	p, err := s.store.UpdatePolicyV2(ctx, &store.UpdatePolicyMessage{
+		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
+		ResourceType: policy.ResourceType,
+		Type:         policy.Type,
+		ResourceUID:  policy.ResourceUID,
+		RowStatus:    &rowStatus,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	response, err := convertToPolicy(parent, p)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return response, nil
+}
+
+// findPolicyMessage finds the policy and the parent name by the policy name
+func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName string) (*store.PolicyMessage, string, error) {
+	tokens := strings.Split(policyName, policyNamePrefix)
+	if len(tokens) != 2 {
+		return nil, "", status.Errorf(codes.InvalidArgument, "invalid request %s", policyName)
+	}
+
+	policyParent := tokens[0]
+	if strings.HasSuffix(policyParent, "/") {
+		policyParent = policyParent[:(len(policyParent) - 1)]
+	}
+	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, policyParent)
+	if err != nil {
+		return nil, "", err
 	}
 
 	policyType, err := convertPolicyType(tokens[1])
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, "", status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
@@ -173,35 +244,13 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		ResourceUID:  &resourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, "", status.Errorf(codes.Internal, err.Error())
 	}
 	if policy == nil {
-		return nil, status.Errorf(codes.NotFound, "policy %q not found", request.Policy.Name)
-	}
-	if policy.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "policy %q has been deleted", request.Policy.Name)
+		return nil, "", status.Errorf(codes.NotFound, "policy %q not found", policyName)
 	}
 
-	patch := &store.UpdatePolicyMessage{
-		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
-		ResourceType: resourceType,
-		Type:         policyType,
-		ResourceUID:  resourceID,
-	}
-	for _, path := range request.UpdateMask.Paths {
-	}
-
-	p, err := s.store.UpdatePolicyV2(ctx, patch)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	response, err := convertToPolicy(token, p)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	return response, nil
+	return policy, policyParent, nil
 }
 
 func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, requestName string) (api.PolicyResourceType, int, error) {
