@@ -1,0 +1,204 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+import "v1/common.proto";
+import "v1/deployment.proto";
+
+option go_package = "generated-go/v1";
+
+service OrgPolicyService {
+  rpc GetPolicy(GetPolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      get: "/v1/{name=policies/*}"
+
+      additional_bindings {
+        get: "/v1/{name=projects/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/instances/*/policies/*}"
+      }
+      additional_bindings {
+        get: "/v1/{name=environments/*/instances/*/databases/*/policies/*}"
+      }
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
+    option (google.api.http) = {
+      get: "/v1/policies"
+
+      additional_bindings {
+        get: "/v1/{parent=projects/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*/instances/*}/policies"
+      }
+      additional_bindings {
+        get: "/v1/{parent=environments/*/instances/*/databases/*}/policies"
+      }
+    };
+    option (google.api.method_signature) = "";
+  }
+}
+
+message GetPolicyRequest {
+  // The name of the policy to retrieve.
+  // Format: {resource type}/{resource id}/policies/{policy type}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListPoliciesRequest {
+  // The parent, which owns this collection of policies.
+  // Format: {resource type}/{resource id}/policies/{policy type}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of policies to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 policies will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `GetPolicies` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `GetPolicies` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListPoliciesResponse {
+  // The policies from the specified request.
+  repeated Policy policies = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message Policy {
+  // The name of the policy.
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  bool inherit_from_parent = 4;
+
+  PolicyType type = 5;
+
+  oneof policy {
+    DeploymentApprovalPolicy deployment_approval_policy = 6;
+    BackupPlanPolicy backup_plan_policy = 7;
+    SensitiveDataPolicy sensitive_data_policy = 8;
+    AccessControlPolicy access_control_policy = 9;
+    SQLReviewPolicy sql_review_policy = 10;
+  }
+}
+
+enum PolicyType {
+  POLICY_TYPE_UNSPECIFIED = 0;
+  DEPLOYMENT_APPROVAL = 1;
+  BACKUP_PLAN = 2;
+  SQL_REVIEW = 3;
+  SENSITIVE_DATA = 4;
+  ACCESS_CONTROL = 5;
+}
+
+message DeploymentApprovalPolicy {
+  ApprovalStrategy default_strategy = 1;
+  repeated DeploymentApprovalStrategy deployment_approval_strategies = 2;
+}
+
+message DeploymentApprovalStrategy {
+  DeploymentType deployment_type = 1;
+  ApprovalGroup approval_group = 2;
+  ApprovalStrategy approval_strategy = 3;
+}
+
+enum ApprovalGroup {
+  ASSIGNEE_GROUP_UNSPECIFIED = 0;
+  APPROVAL_GROUP_DBA = 1;
+  APPROVAL_GROUP_PROJECT_OWNER = 2;
+}
+
+enum ApprovalStrategy {
+  APPROVAL_STRATEGY_UNSPECIFIED = 0;
+  AUTOMATIC = 1;
+  MANUAL = 2;
+}
+
+message BackupPlanPolicy {
+  BackupPlanSchedule schedule = 1;
+  google.protobuf.Duration retention_duration = 2;
+}
+
+enum BackupPlanSchedule {
+  SCHEDULE_UNSPECIFIED = 0;
+  UNSET = 1;
+  DAILY = 2;
+  WEEKLY = 3;
+}
+
+message SensitiveDataPolicy {
+  repeated SensitiveData sensitive_data = 1;
+}
+
+message SensitiveData {
+  string schema = 1;
+  string table = 2;
+  string column = 3;
+  SensitiveDataMaskType mask_type = 4;
+}
+
+enum SensitiveDataMaskType {
+  MASK_TYPE_UNSPECIFIED = 0;
+  DEFAULT = 1;
+}
+
+message AccessControlPolicy {
+  repeated AccessControlRule disallow_rules = 1;
+}
+
+message AccessControlRule {
+  bool full_database = 1;
+}
+
+message SQLReviewPolicy {
+  string title = 1;
+  repeated SQLReviewRule rules = 2;
+}
+
+message SQLReviewRule {
+  string type = 1;
+  SQLReviewRuleLevel level = 2;
+  string payload = 3;
+}
+
+enum SQLReviewRuleLevel {
+  LEVEL_UNSPECIFIED = 0;
+  ERROR = 1;
+  WARNING = 2;
+  DISABLED = 3;
+}

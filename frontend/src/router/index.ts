@@ -23,6 +23,7 @@ import {
   hasProjectPermission,
   hasWorkspacePermission,
   idFromSlug,
+  migrationHistoryIdFromSlug,
 } from "../utils";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -798,7 +799,7 @@ const routes: Array<RouteRecordRaw> = [
                     const slug = route.params.migrationHistorySlug as string;
                     const migrationHistory =
                       useInstanceStore().getMigrationHistoryById(
-                        idFromSlug(slug)
+                        migrationHistoryIdFromSlug(slug)
                       );
                     return migrationHistory?.version ?? "";
                   },
@@ -1263,7 +1264,8 @@ router.beforeEach((to, from, next) => {
               instanceStore
                 .fetchMigrationHistoryById({
                   instanceId: database.instance.id,
-                  migrationHistoryId: idFromSlug(migrationHistorySlug),
+                  migrationHistoryId:
+                    migrationHistoryIdFromSlug(migrationHistorySlug),
                 })
                 .then(() => {
                   next();

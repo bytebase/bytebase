@@ -16,6 +16,7 @@ const (
 	projectNamePrefix     = "projects/"
 	environmentNamePrefix = "environments/"
 	instanceNamePrefix    = "instances/"
+	policyNamePrefix      = "policies/"
 	databaseIDPrefix      = "databases/"
 	instanceRolePrefix    = "roles/"
 	userNamePrefix        = "users/"

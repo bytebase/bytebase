@@ -144,13 +144,6 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			s.stateCfg.InstanceDatabaseSyncChan <- composedInstance
 		}
 		if sync.DatabaseID != nil {
-			composedDatabase, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to database instance ID: %d", *sync.DatabaseID)).SetInternal(err)
-			}
-			if composedDatabase == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
-			}
 			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: sync.DatabaseID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", *sync.DatabaseID)).SetInternal(err)
@@ -729,7 +722,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 		columnMap := make(sensitiveDataMap)
 		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instance.UID))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database %q in instance %q", databaseName, instance.Title))
 		}
 		for _, data := range policy.SensitiveDataList {
 			columnMap[api.SensitiveData{
