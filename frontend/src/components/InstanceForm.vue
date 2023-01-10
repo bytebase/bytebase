@@ -201,12 +201,14 @@
           </NTab>
         </NTabs>
 
-        <CreateDataSourceExample
-          className="sm:col-span-3 border-none mt-2"
-          :createInstanceFlag="false"
-          :engineType="state.instance.engine"
-          :dataSourceType="state.currentDataSourceType"
-        />
+        <template v-if="state.instance.engine !== 'SPANNER'">
+          <CreateDataSourceExample
+            className="sm:col-span-3 border-none mt-2"
+            :createInstanceFlag="false"
+            :engineType="state.instance.engine"
+            :dataSourceType="state.currentDataSourceType"
+          />
+        </template>
 
         <template v-if="state.instance.engine !== 'SPANNER'">
           <div class="mt-2 sm:col-span-1 sm:col-start-1">
