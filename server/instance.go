@@ -233,7 +233,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration setup status response for instance %q", instance.ResourceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration setup status response for instance %q", instance.Title)).SetInternal(err)
 		}
 		return nil
 	})
@@ -262,7 +262,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			defer db.Close(ctx)
 			setup, err := db.NeedsSetupMigration(ctx)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check migration setup status for instance %q", instance.ResourceID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to check migration setup status for instance %q", instance.Title)).SetInternal(err)
 			}
 			if setup {
 				instanceMigration.Status = api.InstanceMigrationSchemaNotExist
@@ -273,7 +273,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, instanceMigration); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration setup status response for instance %q", instance.ResourceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration setup status response for instance %q", instance.Title)).SetInternal(err)
 		}
 		return nil
 	})
@@ -298,7 +298,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		find := &db.MigrationHistoryFind{ID: &historyID}
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.ResourceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Title)).SetInternal(err)
 		}
 		defer driver.Close(ctx)
 		list, err := driver.FindMigrationHistoryList(ctx, find)
@@ -306,7 +306,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch migration history list").SetInternal(err)
 		}
 		if len(list) == 0 {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.ResourceID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Migration history ID %q not found for instance %q", historyID, instance.Title))
 		}
 		entry := list[0]
 
@@ -333,7 +333,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			IssueID:               entry.IssueID,
 			Payload:               entry.Payload,
 		}); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.ResourceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.Title)).SetInternal(err)
 		}
 		return nil
 	})
@@ -373,7 +373,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		historyList := []*api.MigrationHistory{}
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.ResourceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Title)).SetInternal(err)
 		}
 		defer driver.Close(ctx)
 		list, err := driver.FindMigrationHistoryList(ctx, find)
@@ -408,7 +408,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, historyList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.ResourceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal migration history response for instance: %v", instance.Title)).SetInternal(err)
 		}
 		return nil
 	})

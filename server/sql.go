@@ -722,7 +722,7 @@ func (s *Server) getSensitiveSchemaInfo(ctx context.Context, instance *store.Ins
 		columnMap := make(sensitiveDataMap)
 		policy, err := s.store.GetSensitiveDataPolicy(ctx, database.UID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database `%s` in instance ID: %d", databaseName, instance.UID))
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sensitive data policy for database %q in instance %q", databaseName, instance.Title))
 		}
 		for _, data := range policy.SensitiveDataList {
 			columnMap[api.SensitiveData{

@@ -1090,7 +1090,7 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 	// Get admin data source username.
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.UID)
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
 	}
 	// Snowflake needs to use upper case of DatabaseName.
 	databaseName := c.DatabaseName
