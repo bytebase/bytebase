@@ -14,7 +14,7 @@
         </template>
       </n-input>
     </div>
-    <div class="databases-tree--tree flex-1 overflow-y-auto">
+    <div class="databases-tree--tree flex-1 overflow-y-auto select-none">
       <NTree
         block-line
         :data="treeData"
