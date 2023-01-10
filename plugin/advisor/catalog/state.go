@@ -42,7 +42,7 @@ func newSchemaState(s *storepb.SchemaMetadata, context *FinderContext) *SchemaSt
 		schema.tableSet[table.Name] = tableState
 
 		schema.identifierMap[table.Name] = true
-		for indexName, _ := range tableState.indexSet {
+		for indexName := range tableState.indexSet {
 			schema.identifierMap[indexName] = true
 		}
 	}

@@ -13,7 +13,7 @@ const (
 )
 
 func (d *DatabaseState) pgWalkThrough(stmt string) error {
-	nodeList, err := d.pgParse(stmt)
+	nodeList, err := pgParse(stmt)
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func (s *SchemaState) pgGeneratePrimaryKeyName(tableName string) string {
 		if _, exists := s.identifierMap[fmt.Sprintf("%s%d", pkName, suffix)]; !exists {
 			return fmt.Sprintf("%s%d", pkName, suffix)
 		}
-		suffix += 1
+		suffix++
 	}
 }
 
@@ -422,7 +422,7 @@ func (s *SchemaState) pgGenerateIndexName(createIndex *ast.CreateIndexStmt) (str
 		return "", err
 	}
 	exprText := "expr"
-	expressionId := 0
+	expressionID := 0
 	for _, key := range createIndex.Index.KeyList {
 		if err := buf.WriteByte('_'); err != nil {
 			return "", err
@@ -436,16 +436,16 @@ func (s *SchemaState) pgGenerateIndexName(createIndex *ast.CreateIndexStmt) (str
 			if _, err := buf.WriteString(exprText); err != nil {
 				return "", err
 			}
-			if expressionId != 0 {
-				if _, err := buf.WriteString(fmt.Sprintf("%d", expressionId)); err != nil {
+			if expressionID != 0 {
+				if _, err := buf.WriteString(fmt.Sprintf("%d", expressionID)); err != nil {
 					return "", err
 				}
 			}
-			expressionId += 1
+			expressionID++
 		}
 	}
 	if _, err := buf.WriteString("_idx"); err != nil {
-		return "", nil
+		return "", err
 	}
 	indexName := buf.String()
 	if _, exists := s.identifierMap[indexName]; !exists {
@@ -456,19 +456,8 @@ func (s *SchemaState) pgGenerateIndexName(createIndex *ast.CreateIndexStmt) (str
 		if _, exists := s.identifierMap[fmt.Sprintf("%s%d", indexName, suffix)]; !exists {
 			return fmt.Sprintf("%s%d", indexName, suffix), nil
 		}
-		suffix += 1
+		suffix++
 	}
-}
-
-func (s *SchemaState) getTable(tableName string) (*TableState, *WalkThroughError) {
-	table, exists := s.tableSet[tableName]
-	if !exists {
-		return nil, &WalkThroughError{
-			Type:    ErrorTypeTableNotExists,
-			Content: fmt.Sprintf("The table %q doesn't exist in the schema %q", tableName, s.name),
-		}
-	}
-	return table, nil
 }
 
 func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThroughError) {
@@ -485,6 +474,6 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 	return schema, nil
 }
 
-func (d *DatabaseState) pgParse(stmt string) ([]ast.Node, error) {
+func pgParse(stmt string) ([]ast.Node, error) {
 	return parser.Parse(parser.Postgres, parser.ParseContext{}, stmt)
 }
