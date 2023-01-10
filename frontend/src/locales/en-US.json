@@ -1490,7 +1490,8 @@
       "duplicated-table-name": "Duplicated table name",
       "invalid-column-name": "Invalid column name",
       "duplicated-column-name": "Duplicated column name",
-      "invalid-column-type": "Invalid column type"
+      "invalid-column-type": "Invalid column type",
+      "failed-to-fetch-database-schema": "Failed to fetch database schema"
     },
     "confirm-to-close": {
       "title": "Confirm to close",
