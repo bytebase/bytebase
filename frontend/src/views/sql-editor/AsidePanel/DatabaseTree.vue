@@ -190,6 +190,14 @@ const setConnection = (
       }
       tabStore.selectOrAddSimilarTab(target);
       tabStore.updateCurrentTab(target);
+
+      if (connectionTreeStore.selectedTableAtom) {
+        const tableAtom = connectionTreeStore.selectedTableAtom;
+        if (tableAtom.parentId !== target.connection.databaseId) {
+          // Switching database should hide the selected table schema panel
+          connectionTreeStore.selectedTableAtom = undefined;
+        }
+      }
     };
 
     // If selected item is instance node
