@@ -66,6 +66,7 @@ import {
   useSchemaEditorStore,
   generateUniqueTabId,
   useInstanceStore,
+  useNotificationStore,
 } from "@/store";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import { isSchemaChanged } from "./utils/schema";
@@ -614,12 +615,20 @@ const loadSubTree = async (treeNode: TreeNode) => {
     }
 
     databaseDataLoadedSet.value.add(databaseId);
-    const schemaList = await editorStore.fetchSchemaListByDatabaseId(
-      databaseId
-    );
-    if (schemaList.length === 0) {
-      treeNode.children = [];
-      treeNode.isLeaf = true;
+    try {
+      const schemaList = await editorStore.fetchSchemaListByDatabaseId(
+        databaseId
+      );
+      if (schemaList.length === 0) {
+        treeNode.children = [];
+        treeNode.isLeaf = true;
+      }
+    } catch (error) {
+      useNotificationStore().pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("schema-editor.message.failed-to-fetch-database-schema"),
+      });
     }
   }
 };
