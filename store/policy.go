@@ -666,6 +666,7 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creat
 	return create, nil
 }
 
+// UpdatePolicyV2 updates the policy.
 func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
 	if v := patch.InheritFromParent; v != nil {
