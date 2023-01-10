@@ -1,5 +1,6 @@
 /* eslint-disable */
-import _m0 from "protobufjs/minimal";
+import type { CallContext, CallOptions } from "nice-grpc-common";
+import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
@@ -312,7 +313,7 @@ export const GetInstanceRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetInstanceRequest>, I>>(object: I): GetInstanceRequest {
+  fromPartial(object: DeepPartial<GetInstanceRequest>): GetInstanceRequest {
     const message = createBaseGetInstanceRequest();
     message.name = object.name ?? "";
     return message;
@@ -385,7 +386,7 @@ export const ListInstancesRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListInstancesRequest>, I>>(object: I): ListInstancesRequest {
+  fromPartial(object: DeepPartial<ListInstancesRequest>): ListInstancesRequest {
     const message = createBaseListInstancesRequest();
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
@@ -449,7 +450,7 @@ export const ListInstancesResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListInstancesResponse>, I>>(object: I): ListInstancesResponse {
+  fromPartial(object: DeepPartial<ListInstancesResponse>): ListInstancesResponse {
     const message = createBaseListInstancesResponse();
     message.instances = object.instances?.map((e) => Instance.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
@@ -515,7 +516,7 @@ export const CreateInstanceRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<CreateInstanceRequest>, I>>(object: I): CreateInstanceRequest {
+  fromPartial(object: DeepPartial<CreateInstanceRequest>): CreateInstanceRequest {
     const message = createBaseCreateInstanceRequest();
     message.parent = object.parent ?? "";
     message.instance = (object.instance !== undefined && object.instance !== null)
@@ -576,7 +577,7 @@ export const UpdateInstanceRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UpdateInstanceRequest>, I>>(object: I): UpdateInstanceRequest {
+  fromPartial(object: DeepPartial<UpdateInstanceRequest>): UpdateInstanceRequest {
     const message = createBaseUpdateInstanceRequest();
     message.instance = (object.instance !== undefined && object.instance !== null)
       ? Instance.fromPartial(object.instance)
@@ -626,7 +627,7 @@ export const DeleteInstanceRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DeleteInstanceRequest>, I>>(object: I): DeleteInstanceRequest {
+  fromPartial(object: DeepPartial<DeleteInstanceRequest>): DeleteInstanceRequest {
     const message = createBaseDeleteInstanceRequest();
     message.name = object.name ?? "";
     return message;
@@ -673,7 +674,7 @@ export const UndeleteInstanceRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UndeleteInstanceRequest>, I>>(object: I): UndeleteInstanceRequest {
+  fromPartial(object: DeepPartial<UndeleteInstanceRequest>): UndeleteInstanceRequest {
     const message = createBaseUndeleteInstanceRequest();
     message.name = object.name ?? "";
     return message;
@@ -731,7 +732,7 @@ export const AddDataSourceRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<AddDataSourceRequest>, I>>(object: I): AddDataSourceRequest {
+  fromPartial(object: DeepPartial<AddDataSourceRequest>): AddDataSourceRequest {
     const message = createBaseAddDataSourceRequest();
     message.instance = object.instance ?? "";
     message.dataSources = (object.dataSources !== undefined && object.dataSources !== null)
@@ -792,7 +793,7 @@ export const RemoveDataSourceRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<RemoveDataSourceRequest>, I>>(object: I): RemoveDataSourceRequest {
+  fromPartial(object: DeepPartial<RemoveDataSourceRequest>): RemoveDataSourceRequest {
     const message = createBaseRemoveDataSourceRequest();
     message.instance = object.instance ?? "";
     message.dataSources = (object.dataSources !== undefined && object.dataSources !== null)
@@ -861,7 +862,7 @@ export const UpdateDataSourceRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UpdateDataSourceRequest>, I>>(object: I): UpdateDataSourceRequest {
+  fromPartial(object: DeepPartial<UpdateDataSourceRequest>): UpdateDataSourceRequest {
     const message = createBaseUpdateDataSourceRequest();
     message.instance = object.instance ?? "";
     message.dataSources = (object.dataSources !== undefined && object.dataSources !== null)
@@ -966,7 +967,7 @@ export const Instance = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<Instance>, I>>(object: I): Instance {
+  fromPartial(object: DeepPartial<Instance>): Instance {
     const message = createBaseInstance();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
@@ -1122,7 +1123,7 @@ export const DataSource = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DataSource>, I>>(object: I): DataSource {
+  fromPartial(object: DeepPartial<DataSource>): DataSource {
     const message = createBaseDataSource();
     message.title = object.title ?? "";
     message.type = object.type ?? 0;
@@ -1140,91 +1141,138 @@ export const DataSource = {
   },
 };
 
-export interface InstanceService {
-  GetInstance(request: GetInstanceRequest): Promise<Instance>;
-  ListInstances(request: ListInstancesRequest): Promise<ListInstancesResponse>;
-  CreateInstance(request: CreateInstanceRequest): Promise<Instance>;
-  UpdateInstance(request: UpdateInstanceRequest): Promise<Instance>;
-  DeleteInstance(request: DeleteInstanceRequest): Promise<Empty>;
-  UndeleteInstance(request: UndeleteInstanceRequest): Promise<Instance>;
-  AddDataSource(request: AddDataSourceRequest): Promise<Instance>;
-  RemoveDataSource(request: RemoveDataSourceRequest): Promise<Instance>;
-  UpdateDataSource(request: UpdateDataSourceRequest): Promise<Instance>;
+export type InstanceServiceDefinition = typeof InstanceServiceDefinition;
+export const InstanceServiceDefinition = {
+  name: "InstanceService",
+  fullName: "bytebase.v1.InstanceService",
+  methods: {
+    getInstance: {
+      name: "GetInstance",
+      requestType: GetInstanceRequest,
+      requestStream: false,
+      responseType: Instance,
+      responseStream: false,
+      options: {},
+    },
+    listInstances: {
+      name: "ListInstances",
+      requestType: ListInstancesRequest,
+      requestStream: false,
+      responseType: ListInstancesResponse,
+      responseStream: false,
+      options: {},
+    },
+    createInstance: {
+      name: "CreateInstance",
+      requestType: CreateInstanceRequest,
+      requestStream: false,
+      responseType: Instance,
+      responseStream: false,
+      options: {},
+    },
+    updateInstance: {
+      name: "UpdateInstance",
+      requestType: UpdateInstanceRequest,
+      requestStream: false,
+      responseType: Instance,
+      responseStream: false,
+      options: {},
+    },
+    deleteInstance: {
+      name: "DeleteInstance",
+      requestType: DeleteInstanceRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    undeleteInstance: {
+      name: "UndeleteInstance",
+      requestType: UndeleteInstanceRequest,
+      requestStream: false,
+      responseType: Instance,
+      responseStream: false,
+      options: {},
+    },
+    addDataSource: {
+      name: "AddDataSource",
+      requestType: AddDataSourceRequest,
+      requestStream: false,
+      responseType: Instance,
+      responseStream: false,
+      options: {},
+    },
+    removeDataSource: {
+      name: "RemoveDataSource",
+      requestType: RemoveDataSourceRequest,
+      requestStream: false,
+      responseType: Instance,
+      responseStream: false,
+      options: {},
+    },
+    updateDataSource: {
+      name: "UpdateDataSource",
+      requestType: UpdateDataSourceRequest,
+      requestStream: false,
+      responseType: Instance,
+      responseStream: false,
+      options: {},
+    },
+  },
+} as const;
+
+export interface InstanceServiceImplementation<CallContextExt = {}> {
+  getInstance(request: GetInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
+  listInstances(
+    request: ListInstancesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListInstancesResponse>>;
+  createInstance(request: CreateInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
+  updateInstance(request: UpdateInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
+  deleteInstance(request: DeleteInstanceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  undeleteInstance(
+    request: UndeleteInstanceRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Instance>>;
+  addDataSource(request: AddDataSourceRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Instance>>;
+  removeDataSource(
+    request: RemoveDataSourceRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Instance>>;
+  updateDataSource(
+    request: UpdateDataSourceRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Instance>>;
 }
 
-export class InstanceServiceClientImpl implements InstanceService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.InstanceService";
-    this.rpc = rpc;
-    this.GetInstance = this.GetInstance.bind(this);
-    this.ListInstances = this.ListInstances.bind(this);
-    this.CreateInstance = this.CreateInstance.bind(this);
-    this.UpdateInstance = this.UpdateInstance.bind(this);
-    this.DeleteInstance = this.DeleteInstance.bind(this);
-    this.UndeleteInstance = this.UndeleteInstance.bind(this);
-    this.AddDataSource = this.AddDataSource.bind(this);
-    this.RemoveDataSource = this.RemoveDataSource.bind(this);
-    this.UpdateDataSource = this.UpdateDataSource.bind(this);
-  }
-  GetInstance(request: GetInstanceRequest): Promise<Instance> {
-    const data = GetInstanceRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetInstance", data);
-    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
-  }
-
-  ListInstances(request: ListInstancesRequest): Promise<ListInstancesResponse> {
-    const data = ListInstancesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListInstances", data);
-    return promise.then((data) => ListInstancesResponse.decode(new _m0.Reader(data)));
-  }
-
-  CreateInstance(request: CreateInstanceRequest): Promise<Instance> {
-    const data = CreateInstanceRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "CreateInstance", data);
-    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
-  }
-
-  UpdateInstance(request: UpdateInstanceRequest): Promise<Instance> {
-    const data = UpdateInstanceRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UpdateInstance", data);
-    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
-  }
-
-  DeleteInstance(request: DeleteInstanceRequest): Promise<Empty> {
-    const data = DeleteInstanceRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "DeleteInstance", data);
-    return promise.then((data) => Empty.decode(new _m0.Reader(data)));
-  }
-
-  UndeleteInstance(request: UndeleteInstanceRequest): Promise<Instance> {
-    const data = UndeleteInstanceRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UndeleteInstance", data);
-    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
-  }
-
-  AddDataSource(request: AddDataSourceRequest): Promise<Instance> {
-    const data = AddDataSourceRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "AddDataSource", data);
-    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
-  }
-
-  RemoveDataSource(request: RemoveDataSourceRequest): Promise<Instance> {
-    const data = RemoveDataSourceRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "RemoveDataSource", data);
-    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
-  }
-
-  UpdateDataSource(request: UpdateDataSourceRequest): Promise<Instance> {
-    const data = UpdateDataSourceRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UpdateDataSource", data);
-    return promise.then((data) => Instance.decode(new _m0.Reader(data)));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+export interface InstanceServiceClient<CallOptionsExt = {}> {
+  getInstance(request: DeepPartial<GetInstanceRequest>, options?: CallOptions & CallOptionsExt): Promise<Instance>;
+  listInstances(
+    request: DeepPartial<ListInstancesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListInstancesResponse>;
+  createInstance(
+    request: DeepPartial<CreateInstanceRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Instance>;
+  updateInstance(
+    request: DeepPartial<UpdateInstanceRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Instance>;
+  deleteInstance(request: DeepPartial<DeleteInstanceRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  undeleteInstance(
+    request: DeepPartial<UndeleteInstanceRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Instance>;
+  addDataSource(request: DeepPartial<AddDataSourceRequest>, options?: CallOptions & CallOptionsExt): Promise<Instance>;
+  removeDataSource(
+    request: DeepPartial<RemoveDataSourceRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Instance>;
+  updateDataSource(
+    request: DeepPartial<UpdateDataSourceRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Instance>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
@@ -1233,10 +1281,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

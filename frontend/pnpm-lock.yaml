@@ -4,6 +4,7 @@ specifiers:
   '@bytebase/vue-kbar': 0.1.8
   '@codingame/monaco-vscode-api': 1.69.12
   '@iconify/json': 2.1.159
+  '@improbable-eng/grpc-web': ^0.15.0
   '@intlify/vite-plugin-vue-i18n': 6.0.3
   '@joe-re/sql-parser': ^1.2.1
   '@markdoc/markdoc': 0.2.1
@@ -53,6 +54,7 @@ specifiers:
   eslint-config-prettier: 8.5.0
   eslint-plugin-prettier: 4.2.1
   eslint-plugin-vue: 9.7.0
+  google-protobuf: ^3.21.2
   highlight.js: 11.6.0
   inter-ui: 3.19.3
   jquery: 3.6.1
@@ -62,6 +64,8 @@ specifiers:
   monaco-editor: 0.34.1
   monaco-languageclient: 4.0.1
   naive-ui: 2.33.5
+  nice-grpc-common: ^2.0.0
+  nice-grpc-web: ^2.0.1
   node-sql-parser: 4.5.1
   normalize-wheel: ^1.0.1
   papaparse: 5.3.2
@@ -104,6 +108,7 @@ specifiers:
 dependencies:
   '@bytebase/vue-kbar': 0.1.8_vue@3.2.41
   '@codingame/monaco-vscode-api': 1.69.12_g4fp2q2jxj3u35wmxezeq2vo6y
+  '@improbable-eng/grpc-web': 0.15.0_google-protobuf@3.21.2
   '@joe-re/sql-parser': 1.2.1
   '@markdoc/markdoc': 0.2.1
   '@soerenmartius/vue3-clipboard': 0.1.2
@@ -120,6 +125,7 @@ dependencies:
   elkjs: 0.8.2
   emittery: 1.0.1
   escape-string-regexp: 5.0.0
+  google-protobuf: 3.21.2
   highlight.js: 11.6.0
   inter-ui: 3.19.3
   js-yaml: 4.1.0
@@ -127,6 +133,8 @@ dependencies:
   monaco-editor: 0.34.1
   monaco-languageclient: 4.0.1_g4fp2q2jxj3u35wmxezeq2vo6y
   naive-ui: 2.33.5_vue@3.2.41
+  nice-grpc-common: 2.0.0
+  nice-grpc-web: 2.0.1_google-protobuf@3.21.2
   node-sql-parser: 4.5.1
   normalize-wheel: 1.0.1
   papaparse: 5.3.2
@@ -422,6 +430,15 @@ packages:
       - supports-color
     dev: true
 
+  /@improbable-eng/grpc-web/0.15.0_google-protobuf@3.21.2:
+    resolution: {integrity: sha512-ERft9/0/8CmYalqOVnJnpdDry28q+j+nAlFFARdjyxXDJ+Mhgv9+F600QC8BR9ygOfrXRlAk6CvST2j+JCpQPg==}
+    peerDependencies:
+      google-protobuf: ^3.14.0
+    dependencies:
+      browser-headers: 0.4.1
+      google-protobuf: 3.21.2
+    dev: false
+
   /@intlify/bundle-utils/3.2.1_vue-i18n@9.2.2:
     resolution: {integrity: sha512-rf4cLBOnbqmpXVcCdcYHilZpMt1m82syh3WLBJlZvGxN2KkH9HeHVH4+bnibF/SDXCHNh6lM6wTpS/qw+PkcMg==}
     engines: {node: '>= 12'}
@@ -434,8 +451,8 @@ packages:
       vue-i18n:
         optional: true
     dependencies:
-      '@intlify/message-compiler': 9.3.0-beta.12
-      '@intlify/shared': 9.3.0-beta.12
+      '@intlify/message-compiler': 9.3.0-beta.14
+      '@intlify/shared': 9.3.0-beta.14
       jsonc-eslint-parser: 1.4.1
       source-map: 0.6.1
       vue-i18n: 9.2.2_vue@3.2.41
@@ -464,11 +481,11 @@ packages:
       '@intlify/shared': 9.2.2
       source-map: 0.6.1
 
-  /@intlify/message-compiler/9.3.0-beta.12:
-    resolution: {integrity: sha512-A8/s7pb3v8nf6HG77qFPJntxgQKI9GXxGnkn7aO+b03/X/GkF/4WceDSAIk3i+yLeIgszeBn9GZ23tSg4sTEHA==}
+  /@intlify/message-compiler/9.3.0-beta.14:
+    resolution: {integrity: sha512-PlZ3pl+YYuql54Nq+26wv6ohIa8Ig6ALrvQI+f2zZKUtkupb49M4wyVN3bDQbFlgYVE7/u3n19BJSY8lEuX5Eg==}
     engines: {node: '>= 14'}
     dependencies:
-      '@intlify/shared': 9.3.0-beta.11
+      '@intlify/shared': 9.3.0-beta.14
       source-map: 0.6.1
     dev: true
 
@@ -476,13 +493,8 @@ packages:
     resolution: {integrity: sha512-wRwTpsslgZS5HNyM7uDQYZtxnbI12aGiBZURX3BTR9RFIKKRWpllTsgzHWvj3HKm3Y2Sh5LPC1r0PDCKEhVn9Q==}
     engines: {node: '>= 14'}
 
-  /@intlify/shared/9.3.0-beta.11:
-    resolution: {integrity: sha512-CtbotesxTRiC3bRyXyv1NG39fkqJ790f8z8xFaeIXSZpOdiyxoh5BIyypCzSFQZDGLwz0Q9gyWbW1XpxQJm68Q==}
-    engines: {node: '>= 14'}
-    dev: true
-
-  /@intlify/shared/9.3.0-beta.12:
-    resolution: {integrity: sha512-WsmaS54sA8xuwezPKpa/OMoaX1v2VF2fCgAmYS6prDr2ir0CkUFWPm9A8ilmxzv4nkS61/v8+vf4lGGkn5uBdA==}
+  /@intlify/shared/9.3.0-beta.14:
+    resolution: {integrity: sha512-mJ/rFan+4uVsBAQSCAJnpQaPvSjQ49mJMNmGelTUbTDAmgf0oexYxwqtKOlFFyY3hmQ8lUDYaGQKuYrFgRuHnA==}
     engines: {node: '>= 14'}
     dev: true
 
@@ -502,7 +514,7 @@ packages:
         optional: true
     dependencies:
       '@intlify/bundle-utils': 3.2.1_vue-i18n@9.2.2
-      '@intlify/shared': 9.3.0-beta.12
+      '@intlify/shared': 9.3.0-beta.14
       '@rollup/pluginutils': 4.2.1
       debug: 4.3.4
       fast-glob: 3.2.12
@@ -1356,6 +1368,10 @@ packages:
     resolution: {integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==}
     dev: false
 
+  /abort-controller-x/0.4.1:
+    resolution: {integrity: sha512-lJ2ssrl3FoTK3cX/g15lRCkXFWKiwRTRtBjfwounO2EM/Q65rI/MEZsfsch1juWU2pH2aLSaq0HGowlDP/imrw==}
+    dev: false
+
   /acorn-jsx/5.3.2_acorn@7.4.1:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -1526,6 +1542,10 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       fill-range: 7.0.1
+
+  /browser-headers/0.4.1:
+    resolution: {integrity: sha512-CA9hsySZVo9371qEHjHZtYxV2cFtVj5Wj/ZHi8ooEsrtm4vOnl9Y9HmyYWk9q+05d7K3rdoAE0j3MVEFVvtQtg==}
+    dev: false
 
   /browserslist/4.21.4:
     resolution: {integrity: sha512-CBHJJdDmgjl3daYjN5Cp5kbTf1mUhZoS+beLklHIvkOWscs83YAhLlF3Wsh/lciQYAcbBJgTOD44VtG31ZM4Hw==}
@@ -2705,6 +2725,10 @@ packages:
       delegate: 3.2.0
     dev: false
 
+  /google-protobuf/3.21.2:
+    resolution: {integrity: sha512-3MSOYFO5U9mPGikIYCzK0SaThypfGgS6bHqrUGXG3DPHCrb+txNqeEcns1W0lkGfk0rCyNXm7xB9rMxnCiZOoA==}
+    dev: false
+
   /grapheme-splitter/1.0.4:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
     dev: true
@@ -2847,6 +2871,10 @@ packages:
 
   /jquery/3.6.1:
     resolution: {integrity: sha512-opJeO4nCucVnsjiXOE+/PcCgYw9Gwpvs/a6B1LL/lQhwWwpbVEVYDZ1FokFr8PRc7ghYlrFPuyHuiiDNTQxmcw==}
+
+  /js-base64/3.7.4:
+    resolution: {integrity: sha512-wpM/wi20Tl+3ifTyi0RdDckS4YTD4Lf953mBRrpG8547T7hInHNPEj8+ck4gB8VDcGyeAWFK++Wb/fU1BeavKQ==}
+    dev: false
 
   /js-sdsl/4.1.5:
     resolution: {integrity: sha512-08bOAKweV2NUC1wqTtf3qZlnpOX/R2DU9ikpjOHs0H+ibQv3zpncVQg6um4uYtRtrwIX8M4Nh3ytK4HGlYAq7Q==}
@@ -3098,6 +3126,23 @@ packages:
       moo: 0.5.2
       railroad-diagrams: 1.0.0
       randexp: 0.4.6
+    dev: false
+
+  /nice-grpc-common/2.0.0:
+    resolution: {integrity: sha512-8h/QraeDmScnbKLd5ImS+e7uUDxumvByBo6ILj1jLHjKlIa74WKHNSn54u7RmnJ5tFAYE70iTm8VWyvbTv82yg==}
+    dependencies:
+      ts-error: 1.0.6
+    dev: false
+
+  /nice-grpc-web/2.0.1_google-protobuf@3.21.2:
+    resolution: {integrity: sha512-r8jy0TJY6ZO9qWtujiqmtRkqgItAChoJxJyYv+CHacP9G5kRIH03M+sQqtieXNNDUAKfFT/z5yroSy1cPFX0sA==}
+    dependencies:
+      '@improbable-eng/grpc-web': 0.15.0_google-protobuf@3.21.2
+      abort-controller-x: 0.4.1
+      js-base64: 3.7.4
+      nice-grpc-common: 2.0.0
+    transitivePeerDependencies:
+      - google-protobuf
     dev: false
 
   /node-releases/2.0.6:
@@ -3772,6 +3817,10 @@ packages:
 
   /treemate/0.3.11:
     resolution: {integrity: sha512-M8RGFoKtZ8dF+iwJfAJTOH/SM4KluKOKRJpjCMhI8bG3qB74zrFoArKZ62ll0Fr3mqkMJiQOmWYkdYgDeITYQg==}
+    dev: false
+
+  /ts-error/1.0.6:
+    resolution: {integrity: sha512-tLJxacIQUM82IR7JO1UUkKlYuUTmoY9HBJAmNWFzheSlDS5SPMcNIepejHJa4BpPQLAcbRhRf3GDJzyj6rbKvA==}
     dev: false
 
   /ts-poet/6.3.0:
