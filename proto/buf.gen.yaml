@@ -13,5 +13,6 @@ plugins:
       - paths=source_relative
   - name: ts
     out: ../frontend/src/types/proto
-    opt: esModuleInterop=true,env=browser,useOptionals=messages,initializeFieldsAsUndefined=true
+    # reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md#using-ts-proto
+    opt: env=browser,useOptionals=messages,outputServices=nice-grpc,outputServices=generic-definitions,useExactTypes=false
     path: ../frontend/node_modules/.bin/protoc-gen-ts_proto

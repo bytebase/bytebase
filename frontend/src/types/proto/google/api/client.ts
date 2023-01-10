@@ -1,5 +1,5 @@
 /* eslint-disable */
-import _m0 from "protobufjs/minimal";
+import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../protobuf/duration";
 import { LaunchStage, launchStageFromJSON, launchStageToJSON } from "./launch_stage";
 
@@ -414,7 +414,7 @@ export const CommonLanguageSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<CommonLanguageSettings>, I>>(object: I): CommonLanguageSettings {
+  fromPartial(object: DeepPartial<CommonLanguageSettings>): CommonLanguageSettings {
     const message = createBaseCommonLanguageSettings();
     message.referenceDocsUri = object.referenceDocsUri ?? "";
     message.destinations = object.destinations?.map((e) => e) || [];
@@ -564,7 +564,7 @@ export const ClientLibrarySettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ClientLibrarySettings>, I>>(object: I): ClientLibrarySettings {
+  fromPartial(object: DeepPartial<ClientLibrarySettings>): ClientLibrarySettings {
     const message = createBaseClientLibrarySettings();
     message.version = object.version ?? "";
     message.launchStage = object.launchStage ?? 0;
@@ -731,7 +731,7 @@ export const Publishing = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<Publishing>, I>>(object: I): Publishing {
+  fromPartial(object: DeepPartial<Publishing>): Publishing {
     const message = createBasePublishing();
     message.methodSettings = object.methodSettings?.map((e) => MethodSettings.fromPartial(e)) || [];
     message.newIssueUri = object.newIssueUri ?? "";
@@ -818,7 +818,7 @@ export const JavaSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<JavaSettings>, I>>(object: I): JavaSettings {
+  fromPartial(object: DeepPartial<JavaSettings>): JavaSettings {
     const message = createBaseJavaSettings();
     message.libraryPackage = object.libraryPackage ?? "";
     message.serviceClassNames = Object.entries(object.serviceClassNames ?? {}).reduce<{ [key: string]: string }>(
@@ -884,9 +884,7 @@ export const JavaSettings_ServiceClassNamesEntry = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<JavaSettings_ServiceClassNamesEntry>, I>>(
-    object: I,
-  ): JavaSettings_ServiceClassNamesEntry {
+  fromPartial(object: DeepPartial<JavaSettings_ServiceClassNamesEntry>): JavaSettings_ServiceClassNamesEntry {
     const message = createBaseJavaSettings_ServiceClassNamesEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
@@ -935,7 +933,7 @@ export const CppSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<CppSettings>, I>>(object: I): CppSettings {
+  fromPartial(object: DeepPartial<CppSettings>): CppSettings {
     const message = createBaseCppSettings();
     message.common = (object.common !== undefined && object.common !== null)
       ? CommonLanguageSettings.fromPartial(object.common)
@@ -985,7 +983,7 @@ export const PhpSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<PhpSettings>, I>>(object: I): PhpSettings {
+  fromPartial(object: DeepPartial<PhpSettings>): PhpSettings {
     const message = createBasePhpSettings();
     message.common = (object.common !== undefined && object.common !== null)
       ? CommonLanguageSettings.fromPartial(object.common)
@@ -1035,7 +1033,7 @@ export const PythonSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<PythonSettings>, I>>(object: I): PythonSettings {
+  fromPartial(object: DeepPartial<PythonSettings>): PythonSettings {
     const message = createBasePythonSettings();
     message.common = (object.common !== undefined && object.common !== null)
       ? CommonLanguageSettings.fromPartial(object.common)
@@ -1085,7 +1083,7 @@ export const NodeSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<NodeSettings>, I>>(object: I): NodeSettings {
+  fromPartial(object: DeepPartial<NodeSettings>): NodeSettings {
     const message = createBaseNodeSettings();
     message.common = (object.common !== undefined && object.common !== null)
       ? CommonLanguageSettings.fromPartial(object.common)
@@ -1135,7 +1133,7 @@ export const DotnetSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DotnetSettings>, I>>(object: I): DotnetSettings {
+  fromPartial(object: DeepPartial<DotnetSettings>): DotnetSettings {
     const message = createBaseDotnetSettings();
     message.common = (object.common !== undefined && object.common !== null)
       ? CommonLanguageSettings.fromPartial(object.common)
@@ -1185,7 +1183,7 @@ export const RubySettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<RubySettings>, I>>(object: I): RubySettings {
+  fromPartial(object: DeepPartial<RubySettings>): RubySettings {
     const message = createBaseRubySettings();
     message.common = (object.common !== undefined && object.common !== null)
       ? CommonLanguageSettings.fromPartial(object.common)
@@ -1235,7 +1233,7 @@ export const GoSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GoSettings>, I>>(object: I): GoSettings {
+  fromPartial(object: DeepPartial<GoSettings>): GoSettings {
     const message = createBaseGoSettings();
     message.common = (object.common !== undefined && object.common !== null)
       ? CommonLanguageSettings.fromPartial(object.common)
@@ -1295,7 +1293,7 @@ export const MethodSettings = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<MethodSettings>, I>>(object: I): MethodSettings {
+  fromPartial(object: DeepPartial<MethodSettings>): MethodSettings {
     const message = createBaseMethodSettings();
     message.selector = object.selector ?? "";
     message.longRunning = (object.longRunning !== undefined && object.longRunning !== null)
@@ -1374,7 +1372,7 @@ export const MethodSettings_LongRunning = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<MethodSettings_LongRunning>, I>>(object: I): MethodSettings_LongRunning {
+  fromPartial(object: DeepPartial<MethodSettings_LongRunning>): MethodSettings_LongRunning {
     const message = createBaseMethodSettings_LongRunning();
     message.initialPollDelay = (object.initialPollDelay !== undefined && object.initialPollDelay !== null)
       ? Duration.fromPartial(object.initialPollDelay)
@@ -1396,10 +1394,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function isObject(value: any): boolean {
   return typeof value === "object" && value !== null;

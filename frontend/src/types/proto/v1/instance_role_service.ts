@@ -1,5 +1,6 @@
 /* eslint-disable */
-import _m0 from "protobufjs/minimal";
+import type { CallContext, CallOptions } from "nice-grpc-common";
+import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 
@@ -169,7 +170,7 @@ export const GetRoleRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<GetRoleRequest>, I>>(object: I): GetRoleRequest {
+  fromPartial(object: DeepPartial<GetRoleRequest>): GetRoleRequest {
     const message = createBaseGetRoleRequest();
     message.name = object.name ?? "";
     return message;
@@ -234,7 +235,7 @@ export const ListRolesRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListRolesRequest>, I>>(object: I): ListRolesRequest {
+  fromPartial(object: DeepPartial<ListRolesRequest>): ListRolesRequest {
     const message = createBaseListRolesRequest();
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
@@ -297,7 +298,7 @@ export const ListRolesResponse = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<ListRolesResponse>, I>>(object: I): ListRolesResponse {
+  fromPartial(object: DeepPartial<ListRolesResponse>): ListRolesResponse {
     const message = createBaseListRolesResponse();
     message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
@@ -355,7 +356,7 @@ export const CreateRoleRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<CreateRoleRequest>, I>>(object: I): CreateRoleRequest {
+  fromPartial(object: DeepPartial<CreateRoleRequest>): CreateRoleRequest {
     const message = createBaseCreateRoleRequest();
     message.parent = object.parent ?? "";
     message.role = (object.role !== undefined && object.role !== null)
@@ -415,7 +416,7 @@ export const UpdateRoleRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UpdateRoleRequest>, I>>(object: I): UpdateRoleRequest {
+  fromPartial(object: DeepPartial<UpdateRoleRequest>): UpdateRoleRequest {
     const message = createBaseUpdateRoleRequest();
     message.role = (object.role !== undefined && object.role !== null)
       ? InstanceRole.fromPartial(object.role)
@@ -465,7 +466,7 @@ export const DeleteRoleRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<DeleteRoleRequest>, I>>(object: I): DeleteRoleRequest {
+  fromPartial(object: DeepPartial<DeleteRoleRequest>): DeleteRoleRequest {
     const message = createBaseDeleteRoleRequest();
     message.name = object.name ?? "";
     return message;
@@ -512,7 +513,7 @@ export const UndeleteRoleRequest = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<UndeleteRoleRequest>, I>>(object: I): UndeleteRoleRequest {
+  fromPartial(object: DeepPartial<UndeleteRoleRequest>): UndeleteRoleRequest {
     const message = createBaseUndeleteRoleRequest();
     message.name = object.name ?? "";
     return message;
@@ -617,7 +618,7 @@ export const RoleAttribute = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<RoleAttribute>, I>>(object: I): RoleAttribute {
+  fromPartial(object: DeepPartial<RoleAttribute>): RoleAttribute {
     const message = createBaseRoleAttribute();
     message.superUser = object.superUser ?? false;
     message.noInherit = object.noInherit ?? false;
@@ -720,7 +721,7 @@ export const InstanceRole = {
     return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<InstanceRole>, I>>(object: I): InstanceRole {
+  fromPartial(object: DeepPartial<InstanceRole>): InstanceRole {
     const message = createBaseInstanceRole();
     message.name = object.name ?? "";
     message.roleName = object.roleName ?? "";
@@ -734,67 +735,81 @@ export const InstanceRole = {
   },
 };
 
-export interface InstanceRoleService {
-  GetRole(request: GetRoleRequest): Promise<InstanceRole>;
-  ListRoles(request: ListRolesRequest): Promise<ListRolesResponse>;
-  CreateRole(request: CreateRoleRequest): Promise<InstanceRole>;
-  UpdateRole(request: UpdateRoleRequest): Promise<InstanceRole>;
-  DeleteRole(request: DeleteRoleRequest): Promise<Empty>;
-  UndeleteRole(request: UndeleteRoleRequest): Promise<InstanceRole>;
+export type InstanceRoleServiceDefinition = typeof InstanceRoleServiceDefinition;
+export const InstanceRoleServiceDefinition = {
+  name: "InstanceRoleService",
+  fullName: "bytebase.v1.InstanceRoleService",
+  methods: {
+    getRole: {
+      name: "GetRole",
+      requestType: GetRoleRequest,
+      requestStream: false,
+      responseType: InstanceRole,
+      responseStream: false,
+      options: {},
+    },
+    listRoles: {
+      name: "ListRoles",
+      requestType: ListRolesRequest,
+      requestStream: false,
+      responseType: ListRolesResponse,
+      responseStream: false,
+      options: {},
+    },
+    createRole: {
+      name: "CreateRole",
+      requestType: CreateRoleRequest,
+      requestStream: false,
+      responseType: InstanceRole,
+      responseStream: false,
+      options: {},
+    },
+    updateRole: {
+      name: "UpdateRole",
+      requestType: UpdateRoleRequest,
+      requestStream: false,
+      responseType: InstanceRole,
+      responseStream: false,
+      options: {},
+    },
+    deleteRole: {
+      name: "DeleteRole",
+      requestType: DeleteRoleRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    undeleteRole: {
+      name: "UndeleteRole",
+      requestType: UndeleteRoleRequest,
+      requestStream: false,
+      responseType: InstanceRole,
+      responseStream: false,
+      options: {},
+    },
+  },
+} as const;
+
+export interface InstanceRoleServiceImplementation<CallContextExt = {}> {
+  getRole(request: GetRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InstanceRole>>;
+  listRoles(request: ListRolesRequest, context: CallContext & CallContextExt): Promise<DeepPartial<ListRolesResponse>>;
+  createRole(request: CreateRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InstanceRole>>;
+  updateRole(request: UpdateRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InstanceRole>>;
+  deleteRole(request: DeleteRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  undeleteRole(request: UndeleteRoleRequest, context: CallContext & CallContextExt): Promise<DeepPartial<InstanceRole>>;
 }
 
-export class InstanceRoleServiceClientImpl implements InstanceRoleService {
-  private readonly rpc: Rpc;
-  private readonly service: string;
-  constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "bytebase.v1.InstanceRoleService";
-    this.rpc = rpc;
-    this.GetRole = this.GetRole.bind(this);
-    this.ListRoles = this.ListRoles.bind(this);
-    this.CreateRole = this.CreateRole.bind(this);
-    this.UpdateRole = this.UpdateRole.bind(this);
-    this.DeleteRole = this.DeleteRole.bind(this);
-    this.UndeleteRole = this.UndeleteRole.bind(this);
-  }
-  GetRole(request: GetRoleRequest): Promise<InstanceRole> {
-    const data = GetRoleRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetRole", data);
-    return promise.then((data) => InstanceRole.decode(new _m0.Reader(data)));
-  }
-
-  ListRoles(request: ListRolesRequest): Promise<ListRolesResponse> {
-    const data = ListRolesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListRoles", data);
-    return promise.then((data) => ListRolesResponse.decode(new _m0.Reader(data)));
-  }
-
-  CreateRole(request: CreateRoleRequest): Promise<InstanceRole> {
-    const data = CreateRoleRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "CreateRole", data);
-    return promise.then((data) => InstanceRole.decode(new _m0.Reader(data)));
-  }
-
-  UpdateRole(request: UpdateRoleRequest): Promise<InstanceRole> {
-    const data = UpdateRoleRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UpdateRole", data);
-    return promise.then((data) => InstanceRole.decode(new _m0.Reader(data)));
-  }
-
-  DeleteRole(request: DeleteRoleRequest): Promise<Empty> {
-    const data = DeleteRoleRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "DeleteRole", data);
-    return promise.then((data) => Empty.decode(new _m0.Reader(data)));
-  }
-
-  UndeleteRole(request: UndeleteRoleRequest): Promise<InstanceRole> {
-    const data = UndeleteRoleRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UndeleteRole", data);
-    return promise.then((data) => InstanceRole.decode(new _m0.Reader(data)));
-  }
-}
-
-interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+export interface InstanceRoleServiceClient<CallOptionsExt = {}> {
+  getRole(request: DeepPartial<GetRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<InstanceRole>;
+  listRoles(request: DeepPartial<ListRolesRequest>, options?: CallOptions & CallOptionsExt): Promise<ListRolesResponse>;
+  createRole(request: DeepPartial<CreateRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<InstanceRole>;
+  updateRole(request: DeepPartial<UpdateRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<InstanceRole>;
+  deleteRole(request: DeepPartial<DeleteRoleRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  undeleteRole(
+    request: DeepPartial<UndeleteRoleRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<InstanceRole>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
@@ -803,10 +818,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
