@@ -217,7 +217,7 @@ func (s *OrgPolicyService) UndeletePolicy(ctx context.Context, request *v1pb.Und
 	return response, nil
 }
 
-// findPolicyMessage finds the policy and the parent name by the policy name
+// findPolicyMessage finds the policy and the parent name by the policy name.
 func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName string) (*store.PolicyMessage, string, error) {
 	tokens := strings.Split(policyName, policyNamePrefix)
 	if len(tokens) != 2 {

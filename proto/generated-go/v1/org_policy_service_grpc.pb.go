@@ -25,7 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 type OrgPolicyServiceClient interface {
 	GetPolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error)
 	ListPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error)
-	CreatcePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
+	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
 	UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
 	DeletePolicy(ctx context.Context, in *DeletePolicyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeletePolicy(ctx context.Context, in *UndeletePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
@@ -57,9 +57,9 @@ func (c *orgPolicyServiceClient) ListPolicies(ctx context.Context, in *ListPolic
 	return out, nil
 }
 
-func (c *orgPolicyServiceClient) CreatcePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*Policy, error) {
+func (c *orgPolicyServiceClient) CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*Policy, error) {
 	out := new(Policy)
-	err := c.cc.Invoke(ctx, "/bytebase.v1.OrgPolicyService/CreatcePolicy", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.OrgPolicyService/CreatePolicy", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (c *orgPolicyServiceClient) UndeletePolicy(ctx context.Context, in *Undelet
 type OrgPolicyServiceServer interface {
 	GetPolicy(context.Context, *GetPolicyRequest) (*Policy, error)
 	ListPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error)
-	CreatcePolicy(context.Context, *CreatePolicyRequest) (*Policy, error)
+	CreatePolicy(context.Context, *CreatePolicyRequest) (*Policy, error)
 	UpdatePolicy(context.Context, *UpdatePolicyRequest) (*Policy, error)
 	DeletePolicy(context.Context, *DeletePolicyRequest) (*emptypb.Empty, error)
 	UndeletePolicy(context.Context, *UndeletePolicyRequest) (*Policy, error)
@@ -116,8 +116,8 @@ func (UnimplementedOrgPolicyServiceServer) GetPolicy(context.Context, *GetPolicy
 func (UnimplementedOrgPolicyServiceServer) ListPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPolicies not implemented")
 }
-func (UnimplementedOrgPolicyServiceServer) CreatcePolicy(context.Context, *CreatePolicyRequest) (*Policy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreatcePolicy not implemented")
+func (UnimplementedOrgPolicyServiceServer) CreatePolicy(context.Context, *CreatePolicyRequest) (*Policy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePolicy not implemented")
 }
 func (UnimplementedOrgPolicyServiceServer) UpdatePolicy(context.Context, *UpdatePolicyRequest) (*Policy, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePolicy not implemented")
@@ -177,20 +177,20 @@ func _OrgPolicyService_ListPolicies_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _OrgPolicyService_CreatcePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _OrgPolicyService_CreatePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreatePolicyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(OrgPolicyServiceServer).CreatcePolicy(ctx, in)
+		return srv.(OrgPolicyServiceServer).CreatePolicy(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/bytebase.v1.OrgPolicyService/CreatcePolicy",
+		FullMethod: "/bytebase.v1.OrgPolicyService/CreatePolicy",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrgPolicyServiceServer).CreatcePolicy(ctx, req.(*CreatePolicyRequest))
+		return srv.(OrgPolicyServiceServer).CreatePolicy(ctx, req.(*CreatePolicyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -265,8 +265,8 @@ var OrgPolicyService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _OrgPolicyService_ListPolicies_Handler,
 		},
 		{
-			MethodName: "CreatcePolicy",
-			Handler:    _OrgPolicyService_CreatcePolicy_Handler,
+			MethodName: "CreatePolicy",
+			Handler:    _OrgPolicyService_CreatePolicy_Handler,
 		},
 		{
 			MethodName: "UpdatePolicy",

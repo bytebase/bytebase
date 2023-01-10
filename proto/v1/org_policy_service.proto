@@ -55,22 +55,26 @@ service OrgPolicyService {
     option (google.api.method_signature) = "";
   }
 
-  rpc CreatcePolicy(CreatePolicyRequest) returns (Policy) {
+  rpc CreatePolicy(CreatePolicyRequest) returns (Policy) {
     option (google.api.http) = {
       post: "/v1/policies"
       body: "policy"
 
       additional_bindings {
         post: "/v1/{parent=projects/*}/policies"
+        body: "policy"
       }
       additional_bindings {
         post: "/v1/{parent=environments/*}/policies"
+        body: "policy"
       }
       additional_bindings {
         post: "/v1/{parent=environments/*/instances/*}/policies"
+        body: "policy"
       }
       additional_bindings {
         post: "/v1/{parent=environments/*/instances/*/databases/*}/policies"
+        body: "policy"
       }
     };
     option (google.api.method_signature) = "parent,policy";
@@ -83,15 +87,19 @@ service OrgPolicyService {
 
       additional_bindings {
         patch: "/v1/{policy.name=projects/*/policies/*}"
+        body: "policy"
       }
       additional_bindings {
         patch: "/v1/{policy.name=environments/*/policies/*}"
+        body: "policy"
       }
       additional_bindings {
         patch: "/v1/{policy.name=environments/*/instances/*/policies/*}"
+        body: "policy"
       }
       additional_bindings {
         patch: "/v1/{policy.name=environments/*/instances/*/databases/*/policies/*}"
+        body: "policy"
       }
     };
     option (google.api.method_signature) = "policy,update_mask";
@@ -124,15 +132,19 @@ service OrgPolicyService {
 
       additional_bindings {
         post: "/v1/{name=projects/*/policies/*}:undelete"
+        body: "*"
       }
       additional_bindings {
         post: "/v1/{name=environments/*/policies/*}:undelete"
+        body: "*"
       }
       additional_bindings {
         post: "/v1/{name=environments/*/instances/*/policies/*}:undelete"
+        body: "*"
       }
       additional_bindings {
         post: "/v1/{name=environments/*/instances/*/databases/*/policies/*}:undelete"
+        body: "*"
       }
     };
   }
