@@ -30,18 +30,27 @@ func newDatabaseState(d *storepb.DatabaseMetadata, context *FinderContext) *Data
 
 func newSchemaState(s *storepb.SchemaMetadata, context *FinderContext) *SchemaState {
 	schema := &SchemaState{
-		ctx:      context.Copy(),
-		name:     s.Name,
-		tableSet: make(tableStateMap),
-		viewSet:  make(viewStateMap),
+		ctx:           context.Copy(),
+		name:          s.Name,
+		tableSet:      make(tableStateMap),
+		viewSet:       make(viewStateMap),
+		identifierMap: make(identifierMap),
 	}
 
 	for _, table := range s.Tables {
-		schema.tableSet[table.Name] = newTableState(table)
+		tableState := newTableState(table)
+		schema.tableSet[table.Name] = tableState
+
+		schema.identifierMap[table.Name] = true
+		for indexName := range tableState.indexSet {
+			schema.identifierMap[indexName] = true
+		}
 	}
 
 	for _, view := range s.Views {
 		schema.viewSet[view.Name] = newViewState(view)
+
+		schema.identifierMap[view.Name] = true
 	}
 
 	return schema
@@ -275,12 +284,18 @@ func (d *DatabaseState) FindTable(find *TableFind) *TableState {
 	return table
 }
 
+type identifierMap map[string]bool
+
 // SchemaState is the state for walk-through.
 type SchemaState struct {
 	ctx      *FinderContext
 	name     string
 	tableSet tableStateMap
 	viewSet  viewStateMap
+
+	// PostgreSQL specific fields
+	// All relation names in PostgreSQL must be distinct in schema level.
+	identifierMap identifierMap
 }
 type schemaStateMap map[string]*SchemaState
 

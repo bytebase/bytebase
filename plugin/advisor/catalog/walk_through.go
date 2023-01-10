@@ -28,13 +28,15 @@ const (
 
 	// ErrorTypeUnsupported is the error for unsupported cases.
 	ErrorTypeUnsupported WalkThroughErrorType = 1
+	// ErrorTypeInternal is the error for internal errors.
+	ErrorTypeInternal WalkThroughErrorType = 2
 
 	// 101 parse error type.
 
 	// ErrorTypeParseError is the error in parsing.
 	ErrorTypeParseError WalkThroughErrorType = 101
-	// ErrorTypeRestoreError is the error in restoring.
-	ErrorTypeRestoreError WalkThroughErrorType = 102
+	// ErrorTypeDeparseError is the error in deparsing.
+	ErrorTypeDeparseError WalkThroughErrorType = 102
 
 	// 201 ~ 299 database error type.
 
@@ -94,6 +96,16 @@ const (
 	ErrorTypeInsertSpecifiedColumnTwice = 602
 	// ErrorTypeInsertNullIntoNotNullColumn is the error that insert NULL into NOT NULL columns.
 	ErrorTypeInsertNullIntoNotNullColumn = 603
+
+	// 701 ~ 799 schema error type.
+
+	// ErrorTypeSchemaNotExists is the error that schema does not exist.
+	ErrorTypeSchemaNotExists = 701
+
+	// 801 ~ 899 relation error type.
+
+	// ErrorTypeRelationExists is the error that relation already exists.
+	ErrorTypeRelationExists = 801
 )
 
 // WalkThroughError is the error for walking-through.
@@ -108,6 +120,14 @@ func NewParseError(content string) *WalkThroughError {
 	return &WalkThroughError{
 		Type:    ErrorTypeParseError,
 		Content: content,
+	}
+}
+
+// NewRelationExistsError returns a new ErrorTypeRelationExists.
+func NewRelationExistsError(relationName string, schemaName string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeRelationExists,
+		Content: fmt.Sprintf("Relation %q already exists in schema %q", relationName, schemaName),
 	}
 }
 
@@ -164,15 +184,22 @@ func (e *WalkThroughError) Error() string {
 	return e.Content
 }
 
-// WalkThrough will collect the catalog schema in the databaseState as it walks through the stmts.
-func (d *DatabaseState) WalkThrough(stmts string) error {
-	if d.dbType != db.MySQL && d.dbType != db.TiDB {
+// WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
+func (d *DatabaseState) WalkThrough(stmt string) error {
+	switch d.dbType {
+	case db.MySQL, db.TiDB:
+		return d.mysqlWalkThrough(stmt)
+	case db.Postgres:
+		return d.pgWalkThrough(stmt)
+	default:
 		return &WalkThroughError{
 			Type:    ErrorTypeUnsupported,
 			Content: fmt.Sprintf("Walk-through doesn't support engine type: %s", d.dbType),
 		}
 	}
+}
 
+func (d *DatabaseState) mysqlWalkThrough(stmt string) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -180,7 +207,7 @@ func (d *DatabaseState) WalkThrough(stmts string) error {
 		d.createSchema("")
 	}
 
-	nodeList, err := d.parse(stmts)
+	nodeList, err := d.parse(stmt)
 	if err != nil {
 		return err
 	}
@@ -1293,7 +1320,7 @@ func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThro
 	ctx := format.NewRestoreCtx(flag, &buffer)
 	if err := node.Restore(ctx); err != nil {
 		return "", &WalkThroughError{
-			Type:    ErrorTypeRestoreError,
+			Type:    ErrorTypeDeparseError,
 			Content: err.Error(),
 		}
 	}

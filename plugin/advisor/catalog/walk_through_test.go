@@ -16,6 +16,9 @@ import (
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"
+
+	// Register postgresql parser driver.
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
 type testData struct {
@@ -34,7 +37,7 @@ func TestMySQLWalkThrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, originDatabase, false /* record */)
+		runWalkThroughTest(t, test, db.MySQL, originDatabase, false /* record */)
 	}
 }
 
@@ -44,11 +47,30 @@ func TestMySQLWalkThroughForIncomplete(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runWalkThroughTest(t, test, nil, false /* record */)
+		runWalkThroughTest(t, test, db.MySQL, nil, false /* record */)
 	}
 }
 
-func runWalkThroughTest(t *testing.T, file string, originDatabase *storepb.DatabaseMetadata, record bool) {
+func TestPostgreSQLWalkThrough(t *testing.T) {
+	originDatabase := &storepb.DatabaseMetadata{
+		Name: "postgres",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+			},
+		},
+	}
+
+	tests := []string{
+		"pg_walk_through",
+	}
+
+	for _, test := range tests {
+		runWalkThroughTest(t, test, db.Postgres, originDatabase, false /* record */)
+	}
+}
+
+func runWalkThroughTest(t *testing.T, file string, engineType db.Type, originDatabase *storepb.DatabaseMetadata, record bool) {
 	tests := []testData{}
 	filepath := filepath.Join("test", file+".yaml")
 	yamlFile, err := os.Open(filepath)
@@ -63,9 +85,9 @@ func runWalkThroughTest(t *testing.T, file string, originDatabase *storepb.Datab
 	for i, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
-			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: db.MySQL})
+			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType})
 		} else {
-			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: db.MySQL})
+			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType})
 			state = finder.Origin
 		}
 
