@@ -81,7 +81,7 @@
         <button
           v-if="state.editing"
           type="button"
-          class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+          class="px-4 py-2 cursor-pointer border border-control-border rounded text-control hover:bg-control-bg-hover text-sm font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed"
           :disabled="!allowSaveSQL"
           @click.prevent="saveEdit"
         >
@@ -569,8 +569,7 @@ const handleUploadLocalFile = async (event: Event) => {
         // nothing to do
       },
       onPositiveClick: () => {
-        updateSheetId(undefined);
-        updateStatement(statement);
+        onStatementChange(statement);
       },
     });
   } else {
