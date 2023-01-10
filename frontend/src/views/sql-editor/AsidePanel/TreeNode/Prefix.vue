@@ -4,53 +4,16 @@
   </template>
   <template v-else-if="atom.type === 'instance'">
     <span class="flex items-center gap-x-1">
-      <span
-        class="text-sm -mr-0.5"
-        :class="[!atom.disabled && 'text-gray-500']"
-      >
-        (
-      </span>
-      <InstanceEngineIcon :instance="instance" />
-      <ProtectedEnvironmentIcon
-        :environment="instance.environment"
-        class="w-4 h-4 text-inherit"
-      />
-      <span class="text-sm" :class="[!atom.disabled && 'text-gray-500']">
-        {{ instance.environment.name }}
-      </span>
-      <span
-        class="text-sm -ml-0.5"
-        :class="[!atom.disabled && 'text-gray-500']"
-      >
-        )
-      </span>
+      <InstancePrefix :instance="instance" :disabled="atom.disabled" />
     </span>
   </template>
   <template v-else-if="atom.type === 'database'">
     <span class="flex items-center gap-x-1">
-      <template
+      <InstancePrefix
         v-if="connectionTreeStore.tree.mode === ConnectionTreeMode.PROJECT"
-      >
-        <span
-          class="text-sm -mr-0.5"
-          :class="[!atom.disabled && 'text-gray-500']"
-        >
-          (
-        </span>
-        <ProtectedEnvironmentIcon
-          :environment="database.instance.environment"
-          class="w-4 h-4 text-inherit"
-        />
-        <span class="text-sm" :class="[!atom.disabled && 'text-gray-500']">
-          {{ database.instance.environment.name }}
-        </span>
-        <span
-          class="text-sm -ml-0.5"
-          :class="[!atom.disabled && 'text-gray-500']"
-        >
-          )
-        </span>
-      </template>
+        :instance="database.instance"
+        :disabled="atom.disabled"
+      />
 
       <heroicons-outline:database class="w-4 h-4" />
     </span>
@@ -63,14 +26,13 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 
-import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
-import ProtectedEnvironmentIcon from "@/components/Environment/ProtectedEnvironmentIcon.vue";
 import { ConnectionAtom, unknown, ConnectionTreeMode } from "@/types";
 import {
   useConnectionTreeStore,
   useDatabaseStore,
   useInstanceStore,
 } from "@/store";
+import InstancePrefix from "./InstancePrefix.vue";
 
 const props = defineProps<{
   atom: ConnectionAtom;
