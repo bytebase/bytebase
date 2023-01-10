@@ -15,7 +15,7 @@
 
       <div>
         <button
-          class="btn-primary"
+          class="btn-primary whitespace-nowrap"
           :disabled="!allowAdmin"
           @click="state.showAddRuleModal = true"
         >
