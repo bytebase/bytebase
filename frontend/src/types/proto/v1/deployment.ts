@@ -3,7 +3,7 @@
 export const protobufPackage = "bytebase.v1";
 
 export enum DeploymentType {
-  ISSUE_TYPE_UNSPECIFIED = 0,
+  DEPLOYMENT_TYPE_UNSPECIFIED = 0,
   DATABASE_CREATE = 1,
   DATABASE_DDL = 2,
   DATABASE_DDL_GHOST = 3,
@@ -16,8 +16,8 @@ export enum DeploymentType {
 export function deploymentTypeFromJSON(object: any): DeploymentType {
   switch (object) {
     case 0:
-    case "ISSUE_TYPE_UNSPECIFIED":
-      return DeploymentType.ISSUE_TYPE_UNSPECIFIED;
+    case "DEPLOYMENT_TYPE_UNSPECIFIED":
+      return DeploymentType.DEPLOYMENT_TYPE_UNSPECIFIED;
     case 1:
     case "DATABASE_CREATE":
       return DeploymentType.DATABASE_CREATE;
@@ -45,8 +45,8 @@ export function deploymentTypeFromJSON(object: any): DeploymentType {
 
 export function deploymentTypeToJSON(object: DeploymentType): string {
   switch (object) {
-    case DeploymentType.ISSUE_TYPE_UNSPECIFIED:
-      return "ISSUE_TYPE_UNSPECIFIED";
+    case DeploymentType.DEPLOYMENT_TYPE_UNSPECIFIED:
+      return "DEPLOYMENT_TYPE_UNSPECIFIED";
     case DeploymentType.DATABASE_CREATE:
       return "DATABASE_CREATE";
     case DeploymentType.DATABASE_DDL:

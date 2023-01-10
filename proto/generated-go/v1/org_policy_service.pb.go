@@ -782,7 +782,7 @@ func (x *DeploymentApprovalStrategy) GetDeploymentType() DeploymentType {
 	if x != nil {
 		return x.DeploymentType
 	}
-	return DeploymentType_ISSUE_TYPE_UNSPECIFIED
+	return DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 }
 
 func (x *DeploymentApprovalStrategy) GetApprovalGroup() ApprovalGroup {

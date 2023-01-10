@@ -400,7 +400,7 @@ func convertPipelineApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentAp
 }
 
 func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
-	res := v1pb.DeploymentType_ISSUE_TYPE_UNSPECIFIED
+	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
 	switch issueType {
 	case api.IssueDatabaseCreate:
 		res = v1pb.DeploymentType_DATABASE_CREATE
