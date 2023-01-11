@@ -597,24 +597,16 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 		return nil, FormatError(err)
 	}
 
-	instanceMsgs, err := s.listInstanceImplV2(ctx, tx, &FindInstanceMessage{
+	instanceMsg, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
 		UID: &instanceUID,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v after add the data source to the instance", instanceUID)
-	}
-	if len(instanceMsgs) == 0 {
-		return nil, errors.Wrapf(err, "cannot get instance %v after add the data source to the instance", instanceUID)
-	}
-	if len(instanceMsgs) >= 2 {
-		return nil, errors.Wrapf(err, "find %v instances with instance uid %v, but expect one", len(instanceMsgs), instanceUID)
+		return nil, errors.Wrapf(err, "failed to find instance with instance uid %d", instanceUID)
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
-
-	instanceMsg := instanceMsgs[0]
 
 	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
 	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
@@ -644,27 +636,20 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, dataSou
 		return nil, errors.Errorf("deleted %v read-only data source records from instance %v, but expected one", rowsAffected, instanceUID)
 	}
 
-	instanceMsgs, err := s.listInstanceImplV2(ctx, tx, &FindInstanceMessage{
+	instance, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
 		UID: &instanceUID,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v after add the data source to the instance", instanceUID)
-	}
-	if len(instanceMsgs) == 0 {
-		return nil, errors.Wrapf(err, "cannot get instance %v after add the data source to the instance", instanceUID)
-	}
-	if len(instanceMsgs) >= 2 {
-		return nil, errors.Wrapf(err, "find %v instances with instance uid %v, but expect one", len(instanceMsgs), instanceUID)
+		return nil, errors.Wrapf(err, "failed to find instance")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
-	instanceMsg := instanceMsgs[0]
-	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
-	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
-	return instanceMsg, nil
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
+	return instance, nil
 }
 
 // UpdateDataSourceV2 updates a data source and returns the instance.
@@ -728,25 +713,18 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		return nil, errors.Errorf("update %v data source records from instance %v, but expected one", rowsAffected, patch.InstanceUID)
 	}
 
-	instanceMsgs, err := s.listInstanceImplV2(ctx, tx, &FindInstanceMessage{
+	instance, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
 		UID: &patch.InstanceUID,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v after add the data source to the instance", patch.InstanceUID)
-	}
-	if len(instanceMsgs) == 0 {
-		return nil, errors.Wrapf(err, "cannot get instance %v after add the data source to the instance", patch.InstanceUID)
-	}
-	if len(instanceMsgs) >= 2 {
-		return nil, errors.Wrapf(err, "find %v instances with instance uid %v, but expect one", len(instanceMsgs), patch.InstanceUID)
+		return nil, errors.Wrapf(err, "failed to find instance")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
-	instanceMsg := instanceMsgs[0]
-	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
-	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
-	return instanceMsg, nil
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
+	return instance, nil
 }

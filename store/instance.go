@@ -732,25 +732,18 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 	defer tx.Rollback()
 
-	instances, err := s.listInstanceImplV2(ctx, tx, find)
+	instanceMsg, err := s.findInstanceImplV2(ctx, tx, find)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to find instance")
 	}
-	if len(instances) == 0 {
-		return nil, nil
-	}
-	if len(instances) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %#v, expect 1", len(instances), find)}
-	}
-	instance := instances[0]
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
-	s.instanceIDCache.Store(instance.UID, instance)
-	return instance, nil
+	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
+	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
+	return instanceMsg, nil
 }
 
 // ListInstancesV2 lists all instance.
@@ -993,6 +986,21 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
+}
+
+// findInstacnceImplV2 finds an instance by instance uid.
+func (s *Store) findInstanceImplV2(ctx context.Context, tx *Tx, findInstaceMsg *FindInstanceMessage) (*InstanceMessage, error) {
+	instanceMsgs, err := s.listInstanceImplV2(ctx, tx, findInstaceMsg)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", findInstaceMsg)
+	}
+	if len(instanceMsgs) == 0 {
+		return nil, errors.Wrapf(err, "cannot to get instance with find instance message %+v", findInstaceMsg)
+	}
+	if len(instanceMsgs) >= 2 {
+		return nil, errors.Wrapf(err, "find %d instances with find instance message %+v, expected 1", len(instanceMsgs), findInstaceMsg)
+	}
+	return instanceMsgs[0], nil
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
