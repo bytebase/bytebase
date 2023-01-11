@@ -4,7 +4,7 @@
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <template v-for="engine in engineList" :key="engine">
           <div
-            class="flex justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
+            class="flex relative justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
             @click.capture="changeInstanceEngine(engine)"
           >
             <div class="flex flex-col items-center">
@@ -12,6 +12,9 @@
               <p class="mt-1 text-center textlabel">
                 {{ engineName(engine) }}
               </p>
+              <template v-if="isEngineBeta(engine)">
+                <BBBetaBadge class="absolute right-0.5 top-1" />
+              </template>
               <div class="mt-3 radio text-sm">
                 <input
                   type="radio"
@@ -371,6 +374,7 @@ import {
   useOnboardingGuideStore,
   useSQLStore,
 } from "@/store";
+import { BBBetaBadge } from "@/bbkit";
 
 interface LocalState {
   instance: InstanceCreate;
@@ -482,6 +486,10 @@ const showDatabase = computed((): boolean => {
 const showAuthenticationDatabase = computed((): boolean => {
   return state.instance.engine === "MONGODB";
 });
+
+const isEngineBeta = (engine: EngineType): boolean => {
+  return engine === "MONGODB" || engine === "SPANNER";
+};
 
 const isInOnboaringCreateDatabaseGuide = computed(() => {
   const guideName = useOnboardingGuideStore().guideName;
