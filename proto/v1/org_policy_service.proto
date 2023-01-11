@@ -54,6 +54,153 @@ service OrgPolicyService {
     };
     option (google.api.method_signature) = "";
   }
+
+  rpc CreatePolicy(CreatePolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      post: "/v1/policies"
+      body: "policy"
+
+      additional_bindings {
+        post: "/v1/{parent=projects/*}/policies"
+        body: "policy"
+      }
+      additional_bindings {
+        post: "/v1/{parent=environments/*}/policies"
+        body: "policy"
+      }
+      additional_bindings {
+        post: "/v1/{parent=environments/*/instances/*}/policies"
+        body: "policy"
+      }
+      additional_bindings {
+        post: "/v1/{parent=environments/*/instances/*/databases/*}/policies"
+        body: "policy"
+      }
+    };
+    option (google.api.method_signature) = "parent,policy";
+  }
+
+  rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      patch: "/v1/{policy.name=policies/*}"
+      body: "policy"
+
+      additional_bindings {
+        patch: "/v1/{policy.name=projects/*/policies/*}"
+        body: "policy"
+      }
+      additional_bindings {
+        patch: "/v1/{policy.name=environments/*/policies/*}"
+        body: "policy"
+      }
+      additional_bindings {
+        patch: "/v1/{policy.name=environments/*/instances/*/policies/*}"
+        body: "policy"
+      }
+      additional_bindings {
+        patch: "/v1/{policy.name=environments/*/instances/*/databases/*/policies/*}"
+        body: "policy"
+      }
+    };
+    option (google.api.method_signature) = "policy,update_mask";
+  }
+
+  rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=policies/*}"
+
+      additional_bindings {
+        delete: "/v1/{name=projects/*/policies/*}"
+      }
+      additional_bindings {
+        delete: "/v1/{name=environments/*/policies/*}"
+      }
+      additional_bindings {
+        delete: "/v1/{name=environments/*/instances/*/policies/*}"
+      }
+      additional_bindings {
+        delete: "/v1/{name=environments/*/instances/*/databases/*/policies/*}"
+      }
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+   rpc UndeletePolicy(UndeletePolicyRequest) returns (Policy) {
+    option (google.api.http) = {
+      post: "/v1/{name=policies/*}:undelete"
+      body: "*"
+
+      additional_bindings {
+        post: "/v1/{name=projects/*/policies/*}:undelete"
+        body: "*"
+      }
+      additional_bindings {
+        post: "/v1/{name=environments/*/policies/*}:undelete"
+        body: "*"
+      }
+      additional_bindings {
+        post: "/v1/{name=environments/*/instances/*/policies/*}:undelete"
+        body: "*"
+      }
+      additional_bindings {
+        post: "/v1/{name=environments/*/instances/*/databases/*/policies/*}:undelete"
+        body: "*"
+      }
+    };
+  }
+}
+
+message CreatePolicyRequest {
+  // The parent resource where this instance will be created.
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The policy to create.
+  Policy policy = 2 [(google.api.field_behavior) = REQUIRED];
+
+  PolicyType type = 3;
+}
+
+message UpdatePolicyRequest {
+  // The policy to update.
+  //
+  // The policy's `name` field is used to identify the instance to update.
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  Policy policy = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the policy is not found, a new policy will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
+}
+
+message DeletePolicyRequest {
+  // The policy's `name` field is used to identify the instance to update.
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeletePolicyRequest {
+  // The policy's `name` field is used to identify the instance to update.
+  // Format: {resource name}/policies/{policy type}
+  // Workspace resource name: "".
+  // Environment resource name: environments/environment-id.
+  // Instance resource name: environments/environment-id/instances/instance-id.
+  // Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetPolicyRequest {
@@ -79,6 +226,9 @@ message ListPoliciesRequest {
   // When paginating, all other parameters provided to `GetPolicies` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // Show deleted policies if specified.
+  bool show_deleted = 4;
 }
 
 message ListPoliciesResponse {
