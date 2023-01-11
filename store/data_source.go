@@ -597,7 +597,7 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 		return nil, FormatError(err)
 	}
 
-	instanceMsg, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
+	instance, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
 		UID: &instanceUID,
 	})
 	if err != nil {
@@ -608,9 +608,9 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
-	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
-	return instanceMsg, nil
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
+	return instance, nil
 }
 
 // RemoveDataSourceV2 removes a RO data source from an instance and return the instance where the data source had beed removed from.

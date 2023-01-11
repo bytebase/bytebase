@@ -283,12 +283,12 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 
-	instanceMsg, err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, dataSourceMsg)
+	instance, err = s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, dataSourceMsg)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToInstance(instanceMsg), nil
+	return convertToInstance(instance), nil
 }
 
 // RemoveDataSource removes a data source to an instance.
@@ -325,12 +325,12 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	instanceMsg, err := s.store.RemoveDataSourceV2(ctx, instance.UID, dataSourceMsg.Type)
+	instance, err = s.store.RemoveDataSourceV2(ctx, instance.UID, dataSourceMsg.Type)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToInstance(instanceMsg), nil
+	return convertToInstance(instance), nil
 }
 
 // UpdateDataSource updates a data source of an instance.

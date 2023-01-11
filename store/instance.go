@@ -732,7 +732,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 	defer tx.Rollback()
 
-	instanceMsg, err := s.findInstanceImplV2(ctx, tx, find)
+	instance, err := s.findInstanceImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find instance")
 	}
@@ -741,9 +741,9 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 		return nil, FormatError(err)
 	}
 
-	s.instanceCache.Store(getInstanceCacheKey(instanceMsg.EnvironmentID, instanceMsg.ResourceID), instanceMsg)
-	s.instanceIDCache.Store(instanceMsg.UID, instanceMsg)
-	return instanceMsg, nil
+	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
+	s.instanceIDCache.Store(instance.UID, instance)
+	return instance, nil
 }
 
 // ListInstancesV2 lists all instance.
@@ -990,17 +990,17 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 // findInstacnceImplV2 finds an instance by instance uid.
 func (s *Store) findInstanceImplV2(ctx context.Context, tx *Tx, findInstaceMsg *FindInstanceMessage) (*InstanceMessage, error) {
-	instanceMsgs, err := s.listInstanceImplV2(ctx, tx, findInstaceMsg)
+	instances, err := s.listInstanceImplV2(ctx, tx, findInstaceMsg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", findInstaceMsg)
 	}
-	if len(instanceMsgs) == 0 {
+	if len(instances) == 0 {
 		return nil, errors.Wrapf(err, "cannot to get instance with find instance message %+v", findInstaceMsg)
 	}
-	if len(instanceMsgs) >= 2 {
-		return nil, errors.Wrapf(err, "find %d instances with find instance message %+v, expected 1", len(instanceMsgs), findInstaceMsg)
+	if len(instances) >= 2 {
+		return nil, errors.Wrapf(err, "find %d instances with find instance message %+v, expected 1", len(instances), findInstaceMsg)
 	}
-	return instanceMsgs[0], nil
+	return instances[0], nil
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
