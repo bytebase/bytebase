@@ -143,7 +143,7 @@
             />
           </button>
           <button
-            v-if="allowAlterSchemaOrChangeData"
+            v-if="allowAlterSchema"
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
@@ -527,6 +527,13 @@ const allowAlterSchemaOrChangeData = computed(() => {
     return false;
   }
   return allowEdit.value;
+});
+
+const allowAlterSchema = computed(() => {
+  return (
+    allowAlterSchemaOrChangeData.value &&
+    database.value.instance.engine !== "MONGODB"
+  );
 });
 
 const allowEditDatabaseLabels = computed((): boolean => {
