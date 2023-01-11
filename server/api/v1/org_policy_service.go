@@ -110,6 +110,10 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		return nil, status.Errorf(codes.InvalidArgument, "policy %q has been deleted", request.Policy.Name)
 	}
 
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+
 	patch := &store.UpdatePolicyMessage{
 		UpdaterID:    principalID,
 		ResourceType: policy.ResourceType,
