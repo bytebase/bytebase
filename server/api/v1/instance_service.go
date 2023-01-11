@@ -35,20 +35,9 @@ func NewInstanceService(store *store.Store, licenseService enterpriseAPI.License
 
 // GetInstance gets an instance.
 func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInstanceRequest) (*v1pb.Instance, error) {
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
+	instance, err := s.getInstanceMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+		return nil, err
 	}
 	return convertToInstance(instance), nil
 }
@@ -124,21 +113,13 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	if request.Instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
-
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
-	})
+	instance, err := s.getInstanceMessage(ctx, request.Instance.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance.Name)
+		return nil, err
 	}
 	if instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance.Name)
@@ -146,8 +127,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 
 	patch := &store.UpdateInstanceMessage{
 		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
-		EnvironmentID: environmentID,
-		ResourceID:    instanceID,
+		EnvironmentID: instance.EnvironmentID,
+		ResourceID:    instance.ResourceID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -176,20 +157,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
+	instance, err := s.getInstanceMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Name)
+		return nil, err
 	}
 	if instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
@@ -198,8 +168,8 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	rowStatus := api.Archived
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
-		EnvironmentID: environmentID,
-		ResourceID:    instanceID,
+		EnvironmentID: instance.EnvironmentID,
+		ResourceID:    instance.ResourceID,
 		RowStatus:     &rowStatus,
 	}); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -210,20 +180,9 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 
 // UndeleteInstance undeletes an instance.
 func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.UndeleteInstanceRequest) (*v1pb.Instance, error) {
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Name)
+	instance, err := s.getInstanceMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Name)
+		return nil, err
 	}
 	if !instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", request.Name)
@@ -232,8 +191,8 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	rowStatus := api.Normal
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
-		EnvironmentID: environmentID,
-		ResourceID:    instanceID,
+		EnvironmentID: instance.EnvironmentID,
+		ResourceID:    instance.ResourceID,
 		RowStatus:     &rowStatus,
 	})
 	if err != nil {
@@ -258,19 +217,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
 
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance)
+	instance, err := s.getInstanceMessage(ctx, request.Instance)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
+		return nil, err
 	}
 	if instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
@@ -307,19 +256,9 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
 
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance)
+	instance, err := s.getInstanceMessage(ctx, request.Instance)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
+		return nil, err
 	}
 	if instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
@@ -330,8 +269,8 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
+		EnvironmentID: &instance.EnvironmentID,
+		ResourceID:    &instance.ResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -357,20 +296,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance)
+	instance, err := s.getInstanceMessage(ctx, request.Instance)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		EnvironmentID: &environmentID,
-		ResourceID:    &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
+		return nil, err
 	}
 	if instance.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
@@ -419,6 +347,26 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	return convertToInstance(instance), nil
+}
+
+func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
+	environmentID, instanceID, err := getEnvironmentInstanceID(name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", name)
+	}
+
+	return instance, nil
 }
 
 func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
