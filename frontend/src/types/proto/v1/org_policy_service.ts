@@ -2,6 +2,8 @@
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
+import { Empty } from "../google/protobuf/empty";
+import { FieldMask } from "../google/protobuf/field_mask";
 import { State, stateFromJSON, stateToJSON } from "./common";
 import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 
@@ -265,6 +267,65 @@ export function sQLReviewRuleLevelToJSON(object: SQLReviewRuleLevel): string {
   }
 }
 
+export interface CreatePolicyRequest {
+  /**
+   * The parent resource where this instance will be created.
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   */
+  parent: string;
+  /** The policy to create. */
+  policy?: Policy;
+  type: PolicyType;
+}
+
+export interface UpdatePolicyRequest {
+  /**
+   * The policy to update.
+   *
+   * The policy's `name` field is used to identify the instance to update.
+   * Format: {resource name}/policies/{policy type}
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   */
+  policy?: Policy;
+  /** The list of fields to update. */
+  updateMask?: string[];
+  /**
+   * If set to true, and the policy is not found, a new policy will be created.
+   * In this situation, `update_mask` is ignored.
+   */
+  allowMissing: boolean;
+}
+
+export interface DeletePolicyRequest {
+  /**
+   * The policy's `name` field is used to identify the instance to update.
+   * Format: {resource name}/policies/{policy type}
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   */
+  name: string;
+}
+
+export interface UndeletePolicyRequest {
+  /**
+   * The policy's `name` field is used to identify the instance to update.
+   * Format: {resource name}/policies/{policy type}
+   * Workspace resource name: "".
+   * Environment resource name: environments/environment-id.
+   * Instance resource name: environments/environment-id/instances/instance-id.
+   * Database resource name: environments/environment-id/instances/instance-id/databases/database-name.
+   */
+  name: string;
+}
+
 export interface GetPolicyRequest {
   /**
    * The name of the policy to retrieve.
@@ -294,6 +355,8 @@ export interface ListPoliciesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** Show deleted policies if specified. */
+  showDeleted: boolean;
 }
 
 export interface ListPoliciesResponse {
@@ -374,6 +437,238 @@ export interface SQLReviewRule {
   payload: string;
 }
 
+function createBaseCreatePolicyRequest(): CreatePolicyRequest {
+  return { parent: "", policy: undefined, type: 0 };
+}
+
+export const CreatePolicyRequest = {
+  encode(message: CreatePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.policy !== undefined) {
+      Policy.encode(message.policy, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.type !== 0) {
+      writer.uint32(24).int32(message.type);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreatePolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreatePolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.parent = reader.string();
+          break;
+        case 2:
+          message.policy = Policy.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.type = reader.int32() as any;
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreatePolicyRequest {
+    return {
+      parent: isSet(object.parent) ? String(object.parent) : "",
+      policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
+      type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
+    };
+  },
+
+  toJSON(message: CreatePolicyRequest): unknown {
+    const obj: any = {};
+    message.parent !== undefined && (obj.parent = message.parent);
+    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
+    message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<CreatePolicyRequest>): CreatePolicyRequest {
+    const message = createBaseCreatePolicyRequest();
+    message.parent = object.parent ?? "";
+    message.policy = (object.policy !== undefined && object.policy !== null)
+      ? Policy.fromPartial(object.policy)
+      : undefined;
+    message.type = object.type ?? 0;
+    return message;
+  },
+};
+
+function createBaseUpdatePolicyRequest(): UpdatePolicyRequest {
+  return { policy: undefined, updateMask: undefined, allowMissing: false };
+}
+
+export const UpdatePolicyRequest = {
+  encode(message: UpdatePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.policy !== undefined) {
+      Policy.encode(message.policy, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.allowMissing === true) {
+      writer.uint32(24).bool(message.allowMissing);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdatePolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdatePolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.policy = Policy.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          break;
+        case 3:
+          message.allowMissing = reader.bool();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdatePolicyRequest {
+    return {
+      policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? Boolean(object.allowMissing) : false,
+    };
+  },
+
+  toJSON(message: UpdatePolicyRequest): unknown {
+    const obj: any = {};
+    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
+    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.allowMissing !== undefined && (obj.allowMissing = message.allowMissing);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<UpdatePolicyRequest>): UpdatePolicyRequest {
+    const message = createBaseUpdatePolicyRequest();
+    message.policy = (object.policy !== undefined && object.policy !== null)
+      ? Policy.fromPartial(object.policy)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
+    message.allowMissing = object.allowMissing ?? false;
+    return message;
+  },
+};
+
+function createBaseDeletePolicyRequest(): DeletePolicyRequest {
+  return { name: "" };
+}
+
+export const DeletePolicyRequest = {
+  encode(message: DeletePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeletePolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeletePolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeletePolicyRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: DeletePolicyRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<DeletePolicyRequest>): DeletePolicyRequest {
+    const message = createBaseDeletePolicyRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUndeletePolicyRequest(): UndeletePolicyRequest {
+  return { name: "" };
+}
+
+export const UndeletePolicyRequest = {
+  encode(message: UndeletePolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UndeletePolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUndeletePolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UndeletePolicyRequest {
+    return { name: isSet(object.name) ? String(object.name) : "" };
+  },
+
+  toJSON(message: UndeletePolicyRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<UndeletePolicyRequest>): UndeletePolicyRequest {
+    const message = createBaseUndeletePolicyRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseGetPolicyRequest(): GetPolicyRequest {
   return { name: "" };
 }
@@ -422,7 +717,7 @@ export const GetPolicyRequest = {
 };
 
 function createBaseListPoliciesRequest(): ListPoliciesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListPoliciesRequest = {
@@ -435,6 +730,9 @@ export const ListPoliciesRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.showDeleted === true) {
+      writer.uint32(32).bool(message.showDeleted);
     }
     return writer;
   },
@@ -455,6 +753,9 @@ export const ListPoliciesRequest = {
         case 3:
           message.pageToken = reader.string();
           break;
+        case 4:
+          message.showDeleted = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -468,6 +769,7 @@ export const ListPoliciesRequest = {
       parent: isSet(object.parent) ? String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
     };
   },
 
@@ -476,6 +778,7 @@ export const ListPoliciesRequest = {
     message.parent !== undefined && (obj.parent = message.parent);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
     return obj;
   },
 
@@ -484,6 +787,7 @@ export const ListPoliciesRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
@@ -1294,6 +1598,38 @@ export const OrgPolicyServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    createPolicy: {
+      name: "CreatePolicy",
+      requestType: CreatePolicyRequest,
+      requestStream: false,
+      responseType: Policy,
+      responseStream: false,
+      options: {},
+    },
+    updatePolicy: {
+      name: "UpdatePolicy",
+      requestType: UpdatePolicyRequest,
+      requestStream: false,
+      responseType: Policy,
+      responseStream: false,
+      options: {},
+    },
+    deletePolicy: {
+      name: "DeletePolicy",
+      requestType: DeletePolicyRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    undeletePolicy: {
+      name: "UndeletePolicy",
+      requestType: UndeletePolicyRequest,
+      requestStream: false,
+      responseType: Policy,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1303,6 +1639,10 @@ export interface OrgPolicyServiceImplementation<CallContextExt = {}> {
     request: ListPoliciesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ListPoliciesResponse>>;
+  createPolicy(request: CreatePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
+  updatePolicy(request: UpdatePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
+  deletePolicy(request: DeletePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  undeletePolicy(request: UndeletePolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Policy>>;
 }
 
 export interface OrgPolicyServiceClient<CallOptionsExt = {}> {
@@ -1311,6 +1651,10 @@ export interface OrgPolicyServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<ListPoliciesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ListPoliciesResponse>;
+  createPolicy(request: DeepPartial<CreatePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
+  updatePolicy(request: DeepPartial<UpdatePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
+  deletePolicy(request: DeepPartial<DeletePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  undeletePolicy(request: DeepPartial<UndeletePolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<Policy>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

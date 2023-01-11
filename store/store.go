@@ -4,6 +4,8 @@ package store
 import (
 	"fmt"
 	"sync"
+
+	"github.com/bytebase/bytebase/api"
 )
 
 // Store provides database access to all raw objects.
@@ -20,6 +22,7 @@ type Store struct {
 	databaseIDCache    sync.Map // map[int]*DatabaseMessage
 	projectCache       sync.Map // map[string]*ProjectMessage
 	projectIDCache     sync.Map // map[int]*ProjectMessage
+	policyCache        sync.Map // map[string]*PolicyMessage
 	dbSchemaCache      sync.Map // map[int]*DBSchema
 }
 
@@ -38,6 +41,10 @@ func (s *Store) Close() error {
 
 func getInstanceCacheKey(environmentID, instanceID string) string {
 	return fmt.Sprintf("%s/%s", environmentID, instanceID)
+}
+
+func getPolicyCacheKey(resourceType api.PolicyResourceType, resourceUID int, policyType api.PolicyType) string {
+	return fmt.Sprintf("policies/%s/%d/%s", resourceType, resourceUID, policyType)
 }
 
 func getDatabaseCacheKey(environmentID, instanceID, databaseName string) string {
