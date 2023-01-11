@@ -587,7 +587,6 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, environ
 	}
 	defer tx.Rollback()
 
-	var environmentResourceID, instanceResourceID string
 	result, err := tx.ExecContext(ctx, `
 		DELETE FROM data_source WHERE data_source.instance_id = $1 AND data_source.type = $2;
 	`, instanceUID, dataSourceTp)
@@ -607,7 +606,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, environ
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.instanceCache.Delete(getInstanceCacheKey(environmentResourceID, instanceResourceID))
+	s.instanceCache.Delete(getInstanceCacheKey(environmentID, instanceID))
 	s.instanceIDCache.Delete(instanceUID)
 	return nil
 }
