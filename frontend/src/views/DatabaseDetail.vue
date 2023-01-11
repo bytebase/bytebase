@@ -143,7 +143,10 @@
             />
           </button>
           <button
-            v-if="allowAlterSchemaOrChangeData"
+            v-if="
+              allowAlterSchemaOrChangeData &&
+              database.instance.engine !== 'MONGODB'
+            "
             type="button"
             class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
