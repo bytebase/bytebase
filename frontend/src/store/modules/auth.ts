@@ -53,7 +53,7 @@ export const useAuthStore = defineStore("auth", {
       return convertedProviderList;
     },
     async login(loginInfo: BytebaseLoginInfo) {
-      await authServiceClient.login({
+      await axios.post("/v1/auth/login", {
         email: loginInfo.email,
         password: loginInfo.password,
         web: true,
@@ -88,7 +88,7 @@ export const useAuthStore = defineStore("auth", {
     async logout() {
       const unknownPrincipal = unknown("PRINCIPAL") as Principal;
       try {
-        await authServiceClient.logout({});
+        await axios.post("/v1/auth/logout");
       } finally {
         this.setCurrentUser(unknownPrincipal);
       }
@@ -102,7 +102,7 @@ export const useAuthStore = defineStore("auth", {
           password: signupInfo.password,
         },
       });
-      await authServiceClient.login({
+      await axios.post("/v1/auth/login", {
         email: signupInfo.email,
         password: signupInfo.password,
         web: true,
