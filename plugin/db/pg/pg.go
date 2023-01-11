@@ -184,6 +184,9 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		guessDSN := fmt.Sprintf("%s dbname=%s", dsn, guessDatabase)
 		if err := func() error {
 			connectionString, err := registerConnectionConfig(guessDSN, tlsConfig)
+			if err != nil {
+				return err
+			}
 			defer unregisterConnectionConfig(connectionString)
 			db, err := sql.Open(driverName, connectionString)
 			if err != nil {
