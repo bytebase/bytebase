@@ -38,7 +38,7 @@ func (s *InstanceRoleService) GetRole(ctx context.Context, request *v1pb.GetRole
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.getInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (s *InstanceRoleService) ListRoles(ctx context.Context, request *v1pb.ListR
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.getInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	instance, err := s.getInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -160,15 +160,19 @@ func (s *InstanceRoleService) CreateRole(ctx context.Context, request *v1pb.Crea
 
 // UpdateRole updates an role.
 func (s *InstanceRoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRequest) (*v1pb.InstanceRole, error) {
+	if request.Role == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "role must be set")
+	}
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
+
 	environmentID, instanceID, roleName, err := getEnvironmentInstanceRoleID(request.Role.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.getInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +237,7 @@ func (s *InstanceRoleService) DeleteRole(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	instance, err := s.getInstance(ctx, environmentID, instanceID)
+	instance, err := s.getInstanceMessage(ctx, environmentID, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +262,7 @@ func (*InstanceRoleService) UndeleteRole(_ context.Context, _ *v1pb.UndeleteRole
 	return nil, status.Errorf(codes.Unimplemented, "Undelete role is not supported")
 }
 
-func (s *InstanceRoleService) getInstance(ctx context.Context, environmentID, instanceID string) (*store.InstanceMessage, error) {
+func (s *InstanceRoleService) getInstanceMessage(ctx context.Context, environmentID, instanceID string) (*store.InstanceMessage, error) {
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,

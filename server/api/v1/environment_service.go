@@ -32,18 +32,9 @@ func NewEnvironmentService(store *store.Store, licenseService enterpriseAPI.Lice
 
 // GetEnvironment gets an environment.
 func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.GetEnvironmentRequest) (*v1pb.Environment, error) {
-	environmentID, err := getEnvironmentID(request.Name)
+	environment, err := s.getEnvironmentMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+		return nil, err
 	}
 	return convertToEnvironment(environment), nil
 }
@@ -109,22 +100,13 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	environmentID, err := getEnvironmentID(request.Environment.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &environmentID,
-	})
+	environment, err := s.getEnvironmentMessage(ctx, request.Environment.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+		return nil, err
 	}
 	if environment.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", request.Environment.Name)
 	}
 
 	patch := &store.UpdateEnvironmentMessage{}
@@ -141,7 +123,7 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 	}
 
 	environment, err = s.store.UpdateEnvironmentV2(ctx,
-		environmentID,
+		environment.ResourceID,
 		patch,
 		principalID,
 	)
@@ -154,27 +136,17 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 // DeleteEnvironment deletes an environment.
 func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1pb.DeleteEnvironmentRequest) (*emptypb.Empty, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	environmentID, err := getEnvironmentID(request.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID:  &environmentID,
-		ShowDeleted: true,
-	})
+	environment, err := s.getEnvironmentMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+		return nil, err
 	}
 	if environment.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", environmentID)
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q has been deleted", request.Name)
 	}
 
 	// All instances in the environment must be deleted.
-	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{EnvironmentID: &environmentID})
+	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{EnvironmentID: &environment.ResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -182,7 +154,7 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment should be deleted")
 	}
 
-	if _, err := s.store.UpdateEnvironmentV2(ctx, environmentID, &store.UpdateEnvironmentMessage{Delete: &deletePatch}, principalID); err != nil {
+	if _, err := s.store.UpdateEnvironmentV2(ctx, environment.ResourceID, &store.UpdateEnvironmentMessage{Delete: &deletePatch}, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
@@ -191,31 +163,40 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 // UndeleteEnvironment undeletes an environment.
 func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v1pb.UndeleteEnvironmentRequest) (*v1pb.Environment, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	environmentID, err := getEnvironmentID(request.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID:  &environmentID,
-		ShowDeleted: true,
-	})
+	environment, err := s.getEnvironmentMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+		return nil, err
 	}
 	if !environment.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "environment %q is active", environmentID)
+		return nil, status.Errorf(codes.InvalidArgument, "environment %q is active", request.Name)
 	}
 
-	environment, err = s.store.UpdateEnvironmentV2(ctx, environmentID, &store.UpdateEnvironmentMessage{Delete: &undeletePatch}, principalID)
+	environment, err = s.store.UpdateEnvironmentV2(ctx, environment.ResourceID, &store.UpdateEnvironmentMessage{Delete: &undeletePatch}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return convertToEnvironment(environment), nil
+}
+
+func (s *EnvironmentService) getEnvironmentMessage(ctx context.Context, name string) (*store.EnvironmentMessage, error) {
+	environmentID, err := getEnvironmentID(name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &environmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", name)
+	}
+
+	return environment, nil
 }
 
 func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environment {
