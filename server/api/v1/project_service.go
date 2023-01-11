@@ -30,22 +30,10 @@ func NewProjectService(store *store.Store) *ProjectService {
 
 // GetProject gets a project.
 func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjectRequest) (*v1pb.Project, error) {
-	projectID, err := getProjectID(request.Name)
+	project, err := s.getProjectMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
-	}
-
 	return convertToProject(project), nil
 }
 
@@ -90,29 +78,21 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 	if request.Project == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "project must be set")
 	}
-
-	projectID, err := getProjectID(request.Project.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	})
+	project, err := s.getProjectMessage(ctx, request.Project.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, err
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project.Name)
 	}
 
 	patch := &store.UpdateProjectMessage{
 		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
-		ResourceID: projectID,
+		ResourceID: project.ResourceID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -167,28 +147,17 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 
 // DeleteProject deletes a project.
 func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.DeleteProjectRequest) (*emptypb.Empty, error) {
-	projectID, err := getProjectID(request.Name)
+	project, err := s.getProjectMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+		return nil, err
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", projectID)
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Name)
 	}
 
 	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
 		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
-		ResourceID: projectID,
+		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -199,7 +168,28 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 
 // UndeleteProject undeletes a project.
 func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.UndeleteProjectRequest) (*v1pb.Project, error) {
-	projectID, err := getProjectID(request.Name)
+	project, err := s.getProjectMessage(ctx, request.Name)
+	if err != nil {
+		return nil, err
+	}
+	if !project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", request.Name)
+	}
+
+	projectMsg, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
+		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
+		ResourceID: project.ResourceID,
+		Delete:     &undeletePatch,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertToProject(projectMsg), nil
+}
+
+func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
+	projectID, err := getProjectID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -212,22 +202,10 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
-	}
-	if !project.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", projectID)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", name)
 	}
 
-	projectMsg, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
-		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
-		ResourceID: projectID,
-		Delete:     &undeletePatch,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	return convertToProject(projectMsg), nil
+	return project, nil
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
