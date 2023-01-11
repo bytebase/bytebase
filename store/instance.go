@@ -819,7 +819,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 	}
 
 	for _, ds := range instanceCreate.DataSources {
-		if _, err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, creatorID, ds); err != nil {
+		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, creatorID, ds); err != nil {
 			return nil, err
 		}
 	}
@@ -928,7 +928,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 
 		for _, ds := range patch.DataSources {
-			if _, err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, patch.UpdaterID, ds); err != nil {
+			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, patch.UpdaterID, ds); err != nil {
 				return nil, err
 			}
 		}

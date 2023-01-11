@@ -488,9 +488,12 @@ type DataSourceMessage struct {
 
 // UpdateDataSourceMessage is the message for the data source.
 type UpdateDataSourceMessage struct {
-	UpdaterID   int
-	InstanceUID int
-	Type        api.DataSourceType
+	UpdaterID     int
+	InstanceUID   int
+	EnvironmentID string
+	InstanceID    string
+
+	Type api.DataSourceType
 
 	Username *string
 	Password *string
@@ -556,29 +559,28 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 }
 
 // AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.
-func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, creatorID int, dataSource *DataSourceMessage) (*InstanceMessage, error) {
+func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, creatorID int, environmentID, instanceID string, dataSource *DataSourceMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.New("Failed to begin transaction")
+		return errors.New("Failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	instance, err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource)
-	if err != nil {
-		return nil, err
+	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource); err != nil {
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, errors.New("Failed to commit transaction")
+		return errors.New("Failed to commit transaction")
 	}
 
-	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
-	s.instanceIDCache.Store(instance.UID, instance)
-	return instance, nil
+	s.instanceCache.Delete(getInstanceCacheKey(environmentID, instanceID))
+	s.instanceIDCache.Delete(instanceUID)
+	return nil
 }
 
 // RemoveDataSourceV2 removes a RO data source from an instance.
-func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, dataSourceTp api.DataSourceType) error {
+func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, environmentID, instanceID string, dataSourceTp api.DataSourceType) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.New("Failed to begin transaction")
@@ -586,13 +588,19 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, dataSou
 	defer tx.Rollback()
 
 	var environmentResourceID, instanceResourceID string
-	if err := tx.QueryRowContext(ctx, `
-		DELETE FROM data_source
-			USING instance, environment
-				WHERE data_source.instance_id = $1 AND data_source.type = $2 AND data_source.instance_id = instance.id AND instance.environment_id = environment.id
-			RETURNING environment.resource_id, instance.resource_id;
-	`, instanceUID, dataSourceTp).Scan(&environmentResourceID, &instanceResourceID); err != nil {
+	result, err := tx.ExecContext(ctx, `
+		DELETE FROM data_source WHERE data_source.instance_id = $1 AND data_source.type = $2;
+	`, instanceUID, dataSourceTp)
+	if err != nil {
 		return FormatError(err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get rows affected")
+	}
+	if rowsAffected != 1 {
+		return errors.Errorf("remove %d type data_sources for instance uid %d, but expected 1", rowsAffected, instanceUID)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -605,7 +613,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, dataSou
 }
 
 // UpdateDataSourceV2 updates a data source and returns the instance.
-func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) (*InstanceMessage, error) {
+func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) error {
 	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
 
 	if v := patch.Username; v != nil {
@@ -644,7 +652,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.New("Failed to begin transaction")
+		return errors.New("Failed to begin transaction")
 	}
 	defer tx.Rollback()
 
@@ -654,34 +662,27 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		` AND type = ` + fmt.Sprintf(`'%s'`, patch.Type)
 	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
-		return nil, FormatError(err)
+		return FormatError(err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get rows affected")
+		return errors.Wrapf(err, "failed to get rows affected")
 	}
 	if rowsAffected != 1 {
-		return nil, errors.Errorf("update %v data source records from instance %v, but expected one", rowsAffected, patch.InstanceUID)
-	}
-
-	instance, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
-		UID: &patch.InstanceUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find instance")
+		return errors.Errorf("update %v data source records from instance %v, but expected one", rowsAffected, patch.InstanceUID)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
+		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
-	s.instanceIDCache.Store(instance.UID, instance)
-	return instance, nil
+	s.instanceCache.Delete(getInstanceCacheKey(patch.EnvironmentID, patch.InstanceID))
+	s.instanceIDCache.Delete(patch.InstanceUID)
+	return nil
 }
 
-func (s *Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) (*InstanceMessage, error) {
+func (s *Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) error {
 	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
 	dataSourceOptions := api.DataSourceOptions{
 		SRV:                    dataSource.SRV,
@@ -715,15 +716,8 @@ func (s *Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, insta
 		dataSource.SslCert, dataSource.SslCa, dataSource.Host, dataSource.Port,
 		dataSourceOptions, dataSource.Database, instanceUID, api.AllDatabaseName,
 	); err != nil {
-		return nil, FormatError(err)
+		return FormatError(err)
 	}
 
-	instance, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
-		UID: &instanceUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find instance with instance uid %d", instanceUID)
-	}
-
-	return instance, nil
+	return nil
 }

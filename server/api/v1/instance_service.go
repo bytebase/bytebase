@@ -278,10 +278,13 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 
-	instance, err = s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, dataSource)
-	if err != nil {
+	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, instance.EnvironmentID, instance.ResourceID, dataSource); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &instance.UID,
+	})
 
 	return convertToInstance(instance), nil
 }
@@ -319,7 +322,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, dataSource.Type); err != nil {
+	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.EnvironmentID, instance.ResourceID, dataSource.Type); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -330,6 +333,10 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &instance.UID,
+	})
 
 	return convertToInstance(instance), nil
 }
@@ -364,9 +371,11 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	patch := &store.UpdateDataSourceMessage{
-		UpdaterID:   ctx.Value(common.PrincipalIDContextKey).(int),
-		InstanceUID: instance.UID,
-		Type:        tp,
+		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
+		InstanceUID:   instance.UID,
+		Type:          tp,
+		EnvironmentID: instance.EnvironmentID,
+		InstanceID:    instance.ResourceID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -392,12 +401,15 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		}
 	}
 
-	ins, err := s.store.UpdateDataSourceV2(ctx, patch)
-	if err != nil {
+	if err := s.store.UpdateDataSourceV2(ctx, patch); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToInstance(ins), nil
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &instance.UID,
+	})
+
+	return convertToInstance(instance), nil
 }
 
 func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
