@@ -217,7 +217,7 @@ func getTokenFromMetadata(md metadata.MD) (string, string, error) {
 	}
 	// check the HTTP cookie
 	var accessToken, refreshToken string
-	for _, t := range append(md.Get("grpcgateway-cookie"), md.Get("cookie")...) {
+	for _, t := range md["grpcgateway-cookie"] {
 		header := http.Header{}
 		header.Add("Cookie", t)
 		request := http.Request{Header: header}
