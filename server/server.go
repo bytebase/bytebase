@@ -18,6 +18,7 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
@@ -441,7 +442,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.grpcServer = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(authProvider.AuthenticationInterceptor, aclProvider.ACLInterceptor),
 	)
-	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
 	v1pb.RegisterAuthServiceServer(s.grpcServer, v1.NewAuthService(s.store, s.secret, s.MetricReporter, &profile))
 	v1pb.RegisterEnvironmentServiceServer(s.grpcServer, v1.NewEnvironmentService(s.store, s.licenseService))
 	v1pb.RegisterInstanceServiceServer(s.grpcServer, v1.NewInstanceService(s.store, s.licenseService))
@@ -449,30 +449,45 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	v1pb.RegisterDatabaseServiceServer(s.grpcServer, v1.NewDatabaseService(s.store))
 	v1pb.RegisterInstanceRoleServiceServer(s.grpcServer, v1.NewInstanceRoleService(s.store, dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir)))
 	v1pb.RegisterOrgPolicyServiceServer(s.grpcServer, v1.NewOrgPolicyService(s.store, s.licenseService))
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+
+	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
-	if err := v1pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+	grpcConn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterEnvironmentServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(auth.GatewayResponseModifier))
+	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterInstanceServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterProjectServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+	if err := v1pb.RegisterInstanceServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterDatabaseServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterInstanceRoleServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
-	if err := v1pb.RegisterOrgPolicyServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts); err != nil {
+	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
+	}
+	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, err
 	}
 	e.Any("/v1/*", echo.WrapHandler(mux))
+	// GRPC web proxy.
+	options := []grpcweb.Option{
+		grpcweb.WithCorsForRegisteredEndpointsOnly(false),
+		grpcweb.WithOriginFunc(func(origin string) bool {
+			return true
+		}),
+	}
+	wrappedGrpc := grpcweb.WrapServer(s.grpcServer, options...)
+	e.Any("/*", echo.WrapHandler(wrappedGrpc))
 
 	// Register open API routes
 	s.registerOpenAPIRoutes(e, ce, profile)
