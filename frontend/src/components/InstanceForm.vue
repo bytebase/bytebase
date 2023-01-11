@@ -626,7 +626,8 @@ const showSSL = computed((): boolean => {
   return (
     state.instance.engine === "CLICKHOUSE" ||
     state.instance.engine === "MYSQL" ||
-    state.instance.engine === "TIDB"
+    state.instance.engine === "TIDB" ||
+    state.instance.engine === "POSTGRES"
   );
 });
 
