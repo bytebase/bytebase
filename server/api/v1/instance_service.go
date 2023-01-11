@@ -43,7 +43,6 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -134,7 +133,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -186,7 +184,6 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -221,7 +218,6 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -248,18 +244,181 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 }
 
 // AddDataSource adds a data source to an instance.
-func (*InstanceService) AddDataSource(_ context.Context, _ *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddDataSource not implemented")
+func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
+	if request.DataSources == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
+	}
+	// We only support add RO type datasouce to instance now, see more details in instance_service.proto.
+	if request.DataSources.Type != v1pb.DataSourceType_READ_ONLY {
+		return nil, status.Errorf(codes.InvalidArgument, "only support add read-only data source")
+	}
+
+	dataSource, err := convertToDataSourceMessage(request.DataSources)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
+	}
+
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+
+	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, instance.EnvironmentID, instance.ResourceID, dataSource); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &instance.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertToInstance(instance), nil
 }
 
 // RemoveDataSource removes a data source to an instance.
-func (*InstanceService) RemoveDataSource(_ context.Context, _ *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveDataSource not implemented")
+func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
+	if request.DataSources == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
+	}
+	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
+	if request.DataSources.Type != v1pb.DataSourceType_READ_ONLY {
+		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
+	}
+
+	dataSource, err := convertToDataSourceMessage(request.DataSources)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
+	}
+
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+	}
+
+	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.EnvironmentID, instance.ResourceID, dataSource.Type); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &instance.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertToInstance(instance), nil
 }
 
 // UpdateDataSource updates a data source of an instance.
-func (*InstanceService) UpdateDataSource(_ context.Context, _ *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSource not implemented")
+func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
+	if request.DataSources == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "datasource is required")
+	}
+	tp, err := convertDataSourceTp(request.DataSources.Type)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	environmentID, instanceID, err := getEnvironmentInstanceID(request.Instance)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", request.Instance)
+	}
+	if instance.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
+	}
+
+	patch := &store.UpdateDataSourceMessage{
+		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
+		InstanceUID:   instance.UID,
+		Type:          tp,
+		EnvironmentID: instance.EnvironmentID,
+		InstanceID:    instance.ResourceID,
+	}
+
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "username":
+			patch.Username = &request.DataSources.Username
+		case "password":
+			patch.Password = &request.DataSources.Password
+		case "ssl_ca":
+			patch.SslCa = &request.DataSources.SslCa
+		case "ssl_cert":
+			patch.SslCert = &request.DataSources.SslCert
+		case "ssl_key":
+			patch.SslKey = &request.DataSources.SslKey
+		case "host":
+			patch.Host = &request.DataSources.Host
+		case "port":
+			patch.Port = &request.DataSources.Port
+		case "srv":
+			patch.SRV = &request.DataSources.Srv
+		case "authentication_database":
+			patch.AuthenticationDatabase = &request.DataSources.AuthenticationDatabase
+		}
+	}
+
+	if err := s.store.UpdateDataSourceV2(ctx, patch); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		UID: &instance.UID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertToInstance(instance), nil
 }
 
 func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
@@ -356,28 +515,47 @@ func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*stor
 func convertToDataSourceMessageList(dataSources []*v1pb.DataSource) ([]*store.DataSourceMessage, error) {
 	datasourceList := []*store.DataSourceMessage{}
 	for _, ds := range dataSources {
-		var dsType api.DataSourceType
-		switch ds.Type {
-		case v1pb.DataSourceType_READ_ONLY:
-			dsType = api.RO
-		case v1pb.DataSourceType_ADMIN:
-			dsType = api.Admin
-		default:
-			return nil, errors.Errorf("invalid data source type %v", ds.Type)
+		dataSource, err := convertToDataSourceMessage(ds)
+		if err != nil {
+			return nil, err
 		}
-		datasourceList = append(datasourceList, &store.DataSourceMessage{
-			Title:    ds.Title,
-			Type:     dsType,
-			Username: ds.Username,
-			Password: ds.Password,
-			SslCa:    ds.SslCa,
-			SslCert:  ds.SslCert,
-			SslKey:   ds.SslKey,
-			Host:     ds.Host,
-			Port:     ds.Port,
-			Database: ds.Database,
-		})
+		datasourceList = append(datasourceList, dataSource)
 	}
 
 	return datasourceList, nil
+}
+
+func convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
+	dsType, err := convertDataSourceTp(dataSource.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	return &store.DataSourceMessage{
+		Title:                  dataSource.Title,
+		Type:                   dsType,
+		Username:               dataSource.Username,
+		Password:               dataSource.Password,
+		SslCa:                  dataSource.SslCa,
+		SslCert:                dataSource.SslCert,
+		SslKey:                 dataSource.SslKey,
+		Host:                   dataSource.Host,
+		Port:                   dataSource.Port,
+		Database:               dataSource.Database,
+		SRV:                    dataSource.Srv,
+		AuthenticationDatabase: dataSource.AuthenticationDatabase,
+	}, nil
+}
+
+func convertDataSourceTp(tp v1pb.DataSourceType) (api.DataSourceType, error) {
+	var dsType api.DataSourceType
+	switch tp {
+	case v1pb.DataSourceType_READ_ONLY:
+		dsType = api.RO
+	case v1pb.DataSourceType_ADMIN:
+		dsType = api.Admin
+	default:
+		return "", errors.Errorf("invalid data source type %v", tp)
+	}
+	return dsType, nil
 }

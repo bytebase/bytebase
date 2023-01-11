@@ -543,7 +543,7 @@ func (s *Store) upsertPolicyCache(policyType api.PolicyType, resourceID int, pay
 // PolicyMessage is the mssage for policy.
 type PolicyMessage struct {
 	UID               int
-	ResourceID        string
+	ResourceUID       int
 	ResourceType      api.PolicyResourceType
 	Payload           string
 	InheritFromParent bool
@@ -559,8 +559,25 @@ type FindPolicyMessage struct {
 	ShowDeleted  bool
 }
 
+// UpdatePolicyMessage is the message for updating a policy.
+type UpdatePolicyMessage struct {
+	UpdaterID         int
+	ResourceType      api.PolicyResourceType
+	ResourceUID       int
+	Type              api.PolicyType
+	InheritFromParent *bool
+	Payload           *string
+	RowStatus         *api.RowStatus
+}
+
 // GetPolicyV2 gets a policy.
 func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*PolicyMessage, error) {
+	if find.ResourceType != nil && find.ResourceUID != nil && find.Type != nil {
+		if policy, ok := s.policyCache.Load(getPolicyCacheKey(*find.ResourceType, *find.ResourceUID, *find.Type)); ok {
+			return policy.(*PolicyMessage), nil
+		}
+	}
+
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -585,7 +602,8 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 		return nil, FormatError(err)
 	}
 
-	// TODO: add cache
+	s.storePolicyIntoCache(policy)
+
 	return policy, nil
 }
 
@@ -606,8 +624,116 @@ func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]
 		return nil, FormatError(err)
 	}
 
-	// TODO: add cache
+	for _, policy := range policies {
+		s.storePolicyIntoCache(policy)
+	}
+
 	return policies, nil
+}
+
+// CreatePolicyV2 creates a policy.
+func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creatorID int) (*PolicyMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var uid int
+	if err := tx.QueryRowContext(ctx, `
+			INSERT INTO policy (
+				creator_id,
+				updater_id,
+				resource_type,
+				resource_id,
+				inherit_from_parent,
+				type,
+				payload
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id
+		`,
+		creatorID,
+		creatorID,
+		create.ResourceType,
+		create.ResourceUID,
+		create.InheritFromParent,
+		create.Type,
+		create.Payload,
+	).Scan(
+		&uid,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	create.UID = uid
+	create.Deleted = false
+
+	s.storePolicyIntoCache(create)
+
+	return create, nil
+}
+
+// UpdatePolicyV2 updates the policy.
+func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
+	if v := patch.InheritFromParent; v != nil {
+		set, args = append(set, fmt.Sprintf("inherit_from_parent = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
+	args = append(args, patch.ResourceType, patch.ResourceUID, patch.Type)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	policy := &PolicyMessage{
+		ResourceUID:  patch.ResourceUID,
+		ResourceType: patch.ResourceType,
+		Type:         patch.Type,
+	}
+	var rowStatus string
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+			UPDATE policy
+			SET `+strings.Join(set, ", ")+`
+			WHERE resource_type = $%d AND resource_id = $%d AND type =$%d
+			RETURNING
+				payload,
+				inherit_from_parent,
+				row_status
+		`, len(args)-2, len(args)-1, len(args)),
+		args...,
+	).Scan(
+		&policy.Payload,
+		&policy.InheritFromParent,
+		&rowStatus,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, FormatError(err)
+	}
+
+	policy.Deleted = convertRowStatusToDeleted(rowStatus)
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	s.storePolicyIntoCache(policy)
+
+	return policy, nil
 }
 
 func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
@@ -651,7 +777,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 			&policyMessage.UID,
 			&rowStatus,
 			&policyMessage.ResourceType,
-			&policyMessage.ResourceID,
+			&policyMessage.ResourceUID,
 			&policyMessage.InheritFromParent,
 			&policyMessage.Type,
 			&policyMessage.Payload,
@@ -666,4 +792,12 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		return nil, FormatError(err)
 	}
 	return policyList, nil
+}
+
+func (s *Store) storePolicyIntoCache(policy *PolicyMessage) {
+	if policy.Type != api.PolicyTypePipelineApproval {
+		return
+	}
+
+	s.policyCache.Store(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
 }

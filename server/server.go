@@ -487,7 +487,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}),
 	}
 	wrappedGrpc := grpcweb.WrapServer(s.grpcServer, options...)
-	e.Any("/*", echo.WrapHandler(wrappedGrpc))
+	e.Any("/bytebase.v1.*", echo.WrapHandler(wrappedGrpc))
 
 	// Register open API routes
 	s.registerOpenAPIRoutes(e, ce, profile)
