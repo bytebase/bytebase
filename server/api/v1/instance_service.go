@@ -319,7 +319,14 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Instance)
 	}
 
-	instance, err = s.store.RemoveDataSourceV2(ctx, instance.UID, dataSource.Type)
+	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, dataSource.Type); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		EnvironmentID: &environmentID,
+		ResourceID:    &instanceID,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

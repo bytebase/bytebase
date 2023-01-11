@@ -577,43 +577,31 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 	return instance, nil
 }
 
-// RemoveDataSourceV2 removes a RO data source from an instance and return the instance where the data source had beed removed from.
-func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, dataSourceTp api.DataSourceType) (*InstanceMessage, error) {
+// RemoveDataSourceV2 removes a RO data source from an instance.
+func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, dataSourceTp api.DataSourceType) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.New("Failed to begin transaction")
+		return errors.New("Failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	result, err := tx.ExecContext(ctx, `
-		DELETE FROM data_source WHERE instance_id = $1 AND type = $2;
-	`, instanceUID, dataSourceTp)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get rows affected")
-	}
-	if rowsAffected != 1 {
-		return nil, errors.Errorf("deleted %v read-only data source records from instance %v, but expected one", rowsAffected, instanceUID)
-	}
-
-	instance, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
-		UID: &instanceUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find instance")
+	var environmentResourceID, instanceResourceID string
+	if err := tx.QueryRowContext(ctx, `
+		DELETE FROM data_source
+			USING instance, environment
+				WHERE data_source.instance_id = $1 AND data_source.type = $2 AND data_source.instance_id = instance.id AND instance.environment_id = environment.id
+			RETURNING environment.resource_id, instance.resource_id;
+	`, instanceUID, dataSourceTp).Scan(&environmentResourceID, &instanceResourceID); err != nil {
+		return FormatError(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
+		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
-	s.instanceIDCache.Store(instance.UID, instance)
-	return instance, nil
+	s.instanceCache.Delete(getInstanceCacheKey(environmentResourceID, instanceResourceID))
+	s.instanceIDCache.Delete(instanceUID)
+	return nil
 }
 
 // UpdateDataSourceV2 updates a data source and returns the instance.
