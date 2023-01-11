@@ -295,6 +295,11 @@ export interface UpdatePolicyRequest {
   policy?: Policy;
   /** The list of fields to update. */
   updateMask?: string[];
+  /**
+   * If set to true, and the policy is not found, a new policy will be created.
+   * In this situation, `update_mask` is ignored.
+   */
+  allowMissing: boolean;
 }
 
 export interface DeletePolicyRequest {
@@ -502,7 +507,7 @@ export const CreatePolicyRequest = {
 };
 
 function createBaseUpdatePolicyRequest(): UpdatePolicyRequest {
-  return { policy: undefined, updateMask: undefined };
+  return { policy: undefined, updateMask: undefined, allowMissing: false };
 }
 
 export const UpdatePolicyRequest = {
@@ -512,6 +517,9 @@ export const UpdatePolicyRequest = {
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.allowMissing === true) {
+      writer.uint32(24).bool(message.allowMissing);
     }
     return writer;
   },
@@ -529,6 +537,9 @@ export const UpdatePolicyRequest = {
         case 2:
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           break;
+        case 3:
+          message.allowMissing = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -541,6 +552,7 @@ export const UpdatePolicyRequest = {
     return {
       policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? Boolean(object.allowMissing) : false,
     };
   },
 
@@ -548,6 +560,7 @@ export const UpdatePolicyRequest = {
     const obj: any = {};
     message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
     message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    message.allowMissing !== undefined && (obj.allowMissing = message.allowMissing);
     return obj;
   },
 
@@ -557,6 +570,7 @@ export const UpdatePolicyRequest = {
       ? Policy.fromPartial(object.policy)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    message.allowMissing = object.allowMissing ?? false;
     return message;
   },
 };

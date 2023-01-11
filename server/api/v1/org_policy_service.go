@@ -88,44 +88,22 @@ func (s *OrgPolicyService) CreatePolicy(ctx context.Context, request *v1pb.Creat
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
-	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, request.Parent)
-	if err != nil {
-		return nil, err
-	}
-
-	policyType, err := convertPolicyType(request.Type.String())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	payloadStr, err := convertPolicyPayloadToString(request.Policy)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid policy %v", err.Error())
-	}
-
-	policy, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       resourceID,
-		ResourceType:      resourceType,
-		Payload:           payloadStr,
-		Type:              policyType,
-		InheritFromParent: request.Policy.InheritFromParent,
-	}, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	response, err := convertToPolicy(request.Parent, policy)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	return response, nil
+	return s.createPolicyMessage(ctx, principalID, request.Parent, request.Policy)
 }
 
 // UpdatePolicy updates a policy in a specific resource.
 func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.UpdatePolicyRequest) (*v1pb.Policy, error) {
+	if request.Policy == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	policy, parent, err := s.findPolicyMessage(ctx, request.Policy.Name)
 	if err != nil {
+		st := status.Convert(err)
+		if st.Code() == codes.NotFound && request.AllowMissing {
+			return s.createPolicyMessage(ctx, principalID, parent, request.Policy)
+		}
 		return nil, err
 	}
 	if policy.Deleted {
@@ -133,7 +111,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 	}
 
 	patch := &store.UpdatePolicyMessage{
-		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:    principalID,
 		ResourceType: policy.ResourceType,
 		Type:         policy.Type,
 		ResourceUID:  policy.ResourceUID,
@@ -231,12 +209,12 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	}
 	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, policyParent)
 	if err != nil {
-		return nil, "", err
+		return nil, policyParent, err
 	}
 
 	policyType, err := convertPolicyType(tokens[1])
 	if err != nil {
-		return nil, "", status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, policyParent, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
@@ -245,10 +223,10 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 		ResourceUID:  &resourceID,
 	})
 	if err != nil {
-		return nil, "", status.Errorf(codes.Internal, err.Error())
+		return nil, policyParent, status.Errorf(codes.Internal, err.Error())
 	}
 	if policy == nil {
-		return nil, "", status.Errorf(codes.NotFound, "policy %q not found", policyName)
+		return nil, policyParent, status.Errorf(codes.NotFound, "policy %q not found", policyName)
 	}
 
 	return policy, policyParent, nil
@@ -355,6 +333,41 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 	}
 
 	return api.PolicyResourceTypeUnknown, 0, status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
+}
+
+func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID int, parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
+	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, parent)
+	if err != nil {
+		return nil, err
+	}
+
+	policyType, err := convertPolicyType(policy.Type.String())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	payloadStr, err := convertPolicyPayloadToString(policy)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid policy %v", err.Error())
+	}
+
+	p, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+		ResourceUID:       resourceID,
+		ResourceType:      resourceType,
+		Payload:           payloadStr,
+		Type:              policyType,
+		InheritFromParent: policy.InheritFromParent,
+	}, creatorID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	response, err := convertToPolicy(parent, p)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return response, nil
 }
 
 func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
