@@ -6,8 +6,7 @@ import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
 
 const channel = createChannel(
-  // TODO(steven/danny): change the address to our grpc web proxy server.
-  "http://localhost:8082",
+  "http://localhost:8080",
   grpc.CrossBrowserHttpTransport({
     withCredentials: true,
   })
