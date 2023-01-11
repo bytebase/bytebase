@@ -43,7 +43,6 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -134,7 +133,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -186,7 +184,6 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -221,7 +218,6 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -312,7 +308,6 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -350,7 +345,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
