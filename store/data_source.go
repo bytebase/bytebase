@@ -469,7 +469,7 @@ func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID, datab
 	return nil
 }
 
-// DataSourceMessage is the mssage for data source.
+// DataSourceMessage is the message for data source.
 type DataSourceMessage struct {
 	Title    string
 	Type     api.DataSourceType
@@ -486,6 +486,7 @@ type DataSourceMessage struct {
 	AuthenticationDatabase string
 }
 
+// UpdateDataSourceMessage is the message for the data source.
 type UpdateDataSourceMessage struct {
 	UpdaterID   int
 	InstanceUID int
