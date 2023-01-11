@@ -285,6 +285,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		UID: &instance.UID,
 	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	return convertToInstance(instance), nil
 }
@@ -337,6 +340,9 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		UID: &instance.UID,
 	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	return convertToInstance(instance), nil
 }
@@ -408,6 +414,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		UID: &instance.UID,
 	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	return convertToInstance(instance), nil
 }
