@@ -7,8 +7,8 @@
     <BBGrid
       :column-list="COLUMN_LIST"
       :data-source="state.sensitiveColumnList"
-      :row-clickable="false"
       class="border"
+      @click-row="clickRow"
     >
       <template #item="{ item }: { item: SensitiveColumn }">
         <div class="bb-grid-cell">
@@ -18,9 +18,7 @@
           {{ item.table }}
         </div>
         <div class="bb-grid-cell">
-          <router-link :to="`/db/${databaseSlug(item.database)}`">
-            {{ item.database.name }}
-          </router-link>
+          {{ item.database.name }}
         </div>
         <div class="bb-grid-cell gap-x-1">
           <InstanceEngineIcon :instance="item.database.instance" />
@@ -47,6 +45,7 @@
               <button
                 :disabled="!allowAdmin"
                 class="w-5 h-5 p-0.5 bg-white hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                @click.stop=""
               >
                 <heroicons-outline:trash />
               </button>
@@ -69,9 +68,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NPopconfirm } from "naive-ui";
+import { uniq } from "lodash-es";
+import { useRouter } from "vue-router";
 
 import {
   featureToRef,
@@ -82,7 +83,7 @@ import {
 } from "@/store";
 import { Database, Policy, SensitiveDataPolicyPayload } from "@/types";
 import { BBGridColumn } from "@/bbkit/types";
-import { hasWorkspacePermission } from "@/utils";
+import { databaseSlug, hasWorkspacePermission } from "@/utils";
 import { BBGrid } from "@/bbkit";
 
 type SensitiveColumn = {
@@ -98,6 +99,7 @@ interface LocalState {
 }
 
 const { t } = useI18n();
+const router = useRouter();
 const state = reactive<LocalState>({
   showFeatureModal: false,
   isLoading: false,
@@ -114,15 +116,23 @@ const allowAdmin = computed(() => {
   );
 });
 
-const policyList = usePolicyListByResourceTypeAndPolicyType(
-  computed(() => ({
-    resourceType: "database",
-    policyType: "bb.policy.sensitive-data",
-  }))
-);
+const policyList = usePolicyListByResourceTypeAndPolicyType({
+  resourceType: "database",
+  policyType: "bb.policy.sensitive-data",
+});
 
 const updateList = async () => {
   state.isLoading = true;
+  const distinctDatabaseIdList = uniq(
+    policyList.value.map((policy) => policy.resourceId)
+  );
+  // Fetch or get all needed databases
+  await Promise.all(
+    distinctDatabaseIdList.map((databaseId) =>
+      databaseStore.getOrFetchDatabaseById(databaseId)
+    )
+  );
+
   const sensitiveColumnList: SensitiveColumn[] = [];
   for (let i = 0; i < policyList.value.length; i++) {
     const policy = policyList.value[i];
@@ -140,7 +150,7 @@ const updateList = async () => {
   state.isLoading = false;
 };
 
-watchEffect(updateList);
+watch(policyList, updateList, { immediate: true });
 
 const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
   if (!hasSensitiveDataFeature.value) {
@@ -211,4 +221,18 @@ const COLUMN_LIST = computed((): BBGridColumn[] => [
     class: "justify-center !px-2",
   },
 ]);
+
+const clickRow = (
+  item: SensitiveColumn,
+  section: number,
+  row: number,
+  e: MouseEvent
+) => {
+  const url = `/db/${databaseSlug(item.database)}/table/${item.table}`;
+  if (e.ctrlKey || e.metaKey) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
+};
 </script>
