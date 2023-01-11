@@ -572,6 +572,12 @@ type UpdatePolicyMessage struct {
 
 // GetPolicyV2 gets a policy.
 func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*PolicyMessage, error) {
+	if find.ResourceType != nil && find.ResourceUID != nil && find.Type != nil {
+		if policy, ok := s.policyCache.Load(getPolicyCacheKey(*find.ResourceType, *find.ResourceUID, *find.Type)); ok {
+			return policy.(*PolicyMessage), nil
+		}
+	}
+
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -596,7 +602,8 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 		return nil, FormatError(err)
 	}
 
-	// TODO: add cache
+	s.storePolicyIntoCache(policy)
+
 	return policy, nil
 }
 
@@ -617,7 +624,10 @@ func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]
 		return nil, FormatError(err)
 	}
 
-	// TODO: add cache
+	for _, policy := range policies {
+		s.storePolicyIntoCache(policy)
+	}
+
 	return policies, nil
 }
 
@@ -662,7 +672,9 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creat
 
 	create.UID = uid
 	create.Deleted = false
-	// TODO: update the policy cache
+
+	s.storePolicyIntoCache(create)
+
 	return create, nil
 }
 
@@ -718,7 +730,9 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-	// TODO: update the cache
+
+	s.storePolicyIntoCache(policy)
+
 	return policy, nil
 }
 
@@ -778,4 +792,12 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		return nil, FormatError(err)
 	}
 	return policyList, nil
+}
+
+func (s *Store) storePolicyIntoCache(policy *PolicyMessage) {
+	if policy.Type != api.PolicyTypePipelineApproval {
+		return
+	}
+
+	s.policyCache.Store(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
 }
