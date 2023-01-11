@@ -269,7 +269,6 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		EnvironmentID: &environmentID,
 		ResourceID:    &instanceID,
-		ShowDeleted:   true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
