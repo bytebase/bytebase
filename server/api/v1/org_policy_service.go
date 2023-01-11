@@ -37,29 +37,9 @@ func NewOrgPolicyService(store *store.Store, licenseService enterpriseAPI.Licens
 
 // GetPolicy gets a policy in a specific resource.
 func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolicyRequest) (*v1pb.Policy, error) {
-	policy, parent, pType, err := s.findPolicyMessage(ctx, request.Name)
+	policy, parent, err := s.findPolicyMessage(ctx, request.Name)
 	if err != nil {
-		st := status.Convert(err)
-		if st.Code() == codes.NotFound {
-			payloadStr, err := api.GetDefaultPolicy(pType)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-
-			resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, parent)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-
-			policy = &store.PolicyMessage{
-				ResourceUID:  resourceID,
-				ResourceType: resourceType,
-				Payload:      payloadStr,
-				Type:         pType,
-			}
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	response, err := convertToPolicy(parent, policy)
@@ -118,7 +98,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	policy, parent, _, err := s.findPolicyMessage(ctx, request.Policy.Name)
+	policy, parent, err := s.findPolicyMessage(ctx, request.Policy.Name)
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.NotFound && request.AllowMissing {
@@ -164,7 +144,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 
 // DeletePolicy deletes a policy in a specific resource.
 func (s *OrgPolicyService) DeletePolicy(ctx context.Context, request *v1pb.DeletePolicyRequest) (*emptypb.Empty, error) {
-	policy, _, _, err := s.findPolicyMessage(ctx, request.Name)
+	policy, _, err := s.findPolicyMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +168,7 @@ func (s *OrgPolicyService) DeletePolicy(ctx context.Context, request *v1pb.Delet
 
 // UndeletePolicy undeletes a policy in a specific resource.
 func (s *OrgPolicyService) UndeletePolicy(ctx context.Context, request *v1pb.UndeletePolicyRequest) (*v1pb.Policy, error) {
-	policy, parent, _, err := s.findPolicyMessage(ctx, request.Name)
+	policy, parent, err := s.findPolicyMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -216,13 +196,11 @@ func (s *OrgPolicyService) UndeletePolicy(ctx context.Context, request *v1pb.Und
 	return response, nil
 }
 
-// findPolicyMessage finds the policy, the parent name and the policy type by the policy name.
-func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName string) (*store.PolicyMessage, string, api.PolicyType, error) {
-	var pType api.PolicyType
-
+// findPolicyMessage finds the policy and the parent name by the policy name.
+func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName string) (*store.PolicyMessage, string, error) {
 	tokens := strings.Split(policyName, policyNamePrefix)
 	if len(tokens) != 2 {
-		return nil, "", pType, status.Errorf(codes.InvalidArgument, "invalid request %s", policyName)
+		return nil, "", status.Errorf(codes.InvalidArgument, "invalid request %s", policyName)
 	}
 
 	policyParent := tokens[0]
@@ -231,12 +209,12 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	}
 	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, policyParent)
 	if err != nil {
-		return nil, policyParent, pType, err
+		return nil, policyParent, err
 	}
 
 	policyType, err := convertPolicyType(tokens[1])
 	if err != nil {
-		return nil, policyParent, policyType, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, policyParent, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
@@ -245,13 +223,13 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 		ResourceUID:  &resourceID,
 	})
 	if err != nil {
-		return nil, policyParent, policyType, status.Errorf(codes.Internal, err.Error())
+		return nil, policyParent, status.Errorf(codes.Internal, err.Error())
 	}
 	if policy == nil {
-		return nil, policyParent, policyType, status.Errorf(codes.NotFound, "policy %q not found", policyName)
+		return nil, policyParent, status.Errorf(codes.NotFound, "policy %q not found", policyName)
 	}
 
-	return policy, policyParent, policyType, nil
+	return policy, policyParent, nil
 }
 
 func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, requestName string) (api.PolicyResourceType, int, error) {
