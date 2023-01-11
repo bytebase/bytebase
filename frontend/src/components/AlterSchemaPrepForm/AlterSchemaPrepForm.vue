@@ -278,8 +278,10 @@ const databaseList = computed(() => {
   }
 
   list = list.filter((db) => db.syncStatus === "OK");
-  // We disallow users to alter schema for MongoDB databases.
-  list = list.filter((db) => db.instance.engine !== "MONGODB");
+  if (props.type === "bb.issue.database.schema.update") {
+    // We disallow users to alter schema for MongoDB databases.
+    list = list.filter((db) => db.instance.engine !== "MONGODB");
+  }
 
   const keyword = state.searchText.trim();
   list = list.filter((db) =>
