@@ -16,6 +16,7 @@ import {
   BytebaseLoginInfo,
 } from "@/types";
 import { getIntCookie } from "@/utils";
+import { authServiceClient } from "@/grpcweb";
 import { usePrincipalStore } from "./principal";
 
 function convert(user: ResourceObject): Principal {
@@ -94,10 +95,12 @@ export const useAuthStore = defineStore("auth", {
       return unknownPrincipal;
     },
     async signup(signupInfo: SignupInfo) {
-      await axios.post("/v1/users", {
-        email: signupInfo.email,
-        title: signupInfo.name,
-        password: signupInfo.password,
+      await authServiceClient.createUser({
+        user: {
+          email: signupInfo.email,
+          title: signupInfo.name,
+          password: signupInfo.password,
+        },
       });
       await axios.post("/v1/auth/login", {
         email: signupInfo.email,
