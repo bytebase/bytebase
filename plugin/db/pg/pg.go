@@ -9,7 +9,8 @@ import (
 
 	// Import pg driver.
 	// init() in pgx/v5/stdlib will register it's pgx driver.
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -55,9 +56,12 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	config        db.ConnectionConfig
 
-	db           *sql.DB
-	baseDSN      string
-	databaseName string
+	db *sql.DB
+	// connectionString is the connection string registered by pgx.
+	// Unregister connectionString if we don't need it.
+	connectionString string
+	baseDSN          string
+	databaseName     string
 
 	// strictDatabase should be used only if the user gives only a database instead of a whole instance to access.
 	strictDatabase string
@@ -106,12 +110,39 @@ func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionCon
 		driver.strictDatabase = config.Database
 	}
 
-	db, err := sql.Open(driverName, dsn)
+	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
+	if err != nil {
+		return nil, err
+	}
+	driver.connectionString = connectionString
+
+	db, err := sql.Open(driverName, driver.connectionString)
 	if err != nil {
 		return nil, err
 	}
 	driver.db = db
 	return driver, nil
+}
+
+func registerConnectionConfig(dsn string, tlsConfig db.TLSConfig) (string, error) {
+	connConfig, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return "", err
+	}
+
+	if tlsConfig.SslCA != "" {
+		sslConfig, err := tlsConfig.GetSslConfig()
+		if err != nil {
+			return "", err
+		}
+		connConfig.TLSConfig = sslConfig
+	}
+
+	return stdlib.RegisterConnConfig(connConfig), nil
+}
+
+func unregisterConnectionConfig(connectionString string) {
+	stdlib.UnregisterConnConfig(connectionString)
 }
 
 // guessDSN will guess a valid DB connection and its database name.
@@ -127,18 +158,12 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		m["dbname"] = database
 	}
 
-	// We should use the default connection dsn without setting sslmode.
-	// Some provider might still perform default SSL check at the server side so we
-	// shouldn't disable sslmode at the client side.
-	// m["sslmode"] = "disable"
-	if sslCA != "" {
-		m["sslmode"] = "verify-ca"
-		m["sslrootcert"] = sslCA
-		if sslCert != "" && sslKey != "" {
-			m["sslcert"] = sslCert
-			m["sslkey"] = sslKey
-		}
+	tlsConfig := db.TLSConfig{
+		SslCA:   sslCA,
+		SslCert: sslCert,
+		SslKey:  sslKey,
 	}
+
 	var tokens []string
 	for k, v := range m {
 		if v != "" {
@@ -158,7 +183,9 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 	for _, guessDatabase := range guesses {
 		guessDSN := fmt.Sprintf("%s dbname=%s", dsn, guessDatabase)
 		if err := func() error {
-			db, err := sql.Open(driverName, guessDSN)
+			connectionString, err := registerConnectionConfig(guessDSN, tlsConfig)
+			defer unregisterConnectionConfig(connectionString)
+			db, err := sql.Open(driverName, connectionString)
 			if err != nil {
 				return err
 			}
@@ -175,6 +202,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 
 // Close closes the driver.
 func (driver *Driver) Close(context.Context) error {
+	unregisterConnectionConfig(driver.connectionString)
 	return driver.db.Close()
 }
 
@@ -440,13 +468,21 @@ func (driver *Driver) Query(ctx context.Context, statement string, queryContext 
 
 func (driver *Driver) switchDatabase(dbName string) error {
 	if driver.db != nil {
+		unregisterConnectionConfig(driver.connectionString)
 		if err := driver.db.Close(); err != nil {
 			return err
 		}
 	}
 
 	dsn := driver.baseDSN + " dbname=" + dbName
-	db, err := sql.Open(driverName, dsn)
+
+	connectionString, err := registerConnectionConfig(dsn, driver.config.TLSConfig)
+	if err != nil {
+		return err
+	}
+	driver.connectionString = connectionString
+
+	db, err := sql.Open(driverName, driver.connectionString)
 	if err != nil {
 		return err
 	}
