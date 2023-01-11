@@ -818,28 +818,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		return nil, FormatError(err)
 	}
 
-	allDatabaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instanceID, &DatabaseMessage{DatabaseName: api.AllDatabaseName})
-	if err != nil {
-		return nil, err
-	}
-
 	for _, ds := range instanceCreate.DataSources {
-		dataSourceCreate := &api.DataSourceCreate{
-			CreatorID:  creatorID,
-			InstanceID: instanceID,
-			DatabaseID: allDatabaseUID,
-			Name:       ds.Title,
-			Type:       ds.Type,
-			Username:   ds.Username,
-			Password:   ds.Password,
-			SslKey:     ds.SslKey,
-			SslCert:    ds.SslCert,
-			SslCa:      ds.SslCa,
-			Host:       ds.Host,
-			Port:       ds.Port,
-			Database:   ds.Database,
-		}
-		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+		if _, err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, creatorID, ds); err != nil {
 			return nil, err
 		}
 	}
@@ -948,26 +928,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 
 		for _, ds := range patch.DataSources {
-			dataSourceCreate := &api.DataSourceCreate{
-				CreatorID:  patch.UpdaterID,
-				InstanceID: instance.UID,
-				DatabaseID: allDatabase.UID,
-				Name:       ds.Title,
-				Type:       ds.Type,
-				Username:   ds.Username,
-				Password:   ds.Password,
-				SslKey:     ds.SslKey,
-				SslCert:    ds.SslCert,
-				SslCa:      ds.SslCa,
-				Host:       ds.Host,
-				Port:       ds.Port,
-				Database:   ds.Database,
-				Options: api.DataSourceOptions{
-					SRV:                    ds.SRV,
-					AuthenticationDatabase: ds.AuthenticationDatabase,
-				},
-			}
-			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+			if _, err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, patch.UpdaterID, ds); err != nil {
 				return nil, err
 			}
 		}

@@ -563,50 +563,13 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 	}
 	defer tx.Rollback()
 
-	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
-	dataSourceOptions := api.DataSourceOptions{
-		SRV:                    dataSource.SRV,
-		AuthenticationDatabase: dataSource.AuthenticationDatabase,
-	}
-
-	if _, err := tx.QueryContext(ctx, `
-		INSERT INTO data_source (
-			creator_id,
-			updater_id,
-			instance_id,
-			database_id,
-			name,
-			type,
-			username,
-			password,
-			ssl_key,
-			ssl_cert,
-			ssl_ca,
-			host,
-			port,
-			options,
-			database
-		)
-		SELECT $1, $2, $3, data_source.database_id, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
-			FROM data_source WHERE instance_id = $15 AND type = $16;
-	`, creatorID, creatorID, instanceUID,
-		dataSource.Title, dataSource.Type, dataSource.Username,
-		dataSource.Password, dataSource.SslKey, dataSource.SslCert,
-		dataSource.SslCa, dataSource.Host, dataSource.Port,
-		dataSourceOptions, dataSource.Database, instanceUID, api.Admin,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	instance, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
-		UID: &instanceUID,
-	})
+	instance, err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find instance with instance uid %d", instanceUID)
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
+		return nil, errors.New("Failed to commit transaction")
 	}
 
 	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
@@ -727,5 +690,52 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 
 	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
+	return instance, nil
+}
+
+func (s *Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) (*InstanceMessage, error) {
+	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
+	dataSourceOptions := api.DataSourceOptions{
+		SRV:                    dataSource.SRV,
+		AuthenticationDatabase: dataSource.AuthenticationDatabase,
+	}
+
+	if _, err := tx.QueryContext(ctx, `
+		INSERT INTO data_source (
+			creator_id,
+			updater_id,
+			instance_id,
+			database_id,
+			name,
+			type,
+			username,
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca,
+			host,
+			port,
+			options,
+			database
+		)
+		SELECT $1, $2, $3, data_source.database_id, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+			FROM 
+				data_source JOIN db ON data_source.database_id = db.id
+			WHERE data_source.instance_id = $15 AND db.name = $16;
+	`, creatorID, creatorID, instanceUID, dataSource.Title,
+		dataSource.Type, dataSource.Username, dataSource.Password, dataSource.SslKey,
+		dataSource.SslCert, dataSource.SslCa, dataSource.Host, dataSource.Port,
+		dataSourceOptions, dataSource.Database, instanceUID, api.AllDatabaseName,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	instance, err := s.findInstanceImplV2(ctx, tx, &FindInstanceMessage{
+		UID: &instanceUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find instance with instance uid %d", instanceUID)
+	}
+
 	return instance, nil
 }
