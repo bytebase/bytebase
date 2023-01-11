@@ -950,16 +950,16 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 }
 
 // findInstacnceImplV2 finds an instance by instance uid.
-func (s *Store) findInstanceImplV2(ctx context.Context, tx *Tx, findInstaceMsg *FindInstanceMessage) (*InstanceMessage, error) {
-	instances, err := s.listInstanceImplV2(ctx, tx, findInstaceMsg)
+func (s *Store) findInstanceImplV2(ctx context.Context, tx *Tx, findInstance *FindInstanceMessage) (*InstanceMessage, error) {
+	instances, err := s.listInstanceImplV2(ctx, tx, findInstance)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", findInstaceMsg)
+		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", findInstance)
 	}
 	if len(instances) == 0 {
-		return nil, errors.Wrapf(err, "cannot to get instance with find instance message %+v", findInstaceMsg)
+		return nil, errors.Wrapf(err, "cannot to get instance with find instance message %+v", findInstance)
 	}
 	if len(instances) >= 1 {
-		return nil, errors.Wrapf(err, "find %d instances with find instance message %+v, expected 1", len(instances), findInstaceMsg)
+		return nil, errors.Wrapf(err, "find %d instances with find instance message %+v, expected 1", len(instances), findInstance)
 	}
 	return instances[0], nil
 }
