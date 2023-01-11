@@ -100,15 +100,15 @@ func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError
 				return err
 			}
 		case *ast.DropDefaultStmt:
-			if err := schema.pgDropDefault(table, itemNode); err != nil {
+			if err := table.pgDropDefault(itemNode); err != nil {
 				return err
 			}
 		case *ast.SetNotNullStmt:
-			if err := schema.pgSetNotNull(table, itemNode); err != nil {
+			if err := table.pgSetNotNull(itemNode); err != nil {
 				return err
 			}
 		case *ast.DropNotNullStmt:
-			if err := schema.pgDropNotNull(table, itemNode); err != nil {
+			if err := table.pgDropNotNull(itemNode); err != nil {
 				return err
 			}
 		case *ast.AddConstraintStmt:
@@ -138,7 +138,7 @@ func (s *SchemaState) pgDropConstraint(t *TableState, node *ast.DropConstraintSt
 	return nil
 }
 
-func (s *SchemaState) pgDropNotNull(t *TableState, node *ast.DropNotNullStmt) *WalkThroughError {
+func (t *TableState) pgDropNotNull(node *ast.DropNotNullStmt) *WalkThroughError {
 	column, err := t.getColumn(node.ColumnName)
 	if err != nil {
 		return err
@@ -148,7 +148,7 @@ func (s *SchemaState) pgDropNotNull(t *TableState, node *ast.DropNotNullStmt) *W
 	return nil
 }
 
-func (s *SchemaState) pgSetNotNull(t *TableState, node *ast.SetNotNullStmt) *WalkThroughError {
+func (t *TableState) pgSetNotNull(node *ast.SetNotNullStmt) *WalkThroughError {
 	column, err := t.getColumn(node.ColumnName)
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (s *SchemaState) pgSetNotNull(t *TableState, node *ast.SetNotNullStmt) *Wal
 	return nil
 }
 
-func (s *SchemaState) pgDropDefault(t *TableState, node *ast.DropDefaultStmt) *WalkThroughError {
+func (t *TableState) pgDropDefault(node *ast.DropDefaultStmt) *WalkThroughError {
 	column, err := t.getColumn(node.ColumnName)
 	if err != nil {
 		return err
