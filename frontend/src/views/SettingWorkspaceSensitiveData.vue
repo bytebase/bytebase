@@ -7,8 +7,8 @@
     <BBGrid
       :column-list="COLUMN_LIST"
       :data-source="state.sensitiveColumnList"
-      :row-clickable="false"
       class="border"
+      @click-row="clickRow"
     >
       <template #item="{ item }: { item: SensitiveColumn }">
         <div class="bb-grid-cell">
@@ -18,9 +18,7 @@
           {{ item.table }}
         </div>
         <div class="bb-grid-cell">
-          <router-link :to="`/db/${databaseSlug(item.database)}`">
-            {{ item.database.name }}
-          </router-link>
+          {{ item.database.name }}
         </div>
         <div class="bb-grid-cell gap-x-1">
           <InstanceEngineIcon :instance="item.database.instance" />
@@ -73,6 +71,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NPopconfirm } from "naive-ui";
 import { uniq } from "lodash-es";
+import { useRouter } from "vue-router";
 
 import {
   featureToRef,
@@ -83,7 +82,7 @@ import {
 } from "@/store";
 import { Database, Policy, SensitiveDataPolicyPayload } from "@/types";
 import { BBGridColumn } from "@/bbkit/types";
-import { hasWorkspacePermission } from "@/utils";
+import { databaseSlug, hasWorkspacePermission } from "@/utils";
 import { BBGrid } from "@/bbkit";
 
 type SensitiveColumn = {
@@ -99,6 +98,7 @@ interface LocalState {
 }
 
 const { t } = useI18n();
+const router = useRouter();
 const state = reactive<LocalState>({
   showFeatureModal: false,
   isLoading: false,
@@ -220,4 +220,18 @@ const COLUMN_LIST = computed((): BBGridColumn[] => [
     class: "justify-center !px-2",
   },
 ]);
+
+const clickRow = (
+  item: SensitiveColumn,
+  section: number,
+  row: number,
+  e: MouseEvent
+) => {
+  const url = `/db/${databaseSlug(item.database)}/table/${item.table}`;
+  if (e.ctrlKey || e.metaKey) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
+};
 </script>
