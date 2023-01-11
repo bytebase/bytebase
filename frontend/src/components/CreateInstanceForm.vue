@@ -394,10 +394,8 @@ const engineList = computed(() => {
     "SNOWFLAKE",
     "CLICKHOUSE",
     "MONGODB",
+    "SPANNER",
   ];
-  if (isDev()) {
-    engines.push("SPANNER");
-  }
   return engines;
 });
 
