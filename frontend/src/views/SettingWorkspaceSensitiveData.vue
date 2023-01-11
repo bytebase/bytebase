@@ -69,9 +69,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NPopconfirm } from "naive-ui";
+import { uniq } from "lodash-es";
 
 import {
   featureToRef,
@@ -114,15 +115,23 @@ const allowAdmin = computed(() => {
   );
 });
 
-const policyList = usePolicyListByResourceTypeAndPolicyType(
-  computed(() => ({
-    resourceType: "database",
-    policyType: "bb.policy.sensitive-data",
-  }))
-);
+const policyList = usePolicyListByResourceTypeAndPolicyType({
+  resourceType: "database",
+  policyType: "bb.policy.sensitive-data",
+});
 
 const updateList = async () => {
   state.isLoading = true;
+  const distinctDatabaseIdList = uniq(
+    policyList.value.map((policy) => policy.resourceId)
+  );
+  // Fetch or get all needed databases
+  await Promise.all(
+    distinctDatabaseIdList.map((databaseId) =>
+      databaseStore.getOrFetchDatabaseById(databaseId)
+    )
+  );
+
   const sensitiveColumnList: SensitiveColumn[] = [];
   for (let i = 0; i < policyList.value.length; i++) {
     const policy = policyList.value[i];
@@ -140,7 +149,7 @@ const updateList = async () => {
   state.isLoading = false;
 };
 
-watchEffect(updateList);
+watch(policyList, updateList, { immediate: true });
 
 const removeSensitiveColumn = (sensitiveColumn: SensitiveColumn) => {
   if (!hasSensitiveDataFeature.value) {
