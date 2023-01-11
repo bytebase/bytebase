@@ -45,6 +45,7 @@
               <button
                 :disabled="!allowAdmin"
                 class="w-5 h-5 p-0.5 bg-white hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                @click.stop=""
               >
                 <heroicons-outline:trash />
               </button>
