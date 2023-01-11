@@ -958,7 +958,7 @@ func (s *Store) findInstanceImplV2(ctx context.Context, tx *Tx, findInstaceMsg *
 	if len(instances) == 0 {
 		return nil, errors.Wrapf(err, "cannot to get instance with find instance message %+v", findInstaceMsg)
 	}
-	if len(instances) >= 2 {
+	if len(instances) >= 1 {
 		return nil, errors.Wrapf(err, "find %d instances with find instance message %+v, expected 1", len(instances), findInstaceMsg)
 	}
 	return instances[0], nil
