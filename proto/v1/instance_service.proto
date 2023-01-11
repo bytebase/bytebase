@@ -73,7 +73,7 @@ service InstanceService {
 
   rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
-      post: "/v1/{instance=environments/*/instances/*}:updateDataSource"
+      patch: "/v1/{instance=environments/*/instances/*}:updateDataSource"
       body: "*"
     };
   }

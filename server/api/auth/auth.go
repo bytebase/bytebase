@@ -81,11 +81,11 @@ func New(store *store.Store, secret string, licenseService enterpriseAPI.License
 func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, request interface{}, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "failed to parse metadata from incoming context")
+		return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
 	}
 	accessTokenStr, refreshTokenStr, err := getTokenFromMetadata(md)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Errorf(codes.Unauthenticated, err.Error())
 	}
 
 	principalID, err := in.authenticate(ctx, accessTokenStr, refreshTokenStr)

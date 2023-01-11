@@ -732,17 +732,10 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 	defer tx.Rollback()
 
-	instances, err := s.listInstanceImplV2(ctx, tx, find)
+	instance, err := s.findInstanceImplV2(ctx, tx, find)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to find instance")
 	}
-	if len(instances) == 0 {
-		return nil, nil
-	}
-	if len(instances) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %#v, expect 1", len(instances), find)}
-	}
-	instance := instances[0]
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
@@ -825,28 +818,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		return nil, FormatError(err)
 	}
 
-	allDatabaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instanceID, &DatabaseMessage{DatabaseName: api.AllDatabaseName})
-	if err != nil {
-		return nil, err
-	}
-
 	for _, ds := range instanceCreate.DataSources {
-		dataSourceCreate := &api.DataSourceCreate{
-			CreatorID:  creatorID,
-			InstanceID: instanceID,
-			DatabaseID: allDatabaseUID,
-			Name:       ds.Title,
-			Type:       ds.Type,
-			Username:   ds.Username,
-			Password:   ds.Password,
-			SslKey:     ds.SslKey,
-			SslCert:    ds.SslCert,
-			SslCa:      ds.SslCa,
-			Host:       ds.Host,
-			Port:       ds.Port,
-			Database:   ds.Database,
-		}
-		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, creatorID, ds); err != nil {
 			return nil, err
 		}
 	}
@@ -955,26 +928,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 
 		for _, ds := range patch.DataSources {
-			dataSourceCreate := &api.DataSourceCreate{
-				CreatorID:  patch.UpdaterID,
-				InstanceID: instance.UID,
-				DatabaseID: allDatabase.UID,
-				Name:       ds.Title,
-				Type:       ds.Type,
-				Username:   ds.Username,
-				Password:   ds.Password,
-				SslKey:     ds.SslKey,
-				SslCert:    ds.SslCert,
-				SslCa:      ds.SslCa,
-				Host:       ds.Host,
-				Port:       ds.Port,
-				Database:   ds.Database,
-				Options: api.DataSourceOptions{
-					SRV:                    ds.SRV,
-					AuthenticationDatabase: ds.AuthenticationDatabase,
-				},
-			}
-			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
+			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, patch.UpdaterID, ds); err != nil {
 				return nil, err
 			}
 		}
@@ -993,6 +947,21 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
+}
+
+// findInstacnceImplV2 finds an instance by instance uid.
+func (s *Store) findInstanceImplV2(ctx context.Context, tx *Tx, findInstance *FindInstanceMessage) (*InstanceMessage, error) {
+	instances, err := s.listInstanceImplV2(ctx, tx, findInstance)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", findInstance)
+	}
+	if len(instances) == 0 {
+		return nil, errors.Wrapf(err, "cannot to get instance with find instance message %+v", findInstance)
+	}
+	if len(instances) > 1 {
+		return nil, errors.Wrapf(err, "find %d instances with find instance message %+v, expected 1", len(instances), findInstance)
+	}
+	return instances[0], nil
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {

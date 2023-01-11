@@ -469,7 +469,7 @@ func (*Store) clearDataSourceImpl(ctx context.Context, tx *Tx, instanceID, datab
 	return nil
 }
 
-// DataSourceMessage is the mssage for data source.
+// DataSourceMessage is the message for data source.
 type DataSourceMessage struct {
 	Title    string
 	Type     api.DataSourceType
@@ -484,6 +484,27 @@ type DataSourceMessage struct {
 	// Flatten data source options.
 	SRV                    bool
 	AuthenticationDatabase string
+}
+
+// UpdateDataSourceMessage is the message for the data source.
+type UpdateDataSourceMessage struct {
+	UpdaterID     int
+	InstanceUID   int
+	EnvironmentID string
+	InstanceID    string
+
+	Type api.DataSourceType
+
+	Username *string
+	Password *string
+	SslCa    *string
+	SslCert  *string
+	SslKey   *string
+	Host     *string
+	Port     *string
+	// Flatten data source options.
+	SRV                    *bool
+	AuthenticationDatabase *string
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -535,4 +556,167 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 	}
 
 	return dataSourceMessages, nil
+}
+
+// AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.
+func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, creatorID int, environmentID, instanceID string, dataSource *DataSourceMessage) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.New("Failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.New("Failed to commit transaction")
+	}
+
+	s.instanceCache.Delete(getInstanceCacheKey(environmentID, instanceID))
+	s.instanceIDCache.Delete(instanceUID)
+	return nil
+}
+
+// RemoveDataSourceV2 removes a RO data source from an instance.
+func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, environmentID, instanceID string, dataSourceTp api.DataSourceType) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.New("Failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	result, err := tx.ExecContext(ctx, `
+		DELETE FROM data_source WHERE data_source.instance_id = $1 AND data_source.type = $2;
+	`, instanceUID, dataSourceTp)
+	if err != nil {
+		return FormatError(err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get rows affected")
+	}
+	if rowsAffected != 1 {
+		return errors.Errorf("remove %d type data_sources for instance uid %d, but expected 1", rowsAffected, instanceUID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "failed to commit transaction")
+	}
+
+	s.instanceCache.Delete(getInstanceCacheKey(environmentID, instanceID))
+	s.instanceIDCache.Delete(instanceUID)
+	return nil
+}
+
+// UpdateDataSourceV2 updates a data source and returns the instance.
+func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) error {
+	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
+
+	if v := patch.Username; v != nil {
+		set, args = append(set, fmt.Sprintf("username = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Password; v != nil {
+		set, args = append(set, fmt.Sprintf("password = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslKey; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_key = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslCert; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_cert = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslCa; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_ca = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Host; v != nil {
+		set, args = append(set, fmt.Sprintf("host = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Port; v != nil {
+		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
+	}
+
+	// Use jsonb_build_object to build the jsonb object to update some fields in jsonb instead of whole column.
+	var optionSet []string
+	if v := patch.SRV; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('srv', to_jsonb($%d::BOOLEAN))", len(args)+1)), append(args, *v)
+	}
+	if v := patch.AuthenticationDatabase; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationDatabase', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+	}
+	if len(optionSet) != 0 {
+		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.New("Failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Only update the data source if the
+	query := `UPDATE data_source SET ` + strings.Join(set, ", ") +
+		` WHERE instance_id = ` + fmt.Sprintf("%d", patch.InstanceUID) +
+		` AND type = ` + fmt.Sprintf(`'%s'`, patch.Type)
+	result, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return FormatError(err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get rows affected")
+	}
+	if rowsAffected != 1 {
+		return errors.Errorf("update %v data source records from instance %v, but expected one", rowsAffected, patch.InstanceUID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "failed to commit transaction")
+	}
+
+	s.instanceCache.Delete(getInstanceCacheKey(patch.EnvironmentID, patch.InstanceID))
+	s.instanceIDCache.Delete(patch.InstanceUID)
+	return nil
+}
+
+func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) error {
+	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
+	dataSourceOptions := api.DataSourceOptions{
+		SRV:                    dataSource.SRV,
+		AuthenticationDatabase: dataSource.AuthenticationDatabase,
+	}
+
+	if _, err := tx.QueryContext(ctx, `
+		INSERT INTO data_source (
+			creator_id,
+			updater_id,
+			instance_id,
+			database_id,
+			name,
+			type,
+			username,
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca,
+			host,
+			port,
+			options,
+			database
+		)
+		SELECT $1, $2, $3, data_source.database_id, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+			FROM 
+				data_source JOIN db ON data_source.database_id = db.id
+			WHERE data_source.instance_id = $15 AND db.name = $16;
+	`, creatorID, creatorID, instanceUID, dataSource.Title,
+		dataSource.Type, dataSource.Username, dataSource.Password, dataSource.SslKey,
+		dataSource.SslCert, dataSource.SslCa, dataSource.Host, dataSource.Port,
+		dataSourceOptions, dataSource.Database, instanceUID, api.AllDatabaseName,
+	); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
 }
