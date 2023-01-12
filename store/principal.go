@@ -114,6 +114,7 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 
 	for _, user := range users {
 		s.userIDCache.Store(user.ID, user)
+		s.userEmailCache.Store(user.Email, user)
 	}
 	return users, nil
 }
@@ -146,6 +147,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	}
 
 	s.userIDCache.Store(user.ID, user)
+	s.userEmailCache.Store(user.Email, user)
 	return user, nil
 }
 
@@ -153,6 +155,10 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
 	// We use lower-case for emails.
 	email = strings.ToLower(email)
+
+	if user, ok := s.userEmailCache.Load(email); ok {
+		return user.(*UserMessage), nil
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -176,6 +182,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 	}
 
 	s.userIDCache.Store(user.ID, user)
+	s.userEmailCache.Store(user.Email, user)
 	return user, nil
 }
 
@@ -323,6 +330,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		Role:         role,
 	}
 	s.userIDCache.Store(user.ID, user)
+	s.userEmailCache.Store(user.Email, user)
 	return user, nil
 }
 
@@ -331,6 +339,11 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	if userID == api.SystemBotID {
 		return nil, errors.Errorf("cannot update system bot")
 	}
+	oldUser, err := s.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	principalSet, principalArgs := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", updaterID)}
 	if v := patch.Email; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, *v)
@@ -404,7 +417,9 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-
+	s.userIDCache.Delete(oldUser.ID)
+	s.userEmailCache.Delete(oldUser.Email)
 	s.userIDCache.Store(user.ID, user)
+	s.userEmailCache.Store(user.Email, user)
 	return user, nil
 }
