@@ -173,6 +173,8 @@ func (d *DatabaseState) pgCreateSchema(node *ast.CreateSchemaStmt) *WalkThroughE
 			if err := d.pgCreateTable(itemNode); err != nil {
 				return err
 			}
+		default:
+			// TODO: hack the linter.
 		}
 	}
 
@@ -187,13 +189,6 @@ func (d *DatabaseState) pgRenameIndex(node *ast.RenameIndexStmt) *WalkThroughErr
 	table, index, err := schema.getIndex(node.IndexName)
 	if err != nil {
 		return err
-	}
-	index, exists := table.indexSet[node.IndexName]
-	if !exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeIndexNotExists,
-			Content: fmt.Sprintf("Index %q does not exist in table %q", node.IndexName, table.name),
-		}
 	}
 	if _, exists := schema.identifierMap[node.NewName]; exists {
 		return NewRelationExistsError(node.NewName, schema.name)
