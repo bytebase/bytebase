@@ -417,7 +417,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
-	s.userIDCache.Delete(oldUser.ID)
 	s.userEmailCache.Delete(oldUser.Email)
 	s.userIDCache.Store(user.ID, user)
 	s.userEmailCache.Store(user.Email, user)
