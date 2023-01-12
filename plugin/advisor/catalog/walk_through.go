@@ -30,6 +30,8 @@ const (
 	ErrorTypeUnsupported WalkThroughErrorType = 1
 	// ErrorTypeInternal is the error for internal errors.
 	ErrorTypeInternal WalkThroughErrorType = 2
+	// ErrorTypeInvalidStatement is the error type for invalid statement errors.
+	ErrorTypeInvalidStatement WalkThroughErrorType = 3
 
 	// 101 parse error type.
 
@@ -106,6 +108,11 @@ const (
 
 	// ErrorTypeRelationExists is the error that relation already exists.
 	ErrorTypeRelationExists = 801
+
+	// 901 ~ 999 constraint error type.
+
+	// ErrorTypeConstraintNotExists is the error that constraint doesn't exist.
+	ErrorTypeConstraintNotExists = 901
 )
 
 // WalkThroughError is the error for walking-through.

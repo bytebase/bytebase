@@ -344,6 +344,11 @@ type IndexState struct {
 	visible *bool
 	// Comment isn't supported for SQLite.
 	comment *string
+
+	// PostgreSQL specific fields.
+
+	// PostgreSQL treats INDEX and CONSTRAINT differently.
+	isConstraint bool
 }
 
 func (idx *IndexState) copy() *IndexState {
@@ -355,6 +360,7 @@ func (idx *IndexState) copy() *IndexState {
 		primary:        copyBoolPointer(idx.primary),
 		visible:        copyBoolPointer(idx.visible),
 		comment:        copyStringPointer(idx.comment),
+		isConstraint:   idx.isConstraint,
 	}
 }
 

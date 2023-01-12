@@ -48,9 +48,298 @@ func (d *DatabaseState) pgChangeState(in ast.Node) (err *WalkThroughError) {
 		return d.pgCreateTable(node)
 	case *ast.CreateIndexStmt:
 		return d.pgCreateIndex(node)
+	case *ast.AlterTableStmt:
+		return d.pgAlterTable(node)
 	default:
 		return nil
 	}
+}
+
+func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError {
+	schema, err := d.getSchema(node.Table.Schema)
+	if err != nil {
+		return err
+	}
+	table, err := schema.getTable(node.Table.Name)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range node.AlterItemList {
+		switch itemNode := item.(type) {
+		case *ast.RenameColumnStmt:
+			if err := table.pgRenameColumn(itemNode); err != nil {
+				return err
+			}
+		case *ast.RenameConstraintStmt:
+			if err := schema.pgRenameConstraint(table, itemNode); err != nil {
+				return err
+			}
+		case *ast.RenameTableStmt:
+			if err := schema.pgRenameTable(table, itemNode); err != nil {
+				return err
+			}
+		case *ast.SetSchemaStmt:
+			if err := d.pgSetSchema(schema, table, itemNode); err != nil {
+				return err
+			}
+		case *ast.AddColumnListStmt:
+			if err := schema.pgAddColumn(table, itemNode); err != nil {
+				return err
+			}
+		case *ast.DropColumnStmt:
+			if err := schema.pgDropColumn(table, itemNode); err != nil {
+				return err
+			}
+		case *ast.AlterColumnTypeStmt:
+			if err := schema.pgAlterColumnType(table, itemNode); err != nil {
+				return err
+			}
+		case *ast.SetDefaultStmt:
+			if err := table.pgSetDefault(itemNode); err != nil {
+				return err
+			}
+		case *ast.DropDefaultStmt:
+			if err := table.pgDropDefault(itemNode); err != nil {
+				return err
+			}
+		case *ast.SetNotNullStmt:
+			if err := table.pgSetNotNull(itemNode); err != nil {
+				return err
+			}
+		case *ast.DropNotNullStmt:
+			if err := table.pgDropNotNull(itemNode); err != nil {
+				return err
+			}
+		case *ast.AddConstraintStmt:
+			if err := schema.pgCreateTableConstraint(table, itemNode.Constraint); err != nil {
+				return err
+			}
+		case *ast.DropConstraintStmt:
+			if err := schema.pgDropConstraint(table, itemNode); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *SchemaState) pgDropConstraint(t *TableState, node *ast.DropConstraintStmt) *WalkThroughError {
+	if index, exists := t.indexSet[node.ConstraintName]; exists {
+		delete(s.identifierMap, index.name)
+		delete(t.indexSet, index.name)
+	}
+
+	// TODO(rebelice): deal with other constraints
+
+	// TODO(rebelice): deal with CASCADE
+
+	return nil
+}
+
+func (t *TableState) pgDropNotNull(node *ast.DropNotNullStmt) *WalkThroughError {
+	column, err := t.getColumn(node.ColumnName)
+	if err != nil {
+		return err
+	}
+
+	column.nullable = newTruePointer()
+	return nil
+}
+
+func (t *TableState) pgSetNotNull(node *ast.SetNotNullStmt) *WalkThroughError {
+	column, err := t.getColumn(node.ColumnName)
+	if err != nil {
+		return err
+	}
+
+	column.nullable = newFalsePointer()
+	return nil
+}
+
+func (t *TableState) pgDropDefault(node *ast.DropDefaultStmt) *WalkThroughError {
+	column, err := t.getColumn(node.ColumnName)
+	if err != nil {
+		return err
+	}
+
+	column.defaultValue = nil
+	return nil
+}
+
+func (t *TableState) pgSetDefault(node *ast.SetDefaultStmt) *WalkThroughError {
+	column, err := t.getColumn(node.ColumnName)
+	if err != nil {
+		return err
+	}
+
+	column.defaultValue = newStringPointer(node.Expression.Text())
+	return nil
+}
+
+func (*SchemaState) pgAlterColumnType(t *TableState, node *ast.AlterColumnTypeStmt) *WalkThroughError {
+	column, err := t.getColumn(node.ColumnName)
+	if err != nil {
+		return err
+	}
+
+	typeString, deparseErr := parser.Deparse(parser.Postgres, parser.DeparseContext{}, node.Type)
+	if deparseErr != nil {
+		return &WalkThroughError{
+			Type:    ErrorTypeDeparseError,
+			Content: err.Error(),
+		}
+	}
+	column.columnType = &typeString
+	column.collation = newStringPointer(normalizeCollation(node.Collation))
+	// TODO(rebelice): support USING expression
+	return nil
+}
+
+func (*SchemaState) pgDropColumn(t *TableState, node *ast.DropColumnStmt) *WalkThroughError {
+	if _, exists := t.columnSet[node.ColumnName]; !exists {
+		if node.IfExists {
+			return nil
+		}
+		return NewColumnNotExistsError(t.name, node.ColumnName)
+	}
+
+	// Drop the constraints and indexes involving the column.
+	var dropIndexList []string
+
+	for _, index := range t.indexSet {
+		for _, key := range index.expressionList {
+			// TODO(rebelice): deal with expression key.
+			if key == index.name {
+				dropIndexList = append(dropIndexList, index.name)
+			}
+		}
+	}
+	for _, indexName := range dropIndexList {
+		delete(t.indexSet, indexName)
+	}
+
+	// TODO(rebelice): deal with other constraints.
+
+	// TODO(rebelice): deal with CASCADE.
+
+	delete(t.columnSet, node.ColumnName)
+	return nil
+}
+
+func (s *SchemaState) pgAddColumn(t *TableState, node *ast.AddColumnListStmt) *WalkThroughError {
+	if len(node.ColumnList) != 1 {
+		return &WalkThroughError{
+			Type:    ErrorTypeInvalidStatement,
+			Content: "PostgreSQL doesn't support to add multi-columns in one ADD COLUMN statement",
+		}
+	}
+	return s.pgCreateColumn(t, node.ColumnList[0], node.IfNotExists)
+}
+
+func (d *DatabaseState) pgSetSchema(oldSchema *SchemaState, t *TableState, node *ast.SetSchemaStmt) *WalkThroughError {
+	newSchema, exists := d.schemaSet[node.NewSchema]
+	if !exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeSchemaNotExists,
+			Content: fmt.Sprintf("Schema %q does not exist", node.NewSchema),
+		}
+	}
+
+	if _, exists := newSchema.identifierMap[t.name]; exists {
+		return NewRelationExistsError(t.name, newSchema.name)
+	}
+
+	for indexName := range t.indexSet {
+		if _, exists := newSchema.identifierMap[indexName]; exists {
+			return NewRelationExistsError(indexName, newSchema.name)
+		}
+	}
+
+	// TODO(rebelice): check other constraints and sequences here.
+
+	for indexName := range t.indexSet {
+		delete(oldSchema.identifierMap, indexName)
+		newSchema.identifierMap[indexName] = true
+	}
+
+	delete(oldSchema.identifierMap, t.name)
+	delete(oldSchema.tableSet, t.name)
+	newSchema.identifierMap[t.name] = true
+	newSchema.tableSet[t.name] = t
+	return nil
+}
+
+func (s *SchemaState) pgRenameTable(t *TableState, node *ast.RenameTableStmt) *WalkThroughError {
+	if _, exists := s.identifierMap[node.NewName]; exists {
+		return NewRelationExistsError(node.NewName, s.name)
+	}
+
+	delete(s.identifierMap, t.name)
+	delete(s.tableSet, t.name)
+	t.name = node.NewName
+	s.identifierMap[t.name] = true
+	s.tableSet[t.name] = t
+	return nil
+}
+
+func (s *SchemaState) pgRenameConstraint(t *TableState, node *ast.RenameConstraintStmt) *WalkThroughError {
+	index, exists := t.indexSet[node.ConstraintName]
+	if !exists {
+		// We haven't deal with foreign and check constraints, so skip if not exists.
+		return nil
+	}
+	// TODO(rebelice): check other constraints here.
+
+	if !index.isConstraint {
+		return &WalkThroughError{
+			Type:    ErrorTypeConstraintNotExists,
+			Content: fmt.Sprintf("Constraint %q for table %q does not exist", node.ConstraintName, t.name),
+		}
+	}
+
+	if _, exists := s.identifierMap[node.NewName]; exists {
+		return NewRelationExistsError(node.NewName, s.name)
+	}
+
+	delete(s.identifierMap, node.ConstraintName)
+	delete(t.indexSet, node.ConstraintName)
+	index.name = node.NewName
+	s.identifierMap[index.name] = true
+	t.indexSet[index.name] = index
+	return nil
+}
+
+func (t *TableState) pgRenameColumn(node *ast.RenameColumnStmt) *WalkThroughError {
+	column, err := t.getColumn(node.ColumnName)
+	if err != nil {
+		return err
+	}
+	if node.ColumnName == node.NewName {
+		return nil
+	}
+	if _, exists := t.columnSet[node.NewName]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeColumnExists,
+			Content: fmt.Sprintf("The column %q already exists in table %q", node.NewName, t.name),
+		}
+	}
+
+	delete(t.columnSet, column.name)
+
+	for _, index := range t.indexSet {
+		for i, key := range index.expressionList {
+			// TODO(rebelice): only deal with the column type index key here.
+			if key == column.name {
+				index.expressionList[i] = node.NewName
+			}
+		}
+	}
+
+	column.name = node.NewName
+	t.columnSet[node.NewName] = column
+	return nil
 }
 
 func (d *DatabaseState) pgCreateIndex(node *ast.CreateIndexStmt) *WalkThroughError {
@@ -58,7 +347,7 @@ func (d *DatabaseState) pgCreateIndex(node *ast.CreateIndexStmt) *WalkThroughErr
 	if err != nil {
 		return err
 	}
-	return schema.pgCreateIndex(node, false /* isPrimary */)
+	return schema.pgCreateIndex(node, false /* isPrimary */, false /* isConstraint */)
 }
 
 func (d *DatabaseState) pgCreateTable(node *ast.CreateTableStmt) *WalkThroughError {
@@ -92,7 +381,7 @@ func (d *DatabaseState) pgCreateTable(node *ast.CreateTableStmt) *WalkThroughErr
 	schema.tableSet[table.name] = table
 
 	for _, column := range node.ColumnList {
-		if err := schema.pgCreateColumn(table, column); err != nil {
+		if err := schema.pgCreateColumn(table, column, false /* ifNotExists */); err != nil {
 			err.Line = column.LastLine()
 			return err
 		}
@@ -133,7 +422,7 @@ func (s *SchemaState) pgCreateTableConstraint(t *TableState, constraint *ast.Con
 				Method:  ast.IndexMethodTypeBTree,
 				KeyList: indexKeyList,
 			},
-		}, false /* isPrimary */)
+		}, false /* isPrimary */, true /* isConstraint */)
 	case ast.ConstraintTypeUniqueUsingIndex:
 		return s.pgCreateUniqueUsingIndex(t, constraint)
 	case ast.ConstraintTypeCheck:
@@ -146,8 +435,11 @@ func (s *SchemaState) pgCreateTableConstraint(t *TableState, constraint *ast.Con
 	return nil
 }
 
-func (s *SchemaState) pgCreateColumn(t *TableState, column *ast.ColumnDef) *WalkThroughError {
+func (s *SchemaState) pgCreateColumn(t *TableState, column *ast.ColumnDef, ifNotExists bool) *WalkThroughError {
 	if _, exists := t.columnSet[column.ColumnName]; exists {
+		if ifNotExists {
+			return nil
+		}
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
 			Content: fmt.Sprintf("The column %q already exists in table %q", column.ColumnName, t.name),
@@ -169,7 +461,8 @@ func (s *SchemaState) pgCreateColumn(t *TableState, column *ast.ColumnDef) *Walk
 		defaultValue: nil,
 		nullable:     newTruePointer(),
 		columnType:   &typeString,
-		// TODO(rebelice): support collation and comment here.
+		collation:    newStringPointer(normalizeCollation(column.Collation)),
+		// TODO(rebelice): support comment here.
 	}
 	t.columnSet[columnState.name] = columnState
 
@@ -204,7 +497,7 @@ func (s *SchemaState) pgCreateColumn(t *TableState, column *ast.ColumnDef) *Walk
 					},
 					Method: ast.IndexMethodTypeBTree,
 				},
-			}, false /* isPrimary */); err != nil {
+			}, false /* isPrimary */, true /* isConstraint */); err != nil {
 				return err
 			}
 		case ast.ConstraintTypeUniqueUsingIndex:
@@ -302,7 +595,7 @@ func (s *SchemaState) pgCreatePrimaryKey(t *TableState, createPrimaryKey *ast.Co
 			Method:  ast.IndexMethodTypeBTree,
 			KeyList: pgColumnNameListToKeyList(createPrimaryKey.KeyList),
 		},
-	}, true /* isPrimary */)
+	}, true /* isPrimary */, true /* isConstraint */)
 }
 
 func pgColumnNameListToKeyList(columnList []string) []*ast.IndexKeyDef {
@@ -330,7 +623,7 @@ func (s *SchemaState) pgGeneratePrimaryKeyName(tableName string) string {
 	}
 }
 
-func (s *SchemaState) pgCreateIndex(createIndex *ast.CreateIndexStmt, isPrimary bool) *WalkThroughError {
+func (s *SchemaState) pgCreateIndex(createIndex *ast.CreateIndexStmt, isPrimary bool, isConstraint bool) *WalkThroughError {
 	indexName := createIndex.Index.Name
 	if len(createIndex.Index.KeyList) == 0 {
 		return &WalkThroughError{
@@ -372,6 +665,7 @@ func (s *SchemaState) pgCreateIndex(createIndex *ast.CreateIndexStmt, isPrimary 
 		indexType:      newStringPointer(getIndexMethod(createIndex.Index.Method)),
 		unique:         newBoolPointer(createIndex.Index.Unique),
 		primary:        newBoolPointer(isPrimary),
+		isConstraint:   isConstraint,
 	}
 
 	table.indexSet[index.name] = index
@@ -474,6 +768,40 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 	return schema, nil
 }
 
+func (s *SchemaState) getTable(tableName string) (*TableState, *WalkThroughError) {
+	table, exists := s.tableSet[tableName]
+	if !exists {
+		return nil, &WalkThroughError{
+			Type:    ErrorTypeTableNotExists,
+			Content: fmt.Sprintf("The table %q doesn't exists in schema %q", tableName, s.name),
+		}
+	}
+	return table, nil
+}
+
+func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughError) {
+	column, exists := t.columnSet[columnName]
+	if !exists {
+		return nil, &WalkThroughError{
+			Type:    ErrorTypeColumnNotExists,
+			Content: fmt.Sprintf("The column %q doesn't exists in table %q", columnName, t.name),
+		}
+	}
+	return column, nil
+}
+
 func pgParse(stmt string) ([]ast.Node, error) {
 	return parser.Parse(parser.Postgres, parser.ParseContext{}, stmt)
+}
+
+func normalizeCollation(collation *ast.CollationNameDef) string {
+	if collation == nil {
+		return ""
+	}
+
+	if collation.Schema == "" || collation.Schema == "public" {
+		return collation.Name
+	}
+
+	return fmt.Sprintf("%q.%q", collation.Schema, collation.Name)
 }
