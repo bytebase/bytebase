@@ -769,6 +769,10 @@ const syncDatabaseSchema = () => {
           description: resultSet.error,
         });
       }
+      useDBSchemaStore().getOrFetchDatabaseMetadataById(
+        database.value.id,
+        true // skip cache
+      );
     })
     .catch(() => {
       state.syncingSchema = false;

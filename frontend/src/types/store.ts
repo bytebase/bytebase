@@ -154,6 +154,7 @@ export interface DatabaseState {
 }
 
 export interface DBSchemaState {
+  requestCache: Map<DatabaseId, Promise<DatabaseMetadata>>;
   databaseMetadataById: Map<DatabaseId, DatabaseMetadata>;
 }
 
