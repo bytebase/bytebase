@@ -44,8 +44,16 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListProjectsResponse{}
-	// TODO(d): implement filtering if the caller isn't a member of a project.
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
 	for _, project := range projects {
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if !isOwnerOrDBA(role) && !isProjectMember(policy, principalID) {
+			continue
+		}
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return response, nil
@@ -88,6 +96,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 	}
 	if project.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project.Name)
+	}
+	if project.ResourceID == api.DefaultProjectID {
+		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be updated")
 	}
 
 	patch := &store.UpdateProjectMessage{
@@ -136,13 +147,11 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		}
 	}
 
-	projectMsg, err := s.store.UpdateProjectV2(ctx, patch)
+	project, err = s.store.UpdateProjectV2(ctx, patch)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	// TODO(d): create activity for project transfer.
-
-	return convertToProject(projectMsg), nil
+	return convertToProject(project), nil
 }
 
 // DeleteProject deletes a project.
@@ -153,6 +162,25 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	}
 	if project.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Name)
+	}
+	if project.ResourceID == api.DefaultProjectID {
+		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be deleted")
+	}
+
+	// Resources prevent project deletion.
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, err
+	}
+	if len(databases) > 0 {
+		return nil, status.Errorf(codes.FailedPrecondition, "transfer all databases under the project before deleting the project")
+	}
+	issueList, err := s.store.FindIssueStripped(ctx, &api.IssueFind{ProjectID: &project.UID, StatusList: []api.IssueStatus{api.IssueOpen}})
+	if err != nil {
+		return nil, err
+	}
+	if len(issueList) > 0 {
+		return nil, status.Errorf(codes.FailedPrecondition, "resolve all issues before deleting the project")
 	}
 
 	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
@@ -176,7 +204,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", request.Name)
 	}
 
-	projectMsg, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
+	project, err = s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
 		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
 		ResourceID: project.ResourceID,
 		Delete:     &undeletePatch,
@@ -184,8 +212,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-
-	return convertToProject(projectMsg), nil
+	return convertToProject(project), nil
 }
 
 // GetIamPolicy returns the IAM policy for a project.
@@ -286,7 +313,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		TenantMode:     tenantMode,
 		DbNameTemplate: projectMessage.DBNameTemplate,
 		RoleProvider:   roleProvider,
-		// TODO: schema_version_type for project.
+		// TODO(d): schema_version_type for project.
 		SchemaVersion: v1pb.SchemaVersion_SCHEMA_VERSION_UNSPECIFIED,
 		SchemaChange:  schemaChange,
 		LgtmCheck:     lgtmCheck,
@@ -424,4 +451,15 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		SchemaChangeType: schemaChange,
 		LGTMCheckSetting: lgtmCheck,
 	}, nil
+}
+
+func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == userID {
+				return true
+			}
+		}
+	}
+	return false
 }
