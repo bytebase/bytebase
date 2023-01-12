@@ -50,9 +50,156 @@ func (d *DatabaseState) pgChangeState(in ast.Node) (err *WalkThroughError) {
 		return d.pgCreateIndex(node)
 	case *ast.AlterTableStmt:
 		return d.pgAlterTable(node)
+	case *ast.RenameIndexStmt:
+		return d.pgRenameIndex(node)
+	case *ast.CreateSchemaStmt:
+		return d.pgCreateSchema(node)
+	case *ast.DropSchemaStmt:
+		return d.pgDropSchema(node)
+	case *ast.DropTableStmt:
+		return d.pgDropTableList(node)
+	case *ast.DropIndexStmt:
+		return d.pgDropIndexList(node)
 	default:
 		return nil
 	}
+}
+
+func (d *DatabaseState) pgDropIndexList(node *ast.DropIndexStmt) *WalkThroughError {
+	for _, indexDef := range node.IndexList {
+		if err := d.pgDropIndex(indexDef, node.IfExists, node.Behavior); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *DatabaseState) pgDropIndex(indexDef *ast.IndexDef, ifExists bool, _ ast.DropBehavior) *WalkThroughError {
+	schemaName := ""
+	if indexDef.Table != nil {
+		schemaName = indexDef.Table.Schema
+	}
+	schema, err := d.getSchema(schemaName)
+	if err != nil {
+		if ifExists {
+			return nil
+		}
+		return err
+	}
+
+	table, index, err := schema.getIndex(indexDef.Name)
+	if err != nil {
+		return err
+	}
+
+	delete(schema.identifierMap, index.name)
+	delete(table.indexSet, index.name)
+	return nil
+}
+
+func (d *DatabaseState) pgDropTableList(node *ast.DropTableStmt) *WalkThroughError {
+	for _, tableName := range node.TableList {
+		if err := d.pgDropTable(tableName, node.IfExists, node.Behavior); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *DatabaseState) pgDropTable(tableDef *ast.TableDef, ifExists bool, _ ast.DropBehavior) *WalkThroughError {
+	schema, err := d.getSchema(tableDef.Schema)
+	if err != nil {
+		if ifExists {
+			return nil
+		}
+		return err
+	}
+
+	table, err := schema.getTable(tableDef.Name)
+	if err != nil {
+		if ifExists {
+			return nil
+		}
+		return err
+	}
+
+	for indexName := range table.indexSet {
+		delete(schema.identifierMap, indexName)
+	}
+
+	delete(schema.identifierMap, table.name)
+	delete(schema.tableSet, table.name)
+	return nil
+}
+
+func (d *DatabaseState) pgDropSchema(node *ast.DropSchemaStmt) *WalkThroughError {
+	for _, schemaName := range node.SchemaList {
+		schema, err := d.getSchema(schemaName)
+		if err != nil {
+			if node.IfExists {
+				continue
+			}
+			return err
+		}
+
+		delete(d.schemaSet, schema.name)
+	}
+
+	return nil
+}
+
+func (d *DatabaseState) pgCreateSchema(node *ast.CreateSchemaStmt) *WalkThroughError {
+	if _, exists := d.schemaSet[node.Name]; exists {
+		return &WalkThroughError{
+			Type:    ErrorTypeSchemaExists,
+			Content: fmt.Sprintf("Schema %q already exists", node.Name),
+		}
+	}
+
+	schema := &SchemaState{
+		name:          node.Name,
+		identifierMap: make(identifierMap),
+		tableSet:      make(tableStateMap),
+		viewSet:       make(viewStateMap),
+	}
+	d.schemaSet[schema.name] = schema
+
+	for _, item := range node.SchemaElementList {
+		switch itemNode := item.(type) {
+		// TODO(rebelice): deal with other item type here.
+		case *ast.CreateTableStmt:
+			if err := d.pgCreateTable(itemNode); err != nil {
+				return err
+			}
+		default:
+			// TODO: hack the linter.
+		}
+	}
+
+	return nil
+}
+
+func (d *DatabaseState) pgRenameIndex(node *ast.RenameIndexStmt) *WalkThroughError {
+	schema, err := d.getSchema(node.Table.Schema)
+	if err != nil {
+		return err
+	}
+	table, index, err := schema.getIndex(node.IndexName)
+	if err != nil {
+		return err
+	}
+	if _, exists := schema.identifierMap[node.NewName]; exists {
+		return NewRelationExistsError(node.NewName, schema.name)
+	}
+
+	delete(schema.identifierMap, index.name)
+	delete(table.indexSet, index.name)
+	index.name = node.NewName
+	schema.identifierMap[index.name] = true
+	table.indexSet[index.name] = index
+	return nil
 }
 
 func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError {
@@ -777,6 +924,19 @@ func (s *SchemaState) getTable(tableName string) (*TableState, *WalkThroughError
 		}
 	}
 	return table, nil
+}
+
+func (s *SchemaState) getIndex(indexName string) (*TableState, *IndexState, *WalkThroughError) {
+	for _, table := range s.tableSet {
+		if index, exists := table.indexSet[indexName]; exists {
+			return table, index, nil
+		}
+	}
+
+	return nil, nil, &WalkThroughError{
+		Type:    ErrorTypeIndexNotExists,
+		Content: fmt.Sprintf("Index %q does not exists in schema %q", indexName, s.name),
+	}
 }
 
 func (t *TableState) getColumn(columnName string) (*ColumnState, *WalkThroughError) {

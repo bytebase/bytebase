@@ -103,6 +103,8 @@ const (
 
 	// ErrorTypeSchemaNotExists is the error that schema does not exist.
 	ErrorTypeSchemaNotExists = 701
+	// ErrorTypeSchemaExists is the error that schema already exists.
+	ErrorTypeSchemaExists = 702
 
 	// 801 ~ 899 relation error type.
 
