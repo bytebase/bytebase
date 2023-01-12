@@ -50,6 +50,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 		record = false
 	)
 	var (
+		filepath   = filepath.Join("test-data", "sql_review_pg.yaml")
 		statements = []string{
 			`CREATE TABLE "user"(
 				id INT,
@@ -167,10 +168,8 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
-	filepath := filepath.Join("data", "sql_review_pg.yaml")
 	yamlFile, err := os.Open(filepath)
 	a.NoError(err)
-	defer yamlFile.Close()
 
 	tests := []test{}
 	byteValue, err := io.ReadAll(yamlFile)
@@ -178,18 +177,21 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	err = yaml.Unmarshal(byteValue, &tests)
 	a.NoError(err)
 
-	for _, t := range tests {
+	for i, t := range tests {
 		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.Statement, t.Run)
-		if !record {
+		if record {
+			tests[i].Result = result
+		} else {
 			a.Equal(t.Result, result)
 		}
 	}
 
+	yamlFile.Close()
 	if record {
 		byteValue, err := yaml.Marshal(tests)
-		require.NoError(t, err)
+		a.NoError(err)
 		err = os.WriteFile(filepath, byteValue, 0644)
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 
 	// disable the SQL review policy

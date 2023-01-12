@@ -58,7 +58,7 @@
       code: 601
       status: ERROR
       title: table.require-pk
-      content: 'Table "public"."userTable" requires PRIMARY KEY, related statement: "CREATE TABLE \"userTable\"(\n\t\t\t\tid INT,\n\t\t\t\tname VARCHAR(255),\n\t\t\t\t\"roomId\" INT,\n\t\t\t\tCONSTRAINT uk1 UNIQUE (id, name),\n\t\t\t\tCONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n\t\t\t\t)"'
+      content: 'Table "public"."userTable" requires PRIMARY KEY, related statement: "CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        )"'
     - namespace: bb.advisor
       code: 602
       status: ERROR
@@ -124,15 +124,15 @@
       title: OK
       content: ""
   run: false
-- statement: |4-
-          CREATE TABLE tech_book(
-            id int,
-            creator_id INT NOT NULL,
-            created_ts TIMESTAMP NOT NULL,
-            updater_id INT NOT NULL,
-            updated_ts TIMESTAMP NOT NULL,
-            CONSTRAINT pk_tech_book_id PRIMARY KEY (id)
-          )
+- statement: |-
+    CREATE TABLE tech_book(
+      id int,
+      creator_id INT NOT NULL,
+      created_ts TIMESTAMP NOT NULL,
+      updater_id INT NOT NULL,
+      updated_ts TIMESTAMP NOT NULL,
+      CONSTRAINT pk_tech_book_id PRIMARY KEY (id)
+    )
   result:
     - namespace: bb.core
       code: 0
