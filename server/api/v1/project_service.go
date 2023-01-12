@@ -204,7 +204,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", request.Name)
 	}
 
-	projectMsg, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
+	project, err = s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
 		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
 		ResourceID: project.ResourceID,
 		Delete:     &undeletePatch,
@@ -212,8 +212,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-
-	return convertToProject(projectMsg), nil
+	return convertToProject(project), nil
 }
 
 // GetIamPolicy returns the IAM policy for a project.
