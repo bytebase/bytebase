@@ -723,16 +723,29 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	if c.PointInTimeTs != nil && !s.licenseService.IsFeatureEnabled(api.FeaturePITR) {
 		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
 	}
-
-	database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &c.DatabaseID})
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", c.DatabaseID)).SetInternal(err)
+		return nil, err
+	}
+	if project == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("project %d not found", issueCreate.ProjectID))
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &c.DatabaseID})
+	if err != nil {
+		return nil, err
 	}
 	if database == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("database %d not found", c.DatabaseID))
 	}
-	if database.ProjectID != issueCreate.ProjectID {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The issue project %d must be the same as the database project %d.", issueCreate.ProjectID, database.ProjectID))
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
+	if err != nil {
+		return nil, err
+	}
+	if environment == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("environment %q not found", database.EnvironmentID))
+	}
+	if database.ProjectID != project.ResourceID {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The issue project %d must be the same as the database project %q.", issueCreate.ProjectID, database.ProjectID))
 	}
 
 	taskCreateList, taskIndexDAGList, err := s.createPITRTaskList(ctx, database, issueCreate.ProjectID, c)
@@ -745,8 +758,8 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		CreatorID: issueCreate.CreatorID,
 		StageList: []api.StageCreate{
 			{
-				Name:             database.Instance.Environment.Name,
-				EnvironmentID:    database.Instance.Environment.ID,
+				Name:             environment.Title,
+				EnvironmentID:    environment.UID,
 				TaskList:         taskCreateList,
 				TaskIndexDAGList: taskIndexDAGList,
 			},
@@ -1127,7 +1140,14 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 	}, nil
 }
 
-func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Database, projectID int, c api.PITRContext) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.DatabaseMessage, projectID int, c api.PITRContext) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &originDatabase.EnvironmentID, ResourceID: &originDatabase.EnvironmentID})
+	if err != nil {
+		return nil, nil, err
+	}
+	if instance == nil {
+		return nil, nil, errors.Errorf("instance %q not found", originDatabase.InstanceID)
+	}
 	var taskCreateList []api.TaskCreate
 	// Restore payload
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
@@ -1167,8 +1187,8 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 	restoreTaskCreate := api.TaskCreate{
 		Status:     api.TaskPendingApproval,
 		Type:       api.TaskDatabaseRestorePITRRestore,
-		InstanceID: originDatabase.InstanceID,
-		DatabaseID: &originDatabase.ID,
+		InstanceID: instance.UID,
+		DatabaseID: &originDatabase.UID,
 		Payload:    string(bytesRestore),
 		BackupID:   c.BackupID,
 	}
@@ -1179,7 +1199,7 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 		restoreTaskCreate.DatabaseName = c.CreateDatabaseCtx.DatabaseName
 	} else {
 		// PITR in place: task 1
-		restoreTaskCreate.Name = fmt.Sprintf("Restore to PITR database %q", originDatabase.Name)
+		restoreTaskCreate.Name = fmt.Sprintf("Restore to PITR database %q", originDatabase.DatabaseName)
 	}
 	taskCreateList = append(taskCreateList, restoreTaskCreate)
 
@@ -1191,9 +1211,9 @@ func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *api.Dat
 			return nil, nil, errors.Wrap(err, "failed to create PITR cutover task, unable to marshal payload")
 		}
 		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Swap PITR and the original database %q", originDatabase.Name),
-			InstanceID: originDatabase.InstanceID,
-			DatabaseID: &originDatabase.ID,
+			Name:       fmt.Sprintf("Swap PITR and the original database %q", originDatabase.DatabaseName),
+			InstanceID: instance.UID,
+			DatabaseID: &originDatabase.UID,
 			Status:     api.TaskPendingApproval,
 			Type:       api.TaskDatabaseRestorePITRCutover,
 			Payload:    string(bytesCutover),
