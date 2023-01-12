@@ -34,7 +34,6 @@ import {
   isSameConnection,
   isTempTab,
   isDatabaseAccessible,
-  hasWorkspacePermission,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 
@@ -89,14 +88,7 @@ const prepareAccessibleDatabaseList = async () => {
       )
     )
     .filter((db) => {
-      if (db.project.id === DEFAULT_PROJECT_ID) {
-        // Only high-privileged users can visit unassigned database.
-        return hasWorkspacePermission(
-          "bb.permission.workspace.manage-database",
-          currentUser.value.role
-        );
-      }
-      return true;
+      return db.project.id !== DEFAULT_PROJECT_ID;
     });
   state.databaseList = databaseList;
 };
