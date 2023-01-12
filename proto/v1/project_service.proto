@@ -209,12 +209,13 @@ message Binding {
   // The project role that is assigned to the members.
   ProjectRole role = 1;
 
-  repeated ProjectMember members = 2;
-}
-
-message ProjectMember{
-  // The email of the user.
-  string user = 1;
+  // Specifies the principals requesting access for a Bytebase resource.
+  // `members` can have the following values:
+  //
+  // * `user:{emailid}`: An email address that represents a specific Bytebase
+  //    account. For example, `alice@example.com` .
+  //
+  repeated string members = 2;
 }
 
 enum Workflow {
