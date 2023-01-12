@@ -174,6 +174,7 @@ import {
   useInstanceStore,
   useSubscriptionStore,
   useSQLStore,
+  useDBSchemaStore,
 } from "@/store";
 
 const DATABASE_TAB = 0;
@@ -457,6 +458,16 @@ const syncSchema = () => {
           description: resultSet.error,
         });
       }
+
+      // Clear the db schema metadata cache entities.
+      // So we will re-fetch new values when needed.
+      const dbSchemaStore = useDBSchemaStore();
+      const databaseList = useDatabaseStore().getDatabaseListByInstanceId(
+        instance.value.id
+      );
+      databaseList.forEach((database) =>
+        dbSchemaStore.removeCacheByDatabaseId(database.id)
+      );
     })
     .catch(() => {
       state.syncingSchema = false;
