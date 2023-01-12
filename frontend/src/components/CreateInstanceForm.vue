@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6 divide-y divide-block-border">
     <div class="divide-y divide-block-border">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
+      <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-7">
         <template v-for="engine in engineList" :key="engine">
           <div
             class="flex relative justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
@@ -9,13 +9,13 @@
           >
             <div class="flex flex-col items-center">
               <img class="h-8 w-auto" :src="EngineIconPath[engine]" />
-              <p class="mt-1 text-center textlabel">
+              <p class="mt-2 text-center textlabel">
                 {{ engineName(engine) }}
               </p>
               <template v-if="isEngineBeta(engine)">
                 <BBBetaBadge class="absolute right-0.5 top-1" />
               </template>
-              <div class="mt-3 radio text-sm">
+              <div class="mt-4 radio text-sm">
                 <input
                   type="radio"
                   class="btn"
