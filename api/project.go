@@ -90,10 +90,6 @@ type Project struct {
 
 // ProjectCreate is the API message for creating a project.
 type ProjectCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
 	// Domain specific fields
 	Name             string                  `jsonapi:"attr,name"`
 	Key              string                  `jsonapi:"attr,key"`

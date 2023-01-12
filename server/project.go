@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -45,7 +46,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectCreate.TenantMode == api.TenantModeTenant && !s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 		}
-		projectCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		if projectCreate.TenantMode == "" {
 			projectCreate.TenantMode = api.TenantModeDisabled
 		}
@@ -55,27 +55,27 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectCreate.TenantMode != api.TenantModeTenant && projectCreate.DBNameTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
 		}
-		project, err := s.store.CreateProject(ctx, projectCreate)
+
+		creatorID := c.Get(getPrincipalIDContextKey()).(int)
+		project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
+			ResourceID:       fmt.Sprintf("project-%s", uuid.New().String()[:8]),
+			Title:            projectCreate.Name,
+			Key:              projectCreate.Key,
+			TenantMode:       projectCreate.TenantMode,
+			DBNameTemplate:   projectCreate.DBNameTemplate,
+			RoleProvider:     projectCreate.RoleProvider,
+			SchemaChangeType: projectCreate.SchemaChangeType,
+		}, creatorID)
 		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project name already exists: %s", projectCreate.Name))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project").SetInternal(err)
+			return errors.Wrapf(err, "failed to create Project with ProjectCreate[%+v]", projectCreate)
 		}
 
-		projectMember := &api.ProjectMemberCreate{
-			CreatorID:   projectCreate.CreatorID,
-			ProjectID:   project.ID,
-			Role:        common.ProjectOwner,
-			PrincipalID: projectCreate.CreatorID,
+		composedProject, err := s.store.GetProjectByID(ctx, project.UID)
+		if err != nil {
+			return err
 		}
-
-		if _, err = s.store.CreateProjectMember(ctx, projectMember); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add owner after creating project").SetInternal(err)
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, project); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedProject); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create project response").SetInternal(err)
 		}
 		return nil
