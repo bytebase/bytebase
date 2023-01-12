@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -53,6 +52,6 @@ func getShortMethodName(fullMethod string) string {
 	return strings.TrimPrefix(fullMethod, apiPackagePrefix)
 }
 
-func isOwnerOrDBA(user *store.UserMessage) bool {
-	return user.Role == api.Owner || user.Role == api.DBA
+func isOwnerOrDBA(role api.Role) bool {
+	return role == api.Owner || role == api.DBA
 }
