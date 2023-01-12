@@ -6,4 +6,6 @@ type DropColumnStmt struct {
 
 	Table      *TableDef
 	ColumnName string
+	IfExists   bool
+	Behavior   DropBehavior
 }

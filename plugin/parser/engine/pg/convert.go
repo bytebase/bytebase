@@ -51,8 +51,9 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					}
 
 					addColumn := &ast.AddColumnListStmt{
-						Table:      alterTable.Table,
-						ColumnList: []*ast.ColumnDef{column},
+						Table:       alterTable.Table,
+						ColumnList:  []*ast.ColumnDef{column},
+						IfNotExists: alterCmd.MissingOk,
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, addColumn)
@@ -60,6 +61,8 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 					dropColumn := &ast.DropColumnStmt{
 						Table:      alterTable.Table,
 						ColumnName: alterCmd.Name,
+						IfExists:   alterCmd.MissingOk,
+						Behavior:   convertDropBehavior(alterCmd.Behavior),
 					}
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropColumn)
 				case pgquery.AlterTableType_AT_AddConstraint:

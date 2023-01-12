@@ -729,7 +729,18 @@ func deparseDropColumn(context parser.DeparseContext, in *ast.DropColumnStmt, bu
 	if _, err := buf.WriteString("DROP COLUMN "); err != nil {
 		return err
 	}
-	return writeSurrounding(buf, in.ColumnName, `"`)
+
+	if in.IfExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+
+	if err := writeSurrounding(buf, in.ColumnName, `"`); err != nil {
+		return err
+	}
+
+	return deparseDropBehavior(context, in.Behavior, buf)
 }
 
 func deparseAlterColumnType(context parser.DeparseContext, in *ast.AlterColumnTypeStmt, buf *strings.Builder) error {
@@ -756,6 +767,12 @@ func deparseAddColumnList(context parser.DeparseContext, in *ast.AddColumnListSt
 
 	if _, err := buf.WriteString("ADD COLUMN "); err != nil {
 		return err
+	}
+
+	if in.IfNotExists {
+		if _, err := buf.WriteString("IF NOT EXISTS "); err != nil {
+			return err
+		}
 	}
 
 	if len(in.ColumnList) != 1 {

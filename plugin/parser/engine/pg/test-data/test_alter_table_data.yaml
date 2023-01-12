@@ -8,19 +8,19 @@
         ALTER COLUMN "a" SET DATA TYPE character varying(20);
 - stmt: |-
     alter table t
-        add column a integer,
+        add column if not exists a integer,
         add column b char(20)
   want: |-
     ALTER TABLE "t"
-        ADD COLUMN "a" integer,
+        ADD COLUMN IF NOT EXISTS "a" integer,
         ADD COLUMN "b" character(20);
 - stmt: |-
     alter table t
-        drop column a,
+        drop column if exists a cascade,
         drop column b
   want: |-
     ALTER TABLE "t"
-        DROP COLUMN "a",
+        DROP COLUMN IF EXISTS "a" CASCADE,
         DROP COLUMN "b";
 - stmt: |-
     alter table t
