@@ -188,6 +188,21 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 	return convertToProject(projectMsg), nil
 }
 
+// GetIamPolicy returns the IAM policy for a project.
+func (*ProjectService) GetIamPolicy(_ context.Context, _ *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIamPolicy not implemented")
+}
+
+// SetIamPolicy sets the IAM policy for a project.
+func (*ProjectService) SetIamPolicy(_ context.Context, _ *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
+}
+
+// SyncExternalIamPolicy syncs the IAM policy from the VCS which binds to the project.
+func (*ProjectService) SyncExternalIamPolicy(_ context.Context, _ *v1pb.SyncExternalIamPolicyRequest) (*v1pb.IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncExternalIamPolicy not implemented")
+}
+
 func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
 	projectID, err := getProjectID(name)
 	if err != nil {
