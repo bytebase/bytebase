@@ -166,77 +166,7 @@ func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.I
 	return instance, nil
 }
 
-// FindInstanceWithDatabaseBackupEnabled finds instances with at least one database who enables backup policy.
-func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engineType db.Type) ([]*api.Instance, error) {
-	rows, err := s.db.db.QueryContext(ctx, `
-		SELECT DISTINCT
-			instance.id,
-			instance.resource_id,
-			instance.row_status,
-			instance.creator_id,
-			instance.created_ts,
-			instance.updater_id,
-			instance.updated_ts,
-			instance.environment_id,
-			instance.name,
-			instance.engine,
-			instance.engine_version,
-			instance.external_link,
-			instance.host,
-			instance.port,
-			instance.database
-		FROM instance
-		JOIN db ON db.instance_id = instance.id
-		JOIN backup_setting AS bs ON db.id = bs.database_id
-		WHERE bs.enabled = true AND instance.row_status = $1 AND instance.engine = $2
-	`, api.Normal, engineType)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into instanceRawList.
-	var instanceRawList []*instanceRaw
-	for rows.Next() {
-		var instanceRaw instanceRaw
-		if err := rows.Scan(
-			&instanceRaw.ID,
-			&instanceRaw.ResourceID,
-			&instanceRaw.RowStatus,
-			&instanceRaw.CreatorID,
-			&instanceRaw.CreatedTs,
-			&instanceRaw.UpdaterID,
-			&instanceRaw.UpdatedTs,
-			&instanceRaw.EnvironmentID,
-			&instanceRaw.Name,
-			&instanceRaw.Engine,
-			&instanceRaw.EngineVersion,
-			&instanceRaw.ExternalLink,
-			&instanceRaw.Host,
-			&instanceRaw.Port,
-			&instanceRaw.Database,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		instanceRawList = append(instanceRawList, &instanceRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	var instanceList []*api.Instance
-	for _, raw := range instanceRawList {
-		instance, err := s.composeInstance(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", raw)
-		}
-		instanceList = append(instanceList, instance)
-	}
-	return instanceList, nil
-}
-
-// private function
+// private function.
 func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Instance, error) {
 	instance := raw.toInstance()
 
@@ -988,4 +918,46 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	return instanceMessages, nil
+}
+
+// FindInstanceWithDatabaseBackupEnabled finds instances with at least one database who enables backup policy.
+func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context) ([]*InstanceMessage, error) {
+	rows, err := s.db.db.QueryContext(ctx, `
+		SELECT DISTINCT
+			instance.id
+		FROM instance
+		JOIN db ON db.instance_id = instance.id
+		JOIN backup_setting AS bs ON db.id = bs.database_id
+		WHERE bs.enabled = true AND instance.row_status = $1
+	`, api.Normal)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+	var instanceUIDs []int
+	for rows.Next() {
+		var instanceUID int
+		if err := rows.Scan(
+			&instanceUID,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		instanceUIDs = append(instanceUIDs, instanceUID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	var instances []*InstanceMessage
+	for _, instanceUID := range instanceUIDs {
+		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: &instanceUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %v", instanceUID)
+		}
+		if instance == nil {
+			continue
+		}
+		instances = append(instances, instance)
+	}
+	return instances, nil
 }
