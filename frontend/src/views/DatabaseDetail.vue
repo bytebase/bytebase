@@ -282,7 +282,8 @@
     v-if="state.showSchemaDiagram"
     :title="$t('schema-diagram.self')"
     class="h-[calc(100vh-40px)] !max-h-[calc(100vh-40px)]"
-    container-class="flex-1 !pt-0 !border-0"
+    header-class="!border-0"
+    container-class="flex-1 !pt-0"
     @close="state.showSchemaDiagram = false"
   >
     <div class="w-[80vw] h-full">
