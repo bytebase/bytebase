@@ -311,7 +311,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		Role:        common.ProjectOwner,
 		PrincipalID: creatorID,
 	}
-	if _, err = s.CreateProjectMember(ctx, projectMember); err != nil {
+	if _, err = createProjectMemberImpl(ctx, tx, projectMember); err != nil {
 		return nil, err
 	}
 
