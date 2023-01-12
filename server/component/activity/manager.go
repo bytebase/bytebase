@@ -481,3 +481,5 @@ func shouldPostInbox(activity *api.Activity, createType api.ActivityType) (bool,
 	}
 	return false, nil
 }
+
+func (m *Manager) CreateActivityForTransferProject(ctx context.Context) {}
