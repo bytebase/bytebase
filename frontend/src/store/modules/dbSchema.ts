@@ -9,10 +9,9 @@ import {
   ViewMetadata,
 } from "@/types/proto/store/database";
 
-const requestCache = new Map<DatabaseId, Promise<DatabaseMetadata>>();
-
 export const useDBSchemaStore = defineStore("dbSchema", {
   state: (): DBSchemaState => ({
+    requestCache: new Map(),
     databaseMetadataById: new Map(),
   }),
   actions: {
@@ -26,7 +25,7 @@ export const useDBSchemaStore = defineStore("dbSchema", {
           return this.databaseMetadataById.get(databaseId) as DatabaseMetadata;
         }
 
-        const cachedRequest = requestCache.get(databaseId);
+        const cachedRequest = this.requestCache.get(databaseId);
         if (cachedRequest) {
           // The request was sent but still not returned.
           // We won't create a duplicated request.
@@ -42,7 +41,7 @@ export const useDBSchemaStore = defineStore("dbSchema", {
           this.databaseMetadataById.set(databaseId, databaseMetadata);
           return databaseMetadata;
         });
-      requestCache.set(databaseId, promise);
+      this.requestCache.set(databaseId, promise);
 
       return promise;
     },
@@ -138,6 +137,10 @@ export const useDBSchemaStore = defineStore("dbSchema", {
       }
 
       return databaseMetadata.extensions;
+    },
+    removeCacheByDatabaseId(databaseId: DatabaseId) {
+      this.requestCache.delete(databaseId);
+      this.databaseMetadataById.delete(databaseId);
     },
   },
 });
