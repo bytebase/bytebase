@@ -14,6 +14,7 @@ type Store struct {
 	cache *CacheService
 
 	userIDCache        sync.Map // map[int]*UserMessage
+	userEmailCache     sync.Map // map[string]*UserMessage
 	environmentCache   sync.Map // map[string]*EnvironmentMessage
 	environmentIDCache sync.Map // map[int]*EnvironmentMessage
 	instanceCache      sync.Map // map[string]*InstanceMessage
