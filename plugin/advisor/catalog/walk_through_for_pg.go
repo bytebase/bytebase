@@ -96,7 +96,7 @@ func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError
 				return err
 			}
 		case *ast.SetDefaultStmt:
-			if err := schema.pgSetDefault(table, itemNode); err != nil {
+			if err := table.pgSetDefault(itemNode); err != nil {
 				return err
 			}
 		case *ast.DropDefaultStmt:
@@ -168,7 +168,7 @@ func (t *TableState) pgDropDefault(node *ast.DropDefaultStmt) *WalkThroughError 
 	return nil
 }
 
-func (s *SchemaState) pgSetDefault(t *TableState, node *ast.SetDefaultStmt) *WalkThroughError {
+func (t *TableState) pgSetDefault(node *ast.SetDefaultStmt) *WalkThroughError {
 	column, err := t.getColumn(node.ColumnName)
 	if err != nil {
 		return err
@@ -178,7 +178,7 @@ func (s *SchemaState) pgSetDefault(t *TableState, node *ast.SetDefaultStmt) *Wal
 	return nil
 }
 
-func (s *SchemaState) pgAlterColumnType(t *TableState, node *ast.AlterColumnTypeStmt) *WalkThroughError {
+func (*SchemaState) pgAlterColumnType(t *TableState, node *ast.AlterColumnTypeStmt) *WalkThroughError {
 	column, err := t.getColumn(node.ColumnName)
 	if err != nil {
 		return err
@@ -197,7 +197,7 @@ func (s *SchemaState) pgAlterColumnType(t *TableState, node *ast.AlterColumnType
 	return nil
 }
 
-func (s *SchemaState) pgDropColumn(t *TableState, node *ast.DropColumnStmt) *WalkThroughError {
+func (*SchemaState) pgDropColumn(t *TableState, node *ast.DropColumnStmt) *WalkThroughError {
 	if _, exists := t.columnSet[node.ColumnName]; !exists {
 		if node.IfExists {
 			return nil
