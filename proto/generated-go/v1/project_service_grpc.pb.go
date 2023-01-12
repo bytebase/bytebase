@@ -29,6 +29,9 @@ type ProjectServiceClient interface {
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteProject(ctx context.Context, in *UndeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	SyncExternalIamPolicy(ctx context.Context, in *SyncExternalIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 }
 
 type projectServiceClient struct {
@@ -93,6 +96,33 @@ func (c *projectServiceClient) UndeleteProject(ctx context.Context, in *Undelete
 	return out, nil
 }
 
+func (c *projectServiceClient) GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
+	out := new(IamPolicy)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/GetIamPolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
+	out := new(IamPolicy)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/SetIamPolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) SyncExternalIamPolicy(ctx context.Context, in *SyncExternalIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
+	out := new(IamPolicy)
+	err := c.cc.Invoke(ctx, "/bytebase.v1.ProjectService/SyncExternalIamPolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
@@ -103,6 +133,9 @@ type ProjectServiceServer interface {
 	UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error)
 	DeleteProject(context.Context, *DeleteProjectRequest) (*emptypb.Empty, error)
 	UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error)
+	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
+	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
+	SyncExternalIamPolicy(context.Context, *SyncExternalIamPolicyRequest) (*IamPolicy, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -127,6 +160,15 @@ func (UnimplementedProjectServiceServer) DeleteProject(context.Context, *DeleteP
 }
 func (UnimplementedProjectServiceServer) UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteProject not implemented")
+}
+func (UnimplementedProjectServiceServer) GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIamPolicy not implemented")
+}
+func (UnimplementedProjectServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
+}
+func (UnimplementedProjectServiceServer) SyncExternalIamPolicy(context.Context, *SyncExternalIamPolicyRequest) (*IamPolicy, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncExternalIamPolicy not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 
@@ -249,6 +291,60 @@ func _ProjectService_UndeleteProject_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_GetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIamPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).GetIamPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/GetIamPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).GetIamPolicy(ctx, req.(*GetIamPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetIamPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SetIamPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/SetIamPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SetIamPolicy(ctx, req.(*SetIamPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_SyncExternalIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncExternalIamPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).SyncExternalIamPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bytebase.v1.ProjectService/SyncExternalIamPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).SyncExternalIamPolicy(ctx, req.(*SyncExternalIamPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -279,6 +375,18 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndeleteProject",
 			Handler:    _ProjectService_UndeleteProject_Handler,
+		},
+		{
+			MethodName: "GetIamPolicy",
+			Handler:    _ProjectService_GetIamPolicy_Handler,
+		},
+		{
+			MethodName: "SetIamPolicy",
+			Handler:    _ProjectService_SetIamPolicy_Handler,
+		},
+		{
+			MethodName: "SyncExternalIamPolicy",
+			Handler:    _ProjectService_SyncExternalIamPolicy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
