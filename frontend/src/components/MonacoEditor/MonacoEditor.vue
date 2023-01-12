@@ -74,7 +74,7 @@ const initEditorInstance = () => {
   const { monaco, formatContent, setPositionAtEndOfLine } =
     monacoInstanceRef.value!;
 
-  const model = monaco.editor.createModel(sqlCode.value, props.language);
+  const model = monaco.editor.createModel(sqlCode.value);
   const editorInstance = monaco.editor.create(editorContainerRef.value!, {
     model,
     theme: "bb",
@@ -105,8 +105,20 @@ const initEditorInstance = () => {
     ...props.options,
   });
 
+  const defaultSuggestOption = {
+    ...editorInstance.getOption(monaco.editor.EditorOption.suggest),
+  };
+
   watchEffect((onCleanup) => {
+    const { language } = props;
+
+    monaco.editor.setModelLanguage(model, language);
+
     if (props.language === "sql") {
+      editorInstance.updateOptions({
+        suggest: defaultSuggestOption,
+      });
+
       // add `Format SQL` action into context menu
       const action = editorInstance.addAction({
         id: "format-sql",
@@ -128,6 +140,43 @@ const initEditorInstance = () => {
         action.dispose();
       });
     } else {
+      // Disable auto-complete suggestions for javascript language (MongoDB)
+      editorInstance.updateOptions({
+        suggest: {
+          showConstants: false,
+          showFunctions: false,
+          showInterfaces: false,
+          showClasses: false,
+          showConstructors: false,
+          showColors: false,
+          showDeprecated: false,
+          showEnumMembers: false,
+          showEnums: false,
+          showEvents: false,
+          showFields: false,
+          showFiles: false,
+          showFolders: false,
+          showIcons: false,
+          showInlineDetails: false,
+          showIssues: false,
+          showKeywords: false,
+          showMethods: false,
+          showModules: false,
+          showOperators: false,
+          showProperties: false,
+          showReferences: false,
+          showSnippets: false,
+          showStatusBar: false,
+          showStructs: false,
+          showTypeParameters: false,
+          showUnits: false,
+          showUsers: false,
+          showValues: false,
+          showVariables: false,
+          showWords: false,
+        },
+      });
+
       // When the language is "javascript", we can still use Alt+Shift+F to
       // format the document (the native feature of monaco-editor).
     }
