@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
@@ -48,27 +47,6 @@ func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.
 		composedProjects = append(composedProjects, composedProject)
 	}
 	return composedProjects, nil
-}
-
-// CreateProject creates an instance of Project.
-func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*api.Project, error) {
-	project, err := s.CreateProjectV2(ctx, &ProjectMessage{
-		ResourceID:       fmt.Sprintf("project-%s", uuid.New().String()[:8]),
-		Title:            create.Name,
-		Key:              create.Key,
-		TenantMode:       create.TenantMode,
-		DBNameTemplate:   create.DBNameTemplate,
-		RoleProvider:     create.RoleProvider,
-		SchemaChangeType: create.SchemaChangeType,
-	}, create.CreatorID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Project with ProjectCreate[%+v]", create)
-	}
-	composedProject, err := s.composeProject(ctx, project)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Project with projectRaw[%+v]", project)
-	}
-	return composedProject, nil
 }
 
 // PatchProject patches an instance of Project.
@@ -324,6 +302,17 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 			return nil, common.FormatDBErrorEmptyRowWithQuery("failed to create project")
 		}
 		return nil, FormatError(err)
+	}
+
+	// TODO(h3n4l): migrate to project set IAM policy.
+	projectMember := &api.ProjectMemberCreate{
+		CreatorID:   creatorID,
+		ProjectID:   project.UID,
+		Role:        common.ProjectOwner,
+		PrincipalID: creatorID,
+	}
+	if _, err = s.CreateProjectMember(ctx, projectMember); err != nil {
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
