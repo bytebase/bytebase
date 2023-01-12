@@ -552,7 +552,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 func TestPGAddColumnStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "ALTER TABLE techbook ADD COLUMN a int",
+			stmt: "ALTER TABLE techbook ADD COLUMN IF NOT EXISTS a int",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
@@ -565,6 +565,7 @@ func TestPGAddColumnStmt(t *testing.T) {
 								Type: ast.TableTypeBaseTable,
 								Name: "techbook",
 							},
+							IfNotExists: true,
 							ColumnList: []*ast.ColumnDef{
 								{
 									ColumnName: "a",
@@ -577,7 +578,7 @@ func TestPGAddColumnStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "ALTER TABLE techbook ADD COLUMN a int",
+					Text:     "ALTER TABLE techbook ADD COLUMN IF NOT EXISTS a int",
 					LastLine: 1,
 				},
 			},
@@ -1436,7 +1437,7 @@ func TestPGAddConstraintStmt(t *testing.T) {
 func TestPGDropColumnStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "ALTER TABLE tech_book DROP COLUMN a",
+			stmt: "ALTER TABLE tech_book DROP COLUMN IF EXISTS a CASCADE",
 			want: []ast.Node{
 				&ast.AlterTableStmt{
 					Table: &ast.TableDef{
@@ -1450,13 +1451,15 @@ func TestPGDropColumnStmt(t *testing.T) {
 								Name: "tech_book",
 							},
 							ColumnName: "a",
+							IfExists:   true,
+							Behavior:   ast.DropBehaviorCascade,
 						},
 					},
 				},
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "ALTER TABLE tech_book DROP COLUMN a",
+					Text:     "ALTER TABLE tech_book DROP COLUMN IF EXISTS a CASCADE",
 					LastLine: 1,
 				},
 			},
