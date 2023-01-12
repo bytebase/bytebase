@@ -8,6 +8,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -15,6 +18,7 @@ import (
 	// init() in pgx will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -36,12 +40,15 @@ var noSQLReviewPolicy = []api.TaskCheckResult{
 }
 
 type test struct {
-	statement string
-	result    []api.TaskCheckResult
-	run       bool
+	Statement string
+	Result    []api.TaskCheckResult
+	Run       bool
 }
 
 func TestSQLReviewForPostgreSQL(t *testing.T) {
+	const (
+		record = false
+	)
 	var (
 		statements = []string{
 			`CREATE TABLE "user"(
@@ -64,189 +71,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 				)`,
 		}
 		databaseName = "testsqlreview"
-		tests        = []test{
-			{
-				statement: statements[0],
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-			},
-			{
-				statement: "CREATE TABLE user(id);",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementSyntaxError.Int(),
-						Title:     advisor.SyntaxErrorTitle,
-						Content:   `syntax error at or near "user"`,
-					},
-				},
-			},
-			{
-				statement: statements[1],
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingTableConventionMismatch.Int(),
-						Title:     "naming.table",
-						Content:   `"userTable" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingColumnConventionMismatch.Int(),
-						Title:     "naming.column",
-						Content:   `"userTable"."roomId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingUKConventionMismatch.Int(),
-						Title:     "naming.index.uk",
-						Content:   `Unique key in table "userTable" mismatches the naming convention, expect "^$|^uk_userTable_id_name$" but found "uk1"`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingFKConventionMismatch.Int(),
-						Title:     "naming.index.fk",
-						Content:   `Foreign key in table "userTable" mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found "fk1"`,
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.TableNoPK.Int(),
-						Title:     "table.require-pk",
-						Content:   fmt.Sprintf(`Table "public"."userTable" requires PRIMARY KEY, related statement: %q`, statements[1]),
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.TableHasFK.Int(),
-						Title:     "table.no-foreign-key",
-						Content:   fmt.Sprintf(`Foreign key is not allowed in the table "public"."userTable", related statement: "%s"`, statements[1]),
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoRequiredColumn.Int(),
-						Title:     "column.required",
-						Content:   `Table "userTable" requires columns: created_ts, creator_id, updated_ts, updater_id`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
-						Content:   `Column "id" in "public"."userTable" cannot have NULL value`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
-						Content:   `Column "name" in "public"."userTable" cannot have NULL value`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
-						Content:   `Column "roomId" in "public"."userTable" cannot have NULL value`,
-					},
-				},
-			},
-			{
-				statement: "DELETE FROM t",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementNoWhere.Int(),
-						Title:     "statement.where.require",
-						Content:   `"DELETE FROM t" requires WHERE clause`,
-					},
-				},
-			},
-			{
-				statement: "DELETE FROM t WHERE a like '%abc'",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementLeadingWildcardLike.Int(),
-						Title:     "statement.where.no-leading-wildcard-like",
-						Content:   `"DELETE FROM t WHERE a like '%abc'" uses leading wildcard LIKE`,
-					},
-				},
-			},
-			{
-				statement: `DELETE FROM t WHERE a = (SELECT max(id) FROM "user" WHERE name = 'bytebase')`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-			},
-			{
-				statement: `INSERT INTO t VALUES (1), (2)`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-			},
-			{
-				statement: `
-					CREATE TABLE tech_book(
-						id int,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_tech_book_id PRIMARY KEY (id)
-					)
-				`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-				run: true,
-			},
-			{
-				statement: `ALTER INDEX pk_tech_book_id RENAME TO pk1`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingPKConventionMismatch.Int(),
-						Title:     "naming.index.pk",
-						Content:   `Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id$" but found "pk1"`,
-					},
-				},
-			},
-		}
 	)
 
 	t.Parallel()
@@ -343,9 +167,29 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
+	filepath := filepath.Join("data", "sql_review_pg.yaml")
+	yamlFile, err := os.Open(filepath)
+	a.NoError(err)
+	defer yamlFile.Close()
+
+	tests := []test{}
+	byteValue, err := io.ReadAll(yamlFile)
+	a.NoError(err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	a.NoError(err)
+
 	for _, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.statement, t.run)
-		a.Equal(t.result, result)
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.Statement, t.Run)
+		if !record {
+			a.Equal(t.Result, result)
+		}
+	}
+
+	if record {
+		byteValue, err := yaml.Marshal(tests)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		require.NoError(t, err)
 	}
 
 	// disable the SQL review policy
@@ -415,8 +259,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table`
 		tests = []test{
 			{
-				statement: statements[0],
-				result: []api.TaskCheckResult{
+				Statement: statements[0],
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
 						Namespace: api.BBNamespace,
@@ -427,8 +271,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "CREATE TABLE user(id);",
-				result: []api.TaskCheckResult{
+				Statement: "CREATE TABLE user(id);",
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
@@ -439,8 +283,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: statements[1],
-				result: []api.TaskCheckResult{
+				Statement: statements[1],
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
@@ -619,8 +463,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'`,
-				result: []api.TaskCheckResult{
+				Statement: `CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'`,
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -666,9 +510,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `
+				Statement: `
 					DELETE FROM tech_book`,
-				result: []api.TaskCheckResult{
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
@@ -693,8 +537,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM tech_book WHERE name like `%abc`",
-				result: []api.TaskCheckResult{
+				Statement: "DELETE FROM tech_book WHERE name like `%abc`",
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
@@ -719,9 +563,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `
+				Statement: `
 					INSERT INTO t_copy SELECT * FROM t`,
-				result: []api.TaskCheckResult{
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
@@ -761,9 +605,9 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `
+				Statement: `
 					INSERT INTO t VALUES (1, 1, now(), 1, now())`,
-				result: []api.TaskCheckResult{
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -781,8 +625,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
-				result: []api.TaskCheckResult{
+				Statement: "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -800,8 +644,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `COMMIT;`,
-				result: []api.TaskCheckResult{
+				Statement: `COMMIT;`,
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
@@ -812,8 +656,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: statements[0],
-				result: []api.TaskCheckResult{
+				Statement: statements[0],
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
 						Namespace: api.BBNamespace,
@@ -822,11 +666,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Content:   "",
 					},
 				},
-				run: true,
+				Run: true,
 			},
 			{
-				statement: `INSERT INTO user(id, name) values (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e')`,
-				result: []api.TaskCheckResult{
+				Statement: `INSERT INTO user(id, name) values (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e')`,
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
 						Namespace: api.BBNamespace,
@@ -835,11 +679,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Content:   "",
 					},
 				},
-				run: true,
+				Run: true,
 			},
 			{
-				statement: `DELETE FROM user WHERE id < 10`,
-				result: []api.TaskCheckResult{
+				Statement: `DELETE FROM user WHERE id < 10`,
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
 						Namespace: api.BBNamespace,
@@ -850,8 +694,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `INSERT INTO user(id, name) values (6, 'f'), (7, 'g'), (8, 'h'), (9, 'i'), (10, 'j')`,
-				result: []api.TaskCheckResult{
+				Statement: `INSERT INTO user(id, name) values (6, 'f'), (7, 'g'), (8, 'h'), (9, 'i'), (10, 'j')`,
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
 						Namespace: api.BBNamespace,
@@ -860,11 +704,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 						Content:   "",
 					},
 				},
-				run: true,
+				Run: true,
 			},
 			{
-				statement: `DELETE FROM user WHERE id <= 10`,
-				result: []api.TaskCheckResult{
+				Statement: `DELETE FROM user WHERE id <= 10`,
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -875,8 +719,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `INSERT INTO user(id, name) SELECT id, name FROM ` + valueTable + ` WHERE 1=1`,
-				result: []api.TaskCheckResult{
+				Statement: `INSERT INTO user(id, name) SELECT id, name FROM ` + valueTable + ` WHERE 1=1`,
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -887,8 +731,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1",
-				result: []api.TaskCheckResult{
+				Statement: "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1",
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -899,10 +743,10 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `
+				Statement: `
 					ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;
 				`,
-				result: []api.TaskCheckResult{
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -913,11 +757,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `
+				Statement: `
 					ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
 					ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
 				`,
-				result: []api.TaskCheckResult{
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
@@ -956,10 +800,10 @@ func TestSQLReviewForMySQL(t *testing.T) {
 				},
 			},
 			{
-				statement: `
+				Statement: `
 					DROP TABLE user;
 					`,
-				result: []api.TaskCheckResult{
+				Result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
@@ -1078,8 +922,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.Equal(instance.ID, database.Instance.ID)
 
 	for _, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.statement, t.run)
-		a.Equal(t.result, result, t.statement)
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.Statement, t.Run)
+		a.Equal(t.Result, result, t.Statement)
 	}
 
 	// test for dry-run-dml

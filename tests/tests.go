@@ -426,7 +426,7 @@ func waitForFeishuStart(f *fake.Feishu, errChan <-chan error) error {
 func (ctl *controller) waitForHealthz() error {
 	begin := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
-	timer := time.NewTimer(5 * time.Second)
+	timer := time.NewTimer(10 * time.Second)
 	defer ticker.Stop()
 	defer timer.Stop()
 	for {
