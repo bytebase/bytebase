@@ -292,6 +292,45 @@ export function lgtmCheckToJSON(object: LgtmCheck): string {
   }
 }
 
+export enum ProjectRole {
+  PROJECT_ROLE_UNSPECIFIED = 0,
+  PROJECT_ROLE_OWNER = 1,
+  PROJECT_ROLE_DEVELOPER = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function projectRoleFromJSON(object: any): ProjectRole {
+  switch (object) {
+    case 0:
+    case "PROJECT_ROLE_UNSPECIFIED":
+      return ProjectRole.PROJECT_ROLE_UNSPECIFIED;
+    case 1:
+    case "PROJECT_ROLE_OWNER":
+      return ProjectRole.PROJECT_ROLE_OWNER;
+    case 2:
+    case "PROJECT_ROLE_DEVELOPER":
+      return ProjectRole.PROJECT_ROLE_DEVELOPER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ProjectRole.UNRECOGNIZED;
+  }
+}
+
+export function projectRoleToJSON(object: ProjectRole): string {
+  switch (object) {
+    case ProjectRole.PROJECT_ROLE_UNSPECIFIED:
+      return "PROJECT_ROLE_UNSPECIFIED";
+    case ProjectRole.PROJECT_ROLE_OWNER:
+      return "PROJECT_ROLE_OWNER";
+    case ProjectRole.PROJECT_ROLE_DEVELOPER:
+      return "PROJECT_ROLE_DEVELOPER";
+    case ProjectRole.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface GetProjectRequest {
   /**
    * The name of the project to retrieve.
@@ -371,6 +410,31 @@ export interface UndeleteProjectRequest {
   name: string;
 }
 
+export interface GetIamPolicyRequest {
+  /**
+   * The name of the project to get the IAM policy.
+   * Format: projects/{project}
+   */
+  project: string;
+}
+
+export interface SetIamPolicyRequest {
+  /**
+   * The name of the project to set the IAM policy.
+   * Format: projects/{project}
+   */
+  project: string;
+  policy?: IamPolicy;
+}
+
+export interface SyncExternalIamPolicyRequest {
+  /**
+   * The name of the project to set the IAM policy.
+   * Format: projects/{project}
+   */
+  project: string;
+}
+
 export interface Project {
   /**
    * The name of the project.
@@ -392,6 +456,27 @@ export interface Project {
   schemaVersion: SchemaVersion;
   schemaChange: SchemaChange;
   lgtmCheck: LgtmCheck;
+}
+
+export interface IamPolicy {
+  /**
+   * Collection of binding.
+   * A binding binds one or more project members to a single project role.
+   */
+  bindings: Binding[];
+}
+
+export interface Binding {
+  /** The project role that is assigned to the members. */
+  role: ProjectRole;
+  /**
+   * Specifies the principals requesting access for a Bytebase resource.
+   * `members` can have the following values:
+   *
+   * * `user:{emailid}`: An email address that represents a specific Bytebase
+   *    account. For example, `alice@example.com` .
+   */
+  members: string[];
 }
 
 function createBaseGetProjectRequest(): GetProjectRequest {
@@ -784,6 +869,160 @@ export const UndeleteProjectRequest = {
   },
 };
 
+function createBaseGetIamPolicyRequest(): GetIamPolicyRequest {
+  return { project: "" };
+}
+
+export const GetIamPolicyRequest = {
+  encode(message: GetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetIamPolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetIamPolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetIamPolicyRequest {
+    return { project: isSet(object.project) ? String(object.project) : "" };
+  },
+
+  toJSON(message: GetIamPolicyRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<GetIamPolicyRequest>): GetIamPolicyRequest {
+    const message = createBaseGetIamPolicyRequest();
+    message.project = object.project ?? "";
+    return message;
+  },
+};
+
+function createBaseSetIamPolicyRequest(): SetIamPolicyRequest {
+  return { project: "", policy: undefined };
+}
+
+export const SetIamPolicyRequest = {
+  encode(message: SetIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.policy !== undefined) {
+      IamPolicy.encode(message.policy, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SetIamPolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetIamPolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        case 2:
+          message.policy = IamPolicy.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetIamPolicyRequest {
+    return {
+      project: isSet(object.project) ? String(object.project) : "",
+      policy: isSet(object.policy) ? IamPolicy.fromJSON(object.policy) : undefined,
+    };
+  },
+
+  toJSON(message: SetIamPolicyRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    message.policy !== undefined && (obj.policy = message.policy ? IamPolicy.toJSON(message.policy) : undefined);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<SetIamPolicyRequest>): SetIamPolicyRequest {
+    const message = createBaseSetIamPolicyRequest();
+    message.project = object.project ?? "";
+    message.policy = (object.policy !== undefined && object.policy !== null)
+      ? IamPolicy.fromPartial(object.policy)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSyncExternalIamPolicyRequest(): SyncExternalIamPolicyRequest {
+  return { project: "" };
+}
+
+export const SyncExternalIamPolicyRequest = {
+  encode(message: SyncExternalIamPolicyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SyncExternalIamPolicyRequest {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncExternalIamPolicyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.project = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SyncExternalIamPolicyRequest {
+    return { project: isSet(object.project) ? String(object.project) : "" };
+  },
+
+  toJSON(message: SyncExternalIamPolicyRequest): unknown {
+    const obj: any = {};
+    message.project !== undefined && (obj.project = message.project);
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<SyncExternalIamPolicyRequest>): SyncExternalIamPolicyRequest {
+    const message = createBaseSyncExternalIamPolicyRequest();
+    message.project = object.project ?? "";
+    return message;
+  },
+};
+
 function createBaseProject(): Project {
   return {
     name: "",
@@ -955,6 +1194,119 @@ export const Project = {
   },
 };
 
+function createBaseIamPolicy(): IamPolicy {
+  return { bindings: [] };
+}
+
+export const IamPolicy = {
+  encode(message: IamPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.bindings) {
+      Binding.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IamPolicy {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIamPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.bindings.push(Binding.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IamPolicy {
+    return { bindings: Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: IamPolicy): unknown {
+    const obj: any = {};
+    if (message.bindings) {
+      obj.bindings = message.bindings.map((e) => e ? Binding.toJSON(e) : undefined);
+    } else {
+      obj.bindings = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<IamPolicy>): IamPolicy {
+    const message = createBaseIamPolicy();
+    message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseBinding(): Binding {
+  return { role: 0, members: [] };
+}
+
+export const Binding = {
+  encode(message: Binding, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.role !== 0) {
+      writer.uint32(8).int32(message.role);
+    }
+    for (const v of message.members) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Binding {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBinding();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.role = reader.int32() as any;
+          break;
+        case 2:
+          message.members.push(reader.string());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Binding {
+    return {
+      role: isSet(object.role) ? projectRoleFromJSON(object.role) : 0,
+      members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: Binding): unknown {
+    const obj: any = {};
+    message.role !== undefined && (obj.role = projectRoleToJSON(message.role));
+    if (message.members) {
+      obj.members = message.members.map((e) => e);
+    } else {
+      obj.members = [];
+    }
+    return obj;
+  },
+
+  fromPartial(object: DeepPartial<Binding>): Binding {
+    const message = createBaseBinding();
+    message.role = object.role ?? 0;
+    message.members = object.members?.map((e) => e) || [];
+    return message;
+  },
+};
+
 export type ProjectServiceDefinition = typeof ProjectServiceDefinition;
 export const ProjectServiceDefinition = {
   name: "ProjectService",
@@ -1008,6 +1360,30 @@ export const ProjectServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    getIamPolicy: {
+      name: "GetIamPolicy",
+      requestType: GetIamPolicyRequest,
+      requestStream: false,
+      responseType: IamPolicy,
+      responseStream: false,
+      options: {},
+    },
+    setIamPolicy: {
+      name: "SetIamPolicy",
+      requestType: SetIamPolicyRequest,
+      requestStream: false,
+      responseType: IamPolicy,
+      responseStream: false,
+      options: {},
+    },
+    syncExternalIamPolicy: {
+      name: "SyncExternalIamPolicy",
+      requestType: SyncExternalIamPolicyRequest,
+      requestStream: false,
+      responseType: IamPolicy,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1024,6 +1400,12 @@ export interface ProjectServiceImplementation<CallContextExt = {}> {
     request: UndeleteProjectRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Project>>;
+  getIamPolicy(request: GetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
+  setIamPolicy(request: SetIamPolicyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<IamPolicy>>;
+  syncExternalIamPolicy(
+    request: SyncExternalIamPolicyRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<IamPolicy>>;
 }
 
 export interface ProjectServiceClient<CallOptionsExt = {}> {
@@ -1039,6 +1421,12 @@ export interface ProjectServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<UndeleteProjectRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Project>;
+  getIamPolicy(request: DeepPartial<GetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
+  setIamPolicy(request: DeepPartial<SetIamPolicyRequest>, options?: CallOptions & CallOptionsExt): Promise<IamPolicy>;
+  syncExternalIamPolicy(
+    request: DeepPartial<SyncExternalIamPolicyRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<IamPolicy>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
