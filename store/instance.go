@@ -236,46 +236,7 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engin
 	return instanceList, nil
 }
 
-// GetInstanceAdminPasswordByID gets admin password of instance.
-func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
-	dataSourceFind := &api.DataSourceFind{
-		InstanceID: &instanceID,
-	}
-	dataSourceRawList, err := s.findDataSource(ctx, dataSourceFind)
-	if err != nil {
-		return "", err
-	}
-	for _, dataSourceRaw := range dataSourceRawList {
-		if dataSourceRaw.Type == api.Admin {
-			return dataSourceRaw.Password, nil
-		}
-	}
-	return "", &common.Error{Code: common.NotFound, Err: errors.Errorf("missing admin password for instance with ID %d", instanceID)}
-}
-
-// GetInstanceSslSuiteByID gets ssl suite of instance.
-func (s *Store) GetInstanceSslSuiteByID(ctx context.Context, instanceID int) (db.TLSConfig, error) {
-	dataSourceFind := &api.DataSourceFind{
-		InstanceID: &instanceID,
-	}
-	dataSourceRawList, err := s.findDataSource(ctx, dataSourceFind)
-	if err != nil {
-		return db.TLSConfig{}, err
-	}
-	for _, dataSourceRaw := range dataSourceRawList {
-		return db.TLSConfig{
-			SslCA:   dataSourceRaw.SslCa,
-			SslKey:  dataSourceRaw.SslKey,
-			SslCert: dataSourceRaw.SslCert,
-		}, nil
-	}
-	return db.TLSConfig{}, &common.Error{Code: common.NotFound, Err: errors.Errorf("missing ssl suite for instance with ID %d", instanceID)}
-}
-
-//
 // private function
-//
-
 func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Instance, error) {
 	instance := raw.toInstance()
 
