@@ -95,7 +95,7 @@ export const useAuthStore = defineStore("auth", {
       return unknownPrincipal;
     },
     async signup(signupInfo: SignupInfo) {
-      await authServiceClient.createUser({
+      await authServiceClient().createUser({
         user: {
           email: signupInfo.email,
           title: signupInfo.name,
