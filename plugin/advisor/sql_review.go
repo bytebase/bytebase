@@ -858,6 +858,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLIndexTotalNumberLimit, nil
+		case db.Postgres:
+			return PostgreSQLIndexTotalNumberLimit, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {
