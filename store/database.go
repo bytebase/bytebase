@@ -519,7 +519,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			) keys,
 			ARRAY_AGG (
 				db_label.value
-			) values
+			) label_values
 		FROM db
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
