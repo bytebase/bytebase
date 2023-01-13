@@ -65,17 +65,17 @@
       code: 401
       status: WARN
       title: column.required
-      content: "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id"
+      content: 'Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id'
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
-      content: "`userTable`.`name` cannot have NULL value"
+      content: '`userTable`.`name` cannot have NULL value'
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
-      content: "`userTable`.`roomId` cannot have NULL value"
+      content: '`userTable`.`roomId` cannot have NULL value'
     - namespace: bb.advisor
       code: 404
       status: WARN
@@ -153,7 +153,7 @@
       code: 401
       status: WARN
       title: column.required
-      content: "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
+      content: 'Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id'
     - namespace: bb.advisor
       code: 410
       status: ERROR
@@ -175,8 +175,7 @@
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)
   run: false
-- statement: |4-
-              DELETE FROM tech_book
+- statement: '        DELETE FROM tech_book'
   result:
     - namespace: bb.advisor
       code: 202
@@ -212,8 +211,7 @@
       title: statement.dml-dry-run
       content: '"DELETE FROM tech_book WHERE name like `%abc`" dry runs failed: Error 1146: Table ''testsqlreview.tech_book'' doesn''t exist'
   run: false
-- statement: |4-
-              INSERT INTO t_copy SELECT * FROM t
+- statement: '        INSERT INTO t_copy SELECT * FROM t'
   result:
     - namespace: bb.advisor
       code: 203
@@ -241,8 +239,7 @@
       title: statement.dml-dry-run
       content: '"INSERT INTO t_copy SELECT * FROM t" dry runs failed: Error 1146: Table ''testsqlreview.t_copy'' doesn''t exist'
   run: false
-- statement: |4-
-              INSERT INTO t VALUES (1, 1, now(), 1, now())
+- statement: '        INSERT INTO t VALUES (1, 1, now(), 1, now())'
   result:
     - namespace: bb.advisor
       code: 1107
@@ -352,9 +349,7 @@
       title: statement.disallow-limit
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1" uses
   run: false
-- statement: |4-
-              ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;
-
+- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
   result:
     - namespace: bb.advisor
       code: 608
@@ -363,9 +358,8 @@
       content: Table partition is forbidden, but "ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;" creates
   run: false
 - statement: |4-
-              ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
-              ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
-
+            ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
+            ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
   result:
     - namespace: bb.advisor
       code: 207
@@ -393,9 +387,7 @@
       title: schema.backward-compatibility
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" may cause incompatibility with the existing data and code'
   run: false
-- statement: |4-
-              DROP TABLE user;
-
+- statement: '        DROP TABLE user;'
   result:
     - namespace: bb.advisor
       code: 603
