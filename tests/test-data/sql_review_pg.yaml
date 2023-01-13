@@ -1,0 +1,150 @@
+- statement: |-
+    CREATE TABLE "user"(
+            id INT,
+            name VARCHAR(255) NOT NULL,
+            room_id INT NOT NULL,
+            creator_id INT NOT NULL,
+            created_ts TIMESTAMP NOT NULL,
+            updater_id INT NOT NULL,
+            updated_ts TIMESTAMP NOT NULL,
+            CONSTRAINT pk_user_id PRIMARY KEY (id),
+            CONSTRAINT uk_user_id_name UNIQUE (id, name)
+            )
+  result:
+    - namespace: bb.core
+      code: 0
+      status: SUCCESS
+      title: OK
+      content: ""
+  run: false
+- statement: CREATE TABLE user(id);
+  result:
+    - namespace: bb.advisor
+      code: 201
+      status: ERROR
+      title: Syntax error
+      content: syntax error at or near "user"
+  run: false
+- statement: |-
+    CREATE TABLE "userTable"(
+            id INT,
+            name VARCHAR(255),
+            "roomId" INT,
+            CONSTRAINT uk1 UNIQUE (id, name),
+            CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
+            )
+  result:
+    - namespace: bb.advisor
+      code: 301
+      status: WARN
+      title: naming.table
+      content: '"userTable" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+    - namespace: bb.advisor
+      code: 302
+      status: WARN
+      title: naming.column
+      content: '"userTable"."roomId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+    - namespace: bb.advisor
+      code: 304
+      status: WARN
+      title: naming.index.uk
+      content: Unique key in table "userTable" mismatches the naming convention, expect "^$|^uk_userTable_id_name$" but found "uk1"
+    - namespace: bb.advisor
+      code: 305
+      status: WARN
+      title: naming.index.fk
+      content: Foreign key in table "userTable" mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found "fk1"
+    - namespace: bb.advisor
+      code: 601
+      status: ERROR
+      title: table.require-pk
+      content: 'Table "public"."userTable" requires PRIMARY KEY, related statement: "CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        )"'
+    - namespace: bb.advisor
+      code: 602
+      status: ERROR
+      title: table.no-foreign-key
+      content: |-
+        Foreign key is not allowed in the table "public"."userTable", related statement: "CREATE TABLE "userTable"(
+                id INT,
+                name VARCHAR(255),
+                "roomId" INT,
+                CONSTRAINT uk1 UNIQUE (id, name),
+                CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
+                )"
+    - namespace: bb.advisor
+      code: 401
+      status: WARN
+      title: column.required
+      content: 'Table "userTable" requires columns: created_ts, creator_id, updated_ts, updater_id'
+    - namespace: bb.advisor
+      code: 402
+      status: WARN
+      title: column.no-null
+      content: Column "id" in "public"."userTable" cannot have NULL value
+    - namespace: bb.advisor
+      code: 402
+      status: WARN
+      title: column.no-null
+      content: Column "name" in "public"."userTable" cannot have NULL value
+    - namespace: bb.advisor
+      code: 402
+      status: WARN
+      title: column.no-null
+      content: Column "roomId" in "public"."userTable" cannot have NULL value
+  run: false
+- statement: DELETE FROM t
+  result:
+    - namespace: bb.advisor
+      code: 202
+      status: ERROR
+      title: statement.where.require
+      content: '"DELETE FROM t" requires WHERE clause'
+  run: false
+- statement: DELETE FROM t WHERE a like '%abc'
+  result:
+    - namespace: bb.advisor
+      code: 204
+      status: ERROR
+      title: statement.where.no-leading-wildcard-like
+      content: '"DELETE FROM t WHERE a like ''%abc''" uses leading wildcard LIKE'
+  run: false
+- statement: DELETE FROM t WHERE a = (SELECT max(id) FROM "user" WHERE name = 'bytebase')
+  result:
+    - namespace: bb.core
+      code: 0
+      status: SUCCESS
+      title: OK
+      content: ""
+  run: false
+- statement: INSERT INTO t VALUES (1), (2)
+  result:
+    - namespace: bb.core
+      code: 0
+      status: SUCCESS
+      title: OK
+      content: ""
+  run: false
+- statement: |-
+    CREATE TABLE tech_book(
+      id int,
+      creator_id INT NOT NULL,
+      created_ts TIMESTAMP NOT NULL,
+      updater_id INT NOT NULL,
+      updated_ts TIMESTAMP NOT NULL,
+      CONSTRAINT pk_tech_book_id PRIMARY KEY (id)
+    )
+  result:
+    - namespace: bb.core
+      code: 0
+      status: SUCCESS
+      title: OK
+      content: ""
+  run: true
+- statement: ALTER INDEX pk_tech_book_id RENAME TO pk1
+  result:
+    - namespace: bb.advisor
+      code: 306
+      status: WARN
+      title: naming.index.pk
+      content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id$" but found "pk1"
+  run: false
