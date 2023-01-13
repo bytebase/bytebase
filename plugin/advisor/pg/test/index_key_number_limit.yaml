@@ -24,14 +24,14 @@
     - status: WARN
       code: 802
       title: index.key-number-limit
-      content: The number of index `t_id_name` in table `t` should be not greater than 5
+      content: The number of keys of index "t_id_name" in table "t" should be not greater than 5
       line: 1
 - statement: CREATE TABLE t(id int, name char(225), c1 int, c2 int, c3 int, c4 int, CONSTRAINT t_id_name UNIQUE (id, name, c1, c2, c3, c4));
   want:
     - status: WARN
       code: 802
       title: index.key-number-limit
-      content: The number of index `t_id_name` in table `t` should be not greater than 5
+      content: The number of keys of index "t_id_name" in table "t" should be not greater than 5
       line: 1
 - statement: |-
     CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
@@ -40,7 +40,7 @@
     - status: WARN
       code: 802
       title: index.key-number-limit
-      content: The number of index `idx_address_phone` in table `address` should be not greater than 5
+      content: The number of keys of index "idx_address_phone" in table "address" should be not greater than 5
       line: 2
 - statement: |-
     CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
@@ -49,7 +49,7 @@
     - status: WARN
       code: 802
       title: index.key-number-limit
-      content: The number of index `idx_address_phone` in table `address` should be not greater than 5
+      content: The number of keys of index "idx_address_phone" in table "address" should be not greater than 5
       line: 2
 - statement: |-
     CREATE TABLE address(id int, phone varchar(225), c1 int, c2 int, c3 int, c4 int);
@@ -58,5 +58,5 @@
     - status: WARN
       code: 802
       title: index.key-number-limit
-      content: The number of index `address_id_name` in table `address` should be not greater than 5
+      content: The number of keys of index "address_id_name" in table "address" should be not greater than 5
       line: 2
