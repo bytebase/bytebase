@@ -1775,7 +1775,7 @@
     }
   },
   "schema-diagram": {
-    "self": "Schema 展示图",
+    "self": "Schema 关系图",
     "fit-content-with-view": "自动适应视图"
   }
 }
