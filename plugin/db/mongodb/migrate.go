@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	// embed will embeds the migration schema.
@@ -350,8 +351,13 @@ func (driver *Driver) InsertPendingHistory(ctx context.Context, _ *sql.Tx, seque
 // UpdateHistoryAsDone will update the migration record as done.
 func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrationDurationNs int64, _ string, insertedID string) error {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
+	longMigrationHistoryID, err := strconv.ParseInt(insertedID, 10, 64)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse inserted ID %s to int64", insertedID)
+	}
+
 	filter := bson.M{
-		"id": insertedID,
+		"id": longMigrationHistoryID,
 	}
 	update := bson.M{
 		"$set": bson.M{
@@ -373,8 +379,12 @@ func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrat
 // UpdateHistoryAsFailed will update the migration record as failed.
 func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, _ *sql.Tx, migrationDurationNs int64, insertedID string) error {
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
+	longMigrationHistoryID, err := strconv.ParseInt(insertedID, 10, 64)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse inserted ID %s to int64", insertedID)
+	}
 	filter := bson.M{
-		"id": insertedID,
+		"id": longMigrationHistoryID,
 	}
 	update := bson.M{
 		"$set": bson.M{
