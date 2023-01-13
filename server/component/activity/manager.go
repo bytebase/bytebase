@@ -144,12 +144,12 @@ func (m *Manager) CreateActivity(ctx context.Context, create *api.ActivityCreate
 		return activity, nil
 	}
 
-	updater, err := m.store.GetPrincipalByID(ctx, create.CreatorID)
+	updater, err := m.store.GetUserByID(ctx, create.CreatorID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find updater for posting webhook event after changing the issue status: %v", meta.Issue.Name)
 	}
 	if updater == nil {
-		return nil, errors.Errorf("updater principal not found for ID %v", create.CreatorID)
+		return nil, errors.Errorf("updater user not found for ID %v", create.CreatorID)
 	}
 
 	webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
@@ -186,7 +186,7 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebho
 	}
 }
 
-func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *Metadata, updater *api.Principal) (webhook.Context, error) {
+func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *Metadata, updater *store.UserMessage) (webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var webhookTaskResult *webhook.TaskResult
 	level := webhook.WebhookInfo
@@ -219,7 +219,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 		switch update.FieldID {
 		case api.IssueFieldAssignee:
 			{
-				var oldAssignee, newAssignee *api.Principal
+				var oldAssignee, newAssignee *store.UserMessage
 				if update.OldValue != "" {
 					oldID, err := strconv.Atoi(update.OldValue)
 					if err != nil {
@@ -229,7 +229,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					oldAssignee, err = m.store.GetPrincipalByID(ctx, oldID)
+					oldAssignee, err = m.store.GetUserByID(ctx, oldID)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
 							zap.String("issue_name", meta.Issue.Name),
@@ -256,7 +256,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *api.Activity,
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					newAssignee, err = m.store.GetPrincipalByID(ctx, newID)
+					newAssignee, err = m.store.GetUserByID(ctx, newID)
 					if err != nil {
 						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
 							zap.String("issue_name", meta.Issue.Name),
