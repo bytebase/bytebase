@@ -252,27 +252,34 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID 
 	if err != nil {
 		return nil, err
 	}
-	database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
 	if database == nil {
 		return nil, errors.Errorf("database ID not found %v", task.DatabaseID)
 	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	}
 
-	create, err = getSyntaxCheckTaskCheck(ctx, task, creatorID, database, statement)
+	create, err = getSyntaxCheckTaskCheck(ctx, task, instance, database, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
 	createList = append(createList, create...)
 
-	create, err = s.getSQLReviewTaskCheck(ctx, task, creatorID, database, statement)
+	create, err = s.getSQLReviewTaskCheck(ctx, task, instance, database, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
 	createList = append(createList, create...)
 
-	create, err = s.getStmtTypeTaskCheck(ctx, task, creatorID, database, statement)
+	create, err = s.getStmtTypeTaskCheck(ctx, task, instance, database, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule statement type task check")
 	}
@@ -295,13 +302,13 @@ func (s *Scheduler) ScheduleCheck(ctx context.Context, task *api.Task, creatorID
 	return task, err
 }
 
-func (*Scheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
-	if !api.IsStatementTypeCheckSupported(database.Instance.Engine) {
+func (*Scheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string) ([]*api.TaskCheckRunCreate, error) {
+	if !api.IsStatementTypeCheckSupported(instance.Engine) {
 		return nil, nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
 		Statement: statement,
-		DbType:    database.Instance.Engine,
+		DbType:    instance.Engine,
 		Charset:   database.CharacterSet,
 		Collation: database.Collation,
 	})
@@ -310,7 +317,7 @@ func (*Scheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creato
 	}
 	return []*api.TaskCheckRunCreate{
 		{
-			CreatorID: creatorID,
+			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementType,
 			Payload:   string(payload),
@@ -318,8 +325,8 @@ func (*Scheduler) getStmtTypeTaskCheck(_ context.Context, task *api.Task, creato
 	}, nil
 }
 
-func (s *Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
-	if !api.IsSQLReviewSupported(database.Instance.Engine) {
+func (s *Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string) ([]*api.TaskCheckRunCreate, error) {
+	if !api.IsSQLReviewSupported(instance.Engine) {
 		return nil, nil
 	}
 	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
@@ -328,7 +335,7 @@ func (s *Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, c
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 		Statement: statement,
-		DbType:    database.Instance.Engine,
+		DbType:    instance.Engine,
 		Charset:   database.CharacterSet,
 		Collation: database.Collation,
 		PolicyID:  policyID,
@@ -338,7 +345,7 @@ func (s *Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, c
 	}
 	return []*api.TaskCheckRunCreate{
 		{
-			CreatorID: creatorID,
+			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementAdvise,
 			Payload:   string(payload),
@@ -346,13 +353,13 @@ func (s *Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, c
 	}, nil
 }
 
-func getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, creatorID int, database *api.Database, statement string) ([]*api.TaskCheckRunCreate, error) {
-	if !api.IsSyntaxCheckSupported(database.Instance.Engine) {
+func getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string) ([]*api.TaskCheckRunCreate, error) {
+	if !api.IsSyntaxCheckSupported(instance.Engine) {
 		return nil, nil
 	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 		Statement: statement,
-		DbType:    database.Instance.Engine,
+		DbType:    instance.Engine,
 		Charset:   database.CharacterSet,
 		Collation: database.Collation,
 	})
@@ -361,7 +368,7 @@ func getSyntaxCheckTaskCheck(_ context.Context, task *api.Task, creatorID int, d
 	}
 	return []*api.TaskCheckRunCreate{
 		{
-			CreatorID: creatorID,
+			CreatorID: api.SystemBotID,
 			TaskID:    task.ID,
 			Type:      api.TaskCheckDatabaseStatementSyntax,
 			Payload:   string(payload),
