@@ -8,6 +8,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -15,10 +18,10 @@ import (
 	// init() in pgx will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/postgres"
@@ -36,13 +39,17 @@ var noSQLReviewPolicy = []api.TaskCheckResult{
 }
 
 type test struct {
-	statement string
-	result    []api.TaskCheckResult
-	run       bool
+	Statement string
+	Result    []api.TaskCheckResult
+	Run       bool
 }
 
 func TestSQLReviewForPostgreSQL(t *testing.T) {
+	const (
+		record = false
+	)
 	var (
+		filepath   = filepath.Join("test-data", "sql_review_pg.yaml")
 		statements = []string{
 			`CREATE TABLE "user"(
 				id INT,
@@ -64,189 +71,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 				)`,
 		}
 		databaseName = "testsqlreview"
-		tests        = []test{
-			{
-				statement: statements[0],
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-			},
-			{
-				statement: "CREATE TABLE user(id);",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementSyntaxError.Int(),
-						Title:     advisor.SyntaxErrorTitle,
-						Content:   `syntax error at or near "user"`,
-					},
-				},
-			},
-			{
-				statement: statements[1],
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingTableConventionMismatch.Int(),
-						Title:     "naming.table",
-						Content:   `"userTable" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingColumnConventionMismatch.Int(),
-						Title:     "naming.column",
-						Content:   `"userTable"."roomId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingUKConventionMismatch.Int(),
-						Title:     "naming.index.uk",
-						Content:   `Unique key in table "userTable" mismatches the naming convention, expect "^$|^uk_userTable_id_name$" but found "uk1"`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingFKConventionMismatch.Int(),
-						Title:     "naming.index.fk",
-						Content:   `Foreign key in table "userTable" mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found "fk1"`,
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.TableNoPK.Int(),
-						Title:     "table.require-pk",
-						Content:   fmt.Sprintf(`Table "public"."userTable" requires PRIMARY KEY, related statement: %q`, statements[1]),
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.TableHasFK.Int(),
-						Title:     "table.no-foreign-key",
-						Content:   fmt.Sprintf(`Foreign key is not allowed in the table "public"."userTable", related statement: "%s"`, statements[1]),
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoRequiredColumn.Int(),
-						Title:     "column.required",
-						Content:   `Table "userTable" requires columns: created_ts, creator_id, updated_ts, updater_id`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
-						Content:   `Column "id" in "public"."userTable" cannot have NULL value`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
-						Content:   `Column "name" in "public"."userTable" cannot have NULL value`,
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
-						Content:   `Column "roomId" in "public"."userTable" cannot have NULL value`,
-					},
-				},
-			},
-			{
-				statement: "DELETE FROM t",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementNoWhere.Int(),
-						Title:     "statement.where.require",
-						Content:   `"DELETE FROM t" requires WHERE clause`,
-					},
-				},
-			},
-			{
-				statement: "DELETE FROM t WHERE a like '%abc'",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementLeadingWildcardLike.Int(),
-						Title:     "statement.where.no-leading-wildcard-like",
-						Content:   `"DELETE FROM t WHERE a like '%abc'" uses leading wildcard LIKE`,
-					},
-				},
-			},
-			{
-				statement: `DELETE FROM t WHERE a = (SELECT max(id) FROM "user" WHERE name = 'bytebase')`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-			},
-			{
-				statement: `INSERT INTO t VALUES (1), (2)`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-			},
-			{
-				statement: `
-					CREATE TABLE tech_book(
-						id int,
-						creator_id INT NOT NULL,
-						created_ts TIMESTAMP NOT NULL,
-						updater_id INT NOT NULL,
-						updated_ts TIMESTAMP NOT NULL,
-						CONSTRAINT pk_tech_book_id PRIMARY KEY (id)
-					)
-				`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-				run: true,
-			},
-			{
-				statement: `ALTER INDEX pk_tech_book_id RENAME TO pk1`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingPKConventionMismatch.Int(),
-						Title:     "naming.index.pk",
-						Content:   `Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id$" but found "pk1"`,
-					},
-				},
-			},
-		}
 	)
 
 	t.Parallel()
@@ -343,9 +167,30 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
-	for _, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.statement, t.run)
-		a.Equal(t.result, result)
+	yamlFile, err := os.Open(filepath)
+	a.NoError(err)
+
+	tests := []test{}
+	byteValue, err := io.ReadAll(yamlFile)
+	a.NoError(yamlFile.Close())
+	a.NoError(err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	a.NoError(err)
+
+	for i, t := range tests {
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.Statement, t.Run)
+		if record {
+			tests[i].Result = result
+		} else {
+			a.Equal(t.Result, result)
+		}
+	}
+
+	if record {
+		byteValue, err := yaml.Marshal(tests)
+		a.NoError(err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		a.NoError(err)
 	}
 
 	// disable the SQL review policy
@@ -375,7 +220,11 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 }
 
 func TestSQLReviewForMySQL(t *testing.T) {
+	const (
+		record = false
+	)
 	var (
+		filepath     = filepath.Join("test-data", "sql_review_mysql.yaml")
 		databaseName = "testsqlreview"
 		statements   = []string{
 			"CREATE TABLE user(" +
@@ -413,570 +262,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL
 			SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL
 			SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table`
-		tests = []test{
-			{
-				statement: statements[0],
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-			},
-			{
-				statement: "CREATE TABLE user(id);",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementSyntaxError.Int(),
-						Title:     advisor.SyntaxErrorTitle,
-						Content:   "line 1 column 21 near \");\" ",
-					},
-				},
-			},
-			{
-				statement: statements[1],
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NotInnoDBEngine.Int(),
-						Title:     "engine.mysql.use-innodb",
-						Content:   fmt.Sprintf("%q doesn't use InnoDB engine", statements[1]),
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingTableConventionMismatch.Int(),
-						Title:     "naming.table",
-						Content:   "`userTable` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingColumnConventionMismatch.Int(),
-						Title:     "naming.column",
-						Content:   "`userTable`.`roomId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingIndexConventionMismatch.Int(),
-						Title:     "naming.index.idx",
-						Content:   "Index in table `userTable` mismatches the naming convention, expect \"^$|^idx_userTable_name$\" but found `idx1`",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingUKConventionMismatch.Int(),
-						Title:     "naming.index.uk",
-						Content:   "Unique key in table `userTable` mismatches the naming convention, expect \"^$|^uk_userTable_id_name$\" but found `uk1`",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingFKConventionMismatch.Int(),
-						Title:     "naming.index.fk",
-						Content:   "Foreign key in table `userTable` mismatches the naming convention, expect \"^$|^fk_userTable_roomId_room_id$\" but found `fk1`",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.TableNoPK.Int(),
-						Title:     "table.require-pk",
-						Content:   "Table `userTable` requires PRIMARY KEY",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.TableHasFK.Int(),
-						Title:     "table.no-foreign-key",
-						Content:   "Foreign key is not allowed in the table `userTable`",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoTableComment.Int(),
-						Title:     "table.comment",
-						Content:   "Table `userTable` requires comments",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoRequiredColumn.Int(),
-						Title:     "column.required",
-						Content:   "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
-						Content:   "`userTable`.`name` cannot have NULL value",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ColumnCannotNull.Int(),
-						Title:     "column.no-null",
-						Content:   "`userTable`.`roomId` cannot have NULL value",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NotNullColumnWithNoDefault.Int(),
-						Title:     "column.set-default-for-not-null",
-						Content:   "Column `userTable`.`id` is NOT NULL but doesn't have DEFAULT",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoColumnComment.Int(),
-						Title:     "column.comment",
-						Content:   "Column `userTable`.`id` requires comments",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoColumnComment.Int(),
-						Title:     "column.comment",
-						Content:   "Column `userTable`.`name` requires comments",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoColumnComment.Int(),
-						Title:     "column.comment",
-						Content:   "Column `userTable`.`roomId` requires comments",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.DisabledColumnType.Int(),
-						Title:     "column.type-disallow-list",
-						Content:   "Disallow column type JSON but column `userTable`.`json_content` is",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.SetColumnCharset.Int(),
-						Title:     "column.disallow-set-charset",
-						Content:   fmt.Sprintf("Disallow set column charset but \"%s\" does", statements[1]),
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.OnUpdateCurrentTimeColumnCountExceedsLimit.Int(),
-						Title:     "column.current-time-count-limit",
-						Content:   "Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoDefault.Int(),
-						Title:     "column.require-default",
-						Content:   "Column `userTable`.`id` doesn't have DEFAULT.",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoDefault.Int(),
-						Title:     "column.require-default",
-						Content:   "Column `userTable`.`name` doesn't have DEFAULT.",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoDefault.Int(),
-						Title:     "column.require-default",
-						Content:   "Column `userTable`.`roomId` doesn't have DEFAULT.",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.IndexTypeNoBlob.Int(),
-						Title:     "index.type-no-blob",
-						Content:   "Columns in index must not be BLOB but `userTable`.`content` is blob",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.DisabledCharset.Int(),
-						Title:     "system.charset.allowlist",
-						Content:   fmt.Sprintf("\"%s\" used disabled charset 'ascii'", statements[1]),
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.DisabledCollation.Int(),
-						Title:     "system.collation.allowlist",
-						Content:   fmt.Sprintf("\"%s\" used disabled collation 'latin1_bin'", statements[1]),
-					},
-				},
-			},
-			{
-				statement: `CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NamingAutoIncrementColumnConventionMismatch.Int(),
-						Title:     "naming.column.auto-increment",
-						Content:   "`t_auto`.`auto_id` mismatches auto_increment column naming convention, naming format should be \"^id$\"",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.NoRequiredColumn.Int(),
-						Title:     "column.required",
-						Content:   "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.AutoIncrementColumnNotInteger.Int(),
-						Title:     "column.auto-increment-must-integer",
-						Content:   "Auto-increment column `t_auto`.`auto_id` requires integer type",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.AutoIncrementColumnInitialValueNotMatch.Int(),
-						Title:     "column.auto-increment-initial-value",
-						Content:   "The initial auto-increment value in table `t_auto` is 2, which doesn't equal 20",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.AutoIncrementColumnSigned.Int(),
-						Title:     "column.auto-increment-must-unsigned",
-						Content:   "Auto-increment column `t_auto`.`auto_id` is not UNSIGNED type",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.IndexPKType.Int(),
-						Title:     "index.pk-type-limit",
-						Content:   "Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)",
-					},
-				},
-			},
-			{
-				statement: `
-					DELETE FROM tech_book`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementNoWhere.Int(),
-						Title:     "statement.where.require",
-						Content:   "\"DELETE FROM tech_book\" requires WHERE clause",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
-						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementDMLDryRunFailed.Int(),
-						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
-					},
-				},
-			},
-			{
-				statement: "DELETE FROM tech_book WHERE name like `%abc`",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementLeadingWildcardLike.Int(),
-						Title:     "statement.where.no-leading-wildcard-like",
-						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" uses leading wildcard LIKE",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
-						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementDMLDryRunFailed.Int(),
-						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book WHERE name like `%abc`\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
-					},
-				},
-			},
-			{
-				statement: `
-					INSERT INTO t_copy SELECT * FROM t`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementSelectAll.Int(),
-						Title:     "statement.select.no-select-all",
-						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" uses SELECT all",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementNoWhere.Int(),
-						Title:     "statement.where.require",
-						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" requires WHERE clause",
-					},
-
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.InsertTooManyRows.Int(),
-						Title:     "statement.insert.row-limit",
-						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testsqlreview.t_copy' doesn't exist",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.InsertNotSpecifyColumn.Int(),
-						Title:     "statement.insert.must-specify-column",
-						Content:   "The INSERT statement must specify columns but \"INSERT INTO t_copy SELECT * FROM t\" does not",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementDMLDryRunFailed.Int(),
-						Title:     "statement.dml-dry-run",
-						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146: Table 'testsqlreview.t_copy' doesn't exist",
-					},
-				},
-			},
-			{
-				statement: `
-					INSERT INTO t VALUES (1, 1, now(), 1, now())`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.InsertNotSpecifyColumn.Int(),
-						Title:     "statement.insert.must-specify-column",
-						Content:   "The INSERT statement must specify columns but \"INSERT INTO t VALUES (1, 1, now(), 1, now())\" does not",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementDMLDryRunFailed.Int(),
-						Title:     "statement.dml-dry-run",
-						Content:   "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146: Table 'testsqlreview.t' doesn't exist",
-					},
-				},
-			},
-			{
-				statement: "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
-						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
-					},
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementDMLDryRunFailed.Int(),
-						Title:     "statement.dml-dry-run",
-						Content:   "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146: Table 'testsqlreview.tech_book' doesn't exist",
-					},
-				},
-			},
-			{
-				statement: `COMMIT;`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementDisallowCommit.Int(),
-						Title:     "statement.disallow-commit",
-						Content:   "Commit is not allowed, related statement: \"COMMIT;\"",
-					},
-				},
-			},
-			{
-				statement: statements[0],
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-				run: true,
-			},
-			{
-				statement: `INSERT INTO user(id, name) values (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e')`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-				run: true,
-			},
-			{
-				statement: `DELETE FROM user WHERE id < 10`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-			},
-			{
-				statement: `INSERT INTO user(id, name) values (6, 'f'), (7, 'g'), (8, 'h'), (9, 'i'), (10, 'j')`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.BBNamespace,
-						Code:      common.Ok.Int(),
-						Title:     "OK",
-						Content:   "",
-					},
-				},
-				run: true,
-			},
-			{
-				statement: `DELETE FROM user WHERE id <= 10`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementAffectedRowExceedsLimit.Int(),
-						Title:     "statement.affected-row-limit",
-						Content:   "\"DELETE FROM user WHERE id <= 10\" affected 10 rows. The count exceeds 5.",
-					},
-				},
-			},
-			{
-				statement: `INSERT INTO user(id, name) SELECT id, name FROM ` + valueTable + ` WHERE 1=1`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.InsertTooManyRows.Int(),
-						Title:     "statement.insert.row-limit",
-						Content:   "\"INSERT INTO user(id, name) SELECT id, name FROM " + valueTable + " WHERE 1=1\" inserts 10 rows. The count exceeds 5.",
-					},
-				},
-			},
-			{
-				statement: "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.InsertUseLimit.Int(),
-						Title:     "statement.disallow-limit",
-						Content:   "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1\" uses",
-					},
-				},
-			},
-			{
-				statement: `
-					ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;
-				`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.CreateTablePartition.Int(),
-						Title:     "table.disallow-partition",
-						Content:   "Table partition is forbidden, but \"ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;\" creates",
-					},
-				},
-			},
-			{
-				statement: `
-					ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
-					ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
-				`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.StatementRedundantAlterTable.Int(),
-						Title:     "statement.merge-alter-table",
-						Content:   "There are 2 statements to modify table `user`",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ChangeColumnType.Int(),
-						Title:     "column.disallow-change-type",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column type",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.UseChangeColumnStatement.Int(),
-						Title:     "column.disallow-change",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" contains CHANGE COLUMN statement",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.ChangeColumnOrder.Int(),
-						Title:     "column.disallow-changing-order",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" changes column order",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.CompatibilityAlterColumn.Int(),
-						Title:     "schema.backward-compatibility",
-						Content:   "\"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;\" may cause incompatibility with the existing data and code",
-					},
-				},
-			},
-			{
-				statement: `
-					DROP TABLE user;
-					`,
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.TableDropNamingConventionMismatch.Int(),
-						Title:     "table.drop-naming-convention",
-						Content:   "`user` mismatches drop table naming convention, naming format should be \"_delete$\"",
-					},
-					{
-						Status:    api.TaskCheckStatusWarn,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.CompatibilityDropTable.Int(),
-						Title:     "schema.backward-compatibility",
-						Content:   "\"DROP TABLE user;\" may cause incompatibility with the existing data and code",
-					},
-				},
-			},
-		}
 	)
 
 	t.Parallel()
@@ -1077,9 +362,30 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	database := databases[0]
 	a.Equal(instance.ID, database.Instance.ID)
 
-	for _, t := range tests {
-		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.statement, t.run)
-		a.Equal(t.result, result, t.statement)
+	yamlFile, err := os.Open(filepath)
+	a.NoError(err)
+
+	tests := []test{}
+	byteValue, err := io.ReadAll(yamlFile)
+	a.NoError(yamlFile.Close())
+	a.NoError(err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	a.NoError(err)
+
+	for i, t := range tests {
+		result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, t.Statement, t.Run)
+		if record {
+			tests[i].Result = result
+		} else {
+			a.Equal(t.Result, result, t.Statement)
+		}
+	}
+
+	if record {
+		byteValue, err := yaml.Marshal(tests)
+		a.NoError(err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		a.NoError(err)
 	}
 
 	// test for dry-run-dml
