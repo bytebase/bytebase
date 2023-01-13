@@ -17,6 +17,10 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	publicSchemaName = "public"
+)
+
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
@@ -80,6 +84,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 	defer txn.Rollback()
 
+	schemaList, err := getSchemas(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", databaseName)
+	}
 	tableMap, err := getTables(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", databaseName)
@@ -98,6 +106,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 
 	schemaNameMap := make(map[string]bool)
+	for _, schemaName := range schemaList {
+		schemaNameMap[schemaName] = true
+	}
 	for schemaName := range tableMap {
 		schemaNameMap[schemaName] = true
 	}
@@ -110,10 +121,19 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 	sort.Strings(schemaNames)
 	for _, schemaName := range schemaNames {
+		var tables []*storepb.TableMetadata
+		var views []*storepb.ViewMetadata
+		var exists bool
+		if tables, exists = tableMap[schemaName]; !exists {
+			tables = []*storepb.TableMetadata{}
+		}
+		if views, exists = viewMap[schemaName]; !exists {
+			views = []*storepb.ViewMetadata{}
+		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:   schemaName,
-			Tables: tableMap[schemaName],
-			Views:  viewMap[schemaName],
+			Tables: tables,
+			Views:  views,
 		})
 	}
 	databaseMetadata.Extensions = extensions
@@ -250,6 +270,33 @@ func formatTableNameFromRegclass(name string) string {
 		name = name[1+strings.Index(name, "."):]
 	}
 	return strings.Trim(name, `"`)
+}
+
+func getSchemas(txn *sql.Tx) ([]string, error) {
+	query := `
+		SELECT nspname
+		FROM pg_catalog.pg_namespace
+		WHERE nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast');
+	`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var schemaName string
+		if err := rows.Scan(&schemaName); err != nil {
+			return nil, err
+		}
+		result = append(result, schemaName)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // getTables gets all tables of a database.
