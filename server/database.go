@@ -433,7 +433,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
@@ -469,12 +469,19 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance not found for database ID %d", databaseID))
 		}
 
 		dataSourceCreate := &api.DataSourceCreate{}
@@ -490,25 +497,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
 
-		dataSource, err := s.store.CreateDataSource(ctx, database.Instance, dataSourceCreate)
+		dataSource, err := s.store.CreateDataSource(ctx, instance, dataSourceCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &database.InstanceID})
-		if err != nil {
-			return err
-		}
 		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.String("instance", instance.ResourceID),
 				zap.Error(err))
 		}
-
 		// Sync all databases in the instance asynchronously.
-		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+		updatedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance %q", instance.Title)).SetInternal(err)
 		}
 		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
@@ -533,12 +535,19 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		// Because data source could use a wildcard database "*" as its database,
 		// so we need to include wildcard databases when check if relevant database exists.
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance not found for database ID %d", databaseID))
 		}
 
 		dataSourceFind := &api.DataSourceFind{
@@ -570,24 +579,20 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			password := ""
 			dataSourcePatch.Password = &password
 		}
-		dataSourceNew, err := s.store.PatchDataSource(ctx, database.Instance, dataSourcePatch)
+		dataSourceNew, err := s.store.PatchDataSource(ctx, instance, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
 		}
 
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &database.InstanceID})
-		if err != nil {
-			return err
-		}
 		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
 			log.Warn("Failed to sync instance",
 				zap.String("instance", instance.ResourceID),
 				zap.Error(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+		updatedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance %q", instance.Title)).SetInternal(err)
 		}
 		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 
@@ -610,12 +615,19 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance not found for database ID %d", databaseID))
 		}
 
 		dataSourceFind := &api.DataSourceFind{
@@ -634,9 +646,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, "Data source type is not read only")
 		}
 
-		if err := s.store.DeleteDataSource(ctx, database.Instance, &api.DataSourceDelete{
+		if err := s.store.DeleteDataSource(ctx, instance, &api.DataSourceDelete{
 			ID:         dataSource.ID,
-			InstanceID: database.InstanceID,
+			InstanceID: instance.UID,
 		}); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete data source").SetInternal(err)
 		}
@@ -653,14 +665,19 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{
-			ID: &databaseID,
-		})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &databaseID})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find database").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database").SetInternal(err)
 		}
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance not found for database ID %d", databaseID))
 		}
 
 		body, err := io.ReadAll(c.Request().Body)
@@ -672,7 +689,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed post database edit request").SetInternal(err)
 		}
 
-		engineType := parser.EngineType(database.Instance.Engine)
+		engineType := parser.EngineType(instance.Engine)
 		validateResultList, err := edit.ValidateDatabaseEdit(engineType, databaseEdit)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate DatabaseEdit").SetInternal(err)

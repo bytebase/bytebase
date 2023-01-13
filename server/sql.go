@@ -46,11 +46,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		// we do not transfer the password back to client, thus the client will pass the instanceID to let server
 		// retrieve the password.
 		if password == "" && !connectionInfo.UseEmptyPassword && connectionInfo.InstanceID != nil {
-			adminPassword, err := s.store.GetInstanceAdminPasswordByID(ctx, *connectionInfo.InstanceID)
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: connectionInfo.InstanceID})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve admin password for instance: %d", connectionInfo.InstanceID)).SetInternal(err)
+				return err
 			}
-			password = adminPassword
+			if instance == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance %d not found", *connectionInfo.InstanceID))
+			}
+			for _, ds := range instance.DataSources {
+				if ds.Type == api.Admin {
+					password = ds.Password
+					break
+				}
+			}
 		}
 
 		var tlsConfig db.TLSConfig
@@ -58,11 +66,23 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if supportTLS {
 			if connectionInfo.SslCa == nil && connectionInfo.SslCert == nil && connectionInfo.SslKey == nil && connectionInfo.InstanceID != nil {
 				// Frontend will not pass ssl related field if user don't modify ssl suite, we need get ssl suite from database for this case.
-				tc, err := s.store.GetInstanceSslSuiteByID(ctx, *connectionInfo.InstanceID)
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: connectionInfo.InstanceID})
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve ssl suite for instance: %d", *connectionInfo.InstanceID)).SetInternal(err)
+					return err
 				}
-				tlsConfig = tc
+				if instance == nil {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance %d not found", *connectionInfo.InstanceID))
+				}
+				for _, ds := range instance.DataSources {
+					if ds.SslCa != "" || ds.SslCert != "" || ds.SslKey != "" {
+						tlsConfig = db.TLSConfig{
+							SslCA:   ds.SslCa,
+							SslKey:  ds.SslKey,
+							SslCert: ds.SslCert,
+						}
+						break
+					}
+				}
 			} else if connectionInfo.SslCa != nil && connectionInfo.SslCert != nil && connectionInfo.SslKey != nil {
 				// Users may add instance and click test connection button now, we need get ssl suite from request for this case.
 				tlsConfig = db.TLSConfig{
