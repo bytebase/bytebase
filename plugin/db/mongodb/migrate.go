@@ -353,7 +353,7 @@ func (driver *Driver) UpdateHistoryAsDone(ctx context.Context, _ *sql.Tx, migrat
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 	longMigrationHistoryID, err := strconv.ParseInt(insertedID, 10, 64)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse inserted ID %s to uint64", insertedID)
+		return errors.Wrapf(err, "failed to parse inserted ID %s to int64", insertedID)
 	}
 
 	filter := bson.M{
@@ -381,7 +381,7 @@ func (driver *Driver) UpdateHistoryAsFailed(ctx context.Context, _ *sql.Tx, migr
 	collection := driver.client.Database(migrationHistoryDefaultDatabase).Collection(migrationHistoryDefaultCollection)
 	longMigrationHistoryID, err := strconv.ParseInt(insertedID, 10, 64)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse inserted ID %s to uint64", insertedID)
+		return errors.Wrapf(err, "failed to parse inserted ID %s to int64", insertedID)
 	}
 	filter := bson.M{
 		"id": longMigrationHistoryID,
