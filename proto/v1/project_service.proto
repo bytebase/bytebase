@@ -78,31 +78,31 @@ service ProjectService {
     };
   }
 
-  rpc GetProjectIssue(GetProjectIssueRequest) returns (ProjectIssue) {
+  rpc GetReview(GetReviewRequest) returns (Review) {
     option (google.api.http) = {
-      get: "/v1/{name=projects/*/issues/*}"
+      get: "/v1/{name=projects/*/reviews/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
-  rpc ListProjectIssues(ListProjectIssuesRequest) returns (ListProjectIssuesResponse) {
+  rpc ListReviews(ListReviewsRequest) returns (ListReviewsResponse) {
     option (google.api.http) = {
-      get: "/v1/{parent=projects/*}/issues"
+      get: "/v1/{parent=projects/*}/reviews"
     };
     option (google.api.method_signature) = "parent";
   }
 
-  rpc UpdateProjectIssue(UpdateProjectIssueRequest) returns (ProjectIssue) {
+  rpc UpdateReview(UpdateReviewRequest) returns (Review) {
     option (google.api.http) = {
-      patch: "/v1/{issue.name=projects/*/issues/*}"
-      body: "issue"
+      patch: "/v1/{review.name=projects/*/reviews/*}"
+      body: "review"
     };
-    option (google.api.method_signature) = "issue,update_mask";
+    option (google.api.method_signature) = "review,update_mask";
   }
 
-  rpc BatchUpdateProjectIssues(BatchUpdateProjectIssuesRequest) returns (BatchUpdateProjectIssuesResponse) {
+  rpc BatchUpdateReviews(BatchUpdateReviewsRequest) returns (BatchUpdateReviewsResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/issues:batchUpdate"
+      post: "/v1/{parent=projects/*}/reviews:batchUpdate"
       body: "*"
     };
   }
@@ -299,54 +299,54 @@ enum ProjectRole {
   PROJECT_ROLE_DEVELOPER = 2;
 }
 
-message GetProjectIssueRequest {
-  // The name of the issue to retrieve.
-  // Format: projects/{project}/issues/{issue}
+message GetReviewRequest {
+  // The name of the review to retrieve.
+  // Format: projects/{project}/reviews/{review}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ListProjectIssuesRequest {
-  // The parent, which owns this collection of issues.
+message ListReviewsRequest {
+  // The parent, which owns this collection of reviews.
   // Format: projects/{project}
-  // Use "projects/-" to list all issues from all projects.
+  // Use "projects/-" to list all reviews from all projects.
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The maximum number of issues to return. The service may return fewer than
+  // The maximum number of reviews to return. The service may return fewer than
   // this value.
-  // If unspecified, at most 50 issues will be returned.
+  // If unspecified, at most 50 reviews will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // A page token, received from a previous `ListProjectIssues` call.
+  // A page token, received from a previous `ListReviews` call.
   // Provide this to retrieve the subsequent page.
   //
-  // When paginating, all other parameters provided to `ListProjectIssues` must match
+  // When paginating, all other parameters provided to `ListReviews` must match
   // the call that provided the page token.
   string page_token = 3;
 }
 
-message ListProjectIssuesResponse {
-  // The issues from the specified request.
-  repeated ProjectIssue issues = 1;
+message ListReviewsResponse {
+  // The reviews from the specified request.
+  repeated Review reviews = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-message UpdateProjectIssueRequest {
-  // The issue to update.
+message UpdateReviewRequest {
+  // The review to update.
   //
-  // The issue's `name` field is used to identify the issue to update.
-  // Format: projects/{project}/issues/{issue}
-  ProjectIssue issue = 1 [(google.api.field_behavior) = REQUIRED];
+  // The review's `name` field is used to identify the review to update.
+  // Format: projects/{project}/reviews/{review}
+  Review review = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message BatchUpdateProjectIssuesRequest {
-  // The parent resource shared by all issues being updated.
+message BatchUpdateReviewsRequest {
+  // The parent resource shared by all reviews being updated.
   // Format: projects/{project}
   // If the operation spans parents, a dash (-) may be accepted as a wildcard.
   // We only support updating the status of databases for now.
@@ -354,19 +354,19 @@ message BatchUpdateProjectIssuesRequest {
 
   // The request message specifying the resources to update.
   // A maximum of 1000 databases can be modified in a batch.
-  repeated UpdateProjectIssueRequest requests = 2
+  repeated UpdateReviewRequest requests = 2
     [(google.api.field_behavior) = REQUIRED];
 }
 
-message BatchUpdateProjectIssuesResponse {
-  // Issues updated.
-  repeated ProjectIssue issues = 1;
+message BatchUpdateReviewsResponse {
+  // Reviews updated.
+  repeated Review reviews = 1;
 }
 
-message ProjectIssue {
-  // The name of the issue.
-  // Issue is a system generated ID.
-  // Format: projects/{project}/issues/{issue}
+message Review {
+  // The name of the review.
+  // `review` is a system generated ID.
+  // Format: projects/{project}/reviews/{review}
   string name = 1;
 
   // The system-assigned, unique identifier for a resource.
@@ -376,14 +376,14 @@ message ProjectIssue {
 
   string description = 4;
 
-  IssueStatus status = 5;
+  ReviewStatus status = 5;
 
   // Format: user:hello@world.com
   string assignee = 6;
 
   bool assignee_attention = 7;
 
-  // The issue subscribers.
+  // The subscribers.
   // Format: user:hello@world.com
   repeated string subscribers = 8;
 
@@ -393,14 +393,10 @@ message ProjectIssue {
   google.protobuf.Timestamp create_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp update_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Deployment is the resource name of a deployment.
-  // This is empty when the issue has no deployment.
-  string deployment = 12;
 }
 
-enum IssueStatus {
-  ISSUE_STATE_UNSPECIFIED = 0;
+enum ReviewStatus {
+  REVIEW_STATUS_UNSPECIFIED = 0;
   OPEN = 1;
   DONE = 2;
   CANCELED = 3;
