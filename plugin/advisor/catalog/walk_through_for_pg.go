@@ -15,7 +15,7 @@ const (
 func (d *DatabaseState) pgWalkThrough(stmt string) error {
 	nodeList, err := pgParse(stmt)
 	if err != nil {
-		return err
+		return NewParseError(err.Error())
 	}
 
 	for _, node := range nodeList {
@@ -907,10 +907,19 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 	}
 	schema, exists := d.schemaSet[schemaName]
 	if !exists {
-		return nil, &WalkThroughError{
-			Type:    ErrorTypeSchemaNotExists,
-			Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
+		if schemaName != publicSchemaName {
+			return nil, &WalkThroughError{
+				Type:    ErrorTypeSchemaNotExists,
+				Content: fmt.Sprintf("The schema %q doesn't exist", schemaName),
+			}
 		}
+		schema = &SchemaState{
+			name:          publicSchemaName,
+			tableSet:      make(tableStateMap),
+			viewSet:       make(viewStateMap),
+			identifierMap: make(identifierMap),
+		}
+		d.schemaSet[publicSchemaName] = schema
 	}
 	return schema, nil
 }

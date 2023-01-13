@@ -33,7 +33,7 @@
       title: naming.index.uk
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
       line: 1
-- statement: CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), CONSTRAINT uk_tech_book_name UNIQUE (name))
+- statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), CONSTRAINT uk_book_name UNIQUE (name))
   want:
     - status: SUCCESS
       code: 0
@@ -42,25 +42,25 @@
       line: 0
 - statement: |-
     -- this is the first line.
-            CREATE TABLE tech_book(
+            CREATE TABLE book(
               id INT PRIMARY KEY,
               name VARCHAR(20),
-              CONSTRAINT tech_book_name UNIQUE (name)
+              CONSTRAINT book_name UNIQUE (name)
             )
   want:
     - status: WARN
       code: 304
       title: naming.index.uk
-      content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_name$" but found "tech_book_name"
+      content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_name$" but found "book_name"
       line: 5
-- statement: CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE (name))
+- statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE (name))
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
-- statement: CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20) UNIQUE)
+- statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20) UNIQUE)
   want:
     - status: SUCCESS
       code: 0

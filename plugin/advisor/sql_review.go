@@ -431,7 +431,7 @@ func SQLReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext S
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
-	case db.TiDB, db.MySQL:
+	case db.TiDB, db.MySQL, db.Postgres:
 		if err := finder.WalkThrough(statements); err != nil {
 			return convertWalkThroughErrorToAdvice(err)
 		}
@@ -623,6 +623,14 @@ func convertWalkThroughErrorToAdvice(err error) ([]Advice, error) {
 			Status:  Error,
 			Code:    SpatialIndexKeyNullable,
 			Title:   "Spatial index key must be NOT NULL",
+			Content: walkThroughError.Content,
+			Line:    walkThroughError.Line,
+		})
+	default:
+		res = append(res, Advice{
+			Status:  Error,
+			Code:    Internal,
+			Title:   "Failed to walk-through",
 			Content: walkThroughError.Content,
 			Line:    walkThroughError.Line,
 		})

@@ -47,7 +47,9 @@
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP COLUMN id"'
       line: 1
-- statement: ALTER TABLE "tech_book" DROP COLUMN column_not_in_pk
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN column_not_in_pk int;
+    ALTER TABLE "tech_book" DROP COLUMN column_not_in_pk;
   want:
     - status: SUCCESS
       code: 0
