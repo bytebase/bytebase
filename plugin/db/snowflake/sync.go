@@ -84,11 +84,18 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		return nil, common.Errorf(common.NotFound, "database %q not found", databaseName)
 	}
 
+	schemaList, err := driver.getSchemaList(ctx, databaseName)
+	if err != nil {
+		return nil, err
+	}
 	tableMap, viewMap, err := driver.getTableSchema(ctx, databaseName)
 	if err != nil {
 		return nil, err
 	}
 	schemaNameMap := make(map[string]bool)
+	for _, schemaName := range schemaList {
+		schemaNameMap[schemaName] = true
+	}
 	for schemaName := range tableMap {
 		schemaNameMap[schemaName] = true
 	}
@@ -101,14 +108,56 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 	}
 	sort.Strings(schemaNames)
 	for _, schemaName := range schemaNames {
+		var tables []*storepb.TableMetadata
+		var views []*storepb.ViewMetadata
+		var exists bool
+		if tables, exists = tableMap[schemaName]; !exists {
+			tables = []*storepb.TableMetadata{}
+		}
+		if views, exists = viewMap[schemaName]; !exists {
+			views = []*storepb.ViewMetadata{}
+		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:   schemaName,
-			Tables: tableMap[schemaName],
-			Views:  viewMap[schemaName],
+			Tables: tables,
+			Views:  views,
 		})
 	}
 
 	return databaseMetadata, nil
+}
+
+func (driver *Driver) getSchemaList(ctx context.Context, database string) ([]string, error) {
+	// Query table info
+	var excludedSchemaList []string
+	// Skip all system schemas.
+	for k := range systemSchemas {
+		excludedSchemaList = append(excludedSchemaList, fmt.Sprintf("'%s'", k))
+	}
+	excludeWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
+
+	query := fmt.Sprintf(`
+		SELECT
+			SCHEMA_NAME
+		FROM %s.INFORMATION_SCHEMA.SCHEMATA
+		WHERE %s`, database, excludeWhere)
+
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var schemaName string
+		if err := rows.Scan(&schemaName); err != nil {
+			return nil, err
+		}
+		result = append(result, schemaName)
+	}
+
+	return result, nil
 }
 
 func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ViewMetadata, error) {
