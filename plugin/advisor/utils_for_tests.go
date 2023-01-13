@@ -187,7 +187,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType db.Type, 
 		if record {
 			tests[i].Want = adviceList
 		} else {
-			require.Equal(t, tc.Want, adviceList, tc.Statement)
+			require.Equalf(t, tc.Want, adviceList, "rule: %s, statements: %s", rule, tc.Statement)
 		}
 	}
 

@@ -26,7 +26,7 @@
       title: OK
       content: ""
       line: 0
-- statement: CREATE TABLE tech_book(id int, name varchar(255))
+- statement: CREATE TABLE book(id int, name varchar(255))
   want:
     - status: SUCCESS
       code: 0
@@ -40,7 +40,9 @@
       title: naming.table
       content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
-- statement: ALTER TABLE techBook RENAME TO tech_book
+- statement: |-
+    create table techBook(id int);
+    ALTER TABLE techBook RENAME TO tech_book_tmp;
   want:
     - status: SUCCESS
       code: 0

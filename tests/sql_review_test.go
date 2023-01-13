@@ -469,7 +469,7 @@ func createIssueAndReturnSQLReviewResult(a *require.Assertions, ctl *controller,
 
 	if wait {
 		a.Equal(1, len(result))
-		a.Equal(common.Ok.Int(), result[0].Code)
+		a.Equal(common.Ok.Int(), result[0].Code, result[0])
 		status, err := ctl.waitIssuePipeline(issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
