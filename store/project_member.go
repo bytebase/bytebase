@@ -612,6 +612,8 @@ type PolicyBinding struct {
 type GetProjectPolicyMessage struct {
 	ProjectID *string
 	UID       *int
+
+	roleProvider api.ProjectRoleProvider
 }
 
 // GetProjectPolicy gets the IAM policy of a project.
@@ -619,13 +621,28 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 	if find.ProjectID == nil && find.UID == nil {
 		return nil, errors.Errorf("GetProjectPolicy must set either resource ID or UID")
 	}
+	projectFind := &FindProjectMessage{}
+	if v := find.ProjectID; v != nil {
+		projectFind.ResourceID = v
+	}
+	if v := find.UID; v != nil {
+		projectFind.UID = v
+	}
+	project, err := s.GetProjectV2(ctx, projectFind)
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.Errorf("cannot find project with projectFind %v", projectFind)
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	projectPolicy, err := s.getProjectPolicyImp(ctx, tx, find)
+	projectPolicy, err := s.getProjectPolicyImpl(ctx, tx, project.RoleProvider, find)
 	if err != nil {
 		return nil, err
 	}
@@ -637,9 +654,10 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 	return projectPolicy, nil
 }
 
-func (s *Store) getProjectPolicyImp(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
+func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, projectRoleProvider api.ProjectRoleProvider, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	where, args = append(where, fmt.Sprintf("project_member.role_provider = $%d", len(args)+1)), append(args, projectRoleProvider)
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
