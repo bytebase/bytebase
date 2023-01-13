@@ -623,15 +623,21 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 	defer tx.Rollback()
 
-	instance, err := s.findInstanceImplV2(ctx, tx, find)
+	instances, err := s.listInstanceImplV2(ctx, tx, find)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find instance")
+		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", find)
 	}
-
+	if len(instances) == 0 {
+		return nil, nil
+	}
+	if len(instances) > 1 {
+		return nil, errors.Errorf("find %d instances with find instance message %+v, expected 1", len(instances), find)
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
+	instance := instances[0]
 	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
@@ -838,21 +844,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
 	return instance, nil
-}
-
-// findInstacnceImplV2 finds an instance by instance uid.
-func (s *Store) findInstanceImplV2(ctx context.Context, tx *Tx, findInstance *FindInstanceMessage) (*InstanceMessage, error) {
-	instances, err := s.listInstanceImplV2(ctx, tx, findInstance)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", findInstance)
-	}
-	if len(instances) == 0 {
-		return nil, errors.Wrapf(err, "cannot to get instance with find instance message %+v", findInstance)
-	}
-	if len(instances) > 1 {
-		return nil, errors.Wrapf(err, "find %d instances with find instance message %+v, expected 1", len(instances), findInstance)
-	}
-	return instances[0], nil
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
