@@ -69,11 +69,11 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 		v2Update.Workflow = &v
 	}
 	if patch.RoleProvider != nil {
-		v := api.ProjectRoleProvider(*patch.WorkflowType)
+		v := api.ProjectRoleProvider(*patch.RoleProvider)
 		v2Update.RoleProvider = &v
 	}
 	if patch.SchemaChangeType != nil {
-		v := api.ProjectSchemaChangeType(*patch.WorkflowType)
+		v := api.ProjectSchemaChangeType(*patch.SchemaChangeType)
 		v2Update.SchemaChangeType = &v
 	}
 	if patch.RowStatus != nil {
