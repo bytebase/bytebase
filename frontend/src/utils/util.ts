@@ -12,10 +12,12 @@ dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
 export function isDev(): boolean {
+  return false;
   return import.meta.env.DEV;
 }
 
 export function isRelease(): boolean {
+  return true;
   return import.meta.env.PROD;
 }
 

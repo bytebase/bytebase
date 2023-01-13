@@ -22,6 +22,7 @@
             class="min-h-[2rem]"
             :readonly="!isEditableQueryItem(query)"
             @execute="handleExecute"
+            @history="handleHistory"
           />
           <div v-if="query.queryResult" class="max-h-[20rem] overflow-y-auto">
             <TableView
@@ -45,7 +46,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useElementSize } from "@vueuse/core";
 
 import { ExecuteConfig, ExecuteOption, WebTerminalQueryItem } from "@/types";
@@ -58,9 +59,18 @@ import {
   TableView,
 } from "../EditorCommon";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { minmax } from "@/components/SchemaDiagram/common";
+
+type LocalState = {
+  historyIndex: number;
+};
 
 const tabStore = useTabStore();
 const webTerminalStore = useWebTerminalStore();
+
+const state = reactive<LocalState>({
+  historyIndex: -1,
+});
 
 const queryList = computed(() => {
   return webTerminalStore.getQueryListByTab(tabStore.currentTab);
@@ -110,6 +120,31 @@ const handleExecute = async (
   } finally {
     queryItem.isExecutingSQL = false;
   }
+};
+
+watch(
+  () => queryList.value.length,
+  (len) => {
+    state.historyIndex = len - 1;
+  },
+  { immediate: true }
+);
+const handleHistory = (direction: "up" | "down") => {
+  const list = queryList.value;
+  const delta = direction === "up" ? -1 : 1;
+  const nextIndex = minmax(state.historyIndex + delta, 0, list.length - 1);
+  if (nextIndex === state.historyIndex) {
+    return;
+  }
+  if (nextIndex === list.length - 1) {
+    currentQuery.value.sql = "";
+  } else {
+    const historyQuery = list[nextIndex];
+    if (historyQuery) {
+      currentQuery.value.sql = historyQuery.sql;
+    }
+  }
+  state.historyIndex = nextIndex;
 };
 
 const { height: queryListHeight } = useElementSize(queryListRef);
