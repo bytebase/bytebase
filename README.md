@@ -163,6 +163,7 @@ our product experts.
 - [How to Set Up Database CI/CD with GitHub](https://www.bytebase.com/blog/github-database-cicd-part-1-sql-review-github-actions)
 - [How to integrate SQL Review into Your GitLab or GitHub CI/CD](https://www.bytebase.com/blog/how-to-integrate-sql-review-into-gitlab-github-ci)
 - [How to Synchronize Database Schemas](https://www.bytebase.com/blog/how-to-synchronize-database-schemas)
+- [How to Configure Database Access Control and Data Anonymization for Developer](https://www.bytebase.com/blog/how-to-configure-database-access-control-and-data-anonymization-for-developer)
 - [Get Database Change Notification via Webhook](https://www.bytebase.com/blog/get-database-change-notification-via-webhook)
 - [How to Set Up Backup Monitoring with Better Uptime](https://www.bytebase.com/blog/how-to-use-bytebase-with-better-uptime)
 
@@ -172,6 +173,9 @@ our product experts.
 - Manage Snowflake
   - [Database Change Management with Snowflake](https://www.bytebase.com/blog/database-change-management-with-snowflake)
   - [Database Change Management with Snowflake and GitHub](https://www.bytebase.com/blog/database-change-management-with-snowflake-and-github)
+- Manage TiDB
+  - [Database Change Management with TiDB](https://www.bytebase.com/blog/database-change-management-with-tidb)
+  - [Database Change Management with TiDB and GitHub](https://www.bytebase.com/blog/database-change-management-with-tidb-and-github)
 - [Manage Supabase PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/supabase)
 - [Manage render PostgreSQL](https://www.bytebase.com/docs/how-to/integrations/render)
 - [Manage Neon database](https://www.bytebase.com/docs/how-to/integrations/neon)
