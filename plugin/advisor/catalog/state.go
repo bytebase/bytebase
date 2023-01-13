@@ -19,6 +19,7 @@ func newDatabaseState(d *storepb.DatabaseMetadata, context *FinderContext) *Data
 		collation:    d.Collation,
 		dbType:       context.EngineType,
 		schemaSet:    make(schemaStateMap),
+		usable:       true,
 	}
 
 	for _, schema := range d.Schemas {
@@ -111,6 +112,9 @@ func newIndexState(i *storepb.IndexMetadata) *IndexState {
 		visible:        newBoolPointer(i.Visible),
 		comment:        newStringPointer(i.Comment),
 		expressionList: copyStringSlice(i.Expressions),
+		// We rudely think that pk and uk are constraints here.
+		// But in fact, we can create uk by CREATE UNIQUE INDEX statements.
+		isConstraint: *newBoolPointer(i.Primary || i.Unique),
 	}
 	return index
 }
@@ -124,6 +128,7 @@ type DatabaseState struct {
 	dbType       db.Type
 	schemaSet    schemaStateMap
 	deleted      bool
+	usable       bool
 }
 
 // HasNoTable returns true if the current database has no table.

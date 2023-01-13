@@ -18,17 +18,21 @@
       title: OK
       content: ""
       line: 0
-- statement: ALTER TABLE book RENAME COLUMN creator_id TO creator;
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN creator_id int;
+    ALTER TABLE tech_book RENAME COLUMN creator_id TO creator;
   want:
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table "book" requires columns: creator_id'
-      line: 1
-- statement: ALTER TABLE book DROP COLUMN creator_id;
+      content: 'Table "tech_book" requires columns: creator_id'
+      line: 2
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN creator_id int;
+    ALTER TABLE tech_book DROP COLUMN creator_id;
   want:
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table "book" requires columns: creator_id'
-      line: 1
+      content: 'Table "tech_book" requires columns: creator_id'
+      line: 2

@@ -199,7 +199,16 @@ func (d *DatabaseState) WalkThrough(stmt string) error {
 	case db.MySQL, db.TiDB:
 		return d.mysqlWalkThrough(stmt)
 	case db.Postgres:
-		return d.pgWalkThrough(stmt)
+		if err := d.pgWalkThrough(stmt); err != nil {
+			if d.ctx.CheckIntegrity {
+				return err
+			}
+			// For PostgreSQL, we only support to walk-through with CheckIntegrity == true.
+			// If CheckIntegrity == false, we'll try to walk-through with empty public schema.
+			// We use `usable` to check if walk-through successfully.
+			d.usable = false
+		}
+		return nil
 	default:
 		return &WalkThroughError{
 			Type:    ErrorTypeUnsupported,
