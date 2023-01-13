@@ -39,6 +39,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 		advisor.SchemaRuleTableDropNamingConvention,
 		advisor.SchemaRuleCollationAllowlist,
+		advisor.SchemaRuleIndexTotalNumberLimit,
 	}
 
 	for _, rule := range pgRules {
