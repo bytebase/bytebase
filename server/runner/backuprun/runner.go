@@ -253,7 +253,7 @@ func (r *Runner) purgeBackup(ctx context.Context, backup *api.Backup) error {
 }
 
 func (r *Runner) downloadBinlogFiles(ctx context.Context) {
-	instanceList, err := r.store.FindInstanceWithDatabaseBackupEnabled(ctx, db.MySQL)
+	instances, err := r.store.FindInstanceWithDatabaseBackupEnabled(ctx)
 	if err != nil {
 		log.Error("Failed to retrieve MySQL instance list with at least one database backup enabled", zap.Error(err))
 		return
@@ -261,10 +261,9 @@ func (r *Runner) downloadBinlogFiles(ctx context.Context) {
 
 	r.downloadBinlogMu.Lock()
 	defer r.downloadBinlogMu.Unlock()
-	for _, composedInstance := range instanceList {
-		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &composedInstance.ID})
-		if err != nil {
-			log.Error("failed to get instance", zap.Int("instance", composedInstance.ID))
+	for _, instance := range instances {
+		if instance.Engine != db.MySQL {
+			continue
 		}
 		if _, ok := r.downloadBinlogInstanceIDs[instance.UID]; !ok {
 			r.downloadBinlogInstanceIDs[instance.UID] = true

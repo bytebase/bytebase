@@ -50,7 +50,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request interface{
 	}
 	// Store workspace role into context.
 	childCtx := context.WithValue(ctx, common.RoleContextKey, user.Role)
-	if isOwnerOrDBA(user) {
+	if isOwnerOrDBA(user.Role) {
 		return handler(childCtx, request)
 	}
 

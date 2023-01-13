@@ -56,6 +56,26 @@ service ProjectService {
       body: "*"
     };
   }
+
+  rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy){
+    option (google.api.http) = {
+      get: "/v1/{project=projects/*}:getIamPolicy"
+    };
+  }
+
+  rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy){
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:setIamPolicy"
+      body: "*"
+    };
+  }
+
+  rpc SyncExternalIamPolicy(SyncExternalIamPolicyRequest) returns (IamPolicy){
+    option (google.api.http) = {
+      post: "/v1/{project=projects/*}:syncExternalIamPolicy"
+      body: "*"
+    };
+  }
 }
 
 message GetProjectRequest {
@@ -126,6 +146,26 @@ message UndeleteProjectRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message GetIamPolicyRequest {
+  // The name of the project to get the IAM policy.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];  
+}
+
+message SetIamPolicyRequest {
+  // The name of the project to set the IAM policy.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+
+  IamPolicy policy = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SyncExternalIamPolicyRequest {
+  // The name of the project to set the IAM policy.
+  // Format: projects/{project}
+  string project = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message Project {
   // The name of the project.
   // Format: projects/{project}
@@ -157,6 +197,25 @@ message Project {
   SchemaChange schema_change = 12;
 
   LgtmCheck lgtm_check = 13;
+}
+
+message IamPolicy {
+  // Collection of binding.
+  // A binding binds one or more project members to a single project role.
+  repeated Binding bindings = 1;
+}
+
+message Binding {
+  // The project role that is assigned to the members.
+  ProjectRole role = 1;
+
+  // Specifies the principals requesting access for a Bytebase resource.
+  // `members` can have the following values:
+  //
+  // * `user:{emailid}`: An email address that represents a specific Bytebase
+  //    account. For example, `alice@example.com` .
+  //
+  repeated string members = 2;
 }
 
 enum Workflow {
@@ -202,4 +261,10 @@ enum LgtmCheck {
   LGTM_CHECK_DISABLED = 1;
   LGTM_CHECK_PROJECT_OWNER = 2;
   LGTM_CHECK_PROJECT_MEMBER = 3;
+}
+
+enum ProjectRole {
+  PROJECT_ROLE_UNSPECIFIED = 0;
+  PROJECT_ROLE_OWNER = 1;
+  PROJECT_ROLE_DEVELOPER = 2;
 }
