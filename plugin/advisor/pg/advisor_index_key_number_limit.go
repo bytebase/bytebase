@@ -108,7 +108,7 @@ func (checker *indexKeyNumberLimitChecker) Visit(node ast.Node) ast.Visitor {
 			Status:  checker.level,
 			Code:    advisor.IndexKeyNumberExceedsLimit,
 			Title:   checker.title,
-			Content: fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", index.indexName, index.tableName, checker.max),
+			Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", index.indexName, index.tableName, checker.max),
 			Line:    index.line,
 		})
 	}
