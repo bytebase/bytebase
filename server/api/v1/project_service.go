@@ -216,8 +216,20 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 }
 
 // GetIamPolicy returns the IAM policy for a project.
-func (*ProjectService) GetIamPolicy(_ context.Context, _ *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetIamPolicy not implemented")
+func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+	projectID, err := getProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertToIamPolicy(iamPolicy), nil
 }
 
 // SetIamPolicy sets the IAM policy for a project.
@@ -248,6 +260,41 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	}
 
 	return project, nil
+}
+
+func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
+	var bindings []*v1pb.Binding
+
+	for _, binding := range iamPolicy.Bindings {
+		var members []string
+		for _, member := range binding.Members {
+			members = append(members, getUserIdentifier(member.Email))
+		}
+		bindings = append(bindings, &v1pb.Binding{
+			Role:    convertToProjectRole(binding.Role),
+			Members: members,
+		})
+	}
+	return &v1pb.IamPolicy{
+		Bindings: bindings,
+	}
+}
+
+// getUserIdentifier returns the user identifier.
+// See more details in project_service.proto.
+func getUserIdentifier(email string) string {
+	return "user:" + email
+}
+
+func convertToProjectRole(role api.Role) v1pb.ProjectRole {
+	switch role {
+	case api.Owner:
+		return v1pb.ProjectRole_PROJECT_ROLE_OWNER
+	case api.Developer:
+		return v1pb.ProjectRole_PROJECT_ROLE_DEVELOPER
+	default:
+		return v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED
+	}
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
