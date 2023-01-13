@@ -131,6 +131,11 @@ type DatabaseState struct {
 	usable       bool
 }
 
+// Usable returns the usable of the database state.
+func (d *DatabaseState) Usable() bool {
+	return d.usable
+}
+
 // HasNoTable returns true if the current database has no table.
 func (d *DatabaseState) HasNoTable() bool {
 	for _, schema := range d.schemaSet {
