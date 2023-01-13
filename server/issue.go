@@ -737,6 +737,13 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	if database == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("database %d not found", c.DatabaseID))
 	}
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	}
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EnvironmentID})
 	if err != nil {
 		return nil, err
@@ -748,7 +755,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The issue project %d must be the same as the database project %q.", issueCreate.ProjectID, database.ProjectID))
 	}
 
-	taskCreateList, taskIndexDAGList, err := s.createPITRTaskList(ctx, database, issueCreate.ProjectID, c)
+	taskCreateList, taskIndexDAGList, err := s.createPITRTaskList(ctx, database, instance, issueCreate.ProjectID, c)
 	if err != nil {
 		return nil, err
 	}
@@ -1140,14 +1147,7 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 	}, nil
 }
 
-func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.DatabaseMessage, projectID int, c api.PITRContext) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &originDatabase.EnvironmentID, ResourceID: &originDatabase.EnvironmentID})
-	if err != nil {
-		return nil, nil, err
-	}
-	if instance == nil {
-		return nil, nil, errors.Errorf("instance %q not found", originDatabase.InstanceID)
-	}
+func (s *Server) createPITRTaskList(ctx context.Context, originDatabase *store.DatabaseMessage, instance *store.InstanceMessage, projectID int, c api.PITRContext) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	// Restore payload
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
