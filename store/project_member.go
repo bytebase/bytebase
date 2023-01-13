@@ -612,8 +612,6 @@ type PolicyBinding struct {
 type GetProjectPolicyMessage struct {
 	ProjectID *string
 	UID       *int
-
-	roleProvider api.ProjectRoleProvider
 }
 
 // GetProjectPolicy gets the IAM policy of a project.
