@@ -745,7 +745,10 @@
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "search-instance-name": "搜索实例名称",
     "grants": "权限",
-    "authentication-database": "认证数据库"
+    "authentication-database": "认证数据库",
+    "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
+    "create-gcp-credentials": "创建凭据的方法见",
+    "used-for-testing-connection": "仅作测试连接用"
   },
   "environment": {
     "select": "选择环境",
