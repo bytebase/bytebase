@@ -256,19 +256,27 @@ const loadSubTree = async (option: TreeOption): Promise<void> => {
   const item = option as any as ConnectionAtom;
   if (item.type === "database") {
     const database = databaseStore.getDatabaseById(item.id);
-    const tableList = await dbSchemaStore.getOrFetchTableListByDatabaseId(
+    const schemaList = await dbSchemaStore.getOrFetchSchemaListByDatabaseId(
       item.id as DatabaseId
     );
+    item.children = schemaList.flatMap((schema) => {
+      return schema.tables.map((table) => {
+        const node = generateTableItem(
+          connectionTreeStore.mapAtom(table, "table", item.id)
+        );
+        node.table = {
+          schema: schema.name,
+          name: table.name,
+        };
+        if (schema.name) {
+          node.label = `${schema.name}.${node.label}`;
+        }
+        if (database.instance.engine === "MONGODB") {
+          node.disabled = true;
+        }
 
-    item.children = tableList.map((table) => {
-      const node = generateTableItem(
-        connectionTreeStore.mapAtom(table, "table", item.id)
-      );
-      if (database.instance.engine === "MONGODB") {
-        node.disabled = true;
-      }
-
-      return node;
+        return node;
+      });
     });
     if (item.children.length === 0) {
       // No tables in the db

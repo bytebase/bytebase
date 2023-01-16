@@ -1,8 +1,9 @@
 <template>
-  <div v-if="table !== undefined" class="table-schema">
+  <div v-if="schema && table" class="table-schema">
     <div class="table-schema--header">
       <div class="table-schema--header-title mr-1 flex items-center">
         <heroicons-outline:table class="h-4 w-4 mr-1" />
+        <span v-if="schema.name" class="font-semibold">{{ schema.name }}.</span>
         <span class="font-semibold">{{ table.name }}</span>
       </div>
       <div
@@ -85,14 +86,20 @@ const connectionTreeStore = useConnectionTreeStore();
 const databaseStore = useDatabaseStore();
 const dbSchemaStore = useDBSchemaStore();
 const tableAtom = computed(() => connectionTreeStore.selectedTableAtom);
-const table = computed(() => {
-  if (isUndefined(tableAtom.value)) {
+const schema = computed(() => {
+  const atom = tableAtom.value;
+  if (isUndefined(atom)) {
     return undefined;
   }
-  return dbSchemaStore.getTableByDatabaseIdAndTableName(
-    tableAtom.value.parentId,
-    tableAtom.value.label
-  );
+  const schemaList = dbSchemaStore.getSchemaListByDatabaseId(atom.parentId);
+  return schemaList.find((schema) => schema.name === atom.table!.schema);
+});
+const table = computed(() => {
+  const atom = tableAtom.value;
+  if (isUndefined(atom)) {
+    return undefined;
+  }
+  return schema.value?.tables.find((table) => table.name === atom.table!.name);
 });
 
 const gotoAlterSchema = () => {
