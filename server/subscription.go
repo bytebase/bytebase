@@ -58,10 +58,9 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create trial request").SetInternal(err)
 		}
 		license := &enterpriseAPI.License{
-			InstanceCount: create.InstanceCount,
-			ExpiresTs:     time.Now().AddDate(0, 0, create.Days).Unix(),
-			IssuedTs:      time.Now().Unix(),
-			Plan:          create.Type,
+			ExpiresTs: time.Now().AddDate(0, 0, create.Days).Unix(),
+			IssuedTs:  time.Now().Unix(),
+			Plan:      create.Type,
 			// the subject format for license should be {org id in hub}.{subscription id in hub}
 			// as we just need to simply generate the trialing license in console, we can use the workspace id instead.
 			Subject:  fmt.Sprintf("%s.%s", s.workspaceID, ""),

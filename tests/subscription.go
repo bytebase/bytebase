@@ -13,9 +13,8 @@ import (
 
 func (ctl *controller) setLicense() error {
 	return ctl.trialPlan(&api.TrialPlanCreate{
-		InstanceCount: 100,
-		Type:          api.ENTERPRISE,
-		Days:          1,
+		Type: api.ENTERPRISE,
+		Days: 1,
 	})
 }
 

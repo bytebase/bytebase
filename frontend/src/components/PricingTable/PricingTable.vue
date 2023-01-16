@@ -42,12 +42,9 @@
               </p>
 
               <div class="text-gray-400 h-5">
-                <span v-if="plan.type != PlanType.ENTERPRISE">
-                  {{ $t("subscription.per-instance") }}
+                <span v-if="plan.type != PlanType.FREE">
+                  {{ $t("subscription.billed-annually") }}
                 </span>
-              </div>
-              <div class="text-gray-400">
-                {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
               <button
@@ -255,34 +252,17 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, watch } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { Plan, PlanType, PLANS, FEATURE_SECTIONS } from "@/types";
 import { useSubscriptionStore } from "@/store";
 import { LocalPlan } from "./types";
 import FeatureItem from "./FeatureItem.vue";
 
-interface LocalState {
-  isMonthly: boolean;
-  instanceCount: number;
-}
-
 const emit = defineEmits(["on-trial"]);
-
-const minimumInstanceCount = 5;
 
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionStore();
-const state = reactive<LocalState>({
-  isMonthly: false,
-  instanceCount:
-    subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
-});
-
-watch(
-  () => subscriptionStore.subscription,
-  (val) => (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
-);
 
 const plans = computed((): LocalPlan[] => {
   return PLANS.map((plan) => ({

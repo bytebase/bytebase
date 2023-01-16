@@ -1559,13 +1559,6 @@
         "title": "设定任务执行时间",
         "desc": "「设定任务执行时间」可以将任务设定在特定时间执行"
       },
-      "bb-feature-instance-count": {
-        "title": "实例数量限制",
-        "desc": "您已达最大实例数量限制，请付费升级来获取更多实例额度。",
-        "remaining": "当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。",
-        "runoutof": "已用尽全部 {total} 个实例额度。",
-        "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
-      },
       "bb-feature-multi-tenancy": {
         "title": "多租户",
         "desc": "「多租户功能」可以同时管理多个属于不同租户的同构数据库，帮您更统一和方便地对多个数据库进行管理和表结构变更。"

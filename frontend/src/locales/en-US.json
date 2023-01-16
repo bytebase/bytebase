@@ -1558,13 +1558,6 @@
         "title": "Set task schedule time",
         "desc": "Set task schedule time allows you to set a specific time to run your tasks."
       },
-      "bb-feature-instance-count": {
-        "title": "Instance count limit",
-        "desc": "You have reached the maximum instance count limit. Please upgrade to get more instance quota.",
-        "remaining": "Your total instance quota is {total}, only have {count} instance remained.",
-        "runoutof": "Your have run out of your {total} instance quota.",
-        "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
-      },
       "bb-feature-multi-tenancy": {
         "title": "Multi-tenancy",
         "desc": "Intelligent database management for tenants using identical schemas."

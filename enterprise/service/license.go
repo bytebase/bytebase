@@ -29,10 +29,9 @@ type LicenseService struct {
 // Claims creates a struct that will be encoded to a JWT.
 // We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
 type Claims struct {
-	InstanceCount int    `json:"instanceCount"`
-	Trialing      bool   `json:"trialing"`
-	Plan          string `json:"plan"`
-	OrgName       string `json:"orgName"`
+	Trialing bool   `json:"trialing"`
+	Plan     string `json:"plan"`
+	OrgName  string `json:"orgName"`
 	jwt.RegisteredClaims
 }
 
@@ -82,20 +81,18 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 		return enterpriseAPI.Subscription{
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
-			ExpiresTs:     -1,
-			InstanceCount: 5,
+			ExpiresTs: -1,
 		}
 	}
 
 	// Cache the subscription.
 	s.cachedSubscription = &enterpriseAPI.Subscription{
-		Plan:          license.Plan,
-		ExpiresTs:     license.ExpiresTs,
-		StartedTs:     license.IssuedTs,
-		InstanceCount: license.InstanceCount,
-		Trialing:      license.Trialing,
-		OrgID:         license.OrgID(),
-		OrgName:       license.OrgName,
+		Plan:      license.Plan,
+		ExpiresTs: license.ExpiresTs,
+		StartedTs: license.IssuedTs,
+		Trialing:  license.Trialing,
+		OrgID:     license.OrgID(),
+		OrgName:   license.OrgName,
 	}
 	return *s.cachedSubscription
 }
@@ -154,7 +151,6 @@ func (s *LicenseService) loadLicense(ctx context.Context) (*enterpriseAPI.Licens
 				"Load valid license",
 				zap.String("plan", license.Plan.String()),
 				zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
-				zap.Int("instanceCount", license.InstanceCount),
 			)
 			return license, nil
 		}
@@ -227,24 +223,18 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 		return nil, common.Errorf(common.Invalid, "aud is not valid, expect %s but found '%v'", s.config.Audience, claims.Audience)
 	}
 
-	instanceCount := claims.InstanceCount
-	if instanceCount < s.config.MinimumInstance {
-		return nil, common.Errorf(common.Invalid, "license instance count '%v' is not valid, minimum instance requirement is %d", instanceCount, s.config.MinimumInstance)
-	}
-
 	planType, err := convertPlanType(claims.Plan)
 	if err != nil {
 		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
 	}
 
 	license := &enterpriseAPI.License{
-		InstanceCount: instanceCount,
-		ExpiresTs:     claims.ExpiresAt.Unix(),
-		IssuedTs:      claims.IssuedAt.Unix(),
-		Plan:          planType,
-		Subject:       claims.Subject,
-		Trialing:      claims.Trialing,
-		OrgName:       claims.OrgName,
+		ExpiresTs: claims.ExpiresAt.Unix(),
+		IssuedTs:  claims.IssuedAt.Unix(),
+		Plan:      planType,
+		Subject:   claims.Subject,
+		Trialing:  claims.Trialing,
+		OrgName:   claims.OrgName,
 	}
 
 	if err := license.Valid(); err != nil {

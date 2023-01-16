@@ -80,16 +80,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, status.Errorf(codes.InvalidArgument, "invalid instance ID %v", request.InstanceId)
 	}
 
-	// Instance limit in the plan.
-	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	subscription := s.licenseService.LoadSubscription(ctx)
-	if count >= subscription.InstanceCount {
-		return nil, status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", subscription.InstanceCount)
-	}
-
 	instanceMessage, err := convertToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())

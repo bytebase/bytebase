@@ -1,11 +1,5 @@
 <template>
   <div class="flex flex-col">
-    <FeatureAttention
-      v-if="remainingInstanceCount <= 3"
-      custom-class="m-5"
-      feature="bb.feature.instance-count"
-      :description="instanceCountAttention"
-    />
     <div class="px-5 py-2 flex justify-between items-center">
       <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
@@ -30,14 +24,11 @@ import InstanceTable from "../components/InstanceTable.vue";
 import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
-import { useI18n } from "vue-i18n";
 import {
   useUIStateStore,
-  useSubscriptionStore,
   useEnvironmentStore,
   useEnvironmentList,
   useInstanceList,
-  useInstanceStore,
 } from "@/store";
 
 interface LocalState {
@@ -54,11 +45,8 @@ export default defineComponent({
   setup() {
     const searchField = ref();
 
-    const instanceStore = useInstanceStore();
-    const subscriptionStore = useSubscriptionStore();
     const uiStateStore = useUIStateStore();
     const router = useRouter();
-    const { t } = useI18n();
 
     const environmentList = useEnvironmentList(["NORMAL"]);
 
@@ -125,38 +113,6 @@ export default defineComponent({
       });
     };
 
-    const instanceQuota = computed((): number => {
-      const { subscription } = subscriptionStore;
-      return subscription?.instanceCount ?? 5;
-    });
-
-    const remainingInstanceCount = computed((): number => {
-      const instanceList = instanceStore.getInstanceList(["NORMAL"]);
-      return Math.max(0, instanceQuota.value - instanceList.length);
-    });
-
-    const instanceCountAttention = computed((): string => {
-      const upgrade = t(
-        "subscription.features.bb-feature-instance-count.upgrade"
-      );
-      let status = "";
-      if (remainingInstanceCount.value > 0) {
-        status = t(
-          "subscription.features.bb-feature-instance-count.remaining",
-          {
-            total: instanceQuota.value,
-            count: remainingInstanceCount.value,
-          }
-        );
-      } else {
-        status = t("subscription.features.bb-feature-instance-count.runoutof", {
-          total: instanceQuota.value,
-        });
-      }
-
-      return `${status} ${upgrade}`;
-    });
-
     return {
       searchField,
       state,
@@ -164,8 +120,6 @@ export default defineComponent({
       filteredList,
       selectEnvironment,
       changeSearchText,
-      remainingInstanceCount,
-      instanceCountAttention,
     };
   },
 });

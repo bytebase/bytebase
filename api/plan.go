@@ -253,9 +253,8 @@ type PlanPatch struct {
 
 // TrialPlanCreate is the API message for creating a trial plan.
 type TrialPlanCreate struct {
-	Type          PlanType `jsonapi:"attr,type"`
-	Days          int      `jsonapi:"attr,days"`
-	InstanceCount int      `jsonapi:"attr,instanceCount"`
+	Type PlanType `jsonapi:"attr,type"`
+	Days int      `jsonapi:"attr,days"`
 }
 
 // PlanLimit is the type for plan limits.

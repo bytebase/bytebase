@@ -439,20 +439,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-// instanceCountGuard is a feature guard for instance count.
-// We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
-func (s *Server) instanceCountGuard(ctx context.Context) error {
-	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
-	}
-	subscription := s.licenseService.LoadSubscription(ctx)
-	if count >= subscription.InstanceCount {
-		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
-	}
-	return nil
-}
-
 // disallowBytebaseStore prevents users adding Bytebase's own Postgres database.
 // Otherwise, users can take control of the database which is a security issue.
 func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error {
@@ -464,9 +450,6 @@ func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error 
 }
 
 func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreate) (*api.Instance, error) {
-	if err := s.instanceCountGuard(ctx); err != nil {
-		return nil, err
-	}
 	if err := s.validateDataSourceList(create.DataSourceList); err != nil {
 		return nil, err
 	}
@@ -548,13 +531,6 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 
 	instancePatched := composedInstance
 	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil || patch.Database != nil || patch.DataSourceList != nil {
-		// Users can switch instance status from ARCHIVED to NORMAL.
-		// So we need to check the current instance count with NORMAL status for quota limitation.
-		if patch.RowStatus != nil && *patch.RowStatus == string(api.Normal) {
-			if err := s.instanceCountGuard(ctx); err != nil {
-				return nil, err
-			}
-		}
 		// Ensure all databases belong to this instance are under the default project before instance is archived.
 		if v := patch.RowStatus; v != nil && *v == string(api.Archived) {
 			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &composedInstance.ResourceID})

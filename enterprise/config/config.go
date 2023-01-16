@@ -24,8 +24,6 @@ type Config struct {
 	Issuer string
 	// Audience is the license audience, it should always be "bb.license".
 	Audience string
-	// MinimumInstance is the minimum instance count in each plan.
-	MinimumInstance int
 }
 
 const (
@@ -35,8 +33,6 @@ const (
 	issuer = "bytebase"
 	// audience is the license token audience.
 	audience = "bb.license"
-	// minimumInstance is the minimum instance count in subscribed plan.
-	minimumInstance = 5
 )
 
 // NewConfig will create a new enterprise config instance.
@@ -47,10 +43,9 @@ func NewConfig(mode common.ReleaseMode) (*Config, error) {
 	}
 
 	return &Config{
-		PublicKey:       string(licensePubKey),
-		Version:         keyID,
-		Issuer:          issuer,
-		Audience:        audience,
-		MinimumInstance: minimumInstance,
+		PublicKey: string(licensePubKey),
+		Version:   keyID,
+		Issuer:    issuer,
+		Audience:  audience,
 	}, nil
 }

@@ -251,11 +251,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
-import {
-  useCommandStore,
-  useInstanceStore,
-  useSubscriptionStore,
-} from "@/store";
+import { useCommandStore } from "@/store";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import BBBetaBadge from "@/bbkit/BBBetaBadge.vue";
 import CreateInstanceForm from "../components/CreateInstanceForm.vue";
@@ -285,7 +281,6 @@ const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const commandStore = useCommandStore();
-const subscriptionStore = useSubscriptionStore();
 
 const state = reactive<LocalState>({
   showModal: false,
@@ -323,13 +318,6 @@ const transferDatabase = () => {
 };
 
 const createInstance = () => {
-  const { subscription } = subscriptionStore;
-  const instanceList = useInstanceStore().getInstanceList();
-  if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
-    state.featureName = "bb.feature.instance-count";
-    state.showFeatureModal = true;
-    return;
-  }
   state.modalTitle = t("quick-action.create-instance");
   state.modalSubtitle = "";
   state.quickActionType = "quickaction.bb.instance.create";

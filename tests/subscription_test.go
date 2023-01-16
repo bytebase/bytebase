@@ -13,11 +13,9 @@ import (
 )
 
 type trial struct {
-	instanceCount       int
-	expectInstanceCount int
-	plan                api.PlanType
-	expectPlan          api.PlanType
-	Days                int
+	plan       api.PlanType
+	expectPlan api.PlanType
+	Days       int
 }
 
 func TestSubscription(t *testing.T) {
@@ -40,41 +38,33 @@ func TestSubscription(t *testing.T) {
 	trialList := []trial{
 		{
 			// Test trial the TEAM plan.
-			instanceCount:       20,
-			expectInstanceCount: 20,
-			plan:                api.TEAM,
-			expectPlan:          api.TEAM,
-			Days:                7,
+			plan:       api.TEAM,
+			expectPlan: api.TEAM,
+			Days:       7,
 		},
 		{
 			// Test trial the ENTERPRISE plan.
-			instanceCount:       10,
-			expectInstanceCount: 10,
-			plan:                api.ENTERPRISE,
-			expectPlan:          api.ENTERPRISE,
-			Days:                7,
+			plan:       api.ENTERPRISE,
+			expectPlan: api.ENTERPRISE,
+			Days:       7,
 		},
 		{
 			// Downgrade should be ignored.
-			instanceCount:       99,
-			expectInstanceCount: 10,
-			plan:                api.TEAM,
-			expectPlan:          api.ENTERPRISE,
-			Days:                7,
+			plan:       api.TEAM,
+			expectPlan: api.ENTERPRISE,
+			Days:       7,
 		},
 	}
 
 	for _, trial := range trialList {
 		err = ctl.trialPlan(&api.TrialPlanCreate{
-			InstanceCount: trial.instanceCount,
-			Type:          trial.plan,
-			Days:          trial.Days,
+			Type: trial.plan,
+			Days: trial.Days,
 		})
 		a.NoError(err)
 
 		subscription, err = ctl.getSubscription()
 		a.NoError(err)
 		a.Equal(trial.expectPlan, subscription.Plan)
-		a.Equal(trial.expectInstanceCount, subscription.InstanceCount)
 	}
 }

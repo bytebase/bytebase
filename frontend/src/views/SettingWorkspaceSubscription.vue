@@ -39,12 +39,6 @@
           </div>
         </dd>
       </div>
-      <div class="my-3">
-        <dt class="text-gray-400">
-          {{ $t("subscription.instance-count") }}
-        </dt>
-        <dd class="mt-1 text-4xl">{{ instanceCount }}</dd>
-      </div>
       <div class="my-3 col-span-2">
         <dt class="text-gray-400">
           {{ $t("subscription.expires-at") }}
@@ -150,12 +144,7 @@ export default defineComponent({
       }
     };
 
-    const { subscription, expireAt, isTrialing, isExpired } =
-      storeToRefs(subscriptionStore);
-
-    const instanceCount = computed((): number => {
-      return subscription.value?.instanceCount ?? 5;
-    });
+    const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
 
     const currentPlan = computed((): string => {
       const plan = subscriptionStore.currentPlan;
@@ -192,7 +181,6 @@ export default defineComponent({
       isTrialing,
       isExpired,
       currentPlan,
-      instanceCount,
       uploadLicense,
       openTrialModal,
       canManageSubscription,

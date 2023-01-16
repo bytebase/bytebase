@@ -141,11 +141,6 @@
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </BBModal>
-  <FeatureModal
-    v-if="state.showFeatureModal"
-    feature="bb.feature.instance-count"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -172,7 +167,6 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useInstanceStore,
-  useSubscriptionStore,
   useSQLStore,
   useDBSchemaStore,
 } from "@/store";
@@ -187,7 +181,6 @@ interface LocalState {
   creatingMigrationSchema: boolean;
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
-  showFeatureModal: boolean;
   showMissingDatabases: boolean;
 }
 
@@ -199,7 +192,6 @@ const props = defineProps({
 });
 
 const instanceStore = useInstanceStore();
-const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
@@ -212,7 +204,6 @@ const state = reactive<LocalState>({
   creatingMigrationSchema: false,
   showCreateDatabaseModal: false,
   syncingSchema: false,
-  showFeatureModal: false,
   showMissingDatabases: false,
 });
 
@@ -375,12 +366,6 @@ const doArchive = () => {
 };
 
 const doRestore = () => {
-  const { subscription } = subscriptionStore;
-  const instanceList = instanceStore.getInstanceList(["NORMAL"]);
-  if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
-    state.showFeatureModal = true;
-    return;
-  }
   instanceStore
     .patchInstance({
       instanceId: instance.value.id,

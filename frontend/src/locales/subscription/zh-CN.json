@@ -49,9 +49,7 @@
       "title": "数据库管理",
       "features": {
         "instance-count": "实例数",
-        "instance-upto-5": "不多于 5 个",
-        "instance-minimum-5": "5 ~ 无限制",
-        "instance-customized": "自定义",
+        "instance-unlimited": "无限制",
         "environment-count": "环境数",
         "environment-upto-2": "不多于 2 个",
         "environment-upto-3": "不多于 3 个",
