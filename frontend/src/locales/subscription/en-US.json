@@ -11,6 +11,7 @@
   "per-month": "/ month",
   "price-unit-for-enterprise": "/ month",
   "start-from": "Start from",
+  "billed-annually": "Billed annually",
   "per-instance": "Per instance",
   "free-price-intro": "Up to 5",
   "team-price-intro": "5 minimum, billed annually",
@@ -49,9 +50,8 @@
       "title": "Database Development",
       "features": {
         "instance-count": "Instance count",
-        "instance-upto-5": "Up to 5",
         "instance-customized": "Customized",
-        "instance-minimum-5": "5 ~ unlimited",
+        "instance-unlimited": "Unlimited",
         "environment-count": "Environment count",
         "environment-unlimited": "Unlimited",
         "task-count-in-issue": "Task count in an issue",
