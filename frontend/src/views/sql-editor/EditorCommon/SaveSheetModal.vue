@@ -14,7 +14,7 @@ import { computed, reactive } from "vue";
 import type { SheetUpsert } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { useDatabaseStore, useSheetStore, useTabStore } from "@/store";
-import { defaultTabName } from "@/utils";
+import { defaultTabName, getDefaultTabNameFromConnection } from "@/utils";
 import SaveSheetForm from "./SaveSheetForm.vue";
 
 type LocalState = {
@@ -67,12 +67,31 @@ const doSaveSheet = async (sheetName?: string) => {
   });
 };
 
+const needSheetName = (sheetName: string | undefined) => {
+  const tab = tabStore.currentTab;
+  if (tab.sheetId) {
+    // If the sheet is saved, we don't need to show the name popup.
+    return false;
+  }
+  if (!sheetName) {
+    const name = tab.name;
+    if (
+      name === getDefaultTabNameFromConnection(tab.connection) ||
+      name === defaultTabName.value
+    ) {
+      // The tab is unsaved and its name is still the default one.
+      return true;
+    }
+  }
+  return false;
+};
+
 const trySaveSheet = (sheetName?: string) => {
   if (!allowSave.value) {
     return;
   }
 
-  if (tabStore.currentTab.name === defaultTabName.value && !sheetName) {
+  if (needSheetName(sheetName)) {
     state.showModal = true;
     return;
   }
