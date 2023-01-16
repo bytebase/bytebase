@@ -141,11 +141,6 @@ export type RuleType =
   | "index.total-number-limit"
   | "index.pk-type-limit";
 
-export const availableRulesForFreePlan: RuleType[] = [
-  "statement.where.require",
-  "column.no-null",
-];
-
 // The naming format rule payload.
 // Used by the backend.
 interface NamingFormatPayload {
@@ -660,12 +655,11 @@ export const getRuleLocalization = (
   };
 };
 
+// We decide to make the SQL review policy free to use for all plans in issue BYT-2321.
+// Return true to ignore the feature guard for SQL review rules.
 export const ruleIsAvailableInSubscription = (
   ruleType: RuleType,
   subscriptionPlan: PlanType
 ): boolean => {
-  if (subscriptionPlan === PlanType.FREE) {
-    return availableRulesForFreePlan.indexOf(ruleType) >= 0;
-  }
   return true;
 };
