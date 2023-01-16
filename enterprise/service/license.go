@@ -84,6 +84,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 			// -1 means not expire, just for free plan
 			ExpiresTs:     -1,
 			InstanceCount: 5,
+			Seat:          config.SeatForFreePlan,
 		}
 	}
 
@@ -96,6 +97,8 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 		Trialing:      license.Trialing,
 		OrgID:         license.OrgID(),
 		OrgName:       license.OrgName,
+		// TODO(ed): support seat limit.
+		Seat: -1,
 	}
 	return *s.cachedSubscription
 }
