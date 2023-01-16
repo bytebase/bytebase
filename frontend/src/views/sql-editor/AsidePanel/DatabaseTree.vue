@@ -25,7 +25,6 @@
         :render-prefix="renderPrefix"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
-        :on-load="loadSubTree"
         :on-update:expanded-keys="updateExpandedKeys"
       />
     </div>
@@ -64,7 +63,6 @@ import {
   useConnectionTreeStore,
   useCurrentUser,
   useDatabaseStore,
-  useDBSchemaStore,
   useIsLoggedIn,
   useTabStore,
 } from "@/store";
@@ -75,7 +73,6 @@ import {
   isDescendantOf,
   isSimilarTab,
 } from "@/utils";
-import { generateTableItem } from "./utils";
 import { scrollIntoViewIfNeeded } from "@/bbkit/BBUtil";
 import { Prefix, Label, Suffix } from "./TreeNode";
 
@@ -92,7 +89,6 @@ const { t } = useI18n();
 
 const databaseStore = useDatabaseStore();
 const connectionTreeStore = useConnectionTreeStore();
-const dbSchemaStore = useDBSchemaStore();
 const tabStore = useTabStore();
 const isLoggedIn = useIsLoggedIn();
 const currentUser = useCurrentUser();
@@ -111,15 +107,6 @@ const dropdownOptions = computed((): DropdownOptionWithConnectionAtom[] => {
   }
   if (atom.type === "project") {
     return [];
-  }
-  if (atom.type === "table") {
-    return [
-      {
-        key: "alter-table",
-        label: t("sql-editor.alter-table"),
-        item: atom,
-      },
-    ];
   } else {
     // Don't show any context menu actions for disabled
     // instances/databases
@@ -206,17 +193,6 @@ const setConnection = (
       const database = databaseStore.getDatabaseById(option.id);
       conn.instanceId = database.instance.id;
       conn.databaseId = database.id;
-    } else if (option.type === "table") {
-      // If selected item is table node
-      const databaseId = option.parentId;
-      const database = databaseStore.getDatabaseById(databaseId);
-      const instanceId = database.instance.id;
-      conn.instanceId = instanceId;
-      conn.databaseId = databaseId;
-      if (database.instance.engine !== "MONGODB") {
-        // A MongoDB connection has no schema, so it shouldn't be clickable.
-        connectionTreeStore.selectedTableAtom = option;
-      }
     }
 
     connect();
@@ -224,8 +200,6 @@ const setConnection = (
 };
 
 // dynamic render the highlight keywords
-// and render the selected table node in bold font
-
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const atom = option as any as ConnectionAtom;
   return h(Label, { atom, keyword: searchPattern.value ?? "" });
@@ -242,41 +216,6 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 const renderSuffix = ({ option }: { option: TreeOption }) => {
   const atom = option as any as ConnectionAtom;
   return h(Suffix, { atom });
-};
-
-const loadSubTree = async (option: TreeOption): Promise<void> => {
-  const item = option as any as ConnectionAtom;
-  if (item.type === "database") {
-    const database = databaseStore.getDatabaseById(item.id);
-    const schemaList = await dbSchemaStore.getOrFetchSchemaListByDatabaseId(
-      item.id as DatabaseId
-    );
-    item.children = schemaList.flatMap((schema) => {
-      return schema.tables.map((table) => {
-        const node = generateTableItem(
-          connectionTreeStore.mapAtom(table, "table", item.id)
-        );
-        node.table = {
-          schema: schema.name,
-          name: table.name,
-        };
-        if (schema.name) {
-          node.label = `${schema.name}.${node.label}`;
-        }
-        if (database.instance.engine === "MONGODB") {
-          node.disabled = true;
-        }
-
-        return node;
-      });
-    });
-    if (item.children.length === 0) {
-      // No tables in the db
-      item.isLeaf = true;
-      // TODO: this might be a little bit confusing
-      // Better add a dummy "no tables" node in the future
-    }
-  }
 };
 
 const gotoAlterSchema = (option: ConnectionAtom) => {
@@ -383,22 +322,6 @@ const scrollToConnectedNode = (
     }
   });
 };
-
-// Hide the selected table schema panel when switching to another database
-// or instance.
-watch(
-  [
-    () => connectionTreeStore.selectedTableAtom,
-    () => tabStore.currentTab.connection.databaseId,
-  ],
-  ([tableAtom, databaseId]) => {
-    if (tableAtom) {
-      if (tableAtom.parentId !== databaseId) {
-        connectionTreeStore.selectedTableAtom = undefined;
-      }
-    }
-  }
-);
 
 // Open corresponding tree node when the connection changed.
 watch(
