@@ -11,6 +11,7 @@
   "per-month": "/ 月",
   "price-unit-for-enterprise": "/ 月起",
   "start-from": "",
+  "billed-annually": "按年付费",
   "per-instance": "每个实例",
   "free-price-intro": "最多 5 个实例",
   "team-price-intro": "5 个起步，按年付费",
@@ -49,9 +50,8 @@
       "title": "数据库管理",
       "features": {
         "instance-count": "实例数",
-        "instance-upto-5": "不多于 5 个",
-        "instance-minimum-5": "5 ~ 无限制",
         "instance-customized": "自定义",
+        "instance-unlimited": "无限制",
         "environment-count": "环境数",
         "environment-unlimited": "无限制",
         "task-count-in-issue": "单个工单的任务数",
