@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -20,6 +21,10 @@ const serviceAccountAccessKeyPrefix = "bbs_"
 func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	g.POST("/principal", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		if err := s.seatCountGuard(ctx); err != nil {
+			return err
+		}
+
 		principalCreate := &api.PrincipalCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create principal request").SetInternal(err)
@@ -162,4 +167,30 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) seatCountGuard(ctx context.Context) error {
+	subscription := s.licenseService.LoadSubscription(ctx)
+	if subscription.Seat == -1 {
+		return nil
+	}
+
+	statsList, err := s.store.CountMemberGroupByRoleAndStatus(ctx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count seat").SetInternal(err)
+	}
+
+	count := 0
+	for _, stats := range statsList {
+		if stats.Type != api.EndUser || stats.RowStatus == api.Archived {
+			continue
+		}
+		count += stats.Count
+	}
+
+	if count >= subscription.Seat {
+		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum seat count %d.", subscription.Seat))
+	}
+
+	return nil
 }

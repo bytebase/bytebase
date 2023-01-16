@@ -10,6 +10,7 @@ type SubscriptionPatch struct {
 
 // Subscription is the API message for subscription.
 type Subscription struct {
+	Seat          int          `jsonapi:"attr,seat"`
 	InstanceCount int          `jsonapi:"attr,instanceCount"`
 	ExpiresTs     int64        `jsonapi:"attr,expiresTs"`
 	StartedTs     int64        `jsonapi:"attr,startedTs"`

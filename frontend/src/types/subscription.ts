@@ -2,6 +2,7 @@ import { PlanType } from "./plan";
 
 export interface Subscription {
   instanceCount: number;
+  seat: number;
   expiresTs: number;
   startedTs: number;
   plan: PlanType;

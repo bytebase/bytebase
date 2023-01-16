@@ -18,6 +18,7 @@ categoryList:
       - tenancy
   - type: collaboration
     featureList:
+      - seat-count
       - ui-based-sql-review
       - vsc-workflow
       - shareable-query-link
@@ -68,6 +69,8 @@ planList:
       - type: anomaly-detection
         content: anomaly-detection-basic
         tooltip: anomaly-detection-basic-tooltip
+      - type: seat-count
+        content: seat-maximum-2
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-basic
@@ -117,6 +120,8 @@ planList:
         tooltip: anomaly-detection-advanced-tooltip
       - type: schedule-change
       - type: review-and-backup-policy
+      - type: seat-count
+        content: seat-customized
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-basic
@@ -173,6 +178,8 @@ planList:
       - type: review-and-backup-policy
       - type: read-replica
       - type: tenancy
+      - type: seat-count
+        content: seat-customized
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-advanced
