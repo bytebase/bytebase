@@ -23,6 +23,39 @@ type testData struct {
 func TestStatementTypeCheck(t *testing.T) {
 	tests := []testData{
 		{
+			stmt:     "DROP DATABASE db",
+			taskType: api.TaskDatabaseSchemaUpdate,
+			want: []api.TaskCheckResult{
+				{
+					Status:    api.TaskCheckStatusError,
+					Namespace: api.BBNamespace,
+					Code:      common.TaskTypeDropDatabase.Int(),
+					Title:     "Cannot drop database",
+					Content:   "The statement \"DROP DATABASE db\" drops database",
+				},
+			},
+		},
+		{
+			stmt:     "DROP DATABASE db",
+			taskType: api.TaskDatabaseDataUpdate,
+			want: []api.TaskCheckResult{
+				{
+					Status:    api.TaskCheckStatusError,
+					Namespace: api.BBNamespace,
+					Code:      common.TaskTypeDropDatabase.Int(),
+					Title:     "Cannot drop database",
+					Content:   "The statement \"DROP DATABASE db\" drops database",
+				},
+				{
+					Status:    api.TaskCheckStatusWarn,
+					Namespace: api.BBNamespace,
+					Code:      common.TaskTypeNotDML.Int(),
+					Title:     "Data change can only run DML",
+					Content:   "\"DROP DATABASE db\" is not DML",
+				},
+			},
+		},
+		{
 			stmt:     "CREATE TABLE t(a int, b int)",
 			taskType: api.TaskDatabaseDataUpdate,
 			want: []api.TaskCheckResult{

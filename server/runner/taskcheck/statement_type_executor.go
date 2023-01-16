@@ -64,6 +64,23 @@ func (*StatementTypeExecutor) Run(_ context.Context, taskCheckRun *api.TaskCheck
 	return result, nil
 }
 
+func mysqlDropDatabaseCheck(nodeList []tidbast.StmtNode) []api.TaskCheckResult {
+	var result []api.TaskCheckResult
+	for _, node := range nodeList {
+		if _, dropDatabase := node.(*tidbast.DropDatabaseStmt); dropDatabase {
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.TaskTypeDropDatabase.Int(),
+				Title:     "Cannot drop database",
+				Content:   fmt.Sprintf(`The statement "%s" drops database`, node.Text()),
+			})
+		}
+	}
+
+	return result
+}
+
 func mysqlStatementTypeCheck(statement string, charset string, collation string, taskType api.TaskType) (result []api.TaskCheckResult, err error) {
 	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
 	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
@@ -116,6 +133,9 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 		}, nil
 	}
 
+	// Disallow DROP DATABASE statements.
+	result = append(result, mysqlDropDatabaseCheck(stmts)...)
+
 	switch taskType {
 	case api.TaskDatabaseDataUpdate:
 		for _, node := range stmts {
@@ -153,6 +173,22 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	return result, nil
 }
 
+func postgresqlDropDatabaseCheck(nodeList []ast.Node) []api.TaskCheckResult {
+	var result []api.TaskCheckResult
+	for _, node := range nodeList {
+		if _, dropDatabase := node.(*ast.DropDatabaseStmt); dropDatabase {
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.TaskTypeDropDatabase.Int(),
+				Title:     "Cannot drop database",
+				Content:   fmt.Sprintf(`The statement "%s" drops database`, node.Text()),
+			})
+		}
+	}
+	return result
+}
+
 func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (result []api.TaskCheckResult, err error) {
 	stmts, err := parser.Parse(parser.Postgres, parser.ParseContext{}, statement)
 	if err != nil {
@@ -167,6 +203,9 @@ func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (resu
 			},
 		}, nil
 	}
+
+	// Disallow DROP DATABASE statements.
+	result = append(result, postgresqlDropDatabaseCheck(stmts)...)
 
 	switch taskType {
 	case api.TaskDatabaseDataUpdate:
