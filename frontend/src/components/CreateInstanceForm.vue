@@ -75,10 +75,16 @@
             <template v-else-if="state.instance.engine == 'SPANNER'">
               {{ $t("instance.project-id-and-instance-id") }}
               <span style="color: red">*</span>
-              <p class="text-sm text-gray-500 mt-1 mb-2">
-                Don't know where to find project ID and instance ID? Check this
-                link!
-                <!-- TODO(p0ny): fix the link -->
+              <p class="text-sm text-gray-500 mt-1">
+                {{ $t("instance.find-gcp-project-id-and-instance-id") }}
+                <a
+                  href="https://www.bytebase.com/docs/how-to/spanner/how-to-find-project-id-and-instance-id"
+                  target="_blank"
+                  class="normal-link inline-flex items-center"
+                >
+                  {{ $t("common.detailed-guide")
+                  }}<heroicons-outline:external-link class="w-4 h-4 ml-1"
+                /></a>
               </p>
             </template>
             <template v-else>
@@ -206,6 +212,16 @@
               <template v-if="state.instance.engine == 'SPANNER'">
                 {{ $t("common.credentials") }}
                 <span class="text-red-600">*</span>
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ $t("instance.create-gcp-credentials") }}
+                  <a
+                    href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
+                    target="_blank"
+                    class="normal-link inline-flex items-center"
+                    >{{ $t("common.detailed-guide") }}
+                    <heroicons-outline:external-link class="w-4 h-4 ml-1"
+                  /></a>
+                </p>
               </template>
               <template v-else>
                 {{ $t("common.password") }}
@@ -234,6 +250,9 @@
               {{ $t("common.database") }}
               <template v-if="state.instance.engine === 'SPANNER'">
                 <span style="color: red">*</span>
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ $t("instance.used-for-testing-connection") }}
+                </p>
               </template>
             </label>
           </div>
