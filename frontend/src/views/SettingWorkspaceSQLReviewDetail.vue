@@ -63,6 +63,7 @@
         >
           {{ environmentName(reviewPolicy.environment) }}
         </router-link>
+        <SQLRuleLevelSummary :rule-list="filteredSelectedRuleList" />
       </div>
       <BBAttention
         v-else
@@ -138,7 +139,7 @@
         <BBTableSearch
           ref="searchField"
           :placeholder="$t('sql-review.search-rule-name')"
-          @change-text="(text) => (state.searchText = text)"
+          @change-text="(text: string) => (state.searchText = text)"
         />
       </div>
       <SQLReviewPreview
@@ -212,6 +213,7 @@ import {
   useSQLReviewStore,
 } from "@/store";
 import { CategoryFilterItem } from "../components/SQLReview/components/SQLReviewCategoryTabFilter.vue";
+import SQLRuleLevelSummary from "../components/SQLReview/components/SQLRuleLevelSummary.vue";
 
 const props = defineProps({
   sqlReviewPolicySlug: {
