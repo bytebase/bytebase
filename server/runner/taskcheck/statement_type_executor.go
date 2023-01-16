@@ -64,16 +64,25 @@ func (*StatementTypeExecutor) Run(_ context.Context, taskCheckRun *api.TaskCheck
 	return result, nil
 }
 
-func mysqlDropDatabaseCheck(nodeList []tidbast.StmtNode) []api.TaskCheckResult {
+func mysqlCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []api.TaskCheckResult {
 	var result []api.TaskCheckResult
 	for _, node := range nodeList {
-		if _, dropDatabase := node.(*tidbast.DropDatabaseStmt); dropDatabase {
+		switch node.(type) {
+		case *tidbast.DropDatabaseStmt:
 			result = append(result, api.TaskCheckResult{
 				Status:    api.TaskCheckStatusError,
 				Namespace: api.BBNamespace,
 				Code:      common.TaskTypeDropDatabase.Int(),
 				Title:     "Cannot drop database",
 				Content:   fmt.Sprintf(`The statement "%s" drops database`, node.Text()),
+			})
+		case *tidbast.CreateDatabaseStmt:
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.TaskTypeCreateDatabase.Int(),
+				Title:     "Cannot create database",
+				Content:   fmt.Sprintf(`The statement "%s" creates database`, node.Text()),
 			})
 		}
 	}
@@ -133,8 +142,8 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 		}, nil
 	}
 
-	// Disallow DROP DATABASE statements.
-	result = append(result, mysqlDropDatabaseCheck(stmts)...)
+	// Disallow CREATE/DROP DATABASE statements.
+	result = append(result, mysqlCreateAndDropDatabaseCheck(stmts)...)
 
 	switch taskType {
 	case api.TaskDatabaseDataUpdate:
@@ -173,16 +182,25 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	return result, nil
 }
 
-func postgresqlDropDatabaseCheck(nodeList []ast.Node) []api.TaskCheckResult {
+func postgresqlCreateAndDropDatabaseCheck(nodeList []ast.Node) []api.TaskCheckResult {
 	var result []api.TaskCheckResult
 	for _, node := range nodeList {
-		if _, dropDatabase := node.(*ast.DropDatabaseStmt); dropDatabase {
+		switch node.(type) {
+		case *ast.DropDatabaseStmt:
 			result = append(result, api.TaskCheckResult{
 				Status:    api.TaskCheckStatusError,
 				Namespace: api.BBNamespace,
 				Code:      common.TaskTypeDropDatabase.Int(),
 				Title:     "Cannot drop database",
 				Content:   fmt.Sprintf(`The statement "%s" drops database`, node.Text()),
+			})
+		case *ast.CreateDatabaseStmt:
+			result = append(result, api.TaskCheckResult{
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.TaskTypeCreateDatabase.Int(),
+				Title:     "Cannot create database",
+				Content:   fmt.Sprintf(`The statement "%s" creates database`, node.Text()),
 			})
 		}
 	}
@@ -204,8 +222,8 @@ func postgresqlStatementTypeCheck(statement string, taskType api.TaskType) (resu
 		}, nil
 	}
 
-	// Disallow DROP DATABASE statements.
-	result = append(result, postgresqlDropDatabaseCheck(stmts)...)
+	// Disallow CREATE/DROP DATABASE statements.
+	result = append(result, postgresqlCreateAndDropDatabaseCheck(stmts)...)
 
 	switch taskType {
 	case api.TaskDatabaseDataUpdate:
