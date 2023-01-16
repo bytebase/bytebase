@@ -7,6 +7,22 @@
     :show-header="true"
     :row-clickable="false"
   >
+    <template
+      #sectionHeader="{
+        section,
+      }: {
+        section: BBTableSectionDataSource<Member>,
+      }"
+    >
+      <span>{{ section.title }}</span>
+      <span
+        v-if="section.list.length > 0"
+        class="ml-0.5 font-normal text-control-light"
+      >
+        ({{ section.list.length }})
+      </span>
+    </template>
+
     <template #header>
       <BBTableHeaderCell
         :left-padding="4"
