@@ -196,14 +196,6 @@ const setConnection = (
         /* defaultTabName */ name
       );
       tabStore.updateCurrentTab(target);
-
-      if (connectionTreeStore.selectedTableAtom) {
-        const tableAtom = connectionTreeStore.selectedTableAtom;
-        if (tableAtom.parentId !== target.connection.databaseId) {
-          // Switching database should hide the selected table schema panel
-          connectionTreeStore.selectedTableAtom = undefined;
-        }
-      }
     };
 
     // If selected item is instance node
@@ -391,6 +383,22 @@ const scrollToConnectedNode = (
     }
   });
 };
+
+// Hide the selected table schema panel when switching to another database
+// or instance.
+watch(
+  [
+    () => connectionTreeStore.selectedTableAtom,
+    () => tabStore.currentTab.connection.databaseId,
+  ],
+  ([tableAtom, databaseId]) => {
+    if (tableAtom) {
+      if (tableAtom.parentId !== databaseId) {
+        connectionTreeStore.selectedTableAtom = undefined;
+      }
+    }
+  }
+);
 
 // Open corresponding tree node when the connection changed.
 watch(
