@@ -1,5 +1,6 @@
 {
   "current": "Current plan",
+  "seat-count": "Seat count",
   "instance-count": "Instance count",
   "expires-at": "Expires at",
   "free-trial": "You can start a free trial for 14 days - no credit card required",
@@ -92,6 +93,9 @@
     "collaboration": {
       "title": "Collaboration",
       "features": {
+        "seat-count": "Seat count",
+        "seat-maximum-2": "Up to 2",
+        "seat-customized": "Customized",
         "ui-based-sql-review": "UI based SQL review",
         "vsc-workflow": "VCS workflow #GitOps",
         "shareable-query-link": "Shareable query link",

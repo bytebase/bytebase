@@ -1569,6 +1569,13 @@
         "runoutof": "Your have run out of your {total} instance quota.",
         "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
       },
+      "bb-feature-seat-count": {
+        "title": "Seat count limit",
+        "desc": "You have reached the maximum seat count limit. Please upgrade to get more seat quota.",
+        "remaining": "Your total seat quota is {total}, only have {count} seat remained.",
+        "runoutof": "Your have run out of your {total} seat quota.",
+        "upgrade": "@:{'subscription.upgrade'} to get more seat quota."
+      },
       "bb-feature-multi-tenancy": {
         "title": "Multi-tenancy",
         "desc": "Intelligent database management for tenants using identical schemas."
