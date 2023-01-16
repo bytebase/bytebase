@@ -56,27 +56,6 @@
             {{ activityListStr }}
           </dd>
         </div>
-        <div class="grid grid-cols-5 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">
-            {{ $t("project.webhook.last-updated-by") }}
-          </dt>
-          <dd class="py-0.5 flex items-center text-sm text-main col-span-4">
-            <div class="flex flex-row items-center space-x-2 mr-1">
-              <div class="flex flex-row items-center space-x-1">
-                <PrincipalAvatar
-                  :principal="projectWebhook.updater"
-                  :size="'SMALL'"
-                />
-                <router-link
-                  :to="`/u/${projectWebhook.updater.id}`"
-                  class="normal-link"
-                  >{{ projectWebhook.updater.name }}
-                </router-link>
-              </div>
-            </div>
-            at {{ humanizeTs(projectWebhook.updatedTs) }}
-          </dd>
-        </div>
       </dl>
     </div>
   </div>
@@ -85,7 +64,6 @@
 <script lang="ts">
 import { reactive, PropType, computed, defineComponent } from "vue";
 import { useRouter } from "vue-router";
-import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ProjectWebhook,
   PROJECT_HOOK_ACTIVITY_ITEM_LIST,
@@ -98,7 +76,6 @@ interface LocalState {}
 
 export default defineComponent({
   name: "ProjectWebhookCard",
-  components: { PrincipalAvatar },
   props: {
     projectWebhook: {
       required: true,
