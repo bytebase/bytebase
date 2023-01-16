@@ -90,7 +90,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.multi-tenancy", [false, false, true]],
   ["bb.feature.online-migration", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
-  ["bb.feature.sql-review", [false, true, true]],
+  ["bb.feature.sql-review", [true, true, true]],
   ["bb.feature.task-schedule-time", [false, true, true]],
   ["bb.feature.vcs-sql-review", [false, false, true]],
   // Database management
