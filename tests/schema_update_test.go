@@ -933,7 +933,8 @@ WHERE table_type = 'BASE TABLE'
 			a.Equal(`[["table_name"],["NAME"],[["projects"],["users"]]]`, result)
 
 			// Get migration history
-			const initialSchema = `SET statement_timeout = 0;
+			const initialSchema = `
+SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -945,7 +946,8 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 `
-			const updatedSchema = `SET statement_timeout = 0;
+			const updatedSchema = `
+SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -1849,7 +1851,8 @@ func TestGetLatestSchema(t *testing.T) {
 			dbType:       db.Postgres,
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
-			wantRawSchema: `SET statement_timeout = 0;
+			wantRawSchema: `
+SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
