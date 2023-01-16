@@ -297,7 +297,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			return true, nil, errors.Errorf("failed to update database %q for instance %q", databaseName, task.Database.Instance.Name)
 		}
 	}
-	// On the presence of schema path template and non-wildcard branch filter, We write back the latest schema after migration for VCS-based projects for
+	// On the presence of schema path template, We write back the latest schema after migration for VCS-based projects for
 	// 1) baseline migration for SDL,
 	// 2) all DDL/Ghost migrations.
 	writeBack := false
@@ -364,7 +364,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			bytebaseURL = fmt.Sprintf("%s/issue/%s?stage=%d", profile.ExternalURL, api.IssueSlug(issue), task.StageID)
 		}
 
-		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, repo.BranchFilter, latestSchemaFile, schema, bytebaseURL)
+		commitID, err := writeBackLatestSchema(ctx, stores, repo, vcsPushEvent, mi, latestSchemaFile, schema, bytebaseURL)
 		if err != nil {
 			return true, nil, err
 		}
@@ -460,7 +460,7 @@ func findIssueByTask(ctx context.Context, store *store.Store, task *api.Task) (*
 
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
-func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
+func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
 	schemaFileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
@@ -473,7 +473,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		repository.VCS.InstanceURL,
 		repository.ExternalID,
 		latestSchemaFile,
-		branch,
+		pushEvent.Ref,
 	)
 
 	createSchemaFile := false
@@ -525,7 +525,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 	}
 
 	schemaFileCommit := vcsPlugin.FileCommitCreate{
-		Branch:        branch,
+		Branch:        pushEvent.Ref,
 		CommitMessage: commitMessage,
 		Content:       schema,
 	}
@@ -599,7 +599,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		repo2.VCS.InstanceURL,
 		repo2.ExternalID,
 		latestSchemaFile,
-		branch,
+		pushEvent.Ref,
 	)
 
 	if err != nil {
