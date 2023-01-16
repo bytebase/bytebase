@@ -27,4 +27,8 @@ export interface ConnectionAtom {
   children?: ConnectionAtom[];
   disabled?: boolean;
   isLeaf?: boolean;
+  table?: {
+    schema: string;
+    name: string;
+  };
 }
