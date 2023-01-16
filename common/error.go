@@ -38,8 +38,10 @@ const (
 	TaskTimingNotAllowed Code = 301
 
 	// 401 task sql type error.
-	TaskTypeNotDML Code = 401
-	TaskTypeNotDDL Code = 402
+	TaskTypeNotDML         Code = 401
+	TaskTypeNotDDL         Code = 402
+	TaskTypeDropDatabase   Code = 403
+	TaskTypeCreateDatabase Code = 404
 )
 
 // Int returns the int type of code.
