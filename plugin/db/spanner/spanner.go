@@ -11,7 +11,7 @@ import (
 
 	spanner "cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
-	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
+	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"go.uber.org/zap"
 
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
@@ -125,24 +125,17 @@ func (d *Driver) Close(_ context.Context) error {
 	return d.dbClient.Close()
 }
 
-// Ping pings the database.
+// Ping pings the instance.
 func (d *Driver) Ping(ctx context.Context) error {
-	iter := d.client.Single().Query(ctx, spanner.NewStatement("SELECT 1"))
-	defer iter.Stop()
-
-	var i int64
-	row, err := iter.Next()
+	iter := d.dbClient.ListDatabases(ctx, &databasepb.ListDatabasesRequest{
+		Parent: d.config.Host,
+	})
+	_, err := iter.Next()
+	if err == iterator.Done {
+		return nil
+	}
 	if err != nil {
-		return err
-	}
-	if err := row.Column(0, &i); err != nil {
-		return err
-	}
-	if i != 1 {
-		return errors.New("expect to get 1")
-	}
-	if _, err = iter.Next(); err != iterator.Done {
-		return errors.New("expect no more rows")
+		return errors.Wrap(err, "spanner: bad connection")
 	}
 	return nil
 }
@@ -178,7 +171,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, createDatabase b
 	}()
 
 	if ddl {
-		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &adminpb.UpdateDatabaseDdlRequest{
+		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
 			Database:   getDSN(d.config.Host, d.dbName),
 			Statements: stmts,
 		})
@@ -261,7 +254,7 @@ func (d *Driver) Query(ctx context.Context, statement string, queryContext *db.Q
 
 func (d *Driver) queryAdmin(ctx context.Context, statement string) ([]interface{}, error) {
 	if isDDL(statement) {
-		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &adminpb.UpdateDatabaseDdlRequest{
+		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
 			Database:   getDSN(d.config.Host, d.dbName),
 			Statements: []string{statement},
 		})
