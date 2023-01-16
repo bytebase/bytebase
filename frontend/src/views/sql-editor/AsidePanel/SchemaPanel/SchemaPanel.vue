@@ -1,20 +1,29 @@
 <template>
-  <template v-if="databaseMetadata">
-    <DatabaseSchema
-      v-show="!state.selected"
-      :database="database"
-      :database-metadata="databaseMetadata"
-      @select-table="handleSelectTable"
-    />
-    <TableSchema
-      v-if="state.selected"
-      :database="database"
-      :database-metadata="databaseMetadata"
-      :schema="state.selected.schema"
-      :table="state.selected.table"
-      @close="state.selected = undefined"
-    />
-  </template>
+  <div class="w-full h-full relative overflow-hidden">
+    <template v-if="databaseMetadata">
+      <DatabaseSchema
+        v-show="!state.selected"
+        :database="database"
+        :database-metadata="databaseMetadata"
+        @select-table="handleSelectTable"
+      />
+      <TableSchema
+        v-if="state.selected"
+        :database="database"
+        :database-metadata="databaseMetadata"
+        :schema="state.selected.schema"
+        :table="state.selected.table"
+        @close="state.selected = undefined"
+      />
+    </template>
+
+    <div
+      v-else
+      class="absolute inset-0 bg-white/50 flex flex-col items-center justify-center"
+    >
+      <BBSpin />
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
