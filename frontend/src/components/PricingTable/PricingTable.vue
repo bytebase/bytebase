@@ -42,12 +42,9 @@
               </p>
 
               <div class="text-gray-400 h-5">
-                <span v-if="plan.type != PlanType.ENTERPRISE">
-                  {{ $t("subscription.per-instance") }}
+                <span v-if="plan.type != PlanType.FREE">
+                  {{ $t("subscription.billed-annually") }}
                 </span>
-              </div>
-              <div class="text-gray-400">
-                {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
               <button
@@ -165,13 +162,12 @@
           <span class="text-4xl"> {{ plan.pricing }} </span>
           <span v-if="plan.type != PlanType.ENTERPRISE">
             &nbsp;
-            {{ $t("subscription.per-instance") }}
             {{ $t("subscription.per-month") }}
           </span>
         </p>
 
-        <div class="text-gray-400">
-          {{ $t(`subscription.${plan.title}-price-intro`) }}
+        <div class="text-gray-400" v-if="plan.type != PlanType.FREE">
+          {{ $t("subscription.billed-annually") }}
         </div>
 
         <button
