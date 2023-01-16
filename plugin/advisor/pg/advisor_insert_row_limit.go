@@ -105,7 +105,7 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 					Line:    checker.line,
 				})
 			} else {
-				rowCount, err := getInsertRows(res)
+				rowCount, err := getAffectedRows(res)
 				if err != nil {
 					checker.adviceList = append(checker.adviceList, advisor.Advice{
 						Status:  checker.level,
@@ -134,7 +134,7 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 	return checker
 }
 
-func getInsertRows(res []interface{}) (int64, error) {
+func getAffectedRows(res []interface{}) (int64, error) {
 	// the res struct is []interface{}{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
