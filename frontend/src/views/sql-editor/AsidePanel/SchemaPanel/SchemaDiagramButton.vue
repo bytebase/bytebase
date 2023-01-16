@@ -1,5 +1,5 @@
 <template>
-  <NTooltip trigger="hover">
+  <NTooltip trigger="hover" :delay="500">
     <template #trigger>
       <NButton text v-bind="$attrs" @click="state.show = true">
         <SchemaDiagramIcon />
@@ -27,6 +27,7 @@
 
 <script lang="ts" setup>
 import { reactive } from "vue";
+import { NButton } from "naive-ui";
 
 import type { DatabaseMetadata } from "@/types/proto/store/database";
 import type { Database } from "@/types";

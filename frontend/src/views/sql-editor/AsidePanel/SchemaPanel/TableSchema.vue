@@ -13,14 +13,10 @@
           :schema="schema"
           :table="table"
         />
-        <NTooltip trigger="hover">
-          <template #trigger>
-            <NButton text @click="handleClose">
-              <heroicons-outline:x class="w-4 h-4" />
-            </NButton>
-          </template>
-          {{ $t("sql-editor.close-pane") }}
-        </NTooltip>
+
+        <NButton text @click="handleClose">
+          <heroicons-outline:x class="w-4 h-4" />
+        </NButton>
       </div>
     </div>
     <div class="px-2 py-2 border-b text-gray-500 text-xs space-y-1">
@@ -48,6 +44,8 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
+
 import type {
   DatabaseMetadata,
   SchemaMetadata,

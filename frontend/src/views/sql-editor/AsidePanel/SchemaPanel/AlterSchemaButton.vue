@@ -1,5 +1,5 @@
 <template>
-  <NTooltip trigger="hover">
+  <NTooltip trigger="hover" :delay="500">
     <template #trigger>
       <NButton text v-bind="$attrs" @click="gotoAlterSchema">
         <heroicons-outline:pencil-alt class="w-4 h-4" />
@@ -12,6 +12,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { stringify } from "qs";
+import { NButton } from "naive-ui";
 
 import { useRepositoryStore } from "@/store";
 import type {
