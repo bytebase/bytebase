@@ -92,14 +92,14 @@ const schema = computed(() => {
     return undefined;
   }
   const schemaList = dbSchemaStore.getSchemaListByDatabaseId(atom.parentId);
-  return schemaList.find((schema) => schema.name === atom.table!.schema);
+  return schemaList.find((schema) => schema.name === atom.table?.schema);
 });
 const table = computed(() => {
   const atom = tableAtom.value;
   if (isUndefined(atom)) {
     return undefined;
   }
-  return schema.value?.tables.find((table) => table.name === atom.table!.name);
+  return schema.value?.tables.find((table) => table.name === atom.table?.name);
 });
 
 const gotoAlterSchema = () => {
