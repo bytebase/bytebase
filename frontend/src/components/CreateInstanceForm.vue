@@ -248,12 +248,6 @@
           <div class="flex flex-row items-center space-x-2">
             <label for="database" class="textlabel block">
               {{ $t("common.database") }}
-              <template v-if="state.instance.engine === 'SPANNER'">
-                <span style="color: red">*</span>
-                <p class="text-sm text-gray-500 mt-1">
-                  {{ $t("instance.used-for-testing-connection") }}
-                </p>
-              </template>
             </label>
           </div>
           <input
@@ -459,10 +453,7 @@ const embeddedPostgresInstance = ref<Partial<InstanceCreate>>();
 const allowCreate = computed(() => {
   if (state.instance.engine === "SPANNER") {
     return (
-      state.instance.name &&
-      state.instance.host &&
-      state.instance.password &&
-      state.instance.database
+      state.instance.name && state.instance.host && state.instance.password
     );
   }
   return state.instance.name && state.instance.host;
@@ -497,9 +488,7 @@ const showSSL = computed((): boolean => {
 });
 
 const showDatabase = computed((): boolean => {
-  return (
-    state.instance.engine === "POSTGRES" || state.instance.engine === "SPANNER"
-  );
+  return state.instance.engine === "POSTGRES";
 });
 
 const showAuthenticationDatabase = computed((): boolean => {
@@ -690,11 +679,6 @@ const tryCreate = () => {
   // MongoDB can use auth database.
   // https://www.mongodb.com/docs/manual/tutorial/authenticate-a-user/#std-label-authentication-auth-as-user
   if (instance.engine === "MONGODB") {
-    connectionInfo.database = instance.database;
-  }
-  // Spanner must connect to a specific database.
-  // To test connection, we must set database.
-  if (instance.engine === "SPANNER") {
     connectionInfo.database = instance.database;
   }
 
