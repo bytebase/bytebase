@@ -80,9 +80,11 @@
                 <a
                   href="https://www.bytebase.com/docs/how-to/spanner/how-to-find-project-id-and-instance-id"
                   target="_blank"
-                  class="normal-link"
-                  >{{ $t("common.detailed-guide") }}</a
+                  class="normal-link inline-flex items-center"
                 >
+                  {{ $t("common.detailed-guide")
+                  }}<heroicons-outline:external-link class="w-4 h-4 ml-1"
+                /></a>
               </p>
             </template>
             <template v-else>
@@ -215,9 +217,10 @@
                   <a
                     href="https://www.bytebase.com/docs/how-to/spanner/how-to-create-a-service-account-for-bytebase"
                     target="_blank"
-                    class="normal-link"
-                    >{{ $t("common.detailed-guide") }}</a
-                  >
+                    class="normal-link inline-flex items-center"
+                    >{{ $t("common.detailed-guide") }}
+                    <heroicons-outline:external-link class="w-4 h-4 ml-1"
+                  /></a>
                 </p>
               </template>
               <template v-else>
