@@ -63,8 +63,8 @@ planList:
         tooltip: disaster-recovery-basic-tooltip
       - type: archiving
       - type: sql-check
-        content: sql-check-basic
-        tooltip: sql-check-basic-tooltip
+        content: sql-check-advanced
+        tooltip: sql-check-advanced-tooltip
       - type: anomaly-detection
         content: anomaly-detection-basic
         tooltip: anomaly-detection-basic-tooltip
