@@ -4,6 +4,7 @@ import { v1 as uuidv1 } from "uuid";
 import { t } from "../plugins/i18n";
 import type { Connection, CoreTabInfo, TabInfo } from "@/types";
 import { UNKNOWN_ID, TabMode } from "@/types";
+import { useDatabaseStore, useInstanceStore } from "@/store";
 
 export const defaultTabName = computed(() => t("sql-editor.untitled-sheet"));
 
@@ -47,4 +48,16 @@ export const isSimilarTab = (a: CoreTabInfo, b: CoreTabInfo): boolean => {
     a.sheetId === b.sheetId &&
     a.mode === b.mode
   );
+};
+
+export const getDefaultTabNameFromConnection = (conn: Connection) => {
+  const instance = useInstanceStore().getInstanceById(conn.instanceId);
+  const database = useDatabaseStore().getDatabaseById(conn.databaseId);
+  if (database.id !== UNKNOWN_ID) {
+    return `[${database.name}]`;
+  }
+  if (instance.id !== UNKNOWN_ID) {
+    return `[${instance.name}]`;
+  }
+  return defaultTabName.value;
 };
