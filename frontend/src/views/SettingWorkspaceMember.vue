@@ -157,20 +157,15 @@ export default defineComponent({
     });
 
     const seatCountAttention = computed((): string => {
-      const upgrade = t(
-        "subscription.features.bb-feature-instance-count.upgrade"
-      );
+      const upgrade = t("subscription.features.bb-feature-seat-count.upgrade");
       let status = "";
       if (remainingSeatCount.value > 0) {
-        status = t(
-          "subscription.features.bb-feature-instance-count.remaining",
-          {
-            total: seatQuota.value,
-            count: remainingSeatCount.value,
-          }
-        );
+        status = t("subscription.features.bb-feature-seat-count.remaining", {
+          total: seatQuota.value,
+          count: remainingSeatCount.value,
+        });
       } else {
-        status = t("subscription.features.bb-feature-instance-count.runoutof", {
+        status = t("subscription.features.bb-feature-seat-count.runoutof", {
           total: seatQuota.value,
         });
       }

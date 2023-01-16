@@ -1,6 +1,7 @@
 {
   "current": "Current plan",
   "seat-count": "Seat count",
+  "seat-unlimited": "Unlimited",
   "instance-count": "Instance count",
   "expires-at": "Expires at",
   "free-trial": "You can start a free trial for 14 days - no credit card required",

@@ -1,6 +1,7 @@
 {
   "current": "当前版本",
-  "seat-count": "席位",
+  "seat-count": "席位数",
+  "seat-unlimited": "无限制",
   "instance-count": "实例数",
   "expires-at": "过期时间",
   "free-trial": "您可以免费试用 14 天 - 无需信用卡或预付费",
