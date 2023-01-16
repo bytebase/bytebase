@@ -101,10 +101,15 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	}
 	previousLineComment := false
 	previousLineEmpty := false
+	readErr := error(nil)
 	for {
-		line, err := outReader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			return err
+		if readErr == io.EOF {
+			break
+		}
+		var line string
+		line, readErr = outReader.ReadString('\n')
+		if readErr != nil && readErr != io.EOF {
+			return readErr
 		}
 		// Skip "SET SESSION AUTHORIZATION" till we can support it.
 		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
@@ -133,17 +138,19 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		if _, err := io.WriteString(out, line); err != nil {
 			return err
 		}
-
-		if err == io.EOF {
-			break
-		}
 	}
 
 	var errBuilder strings.Builder
+	readErr = error(nil)
 	for {
-		line, err := errReader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			return err
+		if readErr == io.EOF {
+			break
+		}
+
+		var line string
+		line, readErr = errReader.ReadString('\n')
+		if readErr != nil && readErr != io.EOF {
+			return readErr
 		}
 
 		// Log the error, but return the first 1024 characters in the error to users.
@@ -152,10 +159,6 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 			if _, err := errBuilder.WriteString(line); err != nil {
 				return err
 			}
-		}
-
-		if err == io.EOF {
-			break
 		}
 	}
 
