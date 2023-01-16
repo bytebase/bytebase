@@ -103,7 +103,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	previousLineEmpty := false
 	for {
 		line, err := outReader.ReadString('\n')
-		if err != nil || err == io.EOF {
+		if err == nil || err == io.EOF {
 			// Skip "SET SESSION AUTHORIZATION" till we can support it.
 			if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 				continue
@@ -143,7 +143,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	var errBuilder strings.Builder
 	for {
 		line, err := errReader.ReadString('\n')
-		if err != nil || err == io.EOF {
+		if err == nil || err == io.EOF {
 			// Log the error, but return the first 1024 characters in the error to users.
 			log.Warn(line)
 			if errBuilder.Len() < 1024 {
