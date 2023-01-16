@@ -103,59 +103,59 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	previousLineEmpty := false
 	for {
 		line, err := outReader.ReadString('\n')
-		if err == nil || err == io.EOF {
-			// Skip "SET SESSION AUTHORIZATION" till we can support it.
-			if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
-				continue
-			}
-			// Skip comment lines.
-			if strings.HasPrefix(line, "--") {
-				previousLineComment = true
-				continue
-			}
-			if previousLineComment && line == "" {
-				previousLineComment = false
-				continue
-			}
-			previousLineComment = false
-			// Skip extra empty lines.
-			if line == "" {
-				if previousLineEmpty {
-					continue
-				}
-				previousLineEmpty = true
-			} else {
-				previousLineEmpty = false
-			}
-
-			if _, err := io.WriteString(out, line); err != nil {
-				return err
-			}
-
-			if err == io.EOF {
-				break
-			}
-		} else {
+		if err != nil && err != io.EOF {
 			return err
+		}
+		// Skip "SET SESSION AUTHORIZATION" till we can support it.
+		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
+			continue
+		}
+		// Skip comment lines.
+		if strings.HasPrefix(line, "--") {
+			previousLineComment = true
+			continue
+		}
+		if previousLineComment && line == "" {
+			previousLineComment = false
+			continue
+		}
+		previousLineComment = false
+		// Skip extra empty lines.
+		if strings.TrimSpace(line) == "" {
+			if previousLineEmpty {
+				continue
+			}
+			previousLineEmpty = true
+		} else {
+			previousLineEmpty = false
+		}
+
+		if _, err := io.WriteString(out, line); err != nil {
+			return err
+		}
+
+		if err == io.EOF {
+			break
 		}
 	}
 
 	var errBuilder strings.Builder
 	for {
 		line, err := errReader.ReadString('\n')
-		if err == nil || err == io.EOF {
-			// Log the error, but return the first 1024 characters in the error to users.
-			log.Warn(line)
-			if errBuilder.Len() < 1024 {
-				if _, err := errBuilder.WriteString(line); err != nil {
-					return err
-				}
-			}
-			if err == io.EOF {
-				break
-			}
-		} else {
+		if err != nil && err != io.EOF {
 			return err
+		}
+
+		// Log the error, but return the first 1024 characters in the error to users.
+		log.Warn(line)
+		if errBuilder.Len() < 1024 {
+			if _, err := errBuilder.WriteString(line); err != nil {
+				return err
+			}
+		}
+
+		if err == io.EOF {
+			break
 		}
 	}
 
