@@ -87,73 +87,76 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		return err
 	}
 	defer outPipe.Close()
-	outScanner := bufio.NewScanner(outPipe)
+	outReader := bufio.NewReader(outPipe)
 
 	errPipe, err := cmd.StderrPipe()
 	if err != nil {
 		return err
 	}
 	defer errPipe.Close()
-	errScanner := bufio.NewScanner(errPipe)
+	errReader := bufio.NewReader(errPipe)
 
 	if err := cmd.Start(); err != nil {
 		return err
 	}
 	previousLineComment := false
 	previousLineEmpty := false
-	for outScanner.Scan() {
-		line := outScanner.Text()
-		// Skip "SET SESSION AUTHORIZATION" till we can support it.
-		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
-			continue
-		}
-		// Skip comment lines.
-		if strings.HasPrefix(line, "--") {
-			previousLineComment = true
-			continue
-		}
-		if previousLineComment && line == "" {
-			previousLineComment = false
-			continue
-		}
-		previousLineComment = false
-		// Skip extra empty lines.
-		if line == "" {
-			if previousLineEmpty {
+	for {
+		line, err := outReader.ReadString('\n')
+		if err != nil || err == io.EOF {
+			// Skip "SET SESSION AUTHORIZATION" till we can support it.
+			if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 				continue
 			}
-			previousLineEmpty = true
-		} else {
-			previousLineEmpty = false
-		}
+			// Skip comment lines.
+			if strings.HasPrefix(line, "--") {
+				previousLineComment = true
+				continue
+			}
+			if previousLineComment && line == "" {
+				previousLineComment = false
+				continue
+			}
+			previousLineComment = false
+			// Skip extra empty lines.
+			if line == "" {
+				if previousLineEmpty {
+					continue
+				}
+				previousLineEmpty = true
+			} else {
+				previousLineEmpty = false
+			}
 
-		if _, err := io.WriteString(out, line); err != nil {
+			if _, err := io.WriteString(out, line); err != nil {
+				return err
+			}
+
+			if err == io.EOF {
+				break
+			}
+		} else {
 			return err
 		}
-		if _, err := io.WriteString(out, "\n"); err != nil {
-			return err
-		}
-	}
-	if outScanner.Err() != nil {
-		return outScanner.Err()
 	}
 
 	var errBuilder strings.Builder
-	for errScanner.Scan() {
-		line := errScanner.Text()
-		// Log the error, but return the first 1024 characters in the error to users.
-		log.Warn(line)
-		if errBuilder.Len() < 1024 {
-			if _, err := errBuilder.WriteString(line); err != nil {
-				return err
+	for {
+		line, err := errReader.ReadString('\n')
+		if err != nil || err == io.EOF {
+			// Log the error, but return the first 1024 characters in the error to users.
+			log.Warn(line)
+			if errBuilder.Len() < 1024 {
+				if _, err := errBuilder.WriteString(line); err != nil {
+					return err
+				}
 			}
-			if _, err := errBuilder.WriteString("\n"); err != nil {
-				return err
+			if err == io.EOF {
+				break
 			}
+		} else {
+			return err
 		}
-	}
-	if errScanner.Err() != nil {
-		return errScanner.Err()
 	}
 
 	err = cmd.Wait()
