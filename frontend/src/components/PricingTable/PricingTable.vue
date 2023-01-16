@@ -166,7 +166,7 @@
           </span>
         </p>
 
-        <div class="text-gray-400" v-if="plan.type != PlanType.FREE">
+        <div v-if="plan.type != PlanType.FREE" class="text-gray-400">
           {{ $t("subscription.billed-annually") }}
         </div>
 
