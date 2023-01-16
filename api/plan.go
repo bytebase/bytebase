@@ -227,7 +227,7 @@ var featureMatrix = map[FeatureType][3]bool{
 	FeatureMultiTenancy:         {false, false, true},
 	FeatureOnlineMigration:      {false, true, true},
 	FeatureSchemaDrift:          {false, true, true},
-	FeatureSQLReview:            {false, true, true},
+	FeatureSQLReview:            {true, true, true},
 	FeatureTaskScheduleTime:     {false, true, true},
 	FeatureVCSSQLReviewWorkflow: {false, false, true},
 	// Database management
