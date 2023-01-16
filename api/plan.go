@@ -216,7 +216,7 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 var featureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	Feature3rdPartyAuth: {false, true, true},
-	FeatureRBAC:         {false, true, true},
+	FeatureRBAC:         {true, true, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow

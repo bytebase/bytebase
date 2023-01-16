@@ -11,7 +11,12 @@
 
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
-import { FeatureType, PlanType, planTypeToString } from "@/types";
+import {
+  FeatureType,
+  PlanType,
+  planTypeToString,
+  FEATURE_MATRIX,
+} from "@/types";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionStore, pushNotification } from "@/store";
@@ -36,7 +41,6 @@ const props = defineProps({
 const router = useRouter();
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionStore();
-const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
 
 const actionText = computed(() => {
   if (!subscriptionStore.canTrial) {
@@ -51,15 +55,21 @@ const actionText = computed(() => {
 });
 
 const descriptionText = computed(() => {
+  const startTrial = subscriptionStore.canUpgradeTrial
+    ? t("subscription.upgrade-trial").toLowerCase()
+    : t("subscription.trial-for-days", {
+        days: subscriptionStore.trialingDays,
+      });
+  if (!Array.isArray(FEATURE_MATRIX.get(props.feature))) {
+    return `${props.description}\n${startTrial}`;
+  }
+
+  const requiredPlan = subscriptionStore.getMinimumRequiredPlan(props.feature);
   const trialText = t("subscription.required-plan-with-trial", {
     requiredPlan: t(
       `subscription.plan.${planTypeToString(requiredPlan)}.title`
     ),
-    startTrial: subscriptionStore.canUpgradeTrial
-      ? t("subscription.upgrade-trial").toLowerCase()
-      : t("subscription.trial-for-days", {
-          days: subscriptionStore.trialingDays,
-        }).toLowerCase(),
+    startTrial,
   });
 
   return `${props.description}\n${trialText}`;
