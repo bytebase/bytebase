@@ -1,14 +1,14 @@
 <template>
-  <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
-    <MemberAddOrInvite />
-  </div>
-  <FeatureAttention
-    v-if="!hasRBACFeature"
-    custom-class="my-5"
-    feature="bb.feature.rbac"
-    :description="$t('subscription.features.bb-feature-rbac.desc')"
-  />
-  <div>
+  <div class="w-full overflow-x-hidden">
+    <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
+      <MemberAddOrInvite />
+    </div>
+    <FeatureAttention
+      v-if="!hasRBACFeature"
+      custom-class="my-5"
+      feature="bb.feature.rbac"
+      :description="$t('subscription.features.bb-feature-rbac.desc')"
+    />
     <div class="flex justify-between items-center">
       <div class="flex-1 flex space-x-2">
         <p class="text-lg font-medium leading-7 text-main">
