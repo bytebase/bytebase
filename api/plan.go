@@ -270,8 +270,8 @@ const (
 
 // PlanLimitValues is the plan limit value mapping.
 var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaximumTask:        {4, math.MaxInt64, math.MaxInt64},
-	PlanLimitMaximumEnvironment: {2, 3, math.MaxInt64},
+	PlanLimitMaximumTask:        {math.MaxInt64, math.MaxInt64, math.MaxInt64},
+	PlanLimitMaximumEnvironment: {math.MaxInt64, math.MaxInt64, math.MaxInt64},
 }
 
 // Feature returns whether a particular feature is available in a particular plan.
