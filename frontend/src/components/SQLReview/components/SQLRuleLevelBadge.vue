@@ -1,13 +1,11 @@
 <template>
-  <BBBadge
-    :text="$t(`sql-review.level.${level.toLowerCase()}`)"
-    :can-remove="false"
-    :style="style"
-  />
+  <BBBadge :text="text" :can-remove="false" :style="style" />
 </template>
 
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
+import { useI18n } from "vue-i18n";
+
 import { RuleLevel } from "@/types/sqlReview";
 import { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 
@@ -16,7 +14,13 @@ const props = defineProps({
     required: true,
     type: String as PropType<RuleLevel>,
   },
+  suffix: {
+    type: String,
+    default: "",
+  },
 });
+
+const { t } = useI18n();
 
 const style = computed((): BBBadgeStyle => {
   switch (props.level) {
@@ -27,5 +31,14 @@ const style = computed((): BBBadgeStyle => {
     default:
       return "DISABLED";
   }
+});
+
+const text = computed(() => {
+  const { level, suffix } = props;
+  const parts = [t(`sql-review.level.${level.toLowerCase()}`)];
+  if (suffix) {
+    parts.push(suffix);
+  }
+  return parts.join(" ");
 });
 </script>
