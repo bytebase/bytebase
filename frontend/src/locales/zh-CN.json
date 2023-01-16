@@ -1007,7 +1007,8 @@
       "select": "选择 schema"
     },
     "show-missing-databases": "显示未找到的数据库",
-    "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）"
+    "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）",
+    "data-type": "数据类型"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
