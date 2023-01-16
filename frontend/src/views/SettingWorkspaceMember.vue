@@ -9,7 +9,7 @@
     :description="$t('subscription.features.bb-feature-rbac.desc')"
   />
   <div>
-    <div class="flex justify-between">
+    <div class="flex justify-between items-center">
       <div class="flex-1 flex space-x-2">
         <p class="text-lg font-medium leading-7 text-main">
           <span>{{ $t("settings.members.active") }}</span>
@@ -40,7 +40,7 @@
       v-if="inactiveMemberList.length > 0 || state.inactiveMemberFilterText"
       class="mt-8"
     >
-      <div class="flex justify-between">
+      <div class="flex justify-between items-center">
         <p class="text-lg font-medium leading-7 text-control-light">
           <span>{{ $t("settings.members.inactive") }}</span>
           <span class="ml-1 font-normal text-control-light">
