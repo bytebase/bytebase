@@ -7,11 +7,11 @@
           class="default-theme"
           :dbl-click-splitter="false"
         >
-          <Pane :size="databasePaneSize">
+          <Pane>
             <DatabaseTree />
           </Pane>
-          <Pane :size="FULL_HEIGHT - databasePaneSize">
-            <SchemaPanel v-if="showSchemaPanel" />
+          <Pane v-if="showSchemaPanel" :size="40">
+            <SchemaPanel />
           </Pane>
         </Splitpanes>
       </n-tab-pane>
@@ -25,11 +25,11 @@
           class="default-theme"
           :dbl-click-splitter="false"
         >
-          <Pane :size="databasePaneSize">
+          <Pane>
             <DatabaseTree />
           </Pane>
-          <Pane :size="FULL_HEIGHT - databasePaneSize">
-            <SchemaPanel v-if="showSchemaPanel" />
+          <Pane v-if="showSchemaPanel" :size="40">
+            <SchemaPanel />
           </Pane>
         </Splitpanes>
       </n-tab-pane>
@@ -51,9 +51,6 @@ import { Splitpanes, Pane } from "splitpanes";
 import { ConnectionTreeMode, UNKNOWN_ID } from "@/types";
 import { hasWorkspacePermission } from "@/utils";
 
-const FULL_HEIGHT = 100;
-const DATABASE_PANE_SIZE = 60;
-
 const currentUser = useCurrentUser();
 const tabStore = useTabStore();
 
@@ -70,10 +67,6 @@ const connectionTreeStore = useConnectionTreeStore();
 
 const showSchemaPanel = computed(() => {
   return tabStore.currentTab.connection.databaseId !== UNKNOWN_ID;
-});
-
-const databasePaneSize = computed(() => {
-  return showSchemaPanel.value ? DATABASE_PANE_SIZE : FULL_HEIGHT;
 });
 
 watchEffect(() => {
