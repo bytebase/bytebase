@@ -47,7 +47,7 @@ planList:
     pricePerInstancePerMonth: 0
     featureList:
       - type: instance-count
-        content: instance-upto-5
+        content: instance-unlimited
       - type: environment-count
         content: environment-unlimited
       - type: task-count-in-issue
@@ -94,7 +94,7 @@ planList:
     pricePerInstancePerMonth: 79
     featureList:
       - type: instance-count
-        content: instance-minimum-5
+        content: instance-unlimited
       - type: environment-count
         content: environment-unlimited
       - type: task-count-in-issue
