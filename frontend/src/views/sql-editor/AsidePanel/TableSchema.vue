@@ -38,7 +38,7 @@
       </div>
       <div class="flex justify-between items-center w-full text-xs py-2">
         <div class="table-schema--content-column">
-          <span>Columns</span>
+          <span>{{ $t("database.columns") }}</span>
         </div>
         <div class="table-schema--content-column">
           <span>Data Type</span>
