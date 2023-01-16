@@ -70,6 +70,7 @@ import {
 } from "@/store";
 import {
   emptyConnection,
+  getDefaultTabNameFromConnection,
   hasWorkspacePermission,
   isDescendantOf,
   isSimilarTab,
@@ -188,7 +189,12 @@ const setConnection = (
         // Don't go further if the connection doesn't change.
         return;
       }
-      tabStore.selectOrAddSimilarTab(target);
+      const name = getDefaultTabNameFromConnection(target.connection);
+      tabStore.selectOrAddSimilarTab(
+        target,
+        /* beside */ false,
+        /* defaultTabName */ name
+      );
       tabStore.updateCurrentTab(target);
 
       if (connectionTreeStore.selectedTableAtom) {

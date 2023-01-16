@@ -104,8 +104,15 @@ export const useTabStore = defineStore("tab", () => {
   const setCurrentTabId = (id: string) => {
     currentTabId.value = id;
   };
-  const selectOrAddSimilarTab = (tab: CoreTabInfo, beside = false) => {
+  const selectOrAddSimilarTab = (
+    tab: CoreTabInfo,
+    beside = false,
+    defaultName?: string
+  ) => {
     if (isDisconnected.value) {
+      if (defaultName) {
+        currentTab.value.name = defaultName;
+      }
       return;
     }
     if (isSimilarTab(tab, currentTab.value)) {
@@ -116,6 +123,9 @@ export const useTabStore = defineStore("tab", () => {
       setCurrentTabId(similarTab.id);
     } else {
       addTab(tab, beside);
+      if (defaultName) {
+        currentTab.value.name = defaultName;
+      }
     }
   };
   const selectOrAddTempTab = () => {
