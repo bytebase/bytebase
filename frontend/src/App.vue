@@ -30,6 +30,7 @@
 
 <script lang="ts" setup>
 import { NConfigProvider, NDialogProvider } from "naive-ui";
+import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
 import { reactive, watchEffect, onErrorCaptured, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -48,7 +49,6 @@ import { RouteMapList } from "@/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
 import HelpDrawer from "@/components/HelpDrawer";
-import { ServerError } from "nice-grpc-common";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
