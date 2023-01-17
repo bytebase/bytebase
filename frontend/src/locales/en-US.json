@@ -32,6 +32,7 @@
     "activate": "Activate",
     "save": "Save",
     "cancel": "Cancel",
+    "cancelled": "Cancelled",
     "comment": "Comment",
     "home": "Home",
     "setting": "Setting",
@@ -745,7 +746,10 @@
     "failed-to-connect-instance": "Failed to connect instance.",
     "failed-to-connect-instance-localhost": "Failed to connect instance.\nIf you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
     "search-instance-name": "Search instance name",
-    "grants": "Grants"
+    "grants": "Grants",
+    "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
+    "create-gcp-credentials": "To create Credentials, see",
+    "used-for-testing-connection": "Used for testing connections only"
   },
   "environment": {
     "select": "Select environment",
@@ -1564,6 +1568,13 @@
         "remaining": "Your total instance quota is {total}, only have {count} instance remained.",
         "runoutof": "Your have run out of your {total} instance quota.",
         "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
+      },
+      "bb-feature-seat-count": {
+        "title": "Seat count limit",
+        "desc": "You have reached the maximum seat count limit. Please upgrade to get more seat quota.",
+        "remaining": "Your total seat quota is {total}, only have {count} seat remained.",
+        "runoutof": "Your have run out of your {total} seat quota.",
+        "upgrade": "@:{'subscription.upgrade'} to get more seat quota."
       },
       "bb-feature-multi-tenancy": {
         "title": "Multi-tenancy",

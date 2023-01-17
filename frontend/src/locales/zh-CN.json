@@ -32,6 +32,7 @@
     "activate": "激活",
     "save": "保存",
     "cancel": "取消",
+    "cancelled": "已取消",
     "comment": "评论",
     "home": "主页",
     "setting": "设置",
@@ -745,7 +746,10 @@
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "search-instance-name": "搜索实例名称",
     "grants": "权限",
-    "authentication-database": "认证数据库"
+    "authentication-database": "认证数据库",
+    "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
+    "create-gcp-credentials": "创建凭据的方法见",
+    "used-for-testing-connection": "仅作测试连接用"
   },
   "environment": {
     "select": "选择环境",
@@ -1565,6 +1569,13 @@
         "remaining": "当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。",
         "runoutof": "已用尽全部 {total} 个实例额度。",
         "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
+      },
+      "bb-feature-seat-count": {
+        "title": "席位数量限制",
+        "desc": "您已达最大席位数量限制，请付费升级来获取更多席位额度。",
+        "remaining": "当前总席位额度为 {total}，目前仅剩 {count} 个份额可用。",
+        "runoutof": "已用尽全部 {total} 个席位额度。",
+        "upgrade": "@:{'subscription.upgrade'}来获取更多席位额度。"
       },
       "bb-feature-multi-tenancy": {
         "title": "多租户",

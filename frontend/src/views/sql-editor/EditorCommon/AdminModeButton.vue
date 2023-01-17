@@ -45,7 +45,7 @@ const enterAdminMode = () => {
     connection: current.connection,
     mode: TabMode.Admin,
   };
-  tabStore.selectOrAddSimilarTab(target, true);
+  tabStore.selectOrAddSimilarTab(target, /* beside */ true);
   tabStore.updateCurrentTab({
     ...target,
     statement,

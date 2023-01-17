@@ -18,6 +18,7 @@ categoryList:
       - tenancy
   - type: collaboration
     featureList:
+      - seat-count
       - ui-based-sql-review
       - vsc-workflow
       - shareable-query-link
@@ -44,14 +45,14 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeInstanceCount: 1
-    pricePerInstancePerMonth: 0
+    pricePerSeatPerMonth: 0
     featureList:
       - type: instance-count
-        content: instance-upto-5
+        content: instance-unlimited
       - type: environment-count
-        content: environment-upto-2
+        content: environment-unlimited
       - type: task-count-in-issue
-        content: task-upto-4
+        content: task-unlimited
       - type: schema-change
         content: schema-change-basic
         tooltip: schema-change-basic-tooltip
@@ -63,11 +64,13 @@ planList:
         tooltip: disaster-recovery-basic-tooltip
       - type: archiving
       - type: sql-check
-        content: sql-check-basic
-        tooltip: sql-check-basic-tooltip
+        content: sql-check-advanced
+        tooltip: sql-check-advanced-tooltip
       - type: anomaly-detection
         content: anomaly-detection-basic
         tooltip: anomaly-detection-basic-tooltip
+      - type: seat-count
+        content: seat-maximum-2
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-basic
@@ -91,12 +94,12 @@ planList:
     unitPrice: 1740
     trialPrice: 0
     freeInstanceCount: 5
-    pricePerInstancePerMonth: 79
+    pricePerSeatPerMonth: 29
     featureList:
       - type: instance-count
-        content: instance-minimum-5
+        content: instance-unlimited
       - type: environment-count
-        content: environment-upto-3
+        content: environment-unlimited
       - type: task-count-in-issue
         content: task-unlimited
       - type: schema-change
@@ -117,6 +120,8 @@ planList:
         tooltip: anomaly-detection-advanced-tooltip
       - type: schedule-change
       - type: review-and-backup-policy
+      - type: seat-count
+        content: seat-maximum-10
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-basic
@@ -145,7 +150,7 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeInstanceCount: 5
-    pricePerInstancePerMonth: 199
+    pricePerSeatPerMonth: 199
     featureList:
       - type: instance-count
         content: instance-customized
@@ -173,6 +178,8 @@ planList:
       - type: review-and-backup-policy
       - type: read-replica
       - type: tenancy
+      - type: seat-count
+        content: seat-customized
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-advanced

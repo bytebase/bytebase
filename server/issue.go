@@ -1097,7 +1097,7 @@ func (s *Server) createDatabaseCreateTaskList(c api.CreateDatabaseContext, insta
 	}
 	// Validate the labels. Labels are set upon task completion.
 	if _, err := convertDatabaseLabels(c.Labels); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error: %v", c.Labels, err))
 	}
 
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
