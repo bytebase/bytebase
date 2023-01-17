@@ -275,6 +275,9 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 		ProjectID: &projectID,
 	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	return convertToIamPolicy(iamPolicy), nil
 }
