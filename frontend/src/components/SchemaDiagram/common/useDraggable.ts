@@ -1,7 +1,7 @@
 import { ref, unref } from "vue";
 import { MaybeRef, useEventListener } from "@vueuse/core";
 
-import { Position } from "../types";
+import { Point } from "../types";
 
 export type DraggableOptions = {
   exact?: boolean;
@@ -15,8 +15,8 @@ export const useDraggable = (
   target: MaybeRef<Element | undefined>,
   options: DraggableOptions
 ) => {
-  const startPointerPosition = ref<Position>();
-  const lastPointerPosition = ref<Position>();
+  const startPointerPosition = ref<Point>();
+  const lastPointerPosition = ref<Point>();
 
   const start = (e: PointerEvent) => {
     if (unref(options.exact) && e.target !== unref(target)) return;
