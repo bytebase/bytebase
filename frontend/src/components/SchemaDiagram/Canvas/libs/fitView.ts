@@ -1,13 +1,13 @@
-import { calcBBox, minmax, pointsOfRect } from "../../common";
-import { Rect } from "../../types";
+import { calcBBox, minmax } from "../../common";
+import { Geometry, Rect } from "../../types";
 
 export const fitView = (
   canvas: Element,
-  rects: Rect[],
+  geometries: Geometry[],
   paddings: number[] = [0, 0, 0, 0], // [T,R,B,L]
   zoomRange: number[] = [0.5, 2]
 ) => {
-  const contentBBox = calcBBox(rects.flatMap(pointsOfRect));
+  const contentBBox = calcBBox(geometries);
   if (
     contentBBox.width < Number.EPSILON ||
     contentBBox.height < Number.EPSILON
