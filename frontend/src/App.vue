@@ -48,6 +48,7 @@ import { RouteMapList } from "@/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
 import HelpDrawer from "@/components/HelpDrawer";
+import { ServerError } from "nice-grpc-common";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
@@ -170,7 +171,7 @@ onErrorCaptured((error: any /* , _, info */) => {
   // Handle grpc request error.
   // It looks like: `{"path":"/bytebase.v1.AuthService/Login","code":2,"details":"Response closed without headers"}`
   if (
-    error instanceof ClientError &&
+    (error instanceof ServerError || error instanceof ClientError) &&
     Object.values(Status).includes(error.code)
   ) {
     notificationStore.pushNotification({
