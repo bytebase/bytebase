@@ -15,7 +15,7 @@
 import { computed, onMounted, ref } from "vue";
 
 import { TableMetadata } from "@/types/proto/store/database";
-import { Position, Rect, Path, ForeignKey } from "../types";
+import { Point, Rect, Path, ForeignKey } from "../types";
 import {
   segmentOverlap1D,
   SegmentOverlap1D,
@@ -102,11 +102,11 @@ const pickPorts = (
   }
 };
 
-const grow = (pos: Position, dir: Direction, length: number): Position => {
+const grow = (pos: Point, dir: Direction, length: number): Point => {
   const x = dir === "LEFT" ? pos.x - length : pos.x + length;
   return { x, y: pos.y };
 };
-const anchor = (rect: Rect, edge: Direction): Position => {
+const anchor = (rect: Rect, edge: Direction): Point => {
   const x = edge === "LEFT" ? rect.x : rect.x + rect.width;
   const y = rect.y + rect.height / 2;
   return { x, y };
