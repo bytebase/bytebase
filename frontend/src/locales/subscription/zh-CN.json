@@ -15,7 +15,7 @@
   "start-from": "",
   "billed-annually": "按年付费",
   "per-instance": "每个实例",
-  "free-price-intro": "最多 5 个实例",
+  "free-price-intro": "最多 2 个席位",
   "team-price-intro": "根据席位数量按年付费",
   "enterprise-price-intro": "自定义席位和实例，按年付费",
   "deploy": "部署",
