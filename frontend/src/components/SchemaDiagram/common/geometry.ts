@@ -11,6 +11,9 @@ export const pointsOfRect = (rect: Rect): Point[] => {
 
 export const calcBBox = (geometries: Geometry[]): Rect => {
   const points = geometries.flatMap(pointsOfGeometry);
+  if (points.length === 0) {
+    return { x: 0, y: 0, width: 0, height: 0 };
+  }
 
   const min: Point = { x: Number.MAX_VALUE, y: Number.MAX_VALUE };
   const max: Point = { x: Number.MIN_VALUE, y: Number.MIN_VALUE };

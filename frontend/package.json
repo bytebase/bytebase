@@ -34,6 +34,7 @@
     "escape-string-regexp": "5.0.0",
     "google-protobuf": "^3.21.2",
     "highlight.js": "11.6.0",
+    "html-to-image": "^1.11.4",
     "inter-ui": "3.19.3",
     "js-yaml": "4.1.0",
     "lodash-es": "4.17.21",
