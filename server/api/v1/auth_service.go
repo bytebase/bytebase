@@ -51,7 +51,7 @@ func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	}
 	user, err := s.store.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
@@ -63,7 +63,7 @@ func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequest) (*v1pb.ListUsersResponse, error) {
 	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{ShowDeleted: request.ShowDeleted})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list user, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to list user, error: %v", err)
 	}
 	response := &v1pb.ListUsersResponse{}
 	for _, user := range users {
@@ -91,7 +91,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
 	}
 
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
@@ -101,7 +101,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		PasswordHash: string(passwordHash),
 	}, api.SystemBotID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create user, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 	}
 
 	if user.ID == api.PrincipalIDForFirstUser && s.metricReporter != nil {
@@ -123,7 +123,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		Role:           user.Role,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to construct activity payload, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to construct activity payload, error: %v", err)
 	}
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   user.ID,
@@ -133,7 +133,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		Payload:     string(bytes),
 	}
 	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create activity, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
 	}
 
 	return convertToUser(user), nil
@@ -155,7 +155,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	}
 	user, err := s.store.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
@@ -182,7 +182,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		case "user.password":
 			passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to generate password hash, error %v", err)
+				return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
 			}
 			passwordHashStr := string(passwordHash)
 			patch.PasswordHash = &passwordHashStr
@@ -200,7 +200,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 
 	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update user, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
 	return convertToUser(user), nil
 }
@@ -214,7 +214,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 	}
 	user, err := s.store.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
@@ -243,7 +243,7 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	}
 	user, err := s.store.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
@@ -340,7 +340,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			auth.GatewayMetadataRefreshTokenKey: refreshToken,
 			auth.GatewayMetadataUserIDKey:       fmt.Sprintf("%d", user.ID),
 		})); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 		}
 	} else {
 		token, err := auth.GenerateAPIToken(user.Name, user.ID, s.profile.Mode, s.secret)
@@ -361,7 +361,7 @@ func (*AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*emptypb
 		auth.GatewayMetadataRefreshTokenKey: "",
 		auth.GatewayMetadataUserIDKey:       "",
 	})); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 	}
 	return &emptypb.Empty{}, nil
 }
