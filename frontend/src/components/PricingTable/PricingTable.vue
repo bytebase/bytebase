@@ -41,10 +41,8 @@
                 {{ plan.priceUnit }}
               </p>
 
-              <div class="text-gray-400 h-5">
-                <span v-if="plan.type != PlanType.FREE">
-                  {{ $t("subscription.billed-annually") }}
-                </span>
+              <div class="text-gray-400">
+                {{ plan.priceInfo }}
               </div>
 
               <button
@@ -166,8 +164,8 @@
           </span>
         </p>
 
-        <div v-if="plan.type != PlanType.FREE" class="text-gray-400">
-          {{ $t("subscription.billed-annually") }}
+        <div class="text-gray-400">
+          {{ plan.priceInfo }}
         </div>
 
         <button
@@ -298,6 +296,7 @@ const plans = computed((): LocalPlan[] => {
         : `$${plan.pricePerInstancePerMonth}`,
     priceUnit:
       plan.type === PlanType.ENTERPRISE ? "" : t("subscription.per-month"),
+    priceInfo: t(`subscription.${plan.title}-price-intro`),
   }));
 });
 
