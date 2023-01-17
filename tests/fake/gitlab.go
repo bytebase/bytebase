@@ -187,7 +187,7 @@ func (gl *GitLab) readProjectTree(c echo.Context) error {
 
 	buf, err := json.Marshal(&fileNodes)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal fileNodes, error %v", err))
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal fileNodes, error: %v", err))
 	}
 
 	return c.String(http.StatusOK, string(buf))
@@ -236,7 +236,7 @@ func (gl *GitLab) getFakeCommit(c echo.Context) error {
 	}
 	buf, err := json.Marshal(commit)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal commit, error %v", err))
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal commit, error: %v", err))
 	}
 
 	return c.String(http.StatusOK, string(buf))
@@ -256,11 +256,11 @@ func (gl *GitLab) createProjectFile(c echo.Context) error {
 	}
 	b, err := io.ReadAll(c.Request().Body)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read create project file request body, error %v", err))
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read create project file request body, error: %v", err))
 	}
 	fileCommit := &gitlab.FileCommit{}
 	if err := json.Unmarshal(b, fileCommit); err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal create project file request body, error %v", err))
+		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal create project file request body, error: %v", err))
 	}
 
 	// Save file.
