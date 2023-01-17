@@ -757,7 +757,7 @@ func (*Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPolic
 	for _, binding := range set.Bindings {
 		for _, member := range binding.Members {
 			selects := []string{}
-			// We need to declare the type cast, otherwise we need encounter the error:
+			// We need to declare the type cast, otherwise we will encounter the error:
 			// [85973] ERROR:  column "creator_id" is of type integer but expression is of type text at character 109.
 			// [85973] HINT:  You will need to rewrite or cast the expression.
 			// It's due to the way Postgres coerces types. With a single select, it'll infer the types based on the insert part of the statement,
