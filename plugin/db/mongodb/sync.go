@@ -8,9 +8,11 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -120,9 +122,18 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		if !ok {
 			return nil, errors.New("cannot get size from collStats command result")
 		}
+		dataSize64, err := convertEmptyInterfaceToInt64(dataSize)
+		if err != nil {
+			log.Debug("Failed to convert dataSize to int64", zap.Any("dataSize", dataSize))
+		}
+
 		totalIndexSize, ok := commandResult["totalIndexSize"]
 		if !ok {
 			return nil, errors.New("cannot get totalIndexSize from collStats command result")
+		}
+		totalIndexSize64, err := convertEmptyInterfaceToInt64(totalIndexSize)
+		if err != nil {
+			log.Debug("Failed to convert totalIndexSize to int64", zap.Any("totalIndexSize", totalIndexSize))
 		}
 
 		// Get collection indexes.
@@ -133,8 +144,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*s
 		schemaMetadata.Tables = append(schemaMetadata.Tables, &storepb.TableMetadata{
 			Name:      collectionName,
 			RowCount:  count,
-			DataSize:  int64(dataSize.(int32)),
-			IndexSize: int64(totalIndexSize.(int32)),
+			DataSize:  dataSize64,
+			IndexSize: totalIndexSize64,
 			Indexes:   indexes,
 		})
 	}
@@ -259,4 +270,36 @@ func isAtlasUnauthorizedError(err error) bool {
 		return commandError.Name == "AtlasError" && commandError.Code == 8000 && strings.Contains(commandError.Message, "Unauthorized")
 	}
 	return strings.Contains(err.Error(), "AtlasError: Unauthorized")
+}
+
+func convertEmptyInterfaceToInt64(value interface{}) (int64, error) {
+	// NOTE: convert uint64 to int64 may cause overflow. But we don't care about it.
+	switch v := value.(type) {
+	case int:
+		return int64(v), nil
+	case int8:
+		return int64(v), nil
+	case int16:
+		return int64(v), nil
+	case int32:
+		return int64(v), nil
+	case int64:
+		return v, nil
+	case float32:
+		return int64(v), nil
+	case float64:
+		return int64(v), nil
+	case uint:
+		return int64(v), nil
+	case uint8:
+		return int64(v), nil
+	case uint16:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case uint64:
+		return int64(v), nil
+	default:
+		return 0, errors.Errorf("cannot convert %v to int64", value)
+	}
 }
