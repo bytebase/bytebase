@@ -638,7 +638,6 @@ func validateBindings(bindings []*v1pb.Binding) error {
 			}
 		}
 		projectRoleMap[binding.Role] = true
-
 	}
 	// Must contain one owner binding.
 	if _, ok := projectRoleMap[v1pb.ProjectRole_PROJECT_ROLE_OWNER]; !ok {
