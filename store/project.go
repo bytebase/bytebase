@@ -304,14 +304,25 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, FormatError(err)
 	}
 
-	// TODO(h3n4l): migrate to project set IAM policy.
-	projectMember := &api.ProjectMemberCreate{
-		CreatorID:   creatorID,
-		ProjectID:   project.UID,
-		Role:        common.ProjectOwner,
-		PrincipalID: creatorID,
+	user, err := s.GetUserByID(ctx, creatorID)
+	if err != nil {
+		return nil, err
 	}
-	if _, err = createProjectMemberImpl(ctx, tx, projectMember); err != nil {
+	set := &SetProjectPolicyMessage{
+		CreatorID:  creatorID,
+		ProjectUID: &project.UID,
+		Policy: &IAMPolicyMessage{
+			Bindings: []*PolicyBinding{
+				{
+					Role: api.Owner,
+					Members: []*UserMessage{
+						user,
+					},
+				},
+			},
+		},
+	}
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, set); err != nil {
 		return nil, err
 	}
 
