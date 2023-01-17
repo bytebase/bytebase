@@ -10,34 +10,30 @@ import (
 
 func TestValidateMembers(t *testing.T) {
 	tests := []struct {
-		members []string
+		member  string
 		wantErr bool
 	}{
 		{
-			members: []string{""},
+			member:  "",
 			wantErr: true,
 		},
 		{
-			members: []string{"foo"},
+			member:  "foo",
 			wantErr: true,
 		},
 		{
-			members: []string{"user:"},
+			member:  "user",
 			wantErr: true,
 		},
 		{
-			members: []string{"user:foo", "user:bar", "user:foo"},
-			wantErr: true,
-		},
-		{
-			members: []string{"user:foo"},
+			member:  "user:foo",
 			wantErr: false,
 		},
 	}
 
 	a := require.New(t)
 	for _, tt := range tests {
-		err := validateMembers(tt.members)
+		err := validateMember(tt.member)
 		if tt.wantErr {
 			a.Error(err)
 		} else {

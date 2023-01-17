@@ -617,6 +617,7 @@ func validateBindings(bindings []*v1pb.Binding) error {
 	if len(bindings) == 0 {
 		return errors.Errorf("IAM Binding is required")
 	}
+	userMap := make(map[string]bool)
 	projectRoleMap := make(map[v1pb.ProjectRole]bool)
 	for _, binding := range bindings {
 		if binding.Role == v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED {
@@ -630,10 +631,18 @@ func validateBindings(bindings []*v1pb.Binding) error {
 		if _, ok := projectRoleMap[binding.Role]; ok {
 			return errors.Errorf("Each IAM binding must have a unique role")
 		}
-		projectRoleMap[binding.Role] = true
-		if err := validateMembers(binding.Members); err != nil {
-			return err
+
+		for _, member := range binding.Members {
+			if _, ok := userMap[member]; ok {
+				return errors.Errorf("duplicate user %s", member)
+			}
+			userMap[member] = true
+			if err := validateMember(member); err != nil {
+				return err
+			}
 		}
+		projectRoleMap[binding.Role] = true
+
 	}
 	// Must contain one owner binding.
 	if _, ok := projectRoleMap[v1pb.ProjectRole_PROJECT_ROLE_OWNER]; !ok {
@@ -641,26 +650,15 @@ func validateBindings(bindings []*v1pb.Binding) error {
 	}
 	return nil
 }
-func validateMembers(members []string) error {
+
+func validateMember(member string) error {
 	userIdentifierMap := map[string]bool{
 		"user:": true,
 	}
-	userMap := map[string]bool{}
-	for _, member := range members {
-		if _, ok := userMap[member]; ok {
-			return errors.Errorf("duplicate user %s", member)
+	for prefix := range userIdentifierMap {
+		if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {
+			return nil
 		}
-		match := false
-		for prefix := range userIdentifierMap {
-			if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {
-				match = true
-				break
-			}
-		}
-		if !match {
-			return errors.Errorf("invalid user identifier %s", member)
-		}
-		userMap[member] = true
 	}
-	return nil
+	return errors.Errorf("invalid user %s", member)
 }
