@@ -381,7 +381,7 @@ func convertProjectRole(role v1pb.ProjectRole) (api.Role, error) {
 	case v1pb.ProjectRole_PROJECT_ROLE_DEVELOPER:
 		return api.Developer, nil
 	}
-	return api.Role(""), fmt.Errorf("invalid project role %q", role)
+	return api.Role(""), errors.Errorf("invalid project role %q", role)
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
@@ -602,11 +602,7 @@ func validateIAMPolicy(policy *v1pb.IamPolicy) error {
 	if policy == nil {
 		return errors.Errorf("IAM Policy is required")
 	}
-	if err := validateBindings(policy.Bindings); err != nil {
-		return err
-	}
-
-	return nil
+	return validateBindings(policy.Bindings)
 }
 
 func getUserEmailFromIdentifier(ident string) string {
