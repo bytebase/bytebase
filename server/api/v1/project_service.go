@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -233,8 +234,49 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 }
 
 // SetIamPolicy sets the IAM policy for a project.
-func (*ProjectService) SetIamPolicy(_ context.Context, _ *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
+func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+	projectID, err := getProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	creatorUID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
+	}
+	if err := validateIAMPolicy(request.Policy); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+	}
+	// We only allow set IAM policy for the project whose role provider is BYTEBASE.
+	if project.RoleProvider != api.ProjectRoleProviderBytebase {
+		return nil, status.Errorf(codes.InvalidArgument, "the member in project %q is not managed by Bytebase, you cannot set IAM policy for the project whose members were sync from GitLab/GitHub", request.Project)
+	}
+
+	newPolicy, err := s.convertToSetIAMPolicyMessage(ctx, request.Policy, creatorUID, projectID, project.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	if err := s.store.SetProjectIAMPolicy(ctx, newPolicy); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+		ProjectID: &projectID,
+	})
+
+	return convertToIamPolicy(iamPolicy), nil
 }
 
 // SyncExternalIamPolicy syncs the IAM policy from the VCS which binds to the project.
@@ -280,6 +322,41 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
 	}
 }
 
+func (s *ProjectService) convertToSetIAMPolicyMessage(ctx context.Context, iamPolicy *v1pb.IamPolicy, creatorID int, projectID string, projectUID int) (*store.SetProjectPolicyMessage, error) {
+	// Backfill the user id.
+	var bindings []*store.PolicyBinding
+	for _, binding := range iamPolicy.Bindings {
+		var users []*store.UserMessage
+		role, err := convertProjectRole(binding.Role)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		for _, member := range binding.Members {
+			user, err := s.store.GetUserByEmail(ctx, getUserEmailFromIdentifier(member))
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if user == nil {
+				return nil, status.Errorf(codes.NotFound, "user %q not found", member)
+			}
+			users = append(users, user)
+		}
+
+		bindings = append(bindings, &store.PolicyBinding{
+			Role:    role,
+			Members: users,
+		})
+	}
+	return &store.SetProjectPolicyMessage{
+		CreatorID:  creatorID,
+		ProjectID:  &projectID,
+		ProjectUID: &projectUID,
+		Policy: &store.IAMPolicyMessage{
+			Bindings: bindings,
+		},
+	}, nil
+}
+
 // getUserIdentifier returns the user identifier.
 // See more details in project_service.proto.
 func getUserIdentifier(email string) string {
@@ -295,6 +372,16 @@ func convertToProjectRole(role api.Role) v1pb.ProjectRole {
 	default:
 		return v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED
 	}
+}
+
+func convertProjectRole(role v1pb.ProjectRole) (api.Role, error) {
+	switch role {
+	case v1pb.ProjectRole_PROJECT_ROLE_OWNER:
+		return api.Owner, nil
+	case v1pb.ProjectRole_PROJECT_ROLE_DEVELOPER:
+		return api.Developer, nil
+	}
+	return api.Role(""), fmt.Errorf("invalid project role %q", role)
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
@@ -509,4 +596,62 @@ func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
 		}
 	}
 	return false
+}
+
+func validateIAMPolicy(policy *v1pb.IamPolicy) error {
+	if policy == nil {
+		return errors.Errorf("IAM Policy is required")
+	}
+	if err := validateBindings(policy.Bindings); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getUserEmailFromIdentifier(ident string) string {
+	return strings.TrimPrefix(ident, "user:")
+}
+
+func validateBindings(bindings []*v1pb.Binding) error {
+	if len(bindings) == 0 {
+		return errors.Errorf("IAM Binding is required")
+	}
+	projectRoleMap := make(map[v1pb.ProjectRole]bool)
+	for _, binding := range bindings {
+		if binding.Role == v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED {
+			return errors.Errorf("IAM Binding role is required")
+		}
+		// Each of the bindings must contain at least one member.
+		if len(binding.Members) == 0 {
+			return errors.Errorf("Each IAM binding must have at least one member")
+		}
+		// We have not merge the binding by the same role yet, so the roles in each binding must be unique.
+		if _, ok := projectRoleMap[binding.Role]; ok {
+			return errors.Errorf("Each IAM binding must have a unique role")
+		}
+		projectRoleMap[binding.Role] = true
+		for _, member := range binding.Members {
+			if err := validateMember(member); err != nil {
+				return err
+			}
+		}
+	}
+	// Must contain one owner binding.
+	if _, ok := projectRoleMap[v1pb.ProjectRole_PROJECT_ROLE_OWNER]; !ok {
+		return errors.Errorf("IAM Policy must have at least one binding with role PROJECT_OWNER")
+	}
+	return nil
+}
+func validateMember(member string) error {
+	userIdentifierMap := map[string]bool{
+		"user:": true,
+	}
+	for prefix := range userIdentifierMap {
+		if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {
+			return nil
+		}
+	}
+
+	return errors.Errorf("invalid user identifier %s", member)
 }

@@ -614,6 +614,19 @@ type GetProjectPolicyMessage struct {
 	UID       *int
 }
 
+type SetProjectPolicyMessage struct {
+	CreatorID  int
+	ProjectID  *string
+	ProjectUID *int
+	// Only Email and ID in the user message is used.
+	Policy *IAMPolicyMessage
+}
+
+type removeProjectPolicyMessage struct {
+	ProjectID *string
+	UID       *int
+}
+
 // GetProjectPolicy gets the IAM policy of a project.
 func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
 	if find.ProjectID == nil && find.UID == nil {
@@ -650,6 +663,32 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 	}
 
 	return projectPolicy, nil
+}
+
+// SetProjectIAMPolicy sets the IAM policy of a project.
+func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *SetProjectPolicyMessage) error {
+	if set == nil {
+		return errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if err := s.removeProjectIAMPolicyImpl(ctx, tx, &removeProjectPolicyMessage{
+		ProjectID: set.ProjectID,
+		UID:       set.ProjectUID,
+	}); err != nil {
+		return err
+	}
+
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, set); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, projectRoleProvider api.ProjectRoleProvider, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
@@ -709,4 +748,75 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, projectRolePro
 		projectPolicy.Bindings = append(projectPolicy.Bindings, binding)
 	}
 	return projectPolicy, nil
+}
+
+func (*Store) removeProjectIAMPolicyImpl(ctx context.Context, tx *Tx, delete *removeProjectPolicyMessage) error {
+	if delete == nil {
+		return errors.Errorf("RemoveProjectPolicy must set removeProjectPolicyMessage")
+	}
+	if delete.ProjectID == nil && delete.UID == nil {
+		return errors.Errorf("RemoveProjectPolicy must either ProjectID or UID")
+	}
+	query := ""
+	where, args := []string{}, []interface{}{}
+	if v := delete.UID; v != nil {
+		// If UID is set, we don't need to query from the project table to get the project UID, it can reduce the database load.
+		where, args = append(where, fmt.Sprintf("project_member.project_id = $%d", len(args)+1)), append(args, *v)
+		query = `DELETE FROM project_member WHERE ` + strings.Join(where, " AND ")
+	} else if v := delete.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+		query = `DELETE FROM project_member WHERE project_member.project_id IN ` +
+			`(SELECT project_id FROM project ` + strings.Join(where, " AND ") + `)`
+	}
+
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
+func (*Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *SetProjectPolicyMessage) error {
+	if set == nil {
+		return errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
+	}
+	if set.ProjectID == nil && set.ProjectUID == nil {
+		return errors.Errorf("SetProjectPolicy must either ProjectID or ProjectUID")
+	}
+	if set.Policy == nil {
+		return errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
+	}
+
+	subList, args := []string{}, []interface{}{}
+	// Due to performance concern, we use bulk insert here.
+	for _, binding := range set.Policy.Bindings {
+		for _, member := range binding.Members {
+			selects := []string{}
+			// We need to declare the type cast, otherwise we need encounter the error:
+			// [85973] ERROR:  column "creator_id" is of type integer but expression is of type text at character 109.
+			// [85973] HINT:  You will need to rewrite or cast the expression.
+			// It's due to the way Postgres coerces types. With a single select, it'll infer the types based on the insert part of the statement,
+			// whereas with a union, it'll infer the type based on the first line of the union and fallback to text from lack of hints.
+			selects, args = append(selects, fmt.Sprintf("$%d::integer", len(args)+1)), append(args, set.CreatorID) // creator_id
+			selects, args = append(selects, fmt.Sprintf("$%d::integer", len(args)+1)), append(args, set.CreatorID) // updater_id
+			// project_id
+			if v := set.ProjectUID; v != nil {
+				// If UID is set, we don't need to query from the project table to get the project UID, it can reduce the database load.
+				selects, args = append(selects, fmt.Sprintf("$%d::integer", len(args)+1)), append(args, *v)
+			} else if v := set.ProjectID; v != nil {
+				selects, args = append(selects, fmt.Sprintf("(SELECT project.id FROM project WHERE project.resource_id = $%d)::integer", len(selects)+1)), append(args, *v)
+			}
+			selects, args = append(selects, fmt.Sprintf("$%d::text", len(args)+1)), append(args, binding.Role)                    // role
+			selects, args = append(selects, fmt.Sprintf("$%d::integer", len(args)+1)), append(args, member.ID)                    // principal_id
+			selects, args = append(selects, fmt.Sprintf("$%d::text", len(args)+1)), append(args, api.ProjectRoleProviderBytebase) // role_provider
+			sub := `(SELECT ` + strings.Join(selects, ", ") + `)`
+			subList = append(subList, sub)
+		}
+	}
+	sub := strings.Join(subList, " UNION ALL ")
+	query := `INSERT INTO project_member (creator_id, updater_id, project_id, role, principal_id, role_provider) ` +
+		`(` + sub + `)`
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return FormatError(err)
+	}
+	return nil
 }
