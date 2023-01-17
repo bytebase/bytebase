@@ -6,7 +6,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import { Point, Rect } from "./geometry";
+import { Geometry, Point, Rect } from "./geometry";
 import { EditStatus } from "./edit";
 
 // This is an abstract Schema Diagram context including states, methods and
@@ -21,6 +21,7 @@ export type SchemaDiagramContext = {
   zoom: Ref<number>;
   position: Ref<Point>;
   panning: Ref<boolean>;
+  geometries: Ref<Set<Geometry>>;
 
   // Methods
   idOfTable: (table: TableMetadata) => string;

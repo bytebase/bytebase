@@ -19,6 +19,7 @@ import { Point, Rect, Path, ForeignKey } from "../types";
 import {
   segmentOverlap1D,
   SegmentOverlap1D,
+  useGeometry,
   useSchemaDiagramContext,
 } from "../common";
 
@@ -149,4 +150,6 @@ const updatePath = () => {
 events.on("render", () => void updatePath());
 
 onMounted(updatePath);
+
+useGeometry(path);
 </script>
