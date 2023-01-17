@@ -45,7 +45,7 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeInstanceCount: 1
-    pricePerInstancePerMonth: 0
+    pricePerSeatPerMonth: 0
     featureList:
       - type: instance-count
         content: instance-unlimited
@@ -94,7 +94,7 @@ planList:
     unitPrice: 1740
     trialPrice: 0
     freeInstanceCount: 5
-    pricePerInstancePerMonth: 29
+    pricePerSeatPerMonth: 29
     featureList:
       - type: instance-count
         content: instance-unlimited
@@ -150,7 +150,7 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeInstanceCount: 5
-    pricePerInstancePerMonth: 199
+    pricePerSeatPerMonth: 199
     featureList:
       - type: instance-count
         content: instance-customized
