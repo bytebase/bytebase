@@ -22,7 +22,7 @@ CREATE TABLE principal (
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
-    idp_id INTEGER REFERENCES identity_provider (id),
+    idp_id INTEGER REFERENCES idp (id),
     idp_user_info JSONB CONSTRAINT principal_idp_id_idp_user_info_check CHECK ((idp_id IS NULL AND idp_user_info IS NULL) OR (idp_id IS NOT NULL AND idp_user_info IS NOT NULL))
 );
 
@@ -1194,8 +1194,8 @@ UPDATE
     ON external_approval FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- identity_provider stores generic identity provider.
-CREATE TABLE identity_provider (
+-- idp stores generic identity provider.
+CREATE TABLE idp (
   id SERIAL PRIMARY KEY,
   row_status row_status NOT NULL DEFAULT 'NORMAL',
   creator_id INTEGER NOT NULL REFERENCES principal (id),
@@ -1204,15 +1204,15 @@ CREATE TABLE identity_provider (
   updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   resource_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  type TEXT NOT NULL CONSTRAINT identity_provider_type_check CHECK (type IN ('OAUTH2', 'OIDC')),
+  type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC')),
   -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
   config JSONB NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_identity_provider_unique_resource_id ON identity_provider(resource_id);
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON idp(resource_id);
 
-CREATE TRIGGER update_identity_provider_updated_ts
+CREATE TRIGGER update_idp_updated_ts
 BEFORE
 UPDATE
-    ON identity_provider FOR EACH ROW
+    ON idp FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
