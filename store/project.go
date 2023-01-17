@@ -308,21 +308,17 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	if err != nil {
 		return nil, err
 	}
-	set := &SetProjectPolicyMessage{
-		CreatorID:  creatorID,
-		ProjectUID: &project.UID,
-		Policy: &IAMPolicyMessage{
-			Bindings: []*PolicyBinding{
-				{
-					Role: api.Owner,
-					Members: []*UserMessage{
-						user,
-					},
+	policy := &IAMPolicyMessage{
+		Bindings: []*PolicyBinding{
+			{
+				Role: api.Owner,
+				Members: []*UserMessage{
+					user,
 				},
 			},
 		},
 	}
-	if err := s.setProjectIAMPolicyImpl(ctx, tx, set); err != nil {
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, policy, creatorID, project.ResourceID); err != nil {
 		return nil, err
 	}
 

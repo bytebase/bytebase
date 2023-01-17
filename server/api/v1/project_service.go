@@ -263,12 +263,12 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.InvalidArgument, "the member in project %q is not managed by Bytebase, you cannot set IAM policy for the project whose members were sync from GitLab/GitHub", request.Project)
 	}
 
-	newPolicy, err := s.convertToSetIAMPolicyMessage(ctx, request.Policy, creatorUID, projectID, project.UID)
+	policy, err := s.convertToIAMPolicyMessage(ctx, request.Policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	if err := s.store.SetProjectIAMPolicy(ctx, newPolicy); err != nil {
+	if err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, projectID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -325,8 +325,8 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
 	}
 }
 
-func (s *ProjectService) convertToSetIAMPolicyMessage(ctx context.Context, iamPolicy *v1pb.IamPolicy, creatorID int, projectID string, projectUID int) (*store.SetProjectPolicyMessage, error) {
-	// Backfill the user id.
+// convertToIAMPolicyMessage will convert the IAM policy to IAM policy message.
+func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*store.IAMPolicyMessage, error) {
 	var bindings []*store.PolicyBinding
 	for _, binding := range iamPolicy.Bindings {
 		var users []*store.UserMessage
@@ -350,13 +350,8 @@ func (s *ProjectService) convertToSetIAMPolicyMessage(ctx context.Context, iamPo
 			Members: users,
 		})
 	}
-	return &store.SetProjectPolicyMessage{
-		CreatorID:  creatorID,
-		ProjectID:  &projectID,
-		ProjectUID: &projectUID,
-		Policy: &store.IAMPolicyMessage{
-			Bindings: bindings,
-		},
+	return &store.IAMPolicyMessage{
+		Bindings: bindings,
 	}, nil
 }
 
