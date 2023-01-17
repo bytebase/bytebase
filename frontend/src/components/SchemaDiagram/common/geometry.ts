@@ -1,4 +1,4 @@
-import { Point, Rect } from "../types";
+import { Geometry, Path, Point, Rect } from "../types";
 
 export const pointsOfRect = (rect: Rect): Point[] => {
   const { x, y, width, height } = rect;
@@ -9,7 +9,9 @@ export const pointsOfRect = (rect: Rect): Point[] => {
   return [nw, ne, sw, se];
 };
 
-export const calcBBox = (points: Point[]): Rect => {
+export const calcBBox = (geometries: Geometry[]): Rect => {
+  const points = geometries.flatMap(pointsOfGeometry);
+
   const min: Point = { x: Number.MAX_VALUE, y: Number.MAX_VALUE };
   const max: Point = { x: Number.MIN_VALUE, y: Number.MIN_VALUE };
   points.forEach(({ x, y }) => {
@@ -61,4 +63,39 @@ export const segmentOverlap1D = (
   if (a >= d) return "AFTER";
 
   throw new Error(`should never be here a=${a}, b=${b}, c=${c}, d=${d}`);
+};
+export const isPoint = (geometry: Geometry): geometry is Point => {
+  if (Array.isArray(geometry)) {
+    return false;
+  }
+  return (
+    typeof geometry["x"] === "number" &&
+    typeof geometry["y"] === "number" &&
+    typeof (geometry as Rect)["width"] === "undefined" &&
+    typeof (geometry as Rect)["height"] === "undefined"
+  );
+};
+
+export const isPath = (geometry: Geometry): geometry is Path => {
+  return Array.isArray(geometry);
+};
+
+export const isRect = (geometry: Geometry): geometry is Rect => {
+  if (Array.isArray(geometry)) {
+    return false;
+  }
+  return (
+    typeof geometry["x"] === "number" &&
+    typeof geometry["y"] === "number" &&
+    typeof (geometry as Rect)["width"] === "number" &&
+    typeof (geometry as Rect)["height"] === "number"
+  );
+};
+
+export const pointsOfGeometry = (g: Geometry): Point[] => {
+  if (isPoint(g)) return [g];
+  if (isPath(g)) return g;
+  if (isRect(g)) return pointsOfRect(g);
+
+  throw new Error(`'${String(g)}' is not a geometry.`);
 };

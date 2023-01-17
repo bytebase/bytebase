@@ -44,6 +44,7 @@ import {
   SchemaDiagramContext,
   ForeignKey,
   EditStatus,
+  Geometry,
 } from "./types";
 import Canvas from "./Canvas";
 import { TableNode, autoLayout, GraphNodeItem, GraphEdgeItem } from "./ER";
@@ -87,6 +88,7 @@ const initialized = ref(false);
 const zoom = ref(1);
 const position = ref<Point>({ x: 0, y: 0 });
 const panning = ref(false);
+const geometries = ref(new Set<Geometry>());
 
 const render = () => {
   nextTick(() => {
@@ -205,6 +207,7 @@ provideSchemaDiagramContext({
   zoom,
   position,
   panning,
+  geometries,
   idOfTable,
   rectOfTable,
   render,

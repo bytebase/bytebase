@@ -54,7 +54,7 @@ import { fitView } from "./libs/fitView";
 const canvas = ref<Element>();
 const desktop = ref<Element>();
 
-const { tableList, rectOfTable, zoom, position, panning, events } =
+const { zoom, position, panning, geometries, events } =
   useSchemaDiagramContext();
 
 const zoomCenter = ref<Point>({ x: 0.5, y: 0.5 });
@@ -65,10 +65,9 @@ const ZOOM_RANGE = {
 
 const handleFitView = () => {
   if (!canvas.value) return;
-  const rects = tableList.value.map(rectOfTable);
   const layout = fitView(
     canvas.value,
-    rects,
+    [...geometries.value],
     [10, 20, 40, 20] /* paddings [T,R,B,L] */,
     [ZOOM_RANGE.min, 1.0] /* [zoomMin, zoomMax] */
   );
