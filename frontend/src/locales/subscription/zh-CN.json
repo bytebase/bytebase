@@ -93,6 +93,7 @@
       "features": {
         "seat-count": "席位",
         "seat-maximum-2": "不超过 2 个",
+        "seat-maximum-10": "不超过 10 个",
         "seat-customized": "自定义",
         "ui-based-sql-review": "基于 UI 的 SQL 审查",
         "vsc-workflow": "VCS 工作流 #GitOps",

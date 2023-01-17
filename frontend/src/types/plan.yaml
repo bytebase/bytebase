@@ -94,7 +94,7 @@ planList:
     unitPrice: 1740
     trialPrice: 0
     freeInstanceCount: 5
-    pricePerInstancePerMonth: 79
+    pricePerInstancePerMonth: 29
     featureList:
       - type: instance-count
         content: instance-unlimited
@@ -121,7 +121,7 @@ planList:
       - type: schedule-change
       - type: review-and-backup-policy
       - type: seat-count
-        content: seat-customized
+        content: seat-maximum-10
       - type: ui-based-sql-review
       - type: vsc-workflow
         content: vsc-workflow-basic
