@@ -10,7 +10,7 @@ CREATE TABLE idp (
   name TEXT NOT NULL,
   type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC')),
   -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
-  config JSONB NOT NULL
+  config JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_idp_unique_resource_id ON idp(resource_id);

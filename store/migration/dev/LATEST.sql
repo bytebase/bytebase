@@ -23,7 +23,7 @@ CREATE TABLE principal (
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     idp_id INTEGER REFERENCES idp (id),
-    idp_user_info JSONB CONSTRAINT principal_idp_id_idp_user_info_check CHECK ((idp_id IS NULL AND idp_user_info IS NULL) OR (idp_id IS NOT NULL AND idp_user_info IS NOT NULL))
+    idp_user_info JSONB DEFAULT '{}' CONSTRAINT principal_idp_id_idp_user_info_check CHECK ((idp_id IS NULL AND idp_user_info = '{}') OR (idp_id IS NOT NULL AND idp_user_info != '{}'))
 );
 
 CREATE TRIGGER update_principal_updated_ts
@@ -1206,7 +1206,7 @@ CREATE TABLE idp (
   name TEXT NOT NULL,
   type TEXT NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC')),
   -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
-  config JSONB NOT NULL
+  config JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_idp_unique_resource_id ON idp(resource_id);
