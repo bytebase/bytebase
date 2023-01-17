@@ -614,6 +614,7 @@ type GetProjectPolicyMessage struct {
 	UID       *int
 }
 
+// SetProjectPolicyMessage is the message to set project policy.
 type SetProjectPolicyMessage struct {
 	CreatorID  int
 	ProjectID  *string
