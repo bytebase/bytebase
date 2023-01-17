@@ -17,7 +17,7 @@
     </template>
 
     <div
-      v-if="!initialized"
+      v-if="busy || !initialized"
       class="absolute inset-0 bg-white/40 flex items-center justify-center"
     >
       <BBSpin />
@@ -26,7 +26,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, toRef, watch } from "vue";
 import { uniqueId } from "lodash-es";
 import Emittery from "emittery";
 
@@ -81,10 +81,9 @@ const emit = defineEmits<{
 const schemaList = computed(() => {
   return props.databaseMetadata.schemas;
 });
-const tableList = computed(() => {
-  return schemaList.value.flatMap((schema) => schema.tables);
-});
 const initialized = ref(false);
+const dummy = ref(false);
+const busy = ref(false);
 const zoom = ref(1);
 const position = ref<Point>({ x: 0, y: 0 });
 const panning = ref(false);
@@ -202,8 +201,11 @@ events.on("edit-column", ({ schema, table, column, target }) =>
 );
 
 provideSchemaDiagramContext({
-  tableList: computed(() => tableList.value),
+  database: toRef(props, "database"),
+  databaseMetadata: toRef(props, "databaseMetadata"),
   editable: computed(() => props.editable),
+  dummy,
+  busy,
   zoom,
   position,
   panning,
