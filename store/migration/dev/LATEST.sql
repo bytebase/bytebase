@@ -1211,6 +1211,8 @@ CREATE TABLE idp (
 
 CREATE UNIQUE INDEX idx_idp_unique_resource_id ON idp(resource_id);
 
+ALTER SEQUENCE idp_id_seq RESTART WITH 101;
+
 CREATE TRIGGER update_idp_updated_ts
 BEFORE
 UPDATE
