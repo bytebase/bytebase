@@ -8,32 +8,36 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func TestValidateMember(t *testing.T) {
+func TestValidateMembers(t *testing.T) {
 	tests := []struct {
-		member  string
+		members []string
 		wantErr bool
 	}{
 		{
-			member:  "",
+			members: []string{""},
 			wantErr: true,
 		},
 		{
-			member:  "foo",
+			members: []string{"foo"},
 			wantErr: true,
 		},
 		{
-			member:  "user:",
+			members: []string{"user:"},
 			wantErr: true,
 		},
 		{
-			member:  "user:foo",
+			members: []string{"user:foo", "user:bar", "user:foo"},
+			wantErr: true,
+		},
+		{
+			members: []string{"user:foo"},
 			wantErr: false,
 		},
 	}
 
 	a := require.New(t)
 	for _, tt := range tests {
-		err := validateMember(tt.member)
+		err := validateMembers(tt.members)
 		if tt.wantErr {
 			a.Error(err)
 		} else {

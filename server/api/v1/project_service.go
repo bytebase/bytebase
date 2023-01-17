@@ -631,10 +631,8 @@ func validateBindings(bindings []*v1pb.Binding) error {
 			return errors.Errorf("Each IAM binding must have a unique role")
 		}
 		projectRoleMap[binding.Role] = true
-		for _, member := range binding.Members {
-			if err := validateMember(member); err != nil {
-				return err
-			}
+		if err := validateMembers(binding.Members); err != nil {
+			return err
 		}
 	}
 	// Must contain one owner binding.
@@ -643,15 +641,26 @@ func validateBindings(bindings []*v1pb.Binding) error {
 	}
 	return nil
 }
-func validateMember(member string) error {
+func validateMembers(members []string) error {
 	userIdentifierMap := map[string]bool{
 		"user:": true,
 	}
-	for prefix := range userIdentifierMap {
-		if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {
-			return nil
+	userMap := map[string]bool{}
+	for _, member := range members {
+		if _, ok := userMap[member]; ok {
+			return errors.Errorf("duplicate user %s", member)
 		}
+		match := false
+		for prefix := range userIdentifierMap {
+			if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return errors.Errorf("invalid user identifier %s", member)
+		}
+		userMap[member] = true
 	}
-
-	return errors.Errorf("invalid user identifier %s", member)
+	return nil
 }
