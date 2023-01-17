@@ -38,7 +38,7 @@ import {
   TableMetadata,
 } from "@/types/proto/store/database";
 import {
-  Position,
+  Point,
   Rect,
   Size,
   SchemaDiagramContext,
@@ -85,7 +85,7 @@ const tableList = computed(() => {
 });
 const initialized = ref(false);
 const zoom = ref(1);
-const position = ref<Position>({ x: 0, y: 0 });
+const position = ref<Point>({ x: 0, y: 0 });
 const panning = ref(false);
 
 const render = () => {

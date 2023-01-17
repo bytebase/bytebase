@@ -3,11 +3,11 @@ export type Size = {
   height: number;
 };
 
-export type Position = {
+export type Point = {
   x: number;
   y: number;
 };
 
-export type Rect = Position & Size;
+export type Rect = Point & Size;
 
-export type Path = Position[];
+export type Path = Point[];

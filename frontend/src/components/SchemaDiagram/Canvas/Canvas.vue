@@ -46,7 +46,7 @@ import normalizeWheel from "normalize-wheel";
 import { NButtonGroup, NButton } from "naive-ui";
 import Square2x2 from "~icons/heroicons-outline/squares-2x2";
 
-import { Position } from "../types";
+import { Point } from "../types";
 import { useDraggable, minmax, useSchemaDiagramContext } from "../common";
 import ZoomButton from "./ZoomButton.vue";
 import { fitView } from "./libs/fitView";
@@ -57,7 +57,7 @@ const desktop = ref<Element>();
 const { tableList, rectOfTable, zoom, position, panning, events } =
   useSchemaDiagramContext();
 
-const zoomCenter = ref<Position>({ x: 0.5, y: 0.5 });
+const zoomCenter = ref<Point>({ x: 0.5, y: 0.5 });
 const ZOOM_RANGE = {
   max: 2, // 200%
   min: 0.05, // 5%
@@ -80,7 +80,7 @@ const handleFitView = () => {
 };
 events.on("fit-view", handleFitView);
 
-const handleZoom = (delta: number, center: Position = { x: 0.5, y: 0.5 }) => {
+const handleZoom = (delta: number, center: Point = { x: 0.5, y: 0.5 }) => {
   if (!canvas.value) return "";
 
   const z = minmax(zoom.value + delta, ZOOM_RANGE.min, ZOOM_RANGE.max);

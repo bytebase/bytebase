@@ -1,6 +1,6 @@
-import { Position, Rect } from "../types";
+import { Point, Rect } from "../types";
 
-export const pointsOfRect = (rect: Rect): Position[] => {
+export const pointsOfRect = (rect: Rect): Point[] => {
   const { x, y, width, height } = rect;
   const nw = { x, y };
   const ne = { x: x + width, y };
@@ -9,9 +9,9 @@ export const pointsOfRect = (rect: Rect): Position[] => {
   return [nw, ne, sw, se];
 };
 
-export const calcBBox = (points: Position[]): Rect => {
-  const min: Position = { x: Number.MAX_VALUE, y: Number.MAX_VALUE };
-  const max: Position = { x: Number.MIN_VALUE, y: Number.MIN_VALUE };
+export const calcBBox = (points: Point[]): Rect => {
+  const min: Point = { x: Number.MAX_VALUE, y: Number.MAX_VALUE };
+  const max: Point = { x: Number.MIN_VALUE, y: Number.MIN_VALUE };
   points.forEach(({ x, y }) => {
     if (x > max.x) max.x = x;
     if (y > max.y) max.y = y;
