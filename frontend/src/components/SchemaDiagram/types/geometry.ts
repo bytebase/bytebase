@@ -11,3 +11,5 @@ export type Point = {
 export type Rect = Point & Size;
 
 export type Path = Point[];
+
+export type Geometry = Point | Path | Rect;

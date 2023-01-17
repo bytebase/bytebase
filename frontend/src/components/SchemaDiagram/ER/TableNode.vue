@@ -5,8 +5,8 @@
     :bb-node-id="idOfTable(table)"
     :bb-status="tableStatus(table)"
     :style="{
-      left: `${position.x}px`,
-      top: `${position.y}px`,
+      left: `${rect.x}px`,
+      top: `${rect.y}px`,
     }"
   >
     <h3
@@ -85,7 +85,12 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/store/database";
-import { useSchemaDiagramContext, isPrimaryKey, isIndex } from "../common";
+import {
+  useSchemaDiagramContext,
+  isPrimaryKey,
+  isIndex,
+  useGeometry,
+} from "../common";
 import { VueClass } from "@/utils";
 
 const props = withDefaults(
@@ -184,5 +189,7 @@ const tableStatusText = computed(() => {
   return "";
 });
 
-const position = computed(() => rectOfTable(props.table));
+const rect = computed(() => rectOfTable(props.table));
+
+useGeometry(rect);
 </script>
