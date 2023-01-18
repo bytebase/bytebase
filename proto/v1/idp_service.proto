@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service IdentityProviderService {
+  rpc GetIdentityProvider(GetIdentityProviderRequest) returns (IdentityProvider) {
+    option (google.api.http) = {
+      get: "/v1/{name=idps/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
+    option (google.api.http) = {
+      get: "/v1/idps"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc CreateIdentityProvider(CreateIdentityProviderRequest) returns (IdentityProvider) {
+    option (google.api.http) = {
+      post: "/v1/idps"
+      body: "identity_provider"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (IdentityProvider) {
+    option (google.api.http) = {
+      patch: "/v1/{identity_provider.name=idps/*}"
+      body: "identity_provider"
+    };
+    option (google.api.method_signature) = "identity_provider,update_mask";
+  }
+
+  rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=idps/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc UndeleteIdentityProvider(UndeleteIdentityProviderRequest) returns (IdentityProvider) {
+    option (google.api.http) = {
+      post: "/v1/{name=idps/*}:undelete"
+      body: "*"
+    };
+  }
+}
+
+message GetIdentityProviderRequest {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListIdentityProvidersRequest {
+  // The maximum number of identity providers to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // A page token, received from a previous `ListIdentityProviders` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListIdentityProviders` must match
+  // the call that provided the page token.
+  string page_token = 2;
+
+  // Show deleted identity providers if specified.
+  bool show_deleted = 3;
+}
+
+message ListIdentityProvidersResponse {
+  // The identity providers from the specified request.
+  repeated IdentityProvider identity_providers = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateIdentityProviderRequest {
+  // The identity provider to create.
+  IdentityProvider identity_provider = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the identity provider, which will become the final component of
+  // the identity provider's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string identity_provider_id = 2;
+}
+
+message UpdateIdentityProviderRequest {
+  // The identity provider to update.
+  //
+  // The identity provider's `name` field is used to identify the identity provider to update.
+  // Format: idps/{identity_provider}
+  IdentityProvider identity_provider = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteIdentityProviderRequest {
+  // The name of the identity provider to delete.
+  // Format: idps/{identity_provider}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UndeleteIdentityProviderRequest {
+  // The name of the deleted identity provider.
+  // Format: idps/{identity_provider}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message IdentityProvider {
+  // The name of the identity provider.
+  // Format: idps/{identity_provider}
+  string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  State state = 3;
+
+  string title = 4;
+
+  string domain = 5;
+
+  IdentityProviderType type = 6;
+
+  string config = 7;
+}
+
+enum IdentityProviderType {
+  IDENTITY_PROVIDER_UNSPECIFIED = 0;
+  OAUTH2 = 1;
+  OIDC = 2;
+}

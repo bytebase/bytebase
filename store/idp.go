@@ -106,7 +106,7 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 	}
 	defer tx.Rollback()
 
-	identityProviders, err := s.listIdentityProviderImpl(ctx, tx, find)
+	identityProviders, err := s.listIdentityProvidersImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -122,15 +122,15 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 	return identityProviders[0], nil
 }
 
-// ListIdentityProvider lists identity providers.
-func (s *Store) ListIdentityProvider(ctx context.Context, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
+// ListIdentityProviders lists identity providers.
+func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
-	identityProviders, err := s.listIdentityProviderImpl(ctx, tx, find)
+	identityProviders, err := s.listIdentityProvidersImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 	return identityProvider, nil
 }
 
-func (*Store) listIdentityProviderImpl(ctx context.Context, tx *Tx, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
+func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)

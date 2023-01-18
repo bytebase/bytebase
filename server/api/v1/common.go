@@ -13,13 +13,14 @@ import (
 )
 
 const (
-	projectNamePrefix     = "projects/"
-	environmentNamePrefix = "environments/"
-	instanceNamePrefix    = "instances/"
-	policyNamePrefix      = "policies/"
-	databaseIDPrefix      = "databases/"
-	instanceRolePrefix    = "roles/"
-	userNamePrefix        = "users/"
+	projectNamePrefix          = "projects/"
+	environmentNamePrefix      = "environments/"
+	instanceNamePrefix         = "instances/"
+	policyNamePrefix           = "policies/"
+	databaseIDPrefix           = "databases/"
+	instanceRolePrefix         = "roles/"
+	userNamePrefix             = "users/"
+	identityProviderNamePrefix = "idps/"
 )
 
 var (
@@ -81,6 +82,14 @@ func getUserID(name string) (int, error) {
 		return 0, errors.Errorf("invalid user ID %q", tokens[0])
 	}
 	return userID, nil
+}
+
+func getIdentityProviderID(name string) (string, error) {
+	tokens, err := getNameParentTokens(name, identityProviderNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
 }
 
 func trimSuffix(name, suffix string) (string, error) {

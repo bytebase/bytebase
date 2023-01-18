@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package bytebase.store;
+option go_package = "generated-go/store";
+
+// FieldMapping uses for mapping user info from identity provider to Bytebase.
+message FieldMapping {
+  string identifier = 1;
+
+  string name = 2;
+
+  string email = 3;
+}
+
+// OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.
+message OAuth2IdentityProviderConfig {
+  string authURL = 1;
+
+  string tokenURL = 2;
+
+  string userInfoURL = 3;
+
+  string clientID = 4;
+
+  string clientSecret = 5;
+
+  string scopes = 6;
+
+  FieldMapping fieldMapping = 7;
+}
+
+// OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
+message OIDCIdentityProviderConfig {
+  string issuer = 1;
+
+  string clientID = 2;
+
+  string clientSecret = 3;
+
+  FieldMapping fieldMapping = 4;
+}
