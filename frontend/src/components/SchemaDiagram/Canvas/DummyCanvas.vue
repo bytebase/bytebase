@@ -140,7 +140,7 @@ const capture = async (filename: string) => {
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: "Screenshot generated successfully and copied to clipboard!",
+        title: "Screenshot generated successfully and copied to the clipboard!",
       });
     }
   } finally {
