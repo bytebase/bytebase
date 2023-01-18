@@ -247,6 +247,11 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.LGTMCheckSetting = api.GetDefaultLGTMCheckSetting()
 	}
 
+	user, err := s.GetUserByID(ctx, creatorID)
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -304,10 +309,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, FormatError(err)
 	}
 
-	user, err := s.GetUserByID(ctx, creatorID)
-	if err != nil {
-		return nil, err
-	}
 	policy := &IAMPolicyMessage{
 		Bindings: []*PolicyBinding{
 			{
@@ -318,7 +319,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 			},
 		},
 	}
-	if err := s.setProjectIAMPolicyImpl(ctx, tx, policy, creatorID, project.ResourceID); err != nil {
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, policy, project.RoleProvider, creatorID, project.UID); err != nil {
 		return nil, err
 	}
 
