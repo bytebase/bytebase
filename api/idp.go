@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// IdentityProviderType is the type of an idp.
+// IdentityProviderType is the type of an identity provider.
 type IdentityProviderType string
 
 const (
