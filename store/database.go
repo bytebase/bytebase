@@ -476,6 +476,21 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
+func (s *Store) getDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) (*DatabaseMessage, error) {
+	databaseList, err := s.listDatabaseImplV2(ctx, tx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(databaseList) == 0 {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("database not found with %v", find)}
+	}
+	if len(databaseList) > 1 {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases with %v, but expect 1", len(databaseList), find)}
+	}
+
+	return databaseList[0], nil
+}
+
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	if !find.IncludeAllDatabase {
