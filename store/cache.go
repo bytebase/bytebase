@@ -15,8 +15,6 @@ type cacheNamespace string
 const (
 	// projectMemberCacheNamespace is the cache type of project members.
 	projectMemberCacheNamespace cacheNamespace = "pm"
-	// instanceCacheNamespace is the cache type of instances.
-	instanceCacheNamespace cacheNamespace = "i"
 	// pipelineCacheNamespace is the cache type of pipelines.
 	pipelineCacheNamespace cacheNamespace = "pl"
 	// issueCacheNamespace is the cache type of issues.
