@@ -153,6 +153,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 		}
 		return result
 	}
+
 	testCases := []struct {
 		input  Input
 		result Result
@@ -211,7 +212,6 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 				},
 			},
 		},
-
 		// Complex Case
 		{
 			input: Input{
@@ -233,6 +233,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tc := range testCases {
 		oldPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.oldPolicy)
 		newPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.newPolicy)
