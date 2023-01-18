@@ -211,7 +211,7 @@ func createSettingImpl(ctx context.Context, tx *Tx, create *api.SettingCreate) (
 
 func findSettingImpl(ctx context.Context, tx *Tx, find *api.SettingFind) ([]*settingRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.Name; v != nil {
 		where, args = append(where, "name = $1"), append(args, *v)
 	}
