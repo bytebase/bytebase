@@ -554,12 +554,11 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		activeMembers = append(
 			activeMembers,
 			&vcs.RepositoryMember{
-				Name:         m.Name,
-				Email:        m.Email,
-				Role:         bytebaseRole,
-				VCSRole:      string(gitlabRole),
-				State:        vcs.StateActive,
-				RoleProvider: vcs.GitLabSelfHost,
+				Name:    m.Name,
+				Email:   m.Email,
+				Role:    bytebaseRole,
+				VCSRole: string(gitlabRole),
+				State:   vcs.StateActive,
 			},
 		)
 	}

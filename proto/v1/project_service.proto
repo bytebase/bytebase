@@ -220,13 +220,11 @@ message Project {
 
   string db_name_template = 9;
 
-  RoleProvider role_provider = 10;
+  SchemaVersion schema_version = 10;
 
-  SchemaVersion schema_version = 11;
+  SchemaChange schema_change = 11;
 
-  SchemaChange schema_change = 12;
-
-  LgtmCheck lgtm_check = 13;
+  LgtmCheck lgtm_check = 12;
 }
 
 message IamPolicy {
@@ -264,13 +262,6 @@ enum TenantMode {
   TENANT_MODE_UNSPECIFIED = 0;
   TENANT_MODE_DISABLED = 1;
   TENANT_MODE_ENABLED = 2;
-}
-
-enum RoleProvider {
-  ROLE_PROVIDER_UNSPECIFIED = 0;
-  BYTEBASE = 1;
-  GITLAB_SELF_HOST = 2;
-  GITHUB_COM = 3;
 }
 
 enum SchemaVersion {

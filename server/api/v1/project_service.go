@@ -127,12 +127,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			patch.TenantMode = &tenantMode
 		case "project.db_name_template":
 			patch.DBNameTemplate = &request.Project.DbNameTemplate
-		case "project.role_provider":
-			roleProvider, err := convertToProjectRoleProvider(request.Project.RoleProvider)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			patch.RoleProvider = &roleProvider
 		case "project.schema_change":
 			schemaChange, err := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			if err != nil {
@@ -257,10 +251,6 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 	if project.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
-	}
-	// We only allow set IAM policy for the project whose role provider is BYTEBASE.
-	if project.RoleProvider != api.ProjectRoleProviderBytebase {
-		return nil, status.Errorf(codes.InvalidArgument, "the member in project %q is not managed by Bytebase, you cannot set IAM policy for the project whose members were sync from GitLab/GitHub", request.Project)
 	}
 
 	policy, err := s.convertToIAMPolicyMessage(ctx, request.Policy)
@@ -407,16 +397,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		tenantMode = v1pb.TenantMode_TENANT_MODE_ENABLED
 	}
 
-	roleProvider := v1pb.RoleProvider_ROLE_PROVIDER_UNSPECIFIED
-	switch projectMessage.RoleProvider {
-	case api.ProjectRoleProviderBytebase:
-		roleProvider = v1pb.RoleProvider_BYTEBASE
-	case api.ProjectRoleProviderGitHubCom:
-		roleProvider = v1pb.RoleProvider_GITHUB_COM
-	case api.ProjectRoleProviderGitLabSelfHost:
-		roleProvider = v1pb.RoleProvider_GITLAB_SELF_HOST
-	}
-
 	schemaChange := v1pb.SchemaChange_SCHEMA_CHANGE_UNSPECIFIED
 	switch projectMessage.SchemaChangeType {
 	case api.ProjectSchemaChangeTypeDDL:
@@ -444,7 +424,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Visibility:     visibility,
 		TenantMode:     tenantMode,
 		DbNameTemplate: projectMessage.DBNameTemplate,
-		RoleProvider:   roleProvider,
 		// TODO(d): schema_version_type for project.
 		SchemaVersion: v1pb.SchemaVersion_SCHEMA_VERSION_UNSPECIFIED,
 		SchemaChange:  schemaChange,
@@ -489,21 +468,6 @@ func convertToProjectTenantMode(tenantMode v1pb.TenantMode) (api.ProjectTenantMo
 		return t, errors.Errorf("invalid tenant mode %v", tenantMode)
 	}
 	return t, nil
-}
-
-func convertToProjectRoleProvider(roleProvider v1pb.RoleProvider) (api.ProjectRoleProvider, error) {
-	var r api.ProjectRoleProvider
-	switch roleProvider {
-	case v1pb.RoleProvider_BYTEBASE:
-		r = api.ProjectRoleProviderBytebase
-	case v1pb.RoleProvider_GITHUB_COM:
-		r = api.ProjectRoleProviderGitHubCom
-	case v1pb.RoleProvider_GITLAB_SELF_HOST:
-		r = api.ProjectRoleProviderGitLabSelfHost
-	default:
-		return r, errors.Errorf("invalid role provider %v", roleProvider)
-	}
-	return r, nil
 }
 
 func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) (api.ProjectSchemaChangeType, error) {
@@ -556,11 +520,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		return nil, err
 	}
 
-	roleProvider, err := convertToProjectRoleProvider(project.RoleProvider)
-	if err != nil {
-		return nil, err
-	}
-
 	schemaChange, err := convertToProjectSchemaChangeType(project.SchemaChange)
 	if err != nil {
 		return nil, err
@@ -579,7 +538,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		Visibility:       visibility,
 		TenantMode:       tenantMode,
 		DBNameTemplate:   project.DbNameTemplate,
-		RoleProvider:     roleProvider,
 		SchemaChangeType: schemaChange,
 		LGTMCheckSetting: lgtmCheck,
 	}, nil

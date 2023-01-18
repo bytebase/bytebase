@@ -436,12 +436,11 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		githubRole, bytebaseRole := getRoleAndMappedRole(c.RoleName)
 		allMembers = append(allMembers,
 			&vcs.RepositoryMember{
-				Name:         userInfo.Name,
-				Email:        userInfo.PublicEmail,
-				Role:         bytebaseRole,
-				VCSRole:      string(githubRole),
-				State:        vcs.StateActive,
-				RoleProvider: vcs.GitHubCom,
+				Name:    userInfo.Name,
+				Email:   userInfo.PublicEmail,
+				Role:    bytebaseRole,
+				VCSRole: string(githubRole),
+				State:   vcs.StateActive,
 			},
 		)
 	}
