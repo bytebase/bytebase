@@ -23,7 +23,7 @@ CREATE TABLE principal (
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     idp_id INTEGER REFERENCES idp (id),
-    idp_user_info JSONB DEFAULT '{}' CONSTRAINT principal_idp_id_idp_user_info_check CHECK ((idp_id IS NULL AND idp_user_info = '{}') OR (idp_id IS NOT NULL AND idp_user_info != '{}'))
+    idp_user_info JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE TRIGGER update_principal_updated_ts

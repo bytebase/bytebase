@@ -23,3 +23,7 @@ BEFORE
 UPDATE
     ON idp FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
+
+ALTER TABLE principal DROP CONSTRAINT IF EXISTS idx_principal_unique_email;
+ALTER TABLE principal ADD COLUMN idp_id INTEGER REFERENCES idp (id);
+ALTER TABLE principal ADD COLUMN idp_user_info JSONB NOT NULL DEFAULT '{}';
