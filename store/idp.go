@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
-// IdentityProviderMessage is the mssage for identity provider.
+// IdentityProviderMessage is the message for identity provider.
 type IdentityProviderMessage struct {
 	ResourceID string
 	Title      string
