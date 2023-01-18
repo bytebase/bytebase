@@ -239,12 +239,11 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 	// Non-active member should be excluded
 	want := []*vcs.RepositoryMember{
 		{
-			Email:        "john@example.com",
-			Name:         "Raymond Smith",
-			State:        vcs.StateActive,
-			Role:         common.ProjectDeveloper,
-			VCSRole:      string(ProjectRoleDeveloper),
-			RoleProvider: vcs.GitLabSelfHost,
+			Email:   "john@example.com",
+			Name:    "Raymond Smith",
+			State:   vcs.StateActive,
+			Role:    common.ProjectDeveloper,
+			VCSRole: string(ProjectRoleDeveloper),
 		},
 	}
 	assert.Equal(t, want, got)

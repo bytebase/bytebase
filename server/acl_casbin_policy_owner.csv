@@ -16,7 +16,6 @@ p, OWNER, /project/{projectID}/repository, DELETE
 p, OWNER, /project/{projectID}/repository/{repositoryID}/sql-review-ci, POST
 p, OWNER, /project/{projectID}/deployment, GET
 p, OWNER, /project/{projectID}/deployment, PATCH
-p, OWNER, /project/{projectID}/sync-member, POST
 p, OWNER, /project/{projectID}/sync-sheet, POST
 p, OWNER, /project/{projectID}/member, POST
 p, OWNER, /project/{projectID}/member/{memberID}, PATCH

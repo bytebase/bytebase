@@ -13,7 +13,6 @@ p, DBA, /project/{projectID}/repository, DELETE
 p, DBA, /project/{projectID}/repository/{repositoryID}/sql-review-ci, POST
 p, DBA, /project/{projectID}/deployment, GET
 p, DBA, /project/{projectID}/deployment, PATCH
-p, DBA, /project/{projectID}/sync-member, POST
 p, DBA, /project/{projectID}/sync-sheet, POST
 p, DBA, /project/{projectID}/member, POST
 p, DBA, /project/{projectID}/member/{memberID}, PATCH

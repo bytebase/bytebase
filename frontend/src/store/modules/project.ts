@@ -38,7 +38,6 @@ function convert(
     visibility: attrs.visibility,
     tenantMode: attrs.tenantMode,
     dbNameTemplate: attrs.dbNameTemplate,
-    roleProvider: attrs.roleProvider,
     schemaChangeType: attrs.schemaChangeType,
     lgtmCheckSetting: attrs.lgtmCheckSetting,
   };
@@ -102,8 +101,6 @@ function convertMember(
       projectMember.relationships!.principal.data,
       includedList
     ),
-    roleProvider: attrs.roleProvider,
-    payload: JSON.parse((attrs.payload as unknown as string) || "{}"),
   };
 }
 
