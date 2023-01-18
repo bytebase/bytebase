@@ -447,6 +447,15 @@ func (col *ColumnState) Type() string {
 	return ""
 }
 
+// HasDefault returns if column has default value.
+func (col *ColumnState) HasDefault() bool {
+	switch strings.ToLower(col.Type()) {
+	case "serial", "smallserial", "bigserial":
+		return true
+	}
+	return col.defaultValue != nil
+}
+
 type columnStateMap map[string]*ColumnState
 
 func (m columnStateMap) copy() columnStateMap {
