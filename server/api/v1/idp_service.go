@@ -226,7 +226,7 @@ func validIdentityProviderConfig(identityProviderType api.IdentityProviderType, 
 			return errors.Wrap(err, "failed to unmarshal config")
 		}
 	} else {
-		errors.Errorf("unexpected provider type %s", identityProviderType)
+		return errors.Errorf("unexpected provider type %s", identityProviderType)
 	}
 	return nil
 }
