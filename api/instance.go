@@ -33,10 +33,6 @@ type Instance struct {
 
 // InstanceCreate is the API message for creating an instance.
 type InstanceCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
 	// Related fields
 	EnvironmentID int `jsonapi:"attr,environmentId"`
 
@@ -65,14 +61,6 @@ type InstanceFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
-
-	// Related fields
-	EnvironmentID *int
-
-	// Domain specific fields
-	Name *string
-	Host *string
-	Port *string
 }
 
 func (find *InstanceFind) String() string {
