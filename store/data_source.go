@@ -566,7 +566,17 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 	}
 	defer tx.Rollback()
 
-	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource); err != nil {
+	allDatabaseName := api.AllDatabaseName
+	allDatabase, err := s.getDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
+		InstanceID:         &instanceID,
+		DatabaseName:       &allDatabaseName,
+		IncludeAllDatabase: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, allDatabase.UID, creatorID, dataSource); err != nil {
 		return err
 	}
 
@@ -681,7 +691,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	return nil
 }
 
-func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) error {
+func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, databaseUID, creatorID int, dataSource *DataSourceMessage) error {
 	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
 	dataSourceOptions := api.DataSourceOptions{
 		SRV:                    dataSource.SRV,
@@ -706,14 +716,11 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 			options,
 			database
 		)
-		SELECT $1, $2, $3, data_source.database_id, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
-			FROM 
-				data_source JOIN db ON data_source.database_id = db.id
-			WHERE data_source.instance_id = $15 AND db.name = $16;
-	`, creatorID, creatorID, instanceUID, dataSource.Title,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+	`, creatorID, creatorID, instanceUID, databaseUID, dataSource.Title,
 		dataSource.Type, dataSource.Username, dataSource.Password, dataSource.SslKey,
 		dataSource.SslCert, dataSource.SslCa, dataSource.Host, dataSource.Port,
-		dataSourceOptions, dataSource.Database, instanceUID, api.AllDatabaseName,
+		dataSourceOptions, dataSource.Database,
 	); err != nil {
 		return FormatError(err)
 	}
