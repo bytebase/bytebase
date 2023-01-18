@@ -352,7 +352,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *Tx, create *api.Re
 
 func (*Store) findRepositoryImpl(ctx context.Context, tx *Tx, find *api.RepositoryFind) ([]*repositoryRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}

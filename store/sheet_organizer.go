@@ -116,7 +116,7 @@ func upsertSheetOrganizerImpl(ctx context.Context, tx *Tx, upsert *api.SheetOrga
 }
 
 func findSheetOrganizerListImpl(ctx context.Context, tx *Tx, find *api.SheetOrganizerFind) ([]*sheetOrganizerRaw, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("sheet_id = $%d", len(args)+1)), append(args, find.SheetID)
 	where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, find.PrincipalID)
 
