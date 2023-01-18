@@ -1,4 +1,5 @@
-import { Geometry, Path, Point, Rect } from "../types";
+import type { Geometry, Path, Point, Rect, Size } from "../types";
+import { minmax } from "./utils";
 
 export const pointsOfRect = (rect: Rect): Point[] => {
   const { x, y, width, height } = rect;
@@ -101,4 +102,38 @@ export const pointsOfGeometry = (g: Geometry): Point[] => {
   if (isRect(g)) return pointsOfRect(g);
 
   throw new Error(`'${String(g)}' is not a geometry.`);
+};
+
+export const fitBBox = (
+  content: Size,
+  boundary: Size,
+  zoomRange: number[] = [0, Infinity]
+) => {
+  const contentWHRatio = content.width / content.height;
+  const boundaryWHRatio = boundary.width / boundary.height;
+  let zoom = 1;
+
+  if (contentWHRatio > boundaryWHRatio) {
+    // content is wider than boundary, fit horizontally
+    const targetWidth = boundary.width;
+    const targetZoom = targetWidth / content.width;
+    zoom = minmax(targetZoom, zoomRange[0], zoomRange[1]);
+  } else {
+    // content is taller than boundary, fit vertically
+    const targetHeight = boundary.height;
+    const targetZoom = targetHeight / content.height;
+    zoom = minmax(targetZoom, zoomRange[0], zoomRange[1]);
+  }
+
+  const targetSize = {
+    width: content.width * zoom,
+    height: content.height * zoom,
+  };
+  const targetPos = {
+    x: (boundary.width - targetSize.width) / 2,
+    y: (boundary.height - targetSize.height) / 2,
+  };
+
+  const rect = { ...targetSize, ...targetPos };
+  return { zoom, rect };
 };
