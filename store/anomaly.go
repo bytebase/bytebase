@@ -265,7 +265,7 @@ func createAnomalyImpl(ctx context.Context, tx *Tx, upsert *api.AnomalyUpsert) (
 
 func findAnomalyListImpl(ctx context.Context, tx *Tx, find *api.AnomalyFind) ([]*anomalyRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
 		if find.InstanceOnly {
