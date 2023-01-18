@@ -23,6 +23,8 @@ import {
   Connection,
   ConnectionAtom,
   ConnectionTreeMode,
+  CoreTabInfo,
+  TabMode,
 } from "@/types";
 import { ConnectionTreeState, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "@/types";
 import {
@@ -31,9 +33,9 @@ import {
   sheetSlug as makeSheetSlug,
   connectionSlug as makeConnectionSlug,
   isSheetReadable,
-  isSameConnection,
-  isTempTab,
   isDatabaseAccessible,
+  getDefaultTabNameFromConnection,
+  isSimilarTab,
 } from "@/utils";
 import { useI18n } from "vue-i18n";
 
@@ -234,23 +236,29 @@ const prepareConnectionSlug = async () => {
     return false;
   }
 
-  const maybeOpenNewTab = (connection: Connection) => {
+  const connect = (connection: Connection) => {
     const tab = tabStore.currentTab;
     if (tab.sheetId) {
       // Don't touch a saved sheet.
       tabStore.selectOrAddTempTab();
       return;
     }
-    if (isTempTab(tab)) {
-      // Override current tab if it's a temp tab.
+    const target: CoreTabInfo = {
+      connection,
+      mode: TabMode.ReadOnly,
+    };
+
+    if (isSimilarTab(target, tabStore.currentTab)) {
+      // Don't go further if the connection doesn't change.
       return;
     }
-    if (isSameConnection(tab.connection, connection)) {
-      // Stay on current tab if its connection and target connection are equal.
-      return;
-    }
-    // Select or add a temp tab otherwise.
-    tabStore.selectOrAddTempTab();
+    const name = getDefaultTabNameFromConnection(target.connection);
+    tabStore.selectOrAddSimilarTab(
+      target,
+      /* beside */ false,
+      /* defaultTabName */ name
+    );
+    tabStore.updateCurrentTab(target);
   };
 
   if (Number.isNaN(databaseId)) {
@@ -258,8 +266,7 @@ const prepareConnectionSlug = async () => {
     const connection = await connectionTreeStore.fetchConnectionByInstanceId(
       instanceId
     );
-    maybeOpenNewTab(connection);
-    tabStore.updateCurrentTab({ connection });
+    connect(connection);
   } else {
     // connected to db
     const connection =
@@ -267,8 +274,7 @@ const prepareConnectionSlug = async () => {
         instanceId,
         databaseId
       );
-    maybeOpenNewTab(connection);
-    tabStore.updateCurrentTab({ connection });
+    connect(connection);
   }
   return true;
 };
