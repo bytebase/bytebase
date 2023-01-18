@@ -1,7 +1,12 @@
 <template>
   <NTooltip trigger="hover" :delay="500">
     <template #trigger>
-      <NButton text v-bind="$attrs" @click="state.show = true">
+      <NButton
+        quaternary
+        size="tiny"
+        v-bind="$attrs"
+        @click="state.show = true"
+      >
         <SchemaDiagramIcon />
       </NButton>
     </template>

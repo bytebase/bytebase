@@ -1,44 +1,57 @@
 <template>
   <div class="h-full overflow-hidden flex flex-col">
     <div class="flex items-center justify-between p-2 border-b">
-      <div class="flex items-center">
+      <div class="flex items-center truncate">
         <heroicons-outline:table class="h-4 w-4 mr-1" />
-        <span v-if="schema.name" class="font-semibold">{{ schema.name }}.</span>
-        <span class="font-semibold">{{ table.name }}</span>
+        <a
+          :href="tableDetailLink"
+          target="__BLANK"
+          class="font-semibold anchor-link"
+        >
+          <span v-if="schema.name">{{ schema.name }}.</span>
+          <span>{{ table.name }}</span>
+        </a>
       </div>
 
-      <div class="flex justify-end space-x-2">
+      <div class="flex justify-end">
         <AlterSchemaButton
           :database="database"
           :schema="schema"
           :table="table"
         />
 
-        <NButton text @click="handleClose">
+        <NButton quaternary size="tiny" @click="handleClose">
           <heroicons-outline:x class="w-4 h-4" />
         </NButton>
       </div>
     </div>
+
     <div class="px-2 py-2 border-b text-gray-500 text-xs space-y-1">
       <div class="flex items-center justify-between">
         <span class="mr-1">{{ $t("database.row-count-est") }}</span>
         <span>{{ table.rowCount }}</span>
       </div>
     </div>
-    <div class="flex-1 px-2 overflow-y-auto">
-      <div class="flex justify-between items-center text-sm text-gray-500 py-1">
-        <div>{{ $t("database.columns") }}</div>
-        <div>{{ $t("database.data-type") }}</div>
+
+    <div
+      class="grid px-2 overflow-y-auto gap-x-1 gap-y-2"
+      style="grid-template-columns: minmax(4rem, 2fr) minmax(4rem, 1fr)"
+    >
+      <div class="mt-2 text-sm text-gray-500">{{ $t("database.columns") }}</div>
+      <div class="mt-2 text-right text-sm text-gray-500">
+        {{ $t("database.data-type") }}
       </div>
 
-      <div
-        v-for="(column, index) in table.columns"
-        :key="index"
-        class="flex justify-between items-center text-xs text-gray-600 py-1"
-      >
-        <div>{{ column.name }}</div>
-        <div class="text-gray-400">{{ column.type }}</div>
-      </div>
+      <template v-for="(column, index) in table.columns" :key="index">
+        <div class="text-xs text-gray-600whitespace-pre-wrap break-words">
+          {{ column.name }}
+        </div>
+        <div
+          class="text-right text-xs text-gray-400 overflow-x-hidden whitespace-nowrap"
+        >
+          {{ column.type }}
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -53,8 +66,10 @@ import type {
 } from "@/types/proto/store/database";
 import type { Database } from "@/types";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
+import { computed } from "vue";
+import { databaseSlug } from "@/utils";
 
-defineProps<{
+const props = defineProps<{
   database: Database;
   databaseMetadata: DatabaseMetadata;
   schema: SchemaMetadata;
@@ -64,6 +79,18 @@ defineProps<{
 const emit = defineEmits<{
   (e: "close"): void;
 }>();
+
+const tableDetailLink = computed((): string => {
+  const { database, schema, table } = props;
+  let url = `/db/${databaseSlug(database)}/table/${encodeURIComponent(
+    table.name
+  )}`;
+  if (schema.name) {
+    url += `?schema=${encodeURIComponent(schema.name)}`;
+  }
+
+  return url;
+});
 
 const handleClose = () => {
   emit("close");
