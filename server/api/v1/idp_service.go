@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
+// IdentityProviderService implements the identity provider service.
 type IdentityProviderService struct {
 	v1pb.UnimplementedIdentityProviderServiceServer
 	store          *store.Store
