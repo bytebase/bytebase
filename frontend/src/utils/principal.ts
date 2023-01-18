@@ -7,9 +7,7 @@ export const isOwnerOfProject = (
   return (
     project.memberList.findIndex(
       (member) =>
-        member.roleProvider === project.roleProvider &&
-        member.role === "OWNER" &&
-        member.principal.id === principal.id
+        member.role === "OWNER" && member.principal.id === principal.id
     ) >= 0
   );
 };
