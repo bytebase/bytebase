@@ -42,7 +42,7 @@ type OIDCIdentityProviderConfig struct {
 	FieldMapping FieldMapping `json:"fieldMapping"`
 }
 
-// ValidIdentityProviderConfig validates identity provider's config(JSON string).
+// ValidIdentityProviderConfig validates the identity provider's config is a valid JSON.
 func ValidIdentityProviderConfig(identityProviderType IdentityProviderType, configString string) error {
 	if identityProviderType == OAuth2IdentityProvider {
 		formatedConfig := &OAuth2IdentityProviderConfig{}
