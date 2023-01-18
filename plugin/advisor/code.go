@@ -105,6 +105,7 @@ const (
 	SpatialIndexKeyNullable    Code = 811
 	DuplicateColumnInIndex     Code = 812
 	IndexCountExceedsLimit     Code = 813
+	CreateIndexUnconcurrently  Code = 814
 
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
