@@ -138,6 +138,8 @@ const (
 	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
 	// SchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist.
 	SchemaRuleIndexPrimaryKeyTypeAllowlist SQLReviewRuleType = "index.primary-key-type-allowlist"
+	// SchemaRuleCreateIndexConcurrently require creating indexes concurrently.
+	SchemaRuleCreateIndexConcurrently SQLReviewRuleType = "index.create-concurrently"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
@@ -899,6 +901,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
 		if engine == db.Postgres {
 			return PostgreSQLPrimaryKeyTypeAllowlist, nil
+		}
+	case SchemaRuleCreateIndexConcurrently:
+		if engine == db.Postgres {
+			return PostgreSQLCreateIndexConcurrently, nil
 		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
