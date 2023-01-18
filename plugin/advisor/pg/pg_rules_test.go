@@ -45,6 +45,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnRequireDefault,
 		advisor.SchemaRuleStatementDisallowAddColumnWithDefault,
 		advisor.SchemaRuleCreateIndexConcurrently,
+		advisor.SchemaRuleStatementAddCheckNotValid,
 	}
 
 	for _, rule := range pgRules {
