@@ -113,6 +113,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 			Code:      advice.Code.Int(),
 			Title:     advice.Title,
 			Content:   advice.Content,
+			Line:      advice.Line,
 		})
 	}
 
@@ -123,6 +124,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 			Code:      common.Ok.Int(),
 			Title:     "OK",
 			Content:   "",
+			Line:      0,
 		})
 	}
 

@@ -16,6 +16,7 @@
       status: SUCCESS
       title: OK
       content: ""
+      line: 0
   run: false
 - statement: CREATE TABLE user(id);
   result:
@@ -24,6 +25,7 @@
       status: ERROR
       title: Syntax error
       content: syntax error at or near "user"
+      line: 0
   run: false
 - statement: |-
     CREATE TABLE "userTable"(
@@ -39,26 +41,31 @@
       status: WARN
       title: naming.table
       content: '"userTable" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 7
     - namespace: bb.advisor
       code: 302
       status: WARN
       title: naming.column
       content: '"userTable"."roomId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 4
     - namespace: bb.advisor
       code: 304
       status: WARN
       title: naming.index.uk
       content: Unique key in table "userTable" mismatches the naming convention, expect "^$|^uk_userTable_id_name$" but found "uk1"
+      line: 5
     - namespace: bb.advisor
       code: 305
       status: WARN
       title: naming.index.fk
       content: Foreign key in table "userTable" mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found "fk1"
+      line: 6
     - namespace: bb.advisor
       code: 601
       status: ERROR
       title: table.require-pk
       content: 'Table "public"."userTable" requires PRIMARY KEY, related statement: "CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        )"'
+      line: 7
     - namespace: bb.advisor
       code: 602
       status: ERROR
@@ -71,26 +78,31 @@
                 CONSTRAINT uk1 UNIQUE (id, name),
                 CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
                 )"
+      line: 7
     - namespace: bb.advisor
       code: 401
       status: WARN
       title: column.required
       content: 'Table "userTable" requires columns: created_ts, creator_id, updated_ts, updater_id'
+      line: 7
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
       content: Column "id" in "public"."userTable" cannot have NULL value
+      line: 2
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
       content: Column "name" in "public"."userTable" cannot have NULL value
+      line: 3
     - namespace: bb.advisor
       code: 402
       status: WARN
       title: column.no-null
       content: Column "roomId" in "public"."userTable" cannot have NULL value
+      line: 4
   run: false
 - statement: DELETE FROM t
   result:
@@ -99,6 +111,7 @@
       status: ERROR
       title: statement.where.require
       content: '"DELETE FROM t" requires WHERE clause'
+      line: 1
   run: false
 - statement: DELETE FROM t WHERE a like '%abc'
   result:
@@ -107,6 +120,7 @@
       status: ERROR
       title: statement.where.no-leading-wildcard-like
       content: '"DELETE FROM t WHERE a like ''%abc''" uses leading wildcard LIKE'
+      line: 1
   run: false
 - statement: DELETE FROM t WHERE a = (SELECT max(id) FROM "user" WHERE name = 'bytebase')
   result:
@@ -115,6 +129,7 @@
       status: SUCCESS
       title: OK
       content: ""
+      line: 0
   run: false
 - statement: INSERT INTO t VALUES (1), (2)
   result:
@@ -123,6 +138,7 @@
       status: SUCCESS
       title: OK
       content: ""
+      line: 0
   run: false
 - statement: |-
     CREATE TABLE tech_book(
@@ -139,6 +155,7 @@
       status: SUCCESS
       title: OK
       content: ""
+      line: 0
   run: true
 - statement: ALTER INDEX pk_tech_book_id RENAME TO pk1
   result:
@@ -147,4 +164,5 @@
       status: WARN
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id$" but found "pk1"
+      line: 1
   run: false
