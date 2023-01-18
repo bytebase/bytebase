@@ -43,7 +43,9 @@ export default defineComponent({
 
     // Use this to make the list reactive when project is transferred.
     const databaseList = computed((): Database[] => {
-      return databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
+      return databaseStore
+        .getDatabaseListByPrincipalId(currentUser.value.id)
+        .filter((db) => db.syncStatus === "OK");
     });
 
     const databaseListByEnvironment = computed(() => {
