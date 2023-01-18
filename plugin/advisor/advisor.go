@@ -308,6 +308,9 @@ const (
 	// PostgreSQLDisallowAddColumnWithDefault is an advisor type for PostgreSQL to disallow add column with default.
 	PostgreSQLDisallowAddColumnWithDefault Type = "bb.plugin.advisor.postgresql.statement.disallow-add-column-with-default"
 
+	// PostgreSQLDisallowAddNotNull is an advisor type for PostgreSQl to disallow add not null.
+	PostgreSQLDisallowAddNotNull Type = "bb.plugin.advisor.postgresql.statement.disallow-add-not-null"
+
 	// PostgreSQLTableDropNamingConvention is an advisor type for PostgreSQL table drop with naming convention.
 	PostgreSQLTableDropNamingConvention Type = "bb.plugin.advisor.postgresql.table.drop-naming-convention"
 

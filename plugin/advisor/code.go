@@ -35,6 +35,7 @@ const (
 	StatementAffectedRowExceedsLimit Code = 209
 	StatementAddColumnWithDefault    Code = 210
 	StatementAddCheckWithValidation  Code = 211
+	StatementAddNotNull              Code = 212
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
