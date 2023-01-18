@@ -5,10 +5,10 @@
       title: OK
       content: ""
       line: 0
-- statement: |4-
-      CREATE TABLE t(a int);
-      ALTER TABLE tech_book ADD COLUMN a int;
-      ALTER TABLE t ADD COLUMN b int;
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE t ADD COLUMN b int;
   want:
     - status: WARN
       code: 207

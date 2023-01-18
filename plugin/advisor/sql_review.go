@@ -797,6 +797,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLRequireColumnDefault, nil
+		case db.Postgres:
+			return PostgreSQLRequireColumnDefault, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
