@@ -37,6 +37,7 @@
 </template>
 
 <script lang="ts" setup>
+import { pushNotification } from "@/store";
 import { computed, defineComponent, nextTick, PropType, ref, VNode } from "vue";
 
 import {
@@ -122,17 +123,29 @@ const capture = async (filename: string) => {
     return;
   }
 
-  const [{ toPng }, { default: download }] = await Promise.all([
-    import("html-to-image"),
-    import("downloadjs"),
-  ]);
-  const dataUrl = await toPng(node, {
-    pixelRatio: 1,
-    quality: 0.9,
-  });
-  download(dataUrl, filename, `image/png`);
+  try {
+    const [{ toBlob }, { default: download }] = await Promise.all([
+      import("html-to-image"),
+      import("downloadjs"),
+    ]);
+    const blob = await toBlob(node, {
+      pixelRatio: 1,
+      quality: 0.9,
+    });
+    if (blob) {
+      download(blob, filename, blob.type);
 
-  isCapturing.value = false;
+      const data = [new window.ClipboardItem({ [blob.type]: blob })];
+      await navigator.clipboard.write(data);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: "Screenshot generated successfully and copied to the clipboard!",
+      });
+    }
+  } finally {
+    isCapturing.value = false;
+  }
 };
 
 provideSchemaDiagramContext({
