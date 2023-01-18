@@ -15,236 +15,94 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
-// instanceRaw is the store model for an Instance.
-// Fields have exactly the same meanings as Instance.
-type instanceRaw struct {
-	ID         int
-	ResourceID string
-
-	// Standard fields
-	RowStatus api.RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	EnvironmentID int
-
-	// Domain specific fields
-	Name          string
-	Engine        db.Type
-	EngineVersion string
-	ExternalLink  string
-}
-
-// toInstance creates an instance of Instance based on the instanceRaw.
-// This is intended to be called when we need to compose an Instance relationship.
-func (raw *instanceRaw) toInstance() *api.Instance {
-	return &api.Instance{
-		ID:         raw.ID,
-		ResourceID: raw.ResourceID,
-		RowStatus:  raw.RowStatus,
-
-		// Related fields
-		EnvironmentID: raw.EnvironmentID,
-
-		// Domain specific fields
-		Name:          raw.Name,
-		Engine:        raw.Engine,
-		EngineVersion: raw.EngineVersion,
-		ExternalLink:  raw.ExternalLink,
-	}
-}
-
 // GetInstanceByID gets an instance of Instance.
 func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, error) {
-	find := &api.InstanceFind{ID: &id}
-	instanceRaw, err := s.getInstanceRaw(ctx, find)
+	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: &id})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Instance with ID %d", id)
 	}
-	if instanceRaw == nil {
+	if instance == nil {
 		return nil, nil
 	}
-	instance, err := s.composeInstance(ctx, instanceRaw)
+	composedInstance, err := s.composeInstance(ctx, instance)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
+		return nil, errors.Wrapf(err, "failed to compose Instance with instance[%+v]", instance)
 	}
-	return instance, nil
+	return composedInstance, nil
 }
 
 // FindInstance finds a list of Instance instances.
 func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*api.Instance, error) {
-	instanceRawList, err := s.findInstanceRaw(ctx, find)
+	v2Find := &FindInstanceMessage{ShowDeleted: true}
+	instances, err := s.ListInstancesV2(ctx, v2Find)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find Instance list with InstanceFind[%+v]", find)
+		return nil, err
 	}
-	var instanceList []*api.Instance
-	for _, raw := range instanceRawList {
-		instance, err := s.composeInstance(ctx, raw)
+
+	var composedInstances []*api.Instance
+	for _, instance := range instances {
+		composedInstance, err := s.composeInstance(ctx, instance)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", raw)
+			return nil, errors.Wrapf(err, "failed to compose Instance with instance[%+v]", instance)
 		}
-		instanceList = append(instanceList, instance)
+		if find.RowStatus != nil && composedInstance.RowStatus != *find.RowStatus {
+			continue
+		}
+		composedInstances = append(composedInstances, composedInstance)
 	}
-	return instanceList, nil
+	return composedInstances, nil
 }
 
 // private function.
-func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Instance, error) {
-	instance := raw.toInstance()
+func (s *Store) composeInstance(ctx context.Context, instance *InstanceMessage) (*api.Instance, error) {
+	composedInstance := &api.Instance{
+		ID:            instance.UID,
+		ResourceID:    instance.ResourceID,
+		RowStatus:     api.Normal,
+		Name:          instance.Title,
+		Engine:        instance.Engine,
+		EngineVersion: instance.EngineVersion,
+		ExternalLink:  instance.ExternalLink,
+	}
+	if instance.Deleted {
+		composedInstance.RowStatus = api.Archived
+	}
 
-	env, err := s.GetEnvironmentByID(ctx, instance.EnvironmentID)
+	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
 	if err != nil {
 		return nil, err
 	}
-	instance.Environment = env
-
-	dataSourceList, err := s.findDataSource(ctx, &api.DataSourceFind{
-		InstanceID: &instance.ID,
-	})
+	composedInstance.EnvironmentID = environment.UID
+	composedEnvironment, err := s.GetEnvironmentByID(ctx, environment.UID)
 	if err != nil {
 		return nil, err
 	}
-	instance.DataSourceList = dataSourceList
+	composedInstance.Environment = composedEnvironment
 
-	for _, ds := range dataSourceList {
-		if ds.Type != api.Admin {
-			continue
-		}
-		instance.Host = ds.Host
-		instance.Port = ds.Port
-	}
-	return instance, nil
-}
-
-// findInstanceRaw retrieves a list of instances based on find.
-func (s *Store) findInstanceRaw(ctx context.Context, find *api.InstanceFind) ([]*instanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findInstanceImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// getInstanceRaw retrieves a single instance based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*instanceRaw, error) {
-	if find.ID != nil {
-		instanceRaw := &instanceRaw{}
-		has, err := s.cache.FindCache(instanceCacheNamespace, *find.ID, instanceRaw)
-		if err != nil {
-			return nil, err
-		}
-		if has {
-			return instanceRaw, nil
+	for _, ds := range instance.DataSources {
+		composedInstance.DataSourceList = append(composedInstance.DataSourceList, &api.DataSource{
+			ID:         ds.UID,
+			InstanceID: instance.UID,
+			DatabaseID: ds.DatabaseID,
+			Name:       ds.Title,
+			Type:       ds.Type,
+			Username:   ds.Username,
+			Password:   ds.Password,
+			SslCa:      ds.SslCa,
+			SslCert:    ds.SslCert,
+			SslKey:     ds.SslKey,
+			Host:       ds.Host,
+			Port:       ds.Port,
+			Options:    api.DataSourceOptions{SRV: ds.SRV, AuthenticationDatabase: ds.AuthenticationDatabase},
+			Database:   ds.Database,
+		})
+		if ds.Type == api.Admin {
+			composedInstance.Host = ds.Host
+			composedInstance.Port = ds.Port
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findInstanceImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d instances with filter %+v, expect 1", len(list), find)}
-	}
-
-	instance := list[0]
-	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
-		return nil, err
-	}
-	return instance, nil
-}
-
-func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*instanceRaw, error) {
-	where, args := findInstanceQuery(find)
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			resource_id,
-			row_status,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			environment_id,
-			name,
-			engine,
-			engine_version,
-			external_link
-		FROM instance
-		WHERE `+where,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into instanceRawList.
-	var instanceRawList []*instanceRaw
-	for rows.Next() {
-		var instanceRaw instanceRaw
-		if err := rows.Scan(
-			&instanceRaw.ID,
-			&instanceRaw.ResourceID,
-			&instanceRaw.RowStatus,
-			&instanceRaw.CreatorID,
-			&instanceRaw.CreatedTs,
-			&instanceRaw.UpdaterID,
-			&instanceRaw.UpdatedTs,
-			&instanceRaw.EnvironmentID,
-			&instanceRaw.Name,
-			&instanceRaw.Engine,
-			&instanceRaw.EngineVersion,
-			&instanceRaw.ExternalLink,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		instanceRawList = append(instanceRawList, &instanceRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return instanceRawList, nil
-}
-
-func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
-	// Build WHERE clause.
-	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.RowStatus; v != nil {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Name; v != nil {
-		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-
-	return strings.Join(where, " AND "), args
+	return composedInstance, nil
 }
 
 // InstanceMessage is the mssage for instance.
