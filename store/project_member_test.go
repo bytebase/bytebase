@@ -239,11 +239,9 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 		oldPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.oldPolicy)
 		newPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.newPolicy)
 		deleteIDs, creates := getIAMPolicyDiff(oldPolicyMessage, newPolicyMessage)
-
 		sort.Slice(deleteIDs, func(i, j int) bool { return deleteIDs[i] < deleteIDs[j] })
 		sort.Slice(tc.result.deleteIDs, func(i, j int) bool { return tc.result.deleteIDs[i] < tc.result.deleteIDs[j] })
 		require.Equal(t, tc.result.deleteIDs, deleteIDs)
-
 		createsPolicy := extractCreatePolicyFromIAMPolicyMessage(creates)
 		for role, memberIDs := range createsPolicy {
 			sort.Slice(memberIDs, func(i, j int) bool { return memberIDs[i] < memberIDs[j] })
