@@ -158,7 +158,7 @@ func createIssueSubscriberImpl(ctx context.Context, tx *Tx, create *api.IssueSub
 
 func findIssueSubscriberImpl(ctx context.Context, tx *Tx, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.IssueID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)
 	}

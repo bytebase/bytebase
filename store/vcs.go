@@ -248,7 +248,7 @@ func createVCSImpl(ctx context.Context, tx *Tx, create *api.VCSCreate) (*vcsRaw,
 
 func findVCSImpl(ctx context.Context, tx *Tx, find *api.VCSFind) ([]*vcsRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, "id = $1"), append(args, *v)
 	}
