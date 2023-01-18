@@ -783,10 +783,11 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 func TestPGCreateIndexStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "CREATE INDEX IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
+			stmt: "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
 			want: []ast.Node{
 				&ast.CreateIndexStmt{
-					IfNotExists: true,
+					IfNotExists:  true,
+					Concurrently: true,
 					Index: &ast.IndexDef{
 						Name:   "idx_id",
 						Table:  &ast.TableDef{Name: "tech_book"},
@@ -810,7 +811,7 @@ func TestPGCreateIndexStmt(t *testing.T) {
 			},
 			statementList: []parser.SingleSQL{
 				{
-					Text:     "CREATE INDEX IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
+					Text:     "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_id ON tech_book ((id+1) DESC, name)",
 					LastLine: 1,
 				},
 			},

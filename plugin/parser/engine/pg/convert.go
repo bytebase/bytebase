@@ -272,7 +272,7 @@ func convert(node *pgquery.Node, statement parser.SingleSQL) (res ast.Node, err 
 			indexDef.KeyList = append(indexDef.KeyList, indexKey)
 		}
 
-		return &ast.CreateIndexStmt{Index: indexDef, IfNotExists: in.IndexStmt.IfNotExists}, nil
+		return &ast.CreateIndexStmt{Index: indexDef, IfNotExists: in.IndexStmt.IfNotExists, Concurrently: in.IndexStmt.Concurrent}, nil
 	case *pgquery.Node_DropStmt:
 		switch in.DropStmt.RemoveType {
 		case pgquery.ObjectType_OBJECT_INDEX:

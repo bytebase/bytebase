@@ -247,6 +247,11 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.LGTMCheckSetting = api.GetDefaultLGTMCheckSetting()
 	}
 
+	user, err := s.GetUserByID(ctx, creatorID)
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -304,14 +309,17 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, FormatError(err)
 	}
 
-	// TODO(h3n4l): migrate to project set IAM policy.
-	projectMember := &api.ProjectMemberCreate{
-		CreatorID:   creatorID,
-		ProjectID:   project.UID,
-		Role:        common.ProjectOwner,
-		PrincipalID: creatorID,
+	policy := &IAMPolicyMessage{
+		Bindings: []*PolicyBinding{
+			{
+				Role: api.Owner,
+				Members: []*UserMessage{
+					user,
+				},
+			},
+		},
 	}
-	if _, err = createProjectMemberImpl(ctx, tx, projectMember); err != nil {
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, policy, project.RoleProvider, creatorID, project.UID); err != nil {
 		return nil, err
 	}
 
@@ -427,7 +435,7 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 }
 
 func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 	}

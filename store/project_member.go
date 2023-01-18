@@ -473,7 +473,7 @@ func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMem
 
 func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberFind) ([]*projectMemberRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -652,8 +652,27 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 	return projectPolicy, nil
 }
 
+// SetProjectIAMPolicy sets the IAM policy of a project.
+func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, creatorUID int, projectUID int) error {
+	if set == nil {
+		return errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.Rollback()
+
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, set, api.ProjectRoleProviderBytebase, creatorUID, projectUID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, projectRoleProvider api.ProjectRoleProvider, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	where, args = append(where, fmt.Sprintf("project_member.role_provider = $%d", len(args)+1)), append(args, projectRoleProvider)
 	if v := find.ProjectID; v != nil {
@@ -709,4 +728,117 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, projectRolePro
 		projectPolicy.Bindings = append(projectPolicy.Bindings, binding)
 	}
 	return projectPolicy, nil
+}
+
+func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPolicyMessage, projectRoleProvider api.ProjectRoleProvider, creatorUID int, projectUID int) error {
+	if set == nil {
+		return errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
+	}
+	oldPolicy, err := s.getProjectPolicyImpl(ctx, tx, projectRoleProvider, &GetProjectPolicyMessage{
+		UID: &projectUID,
+	})
+	if err != nil {
+		return err
+	}
+	deletes, inserts := getIAMPolicyDiff(oldPolicy, set)
+
+	if len(deletes) > 0 {
+		if err := s.deleteProjectIAMPolicyImpl(ctx, tx, projectUID, deletes); err != nil {
+			return err
+		}
+	}
+
+	if len(inserts.Bindings) > 0 {
+		args := []interface{}{}
+		var placeholders []string
+		for _, binding := range inserts.Bindings {
+			for _, member := range binding.Members {
+				placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", len(args)+1, len(args)+2, len(args)+3, len(args)+4, len(args)+5, len(args)+6))
+				args = append(args,
+					creatorUID,          // creator_id
+					creatorUID,          // updater_id
+					projectUID,          // project_id
+					binding.Role,        // role
+					member.ID,           // principal_id
+					projectRoleProvider, // role_provider
+				)
+			}
+		}
+		query := fmt.Sprintf(`INSERT INTO project_member (
+			creator_id,
+			updater_id,
+			project_id,
+			role,
+			principal_id,
+			role_provider
+		) VALUES %s`, strings.Join(placeholders, ", "))
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return FormatError(err)
+		}
+	}
+	return nil
+}
+
+func (*Store) deleteProjectIAMPolicyImpl(ctx context.Context, tx *Tx, projectUID int, memberIDs []int) error {
+	if len(memberIDs) == 0 {
+		return nil
+	}
+	query := ""
+	where, deletePlaceholders, args := []string{}, []string{}, []interface{}{}
+	where, args = append(where, fmt.Sprintf("(project_member.project_id = $%d)", len(args)+1)), append(args, projectUID)
+	for _, id := range memberIDs {
+		deletePlaceholders = append(deletePlaceholders, fmt.Sprintf("$%d", len(args)+1))
+		args = append(args, id)
+	}
+	where = append(where, fmt.Sprintf("(project_member.principal_id IN (%s))", strings.Join(deletePlaceholders, ", ")))
+	query = `DELETE FROM project_member WHERE ` + strings.Join(where, " AND ")
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return FormatError(err)
+	}
+	return nil
+}
+
+func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) ([]int, *IAMPolicyMessage) {
+	oldUserIDToProjectRoleMap := make(map[int]api.Role)
+	newUserIDToProjectRoleMap := make(map[int]api.Role)
+	newUserIDToUserMap := make(map[int]*UserMessage)
+
+	for _, binding := range oldPolicy.Bindings {
+		for _, member := range binding.Members {
+			oldUserIDToProjectRoleMap[member.ID] = binding.Role
+		}
+	}
+	for _, binding := range newPolicy.Bindings {
+		for _, member := range binding.Members {
+			newUserIDToProjectRoleMap[member.ID] = binding.Role
+			newUserIDToUserMap[member.ID] = member
+		}
+	}
+
+	var deletes []int
+	inserts := make(map[api.Role][]*UserMessage)
+	// Delete member that no longer exist or role doesn't match.
+	for oldUserID, oldRole := range oldUserIDToProjectRoleMap {
+		if newRole, ok := newUserIDToProjectRoleMap[oldUserID]; !ok || oldRole != newRole {
+			deletes = append(deletes, oldUserID)
+		}
+	}
+
+	// Create member if not exist in old policy or project role doesn't match.
+	for newUserID, newRole := range newUserIDToProjectRoleMap {
+		if oldRole, ok := oldUserIDToProjectRoleMap[newUserID]; !ok || newRole != oldRole {
+			inserts[newRole] = append(inserts[newRole], newUserIDToUserMap[newUserID])
+		}
+	}
+
+	var upsertBindings []*PolicyBinding
+	for role, users := range inserts {
+		upsertBindings = append(upsertBindings, &PolicyBinding{
+			Role:    role,
+			Members: users,
+		})
+	}
+	return deletes, &IAMPolicyMessage{
+		Bindings: upsertBindings,
+	}
 }

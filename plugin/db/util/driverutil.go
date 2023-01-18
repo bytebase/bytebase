@@ -220,6 +220,10 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+		// We will ignore the dump error if the database is dropped.
+		if strings.Contains(err.Error(), "not found") {
+			return insertedID, "", nil
+		}
 		return "", "", FormatError(err)
 	}
 

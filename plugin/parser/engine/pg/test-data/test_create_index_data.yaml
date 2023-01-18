@@ -1,5 +1,5 @@
-- stmt: create index idx_1 on public.t using btree (a, b, c)
-  want: CREATE INDEX "idx_1" ON "public"."t" USING btree (a, b, c);
+- stmt: create index concurrently idx_1 on public.t using btree (a, b, c)
+  want: CREATE INDEX CONCURRENTLY "idx_1" ON "public"."t" USING btree (a, b, c);
 - stmt: create unique index if not exists idx_1 on public.t(a nulls first, b desc nulls last, c asc)
   want: CREATE UNIQUE INDEX IF NOT EXISTS "idx_1" ON "public"."t" USING btree (a NULLS FIRST, b DESC NULLS LAST, c);
 - stmt: create index if not exists idx_1 on public.t using hash (a, b, c)

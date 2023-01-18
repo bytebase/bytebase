@@ -168,6 +168,12 @@ func deparseCreateIndex(context parser.DeparseContext, in *ast.CreateIndexStmt, 
 		return err
 	}
 
+	if in.Concurrently {
+		if _, err := buf.WriteString("CONCURRENTLY "); err != nil {
+			return err
+		}
+	}
+
 	if in.IfNotExists {
 		if _, err := buf.WriteString("IF NOT EXISTS "); err != nil {
 			return err
