@@ -42,6 +42,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleIndexTotalNumberLimit,
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		advisor.SchemaRuleStatementMergeAlterTable,
+		advisor.SchemaRuleColumnRequireDefault,
 	}
 
 	for _, rule := range pgRules {
