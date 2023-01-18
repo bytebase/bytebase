@@ -54,7 +54,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return err
 		}
 		if environment == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "environment %v not found", instanceCreate.EnvironmentID)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environment %v not found", instanceCreate.EnvironmentID))
 		}
 		creator := c.Get(getPrincipalIDContextKey()).(int)
 		instance, err := s.store.CreateInstanceV2(ctx, environment.ResourceID, &store.InstanceMessage{
@@ -161,26 +161,66 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &id})
+		if err != nil {
+			return err
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance %v not found", id))
+		}
 
-		instancePatch := &api.InstancePatch{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
+		patch := &api.InstancePatch{}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, patch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch instance request").SetInternal(err)
 		}
 
-		instancePatched, err := s.updateInstance(ctx, &store.InstancePatch{
-			ID:            id,
-			RowStatus:     instancePatch.RowStatus,
+		var deletes *bool
+		if patch.RowStatus != nil {
+			if *patch.RowStatus == string(api.Normal) {
+				if err := s.instanceCountGuard(ctx); err != nil {
+					return err
+				}
+				f := false
+				deletes = &f
+			} else if *patch.RowStatus == string(api.Archived) {
+				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
+				if err != nil {
+					return err
+				}
+				var databaseNameList []string
+				for _, database := range databases {
+					if database.ProjectID != api.DefaultProjectID {
+						databaseNameList = append(databaseNameList, database.DatabaseName)
+					}
+				}
+				if len(databaseNameList) > 0 {
+					return echo.NewHTTPError(http.StatusBadRequest,
+						fmt.Sprintf("You should transfer these databases to the default project before deleting the instance: %s.", strings.Join(databaseNameList, ", ")))
+				}
+				f := true
+				deletes = &f
+			}
+		}
+
+		updateMessage := &store.UpdateInstanceMessage{
+			Title:         patch.Name,
+			ExternalLink:  patch.ExternalLink,
+			Delete:        deletes,
 			UpdaterID:     c.Get(getPrincipalIDContextKey()).(int),
-			Name:          instancePatch.Name,
-			EngineVersion: instancePatch.EngineVersion,
-			ExternalLink:  instancePatch.ExternalLink,
-		})
+			EnvironmentID: instance.EnvironmentID,
+			ResourceID:    instance.ResourceID,
+		}
+		if _, err := s.store.UpdateInstanceV2(ctx, updateMessage); err != nil {
+			return err
+		}
+
+		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
 		if err != nil {
 			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, instancePatched); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstance); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal instance ID response: %v", id)).SetInternal(err)
 		}
 		return nil
@@ -498,94 +538,4 @@ func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error 
 		return errors.Errorf("instance doesn't exist for host %q and port %q", host, port)
 	}
 	return nil
-}
-
-func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch) (*api.Instance, error) {
-	composedInstance, err := s.store.GetInstanceByID(ctx, patch.ID)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", patch.ID)).SetInternal(err)
-	}
-	if composedInstance == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", patch.ID))
-	}
-
-	host, port, database := composedInstance.Host, composedInstance.Port, composedInstance.Database
-	if patch.Host != nil {
-		host = *patch.Host
-	}
-	if patch.Port != nil {
-		port = *patch.Port
-	}
-	if patch.Database != nil {
-		database = *patch.Database
-	}
-	if err := s.disallowBytebaseStore(composedInstance.Engine, host, port); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-	}
-	if composedInstance.Engine != db.Postgres && composedInstance.Engine != db.MongoDB && database != "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
-	}
-
-	instancePatched := composedInstance
-	if patch.RowStatus != nil || patch.Name != nil || patch.ExternalLink != nil || patch.Host != nil || patch.Port != nil || patch.Database != nil || patch.DataSourceList != nil {
-		// Users can switch instance status from ARCHIVED to NORMAL.
-		// So we need to check the current instance count with NORMAL status for quota limitation.
-		if patch.RowStatus != nil && *patch.RowStatus == string(api.Normal) {
-			if err := s.instanceCountGuard(ctx); err != nil {
-				return nil, err
-			}
-		}
-		// Ensure all databases belong to this instance are under the default project before instance is archived.
-		if v := patch.RowStatus; v != nil && *v == string(api.Archived) {
-			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &composedInstance.ResourceID})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError,
-					errors.Errorf("failed to list databases in the instance %d", patch.ID)).SetInternal(err)
-			}
-			var databaseNameList []string
-			for _, database := range databases {
-				if database.ProjectID != api.DefaultProjectID {
-					databaseNameList = append(databaseNameList, database.DatabaseName)
-				}
-			}
-			if len(databaseNameList) > 0 {
-				return nil, echo.NewHTTPError(http.StatusBadRequest,
-					fmt.Sprintf("You should transfer these databases to the default project before deleting the instance: %s.", strings.Join(databaseNameList, ", ")))
-			}
-		}
-		instancePatched, err = s.store.PatchInstance(ctx, patch)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", patch.ID))
-			}
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch instance ID: %v", patch.ID)).SetInternal(err)
-		}
-	}
-
-	// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
-	if patch.Host != nil || patch.Port != nil || patch.Database != nil {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instancePatched.ID})
-		if err != nil {
-			return nil, err
-		}
-		db, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-		if err == nil {
-			defer db.Close(ctx)
-			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
-				log.Warn("Failed to setup migration schema on instance update",
-					zap.String("instance_name", instancePatched.Name),
-					zap.String("engine", string(instancePatched.Engine)),
-					zap.Error(err))
-			}
-			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
-				log.Warn("Failed to sync instance",
-					zap.Int("instance_id", instancePatched.ID),
-					zap.Error(err))
-			}
-			// Sync all databases in the instance asynchronously.
-			s.stateCfg.InstanceDatabaseSyncChan <- instancePatched
-		}
-	}
-
-	return instancePatched, nil
 }

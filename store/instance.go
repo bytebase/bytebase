@@ -422,12 +422,6 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 	if v := find.EnvironmentID; v != nil {
 		where, args = append(where, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.Host; v != nil {
-		where, args = append(where, fmt.Sprintf("host = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Port; v != nil {
-		where, args = append(where, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -453,7 +447,7 @@ type InstanceMessage struct {
 type UpdateInstanceMessage struct {
 	Title        *string
 	ExternalLink *string
-	RowStatus    *api.RowStatus
+	Delete       *bool
 	DataSources  *[]*DataSourceMessage
 
 	// Output only.
@@ -631,8 +625,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if v := patch.ExternalLink; v != nil {
 		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	if v := patch.Delete; v != nil {
+		rowStatus := api.Normal
+		if *patch.Delete {
+			rowStatus = api.Archived
+		}
+		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)

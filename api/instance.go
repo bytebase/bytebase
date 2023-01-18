@@ -67,8 +67,6 @@ type InstanceFind struct {
 
 	// Domain specific fields
 	Name *string
-	Host *string
-	Port *string
 }
 
 func (find *InstanceFind) String() string {
