@@ -141,7 +141,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			patch.DataSources = datasourceList
+			patch.DataSources = &datasourceList
 		}
 	}
 

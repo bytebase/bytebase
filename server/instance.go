@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/jsonapi"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -33,45 +34,81 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	g.POST("/instance", func(c echo.Context) error {
 		ctx := c.Request().Context()
 
+		if err := s.instanceCountGuard(ctx); err != nil {
+			return err
+		}
+
 		instanceCreate := &api.InstanceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create instance request").SetInternal(err)
 		}
 
-		instance, err := s.createInstance(ctx, &store.InstanceCreate{
-			CreatorID:     c.Get(getPrincipalIDContextKey()).(int),
-			EnvironmentID: instanceCreate.EnvironmentID,
-			DataSourceList: []*api.DataSourceCreate{
-				{
-					Name:     api.AdminDataSourceName,
-					Type:     api.Admin,
-					Username: instanceCreate.Username,
-					Password: instanceCreate.Password,
-					SslCa:    instanceCreate.SslCa,
-					SslCert:  instanceCreate.SslCert,
-					SslKey:   instanceCreate.SslKey,
-					Host:     instanceCreate.Host,
-					Port:     instanceCreate.Port,
-					Options: api.DataSourceOptions{
-						SRV:                    instanceCreate.SRV,
-						AuthenticationDatabase: instanceCreate.AuthenticationDatabase,
-					},
-					Database: instanceCreate.Database,
-				},
-			},
-			Name:         instanceCreate.Name,
-			Engine:       instanceCreate.Engine,
-			ExternalLink: instanceCreate.ExternalLink,
-			Host:         instanceCreate.Host,
-			Port:         instanceCreate.Port,
-			Database:     instanceCreate.Database,
-		})
+		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+		if instanceCreate.Engine != db.Postgres && instanceCreate.Engine != db.MongoDB && instanceCreate.Database != "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
+		}
+		environment, err := s.store.GetEnvironmentByID(ctx, instanceCreate.EnvironmentID)
 		if err != nil {
 			return err
 		}
+		if environment == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "environment %v not found", instanceCreate.EnvironmentID)
+		}
+		creator := c.Get(getPrincipalIDContextKey()).(int)
+		instance, err := s.store.CreateInstanceV2(ctx, environment.ResourceID, &store.InstanceMessage{
+			ResourceID:   fmt.Sprintf("instance-%s", uuid.New().String()[:8]),
+			Title:        instanceCreate.Name,
+			Engine:       instanceCreate.Engine,
+			ExternalLink: instanceCreate.ExternalLink,
+			DataSources: []*store.DataSourceMessage{
+				{
+					Title:                  api.AdminDataSourceName,
+					Type:                   api.Admin,
+					Username:               instanceCreate.Username,
+					Password:               instanceCreate.Password,
+					SslCa:                  instanceCreate.SslCa,
+					SslCert:                instanceCreate.SslCert,
+					SslKey:                 instanceCreate.SslKey,
+					Host:                   instanceCreate.Host,
+					Port:                   instanceCreate.Port,
+					Database:               instanceCreate.Database,
+					SRV:                    instanceCreate.SRV,
+					AuthenticationDatabase: instanceCreate.AuthenticationDatabase,
+				},
+			},
+		}, creator)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
+		}
+		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
+		if err != nil {
+			return err
+		}
+		// Try creating the "bytebase" db in the added instance if needed.
+		// Since we allow user to add new instance upfront even providing the incorrect username/password,
+		// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
+		if err == nil {
+			defer driver.Close(ctx)
+			if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
+				log.Warn("Failed to setup migration schema on instance creation",
+					zap.String("instance", instance.ResourceID),
+					zap.String("engine", string(instance.Engine)),
+					zap.Error(err))
+			}
+			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
+				log.Warn("Failed to sync instance",
+					zap.String("instance", instance.ResourceID),
+					zap.Error(err))
+			}
+			// Sync all databases in the instance asynchronously.
+			s.stateCfg.InstanceDatabaseSyncChan <- composedInstance
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, instance); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedInstance); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create instance response").SetInternal(err)
 		}
 		return nil
@@ -463,64 +500,7 @@ func (s *Server) disallowBytebaseStore(engine db.Type, host, port string) error 
 	return nil
 }
 
-func (s *Server) createInstance(ctx context.Context, create *store.InstanceCreate) (*api.Instance, error) {
-	if err := s.instanceCountGuard(ctx); err != nil {
-		return nil, err
-	}
-	if err := s.validateDataSourceList(create.DataSourceList); err != nil {
-		return nil, err
-	}
-
-	if err := s.disallowBytebaseStore(create.Engine, create.Host, create.Port); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-	}
-	if create.Engine != db.Postgres && create.Engine != db.MongoDB && create.Database != "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "database parameter is only allowed for Postgres and MongoDB")
-	}
-
-	composedInstance, err := s.store.CreateInstance(ctx, create)
-	if err != nil {
-		if common.ErrorCode(err) == common.Conflict {
-			return nil, echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Instance name already exists: %s", create.Name))
-		}
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &composedInstance.ID})
-	if err != nil {
-		return nil, err
-	}
-
-	// Try creating the "bytebase" db in the added instance if needed.
-	// Since we allow user to add new instance upfront even providing the incorrect username/password,
-	// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, "" /* databaseName */)
-	if err == nil {
-		defer driver.Close(ctx)
-		if err := driver.SetupMigrationIfNeeded(ctx); err != nil {
-			log.Warn("Failed to setup migration schema on instance creation",
-				zap.String("instance", instance.ResourceID),
-				zap.String("engine", string(instance.Engine)),
-				zap.Error(err))
-		}
-		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
-			log.Warn("Failed to sync instance",
-				zap.String("instance", instance.ResourceID),
-				zap.Error(err))
-		}
-		// Sync all databases in the instance asynchronously.
-		s.stateCfg.InstanceDatabaseSyncChan <- composedInstance
-	}
-
-	return composedInstance, nil
-}
-
 func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch) (*api.Instance, error) {
-	if v := patch.DataSourceList; v != nil {
-		if err := s.validateDataSourceList(v); err != nil {
-			return nil, err
-		}
-	}
-
 	composedInstance, err := s.store.GetInstanceByID(ctx, patch.ID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", patch.ID)).SetInternal(err)
@@ -608,19 +588,4 @@ func (s *Server) updateInstance(ctx context.Context, patch *store.InstancePatch)
 	}
 
 	return instancePatched, nil
-}
-
-func (*Server) validateDataSourceList(dataSourceList []*api.DataSourceCreate) error {
-	dataSourceMap := map[api.DataSourceType]bool{}
-	for _, dataSource := range dataSourceList {
-		if dataSourceMap[dataSource.Type] {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Duplicate data source type %s", dataSource.Type))
-		}
-		dataSourceMap[dataSource.Type] = true
-	}
-	if !dataSourceMap[api.Admin] {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Missing required data source type %s", api.Admin))
-	}
-
-	return nil
 }

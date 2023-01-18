@@ -6,33 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 )
-
-// InstanceCreate is the API message to create the instance.
-// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
-type InstanceCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	EnvironmentID  int
-	DataSourceList []*api.DataSourceCreate
-
-	// Domain specific fields
-	Name         string
-	Engine       db.Type
-	ExternalLink string
-	Host         string
-	Port         string
-	Database     string
-}
 
 // InstancePatch is the API message for patching an instance.
 // TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
@@ -104,19 +85,6 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 	}
 }
 
-// CreateInstance creates an instance of Instance.
-func (s *Store) CreateInstance(ctx context.Context, create *InstanceCreate) (*api.Instance, error) {
-	instanceRaw, err := s.createInstanceRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Instance with InstanceCreate[%+v]", create)
-	}
-	instance, err := s.composeInstance(ctx, instanceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
-	}
-	return instance, nil
-}
-
 // GetInstanceByID gets an instance of Instance.
 func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, error) {
 	find := &api.InstanceFind{ID: &id}
@@ -183,58 +151,14 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 		return nil, err
 	}
 	instance.DataSourceList = dataSourceList
-	return instance, nil
-}
 
-// createInstanceRaw creates a new instance.
-func (s *Store) createInstanceRaw(ctx context.Context, create *InstanceCreate) (*instanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	instance, err := createInstanceImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create * database
-	allDatabaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instance.ID, &DatabaseMessage{DatabaseName: api.AllDatabaseName})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, dataSource := range create.DataSourceList {
-		dataSourceCreate := &api.DataSourceCreate{
-			CreatorID:  create.CreatorID,
-			InstanceID: instance.ID,
-			DatabaseID: allDatabaseUID,
-			Name:       dataSource.Name,
-			Type:       dataSource.Type,
-			Username:   dataSource.Username,
-			Password:   dataSource.Password,
-			SslKey:     dataSource.SslKey,
-			SslCert:    dataSource.SslCert,
-			SslCa:      dataSource.SslCa,
-			Host:       dataSource.Host,
-			Port:       dataSource.Port,
-			Options:    dataSource.Options,
-			Database:   dataSource.Database,
+	for _, ds := range dataSourceList {
+		if ds.Type != api.Admin {
+			continue
 		}
-		if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
-			return nil, err
-		}
+		instance.Host = ds.Host
+		instance.Port = ds.Port
 	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
-		return nil, err
-	}
-
 	return instance, nil
 }
 
@@ -361,64 +285,6 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*in
 	}
 
 	return instance, nil
-}
-
-// createInstanceImpl creates a new instance.
-func createInstanceImpl(ctx context.Context, tx *Tx, create *InstanceCreate) (*instanceRaw, error) {
-	// TODO(d): allow users to set resource_id.
-	resourceID := fmt.Sprintf("instance-%s", uuid.New().String()[:8])
-	// Insert row into database.
-	query := `
-		INSERT INTO instance (
-			creator_id,
-			updater_id,
-			environment_id,
-			name,
-			engine,
-			external_link,
-			host,
-			port,
-			database,
-			resource_id
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, resource_id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
-	`
-	var instanceRaw instanceRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.EnvironmentID,
-		create.Name,
-		create.Engine,
-		create.ExternalLink,
-		create.Host,
-		create.Port,
-		create.Database,
-		resourceID,
-	).Scan(
-		&instanceRaw.ID,
-		&instanceRaw.ResourceID,
-		&instanceRaw.RowStatus,
-		&instanceRaw.CreatorID,
-		&instanceRaw.CreatedTs,
-		&instanceRaw.UpdaterID,
-		&instanceRaw.UpdatedTs,
-		&instanceRaw.EnvironmentID,
-		&instanceRaw.Name,
-		&instanceRaw.Engine,
-		&instanceRaw.EngineVersion,
-		&instanceRaw.ExternalLink,
-		&instanceRaw.Host,
-		&instanceRaw.Port,
-		&instanceRaw.Database,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &instanceRaw, nil
 }
 
 func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*instanceRaw, error) {
@@ -571,27 +437,29 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 
 // InstanceMessage is the mssage for instance.
 type InstanceMessage struct {
+	ResourceID   string
+	Title        string
+	Engine       db.Type
+	ExternalLink string
+	DataSources  []*DataSourceMessage
+	// Output only.
 	EnvironmentID string
 	UID           int
-	ResourceID    string
-	Title         string
-	Engine        db.Type
-	EngineVersion string
-	ExternalLink  string
 	Deleted       bool
-	DataSources   []*DataSourceMessage
+	EngineVersion string
 }
 
 // UpdateInstanceMessage is the mssage for updating an instance.
 type UpdateInstanceMessage struct {
-	UpdaterID     int
-	EnvironmentID string
-	ResourceID    string
-
 	Title        *string
 	ExternalLink *string
 	RowStatus    *api.RowStatus
-	DataSources  []*DataSourceMessage
+	DataSources  *[]*DataSourceMessage
+
+	// Output only.
+	UpdaterID     int
+	EnvironmentID string
+	ResourceID    string
 }
 
 // FindInstanceMessage is the message for finding instances.
@@ -669,6 +537,10 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 
 // CreateInstanceV2 creates the instance.
 func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, instanceCreate *InstanceMessage, creatorID int) (*InstanceMessage, error) {
+	if err := validateDataSourceList(instanceCreate.DataSources); err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -746,6 +618,12 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 
 // UpdateInstanceV2 updates an instance.
 func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
+	if patch.DataSources != nil {
+		if err := validateDataSourceList(*patch.DataSources); err != nil {
+			return nil, err
+		}
+	}
+
 	set, args := []string{"updater_id = $1"}, []interface{}{fmt.Sprintf("%d", patch.UpdaterID)}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -822,7 +700,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			return nil, err
 		}
 
-		for _, ds := range patch.DataSources {
+		for _, ds := range *patch.DataSources {
 			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, allDatabase.UID, patch.UpdaterID, ds); err != nil {
 				return nil, err
 			}
@@ -949,4 +827,18 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context) ([]*I
 		instances = append(instances, instance)
 	}
 	return instances, nil
+}
+
+func validateDataSourceList(dataSources []*DataSourceMessage) error {
+	dataSourceMap := map[api.DataSourceType]bool{}
+	for _, dataSource := range dataSources {
+		if dataSourceMap[dataSource.Type] {
+			return status.Errorf(codes.InvalidArgument, "duplicate data source type %s", dataSource.Type)
+		}
+		dataSourceMap[dataSource.Type] = true
+	}
+	if !dataSourceMap[api.Admin] {
+		return status.Errorf(codes.InvalidArgument, "missing required data source type %s", api.Admin)
+	}
+	return nil
 }

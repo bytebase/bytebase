@@ -33,10 +33,6 @@ type Instance struct {
 
 // InstanceCreate is the API message for creating an instance.
 type InstanceCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
 	// Related fields
 	EnvironmentID int `jsonapi:"attr,environmentId"`
 
