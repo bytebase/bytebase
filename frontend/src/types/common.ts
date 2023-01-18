@@ -13,12 +13,7 @@ import { Issue } from "./issue";
 import { Member } from "./member";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
-import {
-  Project,
-  ProjectMember,
-  EmptyProjectRoleProviderPayload,
-  getDefaultLGTMCheckSetting,
-} from "./project";
+import { Project, ProjectMember, getDefaultLGTMCheckSetting } from "./project";
 import { ProjectWebhook } from "./projectWebhook";
 import { Repository } from "./repository";
 import { VCS } from "./vcs";
@@ -200,7 +195,6 @@ const makeUnknown = (type: ResourceType) => {
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
     dbNameTemplate: "",
-    roleProvider: "BYTEBASE",
     schemaChangeType: "DDL",
     lgtmCheckSetting: getDefaultLGTMCheckSetting(),
   };
@@ -223,8 +217,6 @@ const makeUnknown = (type: ResourceType) => {
     updatedTs: 0,
     role: "DEVELOPER",
     principal: UNKNOWN_PRINCIPAL,
-    roleProvider: "BYTEBASE",
-    payload: EmptyProjectRoleProviderPayload,
   };
 
   const UNKNOWN_INSTANCE: Instance = {
@@ -580,7 +572,6 @@ const makeEmpty = (type: ResourceType) => {
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
     dbNameTemplate: "",
-    roleProvider: "BYTEBASE",
     schemaChangeType: "DDL",
     lgtmCheckSetting: getDefaultLGTMCheckSetting(),
   };
@@ -603,8 +594,6 @@ const makeEmpty = (type: ResourceType) => {
     updatedTs: 0,
     role: "DEVELOPER",
     principal: EMPTY_PRINCIPAL,
-    roleProvider: "BYTEBASE",
-    payload: EmptyProjectRoleProviderPayload,
   };
 
   const EMPTY_INSTANCE: Instance = {

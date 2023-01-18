@@ -6,25 +6,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
-// ProjectRoleProvider is the role provider for a user in projects.
-type ProjectRoleProvider string
-
-const (
-	// ProjectRoleProviderBytebase indicates the role provider is the Bytebase.
-	ProjectRoleProviderBytebase ProjectRoleProvider = "BYTEBASE"
-	// ProjectRoleProviderGitLabSelfHost indicates the role provider is the GitLab
-	// self-hosted.
-	ProjectRoleProviderGitLabSelfHost ProjectRoleProvider = "GITLAB_SELF_HOST"
-	// ProjectRoleProviderGitHubCom indicates the role provider is the GitHub.com.
-	ProjectRoleProviderGitHubCom ProjectRoleProvider = "GITHUB_COM"
-)
-
-// ProjectRoleProviderPayload is the payload for role provider.
-type ProjectRoleProviderPayload struct {
-	VCSRole    string `json:"vcsRole"`
-	LastSyncTs int64  `json:"lastSyncTs"`
-}
-
 // ProjectMember is the API message for project members.
 type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
@@ -45,7 +26,6 @@ type ProjectMember struct {
 	Role        string `jsonapi:"attr,role"`
 	PrincipalID int
 	Principal   *Principal `jsonapi:"relation,principal"`
-	Payload     string     `jsonapi:"attr,payload"`
 }
 
 // ProjectMemberCreate is the API message for creating a project member.
@@ -60,7 +40,6 @@ type ProjectMemberCreate struct {
 	// Domain specific fields
 	Role        common.ProjectRole `jsonapi:"attr,role"`
 	PrincipalID int                `jsonapi:"attr,principalId"`
-	Payload     string             `jsonapi:"attr,payload"`
 }
 
 // ProjectMemberFind is the API message for finding project members.
@@ -90,9 +69,7 @@ type ProjectMemberPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Role         *string `jsonapi:"attr,role"`
-	RoleProvider *string `jsonapi:"attr,roleProvider"`
-	Payload      *string `jsonapi:"attr,payload"`
+	Role *string `jsonapi:"attr,role"`
 }
 
 // ProjectMemberDelete is the API message for deleting a project member.

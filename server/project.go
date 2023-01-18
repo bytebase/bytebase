@@ -63,7 +63,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			Key:              projectCreate.Key,
 			TenantMode:       projectCreate.TenantMode,
 			DBNameTemplate:   projectCreate.DBNameTemplate,
-			RoleProvider:     projectCreate.RoleProvider,
 			SchemaChangeType: projectCreate.SchemaChangeType,
 		}, creatorID)
 		if err != nil {

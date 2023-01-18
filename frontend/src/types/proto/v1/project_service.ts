@@ -125,51 +125,6 @@ export function tenantModeToJSON(object: TenantMode): string {
   }
 }
 
-export enum RoleProvider {
-  ROLE_PROVIDER_UNSPECIFIED = 0,
-  BYTEBASE = 1,
-  GITLAB_SELF_HOST = 2,
-  GITHUB_COM = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function roleProviderFromJSON(object: any): RoleProvider {
-  switch (object) {
-    case 0:
-    case "ROLE_PROVIDER_UNSPECIFIED":
-      return RoleProvider.ROLE_PROVIDER_UNSPECIFIED;
-    case 1:
-    case "BYTEBASE":
-      return RoleProvider.BYTEBASE;
-    case 2:
-    case "GITLAB_SELF_HOST":
-      return RoleProvider.GITLAB_SELF_HOST;
-    case 3:
-    case "GITHUB_COM":
-      return RoleProvider.GITHUB_COM;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return RoleProvider.UNRECOGNIZED;
-  }
-}
-
-export function roleProviderToJSON(object: RoleProvider): string {
-  switch (object) {
-    case RoleProvider.ROLE_PROVIDER_UNSPECIFIED:
-      return "ROLE_PROVIDER_UNSPECIFIED";
-    case RoleProvider.BYTEBASE:
-      return "BYTEBASE";
-    case RoleProvider.GITLAB_SELF_HOST:
-      return "GITLAB_SELF_HOST";
-    case RoleProvider.GITHUB_COM:
-      return "GITHUB_COM";
-    case RoleProvider.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum SchemaVersion {
   SCHEMA_VERSION_UNSPECIFIED = 0,
   TIMESTAMP = 1,
@@ -498,7 +453,6 @@ export interface Project {
   visibility: Visibility;
   tenantMode: TenantMode;
   dbNameTemplate: string;
-  roleProvider: RoleProvider;
   schemaVersion: SchemaVersion;
   schemaChange: SchemaChange;
   lgtmCheck: LgtmCheck;
@@ -1180,7 +1134,6 @@ function createBaseProject(): Project {
     visibility: 0,
     tenantMode: 0,
     dbNameTemplate: "",
-    roleProvider: 0,
     schemaVersion: 0,
     schemaChange: 0,
     lgtmCheck: 0,
@@ -1216,17 +1169,14 @@ export const Project = {
     if (message.dbNameTemplate !== "") {
       writer.uint32(74).string(message.dbNameTemplate);
     }
-    if (message.roleProvider !== 0) {
-      writer.uint32(80).int32(message.roleProvider);
-    }
     if (message.schemaVersion !== 0) {
-      writer.uint32(88).int32(message.schemaVersion);
+      writer.uint32(80).int32(message.schemaVersion);
     }
     if (message.schemaChange !== 0) {
-      writer.uint32(96).int32(message.schemaChange);
+      writer.uint32(88).int32(message.schemaChange);
     }
     if (message.lgtmCheck !== 0) {
-      writer.uint32(104).int32(message.lgtmCheck);
+      writer.uint32(96).int32(message.lgtmCheck);
     }
     return writer;
   },
@@ -1266,15 +1216,12 @@ export const Project = {
           message.dbNameTemplate = reader.string();
           break;
         case 10:
-          message.roleProvider = reader.int32() as any;
-          break;
-        case 11:
           message.schemaVersion = reader.int32() as any;
           break;
-        case 12:
+        case 11:
           message.schemaChange = reader.int32() as any;
           break;
-        case 13:
+        case 12:
           message.lgtmCheck = reader.int32() as any;
           break;
         default:
@@ -1296,7 +1243,6 @@ export const Project = {
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : 0,
       dbNameTemplate: isSet(object.dbNameTemplate) ? String(object.dbNameTemplate) : "",
-      roleProvider: isSet(object.roleProvider) ? roleProviderFromJSON(object.roleProvider) : 0,
       schemaVersion: isSet(object.schemaVersion) ? schemaVersionFromJSON(object.schemaVersion) : 0,
       schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       lgtmCheck: isSet(object.lgtmCheck) ? lgtmCheckFromJSON(object.lgtmCheck) : 0,
@@ -1314,7 +1260,6 @@ export const Project = {
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
     message.tenantMode !== undefined && (obj.tenantMode = tenantModeToJSON(message.tenantMode));
     message.dbNameTemplate !== undefined && (obj.dbNameTemplate = message.dbNameTemplate);
-    message.roleProvider !== undefined && (obj.roleProvider = roleProviderToJSON(message.roleProvider));
     message.schemaVersion !== undefined && (obj.schemaVersion = schemaVersionToJSON(message.schemaVersion));
     message.schemaChange !== undefined && (obj.schemaChange = schemaChangeToJSON(message.schemaChange));
     message.lgtmCheck !== undefined && (obj.lgtmCheck = lgtmCheckToJSON(message.lgtmCheck));
@@ -1332,7 +1277,6 @@ export const Project = {
     message.visibility = object.visibility ?? 0;
     message.tenantMode = object.tenantMode ?? 0;
     message.dbNameTemplate = object.dbNameTemplate ?? "";
-    message.roleProvider = object.roleProvider ?? 0;
     message.schemaVersion = object.schemaVersion ?? 0;
     message.schemaChange = object.schemaChange ?? 0;
     message.lgtmCheck = object.lgtmCheck ?? 0;

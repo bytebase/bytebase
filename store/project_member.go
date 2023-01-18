@@ -30,7 +30,6 @@ type projectMemberRaw struct {
 	// Domain specific fields
 	Role        string
 	PrincipalID int
-	Payload     string
 }
 
 // toProjectMember creates an instance of ProjectMember based on the projectMemberRaw.
@@ -51,7 +50,6 @@ func (raw *projectMemberRaw) toProjectMember() *api.ProjectMember {
 		// Domain specific fields
 		Role:        raw.Role,
 		PrincipalID: raw.PrincipalID,
-		Payload:     raw.Payload,
 	}
 }
 
@@ -277,20 +275,16 @@ func (s *Store) patchProjectMemberRaw(ctx context.Context, patch *api.ProjectMem
 // createProjectMemberImpl creates a new projectMember.
 func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMemberCreate) (*projectMemberRaw, error) {
 	// Insert row into database.
-	if create.Payload == "" {
-		create.Payload = "{}"
-	}
 	query := `
 		INSERT INTO project_member (
 			creator_id,
 			updater_id,
 			project_id,
 			role,
-			principal_id,
-			payload
+			principal_id
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, payload
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
 	`
 	var projectMemberRaw projectMemberRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -299,7 +293,6 @@ func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMem
 		create.ProjectID,
 		create.Role,
 		create.PrincipalID,
-		create.Payload,
 	).Scan(
 		&projectMemberRaw.ID,
 		&projectMemberRaw.CreatorID,
@@ -309,7 +302,6 @@ func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMem
 		&projectMemberRaw.ProjectID,
 		&projectMemberRaw.Role,
 		&projectMemberRaw.PrincipalID,
-		&projectMemberRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -344,8 +336,7 @@ func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 			updated_ts,
 			project_id,
 			role,
-			principal_id,
-			payload
+			principal_id
 		FROM project_member
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -368,7 +359,6 @@ func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 			&projectMemberRaw.ProjectID,
 			&projectMemberRaw.Role,
 			&projectMemberRaw.PrincipalID,
-			&projectMemberRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -389,14 +379,6 @@ func patchProjectMemberImpl(ctx context.Context, tx *Tx, patch *api.ProjectMembe
 	if v := patch.Role; v != nil {
 		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Payload; v != nil {
-		payload := "{}"
-		if *v == "" {
-			payload = *v
-		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
-	}
-
 	args = append(args, patch.ID)
 
 	var projectMemberRaw projectMemberRaw
@@ -405,7 +387,7 @@ func patchProjectMemberImpl(ctx context.Context, tx *Tx, patch *api.ProjectMembe
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
 	`, len(args)),
 		args...,
 	).Scan(
@@ -417,7 +399,6 @@ func patchProjectMemberImpl(ctx context.Context, tx *Tx, patch *api.ProjectMembe
 		&projectMemberRaw.ProjectID,
 		&projectMemberRaw.Role,
 		&projectMemberRaw.PrincipalID,
-		&projectMemberRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project member ID not found: %d", patch.ID)}

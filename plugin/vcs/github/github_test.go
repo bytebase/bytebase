@@ -301,12 +301,11 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 
 	want := []*vcs.RepositoryMember{
 		{
-			Email:        "octocat@github.com",
-			Name:         "monalisa octocat",
-			State:        vcs.StateActive,
-			Role:         common.ProjectOwner,
-			VCSRole:      string(RepositoryRoleWrite),
-			RoleProvider: vcs.GitHubCom,
+			Email:   "octocat@github.com",
+			Name:    "monalisa octocat",
+			State:   vcs.StateActive,
+			Role:    common.ProjectOwner,
+			VCSRole: string(RepositoryRoleWrite),
 		},
 	}
 	assert.Equal(t, want, got)
