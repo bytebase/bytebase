@@ -24,7 +24,7 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	}
 
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, databaseID)
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})

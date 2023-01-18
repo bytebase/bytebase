@@ -148,7 +148,7 @@ func getInstanceUsersDiff(oldInstanceUsers, instanceUsers []*InstanceUserMessage
 }
 
 func listInstanceUsersImpl(ctx context.Context, tx *Tx, find *FindInstanceUserMessage) ([]*InstanceUserMessage, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 
 	where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, find.InstanceUID)
 	if v := find.Name; v != nil {

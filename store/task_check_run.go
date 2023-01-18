@@ -342,7 +342,7 @@ func (*Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *Tx, patch *ap
 	set, args = append(set, "result = $4"), append(args, patch.Result)
 
 	// Build WHERE clause.
-	where := []string{"1 = 1"}
+	where := []string{"TRUE"}
 	if v := patch.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -398,7 +398,7 @@ func (s *Store) listTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind
 
 func (*Store) findTaskCheckRunImpl(ctx context.Context, tx *Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
