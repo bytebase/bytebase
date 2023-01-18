@@ -275,6 +275,9 @@ const (
 	// PostgreSQLIndexNoDuplicateColumn is an advisor type for Postgresql no duplicate columns in index.
 	PostgreSQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.postgresql.index.no-duplicate-column"
 
+	// PostgreSQLCreateIndexConcurrently is an advisor type for PostgreSQL to create index concurrently.
+	PostgreSQLCreateIndexConcurrently Type = "bb.plugin.advisor.postgresql.index.create-concurrently"
+
 	// PostgreSQLColumnTypeDisallowList is an advisor type for Postgresql column type disallow list.
 	PostgreSQLColumnTypeDisallowList Type = "bb.plugin.advisor.postgresql.column.type-disallow-list"
 
