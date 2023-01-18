@@ -77,6 +77,8 @@ const (
 	SchemaRuleStatementDMLDryRun SQLReviewRuleType = "statement.dml-dry-run"
 	// SchemaRuleStatementDisallowAddColumnWithDefault disallow to add column with DEFAULT.
 	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
+	// SchemaRuleStatementAddCheckNotValid require add check constraints not valid.
+	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -961,6 +963,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 	case SchemaRuleStatementDisallowAddColumnWithDefault:
 		if engine == db.Postgres {
 			return PostgreSQLDisallowAddColumnWithDefault, nil
+		}
+	case SchemaRuleStatementAddCheckNotValid:
+		if engine == db.Postgres {
+			return PostgreSQLAddCheckNotValid, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == db.Postgres {

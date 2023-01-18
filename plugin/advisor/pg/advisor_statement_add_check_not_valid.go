@@ -68,7 +68,7 @@ func (checker *statementAddCheckNotValidChecker) Visit(in ast.Node) ast.Visitor 
 				Status:  checker.level,
 				Code:    advisor.StatementAddCheckWithValidation,
 				Title:   checker.title,
-				Content: "Adding check constraints with validation will block reads and writes. You can add check constraints not validation and then validate separately",
+				Content: "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
 				Line:    checker.line,
 			})
 		}
