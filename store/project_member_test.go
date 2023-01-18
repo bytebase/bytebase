@@ -153,7 +153,6 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 		}
 		return result
 	}
-
 	testCases := []struct {
 		input  Input
 		result Result
