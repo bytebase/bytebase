@@ -383,6 +383,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType) (string, error) {
 		SchemaRuleStatementDisallowAddColumnWithDefault,
 		SchemaRuleCreateIndexConcurrently,
 		SchemaRuleStatementAddCheckNotValid,
+		SchemaRuleStatementDisallowAddNotNull,
 		SchemaRuleIndexTypeNoBlob:
 	case SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{
