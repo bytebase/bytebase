@@ -79,6 +79,8 @@ const (
 	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
 	// SchemaRuleStatementAddCheckNotValid require add check constraints not valid.
 	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
+	// SchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
+	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -967,6 +969,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 	case SchemaRuleStatementAddCheckNotValid:
 		if engine == db.Postgres {
 			return PostgreSQLAddCheckNotValid, nil
+		}
+	case SchemaRuleStatementDisallowAddNotNull:
+		if engine == db.Postgres {
+			return PostgreSQLDisallowAddNotNull, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == db.Postgres {
