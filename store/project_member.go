@@ -833,13 +833,9 @@ func getIAMPolicyDiff(oldPolicy *IAMPolicyMessage, newPolicy *IAMPolicyMessage) 
 
 	var upsertBindings []*PolicyBinding
 	for role, users := range inserts {
-		var members []*UserMessage
-		for _, user := range users {
-			members = append(members, user)
-		}
 		upsertBindings = append(upsertBindings, &PolicyBinding{
 			Role:    role,
-			Members: members,
+			Members: users,
 		})
 	}
 	return deletes, &IAMPolicyMessage{
