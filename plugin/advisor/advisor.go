@@ -284,11 +284,20 @@ const (
 	// PostgreSQLColumnMaximumCharacterLength is an advisor type for PostgreSQL maximum character length.
 	PostgreSQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.postgresql.column.maximum-character-length"
 
+	// PostgreSQLRequireColumnDefault is an advisor type for PostgreSQL column default requirement.
+	PostgreSQLRequireColumnDefault Type = "bb.plugin.advisor.postgresql.column.require-default"
+
 	// PostgreSQLStatementDisallowCommit is an advisor type for PostgreSQL to disallow commit.
 	PostgreSQLStatementDisallowCommit Type = "bb.plugin.advisor.postgresql.statement.disallow-commit"
 
 	// PostgreSQLStatementDMLDryRun is an advisor type for PostgreSQL DML dry run.
 	PostgreSQLStatementDMLDryRun Type = "bb.plugin.advisor.postgresql.statement.dml-dry-run"
+
+	// PostgreSQLStatementAffectedRowLimit is an advisor type for PostgreSQL UPDATE/DELETE affected row limit.
+	PostgreSQLStatementAffectedRowLimit Type = "bb.plugin.advisor.postgresql.statement.affected-row-limit"
+
+	// PostgreSQLMergeAlterTable is an advisor type for PostgreSQL no redundant ALTER TABLE statements.
+	PostgreSQLMergeAlterTable Type = "bb.plugin.advisor.postgresql.statement.merge-alter-table"
 
 	// PostgreSQLTableDropNamingConvention is an advisor type for PostgreSQL table drop with naming convention.
 	PostgreSQLTableDropNamingConvention Type = "bb.plugin.advisor.postgresql.table.drop-naming-convention"

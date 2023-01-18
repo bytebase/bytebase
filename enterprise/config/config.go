@@ -37,6 +37,8 @@ const (
 	audience = "bb.license"
 	// minimumInstance is the minimum instance count in subscribed plan.
 	minimumInstance = 5
+	// SeatForFreePlan is the seat limit for the FREE plan.
+	SeatForFreePlan = 2
 )
 
 // NewConfig will create a new enterprise config instance.

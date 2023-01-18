@@ -216,7 +216,7 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 var featureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	Feature3rdPartyAuth: {false, true, true},
-	FeatureRBAC:         {false, true, true},
+	FeatureRBAC:         {true, true, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
@@ -270,8 +270,8 @@ const (
 
 // PlanLimitValues is the plan limit value mapping.
 var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaximumTask:        {4, math.MaxInt64, math.MaxInt64},
-	PlanLimitMaximumEnvironment: {2, 3, math.MaxInt64},
+	PlanLimitMaximumTask:        {math.MaxInt64, math.MaxInt64, math.MaxInt64},
+	PlanLimitMaximumEnvironment: {math.MaxInt64, math.MaxInt64, math.MaxInt64},
 }
 
 // Feature returns whether a particular feature is available in a particular plan.

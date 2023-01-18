@@ -64,7 +64,7 @@ export interface Plan {
   unitPrice: number;
   trialPrice: number;
   freeInstanceCount: number;
-  pricePerInstancePerMonth: number;
+  pricePerSeatPerMonth: number;
   // Plan desc and feature
   title: string;
   featureList: PlanFeature[];
@@ -79,7 +79,7 @@ export interface Plan {
 export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Admin & Security
   ["bb.feature.3rd-party-auth", [false, true, true]],
-  ["bb.feature.rbac", [false, true, true]],
+  ["bb.feature.rbac", [true, true, true]],
   // Branding
   ["bb.feature.branding", [false, false, true]],
   // Change Workflow

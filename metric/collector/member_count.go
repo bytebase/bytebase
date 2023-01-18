@@ -39,6 +39,7 @@ func (c *memberCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 				"role":       string(memberCountMetric.Role),
 				"status":     string(memberCountMetric.Status),
 				"row_status": string(memberCountMetric.RowStatus),
+				"type":       string(memberCountMetric.Type),
 			},
 		})
 	}
