@@ -473,7 +473,7 @@ func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMem
 
 func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberFind) ([]*projectMemberRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -653,7 +653,7 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 }
 
 func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, projectRoleProvider api.ProjectRoleProvider, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	where, args = append(where, fmt.Sprintf("project_member.role_provider = $%d", len(args)+1)), append(args, projectRoleProvider)
 	if v := find.ProjectID; v != nil {

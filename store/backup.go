@@ -421,7 +421,7 @@ func (*Store) createBackupImpl(ctx context.Context, tx *Tx, create *api.BackupCr
 
 func (*Store) findBackupImpl(ctx context.Context, tx *Tx, find *api.BackupFind) ([]*backupRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -590,7 +590,7 @@ func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSetting
 	defer tx.Rollback()
 
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.InstanceID; v != nil {
 		// Relation backup_setting do not have the column "instance_id", so we should join relation db to add the condition.
 		where, args = append(where, fmt.Sprintf("db.instance_id = $%d", len(args)+1)), append(args, *v)
@@ -642,7 +642,7 @@ func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSetting
 
 func (*Store) findBackupSettingImpl(ctx context.Context, tx *Tx, find *api.BackupSettingFind) ([]*backupSettingRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
