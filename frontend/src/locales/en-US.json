@@ -945,6 +945,7 @@
     "index-size": "Index size",
     "column": "Column",
     "columns": "Columns",
+    "data-type": "Data type",
     "indexes": "Indexes",
     "row-count-est": "Row count est.",
     "incorrect-project-warning": "SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.",
@@ -1007,8 +1008,7 @@
       "select": "Select schema"
     },
     "show-missing-databases": "Show missing databases",
-    "n-selected-m-in-total": "({selected} selected, {total} in total)",
-    "data-type": "Data type"
+    "n-selected-m-in-total": "({selected} selected, {total} in total)"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
