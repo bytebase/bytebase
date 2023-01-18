@@ -319,7 +319,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 			},
 		},
 	}
-	if err := s.setProjectIAMPolicyImpl(ctx, tx, policy, project.RoleProvider, creatorID, project.UID); err != nil {
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, policy, creatorID, project.UID); err != nil {
 		return nil, err
 	}
 

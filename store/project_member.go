@@ -28,10 +28,9 @@ type projectMemberRaw struct {
 	ProjectID int
 
 	// Domain specific fields
-	Role         string
-	PrincipalID  int
-	RoleProvider api.ProjectRoleProvider
-	Payload      string
+	Role        string
+	PrincipalID int
+	Payload     string
 }
 
 // toProjectMember creates an instance of ProjectMember based on the projectMemberRaw.
@@ -50,10 +49,9 @@ func (raw *projectMemberRaw) toProjectMember() *api.ProjectMember {
 		ProjectID: raw.PrincipalID,
 
 		// Domain specific fields
-		Role:         raw.Role,
-		PrincipalID:  raw.PrincipalID,
-		RoleProvider: raw.RoleProvider,
-		Payload:      raw.Payload,
+		Role:        raw.Role,
+		PrincipalID: raw.PrincipalID,
+		Payload:     raw.Payload,
 	}
 }
 
@@ -169,32 +167,6 @@ func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemb
 	return nil
 }
 
-// BatchUpdateProjectMember update the project member with provided project member list.
-func (s *Store) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) ([]*api.ProjectMember, []*api.ProjectMember, error) {
-	createdMemberRawList, deletedMemberRawList, err := s.batchUpdateProjectMemberRaw(ctx, batchUpdate)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to batch update projectMemberRaw with ProjectMemberBatchUpdate[%+v]", batchUpdate)
-	}
-	var createdMemberList, deletedMemberList []*api.ProjectMember
-	for _, raw := range createdMemberRawList {
-		createdMember, err := s.composeProjectMember(ctx, raw)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to compose created ProjectMember with projectMemberRaw[%+v]", raw)
-		}
-		createdMemberList = append(createdMemberList, createdMember)
-	}
-	for _, raw := range deletedMemberRawList {
-		deletedMember, err := s.composeProjectMember(ctx, raw)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to compose deleted ProjectMember with projectMemberRaw[%+v]", raw)
-		}
-		deletedMemberList = append(deletedMemberList, deletedMember)
-	}
-	// Invalidate the cache.
-	s.cache.DeleteCache(projectMemberCacheNamespace, batchUpdate.ProjectID)
-	return createdMemberList, deletedMemberList, nil
-}
-
 //
 // private functions
 //
@@ -302,132 +274,11 @@ func (s *Store) patchProjectMemberRaw(ctx context.Context, patch *api.ProjectMem
 	return projectMember, nil
 }
 
-// getBatchUpdatePrincipalIDList return the principal ID for each operation (this function may be a litter overhead, but it is easy to be tested).
-func getBatchUpdatePrincipalIDList(oldPrincipalIDList []int, newPrincipalIDList []int) (createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList []int) {
-	oldPrincipalIDSet := make(map[int]bool)
-	for _, id := range oldPrincipalIDList {
-		oldPrincipalIDSet[id] = true
-	}
-
-	newPrincipalIDSet := make(map[int]bool)
-	for _, id := range newPrincipalIDList {
-		newPrincipalIDSet[id] = true
-	}
-
-	for _, newID := range newPrincipalIDList {
-		// if the ID exists, we will try to update it (NOTICE: a member with the same principal ID but different role provider will be considered as separate member)
-		if _, ok := oldPrincipalIDSet[newID]; ok {
-			patchPrincipalIDList = append(patchPrincipalIDList, newID)
-		} else {
-			createPrincipalIDList = append(createPrincipalIDList, newID)
-		}
-	}
-
-	for _, oldID := range oldPrincipalIDList {
-		// if the old ID also exists on the new id list, then it has already been added to the patch list above.
-		if _, ok := newPrincipalIDSet[oldID]; ok {
-			continue
-		}
-		deletePrincipalIDList = append(deletePrincipalIDList, oldID)
-	}
-
-	return createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList
-}
-
-// batchUpdateProjectMemberRaw update the project member with provided project member list.
-func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) ([]*projectMemberRaw, []*projectMemberRaw, error) {
-	var createdMemberRawList []*projectMemberRaw
-	var deletedMemberRawList []*projectMemberRaw
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	txRead, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, nil, FormatError(err)
-	}
-	defer txRead.Rollback()
-
-	findProjectMember := &api.ProjectMemberFind{
-		ProjectID:    &batchUpdate.ProjectID,
-		RoleProvider: &batchUpdate.RoleProvider,
-	}
-	oldProjectMemberRawList, err := findProjectMemberImpl(ctx, txRead, findProjectMember)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	oldMemberRawMap := make(map[int]*projectMemberRaw)
-	var oldPrincipalIDList []int
-	for _, oldMemberRaw := range oldProjectMemberRawList {
-		oldMemberRawMap[oldMemberRaw.PrincipalID] = oldMemberRaw
-		oldPrincipalIDList = append(oldPrincipalIDList, oldMemberRaw.PrincipalID)
-	}
-	memberCreateMap := make(map[int]*api.ProjectMemberCreate)
-	var newPrincipalIDList []int
-	for _, newMember := range batchUpdate.List {
-		memberCreateMap[newMember.PrincipalID] = newMember
-		newPrincipalIDList = append(newPrincipalIDList, newMember.PrincipalID)
-	}
-
-	createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList := getBatchUpdatePrincipalIDList(oldPrincipalIDList, newPrincipalIDList)
-
-	for _, id := range createPrincipalIDList {
-		memberCreate := memberCreateMap[id]
-		createdMember, err := createProjectMemberImpl(ctx, tx, memberCreate)
-		if err != nil {
-			return nil, nil, FormatError(err)
-		}
-		createdMemberRawList = append(createdMemberRawList, createdMember)
-	}
-
-	for _, id := range patchPrincipalIDList {
-		oldMemberRaw := oldMemberRawMap[id]
-		newMemberCreate := memberCreateMap[id]
-		memberPatch := &api.ProjectMemberPatch{
-			ID:           oldMemberRaw.ID,
-			UpdaterID:    batchUpdate.UpdaterID,
-			Role:         (*string)(&newMemberCreate.Role),
-			RoleProvider: (*string)(&newMemberCreate.RoleProvider),
-			Payload:      &newMemberCreate.Payload,
-		}
-		patchedMemberRaw, err := patchProjectMemberImpl(ctx, tx, memberPatch)
-		if err != nil {
-			return nil, nil, FormatError(err)
-		}
-		createdMemberRawList = append(createdMemberRawList, patchedMemberRaw)
-		deletedMemberRawList = append(deletedMemberRawList, oldMemberRaw)
-	}
-
-	for _, id := range deletePrincipalIDList {
-		deletedMember := oldMemberRawMap[id]
-		memberDelete := &api.ProjectMemberDelete{
-			ID:        deletedMember.ID,
-			DeleterID: batchUpdate.UpdaterID,
-		}
-		if err := s.deleteProjectMemberImpl(ctx, tx, memberDelete); err != nil {
-			return nil, nil, FormatError(err)
-		}
-		deletedMemberRawList = append(deletedMemberRawList, deletedMember)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, nil, FormatError(err)
-	}
-
-	return createdMemberRawList, deletedMemberRawList, nil
-}
-
 // createProjectMemberImpl creates a new projectMember.
 func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMemberCreate) (*projectMemberRaw, error) {
 	// Insert row into database.
 	if create.Payload == "" {
 		create.Payload = "{}"
-	}
-	if create.RoleProvider == "" {
-		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
 	query := `
 		INSERT INTO project_member (
@@ -436,11 +287,10 @@ func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMem
 			project_id,
 			role,
 			principal_id,
-			role_provider,
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, payload
 	`
 	var projectMemberRaw projectMemberRaw
 	if err := tx.QueryRowContext(ctx, query,
@@ -449,7 +299,6 @@ func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMem
 		create.ProjectID,
 		create.Role,
 		create.PrincipalID,
-		create.RoleProvider,
 		create.Payload,
 	).Scan(
 		&projectMemberRaw.ID,
@@ -460,7 +309,6 @@ func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMem
 		&projectMemberRaw.ProjectID,
 		&projectMemberRaw.Role,
 		&projectMemberRaw.PrincipalID,
-		&projectMemberRaw.RoleProvider,
 		&projectMemberRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -486,9 +334,6 @@ func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 	if v := find.Role; v != nil {
 		where, args = append(where, fmt.Sprintf("role = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.RoleProvider; v != nil {
-		where, args = append(where, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
-	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
@@ -500,7 +345,6 @@ func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 			project_id,
 			role,
 			principal_id,
-			role_provider,
 			payload
 		FROM project_member
 		WHERE `+strings.Join(where, " AND "),
@@ -524,7 +368,6 @@ func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 			&projectMemberRaw.ProjectID,
 			&projectMemberRaw.Role,
 			&projectMemberRaw.PrincipalID,
-			&projectMemberRaw.RoleProvider,
 			&projectMemberRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
@@ -546,9 +389,6 @@ func patchProjectMemberImpl(ctx context.Context, tx *Tx, patch *api.ProjectMembe
 	if v := patch.Role; v != nil {
 		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.RoleProvider; v != nil {
-		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.Payload; v != nil {
 		payload := "{}"
 		if *v == "" {
@@ -565,7 +405,7 @@ func patchProjectMemberImpl(ctx context.Context, tx *Tx, patch *api.ProjectMembe
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, payload
 	`, len(args)),
 		args...,
 	).Scan(
@@ -577,7 +417,6 @@ func patchProjectMemberImpl(ctx context.Context, tx *Tx, patch *api.ProjectMembe
 		&projectMemberRaw.ProjectID,
 		&projectMemberRaw.Role,
 		&projectMemberRaw.PrincipalID,
-		&projectMemberRaw.RoleProvider,
 		&projectMemberRaw.Payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -640,7 +479,7 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 	}
 	defer tx.Rollback()
 
-	projectPolicy, err := s.getProjectPolicyImpl(ctx, tx, project.RoleProvider, find)
+	projectPolicy, err := s.getProjectPolicyImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -664,17 +503,16 @@ func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, 
 	}
 	defer tx.Rollback()
 
-	if err := s.setProjectIAMPolicyImpl(ctx, tx, set, api.ProjectRoleProviderBytebase, creatorUID, projectUID); err != nil {
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, set, creatorUID, projectUID); err != nil {
 		return err
 	}
 
 	return tx.Commit()
 }
 
-func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, projectRoleProvider api.ProjectRoleProvider, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
+func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
 	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("project_member.row_status = $%d", len(args)+1)), append(args, api.Normal)
-	where, args = append(where, fmt.Sprintf("project_member.role_provider = $%d", len(args)+1)), append(args, projectRoleProvider)
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -730,11 +568,11 @@ func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, projectRolePro
 	return projectPolicy, nil
 }
 
-func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPolicyMessage, projectRoleProvider api.ProjectRoleProvider, creatorUID int, projectUID int) error {
+func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPolicyMessage, creatorUID int, projectUID int) error {
 	if set == nil {
 		return errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
 	}
-	oldPolicy, err := s.getProjectPolicyImpl(ctx, tx, projectRoleProvider, &GetProjectPolicyMessage{
+	oldPolicy, err := s.getProjectPolicyImpl(ctx, tx, &GetProjectPolicyMessage{
 		UID: &projectUID,
 	})
 	if err != nil {
@@ -753,14 +591,13 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 		var placeholders []string
 		for _, binding := range inserts.Bindings {
 			for _, member := range binding.Members {
-				placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", len(args)+1, len(args)+2, len(args)+3, len(args)+4, len(args)+5, len(args)+6))
+				placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", len(args)+1, len(args)+2, len(args)+3, len(args)+4, len(args)+5))
 				args = append(args,
-					creatorUID,          // creator_id
-					creatorUID,          // updater_id
-					projectUID,          // project_id
-					binding.Role,        // role
-					member.ID,           // principal_id
-					projectRoleProvider, // role_provider
+					creatorUID,   // creator_id
+					creatorUID,   // updater_id
+					projectUID,   // project_id
+					binding.Role, // role
+					member.ID,    // principal_id
 				)
 			}
 		}
@@ -769,8 +606,7 @@ func (s *Store) setProjectIAMPolicyImpl(ctx context.Context, tx *Tx, set *IAMPol
 			updater_id,
 			project_id,
 			role,
-			principal_id,
-			role_provider
+			principal_id
 		) VALUES %s`, strings.Join(placeholders, ", "))
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return FormatError(err)

@@ -42,11 +42,10 @@ type ProjectMember struct {
 	ProjectID int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
-	Role         string `jsonapi:"attr,role"`
-	PrincipalID  int
-	Principal    *Principal          `jsonapi:"relation,principal"`
-	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
-	Payload      string              `jsonapi:"attr,payload"`
+	Role        string `jsonapi:"attr,role"`
+	PrincipalID int
+	Principal   *Principal `jsonapi:"relation,principal"`
+	Payload     string     `jsonapi:"attr,payload"`
 }
 
 // ProjectMemberCreate is the API message for creating a project member.
@@ -59,10 +58,9 @@ type ProjectMemberCreate struct {
 	ProjectID int
 
 	// Domain specific fields
-	Role         common.ProjectRole  `jsonapi:"attr,role"`
-	PrincipalID  int                 `jsonapi:"attr,principalId"`
-	RoleProvider ProjectRoleProvider `jsonapi:"attr,roleProvider"`
-	Payload      string              `jsonapi:"attr,payload"`
+	Role        common.ProjectRole `jsonapi:"attr,role"`
+	PrincipalID int                `jsonapi:"attr,principalId"`
+	Payload     string             `jsonapi:"attr,payload"`
 }
 
 // ProjectMemberFind is the API message for finding project members.
@@ -70,10 +68,9 @@ type ProjectMemberFind struct {
 	ID *int
 
 	// Related fields
-	ProjectID    *int
-	PrincipalID  *int
-	Role         *Role
-	RoleProvider *ProjectRoleProvider
+	ProjectID   *int
+	PrincipalID *int
+	Role        *Role
 }
 
 func (find *ProjectMemberFind) String() string {
@@ -106,19 +103,6 @@ type ProjectMemberDelete struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
-}
-
-// ProjectMemberBatchUpdate is the API message for batch updating project member.
-type ProjectMemberBatchUpdate struct {
-	ProjectID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// All the Member to be update should have the same role provider as this field
-	RoleProvider ProjectRoleProvider
-	List         []*ProjectMemberCreate
 }
 
 // ProjectPermissionType is the type of a project permission.
