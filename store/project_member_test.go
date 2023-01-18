@@ -234,7 +234,6 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			},
 		},
 	}
-
 	for _, tc := range testCases {
 		oldPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.oldPolicy)
 		newPolicyMessage := buildPolicyMessageFromInputPolicy(tc.input.newPolicy)
