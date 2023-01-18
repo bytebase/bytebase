@@ -75,6 +75,8 @@ const (
 	SchemaRuleStatementAffectedRowLimit SQLReviewRuleType = "statement.affected-row-limit"
 	// SchemaRuleStatementDMLDryRun dry run the dml.
 	SchemaRuleStatementDMLDryRun SQLReviewRuleType = "statement.dml-dry-run"
+	// SchemaRuleStatementDisallowAddColumnWithDefault disallow to add column with DEFAULT.
+	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -949,6 +951,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLStatementDMLDryRun, nil
 		case db.Postgres:
 			return PostgreSQLStatementDMLDryRun, nil
+		}
+	case SchemaRuleStatementDisallowAddColumnWithDefault:
+		if engine == db.Postgres {
+			return PostgreSQLDisallowAddColumnWithDefault, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == db.Postgres {
