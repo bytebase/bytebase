@@ -84,23 +84,32 @@ func setUserCookie(c echo.Context, userID int, expiration time.Time) {
 	c.SetCookie(cookie)
 }
 
+func extractTokenFromHeader(c echo.Context) (string, error) {
+	authHeader := c.Request().Header.Get("Authorization")
+	if authHeader == "" {
+		return "", nil
+	}
+
+	authHeaderParts := strings.Fields(authHeader)
+	if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
+		return "", common.Errorf(common.Invalid, "Authorization header format must be Bearer {token}")
+	}
+
+	return authHeaderParts[1], nil
+}
+
 func findAccessToken(c echo.Context) (string, error) {
 	if common.HasPrefixes(c.Path(), openAPIPrefix) {
-		authHeader := c.Request().Header.Get("Authorization")
-		if authHeader == "" {
-			return "", nil
-		}
-
-		authHeaderParts := strings.Fields(authHeader)
-		if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
-			return "", common.Errorf(common.Invalid, "Authorization header format must be Bearer {token}")
-		}
-
-		return authHeaderParts[1], nil
+		return extractTokenFromHeader(c)
 	}
 
 	cookie, err := c.Cookie(auth.AccessTokenCookieName)
 	if err != nil {
+		// TODO(ed): support trigger the schema sync via terraform in a quick but dirty way.
+		// We should support trigger the sync via OpenAPI later.
+		if c.Path() == "/api/sql/sync-schema" {
+			return extractTokenFromHeader(c)
+		}
 		return "", err
 	}
 
