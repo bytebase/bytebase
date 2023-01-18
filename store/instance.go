@@ -715,8 +715,13 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		return nil, FormatError(err)
 	}
 
+	allDatabaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, instanceID, &DatabaseMessage{DatabaseName: api.AllDatabaseName})
+	if err != nil {
+		return nil, err
+	}
+
 	for _, ds := range instanceCreate.DataSources {
-		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, creatorID, ds); err != nil {
+		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, allDatabaseUID, creatorID, ds); err != nil {
 			return nil, err
 		}
 	}
@@ -804,7 +809,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 	if patch.DataSources != nil {
 		allDatabaseName := api.AllDatabaseName
-		databaseList, err := s.listDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
+		allDatabase, err := s.getDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
 			InstanceID:         &instance.ResourceID,
 			DatabaseName:       &allDatabaseName,
 			IncludeAllDatabase: true,
@@ -812,20 +817,13 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		if err != nil {
 			return nil, err
 		}
-		if len(databaseList) == 0 {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("data source database not found for instance %q", instance.ResourceID)}
-		}
-		if len(databaseList) > 1 {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases for instance %q", len(databaseList), instance.ResourceID)}
-		}
-		allDatabase := databaseList[0]
 
 		if err := s.clearDataSourceImpl(ctx, tx, instance.UID, allDatabase.UID); err != nil {
 			return nil, err
 		}
 
 		for _, ds := range patch.DataSources {
-			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, patch.UpdaterID, ds); err != nil {
+			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, allDatabase.UID, patch.UpdaterID, ds); err != nil {
 				return nil, err
 			}
 		}
