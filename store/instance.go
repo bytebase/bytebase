@@ -15,28 +15,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
-// InstancePatch is the API message for patching an instance.
-// TODO(ed): This is an temporary struct to compatible with OpenAPI and JSONAPI. Find way to move it into the API package.
-type InstancePatch struct {
-	ID int
-
-	// Standard fields
-	RowStatus *string
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Related fields
-	DataSourceList []*api.DataSourceCreate
-
-	// Domain specific fields
-	Name          *string
-	EngineVersion *string
-	ExternalLink  *string
-	Host          *string
-	Port          *string
-	Database      *string
-}
-
 // instanceRaw is the store model for an Instance.
 // Fields have exactly the same meanings as Instance.
 type instanceRaw struct {
@@ -58,9 +36,6 @@ type instanceRaw struct {
 	Engine        db.Type
 	EngineVersion string
 	ExternalLink  string
-	Host          string
-	Port          string
-	Database      string
 }
 
 // toInstance creates an instance of Instance based on the instanceRaw.
@@ -79,9 +54,6 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 		Engine:        raw.Engine,
 		EngineVersion: raw.EngineVersion,
 		ExternalLink:  raw.ExternalLink,
-		Host:          raw.Host,
-		Port:          raw.Port,
-		Database:      raw.Database,
 	}
 }
 
@@ -117,21 +89,6 @@ func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*ap
 		instanceList = append(instanceList, instance)
 	}
 	return instanceList, nil
-}
-
-// PatchInstance patches an instance of Instance.
-func (s *Store) PatchInstance(ctx context.Context, patch *InstancePatch) (*api.Instance, error) {
-	instanceRaw, err := s.patchInstanceRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch Instance with InstancePatch[%+v]", patch)
-	}
-	instance, err := s.composeInstance(ctx, instanceRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose Instance with instanceRaw[%+v]", instanceRaw)
-	}
-	s.instanceCache.Delete(getInstanceCacheKey(instance.Environment.ResourceID, instanceRaw.ResourceID))
-	s.instanceIDCache.Delete(instance.ID)
-	return instance, nil
 }
 
 // private function.
@@ -216,77 +173,6 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 	return instance, nil
 }
 
-// patchInstanceRaw updates an existing instance by ID.
-// Returns ENOTFOUND if instance does not exist.
-func (s *Store) patchInstanceRaw(ctx context.Context, patch *InstancePatch) (*instanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	instance, err := patchInstanceImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if patch.DataSourceList != nil {
-		allDatabaseName := api.AllDatabaseName
-		databaseList, err := s.listDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
-			InstanceID:         &instance.ResourceID,
-			DatabaseName:       &allDatabaseName,
-			IncludeAllDatabase: true,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if len(databaseList) == 0 {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("data source database not found for instance %q", instance.ResourceID)}
-		}
-		if len(databaseList) > 1 {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("found %d data source databases for instance %q", len(databaseList), instance.ResourceID)}
-		}
-		allDatabase := databaseList[0]
-
-		if err := s.clearDataSourceImpl(ctx, tx, patch.ID, allDatabase.UID); err != nil {
-			return nil, err
-		}
-		s.cache.DeleteCache(dataSourceCacheNamespace, patch.ID)
-
-		for _, dataSource := range patch.DataSourceList {
-			dataSourceCreate := &api.DataSourceCreate{
-				CreatorID:  patch.UpdaterID,
-				InstanceID: instance.ID,
-				DatabaseID: allDatabase.UID,
-				Name:       dataSource.Name,
-				Type:       dataSource.Type,
-				Username:   dataSource.Username,
-				Password:   dataSource.Password,
-				SslKey:     dataSource.SslKey,
-				SslCert:    dataSource.SslCert,
-				SslCa:      dataSource.SslCa,
-				Host:       dataSource.Host,
-				Port:       dataSource.Port,
-				Options:    dataSource.Options,
-				Database:   dataSource.Database,
-			}
-			if err := s.createDataSourceRawTx(ctx, tx, dataSourceCreate); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(instanceCacheNamespace, instance.ID, instance); err != nil {
-		return nil, err
-	}
-
-	return instance, nil
-}
-
 func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*instanceRaw, error) {
 	where, args := findInstanceQuery(find)
 
@@ -303,10 +189,7 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 			name,
 			engine,
 			engine_version,
-			external_link,
-			host,
-			port,
-			database
+			external_link
 		FROM instance
 		WHERE `+where,
 		args...,
@@ -333,9 +216,6 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 			&instanceRaw.Engine,
 			&instanceRaw.EngineVersion,
 			&instanceRaw.ExternalLink,
-			&instanceRaw.Host,
-			&instanceRaw.Port,
-			&instanceRaw.Database,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -346,68 +226,6 @@ func findInstanceImpl(ctx context.Context, tx *Tx, find *api.InstanceFind) ([]*i
 	}
 
 	return instanceRawList, nil
-}
-
-// patchInstanceImpl updates an instance by ID. Returns the new state of the instance after update.
-func patchInstanceImpl(ctx context.Context, tx *Tx, patch *InstancePatch) (*instanceRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
-	}
-	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.EngineVersion; v != nil {
-		set, args = append(set, fmt.Sprintf("engine_version = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.ExternalLink; v != nil {
-		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Host; v != nil {
-		set, args = append(set, fmt.Sprintf("host = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Port; v != nil {
-		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Database; v != nil {
-		set, args = append(set, fmt.Sprintf("database = $%d", len(args)+1)), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	var instanceRaw instanceRaw
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE instance
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, resource_id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port, database
-	`, len(args)),
-		args...,
-	).Scan(
-		&instanceRaw.ID,
-		&instanceRaw.ResourceID,
-		&instanceRaw.RowStatus,
-		&instanceRaw.CreatorID,
-		&instanceRaw.CreatedTs,
-		&instanceRaw.UpdaterID,
-		&instanceRaw.UpdatedTs,
-		&instanceRaw.EnvironmentID,
-		&instanceRaw.Name,
-		&instanceRaw.Engine,
-		&instanceRaw.EngineVersion,
-		&instanceRaw.ExternalLink,
-		&instanceRaw.Host,
-		&instanceRaw.Port,
-		&instanceRaw.Database,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("instance ID not found: %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	return &instanceRaw, nil
 }
 
 func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
@@ -445,10 +263,11 @@ type InstanceMessage struct {
 
 // UpdateInstanceMessage is the mssage for updating an instance.
 type UpdateInstanceMessage struct {
-	Title        *string
-	ExternalLink *string
-	Delete       *bool
-	DataSources  *[]*DataSourceMessage
+	Title         *string
+	ExternalLink  *string
+	Delete        *bool
+	DataSources   *[]*DataSourceMessage
+	EngineVersion *string
 
 	// Output only.
 	UpdaterID     int
@@ -624,6 +443,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	if v := patch.ExternalLink; v != nil {
 		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.EngineVersion; v != nil {
+		set, args = append(set, fmt.Sprintf("engine_version = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Delete; v != nil {
 		rowStatus := api.Normal

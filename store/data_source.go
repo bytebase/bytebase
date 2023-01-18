@@ -131,21 +131,7 @@ func (s *Store) DeleteDataSource(ctx context.Context, instance *InstanceMessage,
 	return nil
 }
 
-//
-// private functions
-//
-
-// createDataSourceRawTx creates an instance of DataSource.
-// This uses an existing transaction object.
-func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.DataSourceCreate) error {
-	if _, err := s.createDataSourceImpl(ctx, tx, create); err != nil {
-		return errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
-	}
-	// Invalidate the cache.
-	s.cache.DeleteCache(dataSourceCacheNamespace, create.InstanceID)
-	return nil
-}
-
+// private functions.
 func composeDataSource(raw *dataSourceRaw) *api.DataSource {
 	return raw.toDataSource()
 }
