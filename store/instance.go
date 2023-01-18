@@ -269,6 +269,11 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		}
 	}
 
+	dataSources, err := s.listDataSourceV2(ctx, tx, instanceCreate.ResourceID)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -280,7 +285,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 		Title:         instanceCreate.Title,
 		Engine:        instanceCreate.Engine,
 		ExternalLink:  instanceCreate.ExternalLink,
-		DataSources:   instanceCreate.DataSources,
+		DataSources:   dataSources,
 	}
 	s.instanceCache.Store(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID), instance)
 	s.instanceIDCache.Store(instance.UID, instance)
