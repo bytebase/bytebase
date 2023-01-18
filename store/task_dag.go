@@ -134,7 +134,7 @@ func createTaskDAGImpl(ctx context.Context, tx *Tx, create *api.TaskDAGCreate) (
 }
 
 func findTaskDAGRawListImpl(ctx context.Context, tx *Tx, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.FromTaskID; v != nil {
 		where, args = append(where, fmt.Sprintf("from_task_id = $%d", len(args)+1)), append(args, *v)
 	}

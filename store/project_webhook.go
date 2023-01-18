@@ -243,7 +243,7 @@ func createProjectWebhookImpl(ctx context.Context, tx *Tx, create *api.ProjectWe
 
 func findProjectWebhookImpl(ctx context.Context, tx *Tx, find *api.ProjectWebhookFind) ([]*projectWebhookRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
