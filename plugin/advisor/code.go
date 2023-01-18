@@ -33,6 +33,7 @@ const (
 	StatementRedundantAlterTable     Code = 207
 	StatementDMLDryRunFailed         Code = 208
 	StatementAffectedRowExceedsLimit Code = 209
+	StatementAddColumnWithDefault    Code = 210
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
