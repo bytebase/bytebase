@@ -215,8 +215,8 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			principal.name,
 			principal.type,
 			principal.password_hash,
-			principal.idp_id,
 			principal.idp_user_info,
+			principal.idp_id,
 			member.role,
 			member.row_status AS row_status
 		FROM principal
@@ -237,8 +237,8 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			&userMessage.Name,
 			&userMessage.Type,
 			&userMessage.PasswordHash,
-			&userMessage.IdentityProviderID,
 			&userMessage.IdentityProviderUserInfo,
+			&userMessage.IdentityProviderID,
 			&role,
 			&rowStatus,
 		); err != nil {
