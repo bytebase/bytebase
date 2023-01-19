@@ -303,7 +303,7 @@ func convertIdentityProviderType(identityProviderType string) storepb.IdentityPr
 	} else if identityProviderType == "OIDC" {
 		return storepb.IdentityProviderType_OIDC
 	}
-	return storepb.IdentityProviderType_IDENTITY_PROVIDER_UNSPECIFIED
+	return storepb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
 }
 
 func convertIdentityProviderConfigString(identityProviderType storepb.IdentityProviderType, config string) *storepb.IdentityProviderConfig {
