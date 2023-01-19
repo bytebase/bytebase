@@ -8,8 +8,6 @@ import (
 const (
 	// AdminDataSourceName is the name for administrative data source.
 	AdminDataSourceName = "Admin data source"
-	// ReadWriteDataSourceName is the name for read/write data source.
-	ReadWriteDataSourceName = "Read/Write data source"
 	// ReadOnlyDataSourceName is the name for read-only data source.
 	ReadOnlyDataSourceName = "ReadOnly data source"
 	// UnknownDataSourceName is the name for unknown data source.
@@ -23,8 +21,6 @@ func DataSourceNameFromType(dataSourceType DataSourceType) string {
 		return AdminDataSourceName
 	case RO:
 		return ReadOnlyDataSourceName
-	case RW:
-		return ReadWriteDataSourceName
 	}
 	return UnknownDataSourceName
 }
@@ -35,8 +31,6 @@ type DataSourceType string
 const (
 	// Admin is the ADMIN type of data source.
 	Admin DataSourceType = "ADMIN"
-	// RW is the read/write type of data source.
-	RW DataSourceType = "RW"
 	// RO is the read-only type of data source.
 	RO DataSourceType = "RO"
 )

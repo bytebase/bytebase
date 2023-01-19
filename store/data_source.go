@@ -60,17 +60,6 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 	}
 }
 
-// CreateDataSource creates an instance of DataSource.
-func (s *Store) CreateDataSource(ctx context.Context, instance *InstanceMessage, create *api.DataSourceCreate) (*api.DataSource, error) {
-	dataSourceRaw, err := s.createDataSourceRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
-	}
-	s.instanceCache.Delete(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID))
-	s.instanceIDCache.Delete(instance.UID)
-	return composeDataSource(dataSourceRaw), nil
-}
-
 // GetDataSource gets an instance of DataSource.
 func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSource, error) {
 	dataSourceRaw, err := s.getDataSourceRaw(ctx, find)
@@ -122,28 +111,6 @@ func composeDataSource(raw *dataSourceRaw) *api.DataSource {
 	return raw.toDataSource()
 }
 
-// createDataSourceRaw creates a new dataSource.
-func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceCreate) (*dataSourceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	dataSource, err := s.createDataSourceImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-	// Invalidate the cache.
-	s.cache.DeleteCache(dataSourceCacheNamespace, dataSource.InstanceID)
-
-	return dataSource, nil
-}
-
 // getDataSourceRaw retrieves a single dataSource based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) (*dataSourceRaw, error) {
@@ -187,71 +154,6 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 	s.cache.DeleteCache(dataSourceCacheNamespace, dataSource.InstanceID)
 
 	return dataSource, nil
-}
-
-// createDataSourceImpl creates a new dataSource.
-func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
-	// Insert row into dataSource.
-	query := `
-		INSERT INTO data_source (
-			creator_id,
-			updater_id,
-			instance_id,
-			database_id,
-			name,
-			type,
-			username,
-			password,
-			ssl_key,
-			ssl_cert,
-			ssl_ca,
-			host,
-			port,
-			options,
-			database
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-		RETURNING id, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
-	`
-	var dataSourceRaw dataSourceRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.InstanceID,
-		create.DatabaseID,
-		create.Name,
-		create.Type,
-		create.Username,
-		create.Password,
-		create.SslKey,
-		create.SslCert,
-		create.SslCa,
-		create.Host,
-		create.Port,
-		create.Options,
-		create.Database,
-	).Scan(
-		&dataSourceRaw.ID,
-		&dataSourceRaw.InstanceID,
-		&dataSourceRaw.DatabaseID,
-		&dataSourceRaw.Name,
-		&dataSourceRaw.Type,
-		&dataSourceRaw.Username,
-		&dataSourceRaw.Password,
-		&dataSourceRaw.SslKey,
-		&dataSourceRaw.SslCert,
-		&dataSourceRaw.SslCa,
-		&dataSourceRaw.Host,
-		&dataSourceRaw.Port,
-		&dataSourceRaw.Options,
-		&dataSourceRaw.Database,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &dataSourceRaw, nil
 }
 
 func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {

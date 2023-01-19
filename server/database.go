@@ -494,28 +494,47 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 		}
 
-		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
+		creatorID := c.Get(getPrincipalIDContextKey()).(int)
 		dataSourceCreate.DatabaseID = databaseID
+		title := api.AdminDataSourceName
+		if dataSourceCreate.Type == api.RO {
+			title = api.ReadOnlyDataSourceName
+		}
 
-		dataSource, err := s.store.CreateDataSource(ctx, instance, dataSourceCreate)
+		dataSourceMessage := &store.DataSourceMessage{
+			Title:                  title,
+			Type:                   dataSourceCreate.Type,
+			Username:               dataSourceCreate.Username,
+			Password:               dataSourceCreate.Password,
+			SslCa:                  dataSourceCreate.SslCa,
+			SslCert:                dataSourceCreate.SslCert,
+			SslKey:                 dataSourceCreate.SslKey,
+			Host:                   dataSourceCreate.Host,
+			Port:                   dataSourceCreate.Port,
+			Database:               dataSourceCreate.Database,
+			SRV:                    dataSourceCreate.Options.SRV,
+			AuthenticationDatabase: dataSourceCreate.Options.AuthenticationDatabase,
+		}
+		if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, creatorID, instance.EnvironmentID, instance.ResourceID, dataSourceMessage); err != nil {
+			return err
+		}
+
+		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
+			return err
 		}
-
-		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
-			log.Warn("Failed to sync instance",
-				zap.String("instance", instance.ResourceID),
-				zap.Error(err))
+		var composedDataSource *api.DataSource
+		for _, ds := range composedInstance.DataSourceList {
+			if ds.Type == dataSourceCreate.Type {
+				composedDataSource = ds
+				break
+			}
 		}
-		// Sync all databases in the instance asynchronously.
-		updatedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance %q", instance.Title)).SetInternal(err)
+		if composedDataSource == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "data source not found")
 		}
-		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedDataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create data source response").SetInternal(err)
 		}
 		return nil
