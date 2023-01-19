@@ -945,6 +945,7 @@
     "index-size": "Index size",
     "column": "Column",
     "columns": "Columns",
+    "data-type": "Data type",
     "indexes": "Indexes",
     "row-count-est": "Row count est.",
     "incorrect-project-warning": "SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.",

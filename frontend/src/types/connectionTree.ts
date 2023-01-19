@@ -1,11 +1,6 @@
 import { InstanceId, DatabaseId, ProjectId } from "../types";
 
-export type ConnectionAtomType =
-  | "project"
-  | "instance"
-  | "database"
-  | "table"
-  | "view";
+export type ConnectionAtomType = "project" | "instance" | "database";
 
 export enum ConnectionTreeState {
   UNSET,
@@ -27,8 +22,4 @@ export interface ConnectionAtom {
   children?: ConnectionAtom[];
   disabled?: boolean;
   isLeaf?: boolean;
-  table?: {
-    schema: string;
-    name: string;
-  };
 }
