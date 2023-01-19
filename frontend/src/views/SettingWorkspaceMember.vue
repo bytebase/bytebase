@@ -141,12 +141,7 @@ export default defineComponent({
     });
 
     const seatQuota = computed((): number => {
-      const { subscription } = subscriptionStore;
-      let seat = subscription?.seat ?? Number.MAX_VALUE;
-      if (seat <= 0) {
-        seat = Number.MAX_VALUE;
-      }
-      return seat;
+      return subscriptionStore.seatCount;
     });
 
     const remainingSeatCount = computed((): number => {
