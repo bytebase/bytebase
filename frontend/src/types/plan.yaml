@@ -44,7 +44,9 @@ planList:
     trialDays: 0
     unitPrice: 0
     trialPrice: 0
-    freeInstanceCount: 1
+    freeInstanceCount: -1
+    freeSeatCount: 2
+    maximumSeatCount: 2
     pricePerSeatPerMonth: 0
     featureList:
       - type: instance-count
@@ -91,9 +93,11 @@ planList:
   - type: 1
     title: team
     trialDays: 14
-    unitPrice: 1740
+    unitPrice: 29
     trialPrice: 0
-    freeInstanceCount: 5
+    freeInstanceCount: -1
+    freeSeatCount: 1
+    maximumSeatCount: 10
     pricePerSeatPerMonth: 29
     featureList:
       - type: instance-count
@@ -147,10 +151,12 @@ planList:
   - type: 2
     title: enterprise
     trialDays: 0
-    unitPrice: 0
+    unitPrice: 90
     trialPrice: 0
-    freeInstanceCount: 5
-    pricePerSeatPerMonth: 199
+    freeInstanceCount: -1
+    freeSeatCount: 1
+    maximumSeatCount: -1
+    pricePerSeatPerMonth: 90
     featureList:
       - type: instance-count
         content: instance-customized
