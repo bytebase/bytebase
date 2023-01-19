@@ -11,8 +11,8 @@ type UserInfo struct {
 	DisplayName string `json:"displayName"`
 	Email       string `json:"email"`
 
-	// Source contains original fields returned by the Identity Provider.
-	Source json.RawMessage `json:"source"`
+	// Raw contains original fields returned by the Identity Provider.
+	Raw json.RawMessage `json:"raw"`
 }
 
 // FieldMapping contains mapping relations from Bytebase to Identity Provider.

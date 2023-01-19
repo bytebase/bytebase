@@ -110,7 +110,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.Wrap(err, "unmarshal claims")
 	}
 
-	userInfo := &idp.UserInfo{Source: rawClaims}
+	userInfo := &idp.UserInfo{Raw: rawClaims}
 	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {
 		userInfo.Identifier = v
 	}

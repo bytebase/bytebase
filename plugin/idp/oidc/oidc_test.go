@@ -218,7 +218,7 @@ func TestIdentityProvider(t *testing.T) {
 		Identifier:  testSubject,
 		DisplayName: testName,
 		Email:       testEmail,
-		Source:      json.RawMessage(userinfo),
+		Raw:         json.RawMessage(userinfo),
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }
