@@ -74,14 +74,9 @@ type DataSource struct {
 	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name     string         `jsonapi:"attr,name"`
-	Type     DataSourceType `jsonapi:"attr,type"`
-	Username string         `jsonapi:"attr,username"`
-	// Do not return the password to client
-	Password string
-	SslCa    string
-	SslCert  string
-	SslKey   string
+	Name     string            `jsonapi:"attr,name"`
+	Type     DataSourceType    `jsonapi:"attr,type"`
+	Username string            `jsonapi:"attr,username"`
 	Host     string            `jsonapi:"attr,host"`
 	Port     string            `jsonapi:"attr,port"`
 	Options  DataSourceOptions `jsonapi:"attr,options"`
@@ -103,26 +98,6 @@ type DataSourceCreate struct {
 	Database string            `jsonapi:"attr,database"`
 }
 
-// DataSourceFind is the API message for finding data sources.
-type DataSourceFind struct {
-	ID *int
-
-	// Related fields
-	InstanceID *int
-	DatabaseID *int
-
-	// Domain specific fields
-	Type *DataSourceType
-}
-
-func (find *DataSourceFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
 // DataSourcePatch is the API message for data source.
 type DataSourcePatch struct {
 	Username         *string            `jsonapi:"attr,username"`
@@ -135,10 +110,4 @@ type DataSourcePatch struct {
 	Port             *string            `jsonapi:"attr,port"`
 	Options          *DataSourceOptions `jsonapi:"attr,options"`
 	Database         *string            `jsonapi:"attr,database"`
-}
-
-// DataSourceDelete is the API message for deleting data sources.
-type DataSourceDelete struct {
-	ID         int
-	InstanceID int
 }
