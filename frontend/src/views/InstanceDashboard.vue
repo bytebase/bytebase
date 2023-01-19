@@ -127,7 +127,11 @@ export default defineComponent({
 
     const instanceQuota = computed((): number => {
       const { subscription } = subscriptionStore;
-      return subscription?.instanceCount ?? 5;
+      let count = subscription?.instanceCount ?? 5;
+      if (count <= 0) {
+        count = Number.MAX_VALUE;
+      }
+      return count;
     });
 
     const remainingInstanceCount = computed((): number => {
