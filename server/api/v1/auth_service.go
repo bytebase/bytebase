@@ -294,7 +294,7 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserRole: role,
 	}
 	if user.IdentityProviderID != nil {
-		convertedUser.IdpId = &wrapperspb.Int32Value{
+		convertedUser.IdpUid = &wrapperspb.Int32Value{
 			Value: int32(*user.IdentityProviderID),
 		}
 	}

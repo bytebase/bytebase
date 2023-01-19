@@ -164,7 +164,7 @@ message User {
 
   string password = 5 [(google.api.field_behavior) = INPUT_ONLY];
 
-  google.protobuf.Int32Value idp_id = 6;
+  google.protobuf.Int32Value idp_uid = 6;
 
   UserType user_type = 7;
 

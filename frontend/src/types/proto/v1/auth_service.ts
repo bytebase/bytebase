@@ -193,7 +193,7 @@ export interface User {
   email: string;
   title: string;
   password: string;
-  idpId?: number;
+  idpUid?: number;
   userType: UserType;
   /** The user role will not be respected in the create user request, because the role is controlled by workspace owner. */
   userRole: UserRole;
@@ -728,7 +728,7 @@ export const LogoutRequest = {
 };
 
 function createBaseUser(): User {
-  return { name: "", state: 0, email: "", title: "", password: "", idpId: undefined, userType: 0, userRole: 0 };
+  return { name: "", state: 0, email: "", title: "", password: "", idpUid: undefined, userType: 0, userRole: 0 };
 }
 
 export const User = {
@@ -748,8 +748,8 @@ export const User = {
     if (message.password !== "") {
       writer.uint32(42).string(message.password);
     }
-    if (message.idpId !== undefined) {
-      Int32Value.encode({ value: message.idpId! }, writer.uint32(50).fork()).ldelim();
+    if (message.idpUid !== undefined) {
+      Int32Value.encode({ value: message.idpUid! }, writer.uint32(50).fork()).ldelim();
     }
     if (message.userType !== 0) {
       writer.uint32(56).int32(message.userType);
@@ -783,7 +783,7 @@ export const User = {
           message.password = reader.string();
           break;
         case 6:
-          message.idpId = Int32Value.decode(reader, reader.uint32()).value;
+          message.idpUid = Int32Value.decode(reader, reader.uint32()).value;
           break;
         case 7:
           message.userType = reader.int32() as any;
@@ -806,7 +806,7 @@ export const User = {
       email: isSet(object.email) ? String(object.email) : "",
       title: isSet(object.title) ? String(object.title) : "",
       password: isSet(object.password) ? String(object.password) : "",
-      idpId: isSet(object.idpId) ? Number(object.idpId) : undefined,
+      idpUid: isSet(object.idpUid) ? Number(object.idpUid) : undefined,
       userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : 0,
       userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
     };
@@ -819,7 +819,7 @@ export const User = {
     message.email !== undefined && (obj.email = message.email);
     message.title !== undefined && (obj.title = message.title);
     message.password !== undefined && (obj.password = message.password);
-    message.idpId !== undefined && (obj.idpId = message.idpId);
+    message.idpUid !== undefined && (obj.idpUid = message.idpUid);
     message.userType !== undefined && (obj.userType = userTypeToJSON(message.userType));
     message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
     return obj;
@@ -832,7 +832,7 @@ export const User = {
     message.email = object.email ?? "";
     message.title = object.title ?? "";
     message.password = object.password ?? "";
-    message.idpId = object.idpId ?? undefined;
+    message.idpUid = object.idpUid ?? undefined;
     message.userType = object.userType ?? 0;
     message.userRole = object.userRole ?? 0;
     return message;
