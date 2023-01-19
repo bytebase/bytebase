@@ -323,9 +323,8 @@ const transferDatabase = () => {
 };
 
 const createInstance = () => {
-  const { subscription } = subscriptionStore;
   const instanceList = useInstanceStore().getInstanceList();
-  if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
+  if (subscriptionStore.instanceCount <= instanceList.length) {
     state.featureName = "bb.feature.instance-count";
     state.showFeatureModal = true;
     return;
