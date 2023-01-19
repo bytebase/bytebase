@@ -17,8 +17,6 @@ import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { emptyConnection } from "@/utils";
 import { useDBSchemaStore } from "./dbSchema";
-import { TableMetadata } from "@/types/proto/store/database";
-import { has, uniqueId } from "lodash-es";
 
 export const useConnectionTreeStore = defineStore("connectionTree", () => {
   // states
@@ -78,12 +76,11 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
   };
   // utilities
   const mapAtom = (
-    item: Project | Instance | Database | TableMetadata,
+    item: Project | Instance | Database,
     type: ConnectionAtomType,
     parentId: number
   ) => {
-    const id =
-      type !== "table" && has(item, "id") ? (item as any).id : uniqueId();
+    const id = item.id;
     const key = `${type}-${id}`;
     const connectionAtom: ConnectionAtom = {
       parentId,
@@ -91,7 +88,7 @@ export const useConnectionTreeStore = defineStore("connectionTree", () => {
       key,
       label: item.name,
       type,
-      isLeaf: type === "table",
+      isLeaf: type === "database",
     };
     return connectionAtom;
   };
