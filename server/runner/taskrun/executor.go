@@ -297,13 +297,13 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			return true, nil, errors.Errorf("failed to update database %q for instance %q", databaseName, task.Database.Instance.Name)
 		}
 	}
-	// On the presence of schema path template, We write back the latest schema after migration for VCS-based projects for
-	// 1) baseline migration for SDL,
+	// On the presence of schema path template We write back the latest schema after migration for VCS-based projects for
+	// 1) Non-wildcard branch filter and baseline migration for SDL.
 	// 2) all DDL/Ghost migrations.
 	writeBack := false
-	if repo != nil && repo.SchemaPathTemplate != "" && !strings.Contains(repo.BranchFilter, "*") {
+	if repo != nil && repo.SchemaPathTemplate != "" {
 		if repo.Project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-			if task.Type == api.TaskDatabaseSchemaBaseline {
+			if task.Type == api.TaskDatabaseSchemaBaseline && !strings.Contains(repo.BranchFilter, "*") {
 				writeBack = true
 				// Transform the schema to standard style for SDL mode.
 				if task.Database.Instance.Engine == db.MySQL {
