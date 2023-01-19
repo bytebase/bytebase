@@ -1,3 +1,4 @@
+// Package idp provides the utilities for Identity Provider plugins.
 package idp
 
 import (
@@ -12,4 +13,11 @@ type UserInfo struct {
 
 	// Source contains original fields returned by the Identity Provider.
 	Source json.RawMessage `json:"source"`
+}
+
+// FieldMapping contains mapping relations from Bytebase to Identity Provider.
+type FieldMapping struct {
+	Identifier  string `json:"identifier"`
+	DisplayName string `json:"displayName"`
+	Email       string `json:"email"`
 }

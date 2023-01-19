@@ -1,9 +1,9 @@
+// Package oidc is the plugin for OIDC Identity Provider.
 package oidc
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/coreos/go-oidc"
 	"github.com/pkg/errors"
@@ -15,49 +15,39 @@ import (
 // IdentityProvider represents an OIDC Identity Provider.
 type IdentityProvider struct {
 	provider *oidc.Provider
-	config   identityProviderConfig
+	config   IdentityProviderConfig
 }
 
-// identityProviderConfig is the configuration to be consumed by the OIDC
+// IdentityProviderConfig is the configuration to be consumed by the OIDC
 // Identity Provider.
-type identityProviderConfig struct {
-	Issuer       string `json:"issuer"`
-	ClientID     string `json:"clientId"`
-	ClientSecret string `json:"clientSecret"`
-	FieldMapping struct {
-		Identifier  string `json:"identifier"`
-		DisplayName string `json:"displayName"`
-		Email       string `json:"email"`
-	} `json:"fieldMapping"`
+type IdentityProviderConfig struct {
+	Issuer       string           `json:"issuer"`
+	ClientID     string           `json:"clientId"`
+	ClientSecret string           `json:"clientSecret"`
+	FieldMapping idp.FieldMapping `json:"fieldMapping"`
 }
 
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given
 // configuration.
-func NewIdentityProvider(ctx context.Context, config string) (*IdentityProvider, error) {
-	var idpConfig identityProviderConfig
-	err := json.Unmarshal([]byte(config), &idpConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal config")
-	}
-
+func NewIdentityProvider(ctx context.Context, config IdentityProviderConfig) (*IdentityProvider, error) {
 	for v, field := range map[string]string{
-		idpConfig.Issuer:                  "issuer",
-		idpConfig.ClientID:                "clientId",
-		idpConfig.ClientSecret:            "clientSecret",
-		idpConfig.FieldMapping.Identifier: "fieldMapping.identifier",
+		config.Issuer:                  "issuer",
+		config.ClientID:                "clientId",
+		config.ClientSecret:            "clientSecret",
+		config.FieldMapping.Identifier: "fieldMapping.identifier",
 	} {
 		if v == "" {
 			return nil, errors.Errorf("the field %q is empty but required", field)
 		}
 	}
 
-	p, err := oidc.NewProvider(ctx, idpConfig.Issuer)
+	p, err := oidc.NewProvider(ctx, config.Issuer)
 	if err != nil {
 		return nil, errors.Wrap(err, "create new provider")
 	}
 	return &IdentityProvider{
 		provider: p,
-		config:   idpConfig,
+		config:   config,
 	}, nil
 }
 
@@ -119,17 +109,8 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.Wrap(err, "marshal claims")
 	}
 	userInfo := &idp.UserInfo{Source: source}
-	if v, ok := claims[p.config.FieldMapping.Identifier]; ok {
-		// Both string (e.g. login) and integer (e.g. numeric ID) are valid types we
-		// accept for the identifier field.
-		switch id := v.(type) {
-		case string:
-			userInfo.Identifier = id
-		case int, int32, int64:
-			userInfo.Identifier = fmt.Sprintf("%d", id)
-		default:
-			return nil, errors.Errorf("unsupported value type of the field %q in claims, only string and integer types are expected", p.config.FieldMapping.Identifier)
-		}
+	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {
+		userInfo.Identifier = v
 	}
 	if userInfo.Identifier == "" {
 		return nil, errors.Errorf("the field %q is not found in claims or has empty value", p.config.FieldMapping.Identifier)
