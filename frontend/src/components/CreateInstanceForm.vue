@@ -140,6 +140,7 @@
           v-if="state.instance.engine === 'MONGODB'"
           class="sm:col-span-4 sm:col-start-1"
         >
+          <div>{{ state.instance }}</div>
           <label
             for="connectionStringSchema"
             class="textlabel flex flex-row items-center"
@@ -444,7 +445,7 @@ const state = reactive<LocalState>({
   isCreatingInstance: false,
 });
 
-const mongodbConnectionStringSchemaList = ["mongodb", "mongodb+srv"];
+const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
 
 const isCreatingEmbeddedInstance = ref(false);
 // For creating database onboarding guide, we only try to start our embedded sample postgres instance once.
@@ -588,11 +589,12 @@ const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
 };
 
 const handleMongodbConnectionStringSchemaChange = (event: Event) => {
+  console.log((event.target as HTMLInputElement).value);
   switch ((event.target as HTMLInputElement).value) {
-    case "mongodb://":
+    case mongodbConnectionStringSchemaList[0]:
       state.instance.srv = false;
       break;
-    case "mongodb+srv://":
+    case mongodbConnectionStringSchemaList[1]:
       state.instance.srv = true;
       break;
     default:
