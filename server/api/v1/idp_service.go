@@ -209,9 +209,9 @@ func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) 
 func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.IdentityProviderConfig) *v1pb.IdentityProviderConfig {
 	if v := identityProviderConfig.GetOauth2Config(); v != nil {
 		fieldMapping := v1pb.FieldMapping{
-			Identifier:  v.FieldMapping.Identifier,
-			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
+			Identifier: v.FieldMapping.Identifier,
+			Username:   v.FieldMapping.Username,
+			Email:      v.FieldMapping.Email,
 		}
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_Oauth2Config{
@@ -228,9 +228,9 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		}
 	} else if v := identityProviderConfig.GetOidcConfig(); v != nil {
 		fieldMapping := v1pb.FieldMapping{
-			Identifier:  v.FieldMapping.Identifier,
-			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
+			Identifier: v.FieldMapping.Identifier,
+			Username:   v.FieldMapping.Username,
+			Email:      v.FieldMapping.Email,
 		}
 		return &v1pb.IdentityProviderConfig{
 			Config: &v1pb.IdentityProviderConfig_OidcConfig{
@@ -250,9 +250,9 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityProviderConfig) *storepb.IdentityProviderConfig {
 	if v := identityProviderConfig.GetOauth2Config(); v != nil {
 		fieldMapping := storepb.FieldMapping{
-			Identifier:  v.FieldMapping.Identifier,
-			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
+			Identifier: v.FieldMapping.Identifier,
+			Username:   v.FieldMapping.Username,
+			Email:      v.FieldMapping.Email,
 		}
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_Oauth2Config{
@@ -269,9 +269,9 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 		}
 	} else if v := identityProviderConfig.GetOidcConfig(); v != nil {
 		fieldMapping := storepb.FieldMapping{
-			Identifier:  v.FieldMapping.Identifier,
-			DisplayName: v.FieldMapping.DisplayName,
-			Email:       v.FieldMapping.Email,
+			Identifier: v.FieldMapping.Identifier,
+			Username:   v.FieldMapping.Username,
+			Email:      v.FieldMapping.Email,
 		}
 		return &storepb.IdentityProviderConfig{
 			Config: &storepb.IdentityProviderConfig_OidcConfig{
@@ -294,7 +294,7 @@ func convertIdentityProviderTypeFromStore(identityProviderType storepb.IdentityP
 	} else if identityProviderType == storepb.IdentityProviderType_OIDC {
 		return v1pb.IdentityProviderType_OIDC
 	}
-	return v1pb.IdentityProviderType_IDENTITY_PROVIDER_UNSPECIFIED
+	return v1pb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
 }
 
 func convertIdentityProviderTypeToStore(identityProviderType v1pb.IdentityProviderType) storepb.IdentityProviderType {
@@ -303,7 +303,7 @@ func convertIdentityProviderTypeToStore(identityProviderType v1pb.IdentityProvid
 	} else if identityProviderType == v1pb.IdentityProviderType_OIDC {
 		return storepb.IdentityProviderType_OIDC
 	}
-	return storepb.IdentityProviderType_IDENTITY_PROVIDER_UNSPECIFIED
+	return storepb.IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED
 }
 
 // validIdentityProviderConfig validates the identity provider's config is a valid JSON.

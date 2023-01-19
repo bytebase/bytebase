@@ -144,7 +144,7 @@ message IdentityProvider {
 }
 
 enum IdentityProviderType {
-  IDENTITY_PROVIDER_UNSPECIFIED = 0;
+  IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0;
   OAUTH2 = 1;
   OIDC = 2;
 }
@@ -186,9 +186,12 @@ message OIDCIdentityProviderConfig {
 
 // FieldMapping uses for mapping user info from identity provider to Bytebase.
 message FieldMapping {
+  // Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.
   string identifier = 1;
 
-  string display_name = 2;
+  // Username is the field name of username in 3rd-party idp user info. Required.
+  string username = 2;
 
+  // Email is the field name of primary email in 3rd-party idp user info. Required.
   string email = 3;
 }

@@ -4,7 +4,7 @@ import * as _m0 from "protobufjs/minimal";
 export const protobufPackage = "bytebase.store";
 
 export enum IdentityProviderType {
-  IDENTITY_PROVIDER_UNSPECIFIED = 0,
+  IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0,
   OAUTH2 = 1,
   OIDC = 2,
   UNRECOGNIZED = -1,
@@ -13,8 +13,8 @@ export enum IdentityProviderType {
 export function identityProviderTypeFromJSON(object: any): IdentityProviderType {
   switch (object) {
     case 0:
-    case "IDENTITY_PROVIDER_UNSPECIFIED":
-      return IdentityProviderType.IDENTITY_PROVIDER_UNSPECIFIED;
+    case "IDENTITY_PROVIDER_TYPE_UNSPECIFIED":
+      return IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED;
     case 1:
     case "OAUTH2":
       return IdentityProviderType.OAUTH2;
@@ -30,8 +30,8 @@ export function identityProviderTypeFromJSON(object: any): IdentityProviderType 
 
 export function identityProviderTypeToJSON(object: IdentityProviderType): string {
   switch (object) {
-    case IdentityProviderType.IDENTITY_PROVIDER_UNSPECIFIED:
-      return "IDENTITY_PROVIDER_UNSPECIFIED";
+    case IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED:
+      return "IDENTITY_PROVIDER_TYPE_UNSPECIFIED";
     case IdentityProviderType.OAUTH2:
       return "OAUTH2";
     case IdentityProviderType.OIDC:
@@ -68,8 +68,11 @@ export interface OIDCIdentityProviderConfig {
 
 /** FieldMapping uses for mapping user info from identity provider to Bytebase. */
 export interface FieldMapping {
+  /** Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. */
   identifier: string;
-  displayName: string;
+  /** Username is the field name of username in 3rd-party idp user info. Required. */
+  username: string;
+  /** Email is the field name of primary email in 3rd-party idp user info. Required. */
   email: string;
 }
 
@@ -335,7 +338,7 @@ export const OIDCIdentityProviderConfig = {
 };
 
 function createBaseFieldMapping(): FieldMapping {
-  return { identifier: "", displayName: "", email: "" };
+  return { identifier: "", username: "", email: "" };
 }
 
 export const FieldMapping = {
@@ -343,8 +346,8 @@ export const FieldMapping = {
     if (message.identifier !== "") {
       writer.uint32(10).string(message.identifier);
     }
-    if (message.displayName !== "") {
-      writer.uint32(18).string(message.displayName);
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
     }
     if (message.email !== "") {
       writer.uint32(26).string(message.email);
@@ -363,7 +366,7 @@ export const FieldMapping = {
           message.identifier = reader.string();
           break;
         case 2:
-          message.displayName = reader.string();
+          message.username = reader.string();
           break;
         case 3:
           message.email = reader.string();
@@ -379,7 +382,7 @@ export const FieldMapping = {
   fromJSON(object: any): FieldMapping {
     return {
       identifier: isSet(object.identifier) ? String(object.identifier) : "",
-      displayName: isSet(object.displayName) ? String(object.displayName) : "",
+      username: isSet(object.username) ? String(object.username) : "",
       email: isSet(object.email) ? String(object.email) : "",
     };
   },
@@ -387,7 +390,7 @@ export const FieldMapping = {
   toJSON(message: FieldMapping): unknown {
     const obj: any = {};
     message.identifier !== undefined && (obj.identifier = message.identifier);
-    message.displayName !== undefined && (obj.displayName = message.displayName);
+    message.username !== undefined && (obj.username = message.username);
     message.email !== undefined && (obj.email = message.email);
     return obj;
   },
@@ -395,7 +398,7 @@ export const FieldMapping = {
   fromPartial(object: DeepPartial<FieldMapping>): FieldMapping {
     const message = createBaseFieldMapping();
     message.identifier = object.identifier ?? "";
-    message.displayName = object.displayName ?? "";
+    message.username = object.username ?? "";
     message.email = object.email ?? "";
     return message;
   },
