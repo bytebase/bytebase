@@ -495,12 +495,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		creatorID := c.Get(getPrincipalIDContextKey()).(int)
-		dataSourceCreate.DatabaseID = databaseID
 		title := api.AdminDataSourceName
 		if dataSourceCreate.Type == api.RO {
 			title = api.ReadOnlyDataSourceName
 		}
-
 		dataSourceMessage := &store.DataSourceMessage{
 			Title:                  title,
 			Type:                   dataSourceCreate.Type,

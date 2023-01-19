@@ -90,15 +90,6 @@ type DataSource struct {
 
 // DataSourceCreate is the API message for creating a data source.
 type DataSourceCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	InstanceID int `jsonapi:"attr,instanceId"`
-	DatabaseID int `jsonapi:"attr,databaseId"`
-
-	// Domain specific fields
 	Name     string            `jsonapi:"attr,name"`
 	Type     DataSourceType    `jsonapi:"attr,type"`
 	Username string            `jsonapi:"attr,username"`

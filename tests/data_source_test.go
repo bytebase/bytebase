@@ -52,16 +52,14 @@ func TestDataSource(t *testing.T) {
 	instanceID := instance.ID
 
 	// create read-only data source.
-	err = ctl.createDataSource(api.DataSourceCreate{
-		InstanceID: instanceID,
-		DatabaseID: adminDataSource.DatabaseID,
-		Name:       api.ReadOnlyDataSourceName,
-		Type:       api.RO,
-		Username:   "ro_ds",
-		Password:   "",
-		SslCa:      "",
-		SslCert:    "",
-		SslKey:     "",
+	err = ctl.createDataSource(adminDataSource.DatabaseID, api.DataSourceCreate{
+		Name:     api.ReadOnlyDataSourceName,
+		Type:     api.RO,
+		Username: "ro_ds",
+		Password: "",
+		SslCa:    "",
+		SslCert:  "",
+		SslKey:   "",
 	})
 	a.NoError(err)
 
