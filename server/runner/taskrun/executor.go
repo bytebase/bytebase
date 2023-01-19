@@ -607,7 +607,3 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 	}
 	return schemaFileMeta.LastCommitID, nil
 }
-
-func getBranchFromRef(ref string) string {
-	return strings.TrimPrefix(ref, "refs/heads/")
-}
