@@ -98,17 +98,19 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, errors.Wrap(err, "fetch user info")
 	}
 
+	var rawClaims json.RawMessage
+	err = rawUserInfo.Claims(&rawClaims)
+	if err != nil {
+		return nil, errors.Wrap(err, "get raw claims")
+	}
+
 	var claims map[string]any
-	err = rawUserInfo.Claims(&claims)
+	err = json.Unmarshal(rawClaims, &claims)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal claims")
 	}
 
-	source, err := json.Marshal(claims)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal claims")
-	}
-	userInfo := &idp.UserInfo{Source: source}
+	userInfo := &idp.UserInfo{Source: rawClaims}
 	if v, ok := claims[p.config.FieldMapping.Identifier].(string); ok {
 		userInfo.Identifier = v
 	}
