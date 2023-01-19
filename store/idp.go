@@ -75,7 +75,7 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 	}
 	configBytes, err := getConfigBytes(identityProvider.Config)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to marshal identity provider config")
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO idp (
@@ -189,7 +189,7 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 	if v := patch.Config; v != nil {
 		configBytes, err := getConfigBytes(v)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to marshal identity provider config")
 		}
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, string(configBytes))
 	}
@@ -236,7 +236,7 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 	}
 
 	identityProvider.Type = convertIdentityProviderType(identityProviderType)
-	identityProvider.Config = convertIdentityProviderConfig(identityProvider.Type, identityProviderConfig)
+	identityProvider.Config = convertIdentityProviderConfigString(identityProvider.Type, identityProviderConfig)
 	identityProvider.Deleted = convertRowStatusToDeleted(rowStatus)
 	return identityProvider, nil
 }
@@ -289,7 +289,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 			return nil, FormatError(err)
 		}
 		identityProviderMessage.Type = convertIdentityProviderType(identityProviderType)
-		identityProviderMessage.Config = convertIdentityProviderConfig(identityProviderMessage.Type, identityProviderConfig)
+		identityProviderMessage.Config = convertIdentityProviderConfigString(identityProviderMessage.Type, identityProviderConfig)
 		identityProviderMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		identityProviderMessages = append(identityProviderMessages, &identityProviderMessage)
 	}
@@ -306,17 +306,16 @@ func convertIdentityProviderType(identityProviderType string) storepb.IdentityPr
 	return storepb.IdentityProviderType_IDENTITY_PROVIDER_UNSPECIFIED
 }
 
-func convertIdentityProviderConfig(identityProviderType storepb.IdentityProviderType, config string) *storepb.IdentityProviderConfig {
+func convertIdentityProviderConfigString(identityProviderType storepb.IdentityProviderType, config string) *storepb.IdentityProviderConfig {
+	identityProviderConfig := &storepb.IdentityProviderConfig{}
 	if identityProviderType == storepb.IdentityProviderType_OAUTH2 {
 		var formatedConfig storepb.OAuth2IdentityProviderConfig
 		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 		if err := decoder.Unmarshal([]byte(config), &formatedConfig); err != nil {
 			return nil
 		}
-		return &storepb.IdentityProviderConfig{
-			Config: &storepb.IdentityProviderConfig_Oauth2Config{
-				Oauth2Config: &formatedConfig,
-			},
+		identityProviderConfig.Config = &storepb.IdentityProviderConfig_Oauth2Config{
+			Oauth2Config: &formatedConfig,
 		}
 	} else if identityProviderType == storepb.IdentityProviderType_OIDC {
 		var formatedConfig storepb.OIDCIdentityProviderConfig
@@ -324,11 +323,9 @@ func convertIdentityProviderConfig(identityProviderType storepb.IdentityProvider
 		if err := decoder.Unmarshal([]byte(config), &formatedConfig); err != nil {
 			return nil
 		}
-		return &storepb.IdentityProviderConfig{
-			Config: &storepb.IdentityProviderConfig_OidcConfig{
-				OidcConfig: &formatedConfig,
-			},
+		identityProviderConfig.Config = &storepb.IdentityProviderConfig_OidcConfig{
+			OidcConfig: &formatedConfig,
 		}
 	}
-	return nil
+	return identityProviderConfig
 }

@@ -74,8 +74,6 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		Type:       convertIdentityProviderTypeToStore(request.IdentityProvider.Type),
 		Config:     convertIdentityProviderConfigToStore(request.IdentityProvider.GetConfig()),
 	}
-	request.IdentityProvider.GetConfig()
-
 	identityProvider, err := s.store.CreateIdentityProvider(ctx, &identityProviderMessage, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
