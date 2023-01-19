@@ -72,17 +72,6 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 	return composeDataSource(dataSourceRaw), nil
 }
 
-// PatchDataSource patches an instance of DataSource.
-func (s *Store) PatchDataSource(ctx context.Context, instance *InstanceMessage, patch *api.DataSourcePatch) (*api.DataSource, error) {
-	dataSourceRaw, err := s.patchDataSourceRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch DataSource with DataSourcePatch[%+v]", patch)
-	}
-	s.instanceCache.Delete(getInstanceCacheKey(instance.EnvironmentID, instance.ResourceID))
-	s.instanceIDCache.Delete(instance.UID)
-	return composeDataSource(dataSourceRaw), nil
-}
-
 // DeleteDataSource deletes an existing dataSource by ID.
 func (s *Store) DeleteDataSource(ctx context.Context, instance *InstanceMessage, deleteDataSource *api.DataSourceDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -131,29 +120,6 @@ func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) 
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d data sources with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
-}
-
-// patchDataSourceRaw updates an existing dataSource by ID.
-// Returns ENOTFOUND if dataSource does not exist.
-func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	dataSource, err := s.patchDataSourceImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-	// Invalidate the cache.
-	s.cache.DeleteCache(dataSourceCacheNamespace, dataSource.InstanceID)
-
-	return dataSource, nil
 }
 
 func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
@@ -227,72 +193,6 @@ func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSour
 	}
 
 	return dataSourceRawList, nil
-}
-
-// patchDataSourceImpl updates a dataSource by ID. Returns the new state of the dataSource after update.
-func (*Store) patchDataSourceImpl(ctx context.Context, tx *Tx, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.Username; v != nil {
-		set, args = append(set, fmt.Sprintf("username = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Password; v != nil {
-		set, args = append(set, fmt.Sprintf("password = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SslCa; v != nil {
-		set, args = append(set, fmt.Sprintf("ssl_ca= $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SslKey; v != nil {
-		set, args = append(set, fmt.Sprintf("ssl_key= $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SslCert; v != nil {
-		set, args = append(set, fmt.Sprintf("ssl_cert= $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Host; v != nil {
-		set, args = append(set, fmt.Sprintf("host = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Port; v != nil {
-		set, args = append(set, fmt.Sprintf("port = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Options; v != nil {
-		set, args = append(set, fmt.Sprintf("options= $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Database; v != nil {
-		set, args = append(set, fmt.Sprintf("database = $%d", len(args)+1)), append(args, *v)
-	}
-	args = append(args, patch.ID)
-
-	var dataSourceRaw dataSourceRaw
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-			UPDATE data_source
-			SET `+strings.Join(set, ", ")+`
-			WHERE id = $%d
-			RETURNING id, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database
-		`, len(args)),
-		args...,
-	).Scan(
-		&dataSourceRaw.ID,
-		&dataSourceRaw.InstanceID,
-		&dataSourceRaw.DatabaseID,
-		&dataSourceRaw.Name,
-		&dataSourceRaw.Type,
-		&dataSourceRaw.Username,
-		&dataSourceRaw.Password,
-		&dataSourceRaw.SslKey,
-		&dataSourceRaw.SslCert,
-		&dataSourceRaw.SslCa,
-		&dataSourceRaw.Host,
-		&dataSourceRaw.Port,
-		&dataSourceRaw.Options,
-		&dataSourceRaw.Database,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("DataSource not found with ID %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	return &dataSourceRaw, nil
 }
 
 // deleteDataSourceImpl permanently deletes a dataSource by ID.

@@ -134,13 +134,6 @@ func (find *DataSourceFind) String() string {
 
 // DataSourcePatch is the API message for data source.
 type DataSourcePatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
 	Username         *string            `jsonapi:"attr,username"`
 	Password         *string            `jsonapi:"attr,password"`
 	UseEmptyPassword *bool              `jsonapi:"attr,useEmptyPassword"`

@@ -568,16 +568,14 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance not found for database ID %d", databaseID))
 		}
-
-		dataSourceFind := &api.DataSourceFind{
-			ID:         &dataSourceID,
-			DatabaseID: &databaseID,
+		var dataSource *store.DataSourceMessage
+		for _, ds := range instance.DataSources {
+			if ds.UID == dataSourceID {
+				dataSource = ds
+				break
+			}
 		}
-		dataSourceOld, err := s.store.GetDataSource(ctx, dataSourceFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
-		}
-		if dataSourceOld == nil {
+		if dataSource == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
 
@@ -585,38 +583,69 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
-		if dataSourceOld.Type == api.RO && !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
+		if dataSource.Type == api.RO && !s.licenseService.IsFeatureEnabled(api.FeatureReadReplicaConnection) {
 			if (dataSourcePatch.Host != nil && *dataSourcePatch.Host != "") || (dataSourcePatch.Port != nil && *dataSourcePatch.Port != "") {
 				return echo.NewHTTPError(http.StatusForbidden, api.FeatureReadReplicaConnection.AccessErrorMessage())
 			}
 		}
 
-		dataSourcePatch.ID = dataSourceID
-		dataSourcePatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
-
+		updateMessage := &store.UpdateDataSourceMessage{
+			UpdaterID:     c.Get(getPrincipalIDContextKey()).(int),
+			InstanceUID:   instance.UID,
+			EnvironmentID: instance.EnvironmentID,
+			InstanceID:    instance.ResourceID,
+			Type:          dataSource.Type,
+			Username:      dataSourcePatch.Username,
+			Password:      dataSourcePatch.Password,
+			SslCa:         dataSourcePatch.SslCa,
+			SslCert:       dataSourcePatch.SslCert,
+			SslKey:        dataSourcePatch.SslKey,
+			Host:          dataSourcePatch.Host,
+			Port:          dataSourcePatch.Port,
+		}
+		if dataSourcePatch.Options != nil {
+			updateMessage.SRV = &dataSourcePatch.Options.SRV
+			updateMessage.AuthenticationDatabase = &dataSourcePatch.Options.AuthenticationDatabase
+		}
 		if dataSourcePatch.UseEmptyPassword != nil && *dataSourcePatch.UseEmptyPassword {
 			password := ""
-			dataSourcePatch.Password = &password
+			updateMessage.Password = &password
 		}
-		dataSourceNew, err := s.store.PatchDataSource(ctx, instance, dataSourcePatch)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
+		if err := s.store.UpdateDataSourceV2(ctx, updateMessage); err != nil {
+			return err
 		}
 
-		if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
-			log.Warn("Failed to sync instance",
-				zap.String("instance", instance.ResourceID),
-				zap.Error(err))
+		if dataSource.Type == api.Admin {
+			if _, err := s.SchemaSyncer.SyncInstance(ctx, instance); err != nil {
+				log.Warn("Failed to sync instance",
+					zap.String("instance", instance.ResourceID),
+					zap.Error(err))
+			}
+			// Sync all databases in the instance asynchronously.
+			updatedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance %q", instance.Title)).SetInternal(err)
+			}
+			s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
 		}
-		// Sync all databases in the instance asynchronously.
-		updatedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
+
+		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance %q", instance.Title)).SetInternal(err)
+			return err
 		}
-		s.stateCfg.InstanceDatabaseSyncChan <- updatedInstance
+		var composedDataSource *api.DataSource
+		for _, ds := range composedInstance.DataSourceList {
+			if ds.Type == dataSource.Type {
+				composedDataSource = ds
+				break
+			}
+		}
+		if composedDataSource == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "data source not found")
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSourceNew); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedDataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch data source response").SetInternal(err)
 		}
 		return nil

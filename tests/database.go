@@ -238,13 +238,13 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 	return nil
 }
 
-func (ctl *controller) patchDataSource(databaseID int, dataSourcePatch api.DataSourcePatch) error {
+func (ctl *controller) patchDataSource(databaseID, dataSourceID int, dataSourcePatch api.DataSourcePatch) error {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &dataSourcePatch); err != nil {
 		return errors.Wrap(err, "failed to marshal dataSourcePatch")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourcePatch.ID), buf)
+	body, err := ctl.patch(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourceID), buf)
 	if err != nil {
 		return err
 	}
