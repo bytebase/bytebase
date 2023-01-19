@@ -19,8 +19,6 @@ const (
 	pipelineCacheNamespace cacheNamespace = "pl"
 	// issueCacheNamespace is the cache type of issues.
 	issueCacheNamespace cacheNamespace = "is"
-	// dataSourceCacheNamespace is the cache type of data sources.
-	dataSourceCacheNamespace cacheNamespace = "ds"
 	// approvalPolicyCacheNamespace is the cache type of approval policy.
 	approvalPolicyCacheNamespace cacheNamespace = "app"
 )
