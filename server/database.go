@@ -427,7 +427,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("databaseID"))).SetInternal(err)
 		}
-
 		dataSourceID, err := strconv.Atoi(c.Param("dataSourceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
@@ -440,23 +439,31 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if database == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", databaseID))
 		}
-
-		dataSourceFind := &api.DataSourceFind{
-			ID: &dataSourceID,
-		}
-		dataSource, err := s.store.GetDataSource(ctx, dataSourceFind)
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{EnvironmentID: &database.EnvironmentID, ResourceID: &database.InstanceID})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch data source by ID %d", dataSourceID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get instance").SetInternal(err)
 		}
-		if dataSource == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found with ID %d", dataSourceID))
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance not found for database ID %d", databaseID))
 		}
-		if dataSource.DatabaseID != databaseID {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
+
+		composedInstance, err := s.store.GetInstanceByID(ctx, instance.UID)
+		if err != nil {
+			return err
+		}
+		var composedDataSource *api.DataSource
+		for _, ds := range composedInstance.DataSourceList {
+			if ds.ID == dataSourceID {
+				composedDataSource = ds
+				break
+			}
+		}
+		if composedDataSource == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "data source not found")
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedDataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal find data source response").SetInternal(err)
 		}
 		return nil
@@ -676,27 +683,21 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance not found for database ID %d", databaseID))
 		}
 
-		dataSourceFind := &api.DataSourceFind{
-			ID:         &dataSourceID,
-			DatabaseID: &databaseID,
-		}
-		dataSource, err := s.store.GetDataSource(ctx, dataSourceFind)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find data source").SetInternal(err)
+		var dataSource *store.DataSourceMessage
+		for _, ds := range instance.DataSources {
+			if ds.UID == dataSourceID {
+				dataSource = ds
+				break
+			}
 		}
 		if dataSource == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Data source not found by ID %d and database ID %d", dataSourceID, databaseID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("data source not found by ID %d and database ID %d", dataSourceID, databaseID))
 		}
-		// Only allow to delete ReadOnly data source at present.
-		if dataSource.Type != api.RO {
-			return echo.NewHTTPError(http.StatusForbidden, "Data source type is not read only")
+		if dataSource.Type == api.Admin {
+			return echo.NewHTTPError(http.StatusBadRequest, "admin data source cannot be deleted")
 		}
-
-		if err := s.store.DeleteDataSource(ctx, instance, &api.DataSourceDelete{
-			ID:         dataSource.ID,
-			InstanceID: instance.UID,
-		}); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete data source").SetInternal(err)
+		if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.EnvironmentID, instance.ResourceID, dataSource.Type); err != nil {
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
