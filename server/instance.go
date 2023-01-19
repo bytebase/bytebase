@@ -520,7 +520,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 // We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
 func (s *Server) instanceCountGuard(ctx context.Context) error {
 	subscription := s.licenseService.LoadSubscription(ctx)
-	if subscription.Seat == -1 {
+	if subscription.InstanceCount == -1 {
 		return nil
 	}
 
