@@ -14,7 +14,6 @@ export const useSubscriptionStore = defineStore("subscription", {
   state: (): SubscriptionState => ({
     subscription: undefined,
     trialingDays: 14,
-    trialingInstanceCount: 999,
   }),
   getters: {
     currentPlan(state): PlanType {
@@ -130,7 +129,8 @@ export const useSubscriptionStore = defineStore("subscription", {
             attributes: {
               type: planType,
               days: this.trialingDays,
-              instanceCount: this.trialingInstanceCount,
+              seat: 10,
+              instanceCount: -1,
             },
           },
         })
