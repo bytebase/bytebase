@@ -33,6 +33,9 @@ const (
 	StatementRedundantAlterTable     Code = 207
 	StatementDMLDryRunFailed         Code = 208
 	StatementAffectedRowExceedsLimit Code = 209
+	StatementAddColumnWithDefault    Code = 210
+	StatementAddCheckWithValidation  Code = 211
+	StatementAddNotNull              Code = 212
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -104,6 +107,7 @@ const (
 	SpatialIndexKeyNullable    Code = 811
 	DuplicateColumnInIndex     Code = 812
 	IndexCountExceedsLimit     Code = 813
+	CreateIndexUnconcurrently  Code = 814
 
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001

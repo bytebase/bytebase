@@ -1,4 +1,4 @@
-import { SQLResultSet } from "./sql";
+import { SQLResultSet } from "./sqlAdvice";
 import { ExecuteConfig, ExecuteOption } from "./tab";
 
 export type WebTerminalQueryItem = {
@@ -8,6 +8,6 @@ export type WebTerminalQueryItem = {
     config: ExecuteConfig;
     option?: Partial<ExecuteOption>;
   };
-  isExecutingSQL: boolean;
   queryResult?: SQLResultSet;
+  status: "IDLE" | "RUNNING" | "FINISHED" | "CANCELLED";
 };

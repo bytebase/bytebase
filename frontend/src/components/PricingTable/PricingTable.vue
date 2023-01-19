@@ -41,11 +41,6 @@
                 {{ plan.priceUnit }}
               </p>
 
-              <div class="text-gray-400 h-5">
-                <span v-if="plan.type != PlanType.ENTERPRISE">
-                  {{ $t("subscription.per-instance") }}
-                </span>
-              </div>
               <div class="text-gray-400">
                 {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
@@ -165,7 +160,6 @@
           <span class="text-4xl"> {{ plan.pricing }} </span>
           <span v-if="plan.type != PlanType.ENTERPRISE">
             &nbsp;
-            {{ $t("subscription.per-instance") }}
             {{ $t("subscription.per-month") }}
           </span>
         </p>
@@ -299,7 +293,7 @@ const plans = computed((): LocalPlan[] => {
     pricing:
       plan.type === PlanType.ENTERPRISE
         ? t("subscription.contact-us")
-        : `$${plan.pricePerInstancePerMonth}`,
+        : `$${plan.pricePerSeatPerMonth}`,
     priceUnit:
       plan.type === PlanType.ENTERPRISE ? "" : t("subscription.per-month"),
   }));

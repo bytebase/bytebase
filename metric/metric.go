@@ -94,4 +94,5 @@ type MemberCountMetric struct {
 	Role      api.Role
 	Status    api.MemberStatus
 	RowStatus api.RowStatus
+	Type      api.PrincipalType
 }

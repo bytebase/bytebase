@@ -29,6 +29,7 @@ type LicenseService struct {
 // Claims creates a struct that will be encoded to a JWT.
 // We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
 type Claims struct {
+	Seat          int    `json:"seat"`
 	InstanceCount int    `json:"instanceCount"`
 	Trialing      bool   `json:"trialing"`
 	Plan          string `json:"plan"`
@@ -82,9 +83,16 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 		return enterpriseAPI.Subscription{
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
-			ExpiresTs:     -1,
-			InstanceCount: 5,
+			ExpiresTs: -1,
+			// -1 means no limit for instance count.
+			InstanceCount: -1,
+			Seat:          config.SeatForFreePlan,
 		}
+	}
+
+	seat := license.Seat
+	if seat == 0 {
+		seat = -1
 	}
 
 	// Cache the subscription.
@@ -96,6 +104,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 		Trialing:      license.Trialing,
 		OrgID:         license.OrgID(),
 		OrgName:       license.OrgName,
+		Seat:          seat,
 	}
 	return *s.cachedSubscription
 }
@@ -239,12 +248,14 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 
 	license := &enterpriseAPI.License{
 		InstanceCount: instanceCount,
-		ExpiresTs:     claims.ExpiresAt.Unix(),
-		IssuedTs:      claims.IssuedAt.Unix(),
-		Plan:          planType,
-		Subject:       claims.Subject,
-		Trialing:      claims.Trialing,
-		OrgName:       claims.OrgName,
+		// TODO(ed): validate the seat in claim.
+		Seat:      claims.Seat,
+		ExpiresTs: claims.ExpiresAt.Unix(),
+		IssuedTs:  claims.IssuedAt.Unix(),
+		Plan:      planType,
+		Subject:   claims.Subject,
+		Trialing:  claims.Trialing,
+		OrgName:   claims.OrgName,
 	}
 
 	if err := license.Valid(); err != nil {

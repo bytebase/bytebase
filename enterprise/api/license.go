@@ -23,6 +23,7 @@ type License struct {
 	InstanceCount int          `json:"instanceCount"`
 	ExpiresTs     int64        `json:"expiresTs"`
 	IssuedTs      int64        `json:"issuedTs"`
+	Seat          int          `json:"seat"`
 	Plan          api.PlanType `json:"plan"`
 	Trialing      bool         `json:"trialing"`
 	OrgName       string       `json:"orgName"`

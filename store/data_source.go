@@ -83,20 +83,6 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 	return composeDataSource(dataSourceRaw), nil
 }
 
-// findDataSource finds a list of DataSource instances.
-func (s *Store) findDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
-	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find DataSource list with DataSourceFind[%+v]", find)
-	}
-
-	var dataSourceList []*api.DataSource
-	for _, raw := range dataSourceRawList {
-		dataSourceList = append(dataSourceList, composeDataSource(raw))
-	}
-	return dataSourceList, nil
-}
-
 // PatchDataSource patches an instance of DataSource.
 func (s *Store) PatchDataSource(ctx context.Context, instance *InstanceMessage, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	dataSourceRaw, err := s.patchDataSourceRaw(ctx, patch)
@@ -131,21 +117,7 @@ func (s *Store) DeleteDataSource(ctx context.Context, instance *InstanceMessage,
 	return nil
 }
 
-//
-// private functions
-//
-
-// createDataSourceRawTx creates an instance of DataSource.
-// This uses an existing transaction object.
-func (s *Store) createDataSourceRawTx(ctx context.Context, tx *Tx, create *api.DataSourceCreate) error {
-	if _, err := s.createDataSourceImpl(ctx, tx, create); err != nil {
-		return errors.Wrapf(err, "failed to create data source with DataSourceCreate[%+v]", create)
-	}
-	// Invalidate the cache.
-	s.cache.DeleteCache(dataSourceCacheNamespace, create.InstanceID)
-	return nil
-}
-
+// private functions.
 func composeDataSource(raw *dataSourceRaw) *api.DataSource {
 	return raw.toDataSource()
 }
@@ -170,38 +142,6 @@ func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceC
 	s.cache.DeleteCache(dataSourceCacheNamespace, dataSource.InstanceID)
 
 	return dataSource, nil
-}
-
-// findDataSourceRaw retrieves a list of data sources based on find.
-func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
-	findCopy := *find
-	findCopy.InstanceID = nil
-	isListDataSource := find.InstanceID != nil && findCopy == api.DataSourceFind{}
-	var cacheList []*dataSourceRaw
-	has, err := s.cache.FindCache(dataSourceCacheNamespace, *find.InstanceID, &cacheList)
-	if err != nil {
-		return nil, err
-	}
-	if has && isListDataSource {
-		return cacheList, nil
-	}
-
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := s.findDataSourceImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-	if isListDataSource {
-		if err := s.cache.UpsertCache(dataSourceCacheNamespace, *find.InstanceID, list); err != nil {
-			return nil, err
-		}
-	}
-	return list, nil
 }
 
 // getDataSourceRaw retrieves a single dataSource based on find.
@@ -316,7 +256,7 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *Tx, create *api.Data
 
 func (*Store) findDataSourceImpl(ctx context.Context, tx *Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -484,6 +424,9 @@ type DataSourceMessage struct {
 	// Flatten data source options.
 	SRV                    bool
 	AuthenticationDatabase string
+	// (deprecated) Output only.
+	UID        int
+	DatabaseID int
 }
 
 // UpdateDataSourceMessage is the message for the data source.
@@ -511,6 +454,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 	var dataSourceMessages []*DataSourceMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
+			data_source.id,
+			data_source.database_id,
 			data_source.name,
 			data_source.type,
 			data_source.username,
@@ -535,6 +480,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 	for rows.Next() {
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
+			&dataSourceMessage.UID,
+			&dataSourceMessage.DatabaseID,
 			&dataSourceMessage.Title,
 			&dataSourceMessage.Type,
 			&dataSourceMessage.Username,
@@ -566,7 +513,17 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 	}
 	defer tx.Rollback()
 
-	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource); err != nil {
+	allDatabaseName := api.AllDatabaseName
+	allDatabase, err := s.getDatabaseImplV2(ctx, tx, &FindDatabaseMessage{
+		InstanceID:         &instanceID,
+		DatabaseName:       &allDatabaseName,
+		IncludeAllDatabase: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, allDatabase.UID, creatorID, dataSource); err != nil {
 		return err
 	}
 
@@ -681,7 +638,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	return nil
 }
 
-func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) error {
+func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, databaseUID, creatorID int, dataSource *DataSourceMessage) error {
 	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
 	dataSourceOptions := api.DataSourceOptions{
 		SRV:                    dataSource.SRV,
@@ -706,14 +663,11 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 			options,
 			database
 		)
-		SELECT $1, $2, $3, data_source.database_id, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
-			FROM 
-				data_source JOIN db ON data_source.database_id = db.id
-			WHERE data_source.instance_id = $15 AND db.name = $16;
-	`, creatorID, creatorID, instanceUID, dataSource.Title,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+	`, creatorID, creatorID, instanceUID, databaseUID, dataSource.Title,
 		dataSource.Type, dataSource.Username, dataSource.Password, dataSource.SslKey,
 		dataSource.SslCert, dataSource.SslCa, dataSource.Host, dataSource.Port,
-		dataSourceOptions, dataSource.Database, instanceUID, api.AllDatabaseName,
+		dataSourceOptions, dataSource.Database,
 	); err != nil {
 		return FormatError(err)
 	}

@@ -1331,6 +1331,9 @@ func printStmtSliceByText(buf io.Writer, nodeList []ast.Node) error {
 		if err := writeStringWithNewLine(buf, node.Text()); err != nil {
 			return err
 		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -1342,6 +1345,9 @@ func printStmtSlice(buf io.Writer, nodeList []ast.Node) error {
 			return err
 		}
 		if err := writeStringWithNewLine(buf, sql); err != nil {
+			return err
+		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
 			return err
 		}
 	}

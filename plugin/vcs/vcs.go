@@ -146,12 +146,11 @@ type UserInfo struct {
 
 // RepositoryMember is the API message for  repository member info.
 type RepositoryMember struct {
-	Email        string             `json:"email"`
-	Name         string             `json:"name"`
-	State        State              `json:"state"`
-	Role         common.ProjectRole `json:"role"`
-	VCSRole      string             `json:"vcsRole"`
-	RoleProvider Type               `json:"roleProvider"`
+	Email   string             `json:"email"`
+	Name    string             `json:"name"`
+	State   State              `json:"state"`
+	Role    common.ProjectRole `json:"role"`
+	VCSRole string             `json:"vcsRole"`
 }
 
 // Repository is the API message for repository info.

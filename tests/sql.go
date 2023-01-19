@@ -280,10 +280,6 @@ func prodTemplateSQLReviewPolicyForPostgreSQL() (string, error) {
 				Type:  advisor.SchemaRuleCurrentTimeColumnCountLimit,
 				Level: advisor.SchemaRuleLevelWarning,
 			},
-			{
-				Type:  advisor.SchemaRuleColumnRequireDefault,
-				Level: advisor.SchemaRuleLevelWarning,
-			},
 			// SCHEMA
 			{
 				Type:  advisor.SchemaRuleSchemaBackwardCompatibility,

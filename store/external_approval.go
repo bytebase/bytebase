@@ -220,7 +220,7 @@ func (*Store) createExternalApprovalImpl(ctx context.Context, tx *Tx, create *ap
 }
 
 func (*Store) findExternalApprovalImpl(ctx context.Context, tx *Tx, find *api.ExternalApprovalFind) ([]*externalApprovalRaw, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
 	if v := find.IssueID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)

@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -126,12 +127,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			patch.TenantMode = &tenantMode
 		case "project.db_name_template":
 			patch.DBNameTemplate = &request.Project.DbNameTemplate
-		case "project.role_provider":
-			roleProvider, err := convertToProjectRoleProvider(request.Project.RoleProvider)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			patch.RoleProvider = &roleProvider
 		case "project.schema_change":
 			schemaChange, err := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			if err != nil {
@@ -233,8 +228,48 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 }
 
 // SetIamPolicy sets the IAM policy for a project.
-func (*ProjectService) SetIamPolicy(_ context.Context, _ *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetIamPolicy not implemented")
+func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamPolicyRequest) (*v1pb.IamPolicy, error) {
+	projectID, err := getProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	creatorUID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
+	}
+	if err := validateIAMPolicy(request.Policy); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.InvalidArgument, "project %q has been deleted", request.Project)
+	}
+
+	policy, err := s.convertToIAMPolicyMessage(ctx, request.Policy)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	if err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return convertToIamPolicy(iamPolicy), nil
 }
 
 // SyncExternalIamPolicy syncs the IAM policy from the VCS which binds to the project.
@@ -280,6 +315,36 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) *v1pb.IamPolicy {
 	}
 }
 
+// convertToIAMPolicyMessage will convert the IAM policy to IAM policy message.
+func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolicy *v1pb.IamPolicy) (*store.IAMPolicyMessage, error) {
+	var bindings []*store.PolicyBinding
+	for _, binding := range iamPolicy.Bindings {
+		var users []*store.UserMessage
+		role, err := convertProjectRole(binding.Role)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		for _, member := range binding.Members {
+			user, err := s.store.GetUserByEmail(ctx, getUserEmailFromIdentifier(member))
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if user == nil {
+				return nil, status.Errorf(codes.NotFound, "user %q not found", member)
+			}
+			users = append(users, user)
+		}
+
+		bindings = append(bindings, &store.PolicyBinding{
+			Role:    role,
+			Members: users,
+		})
+	}
+	return &store.IAMPolicyMessage{
+		Bindings: bindings,
+	}, nil
+}
+
 // getUserIdentifier returns the user identifier.
 // See more details in project_service.proto.
 func getUserIdentifier(email string) string {
@@ -295,6 +360,16 @@ func convertToProjectRole(role api.Role) v1pb.ProjectRole {
 	default:
 		return v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED
 	}
+}
+
+func convertProjectRole(role v1pb.ProjectRole) (api.Role, error) {
+	switch role {
+	case v1pb.ProjectRole_PROJECT_ROLE_OWNER:
+		return api.Owner, nil
+	case v1pb.ProjectRole_PROJECT_ROLE_DEVELOPER:
+		return api.Developer, nil
+	}
+	return api.Role(""), errors.Errorf("invalid project role %q", role)
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
@@ -320,16 +395,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		tenantMode = v1pb.TenantMode_TENANT_MODE_DISABLED
 	case api.TenantModeTenant:
 		tenantMode = v1pb.TenantMode_TENANT_MODE_ENABLED
-	}
-
-	roleProvider := v1pb.RoleProvider_ROLE_PROVIDER_UNSPECIFIED
-	switch projectMessage.RoleProvider {
-	case api.ProjectRoleProviderBytebase:
-		roleProvider = v1pb.RoleProvider_BYTEBASE
-	case api.ProjectRoleProviderGitHubCom:
-		roleProvider = v1pb.RoleProvider_GITHUB_COM
-	case api.ProjectRoleProviderGitLabSelfHost:
-		roleProvider = v1pb.RoleProvider_GITLAB_SELF_HOST
 	}
 
 	schemaChange := v1pb.SchemaChange_SCHEMA_CHANGE_UNSPECIFIED
@@ -359,7 +424,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Visibility:     visibility,
 		TenantMode:     tenantMode,
 		DbNameTemplate: projectMessage.DBNameTemplate,
-		RoleProvider:   roleProvider,
 		// TODO(d): schema_version_type for project.
 		SchemaVersion: v1pb.SchemaVersion_SCHEMA_VERSION_UNSPECIFIED,
 		SchemaChange:  schemaChange,
@@ -404,21 +468,6 @@ func convertToProjectTenantMode(tenantMode v1pb.TenantMode) (api.ProjectTenantMo
 		return t, errors.Errorf("invalid tenant mode %v", tenantMode)
 	}
 	return t, nil
-}
-
-func convertToProjectRoleProvider(roleProvider v1pb.RoleProvider) (api.ProjectRoleProvider, error) {
-	var r api.ProjectRoleProvider
-	switch roleProvider {
-	case v1pb.RoleProvider_BYTEBASE:
-		r = api.ProjectRoleProviderBytebase
-	case v1pb.RoleProvider_GITHUB_COM:
-		r = api.ProjectRoleProviderGitHubCom
-	case v1pb.RoleProvider_GITLAB_SELF_HOST:
-		r = api.ProjectRoleProviderGitLabSelfHost
-	default:
-		return r, errors.Errorf("invalid role provider %v", roleProvider)
-	}
-	return r, nil
 }
 
 func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) (api.ProjectSchemaChangeType, error) {
@@ -471,11 +520,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		return nil, err
 	}
 
-	roleProvider, err := convertToProjectRoleProvider(project.RoleProvider)
-	if err != nil {
-		return nil, err
-	}
-
 	schemaChange, err := convertToProjectSchemaChangeType(project.SchemaChange)
 	if err != nil {
 		return nil, err
@@ -494,7 +538,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		Visibility:       visibility,
 		TenantMode:       tenantMode,
 		DBNameTemplate:   project.DbNameTemplate,
-		RoleProvider:     roleProvider,
 		SchemaChangeType: schemaChange,
 		LGTMCheckSetting: lgtmCheck,
 	}, nil
@@ -509,4 +552,64 @@ func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
 		}
 	}
 	return false
+}
+
+func validateIAMPolicy(policy *v1pb.IamPolicy) error {
+	if policy == nil {
+		return errors.Errorf("IAM Policy is required")
+	}
+	return validateBindings(policy.Bindings)
+}
+
+func getUserEmailFromIdentifier(ident string) string {
+	return strings.TrimPrefix(ident, "user:")
+}
+
+func validateBindings(bindings []*v1pb.Binding) error {
+	if len(bindings) == 0 {
+		return errors.Errorf("IAM Binding is required")
+	}
+	userMap := make(map[string]bool)
+	projectRoleMap := make(map[v1pb.ProjectRole]bool)
+	for _, binding := range bindings {
+		if binding.Role == v1pb.ProjectRole_PROJECT_ROLE_UNSPECIFIED {
+			return errors.Errorf("IAM Binding role is required")
+		}
+		// Each of the bindings must contain at least one member.
+		if len(binding.Members) == 0 {
+			return errors.Errorf("Each IAM binding must have at least one member")
+		}
+		// We have not merge the binding by the same role yet, so the roles in each binding must be unique.
+		if _, ok := projectRoleMap[binding.Role]; ok {
+			return errors.Errorf("Each IAM binding must have a unique role")
+		}
+
+		for _, member := range binding.Members {
+			if _, ok := userMap[member]; ok {
+				return errors.Errorf("duplicate user %s", member)
+			}
+			userMap[member] = true
+			if err := validateMember(member); err != nil {
+				return err
+			}
+		}
+		projectRoleMap[binding.Role] = true
+	}
+	// Must contain one owner binding.
+	if _, ok := projectRoleMap[v1pb.ProjectRole_PROJECT_ROLE_OWNER]; !ok {
+		return errors.Errorf("IAM Policy must have at least one binding with role PROJECT_OWNER")
+	}
+	return nil
+}
+
+func validateMember(member string) error {
+	userIdentifierMap := map[string]bool{
+		"user:": true,
+	}
+	for prefix := range userIdentifierMap {
+		if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {
+			return nil
+		}
+	}
+	return errors.Errorf("invalid user %s", member)
 }

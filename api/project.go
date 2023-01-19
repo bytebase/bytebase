@@ -80,8 +80,7 @@ type Project struct {
 	// All database with the same {{DB_NAME}} (base database name) belong to one group.
 	//
 	// Empty value means all tenant databases in the project belonging to the same group.
-	DBNameTemplate string              `jsonapi:"attr,dbNameTemplate"`
-	RoleProvider   ProjectRoleProvider `jsonapi:"attr,roleProvider"`
+	DBNameTemplate string `jsonapi:"attr,dbNameTemplate"`
 	// SchemaChangeType is the type of the schema migration script.
 	SchemaChangeType ProjectSchemaChangeType `jsonapi:"attr,schemaChangeType"`
 	// LGTMCheckSetting is the setting of the LGTM check.
@@ -95,7 +94,6 @@ type ProjectCreate struct {
 	Key              string                  `jsonapi:"attr,key"`
 	TenantMode       ProjectTenantMode       `jsonapi:"attr,tenantMode"`
 	DBNameTemplate   string                  `jsonapi:"attr,dbNameTemplate"`
-	RoleProvider     ProjectRoleProvider     `jsonapi:"attr,roleProvider"`
 	SchemaChangeType ProjectSchemaChangeType `jsonapi:"attr,schemaChangeType"`
 }
 
@@ -129,8 +127,7 @@ type ProjectPatch struct {
 	Key              *string            `jsonapi:"attr,key"`
 	TenantMode       *ProjectTenantMode `jsonapi:"attr,tenantMode"`
 	DBNameTemplate   *string            `jsonapi:"attr,dbNameTemplate"`
-	WorkflowType     *string            `jsonapi:"attr,workflowType"` // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
-	RoleProvider     *string            `jsonapi:"attr,roleProvider"`
+	WorkflowType     *string            `jsonapi:"attr,workflowType"`     // NOTE: We can't use *ProjectWorkflowType because "google/jsonapi" doesn't support.
 	SchemaChangeType *string            `jsonapi:"attr,schemaChangeType"` // NOTE: We can't use *ProjectSchemaChangeType because "google/jsonapi" doesn't support.
 	LGTMCheckSetting *LGTMCheckSetting  `jsonapi:"attr,lgtmCheckSetting"`
 }

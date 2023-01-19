@@ -275,6 +275,9 @@ const (
 	// PostgreSQLIndexNoDuplicateColumn is an advisor type for Postgresql no duplicate columns in index.
 	PostgreSQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.postgresql.index.no-duplicate-column"
 
+	// PostgreSQLCreateIndexConcurrently is an advisor type for PostgreSQL to create index concurrently.
+	PostgreSQLCreateIndexConcurrently Type = "bb.plugin.advisor.postgresql.index.create-concurrently"
+
 	// PostgreSQLColumnTypeDisallowList is an advisor type for Postgresql column type disallow list.
 	PostgreSQLColumnTypeDisallowList Type = "bb.plugin.advisor.postgresql.column.type-disallow-list"
 
@@ -284,11 +287,29 @@ const (
 	// PostgreSQLColumnMaximumCharacterLength is an advisor type for PostgreSQL maximum character length.
 	PostgreSQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.postgresql.column.maximum-character-length"
 
+	// PostgreSQLRequireColumnDefault is an advisor type for PostgreSQL column default requirement.
+	PostgreSQLRequireColumnDefault Type = "bb.plugin.advisor.postgresql.column.require-default"
+
 	// PostgreSQLStatementDisallowCommit is an advisor type for PostgreSQL to disallow commit.
 	PostgreSQLStatementDisallowCommit Type = "bb.plugin.advisor.postgresql.statement.disallow-commit"
 
 	// PostgreSQLStatementDMLDryRun is an advisor type for PostgreSQL DML dry run.
 	PostgreSQLStatementDMLDryRun Type = "bb.plugin.advisor.postgresql.statement.dml-dry-run"
+
+	// PostgreSQLStatementAffectedRowLimit is an advisor type for PostgreSQL UPDATE/DELETE affected row limit.
+	PostgreSQLStatementAffectedRowLimit Type = "bb.plugin.advisor.postgresql.statement.affected-row-limit"
+
+	// PostgreSQLMergeAlterTable is an advisor type for PostgreSQL no redundant ALTER TABLE statements.
+	PostgreSQLMergeAlterTable Type = "bb.plugin.advisor.postgresql.statement.merge-alter-table"
+
+	// PostgreSQLAddCheckNotValid is an advisor type for PostgreSQL to add check not valid.
+	PostgreSQLAddCheckNotValid Type = "bb.plugin.advisor.postgresql.statement.add-check-not-valid"
+
+	// PostgreSQLDisallowAddColumnWithDefault is an advisor type for PostgreSQL to disallow add column with default.
+	PostgreSQLDisallowAddColumnWithDefault Type = "bb.plugin.advisor.postgresql.statement.disallow-add-column-with-default"
+
+	// PostgreSQLDisallowAddNotNull is an advisor type for PostgreSQl to disallow add not null.
+	PostgreSQLDisallowAddNotNull Type = "bb.plugin.advisor.postgresql.statement.disallow-add-not-null"
 
 	// PostgreSQLTableDropNamingConvention is an advisor type for PostgreSQL table drop with naming convention.
 	PostgreSQLTableDropNamingConvention Type = "bb.plugin.advisor.postgresql.table.drop-naming-convention"

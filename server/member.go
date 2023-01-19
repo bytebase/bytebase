@@ -115,15 +115,26 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch member request").SetInternal(err)
 		}
 
-		// When archiving an owner, make sure there are other active owners.
-		if user.Role == api.Owner && memberPatch.RowStatus != nil && *memberPatch.RowStatus == string(api.Archived) {
-			countResult, err := s.store.CountMemberGroupByRoleAndStatus(ctx)
-			for _, count := range countResult {
-				if count.Role == api.Owner && count.RowStatus == api.Normal && count.Count == 1 {
+		if status := memberPatch.RowStatus; status != nil {
+			// / When archiving an owner, make sure there are other active owners.
+			if user.Role == api.Owner && *status == string(api.Archived) {
+				countResult, err := s.store.CountMemberGroupByRoleAndStatus(ctx)
+				ownerCount := 0
+				for _, count := range countResult {
+					if count.Role == api.Owner && count.RowStatus == api.Normal && count.Type == api.EndUser {
+						ownerCount += count.Count
+					}
+				}
+				if ownerCount == 1 {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Cannot archive the only remaining owner in workspace").SetInternal(err)
+				}
+			} else if *status == string(api.Normal) {
+				if err := s.seatCountGuard(ctx); err != nil {
+					return err
 				}
 			}
 		}
+
 		oldRole := user.Role
 
 		update := &store.UpdateUserMessage{}

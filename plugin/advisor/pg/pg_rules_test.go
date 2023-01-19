@@ -40,6 +40,13 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleTableDropNamingConvention,
 		advisor.SchemaRuleCollationAllowlist,
 		advisor.SchemaRuleIndexTotalNumberLimit,
+		advisor.SchemaRuleStatementAffectedRowLimit,
+		advisor.SchemaRuleStatementMergeAlterTable,
+		advisor.SchemaRuleColumnRequireDefault,
+		advisor.SchemaRuleStatementDisallowAddColumnWithDefault,
+		advisor.SchemaRuleCreateIndexConcurrently,
+		advisor.SchemaRuleStatementAddCheckNotValid,
+		advisor.SchemaRuleStatementDisallowAddNotNull,
 	}
 
 	for _, rule := range pgRules {

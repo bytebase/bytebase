@@ -1,11 +1,6 @@
-import type {
-  Path,
-  Position,
-  Rect,
-  Size,
-} from "@/components/SchemaDiagram/types";
+import type { Path, Point, Rect, Size } from "@/components/SchemaDiagram/types";
 
-export type GraphChildNodeItem = { id: string; size: Size; pos: Position };
+export type GraphChildNodeItem = { id: string; size: Size; pos: Point };
 
 export type GraphNodeItem = {
   group: string;

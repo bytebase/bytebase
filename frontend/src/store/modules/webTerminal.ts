@@ -4,7 +4,7 @@ import type { TabInfo, WebTerminalQueryItem } from "@/types";
 
 const createInitialQueryItemByTab = (tab: TabInfo): WebTerminalQueryItem => ({
   sql: tab.statement,
-  isExecutingSQL: false,
+  status: "IDLE",
 });
 
 export const useWebTerminalStore = defineStore("webTerminal", () => {

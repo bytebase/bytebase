@@ -8,13 +8,19 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"math/big"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/google/uuid"
+	"github.com/paulmach/orb"
+	"github.com/paulmach/orb/encoding/wkt"
 	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
@@ -214,6 +220,10 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+		// We will ignore the dump error if the database is dropped.
+		if strings.Contains(err.Error(), "not found") {
+			return insertedID, "", nil
+		}
 		return "", "", FormatError(err)
 	}
 
@@ -350,11 +360,12 @@ func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int
 }
 
 // Query will execute a readonly / SELECT query.
+// The result is then JSON marshaled and returned to the frontend.
 func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, queryContext *db.QueryContext) ([]interface{}, error) {
 	readOnly := queryContext.ReadOnly
 	limit := queryContext.Limit
 	if !readOnly {
-		return queryAdmin(ctx, sqldb, statement, limit)
+		return queryAdmin(ctx, dbType, sqldb, statement, limit)
 	}
 	// Limit SQL query result size.
 	if dbType == db.MySQL {
@@ -403,7 +414,42 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		return nil, FormatError(err)
 	}
 
-	colCount := len(columnTypes)
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		// DatabaseTypeName returns the database system name of the column type.
+		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+
+	data, err := readRows(rows, dbType, columnTypes, columnTypeNames, fieldList)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return []interface{}{columnNames, columnTypeNames, data}, nil
+}
+
+// query will execute a query.
+func queryAdmin(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string, _ int) ([]interface{}, error) {
+	rows, err := sqldb.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, FormatError(err)
+	}
 
 	var columnTypeNames []string
 	for _, v := range columnTypes {
@@ -412,9 +458,25 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
+	data, err := readRows(rows, dbType, columnTypes, columnTypeNames, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return []interface{}{columnNames, columnTypeNames, data}, nil
+}
+
+func readRows(rows *sql.Rows, dbType db.Type, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {
+	if dbType == db.ClickHouse {
+		return readRowsForClickhouse(rows, columnTypes, columnTypeNames, fieldList)
+	}
 	data := []interface{}{}
 	for rows.Next() {
-		scanArgs := make([]interface{}, colCount)
+		scanArgs := make([]interface{}, len(columnTypes))
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
 			switch v {
@@ -467,97 +529,8 @@ func Query(ctx context.Context, dbType db.Type, sqldb *sql.DB, statement string,
 
 		data = append(data, rowData)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
 
-	return []interface{}{columnNames, columnTypeNames, data}, nil
-}
-
-// query will execute a query.
-func queryAdmin(ctx context.Context, sqldb *sql.DB, statement string, _ int) ([]interface{}, error) {
-	rows, err := sqldb.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	columnNames, err := rows.Columns()
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	columnTypes, err := rows.ColumnTypes()
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	colCount := len(columnTypes)
-
-	var columnTypeNames []string
-	for _, v := range columnTypes {
-		// DatabaseTypeName returns the database system name of the column type.
-		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
-		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
-	}
-
-	// TODO(d): share the common code.
-	data := []interface{}{}
-	for rows.Next() {
-		scanArgs := make([]interface{}, colCount)
-		for i, v := range columnTypeNames {
-			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
-			switch v {
-			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
-				scanArgs[i] = new(sql.NullString)
-			case "BOOL":
-				scanArgs[i] = new(sql.NullBool)
-			case "INT", "INTEGER":
-				scanArgs[i] = new(sql.NullInt64)
-			case "FLOAT":
-				scanArgs[i] = new(sql.NullFloat64)
-			default:
-				scanArgs[i] = new(sql.NullString)
-			}
-		}
-
-		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, FormatError(err)
-		}
-
-		rowData := []interface{}{}
-		for i := range columnTypes {
-			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
-				rowData = append(rowData, v.Bool)
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
-				rowData = append(rowData, v.String)
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
-				rowData = append(rowData, v.Int64)
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
-				rowData = append(rowData, v.Int32)
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
-				rowData = append(rowData, v.Float64)
-				continue
-			}
-			// If none of them match, set nil to its value.
-			rowData = append(rowData, nil)
-		}
-
-		data = append(data, rowData)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return []interface{}{columnNames, columnTypeNames, data}, nil
+	return data, nil
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
@@ -741,4 +714,213 @@ func ConvertYesNo(s string) (bool, error) {
 	default:
 		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
+}
+
+func readRowsForClickhouse(rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, fieldList []db.SensitiveField) ([]interface{}, error) {
+	data := []interface{}{}
+
+	for rows.Next() {
+		cols := make([]interface{}, len(columnTypes))
+		for i, name := range columnTypeNames {
+			// The ClickHouse driver uses *Type rather than sql.NullType to scan nullable fields
+			// as described in https://github.com/ClickHouse/clickhouse-go/issues/754
+			// TODO: remove this workaround once fixed.
+			if strings.HasPrefix(name, "TUPLE") || strings.HasPrefix(name, "ARRAY") || strings.HasPrefix(name, "MAP") {
+				// For TUPLE, ARRAY, MAP type in ClickHouse, we pass interface{} and the driver will do the rest.
+				var it interface{}
+				cols[i] = &it
+			} else {
+				// We use ScanType to get the correct *Type and then do type assertions
+				// following https://github.com/ClickHouse/clickhouse-go/blob/main/TYPES.md
+				cols[i] = reflect.New(columnTypes[i].ScanType()).Interface()
+			}
+		}
+
+		if err := rows.Scan(cols...); err != nil {
+			return nil, FormatError(err)
+		}
+
+		rowData := []interface{}{}
+		for i := range cols {
+			if len(fieldList) > 0 && fieldList[i].Sensitive {
+				rowData = append(rowData, "******")
+				continue
+			}
+
+			// handle TUPLE ARRAY MAP
+			if v, ok := cols[i].(*interface{}); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+
+			// not nullable
+			if v, ok := cols[i].(*int); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*int8); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*int16); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*int32); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*int64); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*uint); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*uint8); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*uint16); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*uint32); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*uint64); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*float32); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*float64); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*string); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*bool); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*time.Time); ok && v != nil {
+				rowData = append(rowData, *v)
+				continue
+			}
+			if v, ok := cols[i].(*big.Int); ok && v != nil {
+				rowData = append(rowData, v.String())
+				continue
+			}
+			if v, ok := cols[i].(*decimal.Decimal); ok && v != nil {
+				rowData = append(rowData, v.String())
+				continue
+			}
+			if v, ok := cols[i].(*uuid.UUID); ok && v != nil {
+				rowData = append(rowData, v.String())
+				continue
+			}
+			if v, ok := cols[i].(*orb.Point); ok && v != nil {
+				rowData = append(rowData, wkt.MarshalString(*v))
+				continue
+			}
+			if v, ok := cols[i].(*orb.Polygon); ok && v != nil {
+				rowData = append(rowData, wkt.MarshalString(*v))
+				continue
+			}
+			if v, ok := cols[i].(*orb.Ring); ok && v != nil {
+				rowData = append(rowData, wkt.MarshalString(*v))
+				continue
+			}
+			if v, ok := cols[i].(*orb.MultiPolygon); ok && v != nil {
+				rowData = append(rowData, wkt.MarshalString(*v))
+				continue
+			}
+
+			// nullable
+			if v, ok := cols[i].(**int); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**int8); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**int16); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**int32); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**int64); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**uint); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**uint8); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**uint16); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**uint32); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**uint64); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**float32); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**float64); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**string); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**bool); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**time.Time); ok && *v != nil {
+				rowData = append(rowData, **v)
+				continue
+			}
+			if v, ok := cols[i].(**big.Int); ok && *v != nil {
+				rowData = append(rowData, (*v).String())
+				continue
+			}
+			if v, ok := cols[i].(**decimal.Decimal); ok && *v != nil {
+				rowData = append(rowData, (*v).String())
+				continue
+			}
+			if v, ok := cols[i].(**uuid.UUID); ok && *v != nil {
+				rowData = append(rowData, (*v).String())
+				continue
+			}
+			rowData = append(rowData, nil)
+		}
+
+		data = append(data, rowData)
+	}
+
+	return data, nil
 }

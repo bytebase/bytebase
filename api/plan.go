@@ -216,7 +216,7 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 var featureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
 	Feature3rdPartyAuth: {false, true, true},
-	FeatureRBAC:         {false, true, true},
+	FeatureRBAC:         {true, true, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
@@ -227,7 +227,7 @@ var featureMatrix = map[FeatureType][3]bool{
 	FeatureMultiTenancy:         {false, false, true},
 	FeatureOnlineMigration:      {false, true, true},
 	FeatureSchemaDrift:          {false, true, true},
-	FeatureSQLReview:            {false, true, true},
+	FeatureSQLReview:            {true, true, true},
 	FeatureTaskScheduleTime:     {false, true, true},
 	FeatureVCSSQLReviewWorkflow: {false, false, true},
 	// Database management
@@ -255,6 +255,7 @@ type PlanPatch struct {
 type TrialPlanCreate struct {
 	Type          PlanType `jsonapi:"attr,type"`
 	Days          int      `jsonapi:"attr,days"`
+	Seat          int      `jsonapi:"attr,seat"`
 	InstanceCount int      `jsonapi:"attr,instanceCount"`
 }
 
@@ -270,8 +271,8 @@ const (
 
 // PlanLimitValues is the plan limit value mapping.
 var PlanLimitValues = map[PlanLimit][3]int64{
-	PlanLimitMaximumTask:        {4, math.MaxInt64, math.MaxInt64},
-	PlanLimitMaximumEnvironment: {2, 3, math.MaxInt64},
+	PlanLimitMaximumTask:        {math.MaxInt64, math.MaxInt64, math.MaxInt64},
+	PlanLimitMaximumEnvironment: {math.MaxInt64, math.MaxInt64, math.MaxInt64},
 }
 
 // Feature returns whether a particular feature is available in a particular plan.

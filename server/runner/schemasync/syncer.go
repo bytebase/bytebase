@@ -175,17 +175,15 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil, err
 	}
 
-	// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
-	// to avoid changing the updated_ts.
 	if instanceMeta.Version != instance.EngineVersion {
-		if _, err := s.store.PatchInstance(ctx, &store.InstancePatch{
-			ID:            instance.UID,
+		if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 			UpdaterID:     api.SystemBotID,
+			EnvironmentID: instance.EnvironmentID,
+			ResourceID:    instance.ResourceID,
 			EngineVersion: &instanceMeta.Version,
 		}); err != nil {
 			return nil, err
 		}
-		instance.EngineVersion = instanceMeta.Version
 	}
 
 	var instanceUsers []*store.InstanceUserMessage
