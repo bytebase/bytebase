@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // IdentityProviderMessage is the mssage for identity provider.
@@ -17,11 +19,23 @@ type IdentityProviderMessage struct {
 	ResourceID string
 	Title      string
 	Domain     string
-	Type       api.IdentityProviderType
-	Config     string
+	Type       storepb.IdentityProviderType
+	Config     *storepb.IdentityProviderConfig
 	// The following fields are output only and not used for creating.
 	UID     int
 	Deleted bool
+}
+
+func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
+	if v := config.GetOauth2Config(); v != nil {
+		configBytes, err := protojson.Marshal(v)
+		return configBytes, err
+	} else if v := config.GetOidcConfig(); v != nil {
+		configBytes, err := protojson.Marshal(v)
+		return configBytes, err
+	} else {
+		return nil, errors.Errorf("unexpected provider type")
+	}
 }
 
 // FindIdentityProviderMessage is the message for finding identity providers.
@@ -40,7 +54,7 @@ type UpdateIdentityProviderMessage struct {
 
 	Title  *string
 	Domain *string
-	Config *string
+	Config *storepb.IdentityProviderConfig
 	Delete *bool
 }
 
@@ -58,6 +72,10 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 		Domain:     create.Domain,
 		Type:       create.Type,
 		Config:     create.Config,
+	}
+	configBytes, err := getConfigBytes(identityProvider.Config)
+	if err != nil {
+		return nil, err
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO idp (
@@ -77,8 +95,8 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 		create.ResourceID,
 		create.Title,
 		create.Domain,
-		create.Type,
-		create.Config,
+		create.Type.String(),
+		configBytes,
 	).Scan(
 		&identityProvider.UID,
 	); err != nil {
@@ -169,7 +187,11 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		set, args = append(set, fmt.Sprintf("domain = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Config; v != nil {
-		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, *v)
+		configBytes, err := getConfigBytes(v)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, string(configBytes))
 	}
 	if v := patch.Delete; v != nil {
 		rowStatus := api.Normal
@@ -181,6 +203,8 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 	args = append(args, patch.ResourceID)
 
 	identityProvider := &IdentityProviderMessage{}
+	var identityProviderType string
+	var identityProviderConfig string
 	var rowStatus string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE idp
@@ -201,8 +225,8 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		&identityProvider.ResourceID,
 		&identityProvider.Title,
 		&identityProvider.Domain,
-		&identityProvider.Type,
-		&identityProvider.Config,
+		&identityProviderType,
+		&identityProviderConfig,
 		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -211,6 +235,8 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		return nil, FormatError(err)
 	}
 
+	identityProvider.Type = convertIdentityProviderType(identityProviderType)
+	identityProvider.Config = convertIdentityProviderConfig(identityProvider.Type, identityProviderConfig)
 	identityProvider.Deleted = convertRowStatusToDeleted(rowStatus)
 	return identityProvider, nil
 }
@@ -248,21 +274,61 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 	var identityProviderMessages []*IdentityProviderMessage
 	for rows.Next() {
 		var identityProviderMessage IdentityProviderMessage
+		var identityProviderType string
+		var identityProviderConfig string
 		var rowStatus string
 		if err := rows.Scan(
 			&identityProviderMessage.UID,
 			&identityProviderMessage.ResourceID,
 			&identityProviderMessage.Title,
 			&identityProviderMessage.Domain,
-			&identityProviderMessage.Type,
-			&identityProviderMessage.Config,
+			&identityProviderType,
+			&identityProviderConfig,
 			&rowStatus,
 		); err != nil {
 			return nil, FormatError(err)
 		}
+		identityProviderMessage.Type = convertIdentityProviderType(identityProviderType)
+		identityProviderMessage.Config = convertIdentityProviderConfig(identityProviderMessage.Type, identityProviderConfig)
 		identityProviderMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		identityProviderMessages = append(identityProviderMessages, &identityProviderMessage)
 	}
 
 	return identityProviderMessages, nil
+}
+
+func convertIdentityProviderType(identityProviderType string) storepb.IdentityProviderType {
+	if identityProviderType == "OAUTH2" {
+		return storepb.IdentityProviderType_OAUTH2
+	} else if identityProviderType == "OIDC" {
+		return storepb.IdentityProviderType_OIDC
+	}
+	return storepb.IdentityProviderType_IDENTITY_PROVIDER_UNSPECIFIED
+}
+
+func convertIdentityProviderConfig(identityProviderType storepb.IdentityProviderType, config string) *storepb.IdentityProviderConfig {
+	if identityProviderType == storepb.IdentityProviderType_OAUTH2 {
+		var formatedConfig storepb.OAuth2IdentityProviderConfig
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal([]byte(config), &formatedConfig); err != nil {
+			return nil
+		}
+		return &storepb.IdentityProviderConfig{
+			Config: &storepb.IdentityProviderConfig_Oauth2Config{
+				Oauth2Config: &formatedConfig,
+			},
+		}
+	} else if identityProviderType == storepb.IdentityProviderType_OIDC {
+		var formatedConfig storepb.OIDCIdentityProviderConfig
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := decoder.Unmarshal([]byte(config), &formatedConfig); err != nil {
+			return nil
+		}
+		return &storepb.IdentityProviderConfig{
+			Config: &storepb.IdentityProviderConfig_OidcConfig{
+				OidcConfig: &formatedConfig,
+			},
+		}
+	}
+	return nil
 }

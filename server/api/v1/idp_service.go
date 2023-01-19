@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -66,16 +64,17 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	if !isValidResourceID(request.IdentityProviderId) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid identity provider ID %v", request.IdentityProviderId)
 	}
+	if err := validIdentityProviderConfig(request.IdentityProvider.Type, request.IdentityProvider.Config); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
 	identityProviderMessage := store.IdentityProviderMessage{
 		ResourceID: request.IdentityProviderId,
 		Title:      request.IdentityProvider.Title,
 		Domain:     request.IdentityProvider.Domain,
-		Type:       api.IdentityProviderType(request.IdentityProvider.Type.String()),
-		Config:     request.IdentityProvider.Config,
+		Type:       convertIdentityProviderTypeToStore(request.IdentityProvider.Type),
+		Config:     convertIdentityProviderConfigToStore(request.IdentityProvider.GetConfig()),
 	}
-	if err := validIdentityProviderConfig(identityProviderMessage.Type, identityProviderMessage.Config); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
+	request.IdentityProvider.GetConfig()
 
 	identityProvider, err := s.store.CreateIdentityProvider(ctx, &identityProviderMessage, principalID)
 	if err != nil {
@@ -113,11 +112,11 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		case "identityProvider.domain":
 			patch.Domain = &request.IdentityProvider.Domain
 		case "identityProvider.config":
-			patch.Config = &request.IdentityProvider.Config
+			patch.Config = convertIdentityProviderConfigToStore(request.IdentityProvider.Config)
 		}
 	}
 	if patch.Config != nil {
-		if err := validIdentityProviderConfig(identityProvider.Type, *patch.Config); err != nil {
+		if err := validIdentityProviderConfig(convertIdentityProviderTypeFromStore(identityProvider.Type), request.IdentityProvider.Config); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -196,13 +195,8 @@ func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context
 }
 
 func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) *v1pb.IdentityProvider {
-	identityProviderType := v1pb.IdentityProviderType_IDENTITY_PROVIDER_UNSPECIFIED
-	if identityProvider.Type == api.OAuth2IdentityProvider {
-		identityProviderType = v1pb.IdentityProviderType_OAUTH2
-	} else if identityProvider.Type == api.OIDCIdentityProvider {
-		identityProviderType = v1pb.IdentityProviderType_OIDC
-	}
-
+	identityProviderType := convertIdentityProviderTypeFromStore(identityProvider.Type)
+	config := convertIdentityProviderConfigFromStore(identityProvider.Config)
 	return &v1pb.IdentityProvider{
 		Name:   fmt.Sprintf("%s%s", identityProviderNamePrefix, identityProvider.ResourceID),
 		Uid:    fmt.Sprintf("%d", identityProvider.UID),
@@ -210,21 +204,119 @@ func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) 
 		Title:  identityProvider.Title,
 		Domain: identityProvider.Domain,
 		Type:   identityProviderType,
-		Config: identityProvider.Config,
+		Config: config,
 	}
 }
 
-// validIdentityProviderConfig validates the identity provider's config is a valid JSON.
-func validIdentityProviderConfig(identityProviderType api.IdentityProviderType, configString string) error {
-	if identityProviderType == api.OAuth2IdentityProvider {
-		formatedConfig := &storepb.OAuth2IdentityProviderConfig{}
-		if err := json.Unmarshal([]byte(configString), formatedConfig); err != nil {
-			return errors.Wrap(err, "failed to unmarshal config")
+func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.IdentityProviderConfig) *v1pb.IdentityProviderConfig {
+	if v := identityProviderConfig.GetOauth2Config(); v != nil {
+		fieldMapping := v1pb.FieldMapping{
+			Identifier:  v.FieldMapping.Identifier,
+			DisplayName: v.FieldMapping.DisplayName,
+			Email:       v.FieldMapping.Email,
 		}
-	} else if identityProviderType == api.OIDCIdentityProvider {
-		formatedConfig := &storepb.OIDCIdentityProviderConfig{}
-		if err := json.Unmarshal([]byte(configString), formatedConfig); err != nil {
-			return errors.Wrap(err, "failed to unmarshal config")
+		return &v1pb.IdentityProviderConfig{
+			Config: &v1pb.IdentityProviderConfig_Oauth2Config{
+				Oauth2Config: &v1pb.OAuth2IdentityProviderConfig{
+					AuthUrl:      v.AuthUrl,
+					TokenUrl:     v.TokenUrl,
+					UserInfoUrl:  v.UserInfoUrl,
+					ClientId:     v.ClientId,
+					ClientSecret: v.ClientSecret,
+					Scopes:       v.Scopes,
+					FieldMapping: &fieldMapping,
+				},
+			},
+		}
+	} else if v := identityProviderConfig.GetOidcConfig(); v != nil {
+		fieldMapping := v1pb.FieldMapping{
+			Identifier:  v.FieldMapping.Identifier,
+			DisplayName: v.FieldMapping.DisplayName,
+			Email:       v.FieldMapping.Email,
+		}
+		return &v1pb.IdentityProviderConfig{
+			Config: &v1pb.IdentityProviderConfig_OidcConfig{
+				OidcConfig: &v1pb.OIDCIdentityProviderConfig{
+					Issuer:       v.Issuer,
+					ClientId:     v.ClientId,
+					ClientSecret: v.ClientSecret,
+					FieldMapping: &fieldMapping,
+				},
+			},
+		}
+	} else {
+		return nil
+	}
+}
+
+func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityProviderConfig) *storepb.IdentityProviderConfig {
+	if v := identityProviderConfig.GetOauth2Config(); v != nil {
+		fieldMapping := storepb.FieldMapping{
+			Identifier:  v.FieldMapping.Identifier,
+			DisplayName: v.FieldMapping.DisplayName,
+			Email:       v.FieldMapping.Email,
+		}
+		return &storepb.IdentityProviderConfig{
+			Config: &storepb.IdentityProviderConfig_Oauth2Config{
+				Oauth2Config: &storepb.OAuth2IdentityProviderConfig{
+					AuthUrl:      v.AuthUrl,
+					TokenUrl:     v.TokenUrl,
+					UserInfoUrl:  v.UserInfoUrl,
+					ClientId:     v.ClientId,
+					ClientSecret: v.ClientSecret,
+					Scopes:       v.Scopes,
+					FieldMapping: &fieldMapping,
+				},
+			},
+		}
+	} else if v := identityProviderConfig.GetOidcConfig(); v != nil {
+		fieldMapping := storepb.FieldMapping{
+			Identifier:  v.FieldMapping.Identifier,
+			DisplayName: v.FieldMapping.DisplayName,
+			Email:       v.FieldMapping.Email,
+		}
+		return &storepb.IdentityProviderConfig{
+			Config: &storepb.IdentityProviderConfig_OidcConfig{
+				OidcConfig: &storepb.OIDCIdentityProviderConfig{
+					Issuer:       v.Issuer,
+					ClientId:     v.ClientId,
+					ClientSecret: v.ClientSecret,
+					FieldMapping: &fieldMapping,
+				},
+			},
+		}
+	} else {
+		return nil
+	}
+}
+
+func convertIdentityProviderTypeFromStore(identityProviderType storepb.IdentityProviderType) v1pb.IdentityProviderType {
+	if identityProviderType == storepb.IdentityProviderType_OAUTH2 {
+		return v1pb.IdentityProviderType_OAUTH2
+	} else if identityProviderType == storepb.IdentityProviderType_OIDC {
+		return v1pb.IdentityProviderType_OIDC
+	}
+	return v1pb.IdentityProviderType_IDENTITY_PROVIDER_UNSPECIFIED
+}
+
+func convertIdentityProviderTypeToStore(identityProviderType v1pb.IdentityProviderType) storepb.IdentityProviderType {
+	if identityProviderType == v1pb.IdentityProviderType_OAUTH2 {
+		return storepb.IdentityProviderType_OAUTH2
+	} else if identityProviderType == v1pb.IdentityProviderType_OIDC {
+		return storepb.IdentityProviderType_OIDC
+	}
+	return storepb.IdentityProviderType_IDENTITY_PROVIDER_UNSPECIFIED
+}
+
+// validIdentityProviderConfig validates the identity provider's config is a valid JSON.
+func validIdentityProviderConfig(identityProviderType v1pb.IdentityProviderType, identityProviderConfig *v1pb.IdentityProviderConfig) error {
+	if identityProviderType == v1pb.IdentityProviderType_OAUTH2 {
+		if identityProviderConfig.GetOauth2Config() == nil {
+			return errors.Errorf("unexpected provider config value")
+		}
+	} else if identityProviderType == v1pb.IdentityProviderType_OIDC {
+		if identityProviderConfig.GetOidcConfig() == nil {
+			return errors.Errorf("unexpected provider config value")
 		}
 	} else {
 		return errors.Errorf("unexpected provider type %s", identityProviderType)
