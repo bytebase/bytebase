@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -275,19 +276,16 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		role = v1pb.UserRole_DEVELOPER
 	}
 	userType := v1pb.UserType_USER_TYPE_UNSPECIFIED
-	if user.IdentityProviderID != nil {
-		userType = v1pb.UserType_EXTERNAL_ACCOUNT
-	} else {
-		switch user.Type {
-		case api.EndUser:
-			userType = v1pb.UserType_USER
-		case api.SystemBot:
-			userType = v1pb.UserType_SYSTEM_BOT
-		case api.ServiceAccount:
-			userType = v1pb.UserType_SERVICE_ACCOUNT
-		}
+	switch user.Type {
+	case api.EndUser:
+		userType = v1pb.UserType_USER
+	case api.SystemBot:
+		userType = v1pb.UserType_SYSTEM_BOT
+	case api.ServiceAccount:
+		userType = v1pb.UserType_SERVICE_ACCOUNT
 	}
-	return &v1pb.User{
+
+	convertedUser := v1pb.User{
 		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
@@ -295,6 +293,12 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserType: userType,
 		UserRole: role,
 	}
+	if user.IdentityProviderID != nil {
+		convertedUser.IdpId = &wrapperspb.Int32Value{
+			Value: int32(*user.IdentityProviderID),
+		}
+	}
+	return &convertedUser
 }
 
 func convertUserRole(userRole v1pb.UserRole) api.Role {

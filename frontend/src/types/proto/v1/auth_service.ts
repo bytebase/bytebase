@@ -3,6 +3,7 @@ import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Int32Value } from "../google/protobuf/wrappers";
 import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
@@ -12,7 +13,6 @@ export enum UserType {
   USER = 1,
   SYSTEM_BOT = 2,
   SERVICE_ACCOUNT = 3,
-  EXTERNAL_ACCOUNT = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -30,9 +30,6 @@ export function userTypeFromJSON(object: any): UserType {
     case 3:
     case "SERVICE_ACCOUNT":
       return UserType.SERVICE_ACCOUNT;
-    case 4:
-    case "EXTERNAL_ACCOUNT":
-      return UserType.EXTERNAL_ACCOUNT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -50,8 +47,6 @@ export function userTypeToJSON(object: UserType): string {
       return "SYSTEM_BOT";
     case UserType.SERVICE_ACCOUNT:
       return "SERVICE_ACCOUNT";
-    case UserType.EXTERNAL_ACCOUNT:
-      return "EXTERNAL_ACCOUNT";
     case UserType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -198,6 +193,7 @@ export interface User {
   email: string;
   title: string;
   password: string;
+  idpId?: number;
   userType: UserType;
   /** The user role will not be respected in the create user request, because the role is controlled by workspace owner. */
   userRole: UserRole;
@@ -732,7 +728,7 @@ export const LogoutRequest = {
 };
 
 function createBaseUser(): User {
-  return { name: "", state: 0, email: "", title: "", password: "", userType: 0, userRole: 0 };
+  return { name: "", state: 0, email: "", title: "", password: "", idpId: undefined, userType: 0, userRole: 0 };
 }
 
 export const User = {
@@ -752,11 +748,14 @@ export const User = {
     if (message.password !== "") {
       writer.uint32(42).string(message.password);
     }
+    if (message.idpId !== undefined) {
+      Int32Value.encode({ value: message.idpId! }, writer.uint32(50).fork()).ldelim();
+    }
     if (message.userType !== 0) {
-      writer.uint32(48).int32(message.userType);
+      writer.uint32(56).int32(message.userType);
     }
     if (message.userRole !== 0) {
-      writer.uint32(56).int32(message.userRole);
+      writer.uint32(64).int32(message.userRole);
     }
     return writer;
   },
@@ -784,9 +783,12 @@ export const User = {
           message.password = reader.string();
           break;
         case 6:
-          message.userType = reader.int32() as any;
+          message.idpId = Int32Value.decode(reader, reader.uint32()).value;
           break;
         case 7:
+          message.userType = reader.int32() as any;
+          break;
+        case 8:
           message.userRole = reader.int32() as any;
           break;
         default:
@@ -804,6 +806,7 @@ export const User = {
       email: isSet(object.email) ? String(object.email) : "",
       title: isSet(object.title) ? String(object.title) : "",
       password: isSet(object.password) ? String(object.password) : "",
+      idpId: isSet(object.idpId) ? Number(object.idpId) : undefined,
       userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : 0,
       userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
     };
@@ -816,6 +819,7 @@ export const User = {
     message.email !== undefined && (obj.email = message.email);
     message.title !== undefined && (obj.title = message.title);
     message.password !== undefined && (obj.password = message.password);
+    message.idpId !== undefined && (obj.idpId = message.idpId);
     message.userType !== undefined && (obj.userType = userTypeToJSON(message.userType));
     message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
     return obj;
@@ -828,6 +832,7 @@ export const User = {
     message.email = object.email ?? "";
     message.title = object.title ?? "";
     message.password = object.password ?? "";
+    message.idpId = object.idpId ?? undefined;
     message.userType = object.userType ?? 0;
     message.userRole = object.userRole ?? 0;
     return message;
