@@ -1402,7 +1402,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 	return nil
 }
 
-// GetBranchFromRefs returns the branch name from the refs.
+// GetBranchNameFromRef returns the branch name from the refs.
 func (*Provider) GetBranchNameFromRef(ref string) string {
 	return strings.TrimPrefix(ref, "refs/heads/")
 }
