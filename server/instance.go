@@ -519,11 +519,15 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 // instanceCountGuard is a feature guard for instance count.
 // We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
 func (s *Server) instanceCountGuard(ctx context.Context) error {
+	subscription := s.licenseService.LoadSubscription(ctx)
+	if subscription.Seat == -1 {
+		return nil
+	}
+
 	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 	}
-	subscription := s.licenseService.LoadSubscription(ctx)
 	if count >= subscription.InstanceCount {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}

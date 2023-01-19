@@ -255,6 +255,7 @@ type PlanPatch struct {
 type TrialPlanCreate struct {
 	Type          PlanType `jsonapi:"attr,type"`
 	Days          int      `jsonapi:"attr,days"`
+	Seat          int      `jsonapi:"attr,seat"`
 	InstanceCount int      `jsonapi:"attr,instanceCount"`
 }
 
