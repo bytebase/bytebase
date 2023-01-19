@@ -318,7 +318,6 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
 		}
 	}
-	log.Debug("debug", zap.Bool("writeBack", writeBack))
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
 			// For tenant mode project, we will only write back once and we happen to write back on lastTask done.
