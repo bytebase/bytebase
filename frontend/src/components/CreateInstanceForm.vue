@@ -140,7 +140,6 @@
           v-if="state.instance.engine === 'MONGODB'"
           class="sm:col-span-4 sm:col-start-1"
         >
-          <div>{{ state.instance }}</div>
           <label
             for="connectionStringSchema"
             class="textlabel flex flex-row items-center"
@@ -589,7 +588,6 @@ const handleInstanceAuthenticationDatabaseInput = (event: Event) => {
 };
 
 const handleMongodbConnectionStringSchemaChange = (event: Event) => {
-  console.log((event.target as HTMLInputElement).value);
   switch ((event.target as HTMLInputElement).value) {
     case mongodbConnectionStringSchemaList[0]:
       state.instance.srv = false;
