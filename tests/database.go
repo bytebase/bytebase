@@ -220,13 +220,13 @@ func marshalLabels(labelMap map[string]string, environmentID string) (string, er
 	return string(labels), nil
 }
 
-func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) error {
+func (ctl *controller) createDataSource(databaseID int, dataSourceCreate api.DataSourceCreate) error {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &dataSourceCreate); err != nil {
 		return errors.Wrap(err, "failed to marshal dataSourceCreate")
 	}
 
-	body, err := ctl.post(fmt.Sprintf("/database/%d/data-source", dataSourceCreate.DatabaseID), buf)
+	body, err := ctl.post(fmt.Sprintf("/database/%d/data-source", databaseID), buf)
 	if err != nil {
 		return err
 	}
@@ -238,13 +238,13 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 	return nil
 }
 
-func (ctl *controller) patchDataSource(databaseID int, dataSourcePatch api.DataSourcePatch) error {
+func (ctl *controller) patchDataSource(databaseID, dataSourceID int, dataSourcePatch api.DataSourcePatch) error {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &dataSourcePatch); err != nil {
 		return errors.Wrap(err, "failed to marshal dataSourcePatch")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourcePatch.ID), buf)
+	body, err := ctl.patch(fmt.Sprintf("/database/%d/data-source/%d", databaseID, dataSourceID), buf)
 	if err != nil {
 		return err
 	}
