@@ -52,16 +52,14 @@ func TestDataSource(t *testing.T) {
 	instanceID := instance.ID
 
 	// create read-only data source.
-	err = ctl.createDataSource(api.DataSourceCreate{
-		InstanceID: instanceID,
-		DatabaseID: adminDataSource.DatabaseID,
-		Name:       api.ReadOnlyDataSourceName,
-		Type:       api.RO,
-		Username:   "ro_ds",
-		Password:   "",
-		SslCa:      "",
-		SslCert:    "",
-		SslKey:     "",
+	err = ctl.createDataSource(adminDataSource.DatabaseID, api.DataSourceCreate{
+		Name:     api.ReadOnlyDataSourceName,
+		Type:     api.RO,
+		Username: "ro_ds",
+		Password: "",
+		SslCa:    "",
+		SslCert:  "",
+		SslKey:   "",
 	})
 	a.NoError(err)
 
@@ -77,8 +75,7 @@ func TestDataSource(t *testing.T) {
 	dataSourceNewName := "updated_ro_ds"
 	dataSourceNewPassword := "bytebase"
 	// create read-only data source.
-	err = ctl.patchDataSource(adminDataSource.DatabaseID, api.DataSourcePatch{
-		ID:       readOnlyDataSource.ID,
+	err = ctl.patchDataSource(adminDataSource.DatabaseID, readOnlyDataSource.ID, api.DataSourcePatch{
 		Username: &dataSourceNewName,
 		Password: &dataSourceNewPassword,
 	})
@@ -90,8 +87,7 @@ func TestDataSource(t *testing.T) {
 	// update read-only data source read replica fields without enterprise license.
 	err = ctl.removeLicense()
 	a.NoError(err)
-	err = ctl.patchDataSource(adminDataSource.DatabaseID, api.DataSourcePatch{
-		ID:   readOnlyDataSource.ID,
+	err = ctl.patchDataSource(adminDataSource.DatabaseID, readOnlyDataSource.ID, api.DataSourcePatch{
 		Host: &dataSourceNewHost,
 		Port: &dataSourceNewPort,
 	})
@@ -99,8 +95,7 @@ func TestDataSource(t *testing.T) {
 
 	err = ctl.setLicense()
 	a.NoError(err)
-	err = ctl.patchDataSource(adminDataSource.DatabaseID, api.DataSourcePatch{
-		ID:   readOnlyDataSource.ID,
+	err = ctl.patchDataSource(adminDataSource.DatabaseID, readOnlyDataSource.ID, api.DataSourcePatch{
 		Host: &dataSourceNewHost,
 		Port: &dataSourceNewPort,
 	})
