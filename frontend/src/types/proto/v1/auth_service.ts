@@ -12,6 +12,7 @@ export enum UserType {
   USER = 1,
   SYSTEM_BOT = 2,
   SERVICE_ACCOUNT = 3,
+  EXTERNAL_ACCOUNT = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -29,6 +30,9 @@ export function userTypeFromJSON(object: any): UserType {
     case 3:
     case "SERVICE_ACCOUNT":
       return UserType.SERVICE_ACCOUNT;
+    case 4:
+    case "EXTERNAL_ACCOUNT":
+      return UserType.EXTERNAL_ACCOUNT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -46,6 +50,8 @@ export function userTypeToJSON(object: UserType): string {
       return "SYSTEM_BOT";
     case UserType.SERVICE_ACCOUNT:
       return "SERVICE_ACCOUNT";
+    case UserType.EXTERNAL_ACCOUNT:
+      return "EXTERNAL_ACCOUNT";
     case UserType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -275,13 +275,17 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		role = v1pb.UserRole_DEVELOPER
 	}
 	userType := v1pb.UserType_USER_TYPE_UNSPECIFIED
-	switch user.Type {
-	case api.EndUser:
-		userType = v1pb.UserType_USER
-	case api.SystemBot:
-		userType = v1pb.UserType_SYSTEM_BOT
-	case api.ServiceAccount:
-		userType = v1pb.UserType_SERVICE_ACCOUNT
+	if user.IdentityProviderID != nil {
+		userType = v1pb.UserType_EXTERNAL_ACCOUNT
+	} else {
+		switch user.Type {
+		case api.EndUser:
+			userType = v1pb.UserType_USER
+		case api.SystemBot:
+			userType = v1pb.UserType_SYSTEM_BOT
+		case api.ServiceAccount:
+			userType = v1pb.UserType_SERVICE_ACCOUNT
+		}
 	}
 	return &v1pb.User{
 		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),

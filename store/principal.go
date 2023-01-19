@@ -86,13 +86,18 @@ type UpdateUserMessage struct {
 
 // UserMessage is the message for an user.
 type UserMessage struct {
-	ID            int
-	Email         string
-	Name          string
-	Type          api.PrincipalType
-	PasswordHash  string
-	Role          api.Role
-	MemberDeleted bool
+	ID                 int
+	Email              string
+	Name               string
+	Type               api.PrincipalType
+	PasswordHash       string
+	IdentityProviderID *int
+	// IdentityProviderUserInfo is a raw json string from userinfo api response.
+	// e.g. for GitHub's authenticated user api, it looks like the following structure..
+	// https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
+	IdentityProviderUserInfo string
+	Role                     api.Role
+	MemberDeleted            bool
 }
 
 // ListUsers list all users.
@@ -210,6 +215,8 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			principal.name,
 			principal.type,
 			principal.password_hash,
+			principal.idp_id,
+			principal.idp_user_info,
 			member.role,
 			member.row_status AS row_status
 		FROM principal
@@ -230,6 +237,8 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			&userMessage.Name,
 			&userMessage.Type,
 			&userMessage.PasswordHash,
+			&userMessage.IdentityProviderID,
+			&userMessage.IdentityProviderUserInfo,
 			&role,
 			&rowStatus,
 		); err != nil {
@@ -275,25 +284,28 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	if count == 0 {
 		role = api.Owner
 	}
+
+	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash"}
+	args := []interface{}{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
+	// Set idp fields into principal only when the related id is not null.
+	if create.IdentityProviderID != nil {
+		set, args = append(set, "idp_id"), append(args, *create.IdentityProviderID)
+		set, args = append(set, "idp_user_info"), append(args, create.IdentityProviderUserInfo)
+	}
+	placeholder := []string{}
+	for index := range set {
+		placeholder = append(placeholder, fmt.Sprintf("$%d", index+1))
+	}
+
 	var userID int
-	if err := tx.QueryRowContext(ctx, `
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			INSERT INTO principal (
-				creator_id,
-				updater_id,
-				email,
-				name,
-				type,
-				password_hash
+				%s
 			)
-			VALUES ($1, $2, $3, $4, $5, $6)
+			VALUES (%s)
 			RETURNING id
-		`,
-		creatorID,
-		creatorID,
-		create.Email,
-		create.Name,
-		create.Type,
-		create.PasswordHash,
+		`, strings.Join(set, ","), strings.Join(placeholder, ",")),
+		args...,
 	).Scan(&userID); err != nil {
 		return nil, FormatError(err)
 	}
@@ -322,12 +334,14 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 
 	user := &UserMessage{
-		ID:           userID,
-		Email:        create.Email,
-		Name:         create.Name,
-		Type:         create.Type,
-		PasswordHash: create.PasswordHash,
-		Role:         role,
+		ID:                       userID,
+		Email:                    create.Email,
+		Name:                     create.Name,
+		Type:                     create.Type,
+		PasswordHash:             create.PasswordHash,
+		IdentityProviderID:       create.IdentityProviderID,
+		IdentityProviderUserInfo: create.IdentityProviderUserInfo,
+		Role:                     role,
 	}
 	s.userIDCache.Store(user.ID, user)
 	s.userEmailCache.Store(user.Email, user)
