@@ -18,9 +18,6 @@
       <heroicons-outline:database class="w-4 h-4" />
     </span>
   </template>
-  <template v-else-if="atom.type === 'table'">
-    <heroicons-outline:table class="w-4 h-4" />
-  </template>
 </template>
 
 <script lang="ts" setup>
