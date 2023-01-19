@@ -42,7 +42,7 @@
               </p>
 
               <div class="text-gray-400">
-                {{ plan.priceInfo }}
+                {{ $t(`subscription.${plan.title}-price-intro`) }}
               </div>
 
               <button
@@ -165,7 +165,7 @@
         </p>
 
         <div class="text-gray-400">
-          {{ plan.priceInfo }}
+          {{ $t(`subscription.${plan.title}-price-intro`) }}
         </div>
 
         <button
@@ -296,7 +296,6 @@ const plans = computed((): LocalPlan[] => {
         : `$${plan.pricePerSeatPerMonth}`,
     priceUnit:
       plan.type === PlanType.ENTERPRISE ? "" : t("subscription.per-month"),
-    priceInfo: t(`subscription.${plan.title}-price-intro`),
   }));
 });
 
