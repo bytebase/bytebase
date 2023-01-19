@@ -375,9 +375,8 @@ const doArchive = () => {
 };
 
 const doRestore = () => {
-  const { subscription } = subscriptionStore;
   const instanceList = instanceStore.getInstanceList(["NORMAL"]);
-  if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
+  if (subscriptionStore.instanceCount <= instanceList.length) {
     state.showFeatureModal = true;
     return;
   }
