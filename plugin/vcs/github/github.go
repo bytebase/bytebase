@@ -1402,6 +1402,11 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 	return nil
 }
 
+// GetBranchFromRefs returns the branch name from the refs.
+func (*Provider) GetBranchNameFromRef(ref string) string {
+	return strings.TrimPrefix(ref, "refs/heads/")
+}
+
 // oauthContext is the request context for refreshing oauth token.
 type oauthContext struct {
 	ClientID     string `json:"client_id"`

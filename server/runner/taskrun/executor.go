@@ -318,6 +318,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			writeBack = (vcsPushEvent != nil) && (task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostCutover)
 		}
 	}
+	log.Debug("debug", zap.Bool("writeBack", writeBack))
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
 			// For tenant mode project, we will only write back once and we happen to write back on lastTask done.
@@ -525,7 +526,7 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 	}
 
 	schemaFileCommit := vcsPlugin.FileCommitCreate{
-		Branch:        pushEvent.Ref,
+		Branch:        vcsPlugin.Get(repo2.VCS.Type, vcsPlugin.ProviderConfig{}).GetBranchNameFromRef(pushEvent.Ref),
 		CommitMessage: commitMessage,
 		Content:       schema,
 	}
@@ -606,4 +607,8 @@ func writeBackLatestSchema(ctx context.Context, store *store.Store, repository *
 		return "", errors.Wrapf(err, "failed to fetch latest schema file %s after update", latestSchemaFile)
 	}
 	return schemaFileMeta.LastCommitID, nil
+}
+
+func getBranchFromRef(ref string) string {
+	return strings.TrimPrefix(ref, "refs/heads/")
 }
