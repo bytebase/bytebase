@@ -86,11 +86,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return err
 		}
 		composedProjectMember := &api.ProjectMember{
-			ID:          user.ID,
-			ProjectID:   project.UID,
-			Role:        string(projectMemberCreate.Role),
-			PrincipalID: user.ID,
-			Principal:   principal,
+			ID:        user.ID,
+			ProjectID: project.UID,
+			Role:      string(projectMemberCreate.Role),
+			Principal: principal,
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedProjectMember); err != nil {
@@ -178,11 +177,10 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return err
 		}
 		composedProjectMember := &api.ProjectMember{
-			ID:          user.ID,
-			ProjectID:   project.UID,
-			Role:        string(newRole),
-			PrincipalID: user.ID,
-			Principal:   principal,
+			ID:        user.ID,
+			ProjectID: project.UID,
+			Role:      string(newRole),
+			Principal: principal,
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedProjectMember); err != nil {
