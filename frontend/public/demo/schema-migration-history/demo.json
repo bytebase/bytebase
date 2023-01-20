@@ -6,9 +6,9 @@
       "description": "This is schema drift page"
     },
     {
-      "url": "/db/employee-103#migration-history",
-      "title": "migration history",
-      "description": "This is migration history page"
+      "url": "/db/employee-103#change-history",
+      "title": "change history",
+      "description": "This is change history page"
     },
     {
       "url": "/issue/104?stage=test-employee-1&task=update-employee-schema-105",
@@ -45,9 +45,9 @@
       }
     },
     {
-      "selector": "[data-label='bb-migration-history-establish-baseline-alert'] [data-label='bb-alert-ok-button']",
+      "selector": "[data-label='bb-change-history-establish-baseline-alert'] [data-label='bb-alert-ok-button']",
       "type": "shield",
-      "url": "/db/.+?#migration-history$",
+      "url": "/db/.+?#change-history$",
       "dialog": {
         "title": "",
         "description": {
@@ -70,8 +70,8 @@
       }
     },
     {
-      "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(4) > a",
-      "url": "/db/.+?#migration-history$",
+      "selector": "[data-label='bb-change-history-table'] tr:nth-child(2) > td:nth-child(4) > a",
+      "url": "/db/.+?#change-history$",
       "type": "tooltip",
       "position": "center",
       "dialog": {
@@ -85,14 +85,14 @@
       }
     },
     {
-      "selector": "[data-label='bb-migration-history-view-drift-button']",
+      "selector": "[data-label='bb-change-history-view-drift-button']",
       "url": "/db/.+?/history/.+",
       "type": "tooltip",
       "position": "center",
       "dialog": {
         "title": "",
         "description": {
-          "en-US": "This migration task also detected schema drift. It means another client performed some schema changes which were out of version control.",
+          "en-US": "This change task also detected schema drift. It means another client performed some schema changes which were out of version control.",
           "zh-CN": "本次变更还检测到了 Schema 偏差，说明有数据库变更通过其他客户端发起，脱离了版本管控"
         },
         "alwaysShow": true,
