@@ -45,13 +45,20 @@ message OIDCIdentityProviderConfig {
   FieldMapping field_mapping = 4;
 }
 
-// FieldMapping uses for mapping user info from identity provider to Bytebase.
+// FieldMapping saves the field names from user info API of identity provider.
+// As we save all raw json string of user info response data into `principal.idp_user_info`,
+// we can extract the relevant data based with `FieldMapping`.
+//
+// e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response. 
+// Then the identifier of FieldMapping will be `login`, display_name will be `name`,
+// and email will be `email`.
+// reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
 message FieldMapping {
   // Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.
   string identifier = 1;
 
-  // Username is the field name of username in 3rd-party idp user info. Required.
-  string username = 2;
+  // DisplayName is the field name of display name in 3rd-party idp user info. Required.
+  string display_name = 2;
 
   // Email is the field name of primary email in 3rd-party idp user info. Required.
   string email = 3;
