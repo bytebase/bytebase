@@ -86,12 +86,12 @@ type UpdateUserMessage struct {
 
 // UserMessage is the message for an user.
 type UserMessage struct {
-	ID                 int
-	Email              string
-	Name               string
-	Type               api.PrincipalType
-	PasswordHash       string
-	IdentityProviderID *int
+	ID                         int
+	Email                      string
+	Name                       string
+	Type                       api.PrincipalType
+	PasswordHash               string
+	IdentityProviderResourceID *string
 	// IdentityProviderUserInfo is a raw json string from userinfo api response.
 	// e.g. for GitHub's authenticated user api, it looks like the following structure..
 	// https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
@@ -216,12 +216,13 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 				principal.name,
 				principal.type,
 				principal.password_hash,
-				principal.idp_id,
 				principal.idp_user_info,
 				member.role,
-				member.row_status AS row_status
+				member.row_status AS row_status,
+				idp.resource_id AS idp_resource_id
 			FROM principal
 			LEFT JOIN member ON principal.id = member.principal_id
+			LEFT JOIN idp ON principal.idp_id = idp.id
 			WHERE `+strings.Join(where, " AND "),
 			args...,
 		)
@@ -231,17 +232,17 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		defer rows.Close()
 		for rows.Next() {
 			var userMessage UserMessage
-			var role, rowStatus sql.NullString
+			var role, rowStatus, idpResourceID sql.NullString
 			if err := rows.Scan(
 				&userMessage.ID,
 				&userMessage.Email,
 				&userMessage.Name,
 				&userMessage.Type,
 				&userMessage.PasswordHash,
-				&userMessage.IdentityProviderID,
 				&userMessage.IdentityProviderUserInfo,
 				&role,
 				&rowStatus,
+				&idpResourceID,
 			); err != nil {
 				return nil, FormatError(err)
 			}
@@ -256,6 +257,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
 			} else if userMessage.ID != api.SystemBotID {
 				userMessage.MemberDeleted = true
+			}
+			if idpResourceID.Valid {
+				userMessage.IdentityProviderResourceID = &idpResourceID.String
 			}
 			userMessages = append(userMessages, &userMessage)
 		}
@@ -338,8 +342,14 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	args := []interface{}{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
 	// Set idp fields into principal only when the related id is not null.
 	if common.FeatureFlag(common.FeatureFlagNoop) {
-		if create.IdentityProviderID != nil {
-			set, args = append(set, "idp_id"), append(args, *create.IdentityProviderID)
+		if create.IdentityProviderResourceID != nil {
+			identityProvider, err := s.GetIdentityProvider(ctx, &FindIdentityProviderMessage{
+				ResourceID: create.IdentityProviderResourceID,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find identity provider with resource id %s", create.IdentityProviderResourceID)
+			}
+			set, args = append(set, "idp_id"), append(args, identityProvider.UID)
 			set, args = append(set, "idp_user_info"), append(args, create.IdentityProviderUserInfo)
 		}
 	}
@@ -393,7 +403,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		Role:         role,
 	}
 	if common.FeatureFlag(common.FeatureFlagNoop) {
-		user.IdentityProviderID = create.IdentityProviderID
+		user.IdentityProviderResourceID = create.IdentityProviderResourceID
 		user.IdentityProviderUserInfo = create.IdentityProviderUserInfo
 	}
 	s.userIDCache.Store(user.ID, user)

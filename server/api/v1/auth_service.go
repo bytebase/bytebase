@@ -57,11 +57,7 @@ func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
-	convertedUser, err := s.convertToUser(ctx, user)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert user, error: %v", err)
-	}
-	return convertedUser, nil
+	return convertToUser(ctx, user), nil
 }
 
 // ListUsers lists all users.
@@ -72,11 +68,7 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 	}
 	response := &v1pb.ListUsersResponse{}
 	for _, user := range users {
-		convertedUser, err := s.convertToUser(ctx, user)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert user, error: %v", err)
-		}
-		response.Users = append(response.Users, convertedUser)
+		response.Users = append(response.Users, convertToUser(ctx, user))
 	}
 	return response, nil
 }
@@ -144,11 +136,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
 	}
-	convertedUser, err := s.convertToUser(ctx, user)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	return convertedUser, nil
+	return convertToUser(ctx, user), nil
 }
 
 // UpdateUser updates a user.
@@ -214,11 +202,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
-	convertedUser, err := s.convertToUser(ctx, user)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert user, error: %v", err)
-	}
-	return convertedUser, nil
+	return convertToUser(ctx, user), nil
 }
 
 // DeleteUser deletes a user.
@@ -277,14 +261,10 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	convertedUser, err := s.convertToUser(ctx, user)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	return convertedUser, nil
+	return convertToUser(ctx, user), nil
 }
 
-func (s *AuthService) convertToUser(ctx context.Context, user *store.UserMessage) (*v1pb.User, error) {
+func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
 	role := v1pb.UserRole_USER_ROLE_UNSPECIFIED
 	switch user.Role {
 	case api.Owner:
@@ -313,19 +293,13 @@ func (s *AuthService) convertToUser(ctx context.Context, user *store.UserMessage
 		UserRole: role,
 	}
 	if common.FeatureFlag(common.FeatureFlagNoop) {
-		if user.IdentityProviderID != nil {
-			identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-				UID: user.IdentityProviderID,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
+		if user.IdentityProviderResourceID != nil {
 			convertedUser.IdpName = &wrapperspb.StringValue{
-				Value: fmt.Sprintf("%s%s", identityProviderNamePrefix, identityProvider.ResourceID),
+				Value: fmt.Sprintf("%s%s", identityProviderNamePrefix, *user.IdentityProviderResourceID),
 			}
 		}
 	}
-	return convertedUser, nil
+	return convertedUser
 }
 
 func convertUserRole(userRole v1pb.UserRole) api.Role {
