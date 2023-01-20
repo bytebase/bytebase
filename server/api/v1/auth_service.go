@@ -57,7 +57,7 @@ func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
 	}
-	return convertToUser(ctx, user), nil
+	return convertToUser(user), nil
 }
 
 // ListUsers lists all users.
@@ -68,7 +68,7 @@ func (s *AuthService) ListUsers(ctx context.Context, request *v1pb.ListUsersRequ
 	}
 	response := &v1pb.ListUsersResponse{}
 	for _, user := range users {
-		response.Users = append(response.Users, convertToUser(ctx, user))
+		response.Users = append(response.Users, convertToUser(user))
 	}
 	return response, nil
 }
@@ -136,7 +136,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
 	}
-	return convertToUser(ctx, user), nil
+	return convertToUser(user), nil
 }
 
 // UpdateUser updates a user.
@@ -202,7 +202,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
-	return convertToUser(ctx, user), nil
+	return convertToUser(user), nil
 }
 
 // DeleteUser deletes a user.
@@ -261,10 +261,10 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToUser(ctx, user), nil
+	return convertToUser(user), nil
 }
 
-func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
+func convertToUser(user *store.UserMessage) *v1pb.User {
 	role := v1pb.UserRole_USER_ROLE_UNSPECIFIED
 	switch user.Role {
 	case api.Owner:
