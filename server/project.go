@@ -260,11 +260,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Branch must be specified.")
 		}
 
-		hasWildcard := strings.Contains(repositoryCreate.BranchFilter, "*")
-		if hasWildcard && repositoryCreate.SchemaPathTemplate != "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
-		}
-
 		// We need to check the FilePathTemplate in create repository request.
 		// This avoids to a certain extent that the creation succeeds but does not work.
 		if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
@@ -288,7 +283,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
-		if !hasWildcard {
+		if !strings.Contains(repositoryCreate.BranchFilter, "*") {
 			if notFound, err := isBranchNotFound(ctx, vcs, repositoryCreate.AccessToken, repositoryCreate.RefreshToken, repositoryCreate.ExternalID, repositoryCreate.BranchFilter); notFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", repositoryCreate.BranchFilter, repositoryCreate.Name)).SetInternal(err)
 			} else if err != nil {
@@ -492,20 +487,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		repo := repoList[0]
 		repoPatch.ID = &repo.ID
-		newSchemaPathTemplate, newBranchFilter := repo.SchemaPathTemplate, repo.BranchFilter
-		if repoPatch.SchemaPathTemplate != nil {
-			newSchemaPathTemplate = *repoPatch.SchemaPathTemplate
-		}
+		newBranchFilter := repo.BranchFilter
 		if repoPatch.BranchFilter != nil {
 			newBranchFilter = *repoPatch.BranchFilter
 		}
 		if newBranchFilter == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Branch must be specified.")
-		}
-
-		hasWildcard := strings.Contains(newBranchFilter, "*")
-		if hasWildcard && newSchemaPathTemplate != "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Schema path template is supported only if branch doesn't have wildcard.")
 		}
 
 		vcs, err := s.store.GetVCSByID(ctx, repo.VCSID)
@@ -517,7 +504,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
-		if !hasWildcard {
+		if !strings.Contains(newBranchFilter, "*") {
 			if notFound, err := isBranchNotFound(ctx, vcs, repo.AccessToken, repo.RefreshToken, repo.ExternalID, newBranchFilter); notFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Branch %q not found in repository %s.", newBranchFilter, repo.Name)).SetInternal(err)
 			} else if err != nil {
