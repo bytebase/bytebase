@@ -11,7 +11,7 @@ Bytebase OpenAPI implements the OpenAPI specification with Swagger.
 
 ### Comment for OpenAPIs
 
-1. Add general API annotations in `./server/server.go`.
+1. Add general API annotations in `./backend/server/server.go`.
 2. Add API operation annotations in your controller code.
 
 > **Note**
@@ -52,7 +52,7 @@ Every time you changed the comments, you need to re-run the following command to
 ```bash
 cd bytebase
 # generate swagger doc
-swag init -g ./server.go -d ./server --output docs/openapi --parseDependency
+swag init -g ./backend/server.go -d ./backend/server --output docs/openapi --parseDependency
 ```
 
 This should generate new docs under `./docs/openapi` folder based on your comments.

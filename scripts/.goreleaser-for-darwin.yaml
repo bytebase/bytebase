@@ -3,15 +3,15 @@ before:
     - go mod tidy
 builds:
   - id: server
-    main: ./bin/server
+    main: ./backend/bin/server
     binary: bytebase
     ldflags:
       - -w -s
-      - -X github.com/bytebase/bytebase/bin/server/cmd.version={{.Version}}
-      - -X github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}
-      - -X github.com/bytebase/bytebase/bin/server/cmd.gitcommit={{.Commit}}
-      - -X github.com/bytebase/bytebase/bin/server/cmd.buildtime={{.Timestamp}}
-      - -X github.com/bytebase/bytebase/bin/server/cmd.builduser=goreleaser
+      - -X github.com/bytebase/bytebase/backend/bin/server/cmd.version={{.Version}}
+      - -X github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}
+      - -X github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit={{.Commit}}
+      - -X github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime={{.Timestamp}}
+      - -X github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=goreleaser
     tags:
       - release
       - embed_frontend
@@ -28,15 +28,15 @@ builds:
       - amd64
       - arm64
   - id: cli
-    main: ./bin/bb
+    main: ./backend/bin/bb
     binary: bb
     ldflags:
       - -w -s
-      - -X github.com/bytebase/bytebase/bin/bb/cmd.version={{.Version}}
-      - -X github.com/bytebase/bytebase/bin/bb/cmd.goversion=${GO_VERSION}
-      - -X github.com/bytebase/bytebase/bin/bb/cmd.gitcommit={{.Commit}}
-      - -X github.com/bytebase/bytebase/bin/bb/cmd.buildtime={{.Timestamp}}
-      - -X github.com/bytebase/bytebase/bin/bb/cmd.builduser=goreleaser
+      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.version={{.Version}}
+      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.goversion=${GO_VERSION}
+      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.gitcommit={{.Commit}}
+      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.buildtime={{.Timestamp}}
+      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.builduser=goreleaser
     tags:
       - release
     env:
