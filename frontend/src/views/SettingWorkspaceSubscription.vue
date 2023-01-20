@@ -159,8 +159,12 @@ export default defineComponent({
     const { subscription, expireAt, isTrialing, isExpired } =
       storeToRefs(subscriptionStore);
 
-    const instanceCount = computed((): number => {
-      return subscription.value?.instanceCount ?? 5;
+    const instanceCount = computed((): string => {
+      const count = subscription.value?.instanceCount ?? 5;
+      if (count > 0) {
+        return `${count}`;
+      }
+      return t("subscription.unlimited");
     });
 
     const seatCount = computed((): string => {
@@ -168,7 +172,7 @@ export default defineComponent({
       if (seat > 0) {
         return `${seat}`;
       }
-      return t("subscription.seat-unlimited");
+      return t("subscription.unlimited");
     });
 
     const currentPlan = computed((): string => {

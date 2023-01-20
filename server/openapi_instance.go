@@ -7,7 +7,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/api"
 	openAPIV1 "github.com/bytebase/bytebase/api/v1"
 	"github.com/bytebase/bytebase/store"
 )
@@ -26,17 +25,23 @@ func (s *Server) updateInstanceDatabase(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch instance database request").SetInternal(err)
 	}
 
-	instances, err := s.store.FindInstance(ctx, &api.InstanceFind{Name: &instanceName})
+	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
 	}
-	if len(instances) != 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Found %v instances with name %q but expecting one", len(instances), instanceName)
+	var instance *store.InstanceMessage
+	for _, ins := range instances {
+		if ins.Title == instanceName {
+			instance = ins
+			break
+		}
 	}
-	instance := instances[0]
+	if instance == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to find instance")
+	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		EnvironmentID: &instance.Environment.ResourceID,
+		EnvironmentID: &instance.EnvironmentID,
 		InstanceID:    &instance.ResourceID,
 		DatabaseName:  &databaseName,
 	})
