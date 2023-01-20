@@ -322,6 +322,8 @@ type Provider interface {
 	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error
 	// Deletes a webhook.
 	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error
+	// GetBranchNameFromRef gets the branch name from the refs.
+	GetBranchNameFromRef(ref string) string
 }
 
 var (
