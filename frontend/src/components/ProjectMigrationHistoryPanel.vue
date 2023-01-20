@@ -2,7 +2,7 @@
   <div class="flex flex-col space-y-4">
     <template v-if="state.migrationHistorySectionList.length > 0">
       <div class="text-center textinfolabel">
-        {{ $t("migration-history.list-limit") }}
+        {{ $t("change-history.list-limit") }}
       </div>
       <MigrationHistoryTable
         :mode="'PROJECT'"
@@ -15,10 +15,10 @@
       <div class="text-center">
         <heroicons-outline:inbox class="mx-auto w-16 h-16 text-control-light" />
         <h3 class="mt-2 text-sm font-medium text-main">
-          {{ $t("migration-history.no-history-in-project") }}
+          {{ $t("change-history.no-history-in-project") }}
         </h3>
         <p class="mt-1 text-sm text-control-light">
-          {{ $t("migration-history.recording-info") }}
+          {{ $t("change-history.recording-info") }}
         </p>
       </div>
     </template>
@@ -95,7 +95,7 @@ export default defineComponent({
                     );
                     const newItem = {
                       title: title,
-                      link: `${fullDatabasePath(database)}#migration-history`,
+                      link: `${fullDatabasePath(database)}#change-history`,
                       list: migrationHistoryList,
                     };
                     if (index >= 0) {
