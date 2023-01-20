@@ -7,6 +7,7 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "google/protobuf/wrappers.proto";
 
 import "v1/common.proto";
 
@@ -163,10 +164,12 @@ message User {
 
   string password = 5 [(google.api.field_behavior) = INPUT_ONLY];
 
-  UserType user_type = 6;
+  string identity_provider = 6 [(google.api.field_behavior) = OUTPUT_ONLY];;
+
+  UserType user_type = 7;
 
   // The user role will not be respected in the create user request, because the role is controlled by workspace owner.
-  UserRole user_role = 7;
+  UserRole user_role = 8;
 }
 
 enum UserType {
