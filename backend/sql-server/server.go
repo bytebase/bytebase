@@ -30,7 +30,7 @@ type Server struct {
 }
 
 // Use following cmd to generate swagger doc
-// swag init -g ./server.go -d ./sql-server --output docs/sqlservice --parseDependency
+// swag init -g ./backend/server.go -d ./backend/sql-server --output docs/sqlservice --parseDependency
 
 // @title Bytebase SQL Service
 // @version 1.0

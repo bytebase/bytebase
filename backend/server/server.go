@@ -169,7 +169,7 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // Use following cmd to generate swagger doc
-// swag init -g ./server.go -d ./server --output docs/openapi --parseDependency
+// swag init -g ./backend/server.go -d ./backend/server --output docs/openapi --parseDependency
 
 // @title Bytebase OpenAPI
 // @version 1.0
