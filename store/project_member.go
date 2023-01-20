@@ -53,22 +53,6 @@ func (raw *projectMemberRaw) toProjectMember() *api.ProjectMember {
 	}
 }
 
-// CreateProjectMember creates an instance of ProjectMember.
-func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
-	projectMemberRaw, err := s.createProjectMemberRaw(ctx, create)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ProjectMember with ProjectMemberCreate[%+v]", create)
-	}
-	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
-	}
-	// Invalidate the cache.
-	s.cache.DeleteCache(projectMemberCacheNamespace, create.ProjectID)
-
-	return projectMember, nil
-}
-
 // FindProjectMember finds a list of ProjectMember instances.
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
 	findCopy := *find
@@ -129,46 +113,6 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectM
 	return projectMember, nil
 }
 
-// PatchProjectMember patches an instance of ProjectMember.
-func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
-	projectMemberRaw, err := s.patchProjectMemberRaw(ctx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to patch ProjectMember with ProjectMemberPatch[%+v]", patch)
-	}
-	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw[%+v]", projectMemberRaw)
-	}
-	// Invalidate the cache.
-	s.cache.DeleteCache(projectMemberCacheNamespace, projectMemberRaw.ProjectID)
-	return projectMember, nil
-}
-
-// DeleteProjectMember deletes an existing projectMember by ID.
-func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemberDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.Rollback()
-
-	if err := s.deleteProjectMemberImpl(ctx, tx, delete); err != nil {
-		return FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-	// Invalidate the cache.
-	s.cache.DeleteCache(projectMemberCacheNamespace, delete.ProjectID)
-
-	return nil
-}
-
-//
-// private functions
-//
-
 // composeProjectMember composes an instance of ProjectMember by projectMemberRaw.
 func (s *Store) composeProjectMember(ctx context.Context, raw *projectMemberRaw) (*api.ProjectMember, error) {
 	projectMember := raw.toProjectMember()
@@ -190,26 +134,6 @@ func (s *Store) composeProjectMember(ctx context.Context, raw *projectMemberRaw)
 		return nil, err
 	}
 	projectMember.Principal = principal
-
-	return projectMember, nil
-}
-
-// createProjectMemberRaw creates a new projectMember.
-func (s *Store) createProjectMemberRaw(ctx context.Context, create *api.ProjectMemberCreate) (*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	projectMember, err := createProjectMemberImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 
 	return projectMember, nil
 }
@@ -249,66 +173,6 @@ func (s *Store) getProjectMemberRaw(ctx context.Context, find *api.ProjectMember
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d project members with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
-}
-
-// patchProjectMemberRaw updates an existing projectMember by ID.
-// Returns ENOTFOUND if projectMember does not exist.
-func (s *Store) patchProjectMemberRaw(ctx context.Context, patch *api.ProjectMemberPatch) (*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	projectMember, err := patchProjectMemberImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return projectMember, nil
-}
-
-// createProjectMemberImpl creates a new projectMember.
-func createProjectMemberImpl(ctx context.Context, tx *Tx, create *api.ProjectMemberCreate) (*projectMemberRaw, error) {
-	// Insert row into database.
-	query := `
-		INSERT INTO project_member (
-			creator_id,
-			updater_id,
-			project_id,
-			role,
-			principal_id
-		)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
-	`
-	var projectMemberRaw projectMemberRaw
-	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
-		create.CreatorID,
-		create.ProjectID,
-		create.Role,
-		create.PrincipalID,
-	).Scan(
-		&projectMemberRaw.ID,
-		&projectMemberRaw.CreatorID,
-		&projectMemberRaw.CreatedTs,
-		&projectMemberRaw.UpdaterID,
-		&projectMemberRaw.UpdatedTs,
-		&projectMemberRaw.ProjectID,
-		&projectMemberRaw.Role,
-		&projectMemberRaw.PrincipalID,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &projectMemberRaw, nil
 }
 
 func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberFind) ([]*projectMemberRaw, error) {
@@ -370,51 +234,6 @@ func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberF
 	}
 
 	return projectMemberRawList, nil
-}
-
-// patchProjectMemberImpl updates a projectMember by ID. Returns the new state of the projectMember after update.
-func patchProjectMemberImpl(ctx context.Context, tx *Tx, patch *api.ProjectMemberPatch) (*projectMemberRaw, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.Role; v != nil {
-		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, *v)
-	}
-	args = append(args, patch.ID)
-
-	var projectMemberRaw projectMemberRaw
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE project_member
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id
-	`, len(args)),
-		args...,
-	).Scan(
-		&projectMemberRaw.ID,
-		&projectMemberRaw.CreatorID,
-		&projectMemberRaw.CreatedTs,
-		&projectMemberRaw.UpdaterID,
-		&projectMemberRaw.UpdatedTs,
-		&projectMemberRaw.ProjectID,
-		&projectMemberRaw.Role,
-		&projectMemberRaw.PrincipalID,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project member ID not found: %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	return &projectMemberRaw, nil
-}
-
-// deleteProjectMemberImpl permanently deletes a projectMember by ID.
-func (*Store) deleteProjectMemberImpl(ctx context.Context, tx *Tx, delete *api.ProjectMemberDelete) error {
-	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = $1`, delete.ID); err != nil {
-		return FormatError(err)
-	}
-	return nil
 }
 
 // IAMPolicyMessage is the IAM policy of a project.
