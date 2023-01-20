@@ -25,7 +25,7 @@ type IdentityProviderConfig struct {
 	Issuer       string               `json:"issuer"`
 	ClientID     string               `json:"clientId"`
 	ClientSecret string               `json:"clientSecret"`
-	FieldMapping storepb.FieldMapping `json:"fieldMapping"`
+	FieldMapping *storepb.FieldMapping `json:"fieldMapping"`
 }
 
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given

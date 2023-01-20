@@ -34,7 +34,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				Issuer:       "",
 				ClientID:     "test-client-id",
 				ClientSecret: "test-client-secret",
-				FieldMapping: storepb.FieldMapping{
+				FieldMapping: &storepb.FieldMapping{
 					Identifier: "sub",
 				},
 			},
@@ -46,7 +46,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				Issuer:       "https://oidc.example.com",
 				ClientID:     "",
 				ClientSecret: "test-client-secret",
-				FieldMapping: storepb.FieldMapping{
+				FieldMapping: &storepb.FieldMapping{
 					Identifier: "sub",
 				},
 			},
@@ -58,7 +58,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				Issuer:       "https://oidc.example.com",
 				ClientID:     "test-client-id",
 				ClientSecret: "",
-				FieldMapping: storepb.FieldMapping{
+				FieldMapping: &storepb.FieldMapping{
 					Identifier: "sub",
 				},
 			},
@@ -70,7 +70,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				Issuer:       "https://oidc.example.com",
 				ClientID:     "test-client-id",
 				ClientSecret: "test-client-secret",
-				FieldMapping: storepb.FieldMapping{
+				FieldMapping: &storepb.FieldMapping{
 					Username: "name",
 				},
 			},
@@ -199,7 +199,7 @@ func TestIdentityProvider(t *testing.T) {
 			Issuer:       s.URL,
 			ClientID:     testClientID,
 			ClientSecret: "test-client-secret",
-			FieldMapping: storepb.FieldMapping{
+			FieldMapping: &storepb.FieldMapping{
 				Identifier: "sub",
 				Username:   "name",
 				Email:      "email",
