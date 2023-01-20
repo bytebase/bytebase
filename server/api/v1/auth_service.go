@@ -135,7 +135,6 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if _, err := s.store.CreateActivity(ctx, activityCreate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create activity, error: %v", err)
 	}
-
 	return convertToUser(user), nil
 }
 
@@ -283,7 +282,8 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	case api.ServiceAccount:
 		userType = v1pb.UserType_SERVICE_ACCOUNT
 	}
-	return &v1pb.User{
+
+	convertedUser := &v1pb.User{
 		Name:     fmt.Sprintf("%s%d", userNamePrefix, user.ID),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
@@ -291,6 +291,12 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserType: userType,
 		UserRole: role,
 	}
+	if common.FeatureFlag(common.FeatureFlagNoop) {
+		if user.IdentityProviderResourceID != nil {
+			convertedUser.IdentityProvider = fmt.Sprintf("%s%s", identityProviderNamePrefix, *user.IdentityProviderResourceID)
+		}
+	}
+	return convertedUser
 }
 
 func convertUserRole(userRole v1pb.UserRole) api.Role {
