@@ -93,7 +93,7 @@ type UserMessage struct {
 	PasswordHash               string
 	IdentityProviderResourceID *string
 	// IdentityProviderUserInfo is a raw json string from userinfo api response.
-	// e.g. for GitHub's authenticated user api, it looks like the following structure..
+	// e.g. for GitHub's authenticated user api, it looks like the following structure.
 	// https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
 	IdentityProviderUserInfo string
 	Role                     api.Role
