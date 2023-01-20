@@ -3,7 +3,7 @@ import type { CallContext, CallOptions } from "nice-grpc-common";
 import * as _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Int32Value } from "../google/protobuf/wrappers";
+import { StringValue } from "../google/protobuf/wrappers";
 import { State, stateFromJSON, stateToJSON } from "./common";
 
 export const protobufPackage = "bytebase.v1";
@@ -193,7 +193,7 @@ export interface User {
   email: string;
   title: string;
   password: string;
-  idpUid?: number;
+  idpName?: string;
   userType: UserType;
   /** The user role will not be respected in the create user request, because the role is controlled by workspace owner. */
   userRole: UserRole;
@@ -728,7 +728,7 @@ export const LogoutRequest = {
 };
 
 function createBaseUser(): User {
-  return { name: "", state: 0, email: "", title: "", password: "", idpUid: undefined, userType: 0, userRole: 0 };
+  return { name: "", state: 0, email: "", title: "", password: "", idpName: undefined, userType: 0, userRole: 0 };
 }
 
 export const User = {
@@ -748,8 +748,8 @@ export const User = {
     if (message.password !== "") {
       writer.uint32(42).string(message.password);
     }
-    if (message.idpUid !== undefined) {
-      Int32Value.encode({ value: message.idpUid! }, writer.uint32(50).fork()).ldelim();
+    if (message.idpName !== undefined) {
+      StringValue.encode({ value: message.idpName! }, writer.uint32(50).fork()).ldelim();
     }
     if (message.userType !== 0) {
       writer.uint32(56).int32(message.userType);
@@ -783,7 +783,7 @@ export const User = {
           message.password = reader.string();
           break;
         case 6:
-          message.idpUid = Int32Value.decode(reader, reader.uint32()).value;
+          message.idpName = StringValue.decode(reader, reader.uint32()).value;
           break;
         case 7:
           message.userType = reader.int32() as any;
@@ -806,7 +806,7 @@ export const User = {
       email: isSet(object.email) ? String(object.email) : "",
       title: isSet(object.title) ? String(object.title) : "",
       password: isSet(object.password) ? String(object.password) : "",
-      idpUid: isSet(object.idpUid) ? Number(object.idpUid) : undefined,
+      idpName: isSet(object.idpName) ? String(object.idpName) : undefined,
       userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : 0,
       userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
     };
@@ -819,7 +819,7 @@ export const User = {
     message.email !== undefined && (obj.email = message.email);
     message.title !== undefined && (obj.title = message.title);
     message.password !== undefined && (obj.password = message.password);
-    message.idpUid !== undefined && (obj.idpUid = message.idpUid);
+    message.idpName !== undefined && (obj.idpName = message.idpName);
     message.userType !== undefined && (obj.userType = userTypeToJSON(message.userType));
     message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
     return obj;
@@ -832,7 +832,7 @@ export const User = {
     message.email = object.email ?? "";
     message.title = object.title ?? "";
     message.password = object.password ?? "";
-    message.idpUid = object.idpUid ?? undefined;
+    message.idpName = object.idpName ?? undefined;
     message.userType = object.userType ?? 0;
     message.userRole = object.userRole ?? 0;
     return message;
