@@ -66,12 +66,21 @@ export interface OIDCIdentityProviderConfig {
   fieldMapping?: FieldMapping;
 }
 
-/** FieldMapping uses for mapping user info from identity provider to Bytebase. */
+/**
+ * FieldMapping saves the field names from user info API of identity provider.
+ * As we save all raw json string of user info response data into `principal.idp_user_info`,
+ * we can extract the relevant data based with `FieldMapping`.
+ *
+ * e.g. For GitHub authenticated user API, it will return `login`, `name` and `email` in response.
+ * Then the identifier of FieldMapping will be `login`, display_name will be `name`,
+ * and email will be `email`.
+ * reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
+ */
 export interface FieldMapping {
   /** Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. */
   identifier: string;
-  /** Username is the field name of username in 3rd-party idp user info. Required. */
-  username: string;
+  /** DisplayName is the field name of display name in 3rd-party idp user info. Required. */
+  displayName: string;
   /** Email is the field name of primary email in 3rd-party idp user info. Required. */
   email: string;
 }
@@ -338,7 +347,7 @@ export const OIDCIdentityProviderConfig = {
 };
 
 function createBaseFieldMapping(): FieldMapping {
-  return { identifier: "", username: "", email: "" };
+  return { identifier: "", displayName: "", email: "" };
 }
 
 export const FieldMapping = {
@@ -346,8 +355,8 @@ export const FieldMapping = {
     if (message.identifier !== "") {
       writer.uint32(10).string(message.identifier);
     }
-    if (message.username !== "") {
-      writer.uint32(18).string(message.username);
+    if (message.displayName !== "") {
+      writer.uint32(18).string(message.displayName);
     }
     if (message.email !== "") {
       writer.uint32(26).string(message.email);
@@ -366,7 +375,7 @@ export const FieldMapping = {
           message.identifier = reader.string();
           break;
         case 2:
-          message.username = reader.string();
+          message.displayName = reader.string();
           break;
         case 3:
           message.email = reader.string();
@@ -382,7 +391,7 @@ export const FieldMapping = {
   fromJSON(object: any): FieldMapping {
     return {
       identifier: isSet(object.identifier) ? String(object.identifier) : "",
-      username: isSet(object.username) ? String(object.username) : "",
+      displayName: isSet(object.displayName) ? String(object.displayName) : "",
       email: isSet(object.email) ? String(object.email) : "",
     };
   },
@@ -390,7 +399,7 @@ export const FieldMapping = {
   toJSON(message: FieldMapping): unknown {
     const obj: any = {};
     message.identifier !== undefined && (obj.identifier = message.identifier);
-    message.username !== undefined && (obj.username = message.username);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
     message.email !== undefined && (obj.email = message.email);
     return obj;
   },
@@ -398,7 +407,7 @@ export const FieldMapping = {
   fromPartial(object: DeepPartial<FieldMapping>): FieldMapping {
     const message = createBaseFieldMapping();
     message.identifier = object.identifier ?? "";
-    message.username = object.username ?? "";
+    message.displayName = object.displayName ?? "";
     message.email = object.email ?? "";
     return message;
   },
