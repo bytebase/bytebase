@@ -20,9 +20,9 @@
       :database-list="databaseList"
     />
   </template>
-  <template v-if="hash === 'migration-history'">
+  <template v-if="hash === 'change-history'">
     <ProjectMigrationHistoryPanel
-      id="migration-history"
+      id="change-history"
       :project="project"
       :database-list="databaseList"
     />

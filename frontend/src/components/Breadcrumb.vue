@@ -175,8 +175,8 @@ export default defineComponent({
           });
           if (migrationHistory) {
             list.push({
-              name: t("common.migration"),
-              path: `/db/${databaseSlug}#migration-history`,
+              name: t("common.change"),
+              path: `/db/${databaseSlug}#change-history`,
             });
           }
         }
