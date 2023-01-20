@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -294,9 +293,7 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 	}
 	if common.FeatureFlag(common.FeatureFlagNoop) {
 		if user.IdentityProviderResourceID != nil {
-			convertedUser.IdpName = &wrapperspb.StringValue{
-				Value: fmt.Sprintf("%s%s", identityProviderNamePrefix, *user.IdentityProviderResourceID),
-			}
+			convertedUser.IdentityProvider = fmt.Sprintf("%s%s", identityProviderNamePrefix, *user.IdentityProviderResourceID)
 		}
 	}
 	return convertedUser
