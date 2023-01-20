@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/bytebase/bytebase/common"
 )
 
@@ -10,76 +8,24 @@ import (
 type ProjectMember struct {
 	ID int `jsonapi:"primary,projectMember"`
 
-	// Standard fields
-	CreatorID int
-	Creator   *Principal `jsonapi:"relation,creator"`
-	CreatedTs int64      `jsonapi:"attr,createdTs"`
-	UpdaterID int
-	Updater   *Principal `jsonapi:"relation,updater"`
-	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
-
 	// Related fields
 	// Just returns ProjectID otherwise would cause circular dependency.
 	ProjectID int `jsonapi:"attr,projectId"`
 
 	// Domain specific fields
-	Role        string `jsonapi:"attr,role"`
-	PrincipalID int
-	Principal   *Principal `jsonapi:"relation,principal"`
+	Role      string     `jsonapi:"attr,role"`
+	Principal *Principal `jsonapi:"relation,principal"`
 }
 
 // ProjectMemberCreate is the API message for creating a project member.
 type ProjectMemberCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	ProjectID int
-
-	// Domain specific fields
 	Role        common.ProjectRole `jsonapi:"attr,role"`
 	PrincipalID int                `jsonapi:"attr,principalId"`
 }
 
-// ProjectMemberFind is the API message for finding project members.
-type ProjectMemberFind struct {
-	ID *int
-
-	// Related fields
-	ProjectID   *int
-	PrincipalID *int
-	Role        *Role
-}
-
-func (find *ProjectMemberFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
 // ProjectMemberPatch is the API message for patching a project member.
 type ProjectMemberPatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
 	Role *string `jsonapi:"attr,role"`
-}
-
-// ProjectMemberDelete is the API message for deleting a project member.
-type ProjectMemberDelete struct {
-	ID        int
-	ProjectID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterID int
 }
 
 // ProjectPermissionType is the type of a project permission.
