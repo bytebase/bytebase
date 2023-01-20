@@ -101,25 +101,29 @@ func checkLGTMcomments(ctx context.Context, store *store.Store, activityList []*
 	return false, nil
 }
 
-func isCommentLGTM(ctx context.Context, store *store.Store, activity *api.Activity, issue *api.Issue) (bool, error) {
+func isCommentLGTM(ctx context.Context, stores *store.Store, activity *api.Activity, issue *api.Issue) (bool, error) {
 	if activity.Comment != "LGTM" {
 		return false, nil
 	}
-	member, err := store.GetProjectMember(ctx, &api.ProjectMemberFind{
-		PrincipalID: &activity.CreatorID,
-		ProjectID:   &issue.ProjectID,
-	})
+
+	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.ProjectID})
 	if err != nil {
-		return false, err
+		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.ProjectID)
 	}
-	if member == nil {
-		return false, nil
+	role := api.UnknownRole
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == activity.CreatorID {
+				role = binding.Role
+			}
+		}
 	}
+
 	switch issue.Project.LGTMCheckSetting.Value {
 	case api.LGTMValueProjectMember:
 		return true, nil
 	case api.LGTMValueProjectOwner:
-		return member.Role == string(api.Owner), nil
+		return role == api.Owner, nil
 	}
 	return false, errors.Errorf("unexpected LGTM setting value: %s", issue.Project.LGTMCheckSetting.Value)
 }

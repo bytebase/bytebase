@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
 
 // projectMemberRaw is the store model for an ProjectMember.
@@ -87,32 +86,6 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 	return projectMemberList, nil
 }
 
-// GetProjectMember gets an instance of ProjectMember.
-func (s *Store) GetProjectMember(ctx context.Context, find *api.ProjectMemberFind) (*api.ProjectMember, error) {
-	projectMemberRaw, err := s.getProjectMemberRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get ProjectMember with projectMemberFind %+v", find)
-	}
-	if projectMemberRaw == nil {
-		return nil, nil
-	}
-	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose ProjectMember with projectMemberRaw %+v", projectMemberRaw)
-	}
-	return projectMember, nil
-}
-
-// GetProjectMemberByID gets an instance of ProjectMember by ID.
-func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectMember, error) {
-	find := &api.ProjectMemberFind{ID: &id}
-	projectMember, err := s.GetProjectMember(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get ProjectMember with ID %d", id)
-	}
-	return projectMember, nil
-}
-
 // composeProjectMember composes an instance of ProjectMember by projectMemberRaw.
 func (s *Store) composeProjectMember(ctx context.Context, raw *projectMemberRaw) (*api.ProjectMember, error) {
 	projectMember := raw.toProjectMember()
@@ -152,27 +125,6 @@ func (s *Store) findProjectMemberRaw(ctx context.Context, find *api.ProjectMembe
 	}
 
 	return list, nil
-}
-
-// getProjectMemberRaw finds project members.
-func (s *Store) getProjectMemberRaw(ctx context.Context, find *api.ProjectMemberFind) (*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	list, err := findProjectMemberImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d project members with filter %+v, expect 1", len(list), find)}
-	}
-	return list[0], nil
 }
 
 func findProjectMemberImpl(ctx context.Context, tx *Tx, find *api.ProjectMemberFind) ([]*projectMemberRaw, error) {
