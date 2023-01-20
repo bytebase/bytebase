@@ -3,7 +3,7 @@ before:
     - go mod tidy
 builds:
   - id: server
-    main: ./bin/server
+    main: ./backend/bin/server
     binary: bytebase
     ldflags:
       - -w -s
@@ -33,7 +33,7 @@ builds:
         env:
           - CC=gcc
   - id: cli
-    main: ./bin/bb
+    main: ./backend/bin/bb
     binary: bb
     ldflags:
       - -w -s

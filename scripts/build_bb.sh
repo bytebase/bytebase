@@ -22,7 +22,7 @@ flags="-X 'github.com/bytebase/bytebase/backend/bin/bb/cmd.version=${VERSION}'
 -X 'github.com/bytebase/bytebase/backend/bin/bb/cmd.builduser=$(id -u -n)'"
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
-go build --tags "release" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./bin/bb/main.go
+go build --tags "release" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./backend/bin/bb/main.go
 
 echo "Completed building bb."
 
