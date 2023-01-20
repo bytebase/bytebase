@@ -509,9 +509,14 @@ func (s *Server) processPushEvent(ctx context.Context, repositoryList []*api.Rep
 	}
 
 	repo := repositoryList[0]
-	filteredDistinctFileList, err := s.filterFilesByCommitsDiff(ctx, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
-	if err != nil {
-		return nil, err
+	filteredDistinctFileList := distinctFileList
+	// The before commit ID is all zeros when the branch is just created and contains no commits yet, and we will encounter an error when we try to get the diff.
+	if baseVCSPushEvent.Before != strings.Repeat("0", 40) {
+		var err error
+		filteredDistinctFileList, err = s.filterFilesByCommitsDiff(ctx, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var createdMessageList []string
