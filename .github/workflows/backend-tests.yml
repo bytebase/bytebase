@@ -5,11 +5,8 @@ on:
     branches:
       - main
       - "release/*.*.*"
-    paths-ignore:
-      - "docs/**"
-      - "frontend/**"
-      - "scripts/**"
-      - "quickstart/**"
+    paths:
+      - "backend/**"
 
 jobs:
   golangci-lint:
@@ -32,8 +29,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ./resources/mysql/*.tar.gz
-            ./resources/mysql/*.tar.xz
+            ./backend/resources/mysql/*.tar.gz
+            ./backend/resources/mysql/*.tar.xz
           key: ${{ runner.OS }}-build-mysql-cache
       - name: Install dependencies
         run: go generate -tags mysql ./...
@@ -66,8 +63,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ./resources/mysql/*.tar.gz
-            ./resources/mysql/*.tar.xz
+            ./backend/resources/mysql/*.tar.gz
+            ./backend/resources/mysql/*.tar.xz
           key: ${{ runner.OS }}-build-mysql-cache
       - name: Install dependencies
         run: go generate -tags ${{ matrix.release-tags }} ./...
