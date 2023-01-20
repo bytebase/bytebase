@@ -120,9 +120,9 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	}
 
 	// Best effort to map optional fields
-	if p.config.FieldMapping.Username != "" {
-		if v, ok := claims[p.config.FieldMapping.Username].(string); ok {
-			userInfo.Username = v
+	if p.config.FieldMapping.DisplayName != "" {
+		if v, ok := claims[p.config.FieldMapping.DisplayName].(string); ok {
+			userInfo.DisplayName = v
 		}
 	}
 	if p.config.FieldMapping.Email != "" {

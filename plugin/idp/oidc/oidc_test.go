@@ -71,7 +71,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				ClientID:     "test-client-id",
 				ClientSecret: "test-client-secret",
 				FieldMapping: &storepb.FieldMapping{
-					Username: "name",
+					DisplayName: "name",
 				},
 			},
 			containsErr: `the field "fieldMapping.identifier" is empty but required`,
@@ -200,9 +200,9 @@ func TestIdentityProvider(t *testing.T) {
 			ClientID:     testClientID,
 			ClientSecret: "test-client-secret",
 			FieldMapping: &storepb.FieldMapping{
-				Identifier: "sub",
-				Username:   "name",
-				Email:      "email",
+				Identifier:  "sub",
+				DisplayName: "name",
+				Email:       "email",
 			},
 		},
 	)
@@ -216,10 +216,10 @@ func TestIdentityProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	wantUserInfo := &idp.UserInfo{
-		Identifier: testSubject,
-		Username:   testName,
-		Email:      testEmail,
-		Raw:        json.RawMessage(userinfo),
+		Identifier:  testSubject,
+		DisplayName: testName,
+		Email:       testEmail,
+		Raw:         json.RawMessage(userinfo),
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }
