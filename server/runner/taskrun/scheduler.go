@@ -1142,11 +1142,11 @@ func (s *Scheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int,
 		}
 		return user.ID, nil
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
-		projectMember, err := s.getAnyProjectOwner(ctx, projectID)
+		projectOwner, err := s.getAnyProjectOwner(ctx, projectID)
 		if err != nil {
 			return api.UnknownID, errors.Wrap(err, "failed to get a project owner")
 		}
-		return projectMember.PrincipalID, nil
+		return projectOwner.ID, nil
 	}
 	// never reached
 	return api.UnknownID, errors.New("invalid assigneeGroupValue")
@@ -1170,18 +1170,15 @@ func (s *Scheduler) getAnyWorkspaceOwner(ctx context.Context) (*store.UserMessag
 }
 
 // getAnyProjectOwner gets a default assignee from the project owners.
-func (s *Scheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*api.ProjectMember, error) {
-	role := api.Owner
-	find := &api.ProjectMemberFind{
-		ProjectID: &projectID,
-		Role:      &role,
-	}
-	projectMemberList, err := s.store.FindProjectMember(ctx, find)
+func (s *Scheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*store.UserMessage, error) {
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
+		return nil, err
 	}
-	if len(projectMemberList) > 0 {
-		return projectMemberList[0], nil
+	for _, binding := range policy.Bindings {
+		if binding.Role == api.Owner && len(binding.Members) > 0 {
+			return binding.Members[0], nil
+		}
 	}
 	return nil, errors.New("failed to get a project owner")
 }

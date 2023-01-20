@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -240,12 +241,16 @@ func aclMiddleware(s *Server, pathPrefix string, ce *casbin.Enforcer, next echo.
 		if role != api.Owner && role != api.DBA {
 			var aclErr *echo.HTTPError
 			roleFinder := func(projectID int, principalID int) (common.ProjectRole, error) {
-				memberList, err := s.store.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &projectID, PrincipalID: &principalID})
+				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
 				if err != nil {
 					return "", err
 				}
-				if len(memberList) > 0 {
-					return common.ProjectRole(memberList[0].Role), nil
+				for _, binding := range policy.Bindings {
+					for _, member := range binding.Members {
+						if member.ID == principalID {
+							return common.ProjectRole(binding.Role), nil
+						}
+					}
 				}
 				return "", nil
 			}
