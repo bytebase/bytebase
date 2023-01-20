@@ -347,7 +347,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 				ResourceID: create.IdentityProviderResourceID,
 			})
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find identity provider with resource id %s", create.IdentityProviderResourceID)
+				return nil, errors.Wrapf(err, "failed to find identity provider with resource id %s", *create.IdentityProviderResourceID)
 			}
 			set, args = append(set, "idp_id"), append(args, identityProvider.UID)
 			set, args = append(set, "idp_user_info"), append(args, create.IdentityProviderUserInfo)
