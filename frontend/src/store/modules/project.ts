@@ -86,16 +86,6 @@ function convertMember(
   return {
     id: parseInt(projectMember.id),
     project: unknown("PROJECT") as Project,
-    creator: getPrincipalFromIncludedList(
-      projectMember.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      projectMember.relationships!.updater.data,
-      includedList
-    ),
-    createdTs: attrs.createdTs,
-    updatedTs: attrs.updatedTs,
     role: attrs.role,
     principal: getPrincipalFromIncludedList(
       projectMember.relationships!.principal.data,

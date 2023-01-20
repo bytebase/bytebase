@@ -75,12 +75,6 @@ export type ProjectMember = {
   // Related fields
   project: Project;
 
-  // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
-
   // Domain specific fields
   role: ProjectRoleType;
   principal: Principal;
