@@ -208,55 +208,104 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	}
 
 	var userMessages []*UserMessage
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			principal.id AS user_id,
-			principal.email,
-			principal.name,
-			principal.type,
-			principal.password_hash,
-			principal.idp_user_info,
-			principal.idp_id,
-			member.role,
-			member.row_status AS row_status
-		FROM principal
-		LEFT JOIN member ON principal.id = member.principal_id
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var userMessage UserMessage
-		var role, rowStatus sql.NullString
-		if err := rows.Scan(
-			&userMessage.ID,
-			&userMessage.Email,
-			&userMessage.Name,
-			&userMessage.Type,
-			&userMessage.PasswordHash,
-			&userMessage.IdentityProviderUserInfo,
-			&userMessage.IdentityProviderID,
-			&role,
-			&rowStatus,
-		); err != nil {
+	if common.FeatureFlag(common.FeatureFlagNoop) {
+		rows, err := tx.QueryContext(ctx, `
+			SELECT
+				principal.id AS user_id,
+				principal.email,
+				principal.name,
+				principal.type,
+				principal.password_hash,
+				principal.idp_id,
+				principal.idp_user_info,
+				member.role,
+				member.row_status AS row_status
+			FROM principal
+			LEFT JOIN member ON principal.id = member.principal_id
+			WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
 			return nil, FormatError(err)
 		}
-		if role.Valid {
-			userMessage.Role = api.Role(role.String)
-		} else if userMessage.ID == api.SystemBotID {
-			userMessage.Role = api.Owner
-		} else {
-			userMessage.Role = api.Developer
+		defer rows.Close()
+		for rows.Next() {
+			var userMessage UserMessage
+			var role, rowStatus sql.NullString
+			if err := rows.Scan(
+				&userMessage.ID,
+				&userMessage.Email,
+				&userMessage.Name,
+				&userMessage.Type,
+				&userMessage.PasswordHash,
+				&userMessage.IdentityProviderID,
+				&userMessage.IdentityProviderUserInfo,
+				&role,
+				&rowStatus,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+			if role.Valid {
+				userMessage.Role = api.Role(role.String)
+			} else if userMessage.ID == api.SystemBotID {
+				userMessage.Role = api.Owner
+			} else {
+				userMessage.Role = api.Developer
+			}
+			if rowStatus.Valid {
+				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
+			} else if userMessage.ID != api.SystemBotID {
+				userMessage.MemberDeleted = true
+			}
+			userMessages = append(userMessages, &userMessage)
 		}
-		if rowStatus.Valid {
-			userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
-		} else if userMessage.ID != api.SystemBotID {
-			userMessage.MemberDeleted = true
+	} else {
+		rows, err := tx.QueryContext(ctx, `
+			SELECT
+				principal.id AS user_id,
+				principal.email,
+				principal.name,
+				principal.type,
+				principal.password_hash,
+				member.role,
+				member.row_status AS row_status
+			FROM principal
+			LEFT JOIN member ON principal.id = member.principal_id
+			WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
 		}
-		userMessages = append(userMessages, &userMessage)
+		defer rows.Close()
+		for rows.Next() {
+			var userMessage UserMessage
+			var role, rowStatus sql.NullString
+			if err := rows.Scan(
+				&userMessage.ID,
+				&userMessage.Email,
+				&userMessage.Name,
+				&userMessage.Type,
+				&userMessage.PasswordHash,
+				&role,
+				&rowStatus,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+			if role.Valid {
+				userMessage.Role = api.Role(role.String)
+			} else if userMessage.ID == api.SystemBotID {
+				userMessage.Role = api.Owner
+			} else {
+				userMessage.Role = api.Developer
+			}
+			if rowStatus.Valid {
+				userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
+			} else if userMessage.ID != api.SystemBotID {
+				userMessage.MemberDeleted = true
+			}
+			userMessages = append(userMessages, &userMessage)
+		}
 	}
 	return userMessages, nil
 }
@@ -288,9 +337,11 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash"}
 	args := []interface{}{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash}
 	// Set idp fields into principal only when the related id is not null.
-	if create.IdentityProviderID != nil {
-		set, args = append(set, "idp_id"), append(args, *create.IdentityProviderID)
-		set, args = append(set, "idp_user_info"), append(args, create.IdentityProviderUserInfo)
+	if common.FeatureFlag(common.FeatureFlagNoop) {
+		if create.IdentityProviderID != nil {
+			set, args = append(set, "idp_id"), append(args, *create.IdentityProviderID)
+			set, args = append(set, "idp_user_info"), append(args, create.IdentityProviderUserInfo)
+		}
 	}
 	placeholder := []string{}
 	for index := range set {
@@ -334,14 +385,16 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 
 	user := &UserMessage{
-		ID:                       userID,
-		Email:                    create.Email,
-		Name:                     create.Name,
-		Type:                     create.Type,
-		PasswordHash:             create.PasswordHash,
-		IdentityProviderID:       create.IdentityProviderID,
-		IdentityProviderUserInfo: create.IdentityProviderUserInfo,
-		Role:                     role,
+		ID:           userID,
+		Email:        create.Email,
+		Name:         create.Name,
+		Type:         create.Type,
+		PasswordHash: create.PasswordHash,
+		Role:         role,
+	}
+	if common.FeatureFlag(common.FeatureFlagNoop) {
+		user.IdentityProviderID = create.IdentityProviderID
+		user.IdentityProviderUserInfo = create.IdentityProviderUserInfo
 	}
 	s.userIDCache.Store(user.ID, user)
 	s.userEmailCache.Store(user.Email, user)
