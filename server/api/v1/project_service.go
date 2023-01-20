@@ -258,13 +258,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	if err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	iamPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-		ProjectID: &projectID,
-	})
+	iamPolicy, err := s.store.SetProjectIAMPolicy(ctx, policy, creatorUID, project.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
