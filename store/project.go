@@ -105,12 +105,24 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 		composedProject.RowStatus = api.Archived
 	}
 
-	// TODO(d): migrate FindProjectMember to v2.
-	projectMemberList, err := s.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &project.UID})
+	policy, err := s.GetProjectPolicy(ctx, &GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, err
 	}
-	composedProject.ProjectMemberList = projectMemberList
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			principal, err := s.GetPrincipalByID(ctx, member.ID)
+			if err != nil {
+				return nil, err
+			}
+			composedProject.ProjectMemberList = append(composedProject.ProjectMemberList, &api.ProjectMember{
+				ID:        member.ID,
+				ProjectID: project.UID,
+				Role:      string(binding.Role),
+				Principal: principal,
+			})
+		}
+	}
 	return composedProject, nil
 }
 

@@ -60,11 +60,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if role == api.Developer {
 			principalID := c.Get(getPrincipalIDContextKey()).(int)
 			for _, database := range dbList {
-				for _, projectMember := range database.Project.ProjectMemberList {
-					if projectMember.PrincipalID == principalID {
-						filteredList = append(filteredList, database)
-						break
-					}
+				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &database.ProjectID})
+				if err != nil {
+					return err
+				}
+				if hasActiveProjectMembership(principalID, policy) {
+					filteredList = append(filteredList, database)
 				}
 			}
 		} else {

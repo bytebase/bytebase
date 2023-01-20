@@ -595,15 +595,19 @@ func (s *Scheduler) CanPrincipalChangeTaskStatus(ctx context.Context, principalI
 	}
 	// as the policy says, the project owner has the privilege to change task status.
 	if *groupValue == api.AssigneeGroupValueProjectOwner {
-		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
-			ProjectID:   &issue.ProjectID,
-			PrincipalID: &principalID,
-		})
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &issue.ProjectID})
 		if err != nil {
-			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", issue.ProjectID, principalID)
+			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.ProjectID)
 		}
-		if member != nil && member.Role == string(api.Owner) {
-			return true, nil
+		for _, binding := range policy.Bindings {
+			if binding.Role != api.Owner {
+				continue
+			}
+			for _, member := range binding.Members {
+				if member.ID == principalID {
+					return true, nil
+				}
+			}
 		}
 	}
 	return false, nil
@@ -1138,11 +1142,11 @@ func (s *Scheduler) GetDefaultAssigneeID(ctx context.Context, environmentID int,
 		}
 		return user.ID, nil
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
-		projectMember, err := s.getAnyProjectOwner(ctx, projectID)
+		projectOwner, err := s.getAnyProjectOwner(ctx, projectID)
 		if err != nil {
 			return api.UnknownID, errors.Wrap(err, "failed to get a project owner")
 		}
-		return projectMember.PrincipalID, nil
+		return projectOwner.ID, nil
 	}
 	// never reached
 	return api.UnknownID, errors.New("invalid assigneeGroupValue")
@@ -1166,18 +1170,15 @@ func (s *Scheduler) getAnyWorkspaceOwner(ctx context.Context) (*store.UserMessag
 }
 
 // getAnyProjectOwner gets a default assignee from the project owners.
-func (s *Scheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*api.ProjectMember, error) {
-	role := api.Owner
-	find := &api.ProjectMemberFind{
-		ProjectID: &projectID,
-		Role:      &role,
-	}
-	projectMemberList, err := s.store.FindProjectMember(ctx, find)
+func (s *Scheduler) getAnyProjectOwner(ctx context.Context, projectID int) (*store.UserMessage, error) {
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FindProjectMember with ProjectMemberFind %+v", find)
+		return nil, err
 	}
-	if len(projectMemberList) > 0 {
-		return projectMemberList[0], nil
+	for _, binding := range policy.Bindings {
+		if binding.Role == api.Owner && len(binding.Members) > 0 {
+			return binding.Members[0], nil
+		}
 	}
 	return nil, errors.New("failed to get a project owner")
 }
@@ -1213,21 +1214,22 @@ func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int,
 		}
 	} else if *groupValue == api.AssigneeGroupValueProjectOwner {
 		// the assignee group is the project owner.
-		member, err := s.store.GetProjectMember(ctx, &api.ProjectMemberFind{
-			ProjectID:   &projectID,
-			PrincipalID: &principalID,
-		})
-		if err != nil {
-			return false, common.Wrapf(err, common.Internal, "failed to get project member by projectID %d, principalID %d", projectID, principalID)
-		}
-		if member == nil {
-			return false, common.Errorf(common.NotFound, "project member not found by projectID %d, principalID %d", projectID, principalID)
-		}
 		if !s.licenseService.IsFeatureEnabled(api.FeatureRBAC) {
-			member.Role = string(api.Owner)
-		}
-		if member.Role == string(api.Owner) {
 			return true, nil
+		}
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectID})
+		if err != nil {
+			return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", projectID)
+		}
+		for _, binding := range policy.Bindings {
+			if binding.Role != api.Owner {
+				continue
+			}
+			for _, member := range binding.Members {
+				if member.ID == principalID {
+					return true, nil
+				}
+			}
 		}
 	}
 	return false, nil
