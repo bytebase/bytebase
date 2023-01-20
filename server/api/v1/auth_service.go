@@ -293,9 +293,11 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserType: userType,
 		UserRole: role,
 	}
-	if user.IdentityProviderID != nil {
-		convertedUser.IdpUid = &wrapperspb.Int32Value{
-			Value: int32(*user.IdentityProviderID),
+	if common.FeatureFlag(common.FeatureFlagNoop) {
+		if user.IdentityProviderID != nil {
+			convertedUser.IdpUid = &wrapperspb.Int32Value{
+				Value: int32(*user.IdentityProviderID),
+			}
 		}
 	}
 	return &convertedUser
