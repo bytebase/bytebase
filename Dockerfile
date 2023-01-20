@@ -80,7 +80,7 @@ ENV OPENSSL_CONF /etc/ssl/
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
-COPY ./.psqlrc /root/.psqlrc
+COPY ./scripts/.psqlrc /root/.psqlrc
 
 # Our HEALTHCHECK instruction in dockerfile needs curl.
 # Install psmisc to use killall command in demo.sh used by render.com.
