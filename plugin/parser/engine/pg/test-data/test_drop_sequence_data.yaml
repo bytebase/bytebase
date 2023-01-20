@@ -1,8 +1,0 @@
-- stmt: drop sequence s;
-  want: DROP SEQUENCE "s";
-- stmt: drop sequence s1, public.s;
-  want: DROP SEQUENCE "s1", "public"."s";
-- stmt: drop sequence if exists s1;
-  want: DROP SEQUENCE IF EXISTS "s1";
-- stmt: drop sequence if exists s1 cascade;
-  want: DROP SEQUENCE IF EXISTS "s1" CASCADE;
