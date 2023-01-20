@@ -260,7 +260,7 @@ func (s *Store) createInboxImpl(ctx context.Context, tx *Tx, create *api.InboxCr
 
 func findInboxImpl(ctx context.Context, tx *Tx, find *api.InboxFind) ([]*inboxRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	where = append(where, "inbox.activity_id = activity.id")
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("inbox.id = $%d", len(args)+1)), append(args, *v)

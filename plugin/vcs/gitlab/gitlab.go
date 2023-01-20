@@ -554,12 +554,11 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		activeMembers = append(
 			activeMembers,
 			&vcs.RepositoryMember{
-				Name:         m.Name,
-				Email:        m.Email,
-				Role:         bytebaseRole,
-				VCSRole:      string(gitlabRole),
-				State:        vcs.StateActive,
-				RoleProvider: vcs.GitLabSelfHost,
+				Name:    m.Name,
+				Email:   m.Email,
+				Role:    bytebaseRole,
+				VCSRole: string(gitlabRole),
+				State:   vcs.StateActive,
 			},
 		)
 	}
@@ -1382,6 +1381,11 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 		Content:      body,
 		LastCommitID: header.Get("x-gitlab-last-commit-id"),
 	}, nil
+}
+
+// GetBranchNameFromRef returns the branch name from the refs.
+func (*Provider) GetBranchNameFromRef(ref string) string {
+	return strings.TrimPrefix(ref, "refs/heads/")
 }
 
 // oauthContext is the request context for refreshing oauth token.

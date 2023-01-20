@@ -86,23 +86,6 @@
           <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{
             member.updater.name
           }}</router-link>
-          <!-- we only show user's role provider if hers is not Bytebase -->
-          <template v-if="member.roleProvider == 'GITLAB_SELF_HOST'">
-            <span>{{ $t("common.from") }}</span>
-            <div class="tooltip-wrapper">
-              <span class="tooltip w-60">
-                {{
-                  $t("settings.members.tooltip.project-role-provider-gitlab", {
-                    rawRole: member.payload.vcsRole,
-                  })
-                }}
-              </span>
-              <img
-                class="w-4 ml-1"
-                :src="RoleProviderConfig[member.roleProvider].iconPath"
-              />
-            </div>
-          </template>
         </div>
       </BBTableCell>
       <BBTableCell>
@@ -128,7 +111,6 @@ import {
   ProjectRoleType,
   MemberId,
   ProjectMemberPatch,
-  ProjectRoleProvider,
 } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { hasWorkspacePermission, hasProjectPermission } from "../utils";
@@ -151,11 +133,6 @@ export default defineComponent({
       required: true,
       type: Object as PropType<Project>,
     },
-    activeRoleProvider: {
-      require: false,
-      default: null,
-      type: String as PropType<ProjectRoleProvider>,
-    },
   },
   setup(props) {
     const { t } = useI18n();
@@ -167,34 +144,11 @@ export default defineComponent({
 
     const state = reactive<LocalState>({});
 
-    const activeRoleProvider = computed(() => {
-      // if props.activeRoleProvider is not passed as a property, we will use props.project.roleProvider by default
-      return props.activeRoleProvider
-        ? props.activeRoleProvider
-        : props.project.roleProvider;
-    });
-
-    const RoleProviderConfig = {
-      GITLAB_SELF_HOST: {
-        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
-        iconPath: new URL("../assets/gitlab-logo.svg", import.meta.url).href,
-      },
-      BYTEBASE: {
-        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
-        iconPath: "",
-      },
-    };
-
     const dataSource = computed(
       (): BBTableSectionDataSource<ProjectMember>[] => {
         const ownerList: ProjectMember[] = [];
         const developerList: ProjectMember[] = [];
         for (const member of props.project.memberList) {
-          // only member with the same role provider as the active one would be consider a valid member
-          if (member.roleProvider !== activeRoleProvider.value) {
-            continue;
-          }
-
           if (member.role == "OWNER") {
             ownerList.push(member);
           }
@@ -262,9 +216,6 @@ export default defineComponent({
       if (props.project.rowStatus == "ARCHIVED") {
         return false;
       }
-      if (props.project.roleProvider !== "BYTEBASE") {
-        return false;
-      }
 
       if (role == "OWNER" && dataSource.value[0].list.length <= 1) {
         return false;
@@ -298,7 +249,6 @@ export default defineComponent({
     const changeRole = (id: MemberId, role: ProjectRoleType) => {
       const projectMemberPatch: ProjectMemberPatch = {
         role,
-        roleProvider: "BYTEBASE",
       };
       projectStore.patchMember({
         projectId: props.project.id,
@@ -321,7 +271,6 @@ export default defineComponent({
 
     return {
       state,
-      RoleProviderConfig,
       currentUser,
       hasRBACFeature,
       columnList,

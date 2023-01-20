@@ -5,27 +5,29 @@
       ref="canvas"
       class="relative overflow-hidden bg-gray-200 pointer-events-none z-10"
       :style="{
-        width: `${width}px`,
-        height: `${height}px`,
+        width: `${resizeParams.rect.width}px`,
+        height: `${resizeParams.rect.height}px`,
       }"
     >
       <div
-        class="absolute overflow-visible"
+        class="absolute overflow-visible origin-top-left"
         :style="{
           width: `${width}px`,
           height: `${height}px`,
+          transform: `scale(${resizeParams.zoom})`,
         }"
       >
         <DesktopRenderer />
       </div>
 
       <img
-        class="absolute z-50 opacity-50"
+        class="absolute z-50 opacity-50 origin-bottom-left"
         :style="{
           width: `${logoWidth}px`,
           height: 'auto',
-          left: `${LOGO_PADDING}px`,
-          bottom: `${LOGO_PADDING}px`,
+          left: `${LOGO_PADDING * resizeParams.zoom}px`,
+          bottom: `${LOGO_PADDING * resizeParams.zoom}px`,
+          transform: `scale(${resizeParams.zoom})`,
         }"
         src="../../../assets/logo-full.svg"
         alt="Bytebase"
@@ -35,10 +37,12 @@
 </template>
 
 <script lang="ts" setup>
+import { pushNotification } from "@/store";
 import { computed, defineComponent, nextTick, PropType, ref, VNode } from "vue";
 
 import {
   calcBBox,
+  fitBBox,
   minmax,
   provideSchemaDiagramContext,
   useSchemaDiagramContext,
@@ -86,28 +90,62 @@ const height = computed(() => {
   return desktopBBox.value.height + desktopBBox.value.y * 2 + paddingBottom;
 });
 
+const resizeParams = computed(() => {
+  // Fit the output image within a size-limited box
+  // and keep W/H ratio.
+  return fitBBox(
+    { width: width.value, height: height.value },
+    {
+      width: 4096,
+      height: 4096,
+    },
+    [0, 1]
+  );
+});
+
 const DesktopRenderer = defineComponent({
   render: () => {
     return props.renderDesktop();
   },
 });
 
-const capture = async (filename: string, format: "png" | "jpg") => {
+const capture = async (filename: string) => {
+  if (isCapturing.value) {
+    return;
+  }
+
   isCapturing.value = true;
 
   await nextTick();
 
   const node = canvas.value;
-  if (!node) return;
+  if (!node) {
+    return;
+  }
 
-  const [{ toPng }, { default: download }] = await Promise.all([
-    import("html-to-image"),
-    import("downloadjs"),
-  ]);
-  const dataUrl = await toPng(node, {});
-  download(dataUrl, filename, `image/${format}`);
+  try {
+    const [{ toBlob }, { default: download }] = await Promise.all([
+      import("html-to-image"),
+      import("downloadjs"),
+    ]);
+    const blob = await toBlob(node, {
+      pixelRatio: 1,
+      quality: 0.9,
+    });
+    if (blob) {
+      download(blob, filename, blob.type);
 
-  isCapturing.value = false;
+      const data = [new window.ClipboardItem({ [blob.type]: blob })];
+      await navigator.clipboard.write(data);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: "Screenshot generated successfully and copied to the clipboard!",
+      });
+    }
+  } finally {
+    isCapturing.value = false;
+  }
 };
 
 provideSchemaDiagramContext({

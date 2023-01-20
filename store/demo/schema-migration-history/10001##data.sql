@@ -6,12 +6,12 @@ INSERT INTO "public"."principal" ("id", "row_status", "creator_id", "created_ts"
 INSERT INTO "public"."member" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "status", "role", "principal_id") VALUES
 (101, 'NORMAL', 1, 1657272815, 1, 1657272815, 'ACTIVE', 'OWNER', 101);
 
-INSERT INTO "public"."project" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "key", "workflow_type", "visibility", "tenant_mode", "db_name_template", "role_provider") VALUES
-(1, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', '', 'BYTEBASE'),
-(101, 'NORMAL', 101, 1657272873, 101, 1657272873, 'DEMO', 'Z77', 'UI', 'PUBLIC', 'DISABLED', '', 'BYTEBASE');
+INSERT INTO "public"."project" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "key", "workflow_type", "visibility", "tenant_mode", "db_name_template") VALUES
+(1, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', ''),
+(101, 'NORMAL', 101, 1657272873, 101, 1657272873, 'DEMO', 'Z77', 'UI', 'PUBLIC', 'DISABLED', '');
 
-INSERT INTO "public"."project_member" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "project_id", "role", "principal_id", "role_provider", "payload") VALUES
-(101, 'NORMAL', 101, 1657272873, 101, 1657272873, 101, 'OWNER', 101, 'BYTEBASE', '{}');
+INSERT INTO "public"."project_member" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "project_id", "role", "principal_id", "payload") VALUES
+(101, 'NORMAL', 101, 1657272873, 101, 1657272873, 101, 'OWNER', 101, '{}');
 
 INSERT INTO "public"."environment" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "name", "order") VALUES
 (101, 'NORMAL', 1, 1657272778, 1, 1657272778, 'Test', 0),

@@ -359,7 +359,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 }
 
 func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind) ([]*policyRaw, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -737,7 +737,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 }
 
 func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ResourceType; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, *v)
 	}

@@ -289,7 +289,7 @@ func (*Store) createPipelineImpl(ctx context.Context, tx *Tx, create *api.Pipeli
 
 func (*Store) findPipelineImpl(ctx context.Context, tx *Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}

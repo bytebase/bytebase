@@ -547,7 +547,7 @@ const state = reactive<State>({
   showFeatureModal: false,
 });
 
-const mongodbConnectionStringSchemaList = ["mongodb", "mongodb+srv"];
+const mongodbConnectionStringSchemaList = ["mongodb://", "mongodb+srv://"];
 
 const currentMongoDBConnectionSchema = computed(() => {
   return currentDataSource.value.options.srv === false

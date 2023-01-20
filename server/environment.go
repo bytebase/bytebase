@@ -195,14 +195,14 @@ func (s *Server) updateEnvironment(ctx context.Context, patch *store.Environment
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid environment name, please visit https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files#file-path-template?source=console to get more detail.").SetInternal(err)
 		}
 	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{UID: &patch.ID})
+	if err != nil {
+		return nil, err
+	}
 
 	// Ensure the environment has no instance before it's archived.
 	if v := patch.RowStatus; v != nil && *v == string(api.Archived) {
-		normalStatus := api.Normal
-		instances, err := s.store.FindInstance(ctx, &api.InstanceFind{
-			EnvironmentID: &patch.ID,
-			RowStatus:     &normalStatus,
-		})
+		instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{EnvironmentID: &environment.ResourceID, ShowDeleted: false})
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("failed to find instances in the environment %d", patch.ID)).SetInternal(err)
 		}

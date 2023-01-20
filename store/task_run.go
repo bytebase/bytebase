@@ -146,7 +146,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *api.Tas
 	}
 
 	// Build WHERE clause.
-	where := []string{"1 = 1"}
+	where := []string{"TRUE"}
 	if v := patch.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -206,7 +206,7 @@ func (s *Store) listTaskRun(ctx context.Context, find *api.TaskRunFind) ([]*task
 
 func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *api.TaskRunFind) ([]*taskRunRaw, error) {
 	// Build WHERE clause.
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}

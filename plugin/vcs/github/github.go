@@ -436,12 +436,11 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		githubRole, bytebaseRole := getRoleAndMappedRole(c.RoleName)
 		allMembers = append(allMembers,
 			&vcs.RepositoryMember{
-				Name:         userInfo.Name,
-				Email:        userInfo.PublicEmail,
-				Role:         bytebaseRole,
-				VCSRole:      string(githubRole),
-				State:        vcs.StateActive,
-				RoleProvider: vcs.GitHubCom,
+				Name:    userInfo.Name,
+				Email:   userInfo.PublicEmail,
+				Role:    bytebaseRole,
+				VCSRole: string(githubRole),
+				State:   vcs.StateActive,
 			},
 		)
 	}
@@ -1401,6 +1400,11 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 		)
 	}
 	return nil
+}
+
+// GetBranchNameFromRef returns the branch name from the refs.
+func (*Provider) GetBranchNameFromRef(ref string) string {
+	return strings.TrimPrefix(ref, "refs/heads/")
 }
 
 // oauthContext is the request context for refreshing oauth token.

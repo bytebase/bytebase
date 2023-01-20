@@ -141,7 +141,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			patch.DataSources = datasourceList
+			patch.DataSources = &datasourceList
 		}
 	}
 
@@ -165,12 +165,11 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q has been deleted", request.Name)
 	}
 
-	rowStatus := api.Archived
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
 		EnvironmentID: instance.EnvironmentID,
 		ResourceID:    instance.ResourceID,
-		RowStatus:     &rowStatus,
+		Delete:        &deletePatch,
 	}); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -188,12 +187,11 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", request.Name)
 	}
 
-	rowStatus := api.Normal
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
 		EnvironmentID: instance.EnvironmentID,
 		ResourceID:    instance.ResourceID,
-		RowStatus:     &rowStatus,
+		Delete:        &undeletePatch,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

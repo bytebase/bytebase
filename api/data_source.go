@@ -8,8 +8,6 @@ import (
 const (
 	// AdminDataSourceName is the name for administrative data source.
 	AdminDataSourceName = "Admin data source"
-	// ReadWriteDataSourceName is the name for read/write data source.
-	ReadWriteDataSourceName = "Read/Write data source"
 	// ReadOnlyDataSourceName is the name for read-only data source.
 	ReadOnlyDataSourceName = "ReadOnly data source"
 	// UnknownDataSourceName is the name for unknown data source.
@@ -23,8 +21,6 @@ func DataSourceNameFromType(dataSourceType DataSourceType) string {
 		return AdminDataSourceName
 	case RO:
 		return ReadOnlyDataSourceName
-	case RW:
-		return ReadWriteDataSourceName
 	}
 	return UnknownDataSourceName
 }
@@ -35,8 +31,6 @@ type DataSourceType string
 const (
 	// Admin is the ADMIN type of data source.
 	Admin DataSourceType = "ADMIN"
-	// RW is the read/write type of data source.
-	RW DataSourceType = "RW"
 	// RO is the read-only type of data source.
 	RO DataSourceType = "RO"
 )
@@ -80,14 +74,9 @@ type DataSource struct {
 	DatabaseID int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
-	Name     string         `jsonapi:"attr,name"`
-	Type     DataSourceType `jsonapi:"attr,type"`
-	Username string         `jsonapi:"attr,username"`
-	// Do not return the password to client
-	Password string
-	SslCa    string
-	SslCert  string
-	SslKey   string
+	Name     string            `jsonapi:"attr,name"`
+	Type     DataSourceType    `jsonapi:"attr,type"`
+	Username string            `jsonapi:"attr,username"`
 	Host     string            `jsonapi:"attr,host"`
 	Port     string            `jsonapi:"attr,port"`
 	Options  DataSourceOptions `jsonapi:"attr,options"`
@@ -96,15 +85,6 @@ type DataSource struct {
 
 // DataSourceCreate is the API message for creating a data source.
 type DataSourceCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
-	// Related fields
-	InstanceID int `jsonapi:"attr,instanceId"`
-	DatabaseID int `jsonapi:"attr,databaseId"`
-
-	// Domain specific fields
 	Name     string            `jsonapi:"attr,name"`
 	Type     DataSourceType    `jsonapi:"attr,type"`
 	Username string            `jsonapi:"attr,username"`
@@ -118,35 +98,8 @@ type DataSourceCreate struct {
 	Database string            `jsonapi:"attr,database"`
 }
 
-// DataSourceFind is the API message for finding data sources.
-type DataSourceFind struct {
-	ID *int
-
-	// Related fields
-	InstanceID *int
-	DatabaseID *int
-
-	// Domain specific fields
-	Type *DataSourceType
-}
-
-func (find *DataSourceFind) String() string {
-	str, err := json.Marshal(*find)
-	if err != nil {
-		return err.Error()
-	}
-	return string(str)
-}
-
 // DataSourcePatch is the API message for data source.
 type DataSourcePatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
 	Username         *string            `jsonapi:"attr,username"`
 	Password         *string            `jsonapi:"attr,password"`
 	UseEmptyPassword *bool              `jsonapi:"attr,useEmptyPassword"`
@@ -157,10 +110,4 @@ type DataSourcePatch struct {
 	Port             *string            `jsonapi:"attr,port"`
 	Options          *DataSourceOptions `jsonapi:"attr,options"`
 	Database         *string            `jsonapi:"attr,database"`
-}
-
-// DataSourceDelete is the API message for deleting data sources.
-type DataSourceDelete struct {
-	ID         int
-	InstanceID int
 }

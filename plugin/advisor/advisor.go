@@ -275,6 +275,9 @@ const (
 	// PostgreSQLIndexNoDuplicateColumn is an advisor type for Postgresql no duplicate columns in index.
 	PostgreSQLIndexNoDuplicateColumn Type = "bb.plugin.advisor.postgresql.index.no-duplicate-column"
 
+	// PostgreSQLCreateIndexConcurrently is an advisor type for PostgreSQL to create index concurrently.
+	PostgreSQLCreateIndexConcurrently Type = "bb.plugin.advisor.postgresql.index.create-concurrently"
+
 	// PostgreSQLColumnTypeDisallowList is an advisor type for Postgresql column type disallow list.
 	PostgreSQLColumnTypeDisallowList Type = "bb.plugin.advisor.postgresql.column.type-disallow-list"
 
@@ -298,6 +301,15 @@ const (
 
 	// PostgreSQLMergeAlterTable is an advisor type for PostgreSQL no redundant ALTER TABLE statements.
 	PostgreSQLMergeAlterTable Type = "bb.plugin.advisor.postgresql.statement.merge-alter-table"
+
+	// PostgreSQLAddCheckNotValid is an advisor type for PostgreSQL to add check not valid.
+	PostgreSQLAddCheckNotValid Type = "bb.plugin.advisor.postgresql.statement.add-check-not-valid"
+
+	// PostgreSQLDisallowAddColumnWithDefault is an advisor type for PostgreSQL to disallow add column with default.
+	PostgreSQLDisallowAddColumnWithDefault Type = "bb.plugin.advisor.postgresql.statement.disallow-add-column-with-default"
+
+	// PostgreSQLDisallowAddNotNull is an advisor type for PostgreSQl to disallow add not null.
+	PostgreSQLDisallowAddNotNull Type = "bb.plugin.advisor.postgresql.statement.disallow-add-not-null"
 
 	// PostgreSQLTableDropNamingConvention is an advisor type for PostgreSQL table drop with naming convention.
 	PostgreSQLTableDropNamingConvention Type = "bb.plugin.advisor.postgresql.table.drop-naming-convention"

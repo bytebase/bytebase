@@ -146,12 +146,11 @@ type UserInfo struct {
 
 // RepositoryMember is the API message for  repository member info.
 type RepositoryMember struct {
-	Email        string             `json:"email"`
-	Name         string             `json:"name"`
-	State        State              `json:"state"`
-	Role         common.ProjectRole `json:"role"`
-	VCSRole      string             `json:"vcsRole"`
-	RoleProvider Type               `json:"roleProvider"`
+	Email   string             `json:"email"`
+	Name    string             `json:"name"`
+	State   State              `json:"state"`
+	Role    common.ProjectRole `json:"role"`
+	VCSRole string             `json:"vcsRole"`
 }
 
 // Repository is the API message for repository info.
@@ -322,6 +321,8 @@ type Provider interface {
 	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error
 	// Deletes a webhook.
 	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error
+	// GetBranchNameFromRef gets the branch name from the refs.
+	GetBranchNameFromRef(ref string) string
 }
 
 var (

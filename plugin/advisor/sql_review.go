@@ -75,6 +75,12 @@ const (
 	SchemaRuleStatementAffectedRowLimit SQLReviewRuleType = "statement.affected-row-limit"
 	// SchemaRuleStatementDMLDryRun dry run the dml.
 	SchemaRuleStatementDMLDryRun SQLReviewRuleType = "statement.dml-dry-run"
+	// SchemaRuleStatementDisallowAddColumnWithDefault disallow to add column with DEFAULT.
+	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
+	// SchemaRuleStatementAddCheckNotValid require add check constraints not valid.
+	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
+	// SchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
+	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -136,6 +142,8 @@ const (
 	SchemaRuleIndexTotalNumberLimit SQLReviewRuleType = "index.total-number-limit"
 	// SchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist.
 	SchemaRuleIndexPrimaryKeyTypeAllowlist SQLReviewRuleType = "index.primary-key-type-allowlist"
+	// SchemaRuleCreateIndexConcurrently require creating indexes concurrently.
+	SchemaRuleCreateIndexConcurrently SQLReviewRuleType = "index.create-concurrently"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
@@ -898,6 +906,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 		if engine == db.Postgres {
 			return PostgreSQLPrimaryKeyTypeAllowlist, nil
 		}
+	case SchemaRuleCreateIndexConcurrently:
+		if engine == db.Postgres {
+			return PostgreSQLCreateIndexConcurrently, nil
+		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
 		case db.MySQL:
@@ -949,6 +961,18 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine db.Type) (Type, err
 			return MySQLStatementDMLDryRun, nil
 		case db.Postgres:
 			return PostgreSQLStatementDMLDryRun, nil
+		}
+	case SchemaRuleStatementDisallowAddColumnWithDefault:
+		if engine == db.Postgres {
+			return PostgreSQLDisallowAddColumnWithDefault, nil
+		}
+	case SchemaRuleStatementAddCheckNotValid:
+		if engine == db.Postgres {
+			return PostgreSQLAddCheckNotValid, nil
+		}
+	case SchemaRuleStatementDisallowAddNotNull:
+		if engine == db.Postgres {
+			return PostgreSQLDisallowAddNotNull, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == db.Postgres {

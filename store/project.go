@@ -68,10 +68,6 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 		v := api.ProjectWorkflowType(*patch.WorkflowType)
 		v2Update.Workflow = &v
 	}
-	if patch.RoleProvider != nil {
-		v := api.ProjectRoleProvider(*patch.RoleProvider)
-		v2Update.RoleProvider = &v
-	}
 	if patch.SchemaChangeType != nil {
 		v := api.ProjectSchemaChangeType(*patch.SchemaChangeType)
 		v2Update.SchemaChangeType = &v
@@ -102,7 +98,6 @@ func (s *Store) composeProject(ctx context.Context, project *ProjectMessage) (*a
 		Visibility:       project.Visibility,
 		TenantMode:       project.TenantMode,
 		DBNameTemplate:   project.DBNameTemplate,
-		RoleProvider:     project.RoleProvider,
 		SchemaChangeType: project.SchemaChangeType,
 		LGTMCheckSetting: project.LGTMCheckSetting,
 	}
@@ -128,7 +123,6 @@ type ProjectMessage struct {
 	Visibility       api.ProjectVisibility
 	TenantMode       api.ProjectTenantMode
 	DBNameTemplate   string
-	RoleProvider     api.ProjectRoleProvider
 	SchemaChangeType api.ProjectSchemaChangeType
 	LGTMCheckSetting api.LGTMCheckSetting
 	// The following fields are output only and not used for create().
@@ -155,7 +149,6 @@ type UpdateProjectMessage struct {
 	TenantMode       *api.ProjectTenantMode
 	DBNameTemplate   *string
 	Workflow         *api.ProjectWorkflowType
-	RoleProvider     *api.ProjectRoleProvider
 	SchemaChangeType *api.ProjectSchemaChangeType
 	LGTMCheckSetting *api.LGTMCheckSetting
 	Delete           *bool
@@ -237,14 +230,16 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	if create.Visibility == "" {
 		create.Visibility = api.Public
 	}
-	if create.RoleProvider == "" {
-		create.RoleProvider = api.ProjectRoleProviderBytebase
-	}
 	if create.SchemaChangeType == "" {
 		create.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
 	}
 	if create.LGTMCheckSetting.Value == "" {
 		create.LGTMCheckSetting = api.GetDefaultLGTMCheckSetting()
+	}
+
+	user, err := s.GetUserByID(ctx, creatorID)
+	if err != nil {
+		return nil, err
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -261,7 +256,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		Visibility:       create.Visibility,
 		TenantMode:       create.TenantMode,
 		DBNameTemplate:   create.DBNameTemplate,
-		RoleProvider:     create.RoleProvider,
 		SchemaChangeType: create.SchemaChangeType,
 		LGTMCheckSetting: create.LGTMCheckSetting,
 	}
@@ -276,11 +270,10 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				visibility,
 				tenant_mode,
 				db_name_template,
-				role_provider,
 				schema_change_type,
 				lgtm_check
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 			RETURNING id
 		`,
 		creatorID,
@@ -292,7 +285,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.Visibility,
 		create.TenantMode,
 		create.DBNameTemplate,
-		create.RoleProvider,
 		create.SchemaChangeType,
 		create.LGTMCheckSetting,
 	).Scan(
@@ -304,14 +296,17 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, FormatError(err)
 	}
 
-	// TODO(h3n4l): migrate to project set IAM policy.
-	projectMember := &api.ProjectMemberCreate{
-		CreatorID:   creatorID,
-		ProjectID:   project.UID,
-		Role:        common.ProjectOwner,
-		PrincipalID: creatorID,
+	policy := &IAMPolicyMessage{
+		Bindings: []*PolicyBinding{
+			{
+				Role: api.Owner,
+				Members: []*UserMessage{
+					user,
+				},
+			},
+		},
 	}
-	if _, err = createProjectMemberImpl(ctx, tx, projectMember); err != nil {
+	if err := s.setProjectIAMPolicyImpl(ctx, tx, policy, creatorID, project.UID); err != nil {
 		return nil, err
 	}
 
@@ -371,9 +366,6 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 	if v := patch.Workflow; v != nil {
 		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.RoleProvider; v != nil {
-		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.SchemaChangeType; v != nil {
 		set, args = append(set, fmt.Sprintf("schema_change_type = $%d", len(args)+1)), append(args, *v)
 	}
@@ -397,7 +389,6 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 			visibility,
 			tenant_mode,
 			db_name_template,
-			role_provider,
 			schema_change_type,
 			lgtm_check,
 			row_status
@@ -412,7 +403,6 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 		&project.Visibility,
 		&project.TenantMode,
 		&project.DBNameTemplate,
-		&project.RoleProvider,
 		&project.SchemaChangeType,
 		&project.LGTMCheckSetting,
 		&rowStatus,
@@ -427,7 +417,7 @@ func (*Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProj
 }
 
 func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
+	where, args := []string{"TRUE"}, []interface{}{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -449,7 +439,6 @@ func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMe
 			visibility,
 			tenant_mode,
 			db_name_template,
-			role_provider,
 			schema_change_type,
 			lgtm_check,
 			row_status
@@ -474,7 +463,6 @@ func (*Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMe
 			&projectMessage.Visibility,
 			&projectMessage.TenantMode,
 			&projectMessage.DBNameTemplate,
-			&projectMessage.RoleProvider,
 			&projectMessage.SchemaChangeType,
 			&projectMessage.LGTMCheckSetting,
 			&rowStatus,
