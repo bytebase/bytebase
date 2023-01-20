@@ -49,11 +49,11 @@ echo "Completed building Bytebase frontend."
 echo ""
 echo "Step 2 - building Bytebase backend..."
 
-flags="-X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}'
--X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=$(go version)'
--X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'
--X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
--X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=$(id -u -n)'"
+flags="-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}'
+-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=$(go version)'
+-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'
+-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")'
+-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=$(id -u -n)'"
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 go build --tags "release,embed_frontend" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./bin/server/main.go

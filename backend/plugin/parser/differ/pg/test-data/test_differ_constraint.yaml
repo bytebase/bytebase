@@ -1,0 +1,178 @@
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (order_id);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        ADD CONSTRAINT "order_details_un_order_id" UNIQUE ("order_id");
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (order_id);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_un_order_id";
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (order_id);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_un_order_id";
+
+    ALTER TABLE "public"."order_details"
+        ADD CONSTRAINT "order_details_un_order_id" UNIQUE ("order_id");
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (order_id);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_un_order_id";
+
+    ALTER TABLE "public"."order_details"
+        ADD CONSTRAINT "order_details_un_order_id" UNIQUE ("id", "order_id");
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT, email_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id, email_id);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_un_order_id";
+
+    ALTER TABLE "public"."order_details"
+        DROP COLUMN "email_id";
+
+    ALTER TABLE "public"."order_details"
+        ADD CONSTRAINT "order_details_un_order_id" UNIQUE ("id", "order_id");
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (order_id);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("order_id");
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (order_id);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_pk";
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (order_id);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_pk";
+
+    ALTER TABLE "public"."order_details"
+        ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("order_id");
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (order_id);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_pk";
+
+    ALTER TABLE "public"."order_details"
+        ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("id", "order_id");
+
+- oldSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT, email_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id, email_id);
+  newSchema: |
+    CREATE TABLE public.order_details(id INT, order_id INT);
+    ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id);
+  diff: |+
+    ALTER TABLE "public"."order_details"
+        DROP CONSTRAINT "order_details_pk";
+
+    ALTER TABLE "public"."order_details"
+        DROP COLUMN "email_id";
+
+    ALTER TABLE "public"."order_details"
+        ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("id", "order_id");
+
+- oldSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+    ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+  newSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+  diff: |+
+    ALTER TABLE "public"."circles"
+        DROP CONSTRAINT "circles_a_b_excl";
+
+- oldSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+  newSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+    ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+  diff: |+
+    ALTER TABLE "public"."circles"
+        ADD CONSTRAINT "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+
+- oldSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+    ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&) WHERE (c > 25);
+  newSchema: |
+    CREATE TABLE public.circles(a circle, b circle, c integer);
+    ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+  diff: |+
+    ALTER TABLE "public"."circles"
+        DROP CONSTRAINT "circles_a_b_excl";
+
+    ALTER TABLE "public"."circles"
+        ADD CONSTRAINT "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
+
+- oldSchema: |
+    CREATE TABLE public.t1(a int, b int, c int);
+    create table public.t2(a int, b int, c int);
+    create unique index uk_1 on public.t1 (a, b, c);
+    create unique index uk_2 on public.t1 (a, b);
+    alter table public.t2 add constraint fk_1 foreign key (a, b, c) references public.t2(a, b, c);
+    alter table public.t2 add constraint fk_3 foreign key (a, b) references public.t2(a, b);
+  newSchema: |
+    CREATE TABLE public.t1(a int, b int, c int);
+    create table public.t2(a int, b int, c int);
+    create unique index uk_1 on public.t1 (a, b, c);
+    create unique index uk_2 on public.t1 (a, b);
+    alter table public.t2 add constraint fk_2 foreign key (a, b, c) references public.t2(a, b, c);
+    alter table public.t2 add constraint fk_3 foreign key (a, b, c) references public.t2(a, b, c);
+  diff: |+
+    ALTER TABLE "public"."t2"
+        DROP CONSTRAINT "fk_3";
+
+    ALTER TABLE "public"."t2"
+        DROP CONSTRAINT "fk_1";
+
+    ALTER TABLE "public"."t2"
+        ADD CONSTRAINT "fk_2" FOREIGN KEY ("a", "b", "c") REFERENCES "public"."t2" ("a", "b", "c");
+
+    ALTER TABLE "public"."t2"
+        ADD CONSTRAINT "fk_3" FOREIGN KEY ("a", "b", "c") REFERENCES "public"."t2" ("a", "b", "c");
+

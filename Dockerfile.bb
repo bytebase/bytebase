@@ -20,7 +20,7 @@ COPY . .
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 RUN GOOS=linux GOARCH=amd64 go build \
     --tags "release" \
-    -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/bb/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/bb/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/bb/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/bb/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/bb/cmd.builduser=${BUILD_USER}'" \
+    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/bb/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/bb/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/bb/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/bb/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/bb/cmd.builduser=${BUILD_USER}'" \
     -o bb \
     ./bin/bb/main.go
 

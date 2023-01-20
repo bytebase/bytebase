@@ -1,0 +1,159 @@
+id: bb.sql-review.prod
+ruleList:
+  - type: engine.mysql.use-innodb
+    level: ERROR
+  - type: table.require-pk
+    level: ERROR
+  - type: table.no-foreign-key
+    level: ERROR
+  - type: table.drop-naming-convention
+    level: ERROR
+    payload:
+      format: _del$
+  - type: table.disallow-partition
+    level: ERROR
+  - type: table.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
+  - type: statement.select.no-select-all
+    level: ERROR
+  - type: statement.where.require
+    level: ERROR
+  - type: statement.where.no-leading-wildcard-like
+    level: ERROR
+  - type: statement.disallow-commit
+    level: ERROR
+  - type: statement.disallow-limit
+    level: ERROR
+  - type: statement.disallow-order-by
+    level: ERROR
+  - type: statement.merge-alter-table
+    level: ERROR
+  - type: statement.insert.must-specify-column
+    level: ERROR
+  - type: statement.insert.disallow-order-by-rand
+    level: ERROR
+  - type: statement.insert.row-limit
+    level: WARNING
+    payload:
+      number: 1000
+  - type: statement.affected-row-limit
+    level: WARNING
+    payload:
+      number: 1000
+  - type: statement.dml-dry-run
+    level: WARNING
+  - type: naming.table
+    level: WARNING
+    payload:
+      format: "^[a-z]+(_[a-z]+)*$"
+      maxLength: 63
+  - type: naming.column
+    level: WARNING
+    payload:
+      format: "^[a-z]+(_[a-z]+)*$"
+      maxLength: 63
+  - type: naming.index.uk
+    level: WARNING
+    payload:
+      format: "^$|^uk_{{table}}_{{column_list}}$"
+      maxLength: 63
+  - type: naming.index.pk
+    level: WARNING
+    payload:
+      format: "^$|^pk_{{table}}_{{column_list}}$"
+      maxLength: 63
+  - type: naming.index.idx
+    level: WARNING
+    payload:
+      format: "^$|^idx_{{table}}_{{column_list}}$"
+      maxLength: 63
+  - type: naming.index.fk
+    level: WARNING
+    payload:
+      format: "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$"
+      maxLength: 63
+  - type: naming.column.auto-increment
+    level: WARNING
+    payload:
+      format: "^id$"
+      maxLength: 63
+  - type: column.required
+    level: WARNING
+    payload:
+      list:
+        - id
+        - created_ts
+        - updated_ts
+        - creator_id
+        - updater_id
+  - type: column.type-disallow-list
+    level: ERROR
+    payload:
+      list:
+        - JSON
+  - type: column.no-null
+    level: WARNING
+  - type: column.disallow-change-type
+    level: ERROR
+  - type: column.set-default-for-not-null
+    level: ERROR
+  - type: column.disallow-change
+    level: ERROR
+  - type: column.disallow-changing-order
+    level: ERROR
+  - type: column.auto-increment-must-integer
+    level: ERROR
+  - type: column.disallow-set-charset
+    level: ERROR
+  - type: column.auto-increment-must-unsigned
+    level: ERROR
+  - type: column.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
+  - type: column.maximum-character-length
+    level: WARNING
+    payload:
+      number: 20
+  - type: column.auto-increment-initial-value
+    level: WARNING
+    payload:
+      number: 1
+  - type: column.current-time-count-limit
+    level: WARNING
+    payload:
+      number: 1000
+  - type: column.require-default
+    level: WARNING
+  - type: schema.backward-compatibility
+    level: WARNING
+  - type: database.drop-empty-database
+    level: ERROR
+  - type: index.no-duplicate-column
+    level: ERROR
+  - type: index.type-no-blob
+    level: ERROR
+  - type: index.pk-type-limit
+    level: ERROR
+  - type: index.key-number-limit
+    level: WARNING
+    payload:
+      number: 5
+  - type: index.total-number-limit
+    level: WARNING
+    payload:
+      number: 5
+  - type: system.charset.allowlist
+    level: ERROR
+    payload:
+      list:
+        - utf8mb4
+  - type: system.collation.allowlist
+    level: ERROR
+    payload:
+      list:
+        - utf8mb4_0900_ai_ci
