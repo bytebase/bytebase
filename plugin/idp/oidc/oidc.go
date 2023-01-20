@@ -22,9 +22,9 @@ type IdentityProvider struct {
 // IdentityProviderConfig is the configuration to be consumed by the OIDC
 // Identity Provider.
 type IdentityProviderConfig struct {
-	Issuer       string               `json:"issuer"`
-	ClientID     string               `json:"clientId"`
-	ClientSecret string               `json:"clientSecret"`
+	Issuer       string                `json:"issuer"`
+	ClientID     string                `json:"clientId"`
+	ClientSecret string                `json:"clientSecret"`
 	FieldMapping *storepb.FieldMapping `json:"fieldMapping"`
 }
 
