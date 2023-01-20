@@ -64,7 +64,7 @@
             :item-list="
                 databaseMigrationHistoryList(state.baseSchemaInfo.databaseId as DatabaseId)
               "
-            :placeholder="$t('migration-history.select')"
+            :placeholder="$t('change-history.select')"
             :show-prefix-item="true"
             @select-item="(migrationHistory: MigrationHistory) => handleSchemaVersionSelect(migrationHistory)"
           >
@@ -159,7 +159,7 @@
           :old-string="state.targetDatabaseInfo.currentSchema"
           :new-string="state.baseSchemaInfo.migrationHistory?.schema ?? ''"
           output-format="side-by-side"
-          data-label="bb-migration-history-code-diff-block"
+          data-label="bb-change-history-code-diff-block"
         />
       </template>
     </div>

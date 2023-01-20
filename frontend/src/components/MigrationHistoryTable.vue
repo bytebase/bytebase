@@ -6,7 +6,7 @@
     :show-header="true"
     :left-bordered="true"
     :right-bordered="true"
-    data-label="bb-migration-history-table"
+    data-label="bb-change-history-table"
     @click-row="clickHistory"
   >
     <template #header>
@@ -132,7 +132,7 @@ export default defineComponent({
             title: "",
           },
           {
-            title: t("migration-history.workflow"),
+            title: t("change-history.workflow"),
           },
           {
             title: t("common.version"),
