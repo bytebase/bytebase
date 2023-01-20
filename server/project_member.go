@@ -61,7 +61,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Members: []*store.UserMessage{user},
 			})
 		}
-		if err := s.store.SetProjectIAMPolicy(ctx, newPolicy, creatorID, project.UID); err != nil {
+		if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, creatorID, project.UID); err != nil {
 			return err
 		}
 
@@ -152,7 +152,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				Members: []*store.UserMessage{user},
 			})
 		}
-		if err := s.store.SetProjectIAMPolicy(ctx, newPolicy, updaterID, project.UID); err != nil {
+		if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, updaterID, project.UID); err != nil {
 			return err
 		}
 
@@ -221,7 +221,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		newPolicy := removeMember(policy, user)
-		if err := s.store.SetProjectIAMPolicy(ctx, newPolicy, updaterID, project.UID); err != nil {
+		if _, err := s.store.SetProjectIAMPolicy(ctx, newPolicy, updaterID, project.UID); err != nil {
 			return err
 		}
 

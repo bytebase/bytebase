@@ -33,6 +33,17 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 	if find.ProjectID == nil && find.UID == nil {
 		return nil, errors.Errorf("GetProjectPolicy must set either resource ID or UID")
 	}
+	if find.ProjectID != nil {
+		if policy, ok := s.projectPolicyCache.Load(*find.ProjectID); ok {
+			return policy.(*IAMPolicyMessage), nil
+		}
+	}
+	if find.UID != nil {
+		if policy, ok := s.projectIDPolicyCache.Load(*find.UID); ok {
+			return policy.(*IAMPolicyMessage), nil
+		}
+	}
+
 	projectFind := &FindProjectMessage{}
 	if v := find.ProjectID; v != nil {
 		projectFind.ResourceID = v
@@ -63,26 +74,38 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 		return nil, FormatError(err)
 	}
 
+	s.projectPolicyCache.Store(project.ResourceID, projectPolicy)
+	s.projectIDPolicyCache.Store(project.UID, projectPolicy)
 	return projectPolicy, nil
 }
 
 // SetProjectIAMPolicy sets the IAM policy of a project.
-func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, creatorUID int, projectUID int) error {
+func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, creatorUID int, projectUID int) (*IAMPolicyMessage, error) {
 	if set == nil {
-		return errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
+		return nil, errors.Errorf("SetProjectPolicy must set IAMPolicyMessage")
+	}
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &projectUID})
+	if err != nil {
+		return nil, err
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return FormatError(err)
+		return nil, FormatError(err)
 	}
 	defer tx.Rollback()
 
 	if err := s.setProjectIAMPolicyImpl(ctx, tx, set, creatorUID, projectUID); err != nil {
-		return err
+		return nil, err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	s.projectPolicyCache.Delete(project.ResourceID)
+	s.projectIDPolicyCache.Delete(project.UID)
+	return s.GetProjectPolicy(ctx, &GetProjectPolicyMessage{UID: &projectUID})
 }
 
 func (s *Store) getProjectPolicyImpl(ctx context.Context, tx *Tx, find *GetProjectPolicyMessage) (*IAMPolicyMessage, error) {
