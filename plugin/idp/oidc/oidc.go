@@ -10,6 +10,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/bytebase/bytebase/plugin/idp"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // IdentityProvider represents an OIDC Identity Provider.
@@ -21,10 +22,10 @@ type IdentityProvider struct {
 // IdentityProviderConfig is the configuration to be consumed by the OIDC
 // Identity Provider.
 type IdentityProviderConfig struct {
-	Issuer       string           `json:"issuer"`
-	ClientID     string           `json:"clientId"`
-	ClientSecret string           `json:"clientSecret"`
-	FieldMapping idp.FieldMapping `json:"fieldMapping"`
+	Issuer       string               `json:"issuer"`
+	ClientID     string               `json:"clientId"`
+	ClientSecret string               `json:"clientSecret"`
+	FieldMapping storepb.FieldMapping `json:"fieldMapping"`
 }
 
 // NewIdentityProvider initializes a new OIDC Identity Provider with the given
@@ -119,9 +120,9 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 	}
 
 	// Best effort to map optional fields
-	if p.config.FieldMapping.DisplayName != "" {
-		if v, ok := claims[p.config.FieldMapping.DisplayName].(string); ok {
-			userInfo.DisplayName = v
+	if p.config.FieldMapping.Username != "" {
+		if v, ok := claims[p.config.FieldMapping.Username].(string); ok {
+			userInfo.Username = v
 		}
 	}
 	if p.config.FieldMapping.Email != "" {

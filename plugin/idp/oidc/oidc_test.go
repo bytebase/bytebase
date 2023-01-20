@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/plugin/idp"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestNewIdentityProvider(t *testing.T) {
@@ -33,7 +34,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				Issuer:       "",
 				ClientID:     "test-client-id",
 				ClientSecret: "test-client-secret",
-				FieldMapping: idp.FieldMapping{
+				FieldMapping: storepb.FieldMapping{
 					Identifier: "sub",
 				},
 			},
@@ -45,7 +46,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				Issuer:       "https://oidc.example.com",
 				ClientID:     "",
 				ClientSecret: "test-client-secret",
-				FieldMapping: idp.FieldMapping{
+				FieldMapping: storepb.FieldMapping{
 					Identifier: "sub",
 				},
 			},
@@ -57,7 +58,7 @@ func TestNewIdentityProvider(t *testing.T) {
 				Issuer:       "https://oidc.example.com",
 				ClientID:     "test-client-id",
 				ClientSecret: "",
-				FieldMapping: idp.FieldMapping{
+				FieldMapping: storepb.FieldMapping{
 					Identifier: "sub",
 				},
 			},
@@ -69,8 +70,8 @@ func TestNewIdentityProvider(t *testing.T) {
 				Issuer:       "https://oidc.example.com",
 				ClientID:     "test-client-id",
 				ClientSecret: "test-client-secret",
-				FieldMapping: idp.FieldMapping{
-					DisplayName: "name",
+				FieldMapping: storepb.FieldMapping{
+					Username: "name",
 				},
 			},
 			containsErr: `the field "fieldMapping.identifier" is empty but required`,
@@ -198,10 +199,10 @@ func TestIdentityProvider(t *testing.T) {
 			Issuer:       s.URL,
 			ClientID:     testClientID,
 			ClientSecret: "test-client-secret",
-			FieldMapping: idp.FieldMapping{
-				Identifier:  "sub",
-				DisplayName: "name",
-				Email:       "email",
+			FieldMapping: storepb.FieldMapping{
+				Identifier: "sub",
+				Username:   "name",
+				Email:      "email",
 			},
 		},
 	)
@@ -215,10 +216,10 @@ func TestIdentityProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	wantUserInfo := &idp.UserInfo{
-		Identifier:  testSubject,
-		DisplayName: testName,
-		Email:       testEmail,
-		Raw:         json.RawMessage(userinfo),
+		Identifier: testSubject,
+		Username:   testName,
+		Email:      testEmail,
+		Raw:        json.RawMessage(userinfo),
 	}
 	assert.Equal(t, wantUserInfo, userInfo)
 }
