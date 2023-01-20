@@ -23,16 +23,6 @@ type ProjectMemberCreate struct {
 	PrincipalID int                `jsonapi:"attr,principalId"`
 }
 
-// ProjectMemberFind is the API message for finding project members.
-type ProjectMemberFind struct {
-	ID *int
-
-	// Related fields
-	ProjectID   *int
-	PrincipalID *int
-	Role        *Role
-}
-
 // ProjectMemberPatch is the API message for patching a project member.
 type ProjectMemberPatch struct {
 	Role *string `jsonapi:"attr,role"`
