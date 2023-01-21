@@ -146,34 +146,17 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		}
 	}
 
-	var errBuilder strings.Builder
-	for {
-		line, readErr := errReader.ReadString('\n')
-		if readErr != nil && readErr != io.EOF {
-			return readErr
-		}
-
-		if err := func() error {
-			// Log the error, but return the first 1024 characters in the error to users.
-			log.Warn(line)
-			if errBuilder.Len() < 1024 {
-				if _, err := errBuilder.WriteString(line); err != nil {
-					return err
-				}
-			}
-			return nil
-		}(); err != nil {
-			return err
-		}
-
-		if readErr == io.EOF {
-			break
-		}
+	errorMsg := make([]byte, 1024)
+	readSize, readErr := errReader.Read(errorMsg)
+	if readErr != nil && readErr != io.EOF {
+		return err
 	}
-
+	if readSize > 0 {
+		log.Warn(string(errorMsg))
+	}
 	err = cmd.Wait()
 	if err != nil {
-		return errors.Wrapf(err, "error message: %s", errBuilder.String())
+		return errors.Wrapf(err, "error message: %s", errorMsg)
 	}
 	return nil
 }
