@@ -12,7 +12,7 @@ cd "$(dirname "$0")/../"
 
 echo "Start building Bytebase docker image ${VERSION}..."
 
-docker build \
+docker build -f ./scripts/Dockerfile \
     --build-arg VERSION=${VERSION} \
     --build-arg GO_VERSION="$(go version)" \
     --build-arg GIT_COMMIT="$(git rev-parse HEAD)"\
