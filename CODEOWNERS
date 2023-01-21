@@ -1,5 +1,8 @@
+# Default
+*                            @d-bytebase @ecmadao
+
 # Backend and API.
-* /backend/                  @d-bytebase @ecmadao
+/backend/                    @d-bytebase @ecmada
 /proto/                      @d-bytebase @ecmadao
 
 # Backend SQL kernel.
