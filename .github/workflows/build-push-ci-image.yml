@@ -33,7 +33,7 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v3
         with:
-          file: Dockerfile
+          file: scripts/Dockerfile
           push: true
           tags: bytebase/bytebase:${{ matrix.docker-image-tag }}
           build-args: |

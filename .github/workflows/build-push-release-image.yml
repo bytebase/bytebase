@@ -30,7 +30,7 @@ jobs:
         id: bytebase_build
         uses: docker/build-push-action@v3
         with:
-          file: Dockerfile
+          file: scripts/Dockerfile
           push: true
           tags: bytebase/bytebase:${{ env.RELEASE_VERSION }}
           build-args: |
@@ -44,7 +44,7 @@ jobs:
         id: bb_build
         uses: docker/build-push-action@v3
         with:
-          file: Dockerfile.bb
+          file: scripts/Dockerfile.bb
           push: true
           tags: bytebase/bb:${{ env.RELEASE_VERSION }}
           build-args: |
@@ -58,7 +58,7 @@ jobs:
         id: sql_build
         uses: docker/build-push-action@v3
         with:
-          file: Dockerfile.sql-service
+          file: scripts/Dockerfile.sql-service
           push: true
           tags: bytebase/sql:${{ env.RELEASE_VERSION }}
           build-args: |
