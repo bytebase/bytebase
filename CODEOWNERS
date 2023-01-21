@@ -2,7 +2,7 @@
 *                            @d-bytebase @ecmadao
 
 # Backend and API.
-/backend/                    @d-bytebase @ecmada
+/backend/                    @d-bytebase @ecmadao
 /proto/                      @d-bytebase @ecmadao
 
 # Backend SQL kernel.
