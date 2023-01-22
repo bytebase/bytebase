@@ -382,6 +382,13 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 
 	// Trigger task checks.
 	if taskPatch.Statement != nil {
+		dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
+		if err != nil {
+			return nil, err
+		}
+		if dbSchema == nil {
+			return nil, errors.Errorf("database schema ID not found %v", task.DatabaseID)
+		}
 		// it's ok to fail.
 		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonSQLModified); err != nil {
 			log.Error("failed to cancel external approval on SQL modified", zap.Int("issue_id", issue.ID), zap.Error(err))
@@ -405,8 +412,8 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: *taskPatch.Statement,
 				DbType:    task.Database.Instance.Engine,
-				Charset:   taskPatched.Database.CharacterSet,
-				Collation: taskPatched.Database.Collation,
+				Charset:   dbSchema.Metadata.CharacterSet,
+				Collation: dbSchema.Metadata.Collation,
 			})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name))
@@ -436,8 +443,8 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementTypePayload{
 				Statement: *taskPatch.Statement,
 				DbType:    task.Instance.Engine,
-				Charset:   task.Database.CharacterSet,
-				Collation: task.Database.Collation,
+				Charset:   dbSchema.Metadata.CharacterSet,
+				Collation: dbSchema.Metadata.Collation,
 			})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, errors.Wrapf(err, "failed to marshal check statement type payload: %v", task.Name))
@@ -530,12 +537,19 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 		)
 		return nil
 	}
+	dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
+	if err != nil {
+		return err
+	}
+	if dbSchema == nil {
+		return errors.Errorf("database schema ID not found %v", task.DatabaseID)
+	}
 
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 		Statement: statement,
 		DbType:    task.Database.Instance.Engine,
-		Charset:   task.Database.CharacterSet,
-		Collation: task.Database.Collation,
+		Charset:   dbSchema.Metadata.CharacterSet,
+		Collation: dbSchema.Metadata.Collation,
 		PolicyID:  policyID,
 	})
 	if err != nil {

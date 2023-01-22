@@ -372,9 +372,16 @@ func (s *Server) sqlAdviceForFile(
 			return nil, err
 		}
 
+		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, err
+		}
+		if dbSchema == nil {
+			return nil, errors.Errorf("database schema %v not found", database.UID)
+		}
 		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
-			Charset:   database.CharacterSet,
-			Collation: database.Collation,
+			Charset:   dbSchema.Metadata.CharacterSet,
+			Collation: dbSchema.Metadata.Collation,
 			DbType:    dbType,
 			Catalog:   catalog,
 			Driver:    connection,

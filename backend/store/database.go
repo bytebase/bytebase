@@ -113,8 +113,6 @@ func (s *Store) composeDatabase(ctx context.Context, database *DatabaseMessage) 
 		ProjectID:            project.UID,
 		InstanceID:           instance.UID,
 		Name:                 database.DatabaseName,
-		CharacterSet:         database.CharacterSet,
-		Collation:            database.Collation,
 		SchemaVersion:        database.SchemaVersion,
 		SyncStatus:           database.SyncState,
 		LastSuccessfulSyncTs: database.SuccessfulSyncTimeTs,
@@ -159,8 +157,6 @@ type DatabaseMessage struct {
 	InstanceID    string
 
 	DatabaseName         string
-	CharacterSet         string
-	Collation            string
 	SyncState            api.SyncStatus
 	SuccessfulSyncTimeTs int64
 	SchemaVersion        string
@@ -174,8 +170,6 @@ type UpdateDatabaseMessage struct {
 	DatabaseName  string
 
 	ProjectID            *string
-	CharacterSet         *string
-	Collation            *string
 	SyncState            *api.SyncStatus
 	SuccessfulSyncTimeTs *int64
 	SchemaVersion        *string
@@ -262,7 +256,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	return databases, nil
 }
 
-// CreateDatabaseDefault creates a new database with charset, collation only in the default project.
+// CreateDatabaseDefault creates a new database in the default project.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) error {
 	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{EnvironmentID: &create.EnvironmentID, ResourceID: &create.InstanceID})
 	if err != nil {
@@ -323,8 +317,8 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		instanceUID,
 		api.DefaultProjectUID,
 		create.DatabaseName,
-		create.CharacterSet,
-		create.Collation,
+		"", /* character_set */
+		"", /* collation */
 		api.OK,
 		0,  /* last_successful_sync_ts */
 		"", /* schema_version */
@@ -377,8 +371,6 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			name = EXCLUDED.name,
-			character_set = EXCLUDED.character_set,
-			"collation" = EXCLUDED.collation,
 			schema_version = EXCLUDED.schema_version
 		RETURNING id`
 	var databaseUID int
@@ -388,8 +380,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		instance.UID,
 		project.UID,
 		create.DatabaseName,
-		create.CharacterSet,
-		create.Collation,
+		"", /* character_set */
+		"", /* collation */
 		api.OK,
 		create.SuccessfulSyncTimeTs,
 		create.SchemaVersion,
@@ -425,12 +417,6 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 			return nil, err
 		}
 		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, project.UID)
-	}
-	if v := patch.CharacterSet; v != nil {
-		set, args = append(set, fmt.Sprintf("character_set = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Collation; v != nil {
-		set, args = append(set, fmt.Sprintf(`"collation" = $%d`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.SyncState; v != nil {
 		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
@@ -524,8 +510,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			environment.resource_id AS environment_id,
 			instance.resource_id AS instance_id,
 			db.name,
-			db.character_set,
-			db.collation,
 			db.sync_status,
 			db.last_successful_sync_ts,
 			db.schema_version,
@@ -559,8 +543,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.EnvironmentID,
 			&databaseMessage.InstanceID,
 			&databaseMessage.DatabaseName,
-			&databaseMessage.CharacterSet,
-			&databaseMessage.Collation,
 			&databaseMessage.SyncState,
 			&databaseMessage.SuccessfulSyncTimeTs,
 			&databaseMessage.SchemaVersion,

@@ -160,7 +160,7 @@ import {
 } from "@/types";
 import { CreatePITRDatabaseContext } from "./utils";
 import { DatabaseLabelForm } from "@/components/CreateDatabasePrepForm";
-import { useInstanceStore, useProjectStore } from "@/store";
+import { useInstanceStore, useProjectStore, useDBSchemaStore } from "@/store";
 import { buildDatabaseNameByTemplateAndLabelList } from "@/utils";
 import { isPITRAvailableOnInstance } from "@/plugins/pitr";
 
@@ -188,13 +188,17 @@ const extractLocalContextFromProps = (): CreatePITRDatabaseContext => {
   if (context) {
     return context;
   } else {
+    const dbSchemaMetadata = dbSchemaStore.getDatabaseMetadataByDatabaseId(
+      props.database.id
+    );
+
     return {
       projectId: database.project.id,
       instanceId: database.instance.id,
       environmentId: database.instance.environment.id,
       databaseName: `${database.name}_recovery`, // looks like "my_db_recovery"
-      characterSet: database.characterSet,
-      collation: database.collation,
+      characterSet: dbSchemaMetadata.characterSet,
+      collation: dbSchemaMetadata.collation,
       labelList: cloneDeep(database.labels),
     };
   }
@@ -202,6 +206,7 @@ const extractLocalContextFromProps = (): CreatePITRDatabaseContext => {
 
 const instanceStore = useInstanceStore();
 const projectStore = useProjectStore();
+const dbSchemaStore = useDBSchemaStore();
 
 // Refresh the instance list
 const prepareInstanceList = () => {
