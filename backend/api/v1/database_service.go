@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -84,13 +85,122 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 }
 
 // UpdateDatabase updates a database.
-func (*DatabaseService) UpdateDatabase(_ context.Context, _ *v1pb.UpdateDatabaseRequest) (*v1pb.Database, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateDatabase not implemented")
+func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.UpdateDatabaseRequest) (*v1pb.Database, error) {
+	if request.Database == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "database must be set")
+	}
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+
+	environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(request.Database.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		EnvironmentID: &environmentID,
+		InstanceID:    &instanceID,
+		DatabaseName:  &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+
+	patch := &store.UpdateDatabaseMessage{}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "database.project":
+			projectID, err := getProjectID(request.Database.Project)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+				ResourceID:  &projectID,
+				ShowDeleted: true,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if project == nil {
+				return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+			}
+
+			patch.ProjectID = &project.ResourceID
+		case "database.labels":
+			patch.Labels = &request.Database.Labels
+		}
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	database, err = s.store.UpdateDatabase(ctx, patch, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return convertToDatabase(database), nil
 }
 
 // BatchUpdateDatabases updates a database in batch.
-func (*DatabaseService) BatchUpdateDatabases(_ context.Context, _ *v1pb.BatchUpdateDatabasesRequest) (*v1pb.BatchUpdateDatabasesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateDatabases not implemented")
+func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1pb.BatchUpdateDatabasesRequest) (*v1pb.BatchUpdateDatabasesResponse, error) {
+	var databases []*store.DatabaseMessage
+	projectURI := ""
+	for _, req := range request.Requests {
+		if req.Database == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "database must be set")
+		}
+		if req.UpdateMask == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+		}
+		environmentID, instanceID, databaseName, err := getEnvironmentInstanceDatabaseID(req.Database.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			EnvironmentID: &environmentID,
+			InstanceID:    &instanceID,
+			DatabaseName:  &databaseName,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if database == nil {
+			return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		}
+		if projectURI != "" && projectURI != req.Database.Project {
+			return nil, status.Errorf(codes.InvalidArgument, "database should use the same project")
+		}
+		projectURI = req.Database.Project
+		databases = append(databases, database)
+	}
+	projectID, err := getProjectID(projectURI)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	databases, err = s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	response := &v1pb.BatchUpdateDatabasesResponse{}
+	for _, database := range databases {
+		response.Databases = append(response.Databases, convertToDatabase(database))
+	}
+	return response, nil
 }
 
 // GetDatabaseMetadata gets the metadata of a database.

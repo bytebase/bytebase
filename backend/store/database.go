@@ -462,6 +462,47 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
+// BatchUpdateDatabaseProject updates the project for databases in batch.
+func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*DatabaseMessage, projectID string, updaterID int) ([]*DatabaseMessage, error) {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.Rollback()
+
+	var wheres []string
+	args := []interface{}{project.UID, updaterID}
+	for i, database := range databases {
+		wheres = append(wheres, fmt.Sprintf("(environment.resource_id = $%d AND instance.resource_id = $%d AND db.name = $%d)", 3*i+3, 3*i+4, 3*i+5))
+		args = append(args, database.EnvironmentID, database.InstanceID, database.DatabaseName)
+	}
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
+			UPDATE db
+			SET project_id = $1, updater_id = $2
+			FROM instance JOIN environment ON instance.environment_id = environment.id
+			WHERE db.instance_id = instance.id AND (%s);`, strings.Join(wheres, " OR ")),
+		args...,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	for _, database := range databases {
+		database.ProjectID = project.ResourceID
+		s.databaseCache.Store(getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName), database)
+		s.databaseIDCache.Store(database.UID, database)
+	}
+	return databases, nil
+}
+
 func (s *Store) getDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) (*DatabaseMessage, error) {
 	databaseList, err := s.listDatabaseImplV2(ctx, tx, find)
 	if err != nil {
