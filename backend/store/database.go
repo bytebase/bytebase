@@ -300,8 +300,6 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 			instance_id,
 			project_id,
 			name,
-			character_set,
-			"collation",
 			sync_status,
 			last_successful_sync_ts,
 			schema_version
@@ -317,8 +315,6 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, instanceUID
 		instanceUID,
 		api.DefaultProjectUID,
 		create.DatabaseName,
-		"", /* character_set */
-		"", /* collation */
 		api.OK,
 		0,  /* last_successful_sync_ts */
 		"", /* schema_version */
@@ -361,8 +357,6 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			instance_id,
 			project_id,
 			name,
-			character_set,
-			"collation",
 			sync_status,
 			last_successful_sync_ts,
 			schema_version
@@ -380,8 +374,6 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		instance.UID,
 		project.UID,
 		create.DatabaseName,
-		"", /* character_set */
-		"", /* collation */
 		api.OK,
 		create.SuccessfulSyncTimeTs,
 		create.SchemaVersion,

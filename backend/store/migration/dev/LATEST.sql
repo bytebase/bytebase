@@ -334,9 +334,7 @@ CREATE TABLE db (
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
-    name TEXT NOT NULL,
-    character_set TEXT NOT NULL,
-    "collation" TEXT NOT NULL
+    name TEXT NOT NULL
 );
 
 CREATE INDEX idx_db_instance_id ON db(instance_id);
