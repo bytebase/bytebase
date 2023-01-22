@@ -1,87 +1,79 @@
-CREATE OR REPLACE FUNCTION f_bytea_to_bit(
-    IN i_bytea BYTEA
+CREATE OR REPLACE FUNCTION bytea_to_bit(
+    IN bytea1 BYTEA
 )
 RETURNS BIT VARYING
 AS
 $BODY$
 DECLARE
-    w_bit BIT VARYING := b'';
+    outbits BIT VARYING := b'';
 BEGIN
-    w_bit := ('x' || ltrim(i_bytea::text, '\x'))::bit varying;
-RETURN w_bit;
+    outbits := ('x' || ltrim(bytea1::text, '\x'))::bit varying;
+RETURN outbits;
 END;
 $BODY$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION f_bit_to_bytea(
-    IN i_bit BIT VARYING
+CREATE OR REPLACE FUNCTION bit_to_bytea(
+    IN bits1 BIT VARYING
 )
 RETURNS bytea
 AS
 $BODY$
 DECLARE
-    w_panel_data_len INTEGER;
-    w_str_bit TEXT := '';
-    w_bytea BYTEA := NULL::BYTEA;
+    bitslen INTEGER;
+    strbits TEXT := '';
+    outbytea BYTEA := NULL::BYTEA;
 BEGIN
-    /* Get number of bytes */
-    w_panel_data_len := octet_length(i_bit);
-
-    IF length(i_bit) % 8 != 0 THEN
-        RAISE 'Can not convert to bytea. The passed argument is % bits', length(i_bit);
-    END IF;
-
-    FOR i IN 0 .. w_panel_data_len - 1 LOOP
-        w_str_bit := w_str_bit || lpad(to_hex(substring(i_bit from (i * 8) + 1  for 8)::int), 2, '0');
+    bitslen := octet_length(bits1);
+    FOR i IN 0 .. bitslen - 1 LOOP
+        strbits := strbits || lpad(to_hex(substring(bits1 from (i * 8) + 1  for 8)::int), 2, '0');
     END LOOP;
-
-    w_bytea := decode(w_str_bit, 'hex');
-
-RETURN w_bytea;
+    outbytea := decode(strbits, 'hex');
+RETURN outbytea;
 END;
 $BODY$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION f_bytea_xor(
-    IN i_bytea_1 BYTEA,
-    IN i_bytea_2 BYTEA
+CREATE OR REPLACE FUNCTION bytea_xor(
+    IN bytea1 BYTEA,
+    IN bytea2 BYTEA
 )
 RETURNS BYTEA
 AS
 $BODY$
 DECLARE
-    w_bit BIT VARYING := b'';
-    w_bytea BYTEA := null::BYTEA;
+    xorbits BIT VARYING := b'';
+    outbytea BYTEA := null::BYTEA;
 BEGIN
-    w_bit := f_bytea_to_bit(i_bytea_1) # f_bytea_to_bit(i_bytea_2);
-    w_bytea := f_bit_to_bytea(w_bit);
-RETURN w_bytea;
+    xorbits := bytea_to_bit(bytea1) # bytea_to_bit(bytea2);
+    outbytea := bit_to_bytea(xorbits);
+RETURN outbytea;
 END;
 $BODY$
 LANGUAGE plpgsql;
 
 UPDATE data_source
 SET
-	password = encode(f_bytea_xor(
+	password = encode(bytea_xor(
 		password::bytea,
 		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(password::bytea)/32), length(password::bytea))::bytea
 	), 'base64'),
-	ssl_key = encode(f_bytea_xor(
+	ssl_key = encode(bytea_xor(
 		ssl_key::bytea,
 		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(ssl_key::bytea)/32), length(ssl_key::bytea))::bytea
 	), 'base64'),
 	
-	ssl_cert = encode(f_bytea_xor(
+	ssl_cert = encode(bytea_xor(
 		ssl_cert::bytea,
 		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(ssl_cert::bytea)/32), length(ssl_cert::bytea))::bytea
 	), 'base64'),
 	
-	ssl_ca = encode(f_bytea_xor(
+	ssl_ca = encode(bytea_xor(
 		ssl_ca::bytea,
 		LEFT(REPEAT((SELECT value FROM setting WHERE name = 'bb.auth.secret'), 1+length(ssl_ca::bytea)/32), length(ssl_ca::bytea))::bytea
 	), 'base64')
 ;
 
-DROP FUNCTION IF EXISTS f_bytea_xor;
-DROP FUNCTION IF EXISTS f_bit_to_bytea;
-DROP FUNCTION IF EXISTS f_bytea_to_bit;
+DROP FUNCTION IF EXISTS bytea_xor;
+DROP FUNCTION IF EXISTS bit_to_bytea;
+DROP FUNCTION IF EXISTS bytea_to_bit;
