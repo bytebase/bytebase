@@ -309,12 +309,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database connection").SetInternal(err)
 			}
+			dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return err
+			}
+			if dbSchema == nil {
+				return errors.Errorf("database schema %v not found", database.UID)
+			}
 
 			adviceLevel, adviceList, err = s.sqlCheck(
 				ctx,
 				dbType,
-				database.CharacterSet,
-				database.Collation,
+				dbSchema.Metadata.CharacterSet,
+				dbSchema.Metadata.Collation,
 				composedInstance.EnvironmentID,
 				exec.Statement,
 				catalog,

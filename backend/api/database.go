@@ -32,8 +32,6 @@ type Database struct {
 
 	// Domain specific fields
 	Name                 string     `jsonapi:"attr,name"`
-	CharacterSet         string     `jsonapi:"attr,characterSet"`
-	Collation            string     `jsonapi:"attr,collation"`
 	SchemaVersion        string     `jsonapi:"attr,schemaVersion"`
 	SyncStatus           SyncStatus `jsonapi:"attr,syncStatus"`
 	LastSuccessfulSyncTs int64      `jsonapi:"attr,lastSuccessfulSyncTs"`

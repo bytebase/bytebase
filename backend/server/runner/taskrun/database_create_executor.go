@@ -173,8 +173,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, task *api.Task)
 		EnvironmentID:        instance.Environment.ResourceID,
 		InstanceID:           instance.ResourceID,
 		DatabaseName:         payload.DatabaseName,
-		CharacterSet:         payload.CharacterSet,
-		Collation:            payload.Collation,
 		SyncState:            api.OK,
 		SuccessfulSyncTimeTs: time.Now().Unix(),
 		SchemaVersion:        schemaVersion,

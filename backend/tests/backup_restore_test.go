@@ -16,11 +16,14 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"go.uber.org/zap"
 
@@ -41,14 +44,20 @@ func TestRestoreToNewDatabase(t *testing.T) {
 	project, mysqlDB, database, backup, _, cleanFn := setUpForPITRTest(ctx, t, ctl)
 	defer cleanFn()
 
+	metadata, err := ctl.getLatestSchemaMetadata(database.ID)
+	a.NoError(err)
+	var latestSchemaMetadata storepb.DatabaseMetadata
+	err = protojson.Unmarshal([]byte(metadata), &latestSchemaMetadata)
+	a.NoError(err)
+
 	issue, err := createPITRIssue(ctl, project, api.PITRContext{
 		DatabaseID: database.ID,
 		BackupID:   &backup.ID,
 		CreateDatabaseCtx: &api.CreateDatabaseContext{
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.Name + "_new",
-			CharacterSet: database.CharacterSet,
-			Collation:    database.Collation,
+			CharacterSet: latestSchemaMetadata.CharacterSet,
+			Collation:    latestSchemaMetadata.Collation,
 			BackupID:     backup.ID,
 		},
 	})
