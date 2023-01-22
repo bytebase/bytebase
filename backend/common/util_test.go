@@ -136,6 +136,11 @@ func TestObfuscate(t *testing.T) {
 			dst:  "WFReX1s=",
 		},
 		{
+			src:  "你好!",
+			seed: "ENuef1JjSvQ6VPfgrB33T2mkshhwRRjp", // 32 bytes.
+			dst:  "ofPVgMOMaw==",
+		},
+		{
 			src:  "Bytebase is a database tool for developers. Bytebase 是个数据库 DevOps 工具。",
 			seed: "01234567890123456789012345678901", // 32 bytes.
 			dst:  "ckhGVlZURVIYUEMRUxNQVEJWWlhDVBJHW1paF15WQhFUVERWWFpGUkpKHhFwSkBQVFZLXBDXqpzQjZzRrYnWvJ7UiKAUcVNBd0lDEdeEkdCzgNu5sg==",
