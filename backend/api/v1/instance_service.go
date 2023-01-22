@@ -23,13 +23,15 @@ type InstanceService struct {
 	v1pb.UnimplementedInstanceServiceServer
 	store          *store.Store
 	licenseService enterpriseAPI.LicenseService
+	secret         string
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterpriseAPI.LicenseService, secret string) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		licenseService: licenseService,
+		secret:         secret,
 	}
 }
 
@@ -85,7 +87,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, err
 	}
 
-	instanceMessage, err := convertToInstanceMessage(request.InstanceId, request.Instance)
+	instanceMessage, err := s.convertToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -132,7 +134,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		case "instance.external_link":
 			patch.ExternalLink = &request.Instance.ExternalLink
 		case "instance.data_sources":
-			datasourceList, err := convertToDataSourceMessageList(request.Instance.DataSources)
+			datasourceList, err := s.convertToDataSourceMessages(request.Instance.DataSources)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
@@ -205,7 +207,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "only support add read-only data source")
 	}
 
-	dataSource, err := convertToDataSourceMessage(request.DataSources)
+	dataSource, err := s.convertToDataSourceMessage(request.DataSources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
@@ -244,7 +246,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
 	}
 
-	dataSource, err := convertToDataSourceMessage(request.DataSources)
+	dataSource, err := s.convertToDataSourceMessage(request.DataSources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
@@ -310,13 +312,17 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "username":
 			patch.Username = &request.DataSources.Username
 		case "password":
-			patch.Password = &request.DataSources.Password
+			obfuscated := common.Obfuscate(request.DataSources.Password, s.secret)
+			patch.ObfuscatedPassword = &obfuscated
 		case "ssl_ca":
-			patch.SslCa = &request.DataSources.SslCa
+			obfuscated := common.Obfuscate(request.DataSources.SslCa, s.secret)
+			patch.ObfuscatedSslCa = &obfuscated
 		case "ssl_cert":
-			patch.SslCert = &request.DataSources.SslCert
+			obfuscated := common.Obfuscate(request.DataSources.SslCert, s.secret)
+			patch.ObfuscatedSslCert = &obfuscated
 		case "ssl_key":
-			patch.SslKey = &request.DataSources.SslKey
+			obfuscated := common.Obfuscate(request.DataSources.SslKey, s.secret)
+			patch.ObfuscatedSslKey = &obfuscated
 		case "host":
 			patch.Host = &request.DataSources.Host
 		case "port":
@@ -412,10 +418,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 			Title:    ds.Title,
 			Type:     dataSourceType,
 			Username: ds.Username,
-			// We don't return the password on reads.
-			SslCa:                  ds.SslCa,
-			SslCert:                ds.SslCert,
-			SslKey:                 ds.SslKey,
+			// We don't return the password and SSLs on reads.
 			Host:                   ds.Host,
 			Port:                   ds.Port,
 			Database:               ds.Database,
@@ -435,7 +438,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 	}
 }
 
-func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
+func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
 	var engine db.Type
 	switch instance.Engine {
 	case v1pb.Engine_CLICKHOUSE:
@@ -456,7 +459,7 @@ func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*stor
 		return nil, errors.Errorf("invalid instance engine %v", instance.Engine)
 	}
 
-	datasourceList, err := convertToDataSourceMessageList(instance.DataSources)
+	datasources, err := s.convertToDataSourceMessages(instance.DataSources)
 	if err != nil {
 		return nil, err
 	}
@@ -466,24 +469,24 @@ func convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*stor
 		Title:        instance.Title,
 		Engine:       engine,
 		ExternalLink: instance.ExternalLink,
-		DataSources:  datasourceList,
+		DataSources:  datasources,
 	}, nil
 }
 
-func convertToDataSourceMessageList(dataSources []*v1pb.DataSource) ([]*store.DataSourceMessage, error) {
-	datasourceList := []*store.DataSourceMessage{}
+func (s *InstanceService) convertToDataSourceMessages(dataSources []*v1pb.DataSource) ([]*store.DataSourceMessage, error) {
+	var datasources []*store.DataSourceMessage
 	for _, ds := range dataSources {
-		dataSource, err := convertToDataSourceMessage(ds)
+		dataSource, err := s.convertToDataSourceMessage(ds)
 		if err != nil {
 			return nil, err
 		}
-		datasourceList = append(datasourceList, dataSource)
+		datasources = append(datasources, dataSource)
 	}
 
-	return datasourceList, nil
+	return datasources, nil
 }
 
-func convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
+func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
 	dsType, err := convertDataSourceTp(dataSource.Type)
 	if err != nil {
 		return nil, err
@@ -493,10 +496,10 @@ func convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceM
 		Title:                  dataSource.Title,
 		Type:                   dsType,
 		Username:               dataSource.Username,
-		Password:               dataSource.Password,
-		SslCa:                  dataSource.SslCa,
-		SslCert:                dataSource.SslCert,
-		SslKey:                 dataSource.SslKey,
+		ObfuscatedPassword:     common.Obfuscate(dataSource.Password, s.secret),
+		ObfuscatedSslCa:        common.Obfuscate(dataSource.SslCa, s.secret),
+		ObfuscatedSslCert:      common.Obfuscate(dataSource.SslCert, s.secret),
+		ObfuscatedSslKey:       common.Obfuscate(dataSource.SslKey, s.secret),
 		Host:                   dataSource.Host,
 		Port:                   dataSource.Port,
 		Database:               dataSource.Database,
