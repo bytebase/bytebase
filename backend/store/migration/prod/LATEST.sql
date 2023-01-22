@@ -173,7 +173,6 @@ CREATE TABLE project (
     -- db_name_template is only used when a project is in tenant mode.
     -- Empty value means {{DB_NAME}}.
     db_name_template TEXT NOT NULL,
-    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
     lgtm_check JSONB NOT NULL DEFAULT '{}',
     resource_id TEXT NOT NULL
@@ -229,12 +228,10 @@ CREATE TABLE project_member (
     project_id INTEGER NOT NULL REFERENCES project (id),
     role TEXT NOT NULL CHECK (role IN ('OWNER', 'DEVELOPER')),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    role_provider TEXT NOT NULL CHECK (role_provider IN ('BYTEBASE', 'GITLAB_SELF_HOST', 'GITHUB_COM')) DEFAULT 'BYTEBASE',
-    -- payload is determined by the type of role_provider
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_project_member_unique_project_id_role_provider_principal_id ON project_member(project_id, role_provider, principal_id);
+CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id ON project_member(project_id, principal_id);
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
 
