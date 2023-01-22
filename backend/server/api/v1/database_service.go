@@ -166,8 +166,6 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		SyncState:          syncState,
 		SuccessfulSyncTime: timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
 		Project:            fmt.Sprintf("%s%s", projectNamePrefix, database.ProjectID),
-		CharacterSet:       database.CharacterSet,
-		Collation:          database.Collation,
 		SchemaVersion:      database.SchemaVersion,
 		Labels:             database.Labels,
 	}
