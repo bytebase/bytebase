@@ -11,9 +11,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/server/component/activity"
 	"github.com/bytebase/bytebase/backend/store"
 )
 

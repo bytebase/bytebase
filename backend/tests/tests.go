@@ -25,9 +25,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	componentConfig "github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/server"
-	componentConfig "github.com/bytebase/bytebase/backend/server/component/config"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 )
 

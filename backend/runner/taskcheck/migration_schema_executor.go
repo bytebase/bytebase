@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/server/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/store"
 )
 

@@ -10,11 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
-	"github.com/bytebase/bytebase/backend/server/component/config"
 	"github.com/bytebase/bytebase/backend/store"
 
 	"go.uber.org/zap"

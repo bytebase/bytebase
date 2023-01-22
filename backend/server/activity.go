@@ -10,8 +10,8 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/server/component/activity"
 )
 
 func (s *Server) registerActivityRoutes(g *echo.Group) {

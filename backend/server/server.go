@@ -36,6 +36,10 @@ import (
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/activity"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	enterpriseService "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -54,10 +58,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/taskcheck"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
-	"github.com/bytebase/bytebase/backend/server/component/activity"
-	"github.com/bytebase/bytebase/backend/server/component/config"
-	"github.com/bytebase/bytebase/backend/server/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/server/component/state"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
 

@@ -14,10 +14,10 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/server/component/state"
-	"github.com/bytebase/bytebase/backend/server/utils"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewSchemaUpdateGhostSyncExecutor creates a schema update (gh-ost) sync task executor.

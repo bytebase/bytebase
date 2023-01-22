@@ -15,6 +15,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
@@ -23,9 +26,6 @@ import (
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
-	"github.com/bytebase/bytebase/backend/server/component/config"
-	"github.com/bytebase/bytebase/backend/server/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/server/component/state"
 	"github.com/bytebase/bytebase/backend/store"
 )
 

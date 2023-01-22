@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
-	"github.com/bytebase/bytebase/backend/server/component/config"
-	"github.com/bytebase/bytebase/backend/server/utils"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
