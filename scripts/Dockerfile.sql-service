@@ -1,0 +1,62 @@
+# DO NOT run docker build against this file directly. Instead using ./build_docker.sh as that
+# one sets the various ARG used in the Dockerfile
+
+# After build
+
+# $ docker run --init --rm --name sql-service --publish 8081:8081 bytebase/sql
+
+FROM golang:1.19 as sql
+
+ARG VERSION="development"
+ARG GO_VERSION="1.19"
+ARG GIT_COMMIT="unknown"
+ARG BUILD_TIME="unknown"
+ARG BUILD_USER="unknown"
+
+ARG RELEASE="release"
+
+# Need gcc for CGO_ENABLED=1
+RUN apt-get install -y gcc
+
+WORKDIR /sql-service-build
+
+COPY . .
+
+COPY ./scripts/VERSION .
+
+# -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
+# go-sqlite3 requires CGO_ENABLED
+RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+    --tags "${RELEASE}" \
+    -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/sql-service/cmd.builduser=${BUILD_USER}'" \
+    -o sql-service \
+    ./backend/bin/sql-service/main.go
+
+# Use debian because mysql requires glibc.
+FROM debian:bullseye-slim as monolithic
+
+ARG VERSION="development"
+ARG GIT_COMMIT="unknown"
+ARG BUILD_TIME="unknown"
+ARG BUILD_USER="unknown"
+
+# See https://github.com/opencontainers/image-spec/blob/master/annotations.md
+LABEL org.opencontainers.image.version=${VERSION}
+LABEL org.opencontainers.image.revision=${GIT_COMMIT}
+LABEL org.opencontainers.image.created=${BUILD_TIME}
+LABEL org.opencontainers.image.authors=${BUILD_USER}
+
+# Our HEALTHCHECK instruction in dockerfile needs curl.
+RUN apt-get update && apt-get install -y curl
+
+COPY --from=sql /sql-service-build/sql-service /usr/local/bin/
+COPY --from=sql /etc/ssl/certs /etc/ssl/certs
+
+# Copy utility scripts
+COPY ./scripts /usr/local/bin/
+
+CMD ["--host", "http://localhost", "--port", "80"]
+
+HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:80/healthz || exit 1
+
+ENTRYPOINT ["sql-service"]

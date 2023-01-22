@@ -24,6 +24,8 @@ import { TableMetadata } from "@/types/proto/store/database";
 import { MonacoHelper, useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
 import type { useLanguageClient } from "@sql-lsp/client";
+import type { AdviceOption } from "./types";
+import { useAdvices } from "./plugins/useAdvices";
 
 const props = defineProps({
   value: {
@@ -45,6 +47,10 @@ const props = defineProps({
   autoFocus: {
     type: Boolean,
     default: true,
+  },
+  advices: {
+    type: Array as PropType<AdviceOption[]>,
+    default: () => [],
   },
   options: {
     type: Object as PropType<Editor.IStandaloneEditorConstructionOptions>,
@@ -77,6 +83,8 @@ const initEditorInstance = () => {
   const model = monaco.editor.createModel(sqlCode.value);
   const editorInstance = monaco.editor.create(editorContainerRef.value!, {
     model,
+    // Learn more: https://github.com/microsoft/monaco-editor/issues/311
+    renderValidationDecorations: "on",
     theme: "bb",
     tabSize: 2,
     insertSpaces: true,
@@ -247,6 +255,8 @@ onMounted(async () => {
     editorInstance.focus();
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
+
+  useAdvices(editorInstance, toRef(props, "advices"));
 
   isEditorLoaded.value = true;
 

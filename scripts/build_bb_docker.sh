@@ -12,7 +12,7 @@ cd "$(dirname "$0")/../"
 
 echo "Start building bb docker image ${VERSION}..."
 
-docker build -f ./Dockerfile.bb\
+docker build -f ./scripts/Dockerfile.bb \
     --build-arg VERSION=${VERSION} \
     --build-arg GO_VERSION="$(go version)" \
     --build-arg GIT_COMMIT="$(git rev-parse HEAD)"\

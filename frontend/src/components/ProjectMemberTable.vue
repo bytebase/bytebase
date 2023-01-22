@@ -18,23 +18,11 @@
           class="w-8 table-cell"
           :title="columnList[1].title"
         />
-        <BBTableHeaderCell
-          class="w-72 table-cell"
-          :title="columnList[2].title"
-        />
-        <BBTableHeaderCell
-          class="w-auto table-cell"
-          :title="columnList[3].title"
-        />
       </template>
       <template v-else>
         <BBTableHeaderCell
           class="w-72 table-cell"
-          :title="columnList[1].title"
-        />
-        <BBTableHeaderCell
-          class="w-auto table-cell"
-          :title="columnList[2].title"
+          :title="columnList[0].title"
         />
       </template>
     </template>
@@ -78,15 +66,6 @@
             }
           "
         />
-      </BBTableCell>
-      <BBTableCell class="table-cell">
-        <div class="flex flex-row items-center space-x-1">
-          <span>{{ humanizeTs(member.updatedTs) }}</span>
-          <span>{{ $t("common.by") }}</span>
-          <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{
-            member.updater.name
-          }}</router-link>
-        </div>
       </BBTableCell>
       <BBTableCell>
         <BBButtonConfirm
@@ -189,22 +168,10 @@ export default defineComponent({
             {
               title: t("settings.members.table.role"),
             },
-            {
-              title: t("settings.members.table.granted-time"),
-            },
-            {
-              title: "",
-            },
           ]
         : [
             {
               title: t("settings.members.table.account"),
-            },
-            {
-              title: t("settings.members.table.granted-time"),
-            },
-            {
-              title: "",
             },
           ];
     });

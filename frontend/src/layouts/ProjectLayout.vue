@@ -102,8 +102,8 @@ export default defineComponent({
         { name: t("common.databases"), hash: "databases" },
 
         isTenantProject.value
-          ? null // Hide "Migration History" tab for tenant projects
-          : { name: t("common.migration-history"), hash: "migration-history" },
+          ? null // Hide "Change History" tab for tenant projects
+          : { name: t("common.change-history"), hash: "change-history" },
 
         { name: t("common.activities"), hash: "activity" },
         { name: t("common.version-control"), hash: "version-control" },
