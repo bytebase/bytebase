@@ -127,6 +127,22 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		dbBinDir = d.pgBinDir
 	}
 
+	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslCa, err := common.Unobfuscate(dataSource.ObfuscatedSslCa, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslCert, err := common.Unobfuscate(dataSource.ObfuscatedSslCert, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslKey, err := common.Unobfuscate(dataSource.ObfuscatedSslKey, d.secret)
+	if err != nil {
+		return nil, err
+	}
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
@@ -136,14 +152,14 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		},
 		db.ConnectionConfig{
 			Username: dataSource.Username,
-			Password: dataSource.ObfuscatedPassword,
+			Password: password,
 			Host:     host,
 			Port:     port,
 			Database: databaseName,
 			TLSConfig: db.TLSConfig{
-				SslCA:   dataSource.ObfuscatedSslCa,
-				SslCert: dataSource.ObfuscatedSslCert,
-				SslKey:  dataSource.ObfuscatedSslKey,
+				SslCA:   sslCa,
+				SslCert: sslCert,
+				SslKey:  sslKey,
 			},
 			ReadOnly: true,
 		},
