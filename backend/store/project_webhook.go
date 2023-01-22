@@ -9,8 +9,8 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // projectWebhookRaw is the store model for an ProjectWebhook.

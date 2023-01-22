@@ -5,7 +5,7 @@ import (
 
 	"github.com/pingcap/tidb/parser/mysql"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // ValidateDatabaseEdit validates the api message DatabaseEdit, including related column type.

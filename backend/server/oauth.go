@@ -7,8 +7,8 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	_ "github.com/bytebase/bytebase/backend/plugin/vcs/github" // Import to call the init until it is imported from somewhere else
 )

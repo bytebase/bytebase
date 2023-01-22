@@ -23,11 +23,11 @@ import (
 	// init() in pgx/v5/stdlib will register it's pgx driver.
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	componentConfig "github.com/bytebase/bytebase/backend/component/config"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/server"
-	componentConfig "github.com/bytebase/bytebase/backend/server/component/config"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 )
 

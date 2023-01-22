@@ -3,7 +3,7 @@ package server
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 func TestEnforceWorkspaceDeveloperSheetRouteACL(t *testing.T) {

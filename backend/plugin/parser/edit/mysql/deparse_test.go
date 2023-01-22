@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 
 	// Register pingcap parser driver.
 	_ "github.com/pingcap/tidb/types/parser_driver"

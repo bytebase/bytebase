@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // map from project ID to the map of <role, principal ID>.

@@ -8,8 +8,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/backend/api"
-	openAPIV1 "github.com/bytebase/bytebase/backend/api/v1"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
+	openAPIV1 "github.com/bytebase/bytebase/backend/legacyapi/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 )

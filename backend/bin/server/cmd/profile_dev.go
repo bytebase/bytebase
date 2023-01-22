@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/server/component/config"
+	"github.com/bytebase/bytebase/backend/component/config"
 )
 
 func activeProfile(dataDir string) config.Profile {
