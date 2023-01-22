@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 
 	// Register PostgreSQL parser engine.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/engine/pg"

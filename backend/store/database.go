@@ -10,8 +10,8 @@ import (
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // FindDatabase finds a list of Database instances.

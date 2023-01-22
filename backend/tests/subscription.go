@@ -8,7 +8,7 @@ import (
 
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 func (ctl *controller) setLicense() error {

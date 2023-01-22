@@ -10,8 +10,8 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	webhookPlugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 )

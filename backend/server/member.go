@@ -9,7 +9,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/server/component/activity"
 	"github.com/bytebase/bytebase/backend/store"
 )

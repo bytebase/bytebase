@@ -12,8 +12,8 @@ import (
 	"github.com/labstack/echo/v4"
 	pkgerrors "github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/server/api/auth"
 	"github.com/bytebase/bytebase/backend/store"
 )
 

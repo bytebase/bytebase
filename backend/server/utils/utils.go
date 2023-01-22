@@ -13,8 +13,8 @@ import (
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 )

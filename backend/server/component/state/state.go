@@ -4,7 +4,7 @@ package state
 import (
 	"sync"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // InstanceMaximumConnectionNumber is the maximum number of connections outstanding per instance.

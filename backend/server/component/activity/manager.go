@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common/log"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/server/component/config"
 	"github.com/bytebase/bytebase/backend/server/utils"

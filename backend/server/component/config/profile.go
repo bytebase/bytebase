@@ -4,8 +4,8 @@ package config
 import (
 	"time"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // Profile is the configuration to start main server.

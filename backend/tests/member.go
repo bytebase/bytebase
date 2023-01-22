@@ -6,7 +6,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 func (ctl *controller) createPrincipal(principalCreate api.PrincipalCreate) (*api.Principal, error) {

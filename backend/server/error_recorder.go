@@ -5,9 +5,9 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/api"
-
 	"github.com/labstack/echo/v4"
+
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 func errorRecorderMiddleware(err error, s *Server, c echo.Context, e *echo.Echo) {

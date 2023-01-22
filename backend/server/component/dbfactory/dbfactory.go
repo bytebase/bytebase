@@ -4,8 +4,8 @@ package dbfactory
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/server/utils"
 	"github.com/bytebase/bytebase/backend/store"

@@ -8,7 +8,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 func (s *Server) registerSheetOrganizerRoutes(g *echo.Group) {

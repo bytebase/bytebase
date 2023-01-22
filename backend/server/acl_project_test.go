@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 func TestEnforceWorkspaceDeveloperProjectRouteACL(t *testing.T) {

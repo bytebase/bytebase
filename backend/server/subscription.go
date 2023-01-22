@@ -9,9 +9,9 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 )
