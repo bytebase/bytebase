@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // Store provides database access to all raw objects.

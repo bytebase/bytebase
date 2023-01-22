@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common/log"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 )
 

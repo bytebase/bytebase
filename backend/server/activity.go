@@ -9,9 +9,9 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/server/component/activity"
+	"github.com/bytebase/bytebase/backend/component/activity"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 func (s *Server) registerActivityRoutes(g *echo.Group) {

@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // InstanceUserMessage is the mssage for instance user.

@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // IAMPolicyMessage is the IAM policy of a project.

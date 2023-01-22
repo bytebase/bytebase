@@ -9,8 +9,8 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common/log"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // createIssue creates an issue.
