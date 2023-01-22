@@ -81,13 +81,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	}
 
 	// Instance limit in the plan.
-	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	subscription := s.licenseService.LoadSubscription(ctx)
-	if count >= subscription.InstanceCount {
-		return nil, status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", subscription.InstanceCount)
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
 	}
 
 	instanceMessage, err := convertToInstanceMessage(request.InstanceId, request.Instance)
@@ -345,6 +340,23 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	return convertToInstance(instance), nil
+}
+
+func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
+	subscription := s.licenseService.LoadSubscription(ctx)
+	if subscription.InstanceCount == -1 {
+		return nil
+	}
+
+	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	if count >= subscription.InstanceCount {
+		return status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", subscription.InstanceCount)
+	}
+
+	return nil
 }
 
 func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
