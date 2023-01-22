@@ -2,14 +2,17 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -109,6 +112,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
+	var project *store.ProjectMessage
 	patch := &store.UpdateDatabaseMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -117,7 +121,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 				ResourceID:  &projectID,
 				ShowDeleted: true,
 			})
@@ -127,7 +131,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			if project == nil {
 				return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 			}
-
+			if project.Deleted {
+				return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", projectID)
+			}
 			patch.ProjectID = &project.ResourceID
 		case "database.labels":
 			patch.Labels = &request.Database.Labels
@@ -135,11 +141,17 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	database, err = s.store.UpdateDatabase(ctx, patch, principalID)
+	updatedDatabase, err := s.store.UpdateDatabase(ctx, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToDatabase(database), nil
+	if project != nil {
+		if err := s.createTransferProjectActivity(ctx, project, principalID, database); err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+	}
+
+	return convertToDatabase(updatedDatabase), nil
 }
 
 // BatchUpdateDatabases updates a database in batch.
@@ -189,15 +201,21 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", projectID)
+	}
 
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	databases, err = s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
+	updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
 	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	response := &v1pb.BatchUpdateDatabasesResponse{}
-	for _, database := range databases {
+	for _, database := range updatedDatabases {
 		response.Databases = append(response.Databases, convertToDatabase(database))
 	}
 	return response, nil
@@ -358,4 +376,43 @@ func convertDatabaseMetadata(metadata *storepb.DatabaseMetadata) *v1pb.DatabaseM
 		})
 	}
 	return m
+}
+
+func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, newProject *store.ProjectMessage, updaterID int, databases ...*store.DatabaseMessage) error {
+	var creates []*api.ActivityCreate
+	for _, database := range databases {
+		oldProject, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+		if err != nil {
+			return err
+		}
+		bytes, err := json.Marshal(api.ActivityProjectDatabaseTransferPayload{
+			DatabaseID:   database.UID,
+			DatabaseName: database.DatabaseName,
+		})
+		if err != nil {
+			return err
+		}
+		creates = append(creates,
+			&api.ActivityCreate{
+				CreatorID:   updaterID,
+				ContainerID: oldProject.UID,
+				Type:        api.ActivityProjectDatabaseTransfer,
+				Level:       api.ActivityInfo,
+				Comment:     fmt.Sprintf("Transferred out database %q to project %q.", database.DatabaseName, newProject.Title),
+				Payload:     string(bytes),
+			},
+			&api.ActivityCreate{
+				CreatorID:   updaterID,
+				ContainerID: newProject.UID,
+				Type:        api.ActivityProjectDatabaseTransfer,
+				Level:       api.ActivityInfo,
+				Comment:     fmt.Sprintf("Transferred in database %q from project %q.", database.DatabaseName, oldProject.Title),
+				Payload:     string(bytes),
+			},
+		)
+	}
+	if _, err := s.store.BatchCreateActivity(ctx, creates); err != nil {
+		log.Warn("failed to create activities for database project updates", zap.Error(err))
+	}
+	return nil
 }

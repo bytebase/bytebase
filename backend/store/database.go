@@ -495,12 +495,15 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 		return nil, FormatError(err)
 	}
 
+	var updatedDatabases []*DatabaseMessage
 	for _, database := range databases {
-		database.ProjectID = project.ResourceID
-		s.databaseCache.Store(getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName), database)
-		s.databaseIDCache.Store(database.UID, database)
+		updatedDatabase := *database
+		updatedDatabase.ProjectID = project.ResourceID
+		s.databaseCache.Store(getDatabaseCacheKey(database.EnvironmentID, database.InstanceID, database.DatabaseName), &updatedDatabase)
+		s.databaseIDCache.Store(database.UID, &updatedDatabase)
+		updatedDatabases = append(updatedDatabases, &updatedDatabase)
 	}
-	return databases, nil
+	return updatedDatabases, nil
 }
 
 func (s *Store) getDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) (*DatabaseMessage, error) {
