@@ -236,7 +236,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, environmentID string, inst
 				engine,
 				external_link
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			RETURNING id
 		`,
 		instanceCreate.ResourceID,
