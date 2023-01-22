@@ -1,2 +1,2 @@
-// Package v1 is the API message for OpenAPI in V1 version.
+// Package v1 is the implementation of v1 API service.
 package v1

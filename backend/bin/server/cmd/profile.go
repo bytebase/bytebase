@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/api"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/feishu"
-	"github.com/bytebase/bytebase/backend/server/component/config"
 )
 
 func getBaseProfile() config.Profile {
