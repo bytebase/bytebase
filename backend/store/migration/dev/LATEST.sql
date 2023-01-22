@@ -284,10 +284,7 @@ CREATE TABLE instance (
     name TEXT NOT NULL,
     engine TEXT NOT NULL CONSTRAINT instance_engine_check CHECK (engine IN ('MYSQL', 'POSTGRES', 'TIDB', 'CLICKHOUSE', 'SNOWFLAKE', 'SQLITE', 'MONGODB', 'SPANNER')),
     engine_version TEXT NOT NULL DEFAULT '',
-    host TEXT NOT NULL,
-    port TEXT NOT NULL,
     external_link TEXT NOT NULL DEFAULT '',
-    database TEXT NOT NULL DEFAULT '',
     resource_id TEXT NOT NULL
 );
 
