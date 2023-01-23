@@ -64,31 +64,6 @@ func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Polic
 	return policy, nil
 }
 
-// ListPolicy gets a list of policy by PolicyFind.
-func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Policy, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	policyRawList, err := findPolicyImpl(ctx, tx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list policy with PolicyFind[%+v]", find)
-	}
-
-	policyList := []*api.Policy{}
-	for _, raw := range policyRawList {
-		policy, err := s.composePolicy(ctx, raw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to compose policy with policyRaw[%+v]", raw)
-		}
-		policyList = append(policyList, policy)
-	}
-
-	return policyList, nil
-}
-
 // GetBackupPlanPolicyByEnvID will get the backup plan policy for an environment.
 func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
 	environmentResourceType := api.PolicyResourceTypeEnvironment

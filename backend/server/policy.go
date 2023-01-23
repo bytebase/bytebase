@@ -67,7 +67,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			}
 			protected := false
 			if tierPolicy.EnvironmentTier == api.EnvironmentTierValueProtected {
-				protected = false
+				protected = true
 			}
 			if _, err := s.store.UpdateEnvironmentV2(ctx, environment.ResourceID, &store.UpdateEnvironmentMessage{Protected: &protected}, updaterID); err != nil {
 				return err
@@ -187,7 +187,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return err
 		}
 		if policy == nil {
-			return echo.NewHTTPError(http.StatusPreconditionFailed, "policy not found")
+			return echo.NewHTTPError(http.StatusNotFound, "policy not found")
 		}
 
 		if err := s.store.DeletePolicyV2(ctx, policy); err != nil {
@@ -213,18 +213,86 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := api.ValidatePolicyType(pType); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
-		policyFind := &api.PolicyFind{
-			ResourceType: &resourceType,
-			ResourceID:   &resourceID,
-			Type:         pType,
+		var composedEnvironment *api.Environment
+		if resourceType == api.PolicyResourceTypeEnvironment {
+			composedEnvironment, err = s.store.GetEnvironmentByID(ctx, resourceID)
+			if err != nil {
+				return err
+			}
 		}
-		policy, err := s.store.GetPolicy(ctx, policyFind)
+		if pType == api.PolicyTypeEnvironmentTier {
+			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{UID: &resourceID})
+			if err != nil {
+				return err
+			}
+			tierPolicy := api.EnvironmentTierPolicy{
+				EnvironmentTier: api.EnvironmentTierValueUnprotected,
+			}
+			if environment.Protected {
+				tierPolicy.EnvironmentTier = api.EnvironmentTierValueProtected
+			}
+			payload, err := tierPolicy.String()
+			if err != nil {
+				return err
+			}
+			composedPolicy := &api.Policy{
+				ID:                resourceID,
+				RowStatus:         api.Normal,
+				ResourceType:      resourceType,
+				ResourceID:        resourceID,
+				Type:              pType,
+				InheritFromParent: true,
+				Payload:           payload,
+				Environment:       composedEnvironment,
+			}
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+			if err := jsonapi.MarshalPayload(c.Response().Writer, composedPolicy); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal policy response").SetInternal(err)
+			}
+			return nil
+		}
+
+		policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+			ResourceType: &resourceType,
+			ResourceUID:  &resourceID,
+			Type:         &pType,
+		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get policy for type %q", pType)).SetInternal(err)
+			return err
+		}
+		if policy == nil {
+			// Return the default policy when there is no stored policy.
+			payload, err := api.GetDefaultPolicy(pType)
+			if err != nil {
+				return err
+			}
+			policy = &store.PolicyMessage{
+				UID:               api.DefaultPolicyID,
+				ResourceType:      resourceType,
+				ResourceUID:       resourceID,
+				Type:              pType,
+				InheritFromParent: true,
+				Payload:           payload,
+				Enforce:           true,
+			}
+		}
+
+		composedPolicy := &api.Policy{
+			ID:                policy.UID,
+			ResourceType:      policy.ResourceType,
+			ResourceID:        policy.ResourceUID,
+			Type:              policy.Type,
+			InheritFromParent: policy.InheritFromParent,
+			Payload:           policy.Payload,
+			RowStatus:         api.Normal,
+			Environment:       composedEnvironment,
+		}
+		if !policy.Enforce {
+			composedPolicy.RowStatus = api.Archived
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, policy); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedPolicy); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal get policy response: %v", pType)).SetInternal(err)
 		}
 		return nil
@@ -252,20 +320,44 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 
-		policyFind := &api.PolicyFind{
-			ResourceType: resourceType,
-			ResourceID:   resourceID,
-			Type:         pType,
-		}
-
 		ctx := c.Request().Context()
-		policyList, err := s.store.ListPolicy(ctx, policyFind)
+		policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+			ResourceType: resourceType,
+			ResourceUID:  resourceID,
+			Type:         &pType,
+		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to list policy for type %q", pType)).SetInternal(err)
+			return err
+		}
+		var composedPolicies []*api.Policy
+		for _, policy := range policies {
+			composedPolicy := &api.Policy{
+				ID:                policy.UID,
+				ResourceType:      policy.ResourceType,
+				ResourceID:        policy.ResourceUID,
+				Type:              policy.Type,
+				InheritFromParent: policy.InheritFromParent,
+				Payload:           policy.Payload,
+				RowStatus:         api.Normal,
+			}
+			if !policy.Enforce {
+				composedPolicy.RowStatus = api.Archived
+			}
+			if policy.ResourceType == api.PolicyResourceTypeEnvironment {
+				composedEnvironment, err := s.store.GetEnvironmentByID(ctx, policy.ResourceUID)
+				if err != nil {
+					return err
+				}
+				if composedEnvironment == nil {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("environment %v not found", policy.ResourceUID))
+				}
+				composedPolicy.Environment = composedEnvironment
+			}
+			composedPolicies = append(composedPolicies, composedPolicy)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, policyList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedPolicies); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal list policy response: %v", pType)).SetInternal(err)
 		}
 		return nil
