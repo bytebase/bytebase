@@ -57,19 +57,8 @@ function convert(
   const environment = convertEnvironment(policy, includedList);
 
   const result = {
-    ...(policy.attributes as Omit<
-      Policy,
-      "id" | "environment" | "payload" | "creator" | "updater"
-    >),
+    ...(policy.attributes as Omit<Policy, "id" | "environment" | "payload">),
     id: parseInt(policy.id),
-    creator: getPrincipalFromIncludedList(
-      policy.relationships!.creator.data,
-      includedList
-    ),
-    updater: getPrincipalFromIncludedList(
-      policy.relationships!.updater.data,
-      includedList
-    ),
     environment,
     payload: JSON.parse((policy.attributes.payload as string) || "{}"),
   };

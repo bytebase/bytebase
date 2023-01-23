@@ -20,10 +20,6 @@ type policyRaw struct {
 
 	// Standard fields
 	RowStatus api.RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
 
 	// Related fields
 	ResourceType api.PolicyResourceType
@@ -43,10 +39,6 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 
 		// Standard fields
 		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
 
 		// Related fields
 		ResourceType: raw.ResourceType,
@@ -206,18 +198,6 @@ func (s *Store) GetNormalAccessControlPolicy(ctx context.Context, resourceType a
 func (s *Store) composePolicy(ctx context.Context, raw *policyRaw) (*api.Policy, error) {
 	policy := raw.toPolicy()
 
-	creator, err := s.GetPrincipalByID(ctx, policy.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	policy.Creator = creator
-
-	updater, err := s.GetPrincipalByID(ctx, policy.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	policy.Updater = updater
-
 	if policy.ResourceType == api.PolicyResourceTypeEnvironment {
 		env, err := s.GetEnvironmentByID(ctx, policy.ResourceID)
 		if err != nil {
@@ -250,9 +230,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 
 	if len(policyRawList) == 0 {
 		ret = &policyRaw{
-			CreatorID: api.SystemBotID,
-			UpdaterID: api.SystemBotID,
-			Type:      find.Type,
+			Type: find.Type,
 		}
 		if find.ResourceType != nil {
 			ret.ResourceType = *find.ResourceType
@@ -298,10 +276,6 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind) ([]*polic
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
 			row_status,
 			resource_type,
 			resource_id,
@@ -323,10 +297,6 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind) ([]*polic
 		var policyRaw policyRaw
 		if err := rows.Scan(
 			&policyRaw.ID,
-			&policyRaw.CreatorID,
-			&policyRaw.CreatedTs,
-			&policyRaw.UpdaterID,
-			&policyRaw.UpdatedTs,
 			&policyRaw.RowStatus,
 			&policyRaw.ResourceType,
 			&policyRaw.ResourceID,
