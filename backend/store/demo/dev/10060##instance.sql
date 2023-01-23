@@ -7,8 +7,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -21,8 +19,6 @@ VALUES
         'Localhost Dev MySQL',
         'MYSQL',
         '8.0.19',
-        '127.0.0.1',
-        '3306',
         'bytebase.com/database/mysql',
         'localhost-dev-mysql'
     );
@@ -36,8 +32,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -50,8 +44,6 @@ VALUES
         'On-premises Integration MySQL',
         'MYSQL',
         '8.0.19',
-        'mysql.integration.example.com',
-        '3306',
         'bytebase.com/database/mysql',
         'onpremises-integration-mysql'
     );
@@ -65,8 +57,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -79,8 +69,6 @@ VALUES
         'On-premises Staging MySQL',
         'MYSQL',
         '8.0.19',
-        'mysql.staging.example.com',
-        '3306',
         'bytebase.com/database/mysql',
         'onpremises-staging-mysql'
     );
@@ -94,8 +82,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -108,8 +94,6 @@ VALUES
         'On-premises Prod MySQL',
         'MYSQL',
         '8.0.19',
-        'mysql.prod.example.com',
-        '3306',
         'bytebase.com/database/mysql',
         'onpremises-prod-mysql'
     );
@@ -137,8 +121,6 @@ VALUES
         'Localhost Dev PostgreSQL',
         'POSTGRES',
         '13.0',
-        '127.0.0.1',
-        '5432',
         'bytebase.com/database/postgres',
         'localhost-dev-postgresql'
     );
@@ -152,8 +134,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -166,8 +146,6 @@ VALUES
         'Demo PostgreSQL on Render',
         'POSTGRES',
         '13.0',
-        'dpg-c8a7pcd0mal7gtod05p0',
-        '5432',
         'postgres://postgre_demo_user:3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG@dpg-c8a7pcd0mal7gtod05p0/postgre_demo',
         'demo-postgresql-on-render'
     );
@@ -181,8 +159,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -195,8 +171,6 @@ VALUES
         'Localhost Dev TiDB',
         'TIDB',
         '5.7.25-TiDB-v5.2.1',
-        '127.0.0.1',
-        '4000',
         'bytebase.com/database/tidb',
         'localhost-dev-tidb'
     );
@@ -210,8 +184,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -224,8 +196,6 @@ VALUES
         'Localhost Dev ClickHouse',
         'CLICKHOUSE',
         '21.10.2.15',
-        '127.0.0.1',
-        '9000',
         'bytebase.com/database/clickhouse',
         'localhost-dev-clickhouse'
     );
@@ -239,8 +209,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -253,8 +221,6 @@ VALUES
         'Localhost Dev Snowflake',
         'SNOWFLAKE',
         '21.10.2.15',
-        '127.0.0.1',
-        '',
         'bytebase.com/database/snowflake',
         'localhost-dev-snowflake'
     );
@@ -269,8 +235,6 @@ INSERT INTO
         name,
         engine,
         engine_version,
-        host,
-        port,
         external_link,
         resource_id
     )
@@ -284,8 +248,6 @@ VALUES
         'Retired Prod MySQL',
         'MYSQL',
         '5.7.25',
-        'mysql.retired.example.com',
-        '3306',
         'bytebase.com/database/mysql',
         'retired-prod-mysql'
     );

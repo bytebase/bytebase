@@ -7,6 +7,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -19,6 +21,8 @@ VALUES
         7001,
         'Admin data source',
         'ADMIN',
+        '127.0.0.1',
+        '3306',
         'root',
         'testpwd1'
     );
@@ -32,6 +36,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -44,6 +50,8 @@ VALUES
         7005,
         'Admin data source',
         'ADMIN',
+        'mysql.integration.example.com',
+        '3306',
         'admin',
         'Integration12345'
     );
@@ -57,6 +65,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -69,6 +79,8 @@ VALUES
         7009,
         'Admin data source',
         'ADMIN',
+        'mysql.staging.example.com',
+        '3306',
         'admin',
         'Staging12345'
     );
@@ -82,6 +94,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -94,6 +108,8 @@ VALUES
         7013,
         'Admin data source',
         'ADMIN',
+        'mysql.prod.example.com',
+        '3306',
         'root',
         'testpwd1'
     );
@@ -107,6 +123,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -119,6 +137,8 @@ VALUES
         7017,
         'Admin data source',
         'ADMIN',
+        '127.0.0.1',
+        '5432',
         'postgres',
         ''
     );
@@ -132,6 +152,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -144,6 +166,8 @@ VALUES
         7018,
         'Admin data source',
         'ADMIN',
+        'dpg-c8a7pcd0mal7gtod05p0',
+        '5432',
         'postgre_demo_user',
         '3QixNmRMGhklX6B1lmCZ3ZsHFPIE5EgG'
     );
@@ -157,6 +181,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -169,6 +195,8 @@ VALUES
         7020,
         'Admin data source',
         'ADMIN',
+        '127.0.0.1',
+        '4000',
         'root',
         ''
     );
@@ -182,6 +210,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -194,6 +224,8 @@ VALUES
         7021,
         'Admin data source',
         'ADMIN',
+        '127.0.0.1',
+        '9000',
         '',
         ''
     );
@@ -207,6 +239,8 @@ INSERT INTO
         database_id,
         name,
         TYPE,
+        host,
+        port,
         username,
         PASSWORD
     )
@@ -219,6 +253,8 @@ VALUES
         7022,
         'Admin data source',
         'ADMIN',
+        '127.0.0.1',
+        '',
         '',
         ''
     );
