@@ -21,10 +21,11 @@ import (
 )
 
 // NewSchemaUpdateGhostSyncExecutor creates a schema update (gh-ost) sync task executor.
-func NewSchemaUpdateGhostSyncExecutor(store *store.Store, stateCfg *state.State) Executor {
+func NewSchemaUpdateGhostSyncExecutor(store *store.Store, stateCfg *state.State, secret string) Executor {
 	return &SchemaUpdateGhostSyncExecutor{
 		store:    store,
 		stateCfg: stateCfg,
+		secret:   secret,
 	}
 }
 
@@ -32,6 +33,7 @@ func NewSchemaUpdateGhostSyncExecutor(store *store.Store, stateCfg *state.State)
 type SchemaUpdateGhostSyncExecutor struct {
 	store    *store.Store
 	stateCfg *state.State
+	secret   string
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
@@ -78,7 +80,10 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 		return true, nil, common.Errorf(common.Internal, "failed to find instance user by instanceID %d", task.InstanceID)
 	}
 
-	config := utils.GetGhostConfig(task, adminDataSource, instanceUsers, tableName, statement, false, 10000000)
+	config, err := utils.GetGhostConfig(task, adminDataSource, exec.secret, instanceUsers, tableName, statement, false, 10000000)
+	if err != nil {
+		return true, nil, err
+	}
 
 	migrationContext, err := utils.NewMigrationContext(config)
 	if err != nil {

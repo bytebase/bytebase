@@ -17,15 +17,17 @@ type DBFactory struct {
 	pgBinDir    string
 	mongoBinDir string
 	dataDir     string
+	secret      string
 }
 
 // New creates a new database driver factory.
-func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir string) *DBFactory {
+func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret string) *DBFactory {
 	return &DBFactory{
 		mysqlBinDir: mysqlBinDir,
 		mongoBinDir: mongoBinDir,
 		pgBinDir:    pgBinDir,
 		dataDir:     dataDir,
+		secret:      secret,
 	}
 }
 
@@ -50,6 +52,22 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if databaseName == "" {
 		databaseName = adminDataSource.Database
 	}
+	password, err := common.Unobfuscate(adminDataSource.ObfuscatedPassword, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslCA, err := common.Unobfuscate(adminDataSource.ObfuscatedSslCa, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslCert, err := common.Unobfuscate(adminDataSource.ObfuscatedSslCert, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslKey, err := common.Unobfuscate(adminDataSource.ObfuscatedSslKey, d.secret)
+	if err != nil {
+		return nil, err
+	}
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
@@ -59,11 +77,11 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 		},
 		db.ConnectionConfig{
 			Username: adminDataSource.Username,
-			Password: adminDataSource.Password,
+			Password: password,
 			TLSConfig: db.TLSConfig{
-				SslCA:   adminDataSource.SslCa,
-				SslCert: adminDataSource.SslCert,
-				SslKey:  adminDataSource.SslKey,
+				SslCA:   sslCA,
+				SslCert: sslCert,
+				SslKey:  sslKey,
 			},
 			Host:                   adminDataSource.Host,
 			Port:                   adminDataSource.Port,
@@ -109,6 +127,22 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		dbBinDir = d.pgBinDir
 	}
 
+	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslCa, err := common.Unobfuscate(dataSource.ObfuscatedSslCa, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslCert, err := common.Unobfuscate(dataSource.ObfuscatedSslCert, d.secret)
+	if err != nil {
+		return nil, err
+	}
+	sslKey, err := common.Unobfuscate(dataSource.ObfuscatedSslKey, d.secret)
+	if err != nil {
+		return nil, err
+	}
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
@@ -118,14 +152,14 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		},
 		db.ConnectionConfig{
 			Username: dataSource.Username,
-			Password: dataSource.Password,
+			Password: password,
 			Host:     host,
 			Port:     port,
 			Database: databaseName,
 			TLSConfig: db.TLSConfig{
-				SslCA:   dataSource.SslCa,
-				SslCert: dataSource.SslCert,
-				SslKey:  dataSource.SslKey,
+				SslCA:   sslCa,
+				SslCert: sslCert,
+				SslKey:  sslKey,
 			},
 			ReadOnly: true,
 		},
