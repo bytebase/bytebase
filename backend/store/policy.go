@@ -760,7 +760,6 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			row_status,
 			resource_type,
 			resource_id,
 			inherit_from_parent,
@@ -778,10 +777,8 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	var policyList []*PolicyMessage
 	for rows.Next() {
 		var policyMessage PolicyMessage
-		var rowStatus string
 		if err := rows.Scan(
 			&policyMessage.UID,
-			&rowStatus,
 			&policyMessage.ResourceType,
 			&policyMessage.ResourceUID,
 			&policyMessage.InheritFromParent,
