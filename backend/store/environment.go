@@ -274,13 +274,14 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 	if err != nil {
 		return nil, err
 	}
-	if _, err := upsertPolicyImpl(ctx, tx, &api.PolicyUpsert{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   uid,
-		Type:         api.PolicyTypeEnvironmentTier,
-		Payload:      &payload,
-		UpdaterID:    creatorID,
-	}); err != nil {
+	if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
+		ResourceType:      api.PolicyResourceTypeEnvironment,
+		ResourceUID:       uid,
+		Type:              api.PolicyTypeEnvironmentTier,
+		InheritFromParent: true,
+		Payload:           payload,
+		Enforce:           true,
+	}, creatorID); err != nil {
 		return nil, err
 	}
 
@@ -343,7 +344,6 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 	}
 
 	// TODO(d): consider moving tier to environment table to simplify things.
-	// TODO(d): move policy interface to store v2.
 	if patch.Protected != nil {
 		value := api.EnvironmentTierValueUnprotected
 		if *patch.Protected {
@@ -353,13 +353,14 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		if err != nil {
 			return nil, err
 		}
-		if _, err := upsertPolicyImpl(ctx, tx, &api.PolicyUpsert{
-			ResourceType: api.PolicyResourceTypeEnvironment,
-			ResourceID:   environmentUID,
-			Type:         api.PolicyTypeEnvironmentTier,
-			Payload:      &payload,
-			UpdaterID:    updaterID,
-		}); err != nil {
+		if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
+			ResourceType:      api.PolicyResourceTypeEnvironment,
+			ResourceUID:       environmentUID,
+			Type:              api.PolicyTypeEnvironmentTier,
+			InheritFromParent: true,
+			Payload:           payload,
+			Enforce:           true,
+		}, updaterID); err != nil {
 			return nil, err
 		}
 	}

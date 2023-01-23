@@ -226,6 +226,8 @@ message Policy {
     AccessControlPolicy access_control_policy = 9;
     SQLReviewPolicy sql_review_policy = 10;
   }
+
+  bool enforce = 11;
 }
 
 enum PolicyType {

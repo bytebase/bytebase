@@ -287,10 +287,6 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_POLICY: Policy = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updater: UNKNOWN_PRINCIPAL,
-    updatedTs: 0,
     rowStatus: "NORMAL",
     resourceType: "",
     resourceId: UNKNOWN_ID,
@@ -465,10 +461,6 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: UNKNOWN_ID,
-    creator: UNKNOWN_PRINCIPAL,
-    updater: UNKNOWN_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     rowStatus: "NORMAL",
     environment: UNKNOWN_ENVIRONMENT,
     name: "",
@@ -660,10 +652,6 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_POLICY: Policy = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updater: EMPTY_PRINCIPAL,
-    updatedTs: 0,
     rowStatus: "NORMAL",
     resourceType: "",
     resourceId: EMPTY_ID,
@@ -838,10 +826,6 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: EMPTY_ID,
-    creator: EMPTY_PRINCIPAL,
-    updater: EMPTY_PRINCIPAL,
-    createdTs: 0,
-    updatedTs: 0,
     rowStatus: "NORMAL",
     environment: EMPTY_ENVIRONMENT,
     name: "",

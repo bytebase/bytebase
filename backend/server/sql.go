@@ -667,8 +667,7 @@ func (s *Server) sqlCheck(
 	driver *sql.DB,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
-	environmentResourceType := api.PolicyResourceTypeEnvironment
-	policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environmentID})
+	policy, err := s.store.GetSQLReviewPolicy(ctx, environmentID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return advisor.Success, nil, nil
@@ -869,12 +868,12 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, r
 	}
 
 	// calculate the effective policy.
-	databasePolicy, inheritFromEnvironment, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
+	databasePolicy, inheritFromEnvironment, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
 	if err != nil {
 		return false, err
 	}
 
-	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
+	environmentPolicy, _, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
 	if err != nil {
 		return false, err
 	}
