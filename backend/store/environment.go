@@ -280,6 +280,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		Type:              api.PolicyTypeEnvironmentTier,
 		InheritFromParent: true,
 		Payload:           payload,
+		Enforce:           true,
 	}, creatorID); err != nil {
 		return nil, err
 	}
@@ -358,6 +359,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 			Type:              api.PolicyTypeEnvironmentTier,
 			InheritFromParent: true,
 			Payload:           payload,
+			Enforce:           true,
 		}, updaterID); err != nil {
 			return nil, err
 		}

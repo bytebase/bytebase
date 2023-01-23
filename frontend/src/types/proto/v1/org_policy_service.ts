@@ -373,6 +373,7 @@ export interface Policy {
   sensitiveDataPolicy?: SensitiveDataPolicy | undefined;
   accessControlPolicy?: AccessControlPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
+  enforce: boolean;
 }
 
 export interface DeploymentApprovalPolicy {
@@ -793,6 +794,7 @@ function createBasePolicy(): Policy {
     sensitiveDataPolicy: undefined,
     accessControlPolicy: undefined,
     sqlReviewPolicy: undefined,
+    enforce: false,
   };
 }
 
@@ -824,6 +826,9 @@ export const Policy = {
     }
     if (message.sqlReviewPolicy !== undefined) {
       SQLReviewPolicy.encode(message.sqlReviewPolicy, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.enforce === true) {
+      writer.uint32(88).bool(message.enforce);
     }
     return writer;
   },
@@ -862,6 +867,9 @@ export const Policy = {
         case 10:
           message.sqlReviewPolicy = SQLReviewPolicy.decode(reader, reader.uint32());
           break;
+        case 11:
+          message.enforce = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -887,6 +895,7 @@ export const Policy = {
         ? AccessControlPolicy.fromJSON(object.accessControlPolicy)
         : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
+      enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
     };
   },
 
@@ -909,6 +918,7 @@ export const Policy = {
       : undefined);
     message.sqlReviewPolicy !== undefined &&
       (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
+    message.enforce !== undefined && (obj.enforce = message.enforce);
     return obj;
   },
 
@@ -934,6 +944,7 @@ export const Policy = {
     message.sqlReviewPolicy = (object.sqlReviewPolicy !== undefined && object.sqlReviewPolicy !== null)
       ? SQLReviewPolicy.fromPartial(object.sqlReviewPolicy)
       : undefined;
+    message.enforce = object.enforce ?? false;
     return message;
   },
 };

@@ -112,11 +112,23 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 				Type:              pType,
 				Payload:           payload,
 				InheritFromParent: inheritFromParent,
+				// Enforce cannot be force while creating a policy.
+				Enforce: true,
 			}, updaterID)
 			if err != nil {
 				return err
 			}
 		} else {
+			var enforce *bool
+			if policyUpsert.RowStatus != nil {
+				if *policyUpsert.RowStatus == string(api.Normal) {
+					t := true
+					enforce = &t
+				} else {
+					f := false
+					enforce = &f
+				}
+			}
 			policy, err = s.store.UpdatePolicyV2(ctx, &store.UpdatePolicyMessage{
 				UpdaterID:         updaterID,
 				ResourceType:      resourceType,
@@ -124,6 +136,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 				Type:              pType,
 				InheritFromParent: policyUpsert.InheritFromParent,
 				Payload:           policyUpsert.Payload,
+				Enforce:           enforce,
 			})
 			if err != nil {
 				return err
@@ -139,6 +152,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			InheritFromParent: policy.InheritFromParent,
 			Payload:           policy.Payload,
 			Environment:       composedEnvironment,
+		}
+		if !policy.Enforce {
+			composedPolicy.RowStatus = api.Archived
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedPolicy); err != nil {

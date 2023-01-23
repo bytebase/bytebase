@@ -322,6 +322,7 @@ type PolicyMessage struct {
 	Payload           string
 	InheritFromParent bool
 	Type              api.PolicyType
+	Enforce           bool
 
 	// Output only.
 	UID int
@@ -342,6 +343,7 @@ type UpdatePolicyMessage struct {
 	Type              api.PolicyType
 	InheritFromParent *bool
 	Payload           *string
+	Enforce           *bool
 }
 
 // GetPolicyV2 gets a policy.
@@ -434,6 +436,13 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	if v := patch.Payload; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Enforce; v != nil {
+		rowStatus := api.Normal
+		if !*patch.Enforce {
+			rowStatus = api.Archived
+		}
+		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+	}
 	args = append(args, patch.ResourceType, patch.ResourceUID, patch.Type)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -468,6 +477,9 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		}
 		return nil, FormatError(err)
 	}
+	if rowStatus == string(api.Normal) {
+		policy.Enforce = true
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
@@ -500,6 +512,10 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 
 func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, creatorID int) (*PolicyMessage, error) {
 	var uid int
+	rowStatus := api.Normal
+	if !create.Enforce {
+		rowStatus = api.Archived
+	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO policy (
 				creator_id,
@@ -508,11 +524,14 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 				resource_id,
 				inherit_from_parent,
 				type,
-				payload
+				payload,
+				row_status
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
-				payload = EXCLUDED.payload
+				inherit_from_parent = EXCLUDED.inherit_from_parent,
+				payload = EXCLUDED.payload,
+				row_status = EXCLUDED.row_status
 			RETURNING id
 		`,
 		creatorID,
@@ -522,6 +541,7 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 		create.InheritFromParent,
 		create.Type,
 		create.Payload,
+		rowStatus,
 	).Scan(
 		&uid,
 	); err != nil {
@@ -550,7 +570,8 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 			resource_id,
 			inherit_from_parent,
 			type,
-			payload
+			payload,
+			row_status
 		FROM policy
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -563,6 +584,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	var policyList []*PolicyMessage
 	for rows.Next() {
 		var policyMessage PolicyMessage
+		var rowStatus api.RowStatus
 		if err := rows.Scan(
 			&policyMessage.UID,
 			&policyMessage.ResourceType,
@@ -570,8 +592,12 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 			&policyMessage.InheritFromParent,
 			&policyMessage.Type,
 			&policyMessage.Payload,
+			&rowStatus,
 		); err != nil {
 			return nil, FormatError(err)
+		}
+		if rowStatus == api.Normal {
+			policyMessage.Enforce = true
 		}
 		policyList = append(policyList, &policyMessage)
 	}

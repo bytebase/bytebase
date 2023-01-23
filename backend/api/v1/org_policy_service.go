@@ -127,6 +127,8 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 				return nil, status.Errorf(codes.InvalidArgument, "invalid policy %v", err.Error())
 			}
 			patch.Payload = &payloadStr
+		case "policy.enforce":
+			patch.Enforce = &request.Policy.Enforce
 		}
 	}
 
@@ -318,6 +320,8 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 		Payload:           payloadStr,
 		Type:              policyType,
 		InheritFromParent: policy.InheritFromParent,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
 	}, creatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -372,6 +376,7 @@ func convertToPolicy(prefix string, policyMessage *store.PolicyMessage) (*v1pb.P
 	policy := &v1pb.Policy{
 		Uid:               fmt.Sprintf("%d", policyMessage.UID),
 		InheritFromParent: policyMessage.InheritFromParent,
+		Enforce:           policyMessage.Enforce,
 	}
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
