@@ -20,7 +20,6 @@ import {
   PolicyUpsert,
   SensitiveDataPolicyPayload,
 } from "@/types/policy";
-import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
 import { useCurrentUser } from "./auth";
 
