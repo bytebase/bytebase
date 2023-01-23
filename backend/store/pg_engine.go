@@ -191,10 +191,9 @@ func (db *DB) Open(ctx context.Context) (schemaVersion *semver.Version, err erro
 // We expect our own migration history to use semantic versions.
 // If there's no migration history, version will be nil.
 func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (*semver.Version, error) {
-	limit := 1
+	// We look back the past migration history records and return the latest successful (DONE) migration version.
 	history, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
 		Database: &database,
-		Limit:    &limit,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get migration history")
@@ -228,7 +227,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		return &v, nil
 	}
 
-	return nil, nil
+	return nil, errors.Errorf("failed to find a successful migration history to determine the schema version")
 }
 
 // setupDemoData loads the setupDemoData data for testing.
