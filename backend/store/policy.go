@@ -51,19 +51,6 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 	}
 }
 
-// GetPolicy gets a policy.
-func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
-	policyRaw, err := s.getPolicyRaw(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get policy with PolicyFind[%+v]", find)
-	}
-	policy, err := s.composePolicy(ctx, policyRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose policy with policyRaw[%+v]", policyRaw)
-	}
-	return policy, nil
-}
-
 // GetBackupPlanPolicyByEnvID will get the backup plan policy for an environment.
 func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
 	environmentResourceType := api.PolicyResourceTypeEnvironment
@@ -164,24 +151,6 @@ func (s *Store) GetNormalAccessControlPolicy(ctx context.Context, resourceType a
 		return nil, true, err
 	}
 	return accessControlPolicy, policy.InheritFromParent, nil
-}
-
-//
-// private functions
-//
-
-func (s *Store) composePolicy(ctx context.Context, raw *policyRaw) (*api.Policy, error) {
-	policy := raw.toPolicy()
-
-	if policy.ResourceType == api.PolicyResourceTypeEnvironment {
-		env, err := s.GetEnvironmentByID(ctx, policy.ResourceID)
-		if err != nil {
-			return nil, err
-		}
-		policy.Environment = env
-	}
-
-	return policy, nil
 }
 
 // getPolicyRaw finds the policy for an environment.
