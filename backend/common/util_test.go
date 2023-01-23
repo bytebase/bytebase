@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHasPrefixes(t *testing.T) {
@@ -115,5 +116,41 @@ func TestTruncateString(t *testing.T) {
 			a.Equal(test.want, got)
 			a.Equal(test.truncated, truncated)
 		})
+	}
+}
+
+func TestObfuscate(t *testing.T) {
+	tests := []struct {
+		src  string
+		seed string
+		dst  string
+	}{
+		{
+			src:  "",
+			seed: "01234567890123456789012345678901", // 32 bytes.
+			dst:  "",
+		},
+		{
+			src:  "hello",
+			seed: "01234567890123456789012345678901", // 32 bytes.
+			dst:  "WFReX1s=",
+		},
+		{
+			src:  "你好!",
+			seed: "ENuef1JjSvQ6VPfgrB33T2mkshhwRRjp", // 32 bytes.
+			dst:  "ofPVgMOMaw==",
+		},
+		{
+			src:  "Bytebase is a database tool for developers. Bytebase 是个数据库 DevOps 工具。",
+			seed: "01234567890123456789012345678901", // 32 bytes.
+			dst:  "ckhGVlZURVIYUEMRUxNQVEJWWlhDVBJHW1paF15WQhFUVERWWFpGUkpKHhFwSkBQVFZLXBDXqpzQjZzRrYnWvJ7UiKAUcVNBd0lDEdeEkdCzgNu5sg==",
+		},
+	}
+	for _, test := range tests {
+		obfuscated := Obfuscate(test.src, test.seed)
+		require.Equal(t, test.dst, obfuscated)
+		ubobfuscated, err := Unobfuscate(obfuscated, test.seed)
+		require.NoError(t, err)
+		require.Equal(t, test.src, ubobfuscated)
 	}
 }

@@ -511,10 +511,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			Title:                  title,
 			Type:                   dataSourceCreate.Type,
 			Username:               dataSourceCreate.Username,
-			Password:               dataSourceCreate.Password,
-			SslCa:                  dataSourceCreate.SslCa,
-			SslCert:                dataSourceCreate.SslCert,
-			SslKey:                 dataSourceCreate.SslKey,
+			ObfuscatedPassword:     common.Obfuscate(dataSourceCreate.Password, s.secret),
+			ObfuscatedSslCa:        common.Obfuscate(dataSourceCreate.SslCa, s.secret),
+			ObfuscatedSslCert:      common.Obfuscate(dataSourceCreate.SslCert, s.secret),
+			ObfuscatedSslKey:       common.Obfuscate(dataSourceCreate.SslKey, s.secret),
 			Host:                   dataSourceCreate.Host,
 			Port:                   dataSourceCreate.Port,
 			Database:               dataSourceCreate.Database,
@@ -602,20 +602,33 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			InstanceID:    instance.ResourceID,
 			Type:          dataSource.Type,
 			Username:      dataSourcePatch.Username,
-			Password:      dataSourcePatch.Password,
-			SslCa:         dataSourcePatch.SslCa,
-			SslCert:       dataSourcePatch.SslCert,
-			SslKey:        dataSourcePatch.SslKey,
 			Host:          dataSourcePatch.Host,
 			Port:          dataSourcePatch.Port,
 		}
+		if dataSourcePatch.Password != nil {
+			obfuscated := common.Obfuscate(*dataSourcePatch.Password, s.secret)
+			updateMessage.ObfuscatedPassword = &obfuscated
+		}
+		if dataSourcePatch.SslCa != nil {
+			obfuscated := common.Obfuscate(*dataSourcePatch.SslCa, s.secret)
+			updateMessage.ObfuscatedSslCa = &obfuscated
+		}
+		if dataSourcePatch.SslCert != nil {
+			obfuscated := common.Obfuscate(*dataSourcePatch.SslCert, s.secret)
+			updateMessage.ObfuscatedSslCert = &obfuscated
+		}
+		if dataSourcePatch.SslKey != nil {
+			obfuscated := common.Obfuscate(*dataSourcePatch.SslKey, s.secret)
+			updateMessage.ObfuscatedSslKey = &obfuscated
+		}
+		if dataSourcePatch.UseEmptyPassword != nil && *dataSourcePatch.UseEmptyPassword {
+			obfuscated := common.Obfuscate("", s.secret)
+			updateMessage.ObfuscatedPassword = &obfuscated
+		}
+
 		if dataSourcePatch.Options != nil {
 			updateMessage.SRV = &dataSourcePatch.Options.SRV
 			updateMessage.AuthenticationDatabase = &dataSourcePatch.Options.AuthenticationDatabase
-		}
-		if dataSourcePatch.UseEmptyPassword != nil && *dataSourcePatch.UseEmptyPassword {
-			password := ""
-			updateMessage.Password = &password
 		}
 		if err := s.store.UpdateDataSourceV2(ctx, updateMessage); err != nil {
 			return err
