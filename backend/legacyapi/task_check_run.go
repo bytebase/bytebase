@@ -92,9 +92,6 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	DbType    db.Type `json:"dbType,omitempty"`
 	Charset   string  `json:"charset,omitempty"`
 	Collation string  `json:"collation,omitempty"`
-
-	// SQL review special fields.
-	PolicyID int `json:"policyID,omitempty"`
 }
 
 // TaskCheckDatabaseStatementTypePayload is the task check payload for SQL type.

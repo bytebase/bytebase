@@ -526,17 +526,6 @@ func (s *Scheduler) PatchTaskStatement(ctx context.Context, task *api.Task, task
 }
 
 func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
-	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
-	if err != nil {
-		// It's OK if we failed to find the SQL review policy, just emit an error log
-		log.Error("Failed to found SQL review policy id for task",
-			zap.Int("task_id", task.ID),
-			zap.String("task_name", task.Name),
-			zap.Int("environment_id", task.Instance.EnvironmentID),
-			zap.Error(err),
-		)
-		return nil
-	}
 	dbSchema, err := s.store.GetDBSchema(ctx, *task.DatabaseID)
 	if err != nil {
 		return err
@@ -550,7 +539,6 @@ func (s *Scheduler) triggerDatabaseStatementAdviseTask(ctx context.Context, stat
 		DbType:    task.Database.Instance.Engine,
 		Charset:   dbSchema.Metadata.CharacterSet,
 		Collation: dbSchema.Metadata.Collation,
-		PolicyID:  policyID,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)

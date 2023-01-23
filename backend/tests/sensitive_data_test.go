@@ -160,11 +160,8 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	payloadString := string(policyPayload)
 
-	_, err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceType: api.PolicyResourceTypeDatabase,
-		ResourceID:   database.ID,
-		Type:         api.PolicyTypeSensitiveData,
-		Payload:      &payloadString,
+	_, err = ctl.upsertPolicy(api.PolicyResourceTypeDatabase, database.ID, api.PolicyTypeSensitiveData, api.PolicyUpsert{
+		Payload: &payloadString,
 	})
 	a.NoError(err)
 

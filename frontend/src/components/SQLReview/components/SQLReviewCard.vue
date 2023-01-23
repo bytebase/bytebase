@@ -51,30 +51,6 @@
             </span>
           </dd>
         </div>
-        <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">
-            {{ $t("common.created-at") }}
-          </dt>
-          <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ humanizeTs(reviewPolicy.createdTs) }}
-          </dd>
-        </div>
-        <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">
-            {{ $t("common.updated-at") }}
-          </dt>
-          <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ humanizeTs(reviewPolicy.updatedTs) }}
-          </dd>
-        </div>
-        <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">
-            {{ $t("common.creator") }}
-          </dt>
-          <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ reviewPolicy.creator.name }}
-          </dd>
-        </div>
       </dl>
     </div>
   </div>
