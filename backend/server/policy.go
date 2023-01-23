@@ -81,6 +81,52 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := api.ValidatePolicy(resourceType, pType, policyUpsert.Payload); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy payload %s", err.Error())).SetInternal(err)
 		}
+		var composedEnvironment *api.Environment
+		if resourceType == api.PolicyResourceTypeEnvironment {
+			composedEnvironment, err = s.store.GetEnvironmentByID(ctx, resourceID)
+			if err != nil {
+				return err
+			}
+		}
+
+		if pType == api.PolicyTypeEnvironmentTier {
+			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{UID: &resourceID})
+			if err != nil {
+				return err
+			}
+			if environment == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "environment not found")
+			}
+			if policyUpsert.Payload == nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "empty payload")
+			}
+			tierPolicy, err := api.UnmarshalEnvironmentTierPolicy(*policyUpsert.Payload)
+			if err != nil {
+				return err
+			}
+			protected := false
+			if tierPolicy.EnvironmentTier == api.EnvironmentTierValueProtected {
+				protected = false
+			}
+			if _, err := s.store.UpdateEnvironmentV2(ctx, environment.ResourceID, &store.UpdateEnvironmentMessage{Protected: &protected}, updaterID); err != nil {
+				return err
+			}
+			composedPolicy := &api.Policy{
+				ID:                resourceID,
+				RowStatus:         api.Normal,
+				ResourceType:      resourceType,
+				ResourceID:        resourceID,
+				Type:              pType,
+				InheritFromParent: true,
+				Payload:           *policyUpsert.Payload,
+				Environment:       composedEnvironment,
+			}
+			c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+			if err := jsonapi.MarshalPayload(c.Response().Writer, composedPolicy); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create set policy response").SetInternal(err)
+			}
+			return nil
+		}
 
 		policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
 			ResourceType: &resourceType,
@@ -131,13 +177,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			Type:              pType,
 			InheritFromParent: policy.InheritFromParent,
 			Payload:           policy.Payload,
-		}
-		if resourceType == api.PolicyResourceTypeEnvironment {
-			composedEnvironment, err := s.store.GetEnvironmentByID(ctx, resourceID)
-			if err != nil {
-				return err
-			}
-			composedPolicy.Environment = composedEnvironment
+			Environment:       composedEnvironment,
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, composedPolicy); err != nil {

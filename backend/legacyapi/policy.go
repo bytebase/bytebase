@@ -134,22 +134,6 @@ type PolicyUpsert struct {
 	Payload           *string `jsonapi:"attr,payload"`
 }
 
-// PolicyDelete is the message to delete a policy.
-type PolicyDelete struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterID int
-
-	// Related fields
-	ResourceType PolicyResourceType
-	ResourceID   int
-
-	// Domain specific fields
-	// Type is the policy type.
-	// Currently we only support delete operation for "bb.policy.sql-review", need it here for validation and update query.
-	Type PolicyType
-}
-
 // PipelineApprovalPolicy is the policy configuration for pipeline approval.
 type PipelineApprovalPolicy struct {
 	Value PipelineApprovalValue `json:"value"`

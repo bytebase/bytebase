@@ -187,11 +187,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 		a.NoError(err)
 	}
 	// delete the SQL review policy
-	err = ctl.deletePolicy(api.PolicyDelete{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   prodEnvironment.ID,
-		Type:         api.PolicyTypeSQLReview,
-	})
+	err = ctl.deletePolicy(prodEnvironment.ID, api.PolicyTypeSQLReview)
 	a.NoError(err)
 
 	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
@@ -390,11 +386,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.Equal(origin, finial)
 
 	// delete the SQL review policy
-	err = ctl.deletePolicy(api.PolicyDelete{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   prodEnvironment.ID,
-		Type:         api.PolicyTypeSQLReview,
-	})
+	err = ctl.deletePolicy(prodEnvironment.ID, api.PolicyTypeSQLReview)
 	a.NoError(err)
 
 	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)

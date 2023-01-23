@@ -72,50 +72,6 @@ func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Polic
 	return policy, nil
 }
 
-// DeletePolicy deletes an existing ARCHIVED policy by PolicyDelete.
-func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete) error {
-	// Validate policy.
-	switch policyDelete.Type {
-	case api.PolicyTypeSQLReview:
-	case api.PolicyTypeAccessControl:
-	default:
-		return &common.Error{Code: common.Invalid, Err: errors.Errorf("disallow to delete policy type: %s", policyDelete.Type)}
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.Rollback()
-
-	find := &api.PolicyFind{
-		ResourceType: &policyDelete.ResourceType,
-		ResourceID:   &policyDelete.ResourceID,
-		Type:         policyDelete.Type,
-	}
-	policyRawList, err := findPolicyImpl(ctx, tx, find)
-	if err != nil {
-		return errors.Wrapf(err, "failed to list policy with PolicyFind[%+v]", find)
-	}
-	if len(policyRawList) != 1 {
-		return &common.Error{Code: common.NotFound, Err: errors.Errorf("failed to found policy with filter %+v, expect 1. ", find)}
-	}
-	policyRaw := policyRawList[0]
-	if policyRaw.RowStatus != api.Archived && policyDelete.Type == api.PolicyTypeSQLReview {
-		return &common.Error{Code: common.Invalid, Err: errors.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", policyDelete)}
-	}
-
-	if err := s.deletePolicyImpl(ctx, tx, policyDelete); err != nil {
-		return FormatError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
-}
-
 // ListPolicy gets a list of policy by PolicyFind.
 func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Policy, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -387,21 +343,6 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind) ([]*polic
 		return nil, FormatError(err)
 	}
 	return policyRawList, nil
-}
-
-// deletePolicyImpl deletes an existing ARCHIVED policy by id and type.
-func (*Store) deletePolicyImpl(ctx context.Context, tx *Tx, delete *api.PolicyDelete) error {
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM policy
-			WHERE resource_type = $1 AND resource_id = $2 AND type = $3
-		`,
-		delete.ResourceType,
-		delete.ResourceID,
-		delete.Type,
-	); err != nil {
-		return FormatError(err)
-	}
-	return nil
 }
 
 // PolicyMessage is the mssage for policy.
