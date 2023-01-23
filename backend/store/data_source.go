@@ -12,16 +12,16 @@ import (
 
 // DataSourceMessage is the message for data source.
 type DataSourceMessage struct {
-	Title    string
-	Type     api.DataSourceType
-	Username string
-	Password string
-	SslCa    string
-	SslCert  string
-	SslKey   string
-	Host     string
-	Port     string
-	Database string
+	Title              string
+	Type               api.DataSourceType
+	Username           string
+	ObfuscatedPassword string
+	ObfuscatedSslCa    string
+	ObfuscatedSslCert  string
+	ObfuscatedSslKey   string
+	Host               string
+	Port               string
+	Database           string
 	// Flatten data source options.
 	SRV                    bool
 	AuthenticationDatabase string
@@ -39,13 +39,13 @@ type UpdateDataSourceMessage struct {
 
 	Type api.DataSourceType
 
-	Username *string
-	Password *string
-	SslCa    *string
-	SslCert  *string
-	SslKey   *string
-	Host     *string
-	Port     *string
+	Username           *string
+	ObfuscatedPassword *string
+	ObfuscatedSslCa    *string
+	ObfuscatedSslCert  *string
+	ObfuscatedSslKey   *string
+	Host               *string
+	Port               *string
 	// Flatten data source options.
 	SRV                    *bool
 	AuthenticationDatabase *string
@@ -86,10 +86,10 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 			&dataSourceMessage.Title,
 			&dataSourceMessage.Type,
 			&dataSourceMessage.Username,
-			&dataSourceMessage.Password,
-			&dataSourceMessage.SslKey,
-			&dataSourceMessage.SslCert,
-			&dataSourceMessage.SslCa,
+			&dataSourceMessage.ObfuscatedPassword,
+			&dataSourceMessage.ObfuscatedSslKey,
+			&dataSourceMessage.ObfuscatedSslCert,
+			&dataSourceMessage.ObfuscatedSslCa,
 			&dataSourceMessage.Host,
 			&dataSourceMessage.Port,
 			&dataSourceMessage.Database,
@@ -176,16 +176,16 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.Username; v != nil {
 		set, args = append(set, fmt.Sprintf("username = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Password; v != nil {
+	if v := patch.ObfuscatedPassword; v != nil {
 		set, args = append(set, fmt.Sprintf("password = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.SslKey; v != nil {
+	if v := patch.ObfuscatedSslKey; v != nil {
 		set, args = append(set, fmt.Sprintf("ssl_key = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.SslCert; v != nil {
+	if v := patch.ObfuscatedSslCert; v != nil {
 		set, args = append(set, fmt.Sprintf("ssl_cert = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.SslCa; v != nil {
+	if v := patch.ObfuscatedSslCa; v != nil {
 		set, args = append(set, fmt.Sprintf("ssl_ca = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Host; v != nil {
@@ -266,8 +266,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`, creatorID, creatorID, instanceUID, databaseUID, dataSource.Title,
-		dataSource.Type, dataSource.Username, dataSource.Password, dataSource.SslKey,
-		dataSource.SslCert, dataSource.SslCa, dataSource.Host, dataSource.Port,
+		dataSource.Type, dataSource.Username, dataSource.ObfuscatedPassword, dataSource.ObfuscatedSslKey,
+		dataSource.ObfuscatedSslCert, dataSource.ObfuscatedSslCa, dataSource.Host, dataSource.Port,
 		dataSourceOptions, dataSource.Database,
 	); err != nil {
 		return FormatError(err)

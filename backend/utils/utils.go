@@ -79,7 +79,7 @@ type GhostConfig struct {
 }
 
 // GetGhostConfig returns a gh-ost configuration for migration.
-func GetGhostConfig(task *api.Task, dataSource *store.DataSourceMessage, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) GhostConfig {
+func GetGhostConfig(task *api.Task, dataSource *store.DataSourceMessage, secret string, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) (GhostConfig, error) {
 	var isAWS bool
 	for _, user := range instanceUsers {
 		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
@@ -87,11 +87,15 @@ func GetGhostConfig(task *api.Task, dataSource *store.DataSourceMessage, instanc
 			break
 		}
 	}
+	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
+	if err != nil {
+		return GhostConfig{}, err
+	}
 	return GhostConfig{
 		host:                 task.Instance.Host,
 		port:                 task.Instance.Port,
 		user:                 dataSource.Username,
-		password:             dataSource.Password,
+		password:             password,
 		database:             task.Database.Name,
 		table:                tableName,
 		alterStatement:       statement,
@@ -104,7 +108,7 @@ func GetGhostConfig(task *api.Task, dataSource *store.DataSourceMessage, instanc
 		serverID: serverIDOffset + uint(task.ID),
 		// https://github.com/github/gh-ost/blob/master/doc/rds.md
 		isAWS: isAWS,
-	}
+	}, nil
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {

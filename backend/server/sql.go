@@ -55,7 +55,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			for _, ds := range instance.DataSources {
 				if ds.Type == api.Admin {
-					password = ds.Password
+					password, err = common.Unobfuscate(ds.ObfuscatedPassword, s.secret)
+					if err != nil {
+						return err
+					}
 					break
 				}
 			}
@@ -74,11 +77,23 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance %d not found", *connectionInfo.InstanceID))
 				}
 				for _, ds := range instance.DataSources {
-					if ds.SslCa != "" || ds.SslCert != "" || ds.SslKey != "" {
+					if ds.ObfuscatedSslCa != "" || ds.ObfuscatedSslCert != "" || ds.ObfuscatedSslKey != "" {
+						sslCa, err := common.Unobfuscate(ds.ObfuscatedSslCa, s.secret)
+						if err != nil {
+							return err
+						}
+						sslKey, err := common.Unobfuscate(ds.ObfuscatedSslKey, s.secret)
+						if err != nil {
+							return err
+						}
+						sslCert, err := common.Unobfuscate(ds.ObfuscatedSslCert, s.secret)
+						if err != nil {
+							return err
+						}
 						tlsConfig = db.TLSConfig{
-							SslCA:   ds.SslCa,
-							SslKey:  ds.SslKey,
-							SslCert: ds.SslCert,
+							SslCA:   sslCa,
+							SslKey:  sslKey,
+							SslCert: sslCert,
 						}
 						break
 					}

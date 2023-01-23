@@ -14,15 +14,17 @@ import (
 )
 
 // NewGhostSyncExecutor creates a task check gh-ost sync executor.
-func NewGhostSyncExecutor(store *store.Store) Executor {
+func NewGhostSyncExecutor(store *store.Store, secret string) Executor {
 	return &GhostSyncExecutor{
-		store: store,
+		store:  store,
+		secret: secret,
 	}
 }
 
 // GhostSyncExecutor is the task check gh-ost sync executor.
 type GhostSyncExecutor struct {
-	store *store.Store
+	store  *store.Store
+	secret string
 }
 
 // Run will run the task check database connector executor once.
@@ -82,7 +84,10 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, _ *api.TaskCheckRun, task *
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", payload.Statement)
 	}
 
-	config := utils.GetGhostConfig(task, adminDataSource, instanceUsers, tableName, payload.Statement, true, 20000000)
+	config, err := utils.GetGhostConfig(task, adminDataSource, e.secret, instanceUsers, tableName, payload.Statement, true, 20000000)
+	if err != nil {
+		return nil, err
+	}
 
 	migrationContext, err := utils.NewMigrationContext(config)
 	if err != nil {
