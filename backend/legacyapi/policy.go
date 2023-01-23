@@ -130,19 +130,7 @@ type PolicyFind struct {
 // PolicyUpsert is the message to upsert a policy.
 // NOTE: We use PATCH for Upsert, this is inspired by https://google.aip.dev/134#patch-and-put
 type PolicyUpsert struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	// CreatorID is the ID of the creator.
-	UpdaterID int
-	RowStatus *string `jsonapi:"attr,rowStatus"`
-
-	// Related fields
-	ResourceType PolicyResourceType
-	ResourceID   int
-
-	// Domain specific fields
-	InheritFromParent *bool
-	Type              PolicyType
+	InheritFromParent *bool   `jsonapi:"attr,inheritFromParent"`
 	Payload           *string `jsonapi:"attr,payload"`
 }
 

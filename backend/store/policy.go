@@ -59,24 +59,6 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 	}
 }
 
-// UpsertPolicy upserts an instance of Policy.
-func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.Policy, error) {
-	policyRaw, err := s.upsertPolicyRaw(ctx, upsert)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to upsert policy with PolicyUpsert[%+v]", upsert)
-	}
-	policy, err := s.composePolicy(ctx, policyRaw)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compose policy with policyRaw[%+v]", policyRaw)
-	}
-
-	if err := s.upsertPolicyCache(upsert.Type, upsert.ResourceID, policy.Payload); err != nil {
-		return nil, err
-	}
-
-	return policy, nil
-}
-
 // GetPolicy gets a policy.
 func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
 	policyRaw, err := s.getPolicyRaw(ctx, find)
@@ -131,9 +113,6 @@ func (s *Store) DeletePolicy(ctx context.Context, policyDelete *api.PolicyDelete
 		return FormatError(err)
 	}
 
-	if policyDelete.Type == api.PolicyTypePipelineApproval {
-		s.cache.DeleteCache(approvalPolicyCacheNamespace, policyDelete.ResourceID)
-	}
 	return nil
 }
 
@@ -178,27 +157,16 @@ func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID in
 
 // GetPipelineApprovalPolicy will get the pipeline approval policy for an environment.
 func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*api.PipelineApprovalPolicy, error) {
-	var payload *string
-	ok, err := s.cache.FindCache(approvalPolicyCacheNamespace, environmentID, &payload)
+	environmentResourceType := api.PolicyResourceTypeEnvironment
+	p, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		ResourceType: &environmentResourceType,
+		ResourceID:   &environmentID,
+		Type:         api.PolicyTypePipelineApproval,
+	})
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		environmentResourceType := api.PolicyResourceTypeEnvironment
-		p, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-			ResourceType: &environmentResourceType,
-			ResourceID:   &environmentID,
-			Type:         api.PolicyTypePipelineApproval,
-		})
-		if err != nil {
-			return nil, err
-		}
-		payload = &p.Payload
-		if err := s.cache.UpsertCache(approvalPolicyCacheNamespace, environmentID, payload); err != nil {
-			return nil, err
-		}
-	}
-	return api.UnmarshalPipelineApprovalPolicy(*payload)
+	return api.UnmarshalPipelineApprovalPolicy(p.Payload)
 }
 
 // GetNormalSQLReviewPolicy will get the normal SQL review policy for an environment.
@@ -421,100 +389,6 @@ func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind) ([]*polic
 	return policyRawList, nil
 }
 
-// upsertPolicyRaw sets a policy for an environment.
-func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (*policyRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	policy, err := upsertPolicyImpl(ctx, tx, upsert)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return policy, nil
-}
-
-// upsertPolicyImpl updates an existing policy by environment id and type.
-func upsertPolicyImpl(ctx context.Context, tx *Tx, upsert *api.PolicyUpsert) (*policyRaw, error) {
-	var set []string
-	if v := upsert.Payload; v != nil {
-		set = append(set, "payload = EXCLUDED.payload")
-	}
-	if v := upsert.RowStatus; v != nil {
-		set = append(set, "row_status = EXCLUDED.row_status")
-	}
-
-	if len(set) == 0 {
-		return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("invalid policy upsert %+v", upsert)}
-	}
-
-	if upsert.Payload == nil || *upsert.Payload == "" {
-		emptyPayload := "{}"
-		upsert.Payload = &emptyPayload
-	}
-	if upsert.RowStatus == nil {
-		rowStatus := string(api.Normal)
-		upsert.RowStatus = &rowStatus
-	}
-	inheritFromParent := true
-	if upsert.InheritFromParent != nil {
-		inheritFromParent = *upsert.InheritFromParent
-	}
-
-	query := fmt.Sprintf(`
-		INSERT INTO policy (
-			creator_id,
-			updater_id,
-			resource_type,
-			resource_id,
-			inherit_from_parent,
-			type,
-			payload,
-			row_status
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
-			%s
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, resource_type, resource_id, inherit_from_parent, type, payload
-	`, strings.Join(set, ","))
-	var policyRaw policyRaw
-	if err := tx.QueryRowContext(ctx, query,
-		upsert.UpdaterID,
-		upsert.UpdaterID,
-		upsert.ResourceType,
-		upsert.ResourceID,
-		inheritFromParent,
-		upsert.Type,
-		upsert.Payload,
-		upsert.RowStatus,
-	).Scan(
-		&policyRaw.ID,
-		&policyRaw.CreatorID,
-		&policyRaw.CreatedTs,
-		&policyRaw.UpdaterID,
-		&policyRaw.UpdatedTs,
-		&policyRaw.RowStatus,
-		&policyRaw.ResourceType,
-		&policyRaw.ResourceID,
-		&policyRaw.InheritFromParent,
-		&policyRaw.Type,
-		&policyRaw.Payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, FormatError(err)
-	}
-	return &policyRaw, nil
-}
-
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.
 func (*Store) deletePolicyImpl(ctx context.Context, tx *Tx, delete *api.PolicyDelete) error {
 	if _, err := tx.ExecContext(ctx, `
@@ -530,24 +404,16 @@ func (*Store) deletePolicyImpl(ctx context.Context, tx *Tx, delete *api.PolicyDe
 	return nil
 }
 
-// Cache environment policy and pipeline approval policy as it is used widely.
-func (s *Store) upsertPolicyCache(policyType api.PolicyType, resourceID int, payload string) error {
-	if policyType == api.PolicyTypePipelineApproval {
-		if err := s.cache.UpsertCache(approvalPolicyCacheNamespace, resourceID, &payload); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // PolicyMessage is the mssage for policy.
 type PolicyMessage struct {
-	UID               int
 	ResourceUID       int
 	ResourceType      api.PolicyResourceType
 	Payload           string
 	InheritFromParent bool
 	Type              api.PolicyType
+
+	// Output only.
+	UID int
 }
 
 // FindPolicyMessage is the message for finding policies.
@@ -634,42 +500,18 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creat
 	}
 	defer tx.Rollback()
 
-	var uid int
-	if err := tx.QueryRowContext(ctx, `
-			INSERT INTO policy (
-				creator_id,
-				updater_id,
-				resource_type,
-				resource_id,
-				inherit_from_parent,
-				type,
-				payload
-			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
-			RETURNING id
-		`,
-		creatorID,
-		creatorID,
-		create.ResourceType,
-		create.ResourceUID,
-		create.InheritFromParent,
-		create.Type,
-		create.Payload,
-	).Scan(
-		&uid,
-	); err != nil {
-		return nil, FormatError(err)
+	policy, err := upsertPolicyV2Impl(ctx, tx, create, creatorID)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	create.UID = uid
+	s.storePolicyIntoCache(policy)
 
-	s.storePolicyIntoCache(create)
-
-	return create, nil
+	return policy, nil
 }
 
 // UpdatePolicyV2 updates the policy.
@@ -743,6 +585,39 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 	}
 
 	return tx.Commit()
+}
+
+func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, creatorID int) (*PolicyMessage, error) {
+	var uid int
+	if err := tx.QueryRowContext(ctx, `
+			INSERT INTO policy (
+				creator_id,
+				updater_id,
+				resource_type,
+				resource_id,
+				inherit_from_parent,
+				type,
+				payload
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
+				payload = EXCLUDED.payload
+			RETURNING id
+		`,
+		creatorID,
+		creatorID,
+		create.ResourceType,
+		create.ResourceUID,
+		create.InheritFromParent,
+		create.Type,
+		create.Payload,
+	).Scan(
+		&uid,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+	create.UID = uid
+	return create, nil
 }
 
 func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {

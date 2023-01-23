@@ -121,19 +121,13 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	policyPayload, err := prodTemplateSQLReviewPolicyForPostgreSQL()
 	a.NoError(err)
 
-	_, err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   prodEnvironment.ID,
-		Type:         api.PolicyTypeSQLReview,
-		Payload:      &policyPayload,
+	_, err = ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
+		Payload: &policyPayload,
 	})
 	a.NoError(err)
 
-	policy, err := ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   prodEnvironment.ID,
-		Type:         api.PolicyTypeSQLReview,
-		Payload:      &policyPayload,
+	policy, err := ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
+		Payload: &policyPayload,
 	})
 	a.NoError(err)
 	a.NotNil(policy.Environment)
@@ -192,21 +186,6 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 		err = os.WriteFile(filepath, byteValue, 0644)
 		a.NoError(err)
 	}
-
-	// disable the SQL review policy
-	disable := string(api.Archived)
-	_, err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   prodEnvironment.ID,
-		Type:         api.PolicyTypeSQLReview,
-		Payload:      &policyPayload,
-		RowStatus:    &disable,
-	})
-	a.NoError(err)
-
-	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
-	a.Equal(noSQLReviewPolicy, result)
-
 	// delete the SQL review policy
 	err = ctl.deletePolicy(api.PolicyDelete{
 		ResourceType: api.PolicyResourceTypeEnvironment,
@@ -215,7 +194,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 
@@ -311,19 +290,13 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	policyPayload, err := prodTemplateSQLReviewPolicyForMySQL()
 	a.NoError(err)
 
-	_, err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   prodEnvironment.ID,
-		Type:         api.PolicyTypeSQLReview,
-		Payload:      &policyPayload,
+	_, err = ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
+		Payload: &policyPayload,
 	})
 	a.NoError(err)
 
-	policy, err := ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   prodEnvironment.ID,
-		Type:         api.PolicyTypeSQLReview,
-		Payload:      &policyPayload,
+	policy, err := ctl.upsertPolicy(api.PolicyResourceTypeEnvironment, prodEnvironment.ID, api.PolicyTypeSQLReview, api.PolicyUpsert{
+		Payload: &policyPayload,
 	})
 	a.NoError(err)
 	a.NotNil(policy.Environment)
@@ -416,20 +389,6 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(origin, finial)
 
-	// disable the SQL review policy
-	disable := string(api.Archived)
-	_, err = ctl.upsertPolicy(api.PolicyUpsert{
-		ResourceType: api.PolicyResourceTypeEnvironment,
-		ResourceID:   prodEnvironment.ID,
-		Type:         api.PolicyTypeSQLReview,
-		Payload:      &policyPayload,
-		RowStatus:    &disable,
-	})
-	a.NoError(err)
-
-	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
-	a.Equal(noSQLReviewPolicy, result)
-
 	// delete the SQL review policy
 	err = ctl.deletePolicy(api.PolicyDelete{
 		ResourceType: api.PolicyResourceTypeEnvironment,
@@ -438,7 +397,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	})
 	a.NoError(err)
 
-	result = createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
+	result := createIssueAndReturnSQLReviewResult(a, ctl, database.ID, project.ID, statements[0], false)
 	a.Equal(noSQLReviewPolicy, result)
 }
 

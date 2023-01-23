@@ -9,19 +9,19 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // hasAccessToUpdatePolicy checks if user can access to policy control feature.
 // return nil if user has access.
-func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
+func (s *Server) hasAccessToUpsertPolicy(pType api.PolicyType, policyUpsert *api.PolicyUpsert) error {
 	// nil payload means user doesn't update the payload field
 	if policyUpsert.Payload == nil {
 		return nil
 	}
 
-	defaultPolicy, err := api.GetDefaultPolicy(policyUpsert.Type)
+	defaultPolicy, err := api.GetDefaultPolicy(pType)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
 	if defaultPolicy == *policyUpsert.Payload {
 		return nil
 	}
-	switch policyUpsert.Type {
+	switch pType {
 	case api.PolicyTypePipelineApproval:
 		if !s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy) {
 			return errors.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
@@ -67,35 +67,80 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := api.ValidatePolicyType(pType); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
-		policyUpsert := &api.PolicyUpsert{
-			ResourceType: resourceType,
-			ResourceID:   resourceID,
-			Type:         pType,
-			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
-		}
+		updaterID := c.Get(getPrincipalIDContextKey()).(int)
+
+		policyUpsert := &api.PolicyUpsert{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set policy request").SetInternal(err)
 		}
 
-		if err := s.hasAccessToUpsertPolicy(policyUpsert); err != nil {
+		if err := s.hasAccessToUpsertPolicy(pType, policyUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
 		}
-
 		// Validate policy.
-		if err := api.ValidatePolicy(policyUpsert.ResourceType, policyUpsert.Type, policyUpsert.Payload); err != nil {
+		if err := api.ValidatePolicy(resourceType, pType, policyUpsert.Payload); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid policy payload %s", err.Error())).SetInternal(err)
 		}
 
-		policy, err := s.store.UpsertPolicy(ctx, policyUpsert)
+		policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+			ResourceType: &resourceType,
+			ResourceUID:  &resourceID,
+			Type:         &pType,
+		})
 		if err != nil {
-			if common.ErrorCode(err) == common.Invalid {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+			return err
+		}
+		if policy == nil {
+			payload := ""
+			if policyUpsert.Payload != nil {
+				payload = *policyUpsert.Payload
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set policy for type %q", pType)).SetInternal(err)
+			inheritFromParent := true
+			if policyUpsert.InheritFromParent != nil {
+				inheritFromParent = *policyUpsert.InheritFromParent
+			}
+			policy, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+				ResourceType:      resourceType,
+				ResourceUID:       resourceID,
+				Type:              pType,
+				Payload:           payload,
+				InheritFromParent: inheritFromParent,
+			}, updaterID)
+			if err != nil {
+				return err
+			}
+		} else {
+			policy, err = s.store.UpdatePolicyV2(ctx, &store.UpdatePolicyMessage{
+				UpdaterID:         updaterID,
+				ResourceType:      resourceType,
+				ResourceUID:       resourceID,
+				Type:              pType,
+				InheritFromParent: policyUpsert.InheritFromParent,
+				Payload:           policyUpsert.Payload,
+			})
+			if err != nil {
+				return err
+			}
 		}
 
+		composedPolicy := &api.Policy{
+			ID:                policy.UID,
+			RowStatus:         api.Normal,
+			ResourceType:      resourceType,
+			ResourceID:        resourceID,
+			Type:              pType,
+			InheritFromParent: policy.InheritFromParent,
+			Payload:           policy.Payload,
+		}
+		if resourceType == api.PolicyResourceTypeEnvironment {
+			composedEnvironment, err := s.store.GetEnvironmentByID(ctx, resourceID)
+			if err != nil {
+				return err
+			}
+			composedPolicy.Environment = composedEnvironment
+		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, policy); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, composedPolicy); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create set policy response").SetInternal(err)
 		}
 		return nil
@@ -115,17 +160,21 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		if err := api.ValidatePolicyType(pType); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
-		policyDelete := &api.PolicyDelete{
-			ResourceType: resourceType,
-			ResourceID:   resourceID,
-			Type:         pType,
-			DeleterID:    c.Get(getPrincipalIDContextKey()).(int),
+
+		policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+			ResourceType: &resourceType,
+			ResourceUID:  &resourceID,
+			Type:         &pType,
+		})
+		if err != nil {
+			return err
 		}
-		if err := s.store.DeletePolicy(ctx, policyDelete); err != nil {
-			if common.ErrorCode(err) == common.Invalid {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete policy by resource type %q id %q", c.Param("resourceType"), c.Param("resourceID"))).SetInternal(err)
+		if policy == nil {
+			return echo.NewHTTPError(http.StatusPreconditionFailed, "policy not found")
+		}
+
+		if err := s.store.DeletePolicyV2(ctx, policy); err != nil {
+			return err
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

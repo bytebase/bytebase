@@ -12,13 +12,17 @@ import (
 )
 
 // upsertPolicy upserts the policy.
-func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) (*api.Policy, error) {
+// ResourceType: api.PolicyResourceTypeEnvironment,
+//
+//	ResourceID:   prodEnvironment.ID,
+//	Type
+func (ctl *controller) upsertPolicy(resourceType api.PolicyResourceType, resourceID int, pType api.PolicyType, policyUpsert api.PolicyUpsert) (*api.Policy, error) {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, &policyUpsert); err != nil {
 		return nil, errors.Wrap(err, "failed to marshal policyUpsert")
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/policy/%s/%d?type=%s", strings.ToLower(string(policyUpsert.ResourceType)), policyUpsert.ResourceID, policyUpsert.Type), buf)
+	body, err := ctl.patch(fmt.Sprintf("/policy/%s/%d?type=%s", strings.ToLower(string(resourceType)), resourceID, pType), buf)
 	if err != nil {
 		return nil, err
 	}
