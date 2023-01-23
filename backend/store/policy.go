@@ -376,7 +376,7 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 		return nil, FormatError(err)
 	}
 
-	s.storePolicyIntoCache(policy)
+	s.policyCache.Store(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
 
 	return policy, nil
 }
@@ -399,7 +399,7 @@ func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]
 	}
 
 	for _, policy := range policies {
-		s.storePolicyIntoCache(policy)
+		s.policyCache.Store(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
 	}
 
 	return policies, nil
@@ -422,7 +422,7 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creat
 		return nil, FormatError(err)
 	}
 
-	s.storePolicyIntoCache(policy)
+	s.policyCache.Store(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
 
 	return policy, nil
 }
@@ -485,7 +485,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		return nil, FormatError(err)
 	}
 
-	s.storePolicyIntoCache(policy)
+	s.policyCache.Store(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
 
 	return policy, nil
 }
@@ -507,7 +507,12 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 		return FormatError(err)
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	s.policyCache.Delete(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type))
+	return nil
 }
 
 func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, creatorID int) (*PolicyMessage, error) {
@@ -605,12 +610,4 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		return nil, FormatError(err)
 	}
 	return policyList, nil
-}
-
-func (s *Store) storePolicyIntoCache(policy *PolicyMessage) {
-	if policy.Type != api.PolicyTypePipelineApproval {
-		return
-	}
-
-	s.policyCache.Store(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
 }
