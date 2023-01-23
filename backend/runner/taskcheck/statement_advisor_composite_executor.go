@@ -43,7 +43,7 @@ func (e *StatementAdvisorCompositeExecutor) Run(ctx context.Context, taskCheckRu
 		return nil, common.Wrapf(err, common.Invalid, "invalid check statement advise payload")
 	}
 
-	policy, err := e.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ID: &payload.PolicyID})
+	policy, err := e.store.GetSQLReviewPolicy(ctx, task.Instance.EnvironmentID)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return []api.TaskCheckResult{

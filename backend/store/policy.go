@@ -31,88 +31,66 @@ type policyRaw struct {
 	Payload           string
 }
 
-// toPolicy creates an instance of Policy based on the PolicyRaw.
-// This is intended to be called when we need to compose an Policy relationship.
-func (raw *policyRaw) toPolicy() *api.Policy {
-	return &api.Policy{
-		ID: raw.ID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-
-		// Related fields
-		ResourceType: raw.ResourceType,
-		ResourceID:   raw.ResourceID,
-
-		// Domain specific fields
-		InheritFromParent: raw.InheritFromParent,
-		Type:              raw.Type,
-		Payload:           raw.Payload,
-	}
-}
-
 // GetBackupPlanPolicyByEnvID will get the backup plan policy for an environment.
 func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
-	environmentResourceType := api.PolicyResourceTypeEnvironment
-	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		ResourceType: &environmentResourceType,
-		ResourceID:   &environmentID,
-		Type:         api.PolicyTypeBackupPlan,
+	resourceType := api.PolicyResourceTypeEnvironment
+	pType := api.PolicyTypeBackupPlan
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &environmentID,
+		Type:         &pType,
 	})
 	if err != nil {
 		return nil, err
+	}
+	if policy == nil {
+		return &api.BackupPlanPolicy{
+			Schedule: api.BackupPlanPolicyScheduleUnset,
+		}, nil
 	}
 	return api.UnmarshalBackupPlanPolicy(policy.Payload)
 }
 
 // GetPipelineApprovalPolicy will get the pipeline approval policy for an environment.
 func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*api.PipelineApprovalPolicy, error) {
-	environmentResourceType := api.PolicyResourceTypeEnvironment
-	p, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		ResourceType: &environmentResourceType,
-		ResourceID:   &environmentID,
-		Type:         api.PolicyTypePipelineApproval,
+	resourceType := api.PolicyResourceTypeEnvironment
+	pType := api.PolicyTypePipelineApproval
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &environmentID,
+		Type:         &pType,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return api.UnmarshalPipelineApprovalPolicy(p.Payload)
-}
-
-// GetNormalSQLReviewPolicy will get the normal SQL review policy for an environment.
-func (s *Store) GetNormalSQLReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SQLReviewPolicy, error) {
-	if find.ID != nil && *find.ID == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy not found with ID %d", *find.ID)}
+	if policy == nil {
+		return &api.PipelineApprovalPolicy{
+			Value: api.PipelineApprovalValueManualAlways,
+		}, nil
 	}
 
-	environmentResourceType := api.PolicyResourceTypeEnvironment
-	find.ResourceType = &environmentResourceType
-	find.Type = api.PolicyTypeSQLReview
-	policy, err := s.getPolicyRaw(ctx, find)
+	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
+}
+
+// GetSQLReviewPolicy will get the SQL review policy for an environment.
+func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*advisor.SQLReviewPolicy, error) {
+	resourceType := api.PolicyResourceTypeEnvironment
+	pType := api.PolicyTypeSQLReview
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &environmentID,
+		Type:         &pType,
+	})
 	if err != nil {
 		return nil, err
 	}
-	if policy.RowStatus == api.Archived {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy ID: %d for environment %d is archived", policy.ID, policy.ResourceID)}
+	if policy == nil {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy for environment %d not found", environmentID)}
 	}
-	if policy.ID == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy ID: %d for environment %d not found", policy.ID, policy.ResourceID)}
+	if !policy.Enforce {
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy is not enforced for environment %d", environmentID)}
 	}
 	return api.UnmarshalSQLReviewPolicy(policy.Payload)
-}
-
-// GetSQLReviewPolicyIDByEnvID will get the SQL review policy ID for an environment.
-func (s *Store) GetSQLReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
-	environmentResourceType := api.PolicyResourceTypeEnvironment
-	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		ResourceType: &environmentResourceType,
-		ResourceID:   &environmentID,
-		Type:         api.PolicyTypeSQLReview,
-	})
-	if err != nil {
-		return 0, err
-	}
-	return policy.ID, nil
 }
 
 // GetSensitiveDataPolicy will get the sensitive data policy for database ID.
@@ -309,6 +287,10 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 		return nil, err
 	}
 	if len(policies) == 0 {
+		// Cache the policy for not found as well to reduce the look up latency.
+		if find.ResourceType != nil && find.ResourceUID != nil && find.Type != nil {
+			s.policyCache.Store(getPolicyCacheKey(*find.ResourceType, *find.ResourceUID, *find.Type), nil)
+		}
 		return nil, nil
 	}
 	if len(policies) > 1 {

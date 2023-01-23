@@ -336,16 +336,11 @@ func (s *Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, i
 	if !api.IsSQLReviewSupported(instance.Engine) {
 		return nil, nil
 	}
-	policyID, err := s.store.GetSQLReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get SQL review policy ID for task: %v, in environment: %v", task.Name, task.Instance.EnvironmentID)
-	}
 	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 		Statement: statement,
 		DbType:    instance.Engine,
 		Charset:   dbSchema.Metadata.CharacterSet,
 		Collation: dbSchema.Metadata.Collation,
-		PolicyID:  policyID,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal statement advise payload: %v", task.Name)
