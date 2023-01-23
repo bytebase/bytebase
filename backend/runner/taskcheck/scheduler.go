@@ -280,7 +280,7 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID 
 	}
 	createList = append(createList, create...)
 
-	create, err = s.getSQLReviewTaskCheck(ctx, task, instance, dbSchema, statement)
+	create, err = s.getSQLReviewTaskCheck(task, instance, dbSchema, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
@@ -332,7 +332,7 @@ func getStmtTypeTaskCheck(task *api.Task, instance *store.InstanceMessage, dbSch
 	}, nil
 }
 
-func (*Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*api.TaskCheckRunCreate, error) {
+func (*Scheduler) getSQLReviewTaskCheck(task *api.Task, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsSQLReviewSupported(instance.Engine) {
 		return nil, nil
 	}
