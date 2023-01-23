@@ -124,6 +124,7 @@ type PolicyFind struct {
 // PolicyUpsert is the message to upsert a policy.
 // NOTE: We use PATCH for Upsert, this is inspired by https://google.aip.dev/134#patch-and-put
 type PolicyUpsert struct {
+	RowStatus         *string `jsonapi:"attr,rowStatus"`
 	InheritFromParent *bool   `jsonapi:"attr,inheritFromParent"`
 	Payload           *string `jsonapi:"attr,payload"`
 }

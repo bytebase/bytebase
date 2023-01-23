@@ -13,45 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// hasAccessToUpdatePolicy checks if user can access to policy control feature.
-// return nil if user has access.
-func (s *Server) hasAccessToUpsertPolicy(pType api.PolicyType, policyUpsert *api.PolicyUpsert) error {
-	// nil payload means user doesn't update the payload field
-	if policyUpsert.Payload == nil {
-		return nil
-	}
-
-	defaultPolicy, err := api.GetDefaultPolicy(pType)
-	if err != nil {
-		return err
-	}
-
-	if defaultPolicy == *policyUpsert.Payload {
-		return nil
-	}
-	switch pType {
-	case api.PolicyTypePipelineApproval:
-		if !s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy) {
-			return errors.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
-		}
-	case api.PolicyTypeBackupPlan:
-		if !s.licenseService.IsFeatureEnabled(api.FeatureBackupPolicy) {
-			return errors.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
-		}
-	case api.PolicyTypeSQLReview:
-		return nil
-	case api.PolicyTypeEnvironmentTier:
-		if !s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy) {
-			return errors.Errorf(api.FeatureEnvironmentTierPolicy.AccessErrorMessage())
-		}
-	case api.PolicyTypeSensitiveData:
-		if !s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData) {
-			return errors.Errorf(api.FeatureSensitiveData.AccessErrorMessage())
-		}
-	}
-	return nil
-}
-
 func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	g.PATCH("/policy/:resourceType/:resourceID", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -301,4 +262,43 @@ func getPolicyResourceID(resourceID string) (int, error) {
 		return 0, errors.Errorf("invalid policy resource ID %q", resourceID)
 	}
 	return id, nil
+}
+
+// hasAccessToUpdatePolicy checks if user can access to policy control feature.
+// return nil if user has access.
+func (s *Server) hasAccessToUpsertPolicy(pType api.PolicyType, policyUpsert *api.PolicyUpsert) error {
+	// nil payload means user doesn't update the payload field
+	if policyUpsert.Payload == nil {
+		return nil
+	}
+
+	defaultPolicy, err := api.GetDefaultPolicy(pType)
+	if err != nil {
+		return err
+	}
+
+	if defaultPolicy == *policyUpsert.Payload {
+		return nil
+	}
+	switch pType {
+	case api.PolicyTypePipelineApproval:
+		if !s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy) {
+			return errors.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
+		}
+	case api.PolicyTypeBackupPlan:
+		if !s.licenseService.IsFeatureEnabled(api.FeatureBackupPolicy) {
+			return errors.Errorf(api.FeatureBackupPolicy.AccessErrorMessage())
+		}
+	case api.PolicyTypeSQLReview:
+		return nil
+	case api.PolicyTypeEnvironmentTier:
+		if !s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy) {
+			return errors.Errorf(api.FeatureEnvironmentTierPolicy.AccessErrorMessage())
+		}
+	case api.PolicyTypeSensitiveData:
+		if !s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData) {
+			return errors.Errorf(api.FeatureSensitiveData.AccessErrorMessage())
+		}
+	}
+	return nil
 }
