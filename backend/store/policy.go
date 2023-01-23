@@ -13,24 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
-// policyRaw is the store model for an Policy.
-// Fields have exactly the same meanings as Policy.
-type policyRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus api.RowStatus
-
-	// Related fields
-	ResourceType api.PolicyResourceType
-	ResourceID   int
-
-	// Domain specific fields
-	InheritFromParent bool
-	Type              api.PolicyType
-	Payload           string
-}
-
 // GetBackupPlanPolicyByEnvID will get the backup plan policy for an environment.
 func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
 	resourceType := api.PolicyResourceTypeEnvironment
@@ -95,30 +77,36 @@ func (s *Store) GetSQLReviewPolicy(ctx context.Context, environmentID int) (*adv
 
 // GetSensitiveDataPolicy will get the sensitive data policy for database ID.
 func (s *Store) GetSensitiveDataPolicy(ctx context.Context, databaseID int) (*api.SensitiveDataPolicy, error) {
-	databaseResourceType := api.PolicyResourceTypeDatabase
-	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		ResourceType: &databaseResourceType,
-		ResourceID:   &databaseID,
-		Type:         api.PolicyTypeSensitiveData,
+	resourceType := api.PolicyResourceTypeDatabase
+	pType := api.PolicyTypeSensitiveData
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		ResourceUID:  &databaseID,
+		Type:         &pType,
 	})
 	if err != nil {
 		return nil, err
 	}
+	if policy == nil {
+		return &api.SensitiveDataPolicy{}, nil
+	}
+
 	return api.UnmarshalSensitiveDataPolicy(policy.Payload)
 }
 
-// GetNormalAccessControlPolicy will get the normal access control polciy. Return nil if InheritFromParent is true.
-func (s *Store) GetNormalAccessControlPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.AccessControlPolicy, bool, error) {
-	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+// GetAccessControlPolicy will get the normal access control polciy. Return nil if InheritFromParent is true.
+func (s *Store) GetAccessControlPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*api.AccessControlPolicy, bool, error) {
+	pType := api.PolicyTypeAccessControl
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceID:   &resourceID,
-		Type:         api.PolicyTypeAccessControl,
+		ResourceUID:  &resourceID,
+		Type:         &pType,
 	})
 	if err != nil {
-		// For access constrol policy, the default value for InheritFromParent is true.
-		return nil, true, err
+		return nil, false, err
 	}
-	if policy == nil || policy.RowStatus != api.Normal {
+
+	if policy == nil || !policy.Enforce {
 		// For access constrol policy, the default value for InheritFromParent is true.
 		return nil, true, nil
 	}
@@ -129,112 +117,6 @@ func (s *Store) GetNormalAccessControlPolicy(ctx context.Context, resourceType a
 		return nil, true, err
 	}
 	return accessControlPolicy, policy.InheritFromParent, nil
-}
-
-// getPolicyRaw finds the policy for an environment.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policyRaw, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.Rollback()
-
-	policyRawList, err := findPolicyImpl(ctx, tx, find)
-	var ret *policyRaw
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if len(policyRawList) == 0 {
-		ret = &policyRaw{
-			Type: find.Type,
-		}
-		if find.ResourceType != nil {
-			ret.ResourceType = *find.ResourceType
-		}
-		if find.ResourceID != nil {
-			ret.ResourceID = *find.ResourceID
-		}
-		if find.Type == api.PolicyTypeAccessControl {
-			// For access constrol policy, the default value for InheritFromParent is true.
-			ret.InheritFromParent = true
-		}
-	} else if len(policyRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}
-	} else {
-		ret = policyRawList[0]
-	}
-
-	if ret.Payload == "" {
-		// Return the default policy when there is no stored policy.
-		payload, err := api.GetDefaultPolicy(find.Type)
-		if err != nil {
-			return nil, &common.Error{Code: common.Internal, Err: err}
-		}
-		ret.Payload = payload
-		ret.ID = api.DefaultPolicyID
-	}
-	return ret, nil
-}
-
-func findPolicyImpl(ctx context.Context, tx *Tx, find *api.PolicyFind) ([]*policyRaw, error) {
-	where, args := []string{"TRUE"}, []interface{}{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ResourceType; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
-	}
-	where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, find.Type)
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT
-			id,
-			row_status,
-			resource_type,
-			resource_id,
-			inherit_from_parent,
-			type,
-			payload
-		FROM policy
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	// Iterate over result set and deserialize rows into policyRawList.
-	var policyRawList []*policyRaw
-	for rows.Next() {
-		var policyRaw policyRaw
-		if err := rows.Scan(
-			&policyRaw.ID,
-			&policyRaw.RowStatus,
-			&policyRaw.ResourceType,
-			&policyRaw.ResourceID,
-			&policyRaw.InheritFromParent,
-			&policyRaw.Type,
-			&policyRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		policyRawList = append(policyRawList, &policyRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return policyRawList, nil
 }
 
 // PolicyMessage is the mssage for policy.

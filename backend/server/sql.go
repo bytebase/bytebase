@@ -868,12 +868,12 @@ func (s *Server) hasDatabaseAccessRights(ctx context.Context, principalID int, r
 	}
 
 	// calculate the effective policy.
-	databasePolicy, inheritFromEnvironment, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
+	databasePolicy, inheritFromEnvironment, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeDatabase, database.UID)
 	if err != nil {
 		return false, err
 	}
 
-	environmentPolicy, _, err := s.store.GetNormalAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
+	environmentPolicy, _, err := s.store.GetAccessControlPolicy(ctx, api.PolicyResourceTypeEnvironment, environment.UID)
 	if err != nil {
 		return false, err
 	}
