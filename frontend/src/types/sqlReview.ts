@@ -1,6 +1,5 @@
 import { useI18n } from "vue-i18n";
 import { PolicyId } from "./id";
-import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
 import { PlanType } from "./plan";
@@ -184,10 +183,6 @@ export interface SQLReviewPolicy {
   id: PolicyId;
 
   // Standard fields
-  creator: Principal;
-  createdTs: number;
-  updater: Principal;
-  updatedTs: number;
   rowStatus: RowStatus;
 
   // Domain specific fields

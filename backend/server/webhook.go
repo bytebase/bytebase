@@ -342,14 +342,12 @@ func (s *Server) sqlAdviceForFile(
 		if err != nil {
 			return nil, err
 		}
-		environmentResourceType := api.PolicyResourceTypeEnvironment
-		policy, err := s.store.GetNormalSQLReviewPolicy(ctx, &api.PolicyFind{ResourceType: &environmentResourceType, ResourceID: &environment.UID})
+		policy, err := s.store.GetSQLReviewPolicy(ctx, environment.UID)
 		if err != nil {
 			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 				log.Debug("Cannot found SQL review policy in environment", zap.String("Environment", database.EnvironmentID), zap.Error(err))
 				continue
 			}
-
 			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", instance.EnvironmentID, err)
 		}
 
