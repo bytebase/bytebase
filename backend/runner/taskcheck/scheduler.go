@@ -332,7 +332,7 @@ func getStmtTypeTaskCheck(task *api.Task, instance *store.InstanceMessage, dbSch
 	}, nil
 }
 
-func (s *Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*api.TaskCheckRunCreate, error) {
+func (*Scheduler) getSQLReviewTaskCheck(ctx context.Context, task *api.Task, instance *store.InstanceMessage, dbSchema *store.DBSchema, statement string) ([]*api.TaskCheckRunCreate, error) {
 	if !api.IsSQLReviewSupported(instance.Engine) {
 		return nil, nil
 	}
