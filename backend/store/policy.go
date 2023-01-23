@@ -547,7 +547,6 @@ type PolicyMessage struct {
 	ResourceType      api.PolicyResourceType
 	Payload           string
 	InheritFromParent bool
-	Deleted           bool
 	Type              api.PolicyType
 }
 
@@ -556,7 +555,6 @@ type FindPolicyMessage struct {
 	ResourceType *api.PolicyResourceType
 	ResourceUID  *int
 	Type         *api.PolicyType
-	ShowDeleted  bool
 }
 
 // UpdatePolicyMessage is the message for updating a policy.
@@ -567,7 +565,6 @@ type UpdatePolicyMessage struct {
 	Type              api.PolicyType
 	InheritFromParent *bool
 	Payload           *string
-	RowStatus         *api.RowStatus
 }
 
 // GetPolicyV2 gets a policy.
@@ -578,8 +575,6 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 		}
 	}
 
-	// We will always return the resource regardless of its deleted state.
-	find.ShowDeleted = true
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -671,7 +666,6 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creat
 	}
 
 	create.UID = uid
-	create.Deleted = false
 
 	s.storePolicyIntoCache(create)
 
@@ -686,9 +680,6 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	}
 	if v := patch.Payload; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.ResourceType, patch.ResourceUID, patch.Type)
 
@@ -725,8 +716,6 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		return nil, FormatError(err)
 	}
 
-	policy.Deleted = convertRowStatusToDeleted(rowStatus)
-
 	if err := tx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
@@ -734,6 +723,26 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	s.storePolicyIntoCache(policy)
 
 	return policy, nil
+}
+
+// DeletePolicyV2 deletes the policy.
+func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM policy WHERE resource_type = $1 AND resource_id = $2 AND type = $3`,
+		policy.ResourceType,
+		policy.ResourceUID,
+		policy.Type,
+	); err != nil {
+		return FormatError(err)
+	}
+
+	return tx.Commit()
 }
 
 func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
@@ -747,14 +756,10 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
-	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			row_status,
 			resource_type,
 			resource_id,
 			inherit_from_parent,
@@ -772,10 +777,8 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	var policyList []*PolicyMessage
 	for rows.Next() {
 		var policyMessage PolicyMessage
-		var rowStatus string
 		if err := rows.Scan(
 			&policyMessage.UID,
-			&rowStatus,
 			&policyMessage.ResourceType,
 			&policyMessage.ResourceUID,
 			&policyMessage.InheritFromParent,
@@ -784,8 +787,6 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		policyMessage.Deleted = convertRowStatusToDeleted(rowStatus)
-
 		policyList = append(policyList, &policyMessage)
 	}
 	if err := rows.Err(); err != nil {

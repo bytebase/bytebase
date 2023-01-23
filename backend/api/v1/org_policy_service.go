@@ -60,7 +60,6 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		ResourceUID:  &resourceID,
-		ShowDeleted:  request.ShowDeleted,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -106,9 +105,6 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		}
 		return nil, err
 	}
-	if policy.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "policy %q has been deleted", request.Policy.Name)
-	}
 
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
@@ -146,58 +142,18 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 	return response, nil
 }
 
-// DeletePolicy deletes a policy in a specific resource.
+// DeletePolicy deletes a policy for a specific resource.
 func (s *OrgPolicyService) DeletePolicy(ctx context.Context, request *v1pb.DeletePolicyRequest) (*emptypb.Empty, error) {
 	policy, _, err := s.findPolicyMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
-	if policy.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "policy %q has been deleted", request.Name)
-	}
 
-	rowStatus := api.Archived
-	if _, err := s.store.UpdatePolicyV2(ctx, &store.UpdatePolicyMessage{
-		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
-		ResourceType: policy.ResourceType,
-		Type:         policy.Type,
-		ResourceUID:  policy.ResourceUID,
-		RowStatus:    &rowStatus,
-	}); err != nil {
+	if err := s.store.DeletePolicyV2(ctx, policy); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &emptypb.Empty{}, nil
-}
-
-// UndeletePolicy undeletes a policy in a specific resource.
-func (s *OrgPolicyService) UndeletePolicy(ctx context.Context, request *v1pb.UndeletePolicyRequest) (*v1pb.Policy, error) {
-	policy, parent, err := s.findPolicyMessage(ctx, request.Name)
-	if err != nil {
-		return nil, err
-	}
-	if !policy.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "policy %q is active", request.Name)
-	}
-
-	rowStatus := api.Normal
-	p, err := s.store.UpdatePolicyV2(ctx, &store.UpdatePolicyMessage{
-		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
-		ResourceType: policy.ResourceType,
-		Type:         policy.Type,
-		ResourceUID:  policy.ResourceUID,
-		RowStatus:    &rowStatus,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	response, err := convertToPolicy(parent, p)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	return response, nil
 }
 
 // findPolicyMessage finds the policy and the parent name by the policy name.
@@ -414,7 +370,6 @@ func convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 func convertToPolicy(prefix string, policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
 	policy := &v1pb.Policy{
 		Uid:               fmt.Sprintf("%d", policyMessage.UID),
-		State:             convertDeletedToState(policyMessage.Deleted),
 		InheritFromParent: policyMessage.InheritFromParent,
 	}
 
