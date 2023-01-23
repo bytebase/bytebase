@@ -154,6 +154,9 @@ type UpdatePolicyMessage struct {
 func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*PolicyMessage, error) {
 	if find.ResourceType != nil && find.ResourceUID != nil && find.Type != nil {
 		if policy, ok := s.policyCache.Load(getPolicyCacheKey(*find.ResourceType, *find.ResourceUID, *find.Type)); ok {
+			if policy == nil {
+				return nil, nil
+			}
 			return policy.(*PolicyMessage), nil
 		}
 	}
