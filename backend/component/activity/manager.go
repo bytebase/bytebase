@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -169,19 +170,17 @@ func postWebhookList(webhookCtx webhook.Context, webhookList []*api.ProjectWebho
 	for _, hook := range webhookList {
 		webhookCtx.URL = hook.URL
 		webhookCtx.CreatedTs = time.Now().Unix()
-		const maxRetries = 3
-		for retries := 0; retries < maxRetries; retries++ {
-			if err := webhook.Post(hook.Type, webhookCtx); err != nil {
-				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-				log.Warn("Failed to post webhook event on activity",
-					zap.String("webhook type", hook.Type),
-					zap.String("webhook name", hook.Name),
-					zap.String("activity type", webhookCtx.ActivityType),
-					zap.String("title", webhookCtx.Title),
-					zap.Error(err))
-			} else {
-				break
-			}
+		if err := common.Retry(func() error {
+			return webhook.Post(hook.Type, webhookCtx)
+		}); err != nil {
+			// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
+			log.Warn("Failed to post webhook event on activity",
+				zap.String("webhook type", hook.Type),
+				zap.String("webhook name", hook.Name),
+				zap.String("activity type", webhookCtx.ActivityType),
+				zap.String("title", webhookCtx.Title),
+				zap.Error(err))
+			return
 		}
 	}
 }
