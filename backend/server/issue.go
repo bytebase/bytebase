@@ -30,9 +30,7 @@ import (
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		issueCreate := &api.IssueCreate{
-			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
-		}
+		issueCreate := &api.IssueCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 		}
@@ -345,7 +343,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	// since we are not creating pipeline/stage list/task list in a single transaction.
 	// We may still run into this issue when we actually create those pipeline/stage list/task list, however, that's
 	// quite unlikely so we will live with it for now.
-	pipelineCreate, err := s.getPipelineCreate(ctx, issueCreate)
+	pipelineCreate, err := s.getPipelineCreate(ctx, issueCreate, creatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -373,8 +371,32 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot set assignee with user id %d", issueCreate.AssigneeID))
 	}
 
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &issueCreate.ProjectID})
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("project %d not found", issueCreate.ProjectID))
+	}
+	assignee, err := s.store.GetUserByID(ctx, issueCreate.AssigneeID)
+	if err != nil {
+		return nil, err
+	}
+	if assignee == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("assignee %d not found", issueCreate.AssigneeID))
+	}
+	issueCreateMessage := &store.IssueMessage{
+		Project:       project,
+		Title:         issueCreate.Name,
+		Type:          issueCreate.Type,
+		Description:   issueCreate.Description,
+		Assignee:      assignee,
+		NeedAttention: issueCreate.AssigneeNeedAttention,
+		Payload:       issueCreate.Payload,
+	}
+
 	if issueCreate.ValidateOnly {
-		issue, err := s.store.CreateIssueValidateOnly(ctx, pipelineCreate, issueCreate)
+		issue, err := s.store.CreateIssueValidateOnly(ctx, pipelineCreate, issueCreateMessage, creatorID)
 		if err != nil {
 			return nil, err
 		}
@@ -385,64 +407,68 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	if err != nil {
 		return nil, err
 	}
-	issueCreate.PipelineID = pipeline.ID
-	issue, err := s.store.CreateIssue(ctx, issueCreate)
+	issueCreateMessage.PipelineUID = pipeline.ID
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
+	if err != nil {
+		return nil, err
+	}
+	composedIssue, err := s.store.GetIssueByID(ctx, issue.UID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, issue.Pipeline); err != nil {
-		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Name)
+	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, composedIssue.Pipeline); err != nil {
+		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
 	}
 
 	createActivityPayload := api.ActivityIssueCreatePayload{
-		IssueName: issue.Name,
+		IssueName: issue.Title,
 	}
 
 	bytes, err := json.Marshal(createActivityPayload)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Name)
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
 	activityCreate := &api.ActivityCreate{
-		CreatorID:   issueCreate.CreatorID,
-		ContainerID: issue.ID,
+		CreatorID:   creatorID,
+		ContainerID: issue.UID,
 		Type:        api.ActivityIssueCreate,
 		Level:       api.ActivityInfo,
 		Payload:     string(bytes),
 	}
 	if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-		Issue: issue,
+		Issue: composedIssue,
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Name)
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
 
-	if len(issue.Pipeline.StageList) > 0 {
-		stage := issue.Pipeline.StageList[0]
+	if len(composedIssue.Pipeline.StageList) > 0 {
+		stage := composedIssue.Pipeline.StageList[0]
 		createActivityPayload := api.ActivityPipelineStageStatusUpdatePayload{
 			StageID:               stage.ID,
 			StageStatusUpdateType: api.StageStatusUpdateTypeBegin,
-			IssueName:             issue.Name,
+			IssueName:             issue.Title,
 			StageName:             stage.Name,
 		}
 		bytes, err := json.Marshal(createActivityPayload)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Name)
+			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
 		}
 		activityCreate := &api.ActivityCreate{
 			CreatorID:   api.SystemBotID,
-			ContainerID: issue.PipelineID,
+			ContainerID: composedIssue.PipelineID,
 			Type:        api.ActivityPipelineStageStatusUpdate,
 			Level:       api.ActivityInfo,
 			Payload:     string(bytes),
 		}
 		if _, err := s.ActivityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-			Issue: issue,
+			Issue: composedIssue,
 		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Name)
+			return nil, errors.Wrapf(err, "failed to create ActivityPipelineStageStatusUpdate activity after creating the issue: %v", issue.Title)
 		}
 	}
 
-	return issue, nil
+	return composedIssue, nil
 }
 
 func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCreate *api.PipelineCreate) (*api.Pipeline, error) {
@@ -497,22 +523,22 @@ func (s *Server) createPipeline(ctx context.Context, creatorID int, pipelineCrea
 	return pipelineCreated, nil
 }
 
-func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.PipelineCreate, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
-		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate)
+		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate, creatorID)
 	case api.IssueDatabaseRestorePITR:
-		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate)
+		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate, creatorID)
 	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate, api.IssueDatabaseSchemaUpdateGhost:
-		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
+		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate, creatorID)
 	case api.IssueDatabaseRollback:
-		return s.getPipelineCreateForDatabaseRollback(ctx, issueCreate)
+		return s.getPipelineCreateForDatabaseRollback(ctx, issueCreate, creatorID)
 	default:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
 }
 
-func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.PipelineCreate, error) {
 	c := api.RollbackContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -578,7 +604,7 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	}
 	issueCreate.CreateContext = string(bytes)
 	issueCreate.Type = api.IssueDatabaseDataUpdate
-	pipelineCreate, err := s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
+	pipelineCreate, err := s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate, creatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -604,7 +630,7 @@ func (s *Server) getPipelineCreateForDatabaseRollback(ctx context.Context, issue
 	return pipelineCreate, nil
 }
 
-func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.PipelineCreate, error) {
 	c := api.CreateDatabaseContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -677,7 +703,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 
 		return &api.PipelineCreate{
 			Name:      fmt.Sprintf("Pipeline - Create database %v from backup %v", c.DatabaseName, backup.Name),
-			CreatorID: issueCreate.CreatorID,
+			CreatorID: creatorID,
 			StageList: []api.StageCreate{
 				{
 					Name:          environment.Title,
@@ -697,7 +723,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 
 	return &api.PipelineCreate{
 		Name:      fmt.Sprintf("Pipeline - Create database %s", c.DatabaseName),
-		CreatorID: issueCreate.CreatorID,
+		CreatorID: creatorID,
 		StageList: []api.StageCreate{
 			{
 				Name:          environment.Title,
@@ -708,7 +734,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 	}, nil
 }
 
-func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.PipelineCreate, error) {
 	c := api.PITRContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -755,7 +781,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 
 	return &api.PipelineCreate{
 		Name:      "Database Point-in-time Recovery pipeline",
-		CreatorID: issueCreate.CreatorID,
+		CreatorID: creatorID,
 		StageList: []api.StageCreate{
 			{
 				Name:             environment.Title,
@@ -767,7 +793,7 @@ func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCrea
 	}, nil
 }
 
-func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Context, issueCreate *api.IssueCreate, creatorID int) (*api.PipelineCreate, error) {
 	c := api.MigrationContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 		return nil, err
@@ -887,7 +913,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	if issueCreate.Type == api.IssueDatabaseSchemaUpdateGhost {
 		create := &api.PipelineCreate{
 			Name:      "Update database schema (gh-ost) pipeline",
-			CreatorID: issueCreate.CreatorID,
+			CreatorID: creatorID,
 		}
 		for i, databaseList := range aggregatedMatrix {
 			// Skip the stage if the stage includes no database.
@@ -938,7 +964,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 	}
 	create := &api.PipelineCreate{
 		Name:      "Change database pipeline",
-		CreatorID: issueCreate.CreatorID,
+		CreatorID: creatorID,
 	}
 	for i, databaseList := range aggregatedMatrix {
 		// Skip the stage if the stage includes no database.

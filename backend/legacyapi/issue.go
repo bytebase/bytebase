@@ -96,10 +96,6 @@ type IssueResponse struct {
 
 // IssueCreate is the API message for creating an issue.
 type IssueCreate struct {
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	CreatorID int
-
 	// Related fields
 	ProjectID  int `jsonapi:"attr,projectId"`
 	PipelineID int

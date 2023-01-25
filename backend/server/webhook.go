@@ -838,7 +838,6 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		}
 	}
 	issueCreate := &api.IssueCreate{
-		CreatorID:             creatorID,
 		ProjectID:             projectID,
 		Name:                  issueName,
 		Type:                  issueType,
