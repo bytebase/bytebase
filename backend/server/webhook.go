@@ -838,7 +838,6 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		}
 	}
 	issueCreate := &api.IssueCreate{
-		CreatorID:             creatorID,
 		ProjectID:             projectID,
 		Name:                  issueName,
 		Type:                  issueType,
@@ -847,7 +846,7 @@ func (s *Server) createIssueFromMigrationDetailList(ctx context.Context, issueNa
 		AssigneeNeedAttention: true,
 		CreateContext:         string(createContext),
 	}
-	issue, err := s.createIssue(ctx, issueCreate)
+	issue, err := s.createIssue(ctx, issueCreate, creatorID)
 	if err != nil {
 		errMsg := "Failed to create schema update issue"
 		if issueType == api.IssueDatabaseDataUpdate {
