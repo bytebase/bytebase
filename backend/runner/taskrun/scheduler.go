@@ -1238,17 +1238,21 @@ func (s *Scheduler) CanPrincipalBeAssignee(ctx context.Context, principalID int,
 }
 
 // ChangeIssueStatus changes the status of an issue.
-func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
+func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *store.IssueMessage, newStatus api.IssueStatus, updaterID int, comment string) (*api.Issue, error) {
+	composedPipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineUID)
+	if err != nil {
+		return nil, err
+	}
 	var pipelineStatus api.PipelineStatus
 	switch newStatus {
 	case api.IssueOpen:
 		pipelineStatus = api.PipelineOpen
 	case api.IssueDone:
 		// Returns error if any of the tasks is not DONE.
-		for _, stage := range issue.Pipeline.StageList {
+		for _, stage := range composedPipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status != api.TaskDone {
-					return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Name, task.Name)}
+					return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("failed to resolve issue: %v, task %v has not finished", issue.Title, task.Name)}
 				}
 			}
 		}
@@ -1257,7 +1261,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, new
 		// If we want to cancel the issue, we find the current running tasks, mark each of them CANCELED.
 		// We keep PENDING and FAILED tasks as is since the issue maybe reopened later, and it's better to
 		// keep those tasks in the same state before the issue was canceled.
-		for _, stage := range issue.Pipeline.StageList {
+		for _, stage := range composedPipeline.StageList {
 			for _, task := range stage.TaskList {
 				if task.Status == api.TaskRunning {
 					if _, err := s.PatchTaskStatus(ctx, task, &api.TaskStatusPatch{
@@ -1265,7 +1269,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, new
 						UpdaterID: updaterID,
 						Status:    api.TaskCanceled,
 					}); err != nil {
-						return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Name, task.Name)
+						return nil, errors.Wrapf(err, "failed to cancel issue: %v, failed to cancel task: %v", issue.Title, task.Name)
 					}
 				}
 			}
@@ -1274,32 +1278,32 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, new
 	}
 
 	pipelinePatch := &api.PipelinePatch{
-		ID:        issue.PipelineID,
+		ID:        issue.PipelineUID,
 		UpdaterID: updaterID,
 		Status:    &pipelineStatus,
 	}
 	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Name, pipelinePatch)
+		return nil, errors.Wrapf(err, "failed to update issue %q's status, failed to update pipeline status with patch %+v", issue.Title, pipelinePatch)
 	}
 
 	issuePatch := &api.IssuePatch{
-		ID:        issue.ID,
+		ID:        issue.UID,
 		UpdaterID: updaterID,
 		Status:    &newStatus,
 	}
-	if newStatus != api.IssueOpen && issue.Project.WorkflowType == api.UIWorkflow {
+	if newStatus != api.IssueOpen && issue.Project.Workflow == api.UIWorkflow {
 		// for UI workflow, set assigneeNeedAttention to false if we are closing the issue.
 		needAttention := false
 		issuePatch.AssigneeNeedAttention = &needAttention
 	}
 	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Name, issuePatch)
+		return nil, errors.Wrapf(err, "failed to update issue %q's status with patch %v", issue.Title, issuePatch)
 	}
 
 	// Cancel external approval, it's ok if we failed.
 	if newStatus != api.IssueOpen {
-		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.ID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
+		if err := s.applicationRunner.CancelExternalApproval(ctx, issue.UID, api.ExternalApprovalCancelReasonIssueNotOpen); err != nil {
 			log.Error("failed to cancel external approval on issue cancellation or completion", zap.Error(err))
 		}
 	}
@@ -1310,12 +1314,12 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, new
 		IssueName: updatedIssue.Name,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Name)
+		return nil, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", issue.Title)
 	}
 
 	activityCreate := &api.ActivityCreate{
 		CreatorID:   updaterID,
-		ContainerID: issue.ID,
+		ContainerID: issue.UID,
 		Type:        api.ActivityIssueStatusUpdate,
 		Level:       api.ActivityInfo,
 		Comment:     comment,
@@ -1325,7 +1329,7 @@ func (s *Scheduler) ChangeIssueStatus(ctx context.Context, issue *api.Issue, new
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: updatedIssue,
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Name)
+		return nil, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", issue.Title)
 	}
 
 	return updatedIssue, nil
