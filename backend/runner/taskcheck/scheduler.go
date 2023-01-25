@@ -217,20 +217,24 @@ func (s *Scheduler) Register(taskType api.TaskCheckType, executor Executor) {
 	s.executors[taskType] = executor
 }
 
-func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (s *Scheduler) getTaskCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	var createList []*api.TaskCheckRunCreate
 
-	create, err := s.getLGTMTaskCheck(ctx, task, creatorID)
+	create, err := s.getLGTMTaskCheck(ctx, project, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule LGTM task check")
 	}
-	createList = append(createList, create...)
+	if create != nil {
+		createList = append(createList, create...)
+	}
 
 	create, err = s.getPITRTaskCheck(ctx, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule backup/PITR task check")
 	}
-	createList = append(createList, create...)
+	if create != nil {
+		createList = append(createList, create...)
+	}
 
 	if task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateSDL && task.Type != api.TaskDatabaseDataUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
 		return createList, nil
@@ -240,13 +244,17 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule general task check")
 	}
-	createList = append(createList, create...)
+	if create != nil {
+		createList = append(createList, create...)
+	}
 
 	create, err = s.getGhostTaskCheck(ctx, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule gh-ost task check")
 	}
-	createList = append(createList, create...)
+	if create != nil {
+		createList = append(createList, create...)
+	}
 
 	statement, err := utils.GetTaskStatement(task)
 	if err != nil {
@@ -278,26 +286,32 @@ func (s *Scheduler) getTaskCheck(ctx context.Context, task *api.Task, creatorID 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule syntax check task check")
 	}
-	createList = append(createList, create...)
+	if create != nil {
+		createList = append(createList, create...)
+	}
 
 	create, err = s.getSQLReviewTaskCheck(task, instance, dbSchema, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule SQL review task check")
 	}
-	createList = append(createList, create...)
+	if create != nil {
+		createList = append(createList, create...)
+	}
 
 	create, err = getStmtTypeTaskCheck(task, instance, dbSchema, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to schedule statement type task check")
 	}
-	createList = append(createList, create...)
+	if create != nil {
+		createList = append(createList, create...)
+	}
 
 	return createList, nil
 }
 
 // ScheduleCheck schedules variouse task checks depending on the task type.
-func (s *Scheduler) ScheduleCheck(ctx context.Context, task *api.Task, creatorID int) (*api.Task, error) {
-	createList, err := s.getTaskCheck(ctx, task, creatorID)
+func (s *Scheduler) ScheduleCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) (*api.Task, error) {
+	createList, err := s.getTaskCheck(ctx, project, task, creatorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to getTaskCheck")
 	}
@@ -419,22 +433,11 @@ func (*Scheduler) getPITRTaskCheck(_ context.Context, task *api.Task, creatorID 
 	}, nil
 }
 
-func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
+func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, project *store.ProjectMessage, task *api.Task, creatorID int) ([]*api.TaskCheckRunCreate, error) {
 	if !s.licenseService.IsFeatureEnabled(api.FeatureLGTM) {
 		return nil, nil
 	}
-	issues, err := s.store.FindIssueStripped(ctx, &api.IssueFind{PipelineID: &task.PipelineID})
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	if len(issues) > 1 {
-		return nil, errors.Errorf("expect to find 0 or 1 issue, get %d", len(issues))
-	}
-	if len(issues) == 0 {
-		// skip if no containing issue.
-		return nil, nil
-	}
-	if issues[0].Project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
+	if project.LGTMCheckSetting.Value == api.LGTMValueDisabled {
 		// don't schedule LGTM check if it's disabled.
 		return nil, nil
 	}
@@ -456,11 +459,11 @@ func (s *Scheduler) getLGTMTaskCheck(ctx context.Context, task *api.Task, creato
 }
 
 // SchedulePipelineTaskCheck schedules the task checks for a pipeline.
-func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, pipeline *api.Pipeline) error {
+func (s *Scheduler) SchedulePipelineTaskCheck(ctx context.Context, project *store.ProjectMessage, pipeline *api.Pipeline) error {
 	var createList []*api.TaskCheckRunCreate
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {
-			create, err := s.getTaskCheck(ctx, task, api.SystemBotID)
+			create, err := s.getTaskCheck(ctx, project, task, api.SystemBotID)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get task check for task %d", task.ID)
 			}

@@ -417,7 +417,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, err
 	}
 
-	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, composedIssue.Pipeline); err != nil {
+	if err := s.TaskCheckScheduler.SchedulePipelineTaskCheck(ctx, project, composedIssue.Pipeline); err != nil {
 		return nil, errors.Wrapf(err, "failed to schedule task check after creating the issue: %v", issue.Title)
 	}
 
